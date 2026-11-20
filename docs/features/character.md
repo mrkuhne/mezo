@@ -14,6 +14,7 @@ related: [companion, proactive, insights, me, _platform-api-backend]
 ---
 
 > **2026-11-21 — reviewed after Boop B6 Évad S2 (`mezo-r36n9.16`, no dossier change).** `ChatToolDomains` maps the new companion tool `get_season` to the `cel` topic (same as `get_goal`), so asking about the season does not read as a topic shift.
+> **2026-11-21 — reviewed after Boop Pénz investment ↔ money account (`mezo-r36n9.119`, no dossier change).** The shared `1.1.0/script` folder gained `202611211400_mezo-r36n9.119_penz_invest_account_link.sql` (one nullable column on `penz_invest_txn`); no character table or behaviour changed.
 
 > **2026-11-20 — reviewed after Boop Pénz L7 (`mezo-r36n9.105`, no dossier change).** The shared `1.1.0/script` folder gained `202611202000_mezo-r36n9.105_penz_practice.sql` (`penz_paper_trade`) and `202611202010_mezo-r36n9.105_penz_proposals.sql` (`penz_product`, `penz_proposal`) — owned by [`penz.md`](penz.md); no Karakter table, detector or signal reads paper trades, the catalog or proposals.
 > **2026-11-20 — reviewed after Boop B6 Évad S1 (`mezo-r36n9.16`, no dossier change).** The shared `1.1.0/script` folder gained `202611211000_mezo-r36n9.16_season.sql` (`season`, `season_allowed_recipe`, `season_revision`) — season-owned, not read by the character dossier. See [`season.md`](season.md).

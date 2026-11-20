@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.penz.repository;
 import io.mrkuhne.mezo.feature.penz.entity.PenzInvestTxnEntity;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -24,6 +25,13 @@ public interface PenzInvestTxnRepository extends JpaRepository<PenzInvestTxnEnti
     Optional<PenzInvestTxnEntity> findByCreatedByAndClientRefAndDeletedFalse(UUID createdBy, UUID clientRef);
 
     boolean existsByCreatedByAndHoldingIdAndDeletedFalse(UUID createdBy, UUID holdingId);
+
+    /** Whether a live investment transaction holds this money row as its link (mezo-r36n9.119). */
+    boolean existsByCreatedByAndTransactionIdAndDeletedFalse(UUID createdBy, UUID transactionId);
+
+    /** The live investment transactions linked to any of these money rows. */
+    List<PenzInvestTxnEntity> findByCreatedByAndTransactionIdInAndDeletedFalse(UUID createdBy,
+                                                                             Collection<UUID> transactionIds);
 
     /** Soft-deletes every live transaction of a holding (the holding is being deleted). */
     @Modifying(flushAutomatically = true, clearAutomatically = true)

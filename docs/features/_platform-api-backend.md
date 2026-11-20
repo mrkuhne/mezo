@@ -2,7 +2,7 @@
 title: Platform · API Contract & Backend Architecture
 type: feature-platform
 status: done
-updated: 2026-11-20
+updated: 2026-11-21
 tags: [platform, backend, data-layer, frontend, boop, b4-etel, idempotency]
 key_files:
   - api/openapi.yml
@@ -12,6 +12,8 @@ key_files:
   - backend/src/main/resources/messages_hu.properties
 related: [_platform-data-layer, _platform-auth-security, _platform-notifications, train, today, fuel, ritual, companion]
 ---
+
+> **2026-11-21 — Boop Pénz investment ↔ money account (`mezo-r36n9.119`, additive contract).** `penz-portfolio.yml`: `PenzInvestTxnRequest` gains optional `accountId` / `accountAmountMinor` / `linkTransactionId`, `PenzInvestTxnResponse` gains `accountId` / `transactionId`, new op `GET /api/penz/invest-transactions/sms-candidates` (`listPenzInvestSmsCandidates`, returns the shared `PenzTransactionResponse` from `penz.yml` — fragments reference each other's schemas by `#/components/schemas/…`, resolved after the merge); `penz.yml` documents a 409 on transaction `PUT`/`DELETE`; `penz-sms.yml` documents the ingest reason `invest_buy_linked`; `api/openapi.yml` regenerated. Two new codes in both bundles: `PENZ_SMS_LINK_MISMATCH` (409), `PENZ_TRANSACTION_INVEST_LINKED` (409). Changeset `1.1.0/script/202611211400_mezo-r36n9.119_penz_invest_account_link.sql` adds the nullable FK `penz_invest_txn.transaction_id` (no new table, `ResetDatabase` unchanged). No techcore mechanism changed. See [`penz.md`](penz.md) §3.6.
 
 > **2026-11-20 — reviewed after the Boop block day editor (`mezo-r36n9.116`, no platform change).** Two new train error keys in both `messages_hu` and `messages_en` (parity kept, bundles now 313 keys each): `TRAIN_SUGGESTIONS_REQUEST_INVALID` (400, the day-suggestions request) and `TRAIN_DAY_WORKOUT_RUNNING` (409, a day with a running workout cannot be edited). Mechanics unchanged. See [`train.md`](train.md).
 

@@ -10,6 +10,7 @@ key_files:
   - api/feature/penz/penz-sms.yml
   - api/feature/penz/penz-portfolio.yml
   - backend/src/main/resources/db/changelog/1.1.0/script/202611201600_mezo-r36n9.104_penz_portfolio.sql
+  - backend/src/main/resources/db/changelog/1.1.0/script/202611211400_mezo-r36n9.119_penz_invest_account_link.sql
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/PenzSmsLlmAdapter.java
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/PenzDigestLlmAdapter.java
   - backend/src/test/java/io/mrkuhne/mezo/feature/penz
@@ -109,7 +110,7 @@ twins). Line keys are `AllowanceLineKey.wireKey()`, identical in engine and API,
 | 3 | `fixedCosts` | the same as (1) for expense rules |
 | 4 | `savingsTarget` | `penz_settings.savings_target_minor`, or that month's own value from `month_overrides` |
 | 5 | `practice` | **Gyakorlás** — `practice_monthly_minor` (default 2 000 000 = 20 000 Ft), deducted like a fixed cost (spec §10.1.2) |
-| 6 | `invested` | the month's `invest_buy` total (an `invest_sell` is never income) |
+| 6 | `invested` | the month's `invest_buy` total (an `invest_sell` is never income) — manual rows and, since `mezo-r36n9.119`, the money row of every investment buy recorded with an account (§3.6) |
 | 7 | `previousDeficit` | the `deficit_minor` the **previous month's close** stored — 0 while that month is open |
 | 8 | `free` | `recurringIncome + oneOffIncome − fixedCosts − savingsTarget − practice − invested − previousDeficit` |
 | 9 | `spent` | day-to-day spend: `expense` txns **not** linked to a rule |
@@ -210,10 +211,19 @@ short transaction — the LLM and FX calls happen before, outside any transactio
    policy (no rate → `parsed / fx_unavailable`, no transaction; an amount that converts to zero →
    `parsed / amount_too_small`, no transaction); category by name + kind, case-insensitive; note =
    merchant; `source = sms`, `needs_review = true`, `sms_message_id` unique. The SMS row flips to `converted`.
+7. **Invest-buy adoption** (`mezo-r36n9.119`, old `linkSmsToInvestBuy` / `matchInvestTxnForSms`; in the same
+   `PenzSmsStore.storeConverted` transaction, before step 6's row is written) — a planned **expense** first looks for
+   a recorded `invest_buy` on the same account with the same `amount_minor` (account currency), no `sms_message_id`
+   yet and a date within **±3 days** of the SMS date, closest date first then the earlier one
+   (`service/sms/InvestSmsMatch`). Found → that row takes the SMS (`sms_message_id`, `source = sms`;
+   `needs_review` stays false, kind and date stay), the SMS flips to `converted` pointing at it, **no second row**;
+   the response is `parsed` with that `transactionId` and reason **`invest_buy_linked`**. Not found → step 6's
+   normal expense.
 
 `ignored` SMS drop their text; `failed` ones keep it for review. Response:
 `{status: parsed|ignored|failed|duplicate, transactionId?, reason?}` with reasons `no_amount`, `not_a_transaction`,
-`llm_error`, `amount_mismatch`, `bad_*`, `no_account`, `fx_unavailable`, `amount_too_small`.
+`llm_error`, `amount_mismatch`, `bad_*`, `no_account`, `fx_unavailable`, `amount_too_small`, and with `parsed`
+`invest_buy_linked` (step 7).
 
 **The iOS Shortcut recipe** (the old app's contract, kept): a personal automation on *Message received* (from the
 bank's sender) → **Get Contents of URL**: method `POST`, URL `https://<server>/api/penz/sms/ingest`, headers
@@ -255,6 +265,33 @@ through `verdict`. Fixtures: `backend/src/test/resources/penz/guard-brief-{consi
   unreachable source accepts the holding unpriced. The currency cannot change once a transaction exists.
 - **Buys and sells** (`penz_invest_txn`) are what he already did on his own platform; amount in the holding's
   currency + the HUF twin **booked by the L4 FX policy** at the trade date. Idempotent on `clientRef`.
+- **The money-account link** (`mezo-r36n9.119`, `PenzInvestLinkService`). The app never moves money; with an
+  optional `accountId` a buy (paid from) / sell (paid into) is also **recorded** on that account as ONE
+  `penz_transaction` — kind `invest_buy` / `invest_sell`, so the balance and the allowance `invested` line (§3.1) see
+  it — written in the same transaction, its id in `penz_invest_txn.transaction_id`, only by the request that
+  actually inserted the investment row (a `clientRef` replay, or a concurrent duplicate, never writes a second money
+  row). Only the owner's live, **non-archived `checking` or `cash`** account can pay (old `payableAccounts`): another
+  type → 400 field error on `accountId`; not his / deleted / archived → 404 `PENZ_ACCOUNT_NOT_FOUND`. The money row
+  is in the **account's** currency: `accountAmountMinor` when he gave it (the exact bank debit); else the investment
+  amount itself when the currencies agree; else its **HUF twin** on a HUF account; else the HUF twin ÷ the account
+  currency's **booking rate** of the date (`PenzFxService`, HALF_UP — never a second rate path). Its own HUF twin is
+  booked by the FX policy like every row's; category null, note = the holding's name, source `manual`, reviewed.
+  The response carries `accountId` + `transactionId`.
+- **Adopting a bank-SMS debit** (a buy only). `GET /api/penz/invest-transactions/sms-candidates?accountId=&amountMinor=&date=`
+  (old `findSmsCandidates`, `InvestSmsMatch`): on an account with an `smsSender`, live **expenses** that came from a
+  bank SMS (`source = sms` or an `sms_message_id`), no recurring rule, not already linked to an investment, exactly
+  `amountMinor` in the account currency, dated within ±3 days — closest first; empty without an SMS sender. A buy
+  with `linkTransactionId` re-checks the same rule (fail → 409 `PENZ_SMS_LINK_MISMATCH`; a sell, or no `accountId` →
+  400 field error) and the debit **becomes** the money row: kind → `invest_buy`, category null, reviewed, note = the
+  holding's name; the investment takes that row's **date** (one buy never carries two dates) and nothing new is
+  written. The investment's own amount and twin stay as he typed them (holding currency).
+- **Delete releases the link.** Deleting an investment transaction (after the FIFO guard) releases its money row in
+  the same transaction: one carrying an `sms_message_id` (the debit really happened) **reverts** to `expense` (buy) /
+  `income` (sell) with `needs_review = true` — offered again by the candidates list when the buy is recorded again;
+  any other is soft-deleted. Deleting a holding releases every one of its transactions' rows the same way.
+- **The guard from the other side.** `PUT` / `DELETE /api/penz/transactions/{id}` of a row linked to a live
+  investment → 409 `PENZ_TRANSACTION_INVEST_LINKED` (change it through the investment), so the two never drift;
+  marking it reviewed stays allowed.
 - **FIFO lots** (`Lots`, build notes call 4): transactions by date, buys before sells on the same day; each buy is a
   lot; a sell consumes the oldest lots first — by quantity when every transaction carries one (a partly consumed lot
   gives up `cost × taken / lotQuantity`, HALF_UP; a fully consumed one all its remaining cost, so nothing drifts),
@@ -552,7 +589,7 @@ Contract-first: [`api/feature/penz/penz.yml`](../../api/feature/penz/penz.yml) (
 | `GET`/`PUT /api/penz/settings` | settings (created with defaults on first access) |
 | `GET`/`POST /api/penz/accounts`, `PUT /api/penz/accounts/{id}`, `POST …/{id}/archive` | accounts with the flag rules |
 | `GET`/`POST /api/penz/categories`, `PUT …/{id}` | categories (15 defaults seeded) |
-| `GET /api/penz/transactions?month=` · `POST` · `PUT`/`DELETE …/{id}` · `POST …/{id}/reviewed` | one month newest first (materializes first); idempotent create on `clientRef`; soft delete |
+| `GET /api/penz/transactions?month=` · `POST` · `PUT`/`DELETE …/{id}` · `POST …/{id}/reviewed` | one month newest first (materializes first); idempotent create on `clientRef`; soft delete; `PUT`/`DELETE` of an investment's money row → 409 `PENZ_TRANSACTION_INVEST_LINKED` (`.119`) |
 | `POST /api/penz/transfers` | a transfer pair, idempotent on `clientRef` |
 | `GET`/`POST /api/penz/recurring-rules`, `PUT`/`DELETE …/{id}` | recurring income and fixed costs (delete keeps produced txns) |
 | `GET`/`POST /api/penz/savings-goals`, `PUT`/`DELETE …/{id}` | savings goals / purchase plans (L5): by `position` then creation; create 201, idempotent on `clientRef`, no position = append at the end; update ignores `clientRef`, null position keeps it; soft delete 204 |
@@ -561,7 +598,8 @@ Contract-first: [`api/feature/penz/penz.yml`](../../api/feature/penz/penz.yml) (
 | `POST /api/penz/sms/ingest` | the Shortcut (API key, §3.4) |
 | `GET`/`POST /api/penz/sms/keys`, `DELETE …/{id}` | key management (JWT; plaintext once) |
 | `GET`/`POST /api/penz/holdings`, `PUT`/`DELETE …/{id}` | L6 holdings (archived included, flagged), by sleeve then position; create 201 idempotent on `clientRef`, symbol checked once (400 `PENZ_SYMBOL_UNKNOWN`); delete soft, with its transactions and events |
-| `GET /api/penz/holdings/{id}/transactions` · `POST /api/penz/invest-transactions` · `DELETE …/{id}` | L6 buys / sells, newest first; create 201 idempotent, FIFO guard 400 `PENZ_SELL_EXCEEDS_POSITION`, non-HUF booked by the FX policy (503 `PENZ_FX_UNAVAILABLE`) |
+| `GET /api/penz/holdings/{id}/transactions` · `POST /api/penz/invest-transactions` · `DELETE …/{id}` | L6 buys / sells, newest first; create 201 idempotent, FIFO guard 400 `PENZ_SELL_EXCEEDS_POSITION`, non-HUF booked by the FX policy (503 `PENZ_FX_UNAVAILABLE`); since `.119` optional `accountId` / `accountAmountMinor` / `linkTransactionId` record the linked money row (§3.6; 404 `PENZ_ACCOUNT_NOT_FOUND`, 409 `PENZ_SMS_LINK_MISMATCH`), the response carries `accountId` + `transactionId`; delete releases the money row |
+| `GET /api/penz/invest-transactions/sms-candidates?accountId=&amountMinor=&date=` | `.119` bank-SMS debits a buy may adopt (§3.6), closest date first; empty without an SMS sender |
 | `GET`/`POST /api/penz/holding-events?from=`, `DELETE …/{id}` | L6 forward timeline (owner-entered), soonest first |
 | `GET /api/penz/portfolio?date=` | L6 Pénzem: totals, moves (price / currency), the three sleeves with holdings and coverage, price date + stale, timeline, practice row (refreshes due quotes first) |
 | `GET /api/penz/digest?date=` | L6 the day's digest (default his today); `pending` when not built; `newsHealthy` |
@@ -583,7 +621,8 @@ Error codes (both bundles): `PENZ_ACCOUNT_NOT_FOUND`, `PENZ_CATEGORY_NOT_FOUND`,
 `PENZ_PRACTICE_CAP_EXCEEDED` (422), `PENZ_PAPER_TRADE_STATE` (409), `PENZ_PAPER_TRADE_INVALID_STOP`,
 `PENZ_PRACTICE_TAG_UNKNOWN`.
 `PENZ_SELL_EXCEEDS_POSITION`, `PENZ_DIGEST_REFRESH_LIMITED`, and L7: `PENZ_PRODUCT_NOT_FOUND`,
-`PENZ_PRODUCT_NOT_APPROVED`, `PENZ_PROPOSAL_NOT_FOUND`, `PENZ_PROPOSAL_STATE`, `PENZ_PROPOSAL_AMOUNT_INVALID`.
+`PENZ_PRODUCT_NOT_APPROVED`, `PENZ_PROPOSAL_NOT_FOUND`, `PENZ_PROPOSAL_STATE`, `PENZ_PROPOSAL_AMOUNT_INVALID`, and
+`.119`: `PENZ_SMS_LINK_MISMATCH` (409), `PENZ_TRANSACTION_INVEST_LINKED` (409).
 
 ### 4.3 Tables
 
@@ -607,7 +646,7 @@ L6 adds seven tables in [`202611201600_mezo-r36n9.104_penz_portfolio.sql`](../..
 | Table | Holds |
 |---|---|
 | `penz_holding` | name, `asset_type`, `symbol`, platform (+ `platform_name`), `sleeve` `short|mid|long`, currency, `bond_rate_pct`, `news_terms` jsonb, note, position, archived, `client_ref` |
-| `penz_invest_txn` | holding, side `buy|sell`, quantity (optional), `amount_minor` in the holding's currency + `amount_huf_minor` + `fx_rate` / `fx_rate_date` (the L4 booking policy), date, note, `client_ref` |
+| `penz_invest_txn` | holding, side `buy|sell`, quantity (optional), `amount_minor` in the holding's currency + `amount_huf_minor` + `fx_rate` / `fx_rate_date` (the L4 booking policy), date, note, `client_ref`, and since `.119` `transaction_id` (nullable FK → `penz_transaction`, the linked money row; [`202611211400_mezo-r36n9.119_penz_invest_account_link.sql`](../../backend/src/main/resources/db/changelog/1.1.0/script/202611211400_mezo-r36n9.119_penz_invest_account_link.sql)) |
 | `penz_holding_event` | holding, kind `maturity|coupon|dividend|earnings|other`, date, optional amount + currency, note, `client_ref` |
 | `penz_quote` | **global** quote cache, one row per symbol (securities and `CURHUF=X`): price, `previous_close`, `market_time`, `as_of` (Budapest date), `fetched_at` |
 | `penz_news_article` | **global** articles from the allow-listed feeds, unique url: `source_key`, `source_name`, title, summary (untrusted text), `published_at`, `fetched_at`; pruned after 30 days |
@@ -692,17 +731,22 @@ Backend only (`-Dmezo.test.use-testcontainers=true`, `ArchitectureTest` in the `
 - Pure / ported: `PenzAllowanceEngineTest`, `PenzDatesTest`, `PenzRecurrenceTest`, `PenzMonthCloseTest`,
   `PenzBalancesTest`, `PenzEmergencyFundTest`, `PenzAccountRulesTest`, `PenzCategoryBudgetsTest`,
   `PenzRecurringMathTest`, `PenzMoneyTest`, `PenzFxConversionTest`, `PenzFxServiceTest`, `PenzTxLogicTest`,
-  `HufAmountGuardPortedTest` + `HufAmountGuardTest`, `service/sms/*` (ingest logic, conversion, keys, amount check).
+  `HufAmountGuardPortedTest` + `HufAmountGuardTest`, `service/sms/*` (ingest logic, conversion, keys, amount check,
+  `PenzInvestSmsMatchTest` — the invest-buy ↔ bank-SMS matching, `.119`).
 - ITs: `PenzApiIT` (CRUD, ownership, `clientRef`, transfers, the FX policy incl. cache / fallback / 503, account
   flags, close guards), `PenzAllowanceApiIT` (10 lines with Gyakorlás and a real-close deficit, week + perDay,
   materialization), `PenzMonthCloseServiceIT`, `PenzSmsIngestApiIT` (chains, rate limit, dedupe, pre-filter, fake
-  LLM, conversion). frankfurter.dev is always WireMock; every figure is invented.
+  LLM, conversion, and since `.119` the 3 invest-buy adoption cases of the old `runConvertSms`). frankfurter.dev is
+  always WireMock; every figure is invented.
 - L6 pure: `service/portfolio/{PenzLotsTest,PenzValuationTest,PenzPortfolioEngineTest}`, `PenzQuoteParseTest`,
   `service/net/PenzHttpFetcherTest`, `service/news/{PenzRssParserTest,PenzNewsSourcesTest,PenzNewsMatcherTest,
   PenzStoryClustererTest,PenzArticleTextTest,PenzDigestFiguresTest,PenzDigestFallbackCopyTest,PenzDigestPromptTest,
   PenzDigestValidatorTest (by taxonomy),PenzDigestAssemblerTest,PenzDigestInjectionTest}`,
   `companion/llm/PenzDigestFakeLlmTest`.
 - L6 ITs: `PenzPortfolioApiIT` (CRUD, ownership, FIFO and its guards, symbol check, FX booking, Pénzem figures),
+  `PenzInvestAccountLinkApiIT` (`.119`: the money row on a HUF / same-currency / explicit / cross-currency account and
+  the allowance `invested` line, sell → `invest_sell`, payable-account rule, ownership, `clientRef` replay, SMS
+  adoption + date from the bank row, link mismatch, delete / holding delete release, the 409 guard),
   `PenzQuoteServiceIT`, `PenzNewsDigestStoreIT` (article upsert / prune, digest round trip and replace),
   `PenzDigestPipelineIT` (companion-fake + WireMock feeds, pages, Yahoo: a full run's figures equal the portfolio's,
   holdings-only relevance, grouping, injection ignored / obeyed → fallback, quiet day, model failure, GET pending /
@@ -737,8 +781,8 @@ where the rest goes.
 | `domain/savings` | 6 | 2 (emergency fund) | 4 `allocateGoals` → L5 *mire gyűjtök* |
 | `morningBrief/brief` + `analysis` | 37 + 24 | 15 (amount guard) | digest copy / analysis → L6 |
 | `ingest-sms/logic` | 15 | 15 | — |
-| `app/smsConversion` | 11 | 6 (+2 `dedupePending` replaced by the unique index, IT-covered) | 3 `matchInvestTxnForSms` → L6 |
-| `app/runConvertSms` | 3 | 0 | 3 invest-buy adoption → L6 |
+| `app/smsConversion` | 11 | 6 (+2 `dedupePending` replaced by the unique index, IT-covered); `.119`: +3 `matchInvestTxnForSms` (`PenzInvestSmsMatchTest`) | — |
+| `app/runConvertSms` | 3 | 0; `.119`: 3 invest-buy adoption (`PenzSmsIngestApiIT`) | — |
 | `app/materialize` | 5 | 5 | — |
 | `data/fx` | 4 | 4 | — |
 | `data/apiKeys` + `apiKeys.create` | 3 + 1 | 4 | — |
@@ -760,14 +804,15 @@ where the rest goes.
 
 Total ported 1:1 in L4: **123** cases (allowance 17, dates 5, recurrence 7, monthClose 9, balances 7, money 2,
 savings 2, guard 15, ingest 15, smsConversion 6 + 2 via IT, materialize 5, fx 4, apiKeys 4, recurringMath 5,
-budgets 2, txLogic 2, accountRules 14). **L6 ports 9 more** (news 5, article 4) → **132**. Sum of the table's cases:
-603.
+budgets 2, txLogic 2, accountRules 14). **L6 ports 9 more** (news 5, article 4) → **132**; **`.119` ports 6 more**
+(`matchInvestTxnForSms` 3, `runConvertSms` 3) → **138**. Sum of the table's cases: 603.
 
 **Honest note on L6.** The investing and news groups were mostly **re-specified, not ported**: the old app used a
 pro-rata average cost (L6 is FIFO, lot-level), had no price / currency split, and labelled each headline with an LLM
 (L6 matches deterministically and narrates once per digest). Their behaviour is covered by new tests written against
 the build notes (`PenzLotsTest`, `PenzValuationTest`, `PenzPortfolioEngineTest`, the `service/news` suite), not by
-the old vectors. `matchInvestTxnForSms` (3) and the `runConvertSms` invest-buy adoption (3) stay unported (§9).
+the old vectors. `matchInvestTxnForSms` (3) and the `runConvertSms` invest-buy adoption (3) were ported with
+`mezo-r36n9.119`.
 
 ## 9. Decisions, gotchas & deferred
 
@@ -782,7 +827,7 @@ the old vectors. `matchInvestTxnForSms` (3) and the `runConvertSms` invest-buy a
   Base44 app, so there is nothing to bring over; Boop Pénz started empty and the old app can be switched off
   (decision #65 in `14-decisions.md`).
 - **Out of L4:** holdings, quotes, news (shipped in L6);
-  **invest-buy adoption on SMS** (old `linkSmsToInvestBuy` / `matchInvestTxnForSms` — still a follow-up after L6);
+  invest-buy adoption on SMS (old `linkSmsToInvestBuy` / `matchInvestTxnForSms` — done in `mezo-r36n9.119`, §3.4);
   every iOS screen (L5).
 - **L6 — valuation ≠ booking** (§4.1, §3.6): a holding's value is recomputed from the latest quote on every read;
   only what a trade cost is booked and stored.
@@ -801,9 +846,11 @@ the old vectors. `matchInvestTxnForSms` (3) and the `runConvertSms` invest-buy a
   executor queue drops a run with a warning.
 - **L6 — no admin alert screen**: the provider-down alert is the gauge + vmalert path (§3.11), since `feature/admin`
   left the server (#52, `mezo-r36n9.97.4`).
-- **Deferred after L6 (follow-up):** linking an investment buy to a cash account (a `penz_transaction` `invest_buy`
-  booked from the portfolio) and **adopting a bank-SMS invest buy** into a recorded investment (old
-  `linkSmsToInvestBuy` / `matchInvestTxnForSms`); the **weekly long-horizon review** (spec §5.1 designer's call — the
+- **Done after L6 — `mezo-r36n9.119`:** linking an investment buy / sell to its money account (the linked
+  `invest_buy` / `invest_sell` row, §3.6) and adopting a bank-SMS invest buy (§3.4 step 7, old
+  `linkSmsToInvestBuy` / `matchInvestTxnForSms`). Decided here: a linked target that is not his is a 404, not a
+  409; deleting a holding releases its rows like deleting each transaction.
+- **Deferred after L6 (follow-up):** the **weekly long-horizon review** (spec §5.1 designer's call — the
   daily digest never carries a call to act on the 5–10 / 10+ sleeves); trades, the practice P/L and "ennyit tudsz
   befektetni" (L7).
 - **Savings goals shipped in L5 as plain CRUD** (`mezo-r36n9.103`): `saved` is the owner's own figure, not linked to
@@ -817,7 +864,9 @@ the old vectors. `matchInvestTxnForSms` (3) and the `runConvertSms` invest-buy a
   `…/penz/controller/PenzPracticeController.java`, `…/penz/mapper/PenzPracticeMapper.java`,
   `…/202611202000_mezo-r36n9.105_penz_practice.sql`
 - Schema: `backend/src/main/resources/db/changelog/1.1.0/script/202611191400_mezo-r36n9.102_penz.sql`, L6:
-  `…/202611201600_mezo-r36n9.104_penz_portfolio.sql`
+  `…/202611201600_mezo-r36n9.104_penz_portfolio.sql`, `.119`: `…/202611211400_mezo-r36n9.119_penz_invest_account_link.sql`
+- Investment ↔ money account (`.119`): `…/penz/service/PenzInvestLinkService.java`,
+  `…/penz/service/sms/InvestSmsMatch.java` (pure), the adoption in `…/penz/service/PenzSmsStore.java`
 - L6 portfolio: `…/penz/service/portfolio/`, `…/penz/service/{PenzHoldingService,PenzInvestTxnService,PenzHoldingEventService,PenzPortfolioService,PenzQuoteService,QuoteClient,PenzProviderHealth}.java`,
   `…/penz/service/net/PenzHttpFetcher.java`, `…/penz/controller/PenzPortfolioController.java`
 - L6 digest: `…/penz/service/news/` (pure), `…/penz/service/{PenzNewsClient,PenzDigestService,PenzDigestStore,PenzNewsRunner,PenzNewsJob,PenzDigestLlm}.java`,

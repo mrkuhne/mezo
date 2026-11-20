@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.api.dto.PenzTransferRequest;
 import io.mrkuhne.mezo.feature.penz.entity.PenzAccountEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzTransactionEntity;
 import io.mrkuhne.mezo.feature.penz.mapper.PenzMapper;
+import io.mrkuhne.mezo.feature.penz.repository.PenzInvestTxnRepository;
 import io.mrkuhne.mezo.feature.penz.repository.PenzTransactionRepository;
 import io.mrkuhne.mezo.feature.penz.service.PenzFxService.Booking;
 import java.time.Instant;
@@ -35,6 +36,9 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>A row's currency is ALWAYS its account's currency (400 {@code PENZ_CURRENCY_MISMATCH}) — the balance of an
  * account sums its rows in its own currency, so a row in another one would be skipped by it (legacy rows only).
  * A foreign purchase on a HUF account is entered as the forints it cost (the SMS ingest converts the same way).
+ *
+ * <p>The money row of a live investment buy / sell (mezo-r36n9.119) cannot be updated or deleted here (409
+ * {@code PENZ_TRANSACTION_INVEST_LINKED}) — it follows its investment record.
  */
 @Service
 @RequiredArgsConstructor
@@ -50,6 +54,7 @@ public class PenzTransactionService {
     private final PenzFxService fx;
     private final PenzRecurringMaterializer materializer;
     private final PenzMapper mapper;
+    private final PenzInvestTxnRepository investTxns;
 
     /**
      * One month's live transactions, newest first; {@code needsReview} filters when given. Due recurring
@@ -99,6 +104,7 @@ public class PenzTransactionService {
     @Transactional
     public PenzTransactionResponse update(UUID owner, UUID id, PenzTransactionRequest req) {
         PenzTransactionEntity row = require(owner, id);
+        requireNotInvestLinked(owner, id);
         PenzAccountEntity account = accounts.require(owner, req.getAccountId());
         boolean transfer = row.getTransferPairId() != null && TRANSFER_KINDS.contains(row.getKind());
         if (transfer ? !row.getKind().equals(req.getKind()) : TRANSFER_KINDS.contains(req.getKind())) {
@@ -161,6 +167,7 @@ public class PenzTransactionService {
     @Transactional
     public void delete(UUID owner, UUID id) {
         PenzTransactionEntity row = require(owner, id);
+        requireNotInvestLinked(owner, id);
         if (row.getTransferPairId() != null) {
             repository.deleteAll(repository.findByCreatedByAndTransferPairIdAndDeletedFalse(owner,
                 row.getTransferPairId()));
@@ -227,6 +234,16 @@ public class PenzTransactionService {
     public PenzTransactionEntity require(UUID owner, UUID id) {
         return repository.findByIdAndCreatedByAndDeletedFalse(id, owner)
             .orElseThrow(() -> PenzErrors.notFound("PENZ_TRANSACTION_NOT_FOUND"));
+    }
+
+    /**
+     * 409 {@code PENZ_TRANSACTION_INVEST_LINKED} when the row is the money row of a live investment buy / sell
+     * (mezo-r36n9.119): it changes only through the investment record, so the two never drift.
+     */
+    private void requireNotInvestLinked(UUID owner, UUID id) {
+        if (investTxns.existsByCreatedByAndTransactionIdAndDeletedFalse(owner, id)) {
+            throw PenzErrors.conflict("PENZ_TRANSACTION_INVEST_LINKED");
+        }
     }
 
     /** 400 {@code PENZ_CURRENCY_MISMATCH} unless {@code currency} is the account's own currency. */

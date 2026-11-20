@@ -187,6 +187,7 @@ paths:
         '400': { description: 'Validation failure', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '404': { description: 'No such transaction of the caller', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '409': { description: 'PENZ_TRANSACTION_INVEST_LINKED — the money row of a recorded investment buy / sell; change or delete the investment record instead', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '503': { description: 'No exchange rate reachable for a non-HUF amount (PENZ_FX_UNAVAILABLE)', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
     delete:
       tags: [Penz]
@@ -198,6 +199,7 @@ paths:
         '204': { description: Deleted }
         '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '404': { description: 'No such transaction of the caller', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '409': { description: 'PENZ_TRANSACTION_INVEST_LINKED — the money row of a recorded investment buy / sell; delete the investment record instead', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/penz/transactions/{id}/reviewed:
     post:
       tags: [Penz]

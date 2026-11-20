@@ -19,6 +19,12 @@ public interface PenzTransactionRepository extends OwnedRepository<PenzTransacti
 
     Optional<PenzTransactionEntity> findByIdAndCreatedByAndDeletedFalse(UUID id, UUID createdBy);
 
+    /** One account's live rows in a date window (the invest-buy ↔ bank-SMS matching, mezo-r36n9.119). */
+    List<PenzTransactionEntity> findByCreatedByAndAccountIdAndDateBetweenAndDeletedFalse(UUID createdBy,
+                                                                                       UUID accountId,
+                                                                                       LocalDate from,
+                                                                                       LocalDate to);
+
     /** Whether the account carries any live transaction (its currency is then locked, mezo-r36n9.108). */
     boolean existsByAccountIdAndDeletedFalse(UUID accountId);
 
