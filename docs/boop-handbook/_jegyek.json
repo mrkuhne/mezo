@@ -1218,5 +1218,14 @@
     ],
     "mit_kapsz": "A rendszer által tervezett új blokk már edzésstílussal indul, így az erőfeszítés hétről hétre fokozódik, a lazító hét pedig valóban könnyebb. A szabad súlyos alapgyakorlatok (guggolás, fekvenyomás) 2–3 ismétlés tartalékot kapnak, a gépes és izolációs gyakorlatok 1-et. A heti javaslat azt is észreveszi, ha egy gyakorlat túl nehéz lett.",
     "munkamenet": "mezo-training-audit"
+  },
+  "mezo-r36n9.117": {
+    "cim": "A törzs- és prevenciós gyakorlatok ne kapjanak tartalék-célt",
+    "tipus": "Hiba",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Holtbogár, plank, Pallof és hasonló gyakorlatoknál a „hány ismétlés maradjon tartalékban” cél értelmetlen. A javítás után a stílus ezeknél nem állít be ilyen célt, így egy nap szerkesztése sem írja át őket."
   }
 }

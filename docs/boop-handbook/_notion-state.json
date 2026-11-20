@@ -217,7 +217,7 @@
     },
     "jegyek:mezo-r36n9.16": {
       "page_id": "4168968e-752b-81dd-967e-fe6305d85e18",
-      "hash": "1ba613c5bb9a"
+      "hash": "397b7f3d3dbe"
     },
     "jegyek:mezo-r36n9.17": {
       "page_id": "4168968e-752b-81d9-9448-c7846b8b3377",
@@ -717,7 +717,7 @@
     },
     "kezikonyv:07-edzes/02-mezociklus-terv": {
       "page_id": "4168968e-752b-81c0-9ca3-e89afff341e8",
-      "hash": "e98b8ae3801f"
+      "hash": "ab16faea62c2"
     },
     "kezikonyv:07-edzes/03-edzeslejatszo": {
       "page_id": "4168968e-752b-8153-a900-cd5b2e535717",
@@ -725,7 +725,7 @@
     },
     "kezikonyv:07-edzes/04-progresszio-motor": {
       "page_id": "4168968e-752b-819d-94a9-cbea5d321e46",
-      "hash": "667f4c660167"
+      "hash": "a61beb3cfb2f"
     },
     "kezikonyv:07-edzes/05-heti-volumen": {
       "page_id": "4168968e-752b-813c-9763-e3bda2691265",
@@ -1173,7 +1173,7 @@
     },
     "kezikonyv:07-edzes/14-edzesstilus": {
       "page_id": "41c8968e-752b-81c4-a675-e42be7ead430",
-      "hash": "4973b713286b"
+      "hash": "a4642a7ab4a8"
     },
     "jegyek:mezo-r36n9.90": {
       "page_id": "41c8968e-752b-8184-90df-f39bbc3d1d5c",
@@ -1369,7 +1369,7 @@
     },
     "kezikonyv:11-penz/00-attekintes": {
       "page_id": "41d8968e-752b-812e-a57d-dd4e8e2bb3c6",
-      "hash": "eadd5a1a19a3"
+      "hash": "811b5f7fb1d2"
     },
     "kezikonyv:11-penz/01-adatalap": {
       "page_id": "41d8968e-752b-81a8-9511-dfeddb3c5bfa",
@@ -1405,7 +1405,7 @@
     },
     "kezikonyv:11-penz/02-terulet": {
       "page_id": "41e8968e-752b-8171-a852-d37806bbe84f",
-      "hash": "75eb7f0a4215"
+      "hash": "f19d5d6c4548"
     },
     "jegyek:mezo-r36n9.113": {
       "page_id": "41e8968e-752b-8145-b144-e62b83f8070b",
@@ -1418,6 +1418,22 @@
     "kiadasok:51cadbb0b": {
       "page_id": "41e8968e-752b-81f8-8bbe-f978ff5425cb",
       "hash": "35a1cb50ee6b"
+    },
+    "jegyek:mezo-r36n9.115": {
+      "page_id": "41e8968e-752b-8106-bfc5-e9458a0e739f",
+      "hash": "d75edb9b6d73"
+    },
+    "jegyek:mezo-r36n9.117": {
+      "page_id": "41e8968e-752b-8198-863e-c157b3b0052f",
+      "hash": "2ada1d4a68cf"
+    },
+    "kiadasok:99a99c8e3": {
+      "page_id": "41e8968e-752b-8151-9cca-d3ecfc6f7e27",
+      "hash": "543806a2551f"
+    },
+    "kezikonyv:11-penz/03-portfolio-hirek": {
+      "page_id": "41e8968e-752b-81ee-819e-d92332c66ce5",
+      "hash": "3dc952d42297"
     }
   }
 }
