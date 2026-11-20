@@ -2918,9 +2918,8 @@ mezo:
     isolation-warmup: 1
     # Training style a generated block carries (mezo-r36n9.115): its exercises are stamped from the
     # mezo.train.style row (rep range, reserve, rest), so the rep/target-rir frames above then only
-    # apply when this is blank (= the unstyled block of before). balanced | volume | heavy | allout.
-    # Style a GENERATED plan is stamped with (lower-case wire value: balanced/volume/heavy/allout; blank = unstyled,
-    # the frames + target-rir below apply). allout also forces its working-sets (2) over the skeleton volume.
+    # apply when this is blank (= the unstyled block of before). balanced | volume | heavy | allout (lower-case;
+    # allout also forces its working-sets: 2 over the skeleton volume).
     default-training-style: balanced
   # Volume progression (Plan 2 Phase A) — weekly per-muscle set-volume tuning. Binds VolumeProperties.
   volume:
