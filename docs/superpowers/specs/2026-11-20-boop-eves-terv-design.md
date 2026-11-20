@@ -1,7 +1,7 @@
 # Boop Edzés — the year plan (éves terv) and the plan recommender (tervajánló)
 
 **Issue:** `mezo-r36n9.113` (re-filed owner decision #49, „Kerüljön a meglévőbe”; scope grown 2026-11-20).
-**Status:** design — owner answered the builder-check questions 2026-11-20; doc OK pending. Then: simulator spike (owner OK) → plan (owner OK) → build per slice.
+**Status:** design — **owner OK 2026-11-20** („Jóváhagyom”). Next: simulator spike → plan. Then: simulator spike (owner OK) → plan (owner OK) → build per slice.
 **Sources:** `docs/research/queries/muscle-ladder-train-fact-check-audit.md` §2.1/§2.5; the owner's own hand-made
 year plan (a local HTML file, "ATLAS 4.0", reviewed 2026-11-20 — used as a *pattern*, never copied as content).
 
