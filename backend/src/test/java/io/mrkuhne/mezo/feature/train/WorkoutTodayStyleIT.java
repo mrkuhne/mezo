@@ -159,12 +159,13 @@ class WorkoutTodayStyleIT extends AbstractIntegrationTest {
         mesocycleRepository.saveAndFlush(meso);
         TodayExercise deload = byName(workoutService.getToday(owner, null), "Machine Chest Press");
 
-        // balanced stable compound: reserve 2 → first third 2, last loading week 0, deload week 2 + 2
-        assertThat(week1.getTargetRIR()).isEqualTo(2);
-        assertThat(working(week1)).allSatisfy(p -> assertThat(p.getTargetRIR()).isEqualTo(2));
+        // balanced stable compound: stable-compound reserve 1 (mezo-r36n9.115) → first third 1, last loading
+        // week max(0, 1 − 2) = 0, deload week 1 + 2
+        assertThat(week1.getTargetRIR()).isEqualTo(1);
+        assertThat(working(week1)).allSatisfy(p -> assertThat(p.getTargetRIR()).isEqualTo(1));
         assertThat(week5.getTargetRIR()).isZero();
         assertThat(working(week5)).allSatisfy(p -> assertThat(p.getTargetRIR()).isZero());
-        assertThat(deload.getTargetRIR()).isEqualTo(4);
+        assertThat(deload.getTargetRIR()).isEqualTo(3);
     }
 
     @Test

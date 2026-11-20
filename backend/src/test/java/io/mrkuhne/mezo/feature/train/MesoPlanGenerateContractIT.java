@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.train;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.api.dto.GymExercise;
 import io.mrkuhne.mezo.api.dto.GymExerciseInput;
 import io.mrkuhne.mezo.api.dto.MesoDayInput;
 import io.mrkuhne.mezo.api.dto.MesoPlanEvaluateRequest;
@@ -10,11 +11,16 @@ import io.mrkuhne.mezo.api.dto.MesoPlanGenerateRequest;
 import io.mrkuhne.mezo.api.dto.MesoPlanGenerateResponse;
 import io.mrkuhne.mezo.api.dto.MesoTemplateResponse;
 import io.mrkuhne.mezo.api.dto.MesoTemplateUpsertRequest;
+import io.mrkuhne.mezo.api.dto.TrainingStyle;
+import io.mrkuhne.mezo.feature.train.repository.ExerciseCatalogRepository;
+import io.mrkuhne.mezo.feature.train.service.ExerciseClass;
+import io.mrkuhne.mezo.feature.train.service.MuscleGroup;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.TestPropertySource;
@@ -24,6 +30,8 @@ import org.springframework.test.context.TestPropertySource;
 class MesoPlanGenerateContractIT extends ApiIntegrationTest {
 
     private static final String GENERATE = "/api/train/meso-plans/generate";
+
+    @Autowired ExerciseCatalogRepository catalogRepository;
 
     @Test
     void testGenerateMesoPlan_shouldReturnSevenDayTemplateWithFrames_whenFourDays() {
@@ -55,8 +63,52 @@ class MesoPlanGenerateContractIT extends ApiIntegrationTest {
             .allSatisfy(e -> {
                 assertThat(e.getCatalogId()).isNotNull();
                 assertThat(e.getWorkingSets()).isBetween(1, 8);
-                assertThat(e.getTargetRIR()).isEqualTo(1);
             });
+    }
+
+    /**
+     * mezo-r36n9.115: a generated block carries the default style (balanced, techniques off) and every
+     * exercise is stamped from the balanced row — free compound 2 (legs 3), stable compound 1, isolation 1;
+     * rest 150 / 90 s; rep ranges 6–10 / 10–15.
+     */
+    @Test
+    void testGenerateMesoPlan_shouldStampTheBalancedStyle_whenDefaultStyleConfigured() {
+        HttpHeaders auth = ownerAuthHeaders();
+        MesoPlanGenerateResponse res = postForBody(GENERATE, MesoPlanGenerateRequest.builder()
+            .daysOfWeek(Set.of("Hét", "Kedd", "Sze", "Csü", "Pén")).weeks(6).build(),
+            auth, HttpStatus.OK, MesoPlanGenerateResponse.class);
+        MesoTemplateUpsertRequest t = res.getTemplate();
+
+        assertThat(t.getTrainingStyle()).isEqualTo(TrainingStyle.BALANCED);
+        assertThat(t.getTechniquesEnabled()).isNotEqualTo(Boolean.TRUE);
+        List<GymExerciseInput> all = t.getDays().stream().flatMap(d -> d.getExercises().stream()).toList();
+        Set<ExerciseClass> seen = new java.util.HashSet<>();
+        assertThat(all).isNotEmpty().allSatisfy(e -> {
+            boolean stable = "stable".equals(catalogRepository.findById(e.getCatalogId()).orElseThrow().getStability());
+            ExerciseClass cls = ExerciseClass.of(e.getType().getValue(), stable);
+            String group = MuscleGroup.of(e.getMuscle());
+            boolean legs = cls.compound() && Set.of("quad", "ham", "glute").contains(group);
+            seen.add(cls);
+            int reserve = switch (cls) {
+                case COMPOUND_FREE -> legs ? 3 : 2;
+                case COMPOUND_STABLE -> legs ? 3 : 1;
+                case ISOLATION -> 1;
+            };
+            assertThat(e.getTargetRIR()).as(e.getName()).isEqualTo(reserve);
+            assertThat(e.getRestSec()).as(e.getName()).isEqualTo(cls.compound() ? 150 : 90);
+            assertThat(e.getRepMin()).as(e.getName()).isEqualTo(cls.compound() ? 6 : 10);
+            assertThat(e.getRepMax()).as(e.getName()).isEqualTo(cls.compound() ? 10 : 15);
+            assertThat(e.getTrainingStyle()).as(e.getName()).isNull(); // the block's style, not a per-exercise one
+            assertThat(e.getOverrides()).as(e.getName()).isNullOrEmpty();
+        });
+        assertThat(seen).contains(ExerciseClass.COMPOUND_FREE, ExerciseClass.ISOLATION);
+
+        // posted back unchanged, the template save re-stamps to the same values (idempotent)
+        MesoTemplateResponse saved = postForBody("/api/train/meso-templates", t, auth, HttpStatus.OK,
+            MesoTemplateResponse.class);
+        assertThat(saved.getTrainingStyle()).isEqualTo(TrainingStyle.BALANCED);
+        assertThat(saved.getDays().stream().flatMap(d -> d.getExercises().stream()).map(GymExercise::getTargetRIR))
+            .containsExactlyElementsOf(all.stream().map(GymExerciseInput::getTargetRIR).toList());
     }
 
     @Test

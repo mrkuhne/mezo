@@ -23,7 +23,10 @@ public record TrainStyleProperties(
     @NotNull @Positive Integer stallWeeks,                // weeks without progress that count as a stall (2)
     @NotNull @Valid Ramp ramp
 ) {
-    /** One style row. Null {@code workingSets} = keep the plan's; null {@code legReserve} = {@code reserve}. */
+    /**
+     * One style row. Null {@code workingSets} = keep the plan's; null {@code legReserve},
+     * {@code stableCompoundReserve} or {@code isolationReserve} = {@code reserve} (mezo-r36n9.115).
+     */
     public record Style(
         @NotNull @Positive Integer compoundRepMin,
         @NotNull @Positive Integer compoundRepMax,
@@ -31,7 +34,9 @@ public record TrainStyleProperties(
         @NotNull @Positive Integer isolationRepMax,
         @Positive Integer workingSets,
         @NotNull @PositiveOrZero Integer reserve,
-        @PositiveOrZero Integer legReserve,
+        @PositiveOrZero Integer legReserve,             // a leg compound (free or stable) — outranks the class reserve
+        @PositiveOrZero Integer stableCompoundReserve,  // a machine-guided compound
+        @PositiveOrZero Integer isolationReserve,       // an isolation exercise
         @NotNull @Min(30) @Max(600) Integer compoundRestSec,
         @NotNull @Min(30) @Max(600) Integer isolationRestSec,
         @NotNull @PositiveOrZero Integer repOverflow

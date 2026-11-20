@@ -37,6 +37,10 @@ import org.springframework.transaction.annotation.Transactional;
  * the instance rather than the template day, counts with its own muscle (the old template-day lookup
  * dropped them, spec §5 defect 6). Exempt exercises ({@code counts_toward_volume = false}) are outside
  * everything here. A group with neither a counted set nor feedback is simply absent.
+ *
+ * <p>The grind ({@link GrindRule}, mezo-r36n9.115): an unstyled run compares the newest reserve with the row's
+ * stored target; a styled run with that week's effective (ramped) reserve — {@link ExerciseStyler#context}, the
+ * same inputs the session's prescription uses — and, at a reserve of 0–1, also reads a set two reps short.
  */
 @Service
 @RequiredArgsConstructor
@@ -50,6 +54,7 @@ public class WeeklySignalReader {
     private final ExerciseRepository exerciseRepository;
     private final ExerciseFeedbackRepository exerciseFeedbackRepository;
     private final DayCheckInPort dayCheckInPort;
+    private final ExerciseStyler exerciseStyler;
     private final VolumeProperties props;
 
     /** The week BEFORE {@code week} (1-based, {@link MesoWeeks}); empty for week 1. */
@@ -96,7 +101,7 @@ public class WeeklySignalReader {
         // Per session: the counting groups it trained (a logged counting working set).
         Map<UUID, Set<String>> groupsOfSession = new HashMap<>();
         Map<String, Integer> logged = new LinkedHashMap<>();
-        Map<UUID, Integer> latestRir = new LinkedHashMap<>();
+        Map<UUID, ExerciseSetEntity> latestSet = new LinkedHashMap<>();
         Map<String, LocalDate> lastTrained = new HashMap<>();
         for (WorkoutSessionEntity s : instances) {
             boolean inWeek = !s.getDate().isAfter(window.to());
@@ -112,16 +117,25 @@ public class WeeklySignalReader {
                     // A technique set's reserve of 0 is deliberate, not a grind (mezo-r36n9.80, spec §6.4):
                     // the newest NON-technique working set carries the signal; it still counts as one set.
                     if (set.getRir() != null && set.getTechnique() == null) {
-                        latestRir.put(set.getExerciseId(), set.getRir()); // oldest-first: last write wins
+                        latestSet.put(set.getExerciseId(), set); // oldest-first: last write wins
                     }
                 }
             }
         }
 
+        TrainingStyle runStyle = TrainingStyle.fromWire(meso.getTrainingStyle());
+        CatalogAttributes.Lookup stability = runStyle == null ? CatalogAttributes.Lookup.EMPTY
+            : exerciseStyler.lookupRows(latestSet.keySet().stream().map(exercises::get).toList(), true);
         Set<String> grind = new HashSet<>();
-        latestRir.forEach((exerciseId, rir) -> {
+        latestSet.forEach((exerciseId, set) -> {
             ExerciseEntity e = exercises.get(exerciseId);
-            if (e.getTargetRir() != null && rir <= e.getTargetRir() - props.grindRirGap()) {
+            StyleContext style = runStyle == null ? StyleContext.NONE
+                : exerciseStyler.context(e, runStyle, week - 1, meso.getPhaseCurve(), stability);
+            boolean grinding = style.styled()
+                ? GrindRule.styled(set.getRir(), set.getReps(), set.getTargetReps(), style.effectiveReserve(),
+                    props.grindRirGap())
+                : GrindRule.unstyled(set.getRir(), e.getTargetRir(), props.grindRirGap());
+            if (grinding) {
                 grind.add(countingGroup(e));
             }
         });

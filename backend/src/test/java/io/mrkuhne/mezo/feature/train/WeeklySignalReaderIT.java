@@ -6,13 +6,16 @@ import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
+import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
+import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.service.WeeklySignalReader;
 import io.mrkuhne.mezo.feature.train.service.WeeklySignalReader.GroupSignals;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +37,7 @@ class WeeklySignalReaderIT extends AbstractIntegrationTest {
     @Autowired DatabasePopulator databasePopulator;
     @Autowired ExerciseSetRepository setRepository;
     @Autowired ExerciseRepository exerciseRepository;
+    @Autowired MesocycleRepository mesocycleRepository;
 
     private UUID owner;
     private MesocycleEntity meso;
@@ -256,5 +260,99 @@ class WeeklySignalReaderIT extends AbstractIntegrationTest {
         log(e, train.createWorkoutInstance(owner, day, weekTwo(2), "active"), 4, 1);                        // not completed
 
         assertThat(read(3)).isEmpty();
+    }
+
+    // ── styled run: the effective (ramped) reserve decides the grind (mezo-r36n9.115, closes mezo-s5sd4) ──
+
+    private static final List<String> CURVE = List.of("MEV", "MEV", "MAV", "MAV", "MRV", "Deload");
+
+    /** The run, moved to start {@code weeksAgo} weeks ago, with the given style (null = unstyled); its day. */
+    private WorkoutSessionEntity runDay(int weeksAgo, String style) {
+        LocalDate start = LocalDate.now().minusWeeks(weeksAgo);
+        meso.setStartDate(start);
+        meso.setEndDate(start.plusWeeks(6).minusDays(1));
+        meso.setPhaseCurve(CURVE);
+        meso.setTrainingStyle(style);
+        meso = mesocycleRepository.saveAndFlush(meso);
+        return day;
+    }
+
+    /** One logged working set in week {@code week} of the run, prescribed {@code targetReps}. */
+    private void logSet(ExerciseEntity e, WorkoutSessionEntity on, int week, int reps, int rir, Integer targetReps) {
+        WorkoutSessionEntity instance = train.createWorkoutInstance(owner, on,
+            meso.getStartDate().plusDays(7L * (week - 1) + 1), "completed");
+        ExerciseSetEntity set = train.createLoggedSet(owner, e.getId(), instance.getId(), 0, "60", reps, rir);
+        set.setTargetReps(targetReps);
+        setRepository.saveAndFlush(set);
+    }
+
+    private boolean grindOf(int weekRead) {
+        return reader.read(owner, meso, weekRead + 1).get("back").grind();
+    }
+
+    @Test
+    void testRead_shouldGrindOnRepsShort_whenStyledReserveAtMostOne() {
+        WorkoutSessionEntity d = runDay(2, "balanced");
+        ExerciseEntity e = row(d, "Evezőgép", "back-mid", 1); // stamped reserve 1, week 2 = base
+        logSet(e, d, 2, 8, 0, 10);  // two reps short at reserve 1 -> grind
+
+        assertThat(grindOf(2)).isTrue();
+    }
+
+    @Test
+    void testRead_shouldNotGrindOnOneRepShort_whenStyledReserveAtMostOne() {
+        WorkoutSessionEntity d = runDay(2, "balanced");
+        ExerciseEntity e = row(d, "Evezőgép", "back-mid", 1);
+        logSet(e, d, 2, 9, 0, 10);
+
+        assertThat(grindOf(2)).isFalse();
+    }
+
+    @Test
+    void testRead_shouldKeepTheStoredTargetRule_whenUnstyled() {
+        WorkoutSessionEntity d = runDay(2, null);
+        ExerciseEntity e = row(d, "Evezőgép", "back-mid", 1);
+        logSet(e, d, 2, 8, 0, 10);  // unstyled: 0 <= 1 - 2 is false, reps are not read
+
+        assertThat(grindOf(2)).isFalse();
+    }
+
+    @Test
+    void testRead_shouldJudgeAgainstTheRampedReserve_whenStyledLastLoadingWeek() {
+        WorkoutSessionEntity d = runDay(5, "balanced");
+        ExerciseEntity e = row(d, "Evezés", "back-mid", 3);  // base 3 -> last loading week 3 - 2 = 1
+        logSet(e, d, 5, 9, 1, 10);  // 1 <= 1 - 2 false, one rep short: no grind (stored-target rule would fire)
+
+        assertThat(grindOf(5)).isFalse();
+    }
+
+    @Test
+    void testRead_shouldGrindByGapOnTheDeloadReserve_whenStyledDeloadWeek() {
+        WorkoutSessionEntity d = runDay(6, "balanced");
+        ExerciseEntity e = row(d, "Evezés", "back-mid", 1);  // base 1 -> deload 1 + 2 = 3
+        logSet(e, d, 6, 10, 1, 10); // 1 <= 3 - 2 -> grind (stored-target rule would not)
+
+        assertThat(grindOf(6)).isTrue();
+    }
+
+    @Test
+    void testRead_shouldIgnoreATechniqueSet_whenStyledReserveAtMostOne() {
+        WorkoutSessionEntity d = runDay(2, "balanced");
+        ExerciseEntity e = row(d, "Evezőgép", "back-mid", 1);
+        logSet(e, d, 2, 10, 1, 10);  // the plain set: on target
+        WorkoutSessionEntity instance = train.createWorkoutInstance(owner, d, meso.getStartDate().plusDays(9), "completed");
+        ExerciseSetEntity t = new ExerciseSetEntity(); // technique is immutable after create: set on insert
+        t.setCreatedBy(owner);
+        t.setExerciseId(e.getId());
+        t.setWorkoutSessionId(instance.getId());
+        t.setSetIndex(1);
+        t.setWeightKg(new BigDecimal("60"));
+        t.setReps(5);
+        t.setRir(0);
+        t.setTargetReps(10);
+        t.setTechnique("myo");
+        setRepository.saveAndFlush(t);
+
+        assertThat(grindOf(2)).isFalse();
     }
 }

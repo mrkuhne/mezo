@@ -28,10 +28,10 @@ class StallOffersTest {
 
     private static final TrainTechniqueProperties.Planner CFG = new TrainTechniqueProperties.Planner(3, 2, 1, 2, 15);
     static final TrainStyleProperties P = new TrainStyleProperties(Map.of(
-        "balanced", new Style(6, 10, 10, 15, null, 2, 3, 150, 90, 3),
-        "volume", new Style(10, 15, 15, 25, null, 2, null, 120, 75, 4),
-        "heavy", new Style(5, 8, 8, 12, null, 2, null, 180, 120, 2),
-        "allout", new Style(6, 10, 8, 12, 2, 0, null, 180, 120, 2)),
+        "balanced", new Style(6, 10, 10, 15, null, 2, 3, null, null, 150, 90, 3),
+        "volume", new Style(10, 15, 15, 25, null, 2, null, null, null, 120, 75, 4),
+        "heavy", new Style(5, 8, 8, 12, null, 2, null, null, null, 180, 120, 2),
+        "allout", new Style(6, 10, 8, 12, 2, 0, null, null, null, 180, 120, 2)),
         1, 56, 2, new TrainStyleProperties.Ramp(1, 2, 2, 1));
     private static final CatalogAttributes.Attrs MACHINE = new CatalogAttributes.Attrs(true, true, "machine");
 
