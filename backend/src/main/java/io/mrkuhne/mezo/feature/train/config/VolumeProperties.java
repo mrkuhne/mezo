@@ -38,7 +38,9 @@ public record VolumeProperties(
     public record Evaluator(
         @NotNull @Positive BigDecimal minutesPerWorkingSet,   // 2.4
         @NotNull @Positive BigDecimal minutesPerWarmupSet,    // 1.0
-        @NotNull @PositiveOrZero Integer sessionOverheadMinutes // 6
+        @NotNull @PositiveOrZero Integer sessionOverheadMinutes, // 6
+        @NotNull @Positive Integer setSeconds,                  // 40: time under tension per set (styled plans)
+        @NotNull @PositiveOrZero BigDecimal transitionMinutes   // 1: per exercise, styled plans
     ) {}
 
     /**

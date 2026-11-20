@@ -2982,6 +2982,8 @@ mezo:
       minutes-per-working-set: 2.4
       minutes-per-warmup-set: 1.0
       session-overhead-minutes: 6
+      set-seconds: 40               # styled plans: work time per set; rest comes from the prescription
+      transition-minutes: 1         # styled plans: per exercise
     sport-groups-by-sport:        # coarse muscle groups a sport already loads
       volleyball: [quad, ham, glute, calf]
     # RP intermediate MEV/MAV/MRV landmarks per coarse muscle group (mezo-xlmp) — seeded onto

@@ -27,11 +27,17 @@ public final class PlanEvaluator {
     /**
      * {@code group} is the coarse muscle group (may be null); {@code counts} false = exempt from volume;
      * {@code capExtra} = the extra set-equivalents its technique set weighs against the caps
-     * ({@link TechniqueRules#capExtra}; 0 for a plain row or a block with techniques off).
+     * ({@link TechniqueRules#capExtra}; 0 for a plain row or a block with techniques off);
+     * {@code restSeconds} = the prescribed rest between its sets (null = unknown; only read for styled plans).
      */
-    public record PlanExercise(String group, int workingSets, int warmupSets, boolean counts, int capExtra) {
+    public record PlanExercise(String group, int workingSets, int warmupSets, boolean counts, int capExtra,
+                               Integer restSeconds) {
         public PlanExercise(String group, int workingSets, int warmupSets, boolean counts) {
-            this(group, workingSets, warmupSets, counts, 0);
+            this(group, workingSets, warmupSets, counts, 0, null);
+        }
+
+        public PlanExercise(String group, int workingSets, int warmupSets, boolean counts, int capExtra) {
+            this(group, workingSets, warmupSets, counts, capExtra, null);
         }
 
         /** What the row weighs against the exercise / session caps. */
@@ -50,7 +56,7 @@ public final class PlanEvaluator {
     /** {@code sportWeekdays}: 0=Hét..6=Vas. */
     public record Input(int weeks, List<String> phaseCurve, List<PlanDay> days, Map<String, String> priorities,
                         Set<String> sportGroups, boolean deficit, Integer sessionMinutesTarget,
-                        Set<Integer> sportWeekdays, VolumeProperties props) {}
+                        Set<Integer> sportWeekdays, VolumeProperties props, boolean styled) {}
 
     public record DaySets(int dayIndex, int sets) {}
 
@@ -188,8 +194,27 @@ public final class PlanEvaluator {
         if (!day.exercises().isEmpty()) {
             int working = day.exercises().stream().mapToInt(PlanExercise::workingSets).sum();
             int warmups = day.exercises().stream().mapToInt(PlanExercise::warmupSets).sum();
-            minutes = p.evaluator().minutesPerWorkingSet().multiply(BigDecimal.valueOf(working))
+            BigDecimal workingMinutes;
+            BigDecimal transitions = BigDecimal.ZERO;
+            if (in.styled()) {
+                // v2: each set costs its work time + the prescribed rest; a row without one falls back to the
+                // flat per-set figure; each exercise adds a transition.
+                BigDecimal flatRest = p.evaluator().minutesPerWorkingSet().multiply(BigDecimal.valueOf(60))
+                    .subtract(BigDecimal.valueOf(p.evaluator().setSeconds()));
+                BigDecimal seconds = BigDecimal.ZERO;
+                for (PlanExercise x : day.exercises()) {
+                    BigDecimal rest = x.restSeconds() == null ? flatRest : BigDecimal.valueOf(x.restSeconds());
+                    seconds = seconds.add(BigDecimal.valueOf(x.workingSets())
+                        .multiply(BigDecimal.valueOf(p.evaluator().setSeconds()).add(rest)));
+                }
+                workingMinutes = seconds.divide(BigDecimal.valueOf(60), 10, RoundingMode.HALF_UP);
+                transitions = p.evaluator().transitionMinutes().multiply(BigDecimal.valueOf(day.exercises().size()));
+            } else {
+                workingMinutes = p.evaluator().minutesPerWorkingSet().multiply(BigDecimal.valueOf(working));
+            }
+            minutes = workingMinutes
                 .add(p.evaluator().minutesPerWarmupSet().multiply(BigDecimal.valueOf(warmups)))
+                .add(transitions)
                 .add(BigDecimal.valueOf(p.evaluator().sessionOverheadMinutes()))
                 .setScale(0, RoundingMode.HALF_UP).intValue();
         }

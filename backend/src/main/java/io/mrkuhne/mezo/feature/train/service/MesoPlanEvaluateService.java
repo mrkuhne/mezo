@@ -77,7 +77,8 @@ public class MesoPlanEvaluateService {
                     !Boolean.FALSE.equals(x.getCountsTowardVolume()),
                     TechniqueRules.capExtra(x.getTechnique() == null ? Technique.NONE
                             : Technique.fromWire(x.getTechnique().getValue()),
-                        Boolean.TRUE.equals(x.getChallenge()), optsIn, techniqueProps.capWeight())));
+                        Boolean.TRUE.equals(x.getChallenge()), optsIn, techniqueProps.capWeight()),
+                    x.getRestSec()));
             }
             days.add(new PlanEvaluator.PlanDay(d.getDay(), list));
         }
@@ -92,7 +93,7 @@ public class MesoPlanEvaluateService {
         boolean deficit = energyBalance.isInDeficit(userId, LocalDate.now());
         PlanEvaluator.Result result = PlanEvaluator.evaluate(new PlanEvaluator.Input(req.getWeeks(), phaseCurve, days,
             priorities, sportGroups == null ? Set.of() : new HashSet<>(sportGroups), deficit,
-            req.getSessionMinutesTarget(), sportWeekdays(slots), props));
+            req.getSessionMinutesTarget(), sportWeekdays(slots), props, req.getTrainingStyle() != null));
         EvaluatorTechniques.Shown shown = optsIn
             ? EvaluatorTechniques.ofProjection(techniquePlanService.planDraft(userId, req)) : null;
         return toResponse(deficit, result, slots, sportGroups == null, null, null, shown);
@@ -129,7 +130,8 @@ public class MesoPlanEvaluateService {
                 String group = e.getMuscle() == null || e.getMuscle().isBlank() ? null : MuscleGroup.of(e.getMuscle());
                 list.add(new PlanEvaluator.PlanExercise(group, e.getWorkingSets() == null ? 0 : e.getWorkingSets(),
                     e.getWarmupSets() == null ? 0 : e.getWarmupSets(), e.isCountsTowardVolume(),
-                    TechniqueRules.capExtra(e, run.isTechniquesEnabled(), techniqueProps.capWeight())));
+                    TechniqueRules.capExtra(e, run.isTechniquesEnabled(), techniqueProps.capWeight()),
+                    e.getRestSec()));
             }
             days.add(new PlanEvaluator.PlanDay(s.getDayLabel(), list, dayIndex));
         }
@@ -141,7 +143,7 @@ public class MesoPlanEvaluateService {
         PlanEvaluator.Result result = PlanEvaluator.evaluate(new PlanEvaluator.Input(run.getWeeks(), phaseCurve, days,
             run.getMusclePriorities(),
             run.getSportGroups() == null ? Set.of() : new HashSet<>(run.getSportGroups()),
-            deficit, null, sportWeekdays(slots), props));
+            deficit, null, sportWeekdays(slots), props, run.getTrainingStyle() != null));
         EvaluatorTechniques.Shown shown = optsIn
             ? EvaluatorTechniques.ofRun(techniquePlanService.planRun(userId, run), run.getCurrentWeek(),
                 storedTechniques, storedChallenges)

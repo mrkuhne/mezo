@@ -91,6 +91,19 @@ class MesoPlanEvaluateContractIT extends ApiIntegrationTest {
     }
 
     @Test
+    void styledPlanMinutesIncludePrescribedRest() {
+        GymExerciseInput rested = ex("Fekvenyomás", "chest", 3);
+        rested.setRestSec(180);
+        MesoDayInput d = day("Hét", rested);
+        MesoPlanEvaluation unstyled = evaluate(request(d).build());
+        MesoPlanEvaluation styled = evaluate(request(d).trainingStyle(
+            io.mrkuhne.mezo.api.dto.TrainingStyle.values()[0]).build());
+
+        assertThat(unstyled.getDays().get(0).getMinutesEstimate()).isEqualTo(14);   // 2.4*3 + 1 + 6
+        assertThat(styled.getDays().get(0).getMinutesEstimate()).isEqualTo(19);     // 3*220/60 + 1 + 1 + 6
+    }
+
+    @Test
     void deficitSlowsThePath() {
         // an active cut goal through the real goal populator + the real adapter (no mock)
         MesoPlanEvaluateRequest req = request(day("Hét", ex("Fekvenyomás", "chest", 3)))

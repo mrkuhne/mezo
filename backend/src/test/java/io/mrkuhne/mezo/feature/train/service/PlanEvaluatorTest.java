@@ -35,7 +35,7 @@ class PlanEvaluatorTest {
         b.put("calf", new VolumeProperties.Baseline(6, 10, 16));
         PROPS = new VolumeProperties(new BigDecimal("0.5"), 2, b, new VolumeProperties.Bands(3, 2, 5, 8, 1, 2, 2),
             new VolumeProperties.WeeklyReview("auto"), 2, 1, 1, new VolumeProperties.Signals(3, 2, 7),
-            new VolumeProperties.Evaluator(new BigDecimal("2.4"), new BigDecimal("1.0"), 6),
+            new VolumeProperties.Evaluator(new BigDecimal("2.4"), new BigDecimal("1.0"), 6, 40, new BigDecimal("1")),
             Map.of("volleyball", List.of("quad", "ham", "glute", "calf")));
     }
 
@@ -45,7 +45,40 @@ class PlanEvaluatorTest {
 
     private static Input input(List<PlanDay> days, Map<String, String> prio, Set<String> sport, Integer target,
                                Set<Integer> sportDays) {
-        return new Input(4, List.of("MEV", "MAV", "MAV", "Deload"), days, prio, sport, false, target, sportDays, PROPS);
+        return new Input(4, List.of("MEV", "MAV", "MAV", "Deload"), days, prio, sport, false, target, sportDays, PROPS, false);
+    }
+
+    private static Input styledInput(List<PlanDay> days) {
+        return new Input(4, List.of("MEV", "MAV", "MAV", "Deload"), days, Map.of(), Set.of(), false, null, Set.of(),
+            PROPS, true);
+    }
+
+    private static PlanDay restDay(Integer... rests) {
+        List<PlanExercise> list = new ArrayList<>();
+        for (Integer r : rests) {
+            list.add(new PlanExercise("chest", 3, 2, true, 0, r));
+        }
+        return new PlanDay("Hét", list);
+    }
+
+    @Test void styledReferenceDay() {
+        int minutes = PlanEvaluator.evaluate(styledInput(List.of(restDay(150, 150, 90, 90, 90))))
+            .days().get(0).minutesEstimate();
+        assertThat(minutes).isEqualTo(60);   // 6x190/60 + 9x130/60 + 10 + 5 + 6 = 59.5, HALF_UP
+        assertThat(minutes).isBetween(35, 60);
+    }
+
+    @Test void unstyledUnchanged() {
+        Input in = new Input(4, List.of("MEV", "MAV", "MAV", "Deload"),
+            List.of(restDay(150, 150, 90, 90, 90)), Map.of(), Set.of(), false, null, Set.of(), PROPS, false);
+        assertThat(PlanEvaluator.evaluate(in).days().get(0).minutesEstimate()).isEqualTo(52);   // 2.4x15 + 10 + 6
+    }
+
+    @Test void styledNullRestFallsBack() {
+        // null rest = 2.4*60 - 40 = 104 s -> every set costs the flat 2.4 min; + 10 warm-up + 5 transition + 6
+        int minutes = PlanEvaluator.evaluate(styledInput(List.of(restDay(null, null, null, null, null))))
+            .days().get(0).minutesEstimate();
+        assertThat(minutes).isEqualTo(57);   // 36 + 10 + 5 + 6
     }
 
     private static Input input(List<PlanDay> days, Map<String, String> prio) {
