@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -141,6 +142,16 @@ public class GoalProjectionService {
      */
     public List<ProjectionSegment> project(
         GoalEntity goal, UUID userId, TdeeBootstrapJson bootstrap, WeightTrendResponse trend) {
+        return project(goal, userId, bootstrap, trend, null);
+    }
+
+    /**
+     * As above, against a DRAFT weekly gym + sport schedule (Boop B6 Évad, mezo-r36n9.16): when
+     * {@code draftScheduledEat} is non-null it replaces the repository-backed scheduled EAT (rest kcal/hour →
+     * kcal/day) in every segment's maintenance. Read-only either way.
+     */
+    public List<ProjectionSegment> project(GoalEntity goal, UUID userId, TdeeBootstrapJson bootstrap,
+        WeightTrendResponse trend, Function<BigDecimal, BigDecimal> draftScheduledEat) {
 
         int weeks = (int) ChronoUnit.WEEKS.between(goal.getStartDate(), goal.getTargetDate());
         if (weeks <= 0) {
@@ -181,7 +192,8 @@ public class GoalProjectionService {
             boolean last = w == weeks;
             if (last || !load[w].sameLoadAs(load[w + 1])) {
                 segments.add(
-                    buildSegment(start, w, load[start], userId, weightKg, bootstrap, balance, goal, trend));
+                    buildSegment(start, w, load[start], userId, weightKg, bootstrap, balance, goal, trend,
+                        draftScheduledEat));
                 start = w + 1;
             }
         }
@@ -284,12 +296,15 @@ public class GoalProjectionService {
     // ── per-segment numbers ─────────────────────────────────────────────────────────────────────
 
     private ProjectionSegment buildSegment(int from, int to, WeekLoad ld, UUID userId, BigDecimal weightKg,
-        TdeeBootstrapJson bootstrap, BigDecimal balance, GoalEntity goal, WeightTrendResponse trend) {
+        TdeeBootstrapJson bootstrap, BigDecimal balance, GoalEntity goal, WeightTrendResponse trend,
+        Function<BigDecimal, BigDecimal> draftScheduledEat) {
 
         // Segment maintenance = neat baseline + scheduled gym+sport EAT + this segment's running EAT.
         // (Gym+sport are weekly-recurring, segment-independent; running is goal-linked, per-segment.)
         BigDecimal restKcalPerHour = ActivityEnergyModel.restKcalPerHour(bootstrap.bmr(), weightKg).orElse(null);
-        BigDecimal scheduled = weeklyActivity.scheduledWeeklyEatKcalPerDay(userId, restKcalPerHour);
+        BigDecimal scheduled = draftScheduledEat != null
+            ? draftScheduledEat.apply(restKcalPerHour)
+            : weeklyActivity.scheduledWeeklyEatKcalPerDay(userId, restKcalPerHour);
         BigDecimal runEat = ld.runActive()
             ? weeklyActivity.runWeeklyEatKcalPerDay(ld.runSessionsPerWeek(), restKcalPerHour)
             : BigDecimal.ZERO;

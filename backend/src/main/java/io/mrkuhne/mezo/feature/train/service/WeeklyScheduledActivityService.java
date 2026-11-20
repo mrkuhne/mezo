@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.feature.train.repository.RunningBlockRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportScheduleSlotRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
@@ -65,6 +66,35 @@ public class WeeklyScheduledActivityService {
             weekly = weekly.add(blockKcal(s.getSport(), s.getDurationMin(), restKcalPerHour));
         }
         return weekly.divide(BigDecimal.valueOf(DAYS_PER_WEEK), SCALE, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * One planned weekly block of a DRAFT schedule (Boop B6 Évad, mezo-r36n9.16): {@code kind} is {@code "gym"} or a
+     * sport code; {@code durationMin = 0} on a gym slot means the configured default (gym slots carry no duration).
+     */
+    public record DraftSlot(String kind, int durationMin) {
+    }
+
+    /**
+     * The weekly EAT (kcal/day) a DRAFT gym + sport slot list would schedule — the same model and rounding as
+     * {@link #scheduledWeeklyEatKcalPerDay}, over the given slots instead of the repositories. Pure: reads and
+     * writes nothing, so a season preview can price a schedule before it is accepted.
+     */
+    public BigDecimal draftWeeklyEatKcalPerDay(List<DraftSlot> slots, BigDecimal restKcalPerHour) {
+        BigDecimal weekly = BigDecimal.ZERO;
+        for (DraftSlot slot : slots) {
+            weekly = weekly.add(blockKcal(slot.kind(), draftMinutes(slot), restKcalPerHour));
+        }
+        return weekly.divide(BigDecimal.valueOf(DAYS_PER_WEEK), SCALE, RoundingMode.HALF_UP);
+    }
+
+    /** Net kcal of one draft slot at the moderate band (gym 0 min → the configured default). */
+    public BigDecimal draftSlotKcal(DraftSlot slot, BigDecimal restKcalPerHour) {
+        return blockKcal(slot.kind(), draftMinutes(slot), restKcalPerHour);
+    }
+
+    private int draftMinutes(DraftSlot slot) {
+        return KIND_GYM.equals(slot.kind()) && slot.durationMin() <= 0 ? props.gymDefaultMinutes() : slot.durationMin();
     }
 
     /** Distinct scheduled training weekdays (0=Mon..6=Sun): gym ∪ sport recurring slots. Running is

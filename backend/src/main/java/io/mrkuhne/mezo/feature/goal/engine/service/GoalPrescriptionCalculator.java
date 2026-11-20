@@ -21,6 +21,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -62,6 +63,7 @@ public class GoalPrescriptionCalculator {
      * @param draftPreferences the draft to project with, or {@code null} for the owner's saved/ghost ones
      */
     public Calculation calculate(UUID userId, GoalEntity goal, DietPreferences draftPreferences) {
+        Function<BigDecimal, BigDecimal> draftEat = DRAFT_EAT.get(); // non-null only inside the draft overload
         WeightTrendResponse trend = weightTrendService.computeTrend(userId);
         GuardStatus guards = guardService.evaluate(goal, linkedMesoIds(goal, userId), trend);
         BiometricProfileEntity profile =
@@ -74,12 +76,15 @@ public class GoalPrescriptionCalculator {
         BigDecimal rest = ActivityEnergyModel.restKcalPerHour(bootstrapService.bmr(profile, currentWeightKg), currentWeightKg)
             .orElse(null);
         BigDecimal weeklyEat = weeklyActivity.totalWeeklyEatKcalPerDay(userId, rest);
+        if (draftEat != null) { // total = scheduled + running → swap only the scheduled part for the draft's
+            weeklyEat = weeklyEat.subtract(weeklyActivity.scheduledWeeklyEatKcalPerDay(userId, rest)).add(draftEat.apply(rest));
+        }
         DietPreferences preferences =
             draftPreferences != null ? draftPreferences : dietPreferences.resolve(userId);
         // Resolved first so a draft with the learning switch flipped projects what the save would serve.
         TdeeBootstrapJson bootstrap = learnedBase.apply(userId,
             bootstrapService.compute(profile, currentWeightKg, weeklyEat), preferences.learningEnabled());
-        List<ProjectionSegment> segments = projectionService.project(goal, userId, bootstrap, trend);
+        List<ProjectionSegment> segments = projectionService.project(goal, userId, bootstrap, trend, draftEat);
         BigDecimal sleepTargetH = sleepTargetPort.targetHours(userId);
         GoalPrescriptionJson prescription = evaluationService.assemble(
             goal, currentWeightKg, profile.getBodyFatPct(), segments, guards,
@@ -87,6 +92,36 @@ public class GoalPrescriptionCalculator {
             bootstrap != null && LearnedBaseResolver.SOURCE_LEARNED.equals(bootstrap.baseSource()));
         return new Calculation(bootstrap, prescription);
     }
+
+    /**
+     * The same read-only calculation against an UNSAVED weekly gym + sport schedule (Boop B6 Évad, mezo-r36n9.16):
+     * when {@code draftEat} is non-null it replaces the repository-backed SCHEDULED (gym + sport) weekly EAT — in the
+     * bootstrap and in every projected segment — receiving the rest energy (kcal/hour, possibly {@code null}) and
+     * returning the draft's kcal/day; the owner's active running block is still added as today. {@code goal} may be
+     * a detached, never-saved entity (a season draft's goal, with its {@code createdBy} set); nothing is saved.
+     *
+     * <p>Why a thread-local instead of a parameter: the 3-arg method above is the one pipeline body, and the frozen
+     * biometrics↔goal ArchUnit cycle (archunit-store) records its biometrics reads by signature and source order,
+     * so the body must stay where and as it is. {@link #DRAFT_EAT} is set only for the duration of this call.
+     *
+     * @param draftPreferences the diet draft, or {@code null} for the owner's saved/ghost preferences
+     * @param draftEat         rest kcal/hour → the draft gym + sport EAT (kcal/day), or {@code null} for the scheduled one
+     */
+    public Calculation calculate(UUID userId, GoalEntity goal, DietPreferences draftPreferences,
+                                 Function<BigDecimal, BigDecimal> draftEat) {
+        if (draftEat == null) {
+            return calculate(userId, goal, draftPreferences);
+        }
+        DRAFT_EAT.set(draftEat);
+        try {
+            return calculate(userId, goal, draftPreferences);
+        } finally {
+            DRAFT_EAT.remove();
+        }
+    }
+
+    /** The draft gym + sport EAT of an in-flight draft {@code calculate} call on this thread; null otherwise. */
+    private static final ThreadLocal<Function<BigDecimal, BigDecimal>> DRAFT_EAT = new ThreadLocal<>();
 
     private Set<UUID> linkedMesoIds(GoalEntity goal, UUID userId) {
         List<GoalPlanLinkEntity> links = linkRepository
