@@ -25,7 +25,7 @@ A „tartalék” azt jelenti, hány ismétlést tudtál volna még csinálni a 
 
 **A nehéz alapgyakorlat messzebb marad a bukástól, mint az izoláció.** A szabad súlyos összetett gyakorlatok (például guggolás, fekvenyomás) jobban fárasztanak és technikásabbak, ezért több tartalékot kapnak; a gépes összetett és az izolációs gyakorlatok közelebb mehetnek a határhoz, mert ott kicsi a kockázat és a fáradtság (Jeff Nippard, *The Muscle Ladder* tanácsa alapján). A lábgyakorlatok a gépen is 3-at kapnak.
 
-**Új blokk alapból Kiegyensúlyozott.** Ha a rendszer tervez neked blokkot, az már ebben a stílusban indul, így a hétről hétre fokozódó erőfeszítés és a könnyebb lazító hét magától működik. A már futó blokkok gyakorlatai megtartják az induláskor kapott tartalékot.
+**A rendszer által tervezett blokk alapból Kiegyensúlyozott.** Ha a szerver tervez blokkot, az már ebben a stílusban indul, így a hétről hétre fokozódó erőfeszítés és a könnyebb lazító hét magától működik. A telefonon ma még nincs „tervezz nekem blokkot” gomb — ezt a készülő tervajánló hozza; addig ez a szabály a háttérben vár.
 
 **Hétről hétre fokozódik.** A blokk elején a stílus tartaléka az irányadó, a közepén eggyel kevesebb (nehezebb), az utolsó terhelő héten
 kettővel kevesebb, a terhelés-csökkentő héten kettővel több. Például egy hat hetes blokkban (az utolsó hét lazító) 2-es
