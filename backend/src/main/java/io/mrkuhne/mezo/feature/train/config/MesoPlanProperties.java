@@ -15,9 +15,9 @@ import org.springframework.validation.annotation.Validated;
 
 /**
  * Tunables of the hypertrophy plan generator (mezo-meso-plan). Bound from {@code mezo.meso-plan}.
- * Every trained group ≥2×/week and ≤8 sets/session hold by construction of the split table
- * ({@link io.mrkuhne.mezo.feature.train.service.MesoPlanSkeleton}, asserted in
- * {@code MesoPlanSkeletonTest}), not by a tunable here.
+ * The split catalogue ({@code splits}, per training-day count) is configurable; every catalogued split must keep
+ * each trained group ≥2×/week and ≤ session-cap sets/session, enforced by {@code SplitCatalogTest} over the
+ * shipped yml (binding only checks shape: known types, one type per training day).
  *
  * <p>{@code defaultTrainingStyle} (mezo-r36n9.115): the training style a generated block carries, whose
  * style row then stamps every exercise (rep range, reserve, rest) instead of the rep / RIR frames here;
@@ -35,14 +35,14 @@ public record MesoPlanProperties(
     @Min(0) @Max(5) int compoundWarmup,
     @Min(0) @Max(5) int isolationWarmup,
     @Pattern(regexp = "^\\s*(balanced|volume|heavy|allout)?\\s*$") String defaultTrainingStyle,
-    @Valid Map<Integer, List<Split>> splits) {
+    Map<Integer, List<@Valid Split>> splits) {
 
     /** Day types a split may use (the skeleton's group table keys). */
     public static final Set<String> SPLIT_TYPES = Set.of("Full", "Upper", "Lower", "Push", "Pull", "Legs");
 
     /**
      * One catalogued split for a training-day count: stable {@code key}, Hungarian {@code label}, and the day
-     * {@code types} in week order. Binding fails on an unknown type (a compact-constructor check); the
+     * {@code types} in week order. Binding fails on an unknown type (an @AssertTrue check); the
      * length-equals-day-count rule is checked by the enclosing record.
      */
     public record Split(@NotBlank String key, @NotBlank String label, @NotEmpty List<String> types) {

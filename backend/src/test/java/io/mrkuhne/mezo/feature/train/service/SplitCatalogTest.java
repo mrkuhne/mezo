@@ -72,6 +72,9 @@ class SplitCatalogTest {
             var bad = new MesoPlanProperties(2, 8, 10, 12, 15, 1, 2, 1, null,
                 Map.of(3, List.of(new Split("x", "X", List.of("Full", "Full")))));
             assertThat(v.validate(bad)).isNotEmpty();
+            var badType = new MesoPlanProperties(2, 8, 10, 12, 15, 1, 2, 1, null,
+                Map.of(2, List.of(new Split("x", "X", List.of("Full", "Arms")))));
+            assertThat(v.validate(badType)).isNotEmpty();
             assertThat(v.validate(P)).isEmpty();
         }
     }
