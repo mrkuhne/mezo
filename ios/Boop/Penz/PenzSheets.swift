@@ -25,11 +25,24 @@ struct PenzCaptureSheet: View {
         NKSheetFrame(hue: penzHue, eyebrow: "Pénz", title: "Kiadás") {
             if let account = store?.cashAccount {
                 form(account)
-            } else {
+            } else if store?.value == nil {
                 NKNotLiveYet(hue: penzHue, title: "Ehhez egyszer net kell",
-                             line: store?.value == nil
-                                ? "Még nem tudom, melyik számládra írjam a készpénzt. Ha egyszer netre kapcsolódsz, megjegyzem, és utána net nélkül is rögzíthetsz."
-                                : "Nincs forintos számlád, amire a készpénzt írhatnám. Ha lesz, itt rögzítheted.")
+                             line: "Még nem tudom, melyik számládra írjam a készpénzt. Ha egyszer netre kapcsolódsz, megjegyzem, és utána net nélkül is rögzíthetsz.")
+            } else {
+                // No forint account at all yet (a fresh start): one tap makes the cash account, then the form appears.
+                NKNotLiveYet(hue: penzHue, title: "Még nincs készpénz számlád",
+                             line: "A készpénzt egy „Készpénz” nevű számlára írom. Egy érintéssel létrehozom, utána rögtön rögzíthetsz.")
+                if let error {
+                    Text(error).nkFont(13.5).foregroundStyle(.white.opacity(0.8)).frame(maxWidth: .infinity, alignment: .leading)
+                }
+                NKPill(saving ? "Létrehozom…" : "Készpénz számla létrehozása", glyph: "plus-ink") {
+                    Task {
+                        saving = true
+                        error = await store?.createCashAccount()
+                        saving = false
+                    }
+                }
+                .disabled(saving)
             }
         }
         // The one button rides above the keyboard, so the number pad never hides it.

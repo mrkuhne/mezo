@@ -75,6 +75,10 @@ public struct PenzClient: Sendable {
                            body: PenzMonthCloseRequest(leftoverAction: leftoverAction))
     }
 
+    public func createAccount(_ request: PenzAccountRequest) async throws(PlanFetchError) -> PenzAccount {
+        try await raw.send(.post, "/api/penz/accounts", operationID: "createPenzAccount", body: request)
+    }
+
     public func createGoal(_ request: PenzGoalRequest) async throws(PlanFetchError) -> PenzGoal {
         try await raw.send(.post, "/api/penz/savings-goals", operationID: "createPenzSavingsGoal", body: request)
     }

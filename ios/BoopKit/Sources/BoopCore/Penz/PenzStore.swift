@@ -200,6 +200,14 @@ public final class PenzStore {
         return nil
     }
 
+    /// The cash sheet's „Készpénz számla létrehozása" when he has no forint account at all (production starts empty).
+    public func createCashAccount() async -> String? {
+        guard let client else { return penzErrorText(.unauthorized) }
+        do { _ = try await client.createAccount(.cash) } catch { return penzErrorText(error) }
+        await load(force: true)
+        return nil
+    }
+
     public func addGoal(_ request: PenzGoalRequest) async -> String? {
         guard let client else { return penzErrorText(.unauthorized) }
         do { _ = try await client.createGoal(request) } catch { return penzErrorText(error) }
