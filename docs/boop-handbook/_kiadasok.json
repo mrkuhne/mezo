@@ -545,5 +545,19 @@
       "mezo-r36n9.111"
     ],
     "mi_valtozott": "Ha gyakorlatcserénél megnyomod a „nem esik jól” gombot, Boop mostantól előbb azt nézi, mi kíméli azt, ami fáj, és csak utána azt, mennyire hasonló a mozdulat — eddig többnyire csak az indokló mondat változott, a sorrend nem. Az izom és az, hogy a gyakorlat összetett vagy izolált, továbbra is az első szempont. A reggel jelzett fájdalom csak akkor számít, ha a cserélt gyakorlat környékét érinti. Ugyanezzel a kiadással a Boop friss változata felkerült a telefonra, így az indokolt csere és a „Mi van a termemben” már ott is elérhető."
+  },
+  "99a99c8e3": {
+    "cim": "A nehéz alapgyakorlatok több tartalékot kapnak, a gépes és izolációs gyakorlatok kevesebbet",
+    "datum": "2026-11-20",
+    "verzio": "v3.18.0",
+    "tipus": "Fejlesztés",
+    "hova": [
+      "Háttérrendszer"
+    ],
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.115"
+    ],
+    "mi_valtozott": "A Kiegyensúlyozott edzésstílusban a szabad súlyos alapgyakorlatok 2 ismétlés tartalékot kapnak (lábgyakorlatok 3), a gépes összetett és az izolációs gyakorlatok 1-et — Jeff Nippard könyvének tanácsa szerint. A heti javaslat mostantól azt is észreveszi, ha egy gyakorlat túl nehéz lett (két vagy több ismétléssel elmaradtál), és akkor nem tesz rá új sorozatot. A futó blokkodban 14 gyakorlat állt át 2-ről 1-re a jóváhagyásoddal; a lábgyakorlatok, az ugrások és a törzs- és prevenciós gyakorlatok változatlanok. A szerver által tervezett új blokk mostantól alapból Kiegyensúlyozott — ezt a készülő tervajánló fogja használni."
   }
 }
