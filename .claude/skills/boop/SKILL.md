@@ -186,8 +186,8 @@ never ask him for a password.
 | L1 Levél · alap — IMAP intake, redaction, schedule, no AI | `mezo-r36n9.38` | open | after B6 + L0 |
 | L2 Levél · összefoglaló — the daily digest with 1–10 scores | `mezo-r36n9.39` | open | after L1 |
 | L3 Levél · figyelt termékek és árellenőrzés | `mezo-r36n9.40` | open | after L2 |
-| L4 Pénz · adatalap — allowance engine, bank-SMS capture, amount guard | `mezo-r36n9.41` | open | after B6 + L0 |
-| L5 Pénz · a szoba | `mezo-r36n9.42` | open | after L4 |
+| L4 Pénz · adatalap — allowance engine, bank-SMS capture, amount guard | `mezo-r36n9.102` | **shipped 2026-11-19** (backend only, `docs/features/penz.md`) | done |
+| L5 Pénz · a terület | `mezo-r36n9.103` | **shipped 2026-11-20** (merge `f44693781`; server savings goals v3.16.0; phone install waits for the cable) | `ios/Boop/Penz/` + `BoopCore/Penz/` (hand-written lenient client over `RawJSONClient`, store cached in ServerCache `penz/snapshot`, pure builders in `PenzLogic`), `OutboxKind.penzExpense` (cash, `clientRef` = item id, `PenzTriggers` in RootView keeps the store in step app-wide), `NKBare(glyph:)`, a read-only Pénz card on Terv. Pénzem/Gyakorlás are `NKNotLiveYet`; next is L6 `mezo-r36n9.104` (portfolio + news digest) |
 | L6 Az egy AI látja a pénzt és a levelet + szálak | `mezo-r36n9.43` | open | after L3 + L5 + B8 |
 
 **B8 must allow for this even though it ships first:** area contributors in "miért?" are an **open set**, not five
