@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.feature.penz.entity.PenzCategoryEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzFxRateEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzMonthCloseEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzRecurringRuleEntity;
+import io.mrkuhne.mezo.feature.penz.entity.PenzSavingsGoalEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzSettingsEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzTransactionEntity;
 import io.mrkuhne.mezo.feature.penz.repository.PenzAccountRepository;
@@ -12,6 +13,7 @@ import io.mrkuhne.mezo.feature.penz.repository.PenzCategoryRepository;
 import io.mrkuhne.mezo.feature.penz.repository.PenzFxRateRepository;
 import io.mrkuhne.mezo.feature.penz.repository.PenzMonthCloseRepository;
 import io.mrkuhne.mezo.feature.penz.repository.PenzRecurringRuleRepository;
+import io.mrkuhne.mezo.feature.penz.repository.PenzSavingsGoalRepository;
 import io.mrkuhne.mezo.feature.penz.repository.PenzSettingsRepository;
 import io.mrkuhne.mezo.feature.penz.repository.PenzTransactionRepository;
 import java.math.BigDecimal;
@@ -36,6 +38,7 @@ public class PenzPopulator {
     private final PenzMonthCloseRepository monthCloseRepository;
     private final PenzRecurringRuleRepository recurringRuleRepository;
     private final PenzFxRateRepository fxRateRepository;
+    private final PenzSavingsGoalRepository savingsGoalRepository;
 
     public PenzSettingsEntity settings(UUID owner, long savingsTargetMinor) {
         PenzSettingsEntity e = new PenzSettingsEntity();
@@ -144,5 +147,18 @@ public class PenzPopulator {
         e.setPublishedDate(rateDate);
         e.setRate(new BigDecimal(rate));
         return fxRateRepository.saveAndFlush(e);
+    }
+
+    /** A savings goal ({@code goal}) or purchase plan ({@code purchase}) in HUF minor units (L5, mezo-r36n9.103). */
+    public PenzSavingsGoalEntity savingsGoal(UUID owner, String name, String kind, long targetMinor, long savedMinor,
+                                             int position) {
+        PenzSavingsGoalEntity e = new PenzSavingsGoalEntity();
+        e.setCreatedBy(owner);
+        e.setName(name);
+        e.setKind(kind);
+        e.setTargetMinor(targetMinor);
+        e.setSavedMinor(savedMinor);
+        e.setPosition(position);
+        return savingsGoalRepository.saveAndFlush(e);
     }
 }

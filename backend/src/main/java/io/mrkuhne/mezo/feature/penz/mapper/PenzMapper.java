@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.api.dto.PenzCategoryResponse;
 import io.mrkuhne.mezo.api.dto.PenzMoney;
 import io.mrkuhne.mezo.api.dto.PenzMonthCloseResponse;
 import io.mrkuhne.mezo.api.dto.PenzRecurringRuleResponse;
+import io.mrkuhne.mezo.api.dto.PenzSavingsGoalResponse;
 import io.mrkuhne.mezo.api.dto.PenzSmsKeyResponse;
 import io.mrkuhne.mezo.api.dto.PenzTransactionResponse;
 import io.mrkuhne.mezo.feature.penz.entity.PenzAccountEntity;
@@ -16,6 +17,7 @@ import io.mrkuhne.mezo.feature.penz.entity.PenzApiKeyEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzCategoryEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzMonthCloseEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzRecurringRuleEntity;
+import io.mrkuhne.mezo.feature.penz.entity.PenzSavingsGoalEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzTransactionEntity;
 import io.mrkuhne.mezo.feature.penz.service.engine.AllowanceLine;
 import io.mrkuhne.mezo.feature.penz.service.engine.CloseOutcome;
@@ -64,6 +66,11 @@ public interface PenzMapper {
     @Mapping(target = "leftoverAction",
         expression = "java(PenzMonthCloseResponse.LeftoverActionEnum.fromValue(e.getLeftoverAction()))")
     PenzMonthCloseResponse toResponse(PenzMonthCloseEntity e);
+
+    @Mapping(target = "kind", expression = "java(PenzSavingsGoalResponse.KindEnum.fromValue(e.getKind()))")
+    @Mapping(target = "target", expression = "java(huf(e.getTargetMinor()))")
+    @Mapping(target = "saved", expression = "java(huf(e.getSavedMinor()))")
+    PenzSavingsGoalResponse toResponse(PenzSavingsGoalEntity e);
 
     /** An SMS API key as listed: never the key itself, nor its hash. */
     PenzSmsKeyResponse toResponse(PenzApiKeyEntity e);

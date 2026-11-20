@@ -10,6 +10,8 @@ import io.mrkuhne.mezo.api.dto.PenzMonthCloseRequest;
 import io.mrkuhne.mezo.api.dto.PenzMonthCloseResponse;
 import io.mrkuhne.mezo.api.dto.PenzRecurringRuleRequest;
 import io.mrkuhne.mezo.api.dto.PenzRecurringRuleResponse;
+import io.mrkuhne.mezo.api.dto.PenzSavingsGoalRequest;
+import io.mrkuhne.mezo.api.dto.PenzSavingsGoalResponse;
 import io.mrkuhne.mezo.api.dto.PenzSettingsRequest;
 import io.mrkuhne.mezo.api.dto.PenzSettingsResponse;
 import io.mrkuhne.mezo.api.dto.PenzTransactionRequest;
@@ -20,6 +22,7 @@ import io.mrkuhne.mezo.feature.penz.service.PenzCategoryService;
 import io.mrkuhne.mezo.feature.penz.service.PenzAllowanceService;
 import io.mrkuhne.mezo.feature.penz.service.PenzMonthCloseService;
 import io.mrkuhne.mezo.feature.penz.service.PenzRecurringRuleService;
+import io.mrkuhne.mezo.feature.penz.service.PenzSavingsGoalService;
 import io.mrkuhne.mezo.feature.penz.service.PenzSettingsService;
 import io.mrkuhne.mezo.feature.penz.service.PenzTransactionService;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
@@ -41,6 +44,7 @@ public class PenzController implements PenzApi {
     private final PenzRecurringRuleService rules;
     private final PenzMonthCloseService monthCloses;
     private final PenzAllowanceService allowance;
+    private final PenzSavingsGoalService savingsGoals;
     private final CurrentUserId currentUserId;
 
     @Override
@@ -136,6 +140,26 @@ public class PenzController implements PenzApi {
     @Override
     public void deletePenzRecurringRule(UUID id) {
         rules.delete(currentUserId.get(), id);
+    }
+
+    @Override
+    public List<PenzSavingsGoalResponse> listPenzSavingsGoals() {
+        return savingsGoals.list(currentUserId.get());
+    }
+
+    @Override
+    public PenzSavingsGoalResponse createPenzSavingsGoal(PenzSavingsGoalRequest request) {
+        return savingsGoals.create(currentUserId.get(), request);
+    }
+
+    @Override
+    public PenzSavingsGoalResponse updatePenzSavingsGoal(UUID id, PenzSavingsGoalRequest request) {
+        return savingsGoals.update(currentUserId.get(), id, request);
+    }
+
+    @Override
+    public void deletePenzSavingsGoal(UUID id) {
+        savingsGoals.delete(currentUserId.get(), id);
     }
 
     @Override
