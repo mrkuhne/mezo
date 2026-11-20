@@ -259,22 +259,32 @@ struct ETBudgetBar: View {
 struct ETJeloltekPage: View {
     let flow: ETFlow
     @State private var position = ScrollPosition()
+    @State private var showClosest = false
 
     var body: some View {
         ZStack {
             PlanSky(height: 260)
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    ETHead(eyebrow: "ÚJ BLOKK · 2/2", title: "Három lehetőség",
-                           sentence: "4 nap, legfeljebb \(flow.intake.minutes) perc, \(flow.intake.weeks) hét. Mindegyik ugyanannyi heti sorozatot ad, csak máshogy osztja el.",
-                           back: true) { flow.go(.alapok) }
-                    ForEach(etCandidates) { c in
-                        ETCandidateCard(candidate: c, limit: flow.intake.minutes, selected: flow.chosen == c.id) {
-                            withAnimation(.snappy) { flow.chosen = c.id }
+                    if flow.nothingFits {
+                        ETHead(eyebrow: "ÚJ BLOKK · 2/2", title: "Nincs jó lehetőség",
+                               sentence: "3 nap, legfeljebb \(flow.intake.minutes) perc, \(flow.intake.weeks) hét, 2 izom Hangsúlyon.",
+                               back: true) { flow.go(.alapok) }
+                        nothingFitsCard
+                        closest
+                    } else {
+                        ETHead(eyebrow: "ÚJ BLOKK · 2/2", title: "Két jó lehetőség",
+                               sentence: "4 nap, legfeljebb \(flow.intake.minutes) perc, \(flow.intake.weeks) hét. Csak olyat mutatok, ami minden szabálynak megfelel.",
+                               back: true) { flow.go(.alapok) }
+                        ForEach(etCandidates) { c in
+                            ETCandidateCard(candidate: c, limit: flow.intake.minutes, selected: flow.chosen == c.id) {
+                                withAnimation(.snappy) { flow.chosen = c.id }
+                            }
                         }
+                        Text("A percek pihenővel és bemelegítéssel együtt értendők. Mindkettőben minden izom legalább kétszer kap munkát hetente, és egy izom sem kap két egymást követő napon nehéz adagot.")
+                            .nkFont(12.5).foregroundStyle(.white.opacity(0.5)).padding(.horizontal, 4)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
-                    Text("A percek pihenővel és bemelegítéssel együtt értendők.")
-                        .nkFont(12.5).foregroundStyle(.white.opacity(0.5)).padding(.horizontal, 4)
                 }
                 .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 30)
             }
@@ -284,8 +294,83 @@ struct ETJeloltekPage: View {
         }
         .sensoryFeedback(.selection, trigger: flow.chosen)
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            ETBottomBar(title: "Ezzel kezdem") { flow.go(.miert) }
+            if !flow.nothingFits {
+                ETBottomBar(title: "Ezzel kezdem") { flow.go(.miert) }
+            }
         }
+    }
+
+    private var nothingFitsCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            PlanMark(.timer, color: planHue.glow, size: 26)
+            Text("Ebbe az időbe most nem fér bele jó terv").nkFont(23, design: .serif).foregroundStyle(.white)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("A legrövidebb felosztásnál is kb. 58 perc lenne egy nap, a határod \(flow.intake.minutes) perc. Hibás tervet nem ajánlok, inkább megmutatom, min múlik.")
+                .nkFont(14).foregroundStyle(.white.opacity(0.75)).fixedSize(horizontal: false, vertical: true)
+            Text("EZ MEGOLDANÁ").nkFont(10, .semibold, design: .monospaced).tracking(1.3).foregroundStyle(planHue.glow)
+                .padding(.top, 4)
+            VStack(spacing: 8) {
+                fix("Legyen 60 perc", "két jó lehetőség lesz belőle") {
+                    flow.intake.minutes = 60; flow.nothingFits = false
+                }
+                fix("Egy izom Hangsúly helyett Építés", "az Alapoknál állíthatod") { flow.go(.alapok) }
+                fix("Legyen 4 nap", "az Évad oldalon") {}
+            }
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .nkGlass(26)
+    }
+
+    private func fix(_ title: String, _ sub: String, _ action: @escaping () -> Void) -> some View {
+        Button { withAnimation(.snappy) { action() } } label: {
+            HStack(spacing: 10) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).nkFont(15, .semibold).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
+                    Text(sub).nkFont(12).foregroundStyle(.white.opacity(0.5))
+                }
+                Spacer(minLength: 6)
+                Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold)).foregroundStyle(.white.opacity(0.5))
+            }
+            .padding(.horizontal, 16).padding(.vertical, 12)
+            .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.white.opacity(0.08)))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// The closest plan, kept apart and grey: never offered as a normal choice.
+    private var closest: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Button { withAnimation(.snappy) { showClosest.toggle() } } label: {
+                HStack(spacing: 8) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("a legközelebbi, ha mégis kéred").nkFont(13).foregroundStyle(.white.opacity(0.55))
+                        Text("\(etClosest.name) · ~\(etClosest.longest) perc · \(etClosest.longest - flow.intake.minutes) perccel hosszabb")
+                            .nkFont(11, design: .monospaced).foregroundStyle(.white.opacity(0.4))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 6)
+                    Image(systemName: showClosest ? "chevron.up" : "chevron.down").font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.4))
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            if showClosest {
+                ETDayBars(minutes: etClosest.minutes, limit: flow.intake.minutes)
+                Button {} label: {
+                    Text("Mégis ezt kérem").nkFont(14, .medium).foregroundStyle(.white.opacity(0.7))
+                        .padding(.horizontal, 18).frame(minHeight: 40)
+                        .background(Capsule().stroke(.white.opacity(0.25), lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(.white.opacity(0.1), style: StrokeStyle(lineWidth: 1, dash: [4, 4])))
+        .opacity(0.85)
     }
 }
 

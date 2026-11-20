@@ -9,7 +9,7 @@ import BoopDesign
 // `-evesTervScroll Y` opens a long screen scrolled down by Y points (for the screenshots).
 
 enum ETScreen: String, CaseIterable, Identifiable {
-    case ures = "1", alapok = "2", keret = "2b", jeloltek = "3", miert = "4", izmok = "4b", letrehozas = "5", terkep = "6", blokk = "6b", kovetkezik = "7"
+    case ures = "1", alapok = "2", keret = "2b", jeloltek = "3", nemFer = "3b", miert = "4", izmok = "4b", letrehozas = "5", terkep = "6", blokk = "6b", kovetkezik = "7"
     var id: String { rawValue }
 
     var title: String {
@@ -18,6 +18,7 @@ enum ETScreen: String, CaseIterable, Identifiable {
         case .alapok: "Új blokk · Alapok"
         case .keret: "Alapok · a keret tele"
         case .jeloltek: "Új blokk · Jelöltek"
+        case .nemFer: "Jelöltek · semmi sem fér bele"
         case .miert: "Izom „miért?”"
         case .izmok: "A blokk izmai · heti keret"
         case .letrehozas: "Éves terv létrehozása"
@@ -37,12 +38,19 @@ enum ETScreen: String, CaseIterable, Identifiable {
     var sheetBlock: Int?
     /// The raise he just tried that the budget or the Hangsúly cap does not allow.
     var blocked: ETBlocked?
+    /// Screen 3b: no candidate passes every rule.
+    var nothingFits = false
 
     init(screen: ETScreen?) {
         self.screen = screen
         switch screen {
         case .miert: sheetMuscle = "back"
         case .izmok: self.screen = .miert
+        case .nemFer:
+            self.screen = .jeloltek
+            nothingFits = true
+            intake.minutes = 45
+            intake.tiers["chest"] = .emphasize
         case .keret:
             self.screen = .alapok
             intake = .full
@@ -77,7 +85,7 @@ struct EvesTervDemoRoot: View {
             case nil: index
             case .ures: ETEmptyState(flow: flow)
             case .alapok, .keret: ETAlapokPage(flow: flow)
-            case .jeloltek: ETJeloltekPage(flow: flow)
+            case .jeloltek, .nemFer: ETJeloltekPage(flow: flow)
             case .miert, .izmok: ETMusclesPage(flow: flow)
             case .letrehozas: ETCreateYearPage(flow: flow)
             case .terkep, .blokk: ETYearMapPage(flow: flow)

@@ -146,14 +146,13 @@ let etCandidates: [ETCandidate] = [
     ETCandidate(id: 1, name: "Teljes test ×4", sub: "minden nap az egész test",
                 minutes: [49, 47, nil, 49, 46, nil, nil], recommended: false,
                 why: [ETWhy(tone: .good, text: "A legrövidebb edzések: kb. 49 perc."),
-                      ETWhy(tone: .neutral, text: "Minden nap mindenre bemelegítesz: hetente kb. 12 bemelegítő sorozattal több."),
-                      ETWhy(tone: .warn, text: "A comb két egymást követő napon kap kemény sorozatot (H, K).")]),
-    ETCandidate(id: 2, name: "Toló / Húzó / Láb / Kar", sub: "izomcsoportonként",
-                minutes: [71, 66, nil, 63, 52, nil, nil], recommended: false,
-                why: [ETWhy(tone: .warn, text: "Túllépi a 60 percet: a toló nap kb. 71 perc."),
-                      ETWhy(tone: .warn, text: "A váll és a kar hetente csak egyszer kap kemény sorozatot."),
-                      ETWhy(tone: .neutral, text: "A heti sorozatszám ugyanannyi, csak kevesebb napra jut.")]),
+                      ETWhy(tone: .good, text: "Minden izom hetente négyszer, naponta kevés sorozattal."),
+                      ETWhy(tone: .neutral, text: "Minden nap mindenre bemelegítesz: hetente kb. 12 bemelegítő sorozattal több.")]),
 ]
+
+/// Screen 3b: 3 days × 45 minutes with two muscles at Hangsúly — no split passes; the closest one, kept apart.
+let etClosest = ETCandidate(id: 9, name: "Teljes test ×3", sub: "minden nap az egész test",
+                            minutes: [58, nil, 57, nil, 58, nil, nil], recommended: false, why: [])
 
 // MARK: - The chosen block's muscles (S1 „miért?")
 
@@ -171,8 +170,8 @@ struct ETMuscleRow: Identifiable {
 }
 
 let etMuscles: [ETMuscleRow] = [
-    ETMuscleRow(muscle: "back", tier: .emphasize, sets: 14, low: 14, high: 22, spread: [("Hétfő", 7), ("Kedd", 3), ("Csütörtök", 4)],
-                hint: "A hát két egymást követő napon kap kemény sorozatot (H, K): kedden a román felhúzás is dolgoztatja. Ha teheted, a csütörtöki húzásból tegyél át egy sorozatot péntekre."),
+    ETMuscleRow(muscle: "back", tier: .emphasize, sets: 14, low: 14, high: 22, spread: [("Hétfő", 7), ("Kedd", 4), ("Csütörtök", 3)],
+                hint: "A hát két egymást követő napon kap nehéz adagot: hétfőn 7, kedden 4 kemény sorozatot (kedden a román felhúzás is dolgoztatja). Ha a keddiből egyet csütörtökre teszel, rendben lesz."),
     ETMuscleRow(muscle: "chest", tier: .grow, sets: 8, low: 8, high: 14, spread: [("Hétfő", 4), ("Csütörtök", 4)], hint: nil),
     ETMuscleRow(muscle: "shoulder", tier: .grow, sets: 8, low: 8, high: 14, spread: [("Hétfő", 4), ("Csütörtök", 4)], hint: nil),
     ETMuscleRow(muscle: "biceps", tier: .grow, sets: 6, low: 6, high: 12, spread: [("Hétfő", 3), ("Csütörtök", 3)], hint: nil),
