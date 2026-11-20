@@ -522,10 +522,19 @@ public struct BlockDraft: Equatable, Sendable {
             trainingStyle: nil, restSec: nil, overrides: nil, technique: nil, techniqueSource: nil, challenge: nil)
         // The style trio is carried over by omission — unless his keys changed (a set count, a rep range, a reset), or
         // the row is a new identity the server has nothing to carry over to.
-        if forSave, fresh || e.overrides != Set(w.overrides ?? []) {
+        // The `workingSets` key of a loaded row is decided here, against the style the save goes out with: a count he
+        // stepped on an unstyled block and then styled in the same save stays his; a style cleared after a step sends
+        // no key the old row did not have.
+        var keys = e.overrides
+        if !fresh {
+            let styled = (e.ownStyle ?? style) != nil
+            if styled && e.sets != w.workingSets { keys.insert("workingSets") }
+            else if !styled && !(w.overrides ?? []).contains("workingSets") { keys.remove("workingSets") }
+        }
+        if forSave, fresh || keys != Set(w.overrides ?? []) {
             input.trainingStyle = w.trainingStyle
             input.restSec = e.restSec
-            input.overrides = e.overrides.sorted()
+            input.overrides = keys.sorted()
         }
         // The technique trio goes out only for a row whose technique or challenge he changed (or a new identity): an
         // untouched row omits all three, so the server carries the stored pick and its source (a planner's pick stays

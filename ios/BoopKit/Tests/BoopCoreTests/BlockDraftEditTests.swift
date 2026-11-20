@@ -167,6 +167,34 @@ struct BlockDraftEditTests {
         #expect(d.dayInput(d.days[0], forSave: true).exercises[1].overrides == ["targetRir"], "field edits mark on any block")
     }
 
+    @Test(.timeLimit(.minutes(1))) func aStepThenAStyleInTheSameSaveKeepsHisCount() {
+        var d = PlanFixtures.draft
+        d.step(day: 0, exercise: 1, by: 1)
+        d.style = .balanced
+        #expect(d.dayInput(d.days[0], forSave: true).exercises[1].overrides == ["workingSets"])
+    }
+
+    @Test(.timeLimit(.minutes(1))) func aStepThenAClearedStyleSendsNoWorkingSetsKey() throws {
+        let block = try JSONDecoder().decode([WireBlock].self, from: Data(PlanFixtures.blocksJSON(style: "balanced").utf8))[0]
+        var d = BlockDraft(block: block, catalog: PlanFixtures.catalog)
+        d.step(day: 0, exercise: 0, by: 1)
+        d.step(day: 0, exercise: 1, by: 1)
+        d.style = nil
+        let input = d.dayInput(d.days[0], forSave: true).exercises
+        #expect(!(input[0].overrides ?? []).contains("workingSets") && !(input[1].overrides ?? []).contains("workingSets"))
+        #expect(input[1].overrides == nil, "nothing left to send on a row without keys")
+    }
+
+    @Test(.timeLimit(.minutes(1))) func aNewRowsPickIsSavedAsHis() {
+        var d = PlanFixtures.draft
+        d.techniquesEnabled = true
+        d.add(day: 0, catalog: Self.curl, prescription: nil)
+        d.setTechnique(day: 0, exercise: 3, .myo)
+        let input = d.dayInput(d.days[0], forSave: true).exercises[3]
+        #expect(input.technique == "myo" && input.techniqueSource == "owner" && input.challenge == false)
+        #expect(!d.days[0].exercises[3].pickedByBoop)
+    }
+
     @Test(.timeLimit(.minutes(1))) func catalogIdCaseDoesNotMakeANewIdentity() throws {
         let json = PlanFixtures.blocksJSON().replacingOccurrences(of: "\"catalogId\":\"\(PlanFixtures.catCurl)\"",
                                                                    with: "\"catalogId\":\"\(PlanFixtures.catCurl.uppercased())\"")
