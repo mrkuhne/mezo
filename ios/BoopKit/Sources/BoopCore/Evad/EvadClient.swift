@@ -67,6 +67,8 @@ public func evadErrorText(_ error: PlanFetchError) -> String {
         case "SEASON_BLOCK_DAYS_LOCKED": "Amíg fut az edzésblokk, az edzésnapok nem változhatnak."
         default: "A szerver ezt most nem fogadta el."
         }
+    // Train's day-save refusal; no Évad call returns it, but the error type is shared.
+    case .dayWorkoutRunning: "Épp fut az edzésed. Ha végeztél, próbáld újra."
     case .server: "A szerver most nem válaszolt rendesen. Próbáld újra."
     }
 }
