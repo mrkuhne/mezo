@@ -22,7 +22,8 @@ import java.util.UUID;
  * always rank after every same-muscle row). Left out
  * (labelled for the full list): unavailable equipment → {@link Label#NO_EQUIPMENT}, a recent
  * {@link PainLevel#STRONG} → {@link Label#HURT_BEFORE}; plyometrics unless the outgoing is plyo
- * (no label). Order is lexicographic over tiers: role → discomfort → goal → trackability, then
+ * (no label). Order is lexicographic over tiers: role (muscle, type) → discomfort → fit (pattern,
+ * secondary overlap) → goal → trackability, then
  * {@code lengthened}, then the candidate's position in the pool.
  */
 public final class ExerciseSubstituteRanker {
@@ -58,11 +59,13 @@ public final class ExerciseSubstituteRanker {
     enum Goal { HYPERTROPHY, STRENGTH, LOW_FATIGUE }
 
     /** Lexicographic score; every field compares "higher is better" except {@code index}. */
-    private record Scored(Candidate c, int index, int role, int discomfort, double goal, int track, int lengthened) {}
+    private record Scored(Candidate c, int index, int role, int discomfort, int fit, double goal, int track,
+                          int lengthened) {}
 
     private static final Comparator<Scored> ORDER = Comparator
         .comparingInt(Scored::role).reversed()
         .thenComparing(Comparator.comparingInt(Scored::discomfort).reversed())
+        .thenComparing(Comparator.comparingInt(Scored::fit).reversed())
         .thenComparing(Comparator.comparingDouble(Scored::goal).reversed())
         .thenComparing(Comparator.comparingInt(Scored::track).reversed())
         .thenComparing(Comparator.comparingInt(Scored::lengthened).reversed())
@@ -82,11 +85,11 @@ public final class ExerciseSubstituteRanker {
             }
         }
 
-        List<Scored> picked = new ArrayList<>();
+        List<Integer> picked = new ArrayList<>();
         for (int i = 0; i < pool.size(); i++) {
             Candidate c = pool.get(i);
             if (Objects.equals(c.muscle(), out.muscle()) && eligible(out, c, inWorkout, labels)) {
-                picked.add(score(out, c, i, ctx.soreNow(), painJoints, goal));
+                picked.add(i);
             }
         }
         if (picked.size() < WIDEN_BELOW && out.pattern() != null) {
@@ -95,15 +98,18 @@ public final class ExerciseSubstituteRanker {
                 Candidate c = pool.get(i);
                 if (!Objects.equals(c.muscle(), out.muscle()) && out.pattern().equals(c.pattern())
                     && region != null && region.equals(region(c.muscle())) && eligible(out, c, inWorkout, labels)) {
-                    picked.add(score(out, c, i, ctx.soreNow(), painJoints, goal));
+                    picked.add(i);
                 }
             }
         }
 
-        // Today's pain only explains a place when some joint in play actually loads it.
+        // Today's pain only moves or explains a place when some joint in play actually loads it.
         boolean painRelevant = hitsPainToday(out, painJoints)
-            || picked.stream().anyMatch(s -> hitsPainToday(s.c(), painJoints));
-        List<Ranked> suggestions = picked.stream().sorted(ORDER).limit(MAX_SUGGESTIONS)
+            || picked.stream().anyMatch(i -> hitsPainToday(pool.get(i), painJoints));
+        boolean gentle = ctx.soreNow() || painRelevant;
+        List<Ranked> suggestions = picked.stream()
+            .map(i -> score(out, pool.get(i), i, ctx.soreNow(), painJoints, gentle, goal))
+            .sorted(ORDER).limit(MAX_SUGGESTIONS)
             .map(s -> new Ranked(s.c().id(), signals(out, s.c(), ctx.soreNow(), painRelevant, painJoints, goal)))
             .toList();
         return new Result(suggestions, Map.copyOf(labels));
@@ -137,19 +143,21 @@ public final class ExerciseSubstituteRanker {
     }
 
     private static Scored score(Candidate out, Candidate c, int index, boolean soreNow, Set<String> painJoints,
-                                Goal goal) {
-        // Role: same muscle (widened rows only fill the list) ≫ same type ≫ attributed over custom
-        // ≫ same pattern ≫ secondary-muscle overlap (≤9).
-        int role = (Objects.equals(c.muscle(), out.muscle()) ? 10_000 : 0) + (sameType(out, c) ? 1000 : 0) + (c.custom() ? 0 : 100)
-            + (samePattern(out, c) ? 10 : 0) + Math.min(9, overlap(out.secondaryMuscles(), c.secondaryMuscles()));
+                                boolean gentle, Goal goal) {
+        // Role: same muscle (widened rows only fill the list) ≫ same type ≫ attributed over custom.
+        int role = (Objects.equals(c.muscle(), out.muscle()) ? 10_000 : 0) + (sameType(out, c) ? 1000 : 0)
+            + (c.custom() ? 0 : 100);
+        // Fit: same pattern ≫ secondary-muscle overlap (≤9). Compared only after discomfort (owner decision
+        // #58, mezo-r36n9.111): a movement that spares what hurt outranks a closer copy of the movement.
+        int fit = (samePattern(out, c) ? 10 : 0) + Math.min(9, overlap(out.secondaryMuscles(), c.secondaryMuscles()));
 
         // Discomfort: each hit costs 10; with a discomfort context gentleness (≤3) lifts.
         int hits = (c.pain() == PainLevel.MILD ? 1 : 0)
             + (hitsPainToday(c, painJoints) ? 1 : 0)
             + (soreNow && sharesJoint(out, c) ? 1 : 0);
-        int discomfort = -10 * hits + (soreNow || !painJoints.isEmpty() ? gentleness(c) : 0);
+        int discomfort = -10 * hits + (gentle ? gentleness(c) : 0);
 
-        return new Scored(c, index, role, discomfort, goalScore(out, c, goal), c.doneBefore() ? 1 : 0,
+        return new Scored(c, index, role, discomfort, fit, goalScore(out, c, goal), c.doneBefore() ? 1 : 0,
             Boolean.TRUE.equals(c.lengthened()) ? 1 : 0);
     }
 
