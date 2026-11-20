@@ -87,16 +87,21 @@ public enum NKBlockState {
 /// the page — with that block's own loading and failed states.
 public struct NKBare<Content: View>: View {
     let label: String, hue: Hue, trailing: String?
+    /// The section's own glyph between the tick and the label (Pénz round 11, owner: "nincsenek ikonok" — every
+    /// section head that has a sensible glyph wears one). nil = the plain head every older caller keeps.
+    let glyph: String?
     let state: NKBlockState
     let content: Content
-    public init(_ label: String, hue: Hue, trailing: String? = nil, state: NKBlockState = .ready,
+    public init(_ label: String, hue: Hue, glyph: String? = nil, trailing: String? = nil, state: NKBlockState = .ready,
                 @ViewBuilder content: () -> Content) {
-        self.label = label; self.hue = hue; self.trailing = trailing; self.state = state; self.content = content()
+        self.label = label; self.hue = hue; self.glyph = glyph; self.trailing = trailing; self.state = state
+        self.content = content()
     }
     public var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 8) {
                 Capsule().fill(hue.glow).frame(width: 3, height: 13)
+                if let glyph { NKGlyph(glyph, hue.glow.opacity(0.9), size: 14) }
                 NKMono(label.uppercased())
                 Spacer(minLength: 8)
                 if let trailing { Text(trailing).nkFont(12).foregroundStyle(.white.opacity(0.5)) }

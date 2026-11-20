@@ -10,6 +10,9 @@ public enum OutboxKind: String, Codable, CaseIterable, Sendable {
     /// so a rename would make every pending write of an older build unreadable.
     case workoutStart, workoutSet, workoutSetEdit, workoutSkipExercise, workoutFeedback, workoutNote, workoutFinish
     case sportSession
+    /// A cash expense typed on the phone (Pénz L5): `POST /api/penz/transactions`, idempotent on the item id as
+    /// `clientRef`. **Never rename** — persisted like the others.
+    case penzExpense
 }
 
 /// One pending write. `id` is the client ref the server keys idempotency on, so a resend never duplicates.
@@ -222,6 +225,8 @@ public actor Outbox {
             ("workout|\(item.groupRef?.uuidString ?? item.id.uuidString)", true)
         // A logged sport session is its own write, with nothing before or after it.
         case .sportSession: ("sport|\(item.id.uuidString)", false)
+        // Every cash expense stands alone: one refused amount never holds the next one back.
+        case .penzExpense: ("penz|\(item.id.uuidString)", false)
         }
     }
 

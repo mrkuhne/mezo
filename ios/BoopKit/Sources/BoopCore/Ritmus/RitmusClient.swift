@@ -34,15 +34,20 @@ public struct RitmusClient: OutboxSender {
     /// The training writes are sent by `TrainClient`, built once here: it remembers which server workout each
     /// queued set belongs to, and a fresh one per send would forget that between two items of the same session.
     private let train: TrainClient
+    /// Sends the Pénz cash expenses (L5) over the hand-written JSON caller; nil = this client has none (tests that
+    /// never queue one) — such an item waits rather than being refused.
+    private let penz: PenzOutboxSender?
 
     /// `audioDirectory`: where `VoicePayload.fileName` is resolved (the outbox directory by default).
     ///
     /// `train`: **the app's own training client, not a fresh one.** `TrainClient` remembers which server workout
     /// a queued set belongs to, and that memory is what the player's online calls (the swap) read: with two
     /// instances the queue learns the workout id and the player never sees it.
-    public init(client: Client, audioDirectory: URL = Outbox.defaultDirectory(), train: TrainClient? = nil) {
+    public init(client: Client, audioDirectory: URL = Outbox.defaultDirectory(), train: TrainClient? = nil,
+                penz: PenzOutboxSender? = nil) {
         self.client = client; self.audioDirectory = audioDirectory
         self.train = train ?? TrainClient(client: client)
+        self.penz = penz
     }
 
     /// Work a retry must not repeat while the app runs: a transcript already paid for, a conversation already created.
@@ -72,6 +77,8 @@ public struct RitmusClient: OutboxSender {
             case .workoutStart, .workoutSet, .workoutSetEdit, .workoutSkipExercise, .workoutFeedback,
                  .workoutNote, .workoutFinish, .sportSession:
                 return await train.send(item)
+            case .penzExpense:
+                return await penz?.send(item) ?? .retryLater
             }
         } catch {
             // An answer whose body would not decode still carries its status; otherwise (no network, a timeout) the

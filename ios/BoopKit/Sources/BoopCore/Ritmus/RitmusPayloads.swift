@@ -18,6 +18,31 @@ public enum RitmusPayload {
     public static func decodeCheckIn(_ data: Data) -> CheckInPayload? { decode(CheckInPayload.self, from: data) }
     public static func decodeVoice(_ data: Data) -> VoicePayload? { decode(VoicePayload.self, from: data) }
     public static func decodeClose(_ data: Data) -> DayClosePayload? { decode(DayClosePayload.self, from: data) }
+    public static func decodePenzExpense(_ data: Data) -> PenzExpensePayload? { decode(PenzExpensePayload.self, from: data) }
+}
+
+/// `penzExpense`: a cash expense typed on the phone (Pénz L5). The item id is the transaction's `clientRef`, so a
+/// resend after a lost answer returns the stored row instead of a second one. Amounts are minor units (1/100 Ft).
+public struct PenzExpensePayload: Codable, Equatable, Sendable {
+    public var accountId: String
+    public var amountMinor: Int64
+    public var currency: String
+    public var categoryId: String?
+    /// `YYYY-MM-DD` — the day he spent it.
+    public var date: String
+    public var note: String?
+
+    public init(accountId: String, amountMinor: Int64, currency: String = "HUF", categoryId: String? = nil,
+                date: String, note: String? = nil) {
+        self.accountId = accountId; self.amountMinor = amountMinor; self.currency = currency
+        self.categoryId = categoryId; self.date = date; self.note = note
+    }
+
+    /// The request the sender posts for the item `id`.
+    public func request(clientRef id: UUID) -> PenzTransactionRequest {
+        PenzTransactionRequest(clientRef: id.uuidString.lowercased(), accountId: accountId, kind: "expense",
+                               amountMinor: amountMinor, currency: currency, categoryId: categoryId, date: date, note: note)
+    }
 }
 
 /// `checkIn` and `checkInNote`: the whole slot (a note follow-up is an upsert of the same slot carrying every value
