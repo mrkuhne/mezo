@@ -100,11 +100,16 @@ trip, no LLM cost per candidate, ranking stays on the server.
    (`daysOfWeek`, `weeks`, `priorities?`, `goalText?` ignored) + `sessionMinutesTarget?` + `sportGroups?`.
    Response: 1–3 candidates, each `{splitKey, splitLabel, template (MesoTemplateUpsertRequest, styled as generate
    does), evaluation (MesoPlanEvaluation), recommended, reasons[]}`. Each candidate's evaluation is the existing
-   `PlanEvaluator` run in-process. **Ranking** (pure, tested): (1) no group under 2×/week (hard filter), (2) fewest
-   days over the minutes target (or the smallest overrun), (3) fewest muscles outside their band, (4) fewest
-   consecutive-day warnings, (5) catalogue order. `reasons[]` are codes + numbers
-   (`FITS_TIME {maxMinutes}`, `OVER_TIME {day, minutes, target}`, `FREQ_2X`, `MORE_WARMUPS {perWeek}`,
-   `CONSECUTIVE {group}`, …); the phone owns the Hungarian copy.
+   `PlanEvaluator` run in-process. **Only flawless candidates are offered (owner, 2026-11-21: „olyanokat generált,
+   amikben már hiba van?”).** Hard filters (pure, tested): every trained group ≥ 2×/week; every day within the minutes
+   target; no group with a *heavy* load on two consecutive calendar days (≥ `consecutive-heavy-sets: 4` hard sets on
+   both days — a full-body split's 2–3 sets a day is not a recovery problem; high-frequency, volume-equated training
+   shows no detriment). Survivors are ranked by (1) fewest muscles outside their band, (2) shortest longest day,
+   (3) catalogue order; the first is *Ajánlott*. If **no** candidate passes, the response returns the closest one
+   flagged `nothingFits` with the failed rule and what would fix it (`MORE_MINUTES {needed}`, `FEWER_EMPHASIS`,
+   `MORE_DAYS`) — the phone says so plainly instead of offering a flawed plan. `reasons[]` on an offered candidate
+   are only neutral or positive facts (`FITS_TIME {maxMinutes}`, `FREQ_2X`, `MORE_WARMUPS {perWeek}`, …); the phone
+   owns the Hungarian copy.
 
 3. **Generate takes `split?`** — the chosen candidate's key; the LLM refinement (when enabled) runs once on it.
    Absent = today.
@@ -125,8 +130,9 @@ trip, no LLM cost per candidate, ranking stays on the server.
    lifters 12–20 sets: Baz-Valle 2022); Tartás = about a third of the growth dose keeps size (Bickel 2011); sport-
    adjusted = the volleyball already trains these.
 
-6. **Recovery spacing hint.** `DayEvaluation`/`MuscleEvaluation` flag a group trained with hard sets on two
-   consecutive calendar days (core/mobility exempt) — a hint, never a block.
+6. **Recovery spacing hint.** `DayEvaluation`/`MuscleEvaluation` flag a group with a heavy load
+   (≥ `consecutive-heavy-sets` hard sets) on two consecutive calendar days (core/mobility exempt) — a hint in the
+   builder (where his own edits can cause it), never a block; candidates with it are not offered at all.
 
 7. **Tier budget (owner decision 2026-11-20, „Időkeret + legfeljebb 2 Hangsúly”).** The evaluation gains
    `budget {capacitySets, usedSets, emphasizeCount, emphasizeMax}`: `capacitySets` = how many working sets fit in the
