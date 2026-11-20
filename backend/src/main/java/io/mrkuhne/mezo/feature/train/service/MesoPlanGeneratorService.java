@@ -53,11 +53,11 @@ public class MesoPlanGeneratorService {
      *  slow-tier LLM round-trip below must never hold a DB connection open for its duration. The
      *  single repository read in {@link #candidates} is transactional on its own. */
     public MesoPlanGenerateResponse generate(UUID user, MesoPlanGenerateRequest req) {
-        Map<String, String> priorities = PriorityTier.normalize(req.getPriorities());
-        PriorityGuard.checkEmphasizeCap(priorities, volumeProperties.bands().emphasizeMax());
-        MesoPlanSkeleton.Skeleton skeleton = buildSkeleton(req, priorities);
-        List<MesoPlanFiller.Candidate> candidates = candidates(user);
-        List<MesoPlanFiller.FilledDay> days = MesoPlanFiller.fill(skeleton, candidates, props);
+        Draft draft = draft(user, req, resolveSplit(req));
+        MesoPlanSkeleton.Skeleton skeleton = draft.skeleton();
+        List<MesoPlanFiller.Candidate> candidates = draft.candidates();
+        Map<String, String> priorities = draft.priorities();
+        List<MesoPlanFiller.FilledDay> days = draft.days();
 
         boolean llmUsed = false;
         String rationale = RATIONALE_DETERMINISTIC;
@@ -88,18 +88,51 @@ public class MesoPlanGeneratorService {
             .build();
     }
 
-    /** Default split when none is chosen; else the catalogued split of the clamped day count (400 when unknown). */
-    private MesoPlanSkeleton.Skeleton buildSkeleton(MesoPlanGenerateRequest req, Map<String, String> priorities) {
-        List<String> days = List.copyOf(req.getDaysOfWeek());
+    /**
+     * The deterministic plan for one split — skeleton → fill → style stamp, never the LLM (mezo-r36n9.113): what
+     * {@code generate} would return with the LLM off, for {@code split} (null = the default split). The
+     * candidates endpoint evaluates one of these per catalogued split. Throws 400 above the Hangsúly cap.
+     */
+    MesoTemplateUpsertRequest deterministicTemplate(UUID user, MesoPlanGenerateRequest req, MesoPlanProperties.Split split) {
+        Draft draft = draft(user, req, split);
+        return toTemplate(draft.skeleton(), draft.days(), draft.priorities(), req);
+    }
+
+    /** The shared deterministic half: normalised priorities (capped), skeleton, catalogue rows, filled days. */
+    private record Draft(Map<String, String> priorities, MesoPlanSkeleton.Skeleton skeleton,
+                         List<MesoPlanFiller.Candidate> candidates, List<MesoPlanFiller.FilledDay> days) {}
+
+    private Draft draft(UUID user, MesoPlanGenerateRequest req, MesoPlanProperties.Split split) {
+        Map<String, String> priorities = PriorityTier.normalize(req.getPriorities());
+        PriorityGuard.checkEmphasizeCap(priorities, volumeProperties.bands().emphasizeMax());
+        MesoPlanSkeleton.Skeleton skeleton = buildSkeleton(req, priorities, split);
+        List<MesoPlanFiller.Candidate> candidates = candidates(user);
+        return new Draft(priorities, skeleton, candidates, MesoPlanFiller.fill(skeleton, candidates, props));
+    }
+
+    /** Null when no split is chosen; else the catalogued split of the clamped day count (400 when unknown). */
+    private MesoPlanProperties.Split resolveSplit(MesoPlanGenerateRequest req) {
         if (req.getSplit() == null) {
+            return null;
+        }
+        return SplitCatalog.find(props, dayCount(req), req.getSplit()).orElseThrow(() ->
+            new SystemRuntimeErrorException(SystemMessage.error("TRAIN_MESO_SPLIT_UNKNOWN").build(), HttpStatus.BAD_REQUEST));
+    }
+
+    private static int dayCount(MesoPlanGenerateRequest req) {
+        return Math.max(2, Math.min(6, req.getDaysOfWeek().size()));
+    }
+
+    /** Default split (today's {@code SPLIT_DAYS}) when {@code split} is null; else that catalogued split. */
+    private MesoPlanSkeleton.Skeleton buildSkeleton(MesoPlanGenerateRequest req, Map<String, String> priorities,
+                                                    MesoPlanProperties.Split split) {
+        List<String> days = List.copyOf(req.getDaysOfWeek());
+        if (split == null) {
             return MesoPlanSkeleton.build(days, req.getWeeks(), priorities, volumeProperties.baselines(),
                 volumeProperties.bands());
         }
-        int n = Math.max(2, Math.min(6, days.size()));
-        MesoPlanProperties.Split split = SplitCatalog.find(props, n, req.getSplit()).orElseThrow(() ->
-            new SystemRuntimeErrorException(SystemMessage.error("TRAIN_MESO_SPLIT_UNKNOWN").build(), HttpStatus.BAD_REQUEST));
         return MesoPlanSkeleton.build(days, req.getWeeks(), priorities, volumeProperties.baselines(),
-            volumeProperties.bands(), split.types(), split.label() + " · " + n + "×/hét");
+            volumeProperties.bands(), split.types(), split.label());
     }
 
     /** Master rows + this user's own catalog rows; soft-deleted rows are already filtered by the entity. */

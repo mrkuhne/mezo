@@ -182,7 +182,7 @@ class MesoPlanGenerateContractIT extends ApiIntegrationTest {
         MesoTemplateUpsertRequest t = res.getTemplate();
         assertThat(t.getDays().stream().map(MesoDayInput::getType).filter(ty -> !"Rest".equals(ty)))
             .hasSize(4).containsOnly("Full");
-        assertThat(t.getSplit()).startsWith("Teljes test ×4");
+        assertThat(t.getSplit()).isEqualTo("Teljes test ×4 · 4×/hét");   // the suffix once, not twice
     }
 
     @Test

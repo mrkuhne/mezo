@@ -65,8 +65,19 @@ public class MesoPlanEvaluateService {
     private final TrainTechniqueProperties techniqueProps;
     private final TechniquePlanService techniquePlanService;
 
+    /** The evaluation of a draft plus the evaluator result it was mapped from. */
+    public record Measured(PlanEvaluator.Result result, MesoPlanEvaluation evaluation) {}
+
     @Transactional(readOnly = true)
     public MesoPlanEvaluation evaluate(UUID userId, MesoPlanEvaluateRequest req) {
+        return measure(userId, req).evaluation();
+    }
+
+    /**
+     * {@link #evaluate}'s whole mapping, also handing back the evaluator result (the candidates endpoint ranks on
+     * it, mezo-r36n9.113). No transaction of its own: the caller's read-only transaction covers its reads.
+     */
+    public Measured measure(UUID userId, MesoPlanEvaluateRequest req) {
         Map<String, String> priorities = PriorityTier.normalize(req.getMusclePriorities());
         List<String> sportGroups = SportGroups.normalize(req.getSportGroups(), props.baselines().keySet());
 
@@ -100,8 +111,8 @@ public class MesoPlanEvaluateService {
         PlanEvaluator.Result result = PlanEvaluator.evaluate(input);
         EvaluatorTechniques.Shown shown = optsIn
             ? EvaluatorTechniques.ofProjection(techniquePlanService.planDraft(userId, req)) : null;
-        return toResponse(deficit, result, slots, sportGroups == null, null, null, shown,
-            TierBudget.of(input, result));
+        return new Measured(result, toResponse(deficit, result, slots, sportGroups == null, null, null, shown,
+            TierBudget.of(input, result)));
     }
 
     @Transactional(readOnly = true)
