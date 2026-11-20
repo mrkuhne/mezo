@@ -417,6 +417,34 @@ alerts **`PenzNewsProviderDown`** on `min(…{kind="news"}) >= 3` (every news so
 **`PenzQuotesProviderDown`** for the quote source. The digest's `newsHealthy` is false while every news provider's
 last fetch failed.
 
+### 3.12 Practice — paper trading (L7)
+
+Gyakorlás is day trading as learning, **on paper** (`penz_paper_trade.paper` is `NOT NULL DEFAULT true`; the API never
+accepts anything else). Builder calls: [`2026-11-20-boop-penz-l7-build.md`](../superpowers/plans/2026-11-20-boop-penz-l7-build.md)
+§1 calls 1–9. `PenzPracticeService` maps rows; the arithmetic is pure in `service/practice/`:
+
+- **The plan is the row** — `planned` → `open` (typed entry + date) → `closed` (exit, ≥ 1 of the eight fixed
+  `PracticeTag`s, mistake flag, one line ≤ 140); a plan may be `cancelled`. Any other step is 409
+  `PENZ_PAPER_TRADE_STATE`, so "no plan, no trade" is structural. Create may open in the same call (`entryMinor`).
+  The stop must be on the losing side of the (planned) entry: 400 `PENZ_PAPER_TRADE_INVALID_STOP`.
+- **`PaperTradeMath`** — risk = |entry − stop| × qty, P/L long/short, R = P/L ÷ risk (computed from the prices, so
+  exact), stored with 2 decimals; `stopRespected` = the exit did not go beyond the stop.
+- **HUF twins** by THE booking policy (§4.1, `PenzFxService.book`): cost and risk at the entry date, P/L at the exit
+  date, the unrealized P/L at the typed last close's date; the plan's per-unit figures at today's rate until opened.
+  No market data at all — every price is typed; without a typed close an open trade is valued at entry (0).
+- **The cap (`PracticeCap`)** — `C = practice_monthly_minor`, the same field as the allowance's `practice` line
+  (§3.1). For the month: used = Σ `cost_huf` of open trades + max(0, −Σ `pnl_huf` closed this month); left =
+  max(0, C − used). Opening above left → **422 `PENZ_PRACTICE_CAP_EXCEEDED`**. Gains never raise it; nothing reads a
+  holding, a savings goal, the allowance or income.
+- **The week (`WeeklyReview`)** — Monday-start (the owner's money timezone): win rate (R > 0), by setup, distribution
+  (≥ +2R · −1,2R…0 · < −1,5R; healthy = none below −1,5R), the most common mistake (the most frequent tag among the
+  week's mistake-flagged trades, ties → the costlier; cost = −Σ their HUF P/L when negative) and the cumulative curve.
+- **The copy (`PracticeCopy`)** — deterministic Hungarian templates over those figures, no model call: headline / sub
+  (null without a closed trade this week), 0–3 observations, and under 50 tagged trades the `noiseLine`. Forints as
+  the digest formats them (`DigestFigures.hufMagnitude`), R with a decimal comma (`+0,8R`). Boundary (spec §6): never
+  urges, promises a return or says sell — `PenzPracticeCopyTest` guards it.
+- Pénzem's practice row (`PenzPracticeRow.monthPnlHufMinor`) reads the same month P/L.
+
 ## 4. Data model & API
 
 ### 4.1 The money value type and THE one FX policy
@@ -447,7 +475,8 @@ The engine works only on the HUF twins; the allowance is HUF-based. Money on the
 
 Contract-first: [`api/feature/penz/penz.yml`](../../api/feature/penz/penz.yml) (tag `Penz`, JWT) and
 [`penz-sms.yml`](../../api/feature/penz/penz-sms.yml) (tag `PenzSms`), and since L6
-[`penz-portfolio.yml`](../../api/feature/penz/penz-portfolio.yml) (tags `PenzPortfolio` and `PenzNews`, JWT), all in
+[`penz-portfolio.yml`](../../api/feature/penz/penz-portfolio.yml) (tags `PenzPortfolio` and `PenzNews`, JWT), since L7
+[`penz-practice.yml`](../../api/feature/penz/penz-practice.yml) (tag `PenzPractice`, JWT), all in
 `api/generate/merge.yml`.
 
 | Method · path | What |
@@ -469,6 +498,9 @@ Contract-first: [`api/feature/penz/penz.yml`](../../api/feature/penz/penz.yml) (
 | `GET /api/penz/portfolio?date=` | L6 Pénzem: totals, moves (price / currency), the three sleeves with holdings and coverage, price date + stale, timeline, practice row (refreshes due quotes first) |
 | `GET /api/penz/digest?date=` | L6 the day's digest (default his today); `pending` when not built; `newsHealthy` |
 | `POST /api/penz/digest/refresh` | L6 rebuild in the background → 202; 429 `PENZ_DIGEST_REFRESH_LIMITED` within 15 minutes |
+| `GET /api/penz/practice?date=` | L7 Gyakorlás: cap, month P/L, avg R, tag counts + `noiseLine`, the eight tags, the week (figures + copy + curve + trades), open and planned trades |
+| `GET`/`POST /api/penz/practice/trades`, `PUT`/`DELETE …/{id}` | L7 the journal (newest first, `from`/`to`); create 201 idempotent on `clientRef` (optionally opened); edit planned only; soft delete |
+| `POST /api/penz/practice/trades/{id}/open` · `/close` · `/last-close` · `/cancel` | L7 the transitions (409 out of order); open checks the stop and the cap (422) |
 
 Error codes (both bundles): `PENZ_ACCOUNT_NOT_FOUND`, `PENZ_CATEGORY_NOT_FOUND`, `PENZ_CATEGORY_NAME_TAKEN`,
 `PENZ_TRANSACTION_NOT_FOUND`, `PENZ_RECURRING_RULE_NOT_FOUND`, `PENZ_TRANSFER_SAME_ACCOUNT`, `PENZ_FX_UNAVAILABLE`,
@@ -476,7 +508,9 @@ Error codes (both bundles): `PENZ_ACCOUNT_NOT_FOUND`, `PENZ_CATEGORY_NOT_FOUND`,
 `PENZ_NO_SAVINGS_TARGET_ACCOUNT`, `PENZ_SMS_KEY_NOT_FOUND`, `PENZ_SMS_KEY_INVALID`, `PENZ_SMS_RATE_LIMITED`,
 `PENZ_CURRENCY_MISMATCH`, `PENZ_CLIENT_REF_CONFLICT`, `PENZ_SAVINGS_GOAL_NOT_FOUND` (L5), and L6:
 `PENZ_HOLDING_NOT_FOUND`, `PENZ_INVEST_TXN_NOT_FOUND`, `PENZ_HOLDING_EVENT_NOT_FOUND`, `PENZ_SYMBOL_UNKNOWN`,
-`PENZ_SELL_EXCEEDS_POSITION`, `PENZ_DIGEST_REFRESH_LIMITED`.
+`PENZ_SELL_EXCEEDS_POSITION`, `PENZ_DIGEST_REFRESH_LIMITED`, and L7: `PENZ_PAPER_TRADE_NOT_FOUND`,
+`PENZ_PRACTICE_CAP_EXCEEDED` (422), `PENZ_PAPER_TRADE_STATE` (409), `PENZ_PAPER_TRADE_INVALID_STOP`,
+`PENZ_PRACTICE_TAG_UNKNOWN`.
 
 ### 4.3 Tables
 
@@ -506,6 +540,12 @@ L6 adds seven tables in [`202611201600_mezo-r36n9.104_penz_portfolio.sql`](../..
 | `penz_news_article` | **global** articles from the allow-listed feeds, unique url: `source_key`, `source_name`, title, summary (untrusted text), `published_at`, `fetched_at`; pruned after 30 days |
 | `penz_digest` | one live row per owner and `digest_date`: status `ready|quiet|failed`, `items` jsonb (contract-shaped `PenzDigestItemJson`), `generated_at`, `prices_as_of` |
 | `penz_provider_status` | **global** health per outbound provider: `provider_key` (unique), kind `news|quotes`, last success / failure, `fail_streak`, `last_error` (§3.11) |
+
+L7 adds [`202611202000_mezo-r36n9.105_penz_practice.sql`](../../backend/src/main/resources/db/changelog/1.1.0/script/202611202000_mezo-r36n9.105_penz_practice.sql):
+
+| Table | Holds |
+|---|---|
+| `penz_paper_trade` | `paper` (always true), status `planned|open|closed|cancelled`, instrument, direction `long|short`, why, currency, quantity, per-unit `planned_entry` / `stop` / `target` / `entry` / `exit` / `last_close` minor units, plan / exit / last-close fx rate + date, `risk_minor` + `risk_huf_minor`, `cost_huf_minor`, `pnl_minor` + `pnl_huf_minor`, `r_multiple`, `unrealized_huf_minor`, `tags` jsonb (read in Java only), `mistake`, `line`, `client_ref` (unique per owner among live rows) |
 
 All registered in `support/ResetDatabase`; test rows through `PenzPopulator`.
 
@@ -581,6 +621,11 @@ Backend only (`-Dmezo.test.use-testcontainers=true`, `ArchitectureTest` in the `
   holdings-only relevance, grouping, injection ignored / obeyed → fallback, quiet day, model failure, GET pending /
   ready, refresh 202 → 429), `PenzNewsProviderAlertIT` (three failed runs → every news streak 3, gauge 3,
   `newsHealthy=false`, the vmalert rule present, the job bean absent with its switch off).
+- L7 pure: `service/practice/{PenzPracticeTagTest,PenzPaperTradeMathTest,PenzPracticeCapTest,PenzWeeklyReviewTest,
+  PenzPracticeCopyTest}` (the copy by case, the boundary words, numbers only from the computed week).
+- L7 IT: `PenzPracticeApiIT` (plan → open → last close → close → overview / week / journal / Pénzem row; every
+  out-of-order step 409; ≥ 1 known tag; the stop side; the cap 422 not borrowing and not raised by gains, the
+  settings' practice amount = the allowance line; `clientRef` replay; owner isolation; `paper` everywhere; EUR twins).
 
 ### 8.1 Oracle — the old app's 603 vitest cases
 
@@ -670,7 +715,11 @@ the old vectors. `matchInvestTxnForSms` (3) and the `runConvertSms` invest-buy a
 
 ## 10. Key files
 
-- Contract: `api/feature/penz/penz.yml`, `api/feature/penz/penz-sms.yml`, `api/feature/penz/penz-portfolio.yml` (L6)
+- Contract: `api/feature/penz/penz.yml`, `api/feature/penz/penz-sms.yml`, `api/feature/penz/penz-portfolio.yml` (L6),
+  `api/feature/penz/penz-practice.yml` (L7)
+- L7 practice: `…/penz/service/practice/` (pure), `…/penz/service/PenzPracticeService.java`,
+  `…/penz/controller/PenzPracticeController.java`, `…/penz/mapper/PenzPracticeMapper.java`,
+  `…/202611202000_mezo-r36n9.105_penz_practice.sql`
 - Schema: `backend/src/main/resources/db/changelog/1.1.0/script/202611191400_mezo-r36n9.102_penz.sql`, L6:
   `…/202611201600_mezo-r36n9.104_penz_portfolio.sql`
 - L6 portfolio: `…/penz/service/portfolio/`, `…/penz/service/{PenzHoldingService,PenzInvestTxnService,PenzHoldingEventService,PenzPortfolioService,PenzQuoteService,QuoteClient,PenzProviderHealth}.java`,

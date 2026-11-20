@@ -22,6 +22,11 @@ public final class PenzErrors {
         return new SystemRuntimeErrorException(SystemMessage.error(code).build(), HttpStatus.BAD_REQUEST);
     }
 
+    /** 422 — a well-formed request the rules refuse (the Gyakorlás cap). */
+    public static SystemRuntimeErrorException unprocessable(String code) {
+        return new SystemRuntimeErrorException(SystemMessage.error(code).build(), HttpStatus.valueOf(422));
+    }
+
     public static SystemRuntimeErrorException tooManyRequests(String code) {
         return new SystemRuntimeErrorException(SystemMessage.error(code).build(), HttpStatus.TOO_MANY_REQUESTS);
     }
