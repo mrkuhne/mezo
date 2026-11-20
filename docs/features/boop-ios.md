@@ -18,6 +18,8 @@ related: [season, penz, fuel, pantry, recipe, dayclose, intention, journal, comp
 
 # Boop — native iOS app — Feature Documentation
 
+> **2026-11-21 — reviewed after the Évad S2 review round (`mezo-r36n9.16`).** A reasoned skip excuses only the session (food and night still count), today's night is never judged, the season title is made inert before it reaches a prompt, the learned-expenditure wall card is keyed on the ISO week, and the Hét tab no longer waits on the day judgement — all described below.
+
 > **2026-11-21 — Boop B6 Évad S2 (`mezo-r36n9.16`).** The Évad tab's **Hogy megy** and **Amit Boop észrevett** are now
 > filled from the server (adherence + gated insights), the *Mi mire hat* Alvás → Étel link shows the server's number,
 > the **Étel Hét tab reads the server's day judgement** (`GET /api/seasons/adherence`, its own rule kept as the offline

@@ -17,6 +17,8 @@ related: [boop-ios, goal-engine, train, fuel, companion, _platform-api-backend]
 
 # Évad — the season (Boop B6) — Feature Documentation
 
+> **2026-11-21 — reviewed after the Évad S2 review round (`mezo-r36n9.16`).** A reasoned skip excuses only the session (food and night still count), today's night is never judged, the season title is made inert before it reaches a prompt, the learned-expenditure wall card is keyed on the ISO week, and the Hét tab no longer waits on the day judgement — all described below.
+
 > Boop's **Évad** place (the spine's second place, was Terv) and its backend feature `season`. **S2 of 4 shipped
 > (2026-11-21, `mezo-r36n9.16`)**. S1 (2026-11-20): the season aggregate, the no-persist live preview with a
 > fingerprinted accept, the lifecycle, the mesocycle gate, the overview read model and the iPhone page (Évad tab,
