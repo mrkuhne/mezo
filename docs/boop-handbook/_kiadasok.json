@@ -605,5 +605,20 @@
       "mezo-r36n9.118"
     ],
     "mi_valtozott": "A blokképítő Napok lapján a futó blokkod napjait a saját képedre szabhatod: gyakorlatot adhatsz hozzá (Boop az adott napra, a termedhez és ahhoz illőt ajánl, ami fájt — elöl azok az izmok, amelyekre a héten kevés jut), törölhetsz visszavonással, a blokk végéig cserélhetsz, húzással átrendezhetsz, és beállíthatod az ismétléstartományt, a tartalékot, a kezdősúlyt és a bemelegítést. Amit te állítottál, azt az edzésmód nem írja felül. Egy üres napból edzésnap lehet. Azt a napot, amelyiken épp fut az edzésed, sem a telefon, sem a szerver nem engedi átrendezni; ha jóváhagyásra vár egy heti javaslat, mentés előtt rákérdez. Kis telefonon a fő gomb felirata is kifér. A változás a következő edzéstől él."
+  },
+  "52d0d382e": {
+    "cim": "Évad — a Terv helyén: egy évad, amely összeköti az edzést, az étkezést, az alvást és a súlyt",
+    "datum": "2026-11-20",
+    "verzio": "v3.22.0",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app",
+      "Háttérrendszer"
+    ],
+    "szakasz": "B6 A Terv",
+    "jegyek": [
+      "mezo-r36n9.16"
+    ],
+    "mi_valtozott": "Az alsó sáv második helye mostantól az Évad. Ha még nincs évadod, Boop a mostani súlycélodból, edzésblokkodból, heti edzés- és sportnapjaidból és alvási célodból összeállít egy javaslatot; csak akkor indul el, ha az „Indulhat az évad” gombbal jóváhagyod. Az Évad lapon látod, mi mire hat (edzés, étel, alvás, súly), a súlyod menetét (súlytartásnál a sávot), az évad tervét és a következő fontos heteket. A Módosításban élőben látod, mi változna: edzés- és pihenőnapi kalória, a hét összes kalóriája, alvásigény, lefekvés, a cél dátuma, és hogy mit kell ehhez tenned; csak az Elfogadom után változik bármi. Amíg fut az edzésblokkod, az edzésnapok nem módosíthatók (a blokk napjai ezekhez igazodnak). Új edzésblokk csak évaddal indulhat; a mostani blokkod fut tovább. A Menü, a Lista és a Hatás lap később jön."
   }
 }

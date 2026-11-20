@@ -217,7 +217,7 @@
     },
     "jegyek:mezo-r36n9.16": {
       "page_id": "4168968e-752b-81dd-967e-fe6305d85e18",
-      "hash": "3ba1d9a4d3e5"
+      "hash": "8b55a0c2ae42"
     },
     "jegyek:mezo-r36n9.17": {
       "page_id": "4168968e-752b-81d9-9448-c7846b8b3377",
@@ -597,39 +597,39 @@
     },
     "kezikonyv:04-terv/00-attekintes": {
       "page_id": "4168968e-752b-81c6-a15f-d115f1a8c6e1",
-      "hash": "bcb29548edbb"
+      "hash": "60ef77d1b81c"
     },
     "kezikonyv:04-terv/01-terv-keret": {
       "page_id": "4168968e-752b-8197-a22b-c72ced5647ab",
-      "hash": "b60d6214fcdb"
+      "hash": "8ea10bfe49dc"
     },
     "kezikonyv:04-terv/02-sulycel-celmotor": {
       "page_id": "4168968e-752b-817c-a592-ecb076252fc5",
-      "hash": "df01f9bac971"
+      "hash": "a08bfbc80b2f"
     },
     "kezikonyv:04-terv/03-testsuly-trend": {
       "page_id": "4168968e-752b-819c-8bdf-c007ba2c2ce2",
-      "hash": "740d771eaf00"
+      "hash": "729126e4d6e8"
     },
     "kezikonyv:04-terv/04-test-kartya": {
       "page_id": "4168968e-752b-81dc-84d2-d1bd345661aa",
-      "hash": "a653c5486f0e"
+      "hash": "ced2e5ae6c5c"
     },
     "kezikonyv:04-terv/05-megtanult-energiaigeny": {
       "page_id": "4168968e-752b-81e6-99a0-c9ddd8732b49",
-      "hash": "702452843b56"
+      "hash": "21696f73eb52"
     },
     "kezikonyv:04-terv/06-terv-csomag": {
       "page_id": "4168968e-752b-81c2-b09d-e11a0ba276cf",
-      "hash": "ece9a972daef"
+      "hash": "f3d8e4e2bc6f"
     },
     "kezikonyv:04-terv/07-bevasarlolista": {
       "page_id": "4168968e-752b-81c4-ab54-c295e5a48d60",
-      "hash": "01ef983de784"
+      "hash": "612c82a0facd"
     },
     "kezikonyv:04-terv/08-hataskovetes": {
       "page_id": "4168968e-752b-81f1-938c-eb8dd448db7c",
-      "hash": "bd2576bbca43"
+      "hash": "4e356040601f"
     },
     "kezikonyv:05-alvas/00-attekintes": {
       "page_id": "4168968e-752b-81a9-98ef-c41118a98d20",
@@ -1405,7 +1405,7 @@
     },
     "kezikonyv:11-penz/02-terulet": {
       "page_id": "41e8968e-752b-8171-a852-d37806bbe84f",
-      "hash": "f19d5d6c4548"
+      "hash": "3b5db60b7fcd"
     },
     "jegyek:mezo-r36n9.113": {
       "page_id": "41e8968e-752b-8145-b144-e62b83f8070b",
@@ -1498,6 +1498,18 @@
     "kezikonyv:11-penz/04-gyakorlas-javaslatok": {
       "page_id": "41e8968e-752b-814e-a3ce-f7b3dfbae302",
       "hash": "605c8f017577"
+    },
+    "jegyek:mezo-r36n9.124": {
+      "page_id": "41e8968e-752b-81e4-939f-d692b715e62e",
+      "hash": "7a73ef7857a3"
+    },
+    "jegyek:mezo-r36n9.123": {
+      "page_id": "41e8968e-752b-8132-99c8-fb5cfec5b13a",
+      "hash": "688c8684230a"
+    },
+    "kiadasok:52d0d382e": {
+      "page_id": "41e8968e-752b-8162-ba7c-c642d1ef038f",
+      "hash": "5ab071dd9866"
     }
   }
 }
