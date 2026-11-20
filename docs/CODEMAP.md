@@ -68,7 +68,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 ### auth
 
 *BE + API* · read next: [docs/features/_platform-auth-security.md](features/_platform-auth-security.md) (updated 2026-11-19, done) ·
-  [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-11-19, mixed)
+  [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-11-20, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/auth`
   - **entities→tables:** `AppUserEntity`→`app_user`, `InviteEntity`→`invite`
@@ -158,7 +158,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### character
 
-*BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-11-19, shipped)
+*BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-11-20, shipped)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/character`
   - **sub-features:** `detector`
@@ -266,7 +266,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### companion
 
-*BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-11-19, shipped) ·
+*BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-11-20, shipped) ·
   [docs/features/companion.md](features/companion.md) (updated 2026-11-19, mixed) ·
   [docs/features/dayclose.md](features/dayclose.md) (updated 2026-11-16, done) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-11-19, done) ·
@@ -274,7 +274,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   [docs/features/me.md](features/me.md) (updated 2026-11-19, mixed) ·
   [docs/features/penz.md](features/penz.md) (updated 2026-11-20, done) ·
   [docs/features/today.md](features/today.md) (updated 2026-11-19, mixed) ·
-  [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-11-19, mixed)
+  [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-11-20, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/companion`
   - **sub-features:** `advisor`, `embedding`, `feedback`, `flags`, `graph`, `llm`, `memory`, `profile`, `quarterly`,
