@@ -1115,9 +1115,9 @@
       "Alapok"
     ],
     "szulo": "mezo-r36n9.33",
-    "allapot": "Később",
     "cim": "Pénz 4. · Gyakorlás és a befektetési javaslatok",
-    "mit_kapsz": "A day trading gyakorlóhelye: terv mielőtt belépsz, egy sor utána, és heti visszanézés Booptól arról, mi működött és mi volt a hét hibája — valódi pénz nélkül. És amikor nagyobb összeged van, Boop előáll egy felosztással, időtávonként két-három konkrét lehetőséggel, amin te igazítasz."
+    "mit_kapsz": "A day trading gyakorlóhelye: terv mielőtt belépsz, egy sor utána, és heti visszanézés Booptól arról, mi működött és mi volt a hét hibája — valódi pénz nélkül. És amikor nagyobb összeged van, Boop előáll egy felosztással, időtávonként két-három konkrét lehetőséggel, amin te igazítasz.",
+    "munkamenet": "boop-penz-l7"
   },
   "mezo-r36n9.106": {
     "cim": "Notion: hiányzó jegyek pótlása a tábládon",
