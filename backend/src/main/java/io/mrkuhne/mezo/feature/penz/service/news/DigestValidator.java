@@ -4,12 +4,14 @@ import io.mrkuhne.mezo.feature.penz.service.guard.HufAmountGuard;
 import io.mrkuhne.mezo.feature.penz.service.news.DigestViolation.Rule;
 import java.text.Normalizer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -89,7 +91,7 @@ public final class DigestValidator {
         "cselekedj", "ne hagyd ki", "utolso esely",
         "buy", "sell", "trim", "exit", "take profit", "offload", "dump", "reduce your", "increase your",
         "add to your", "urgent", "guarantee", "act now");
-    private static final List<String> LEAK_STEMS = List.of(
+    static final List<String> LEAK_STEMS = List.of(
         "boop_penz", "article", "utasitas", "instruction", "ignore", "system", "prompt", "figures");
     private static final Pattern URL = Pattern.compile(
         "https?:|www\\.|\\b[a-z0-9-]+\\.[a-z]{2,24}/"
@@ -123,41 +125,66 @@ public final class DigestValidator {
             String folded = NewsText.fold(prose);
             String joined = joinSpacedLetters(prose);
 
-            if (YEAR.matcher(prose).find()) {
-                out.add(new DigestViolation(Rule.TEMPORAL_CONFUSION, field, "year"));
-            }
-            if (WEEKDAYS.stream().anyMatch(w -> NewsText.containsStem(folded, w))) {
-                out.add(new DigestViolation(Rule.TEMPORAL_CONFUSION, field, "weekday"));
-            }
-            checkNumbers(field, prose, figures, out);
-            if (SIGNED.matcher(withoutHorizon(prose, figures)).find()) {
-                out.add(new DigestViolation(Rule.NEGATION_FLIP, field, "signed figure"));
-            }
-            if (forbiddenTerms.stream().anyMatch(t -> NewsText.containsTerm(folded, t, t.length() >= 5))) {
-                out.add(new DigestViolation(Rule.ENTITY_SWAP, field, "names another holding"));
-            }
-            if (anyStem(folded, BOUNDARY_STEMS) || anyStem(joined, BOUNDARY_STEMS)) {
-                out.add(new DigestViolation(Rule.BOUNDARY, field, "buy, sell, urge or promise wording"));
-            }
-            if (URL.matcher(raw).find()) {
-                out.add(new DigestViolation(Rule.BOUNDARY, field, "url"));
-            }
-            if (MARKUP.matcher(raw).find()) {
-                out.add(new DigestViolation(Rule.BOUNDARY, field, "markup"));
-            }
-            if (anyStem(folded, LEAK_STEMS) || anyStem(joined, LEAK_STEMS)) {
-                out.add(new DigestViolation(Rule.BOUNDARY, field, "prompt-leak marker"));
-            }
+            checkTemporal(field, prose, folded, out);
+            String noHorizon = withoutHorizon(prose, figures);
+            checkNumbers(field, noHorizon, figures.allowedNumbers(), figures.allowedPercent(),
+                figures.allowedHufMinor(), out);
+            checkSigned(field, noHorizon, out);
+            checkEntities(field, folded, forbiddenTerms, out);
+            checkBoundary(field, raw, folded, joined, LEAK_STEMS, out);
         }
         checkDirection(story, NewsText.fold(allProse.toString()), out);
         return out;
     }
 
-    /** Numerical Error: figures, %, scale / currency, horizon digits, the amount guard, spelled numbers, bare Ft. */
-    private static void checkNumbers(String field, String prose, DigestFigures figures, List<DigestViolation> out) {
-        String text = YEAR.matcher(withoutHorizon(prose, figures)).replaceAll(" ");
-        Set<String> allowed = figures.allowedNumbers();
-        String percent = figures.allowedPercent();
+    /** Temporal Confusion: no year and no weekday name. Shared with {@link WeeklyReviewValidator}. */
+    static void checkTemporal(String field, String prose, String folded, List<DigestViolation> out) {
+        if (YEAR.matcher(prose).find()) {
+            out.add(new DigestViolation(Rule.TEMPORAL_CONFUSION, field, "year"));
+        }
+        if (WEEKDAYS.stream().anyMatch(w -> NewsText.containsStem(folded, w))) {
+            out.add(new DigestViolation(Rule.TEMPORAL_CONFUSION, field, "weekday"));
+        }
+    }
+
+    /** Negation Flip's sign rule: no signed figure (the text with its horizon phrase already taken out). */
+    static void checkSigned(String field, String textWithoutHorizon, List<DigestViolation> out) {
+        if (SIGNED.matcher(textWithoutHorizon).find()) {
+            out.add(new DigestViolation(Rule.NEGATION_FLIP, field, "signed figure"));
+        }
+    }
+
+    /** Entity Swap: none of {@code forbiddenTerms} (folded) in the folded prose. */
+    static void checkEntities(String field, String folded, List<String> forbiddenTerms, List<DigestViolation> out) {
+        if (forbiddenTerms.stream().anyMatch(t -> NewsText.containsTerm(folded, t, t.length() >= 5))) {
+            out.add(new DigestViolation(Rule.ENTITY_SWAP, field, "names another holding"));
+        }
+    }
+
+    /** Boundary (spec §6): buy / sell / urge / promise stems, URL, markup, prompt-leak stems. */
+    static void checkBoundary(String field, String raw, String folded, String joined, List<String> leakStems,
+                              List<DigestViolation> out) {
+        if (anyStem(folded, BOUNDARY_STEMS) || anyStem(joined, BOUNDARY_STEMS)) {
+            out.add(new DigestViolation(Rule.BOUNDARY, field, "buy, sell, urge or promise wording"));
+        }
+        if (URL.matcher(raw).find()) {
+            out.add(new DigestViolation(Rule.BOUNDARY, field, "url"));
+        }
+        if (MARKUP.matcher(raw).find()) {
+            out.add(new DigestViolation(Rule.BOUNDARY, field, "markup"));
+        }
+        if (anyStem(folded, leakStems) || anyStem(joined, leakStems)) {
+            out.add(new DigestViolation(Rule.BOUNDARY, field, "prompt-leak marker"));
+        }
+    }
+
+    /**
+     * Numerical Error: figures, %, scale / currency, the amount guard, spelled numbers, bare Ft — on the text with
+     * its horizon phrase already taken out (years are blanked here; Temporal Confusion reports them).
+     */
+    static void checkNumbers(String field, String textWithoutHorizon, Set<String> allowed, String percent,
+                             Set<Long> allowedHufMinor, List<DigestViolation> out) {
+        String text = YEAR.matcher(textWithoutHorizon).replaceAll(" ");
         boolean bad = false;
         Matcher m = DigestFigures.NUMBER.matcher(text);
         while (m.find() && !bad) {
@@ -172,7 +199,7 @@ public final class DigestValidator {
         if (bad) {
             out.add(new DigestViolation(Rule.NUMERICAL_ERROR, field, "number not among the figures"));
         }
-        if (!HufAmountGuard.verdict(text, figures.allowedHufMinor(), Long.MAX_VALUE).isOk()) {
+        if (!HufAmountGuard.verdict(text, allowedHufMinor, Long.MAX_VALUE).isOk()) {
             out.add(new DigestViolation(Rule.NUMERICAL_ERROR, field, "forint amount not among the figures"));
         }
         String folded = NewsText.fold(text);
@@ -246,7 +273,7 @@ public final class DigestValidator {
         }
     }
 
-    private static boolean anyStem(String folded, List<String> stems) {
+    static boolean anyStem(String folded, List<String> stems) {
         return stems.stream().anyMatch(s -> NewsText.containsStem(folded, s));
     }
 
@@ -268,19 +295,27 @@ public final class DigestValidator {
 
     /** Folded names and match terms of the holdings this story must not name. */
     static List<String> forbiddenTerms(DigestStory story, List<NewsHolding> holdings) {
+        return forbiddenTerms(h -> mayName(story, h),
+            story.holdingName() == null ? List.of() : List.of(story.holdingName()), holdings);
+    }
+
+    /**
+     * Folded names and match terms of the holdings {@code mayName} refuses, minus anything an allowed holding (or one
+     * of {@code alsoAllowedNames}) already carries. Shared with {@link WeeklyReviewValidator}.
+     */
+    static List<String> forbiddenTerms(Predicate<NewsHolding> mayName, Collection<String> alsoAllowedNames,
+                                       List<NewsHolding> holdings) {
         Set<String> allowed = new LinkedHashSet<>();
         List<NewsHolding> others = new ArrayList<>();
         for (NewsHolding h : holdings) {
-            if (mayName(story, h)) {
+            if (mayName.test(h)) {
                 allowed.add(NewsText.fold(h.name()));
                 NewsMatcher.termsFor(h).forEach(t -> allowed.add(NewsText.fold(t)));
             } else {
                 others.add(h);
             }
         }
-        if (story.holdingName() != null) {
-            allowed.add(NewsText.fold(story.holdingName()));
-        }
+        alsoAllowedNames.stream().filter(n -> n != null).forEach(n -> allowed.add(NewsText.fold(n)));
         Set<String> out = new LinkedHashSet<>();
         for (NewsHolding h : others) {
             String name = NewsText.fold(h.name());
@@ -312,7 +347,7 @@ public final class DigestValidator {
     }
 
     /** The prose with the story's own ledger name taken out (its digits are not figures). */
-    private static String withoutOwnName(String text, String holdingName) {
+    static String withoutOwnName(String text, String holdingName) {
         if (holdingName == null || holdingName.isBlank()) {
             return text;
         }

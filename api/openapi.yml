@@ -342,6 +342,17 @@ tags:
       those figures only (validated; fixed copy when it fails). He adjusts every
       number and accepts; the accepted plan is a checklist he ticks himself.
       Nothing here moves money, records a transaction or creates a holding.
+  - name: PenzWeekly
+    description: >
+      Boop Pénz (mezo-r36n9.120) — the weekly long-horizon review: "did anything
+      this week change the long-term picture?", one section per horizon (short
+      1–3 év, mid 5–10 év, long 10+ év). Built by the news run from the owner's
+      stored daily digests of the previous complete Monday–Sunday week (his
+      money timezone) — no new feed fetch, no article bodies; the model narrates
+      figures computed by the backend and a deterministic validator replaces any
+      section that breaks a rule with fixed fallback copy. A sleeve no story
+      touched gets fixed quiet copy without a model call. Never a buy / sell /
+      urge, no push, no action button; "nincs teendőd" is a complete answer.
   - name: Season
     description: >
       Boop B6 Évad (mezo-r36n9.16) — one N-week season that owns its goal (1:1),
@@ -16298,6 +16309,35 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '409':
           description: PENZ_PROPOSAL_STATE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/penz/weekly-review:
+    get:
+      tags:
+        - PenzWeekly
+      operationId: getPenzWeeklyReview
+      summary: >
+        The weekly long-horizon review — of the week `week` falls in (a Monday;
+        another day means its week), else the latest stored one; status pending
+        when none was built yet
+      parameters:
+        - name: week
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: The weekly review
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzWeeklyReviewResponse'
+        '401':
+          description: Missing/invalid token
           content:
             application/json:
               schema:
@@ -37950,6 +37990,152 @@ components:
       properties:
         done:
           type: boolean
+    PenzWeeklyReviewResponse:
+      type: object
+      required:
+        - weekStart
+        - weekEnd
+        - status
+        - sections
+      properties:
+        weekStart:
+          type: string
+          format: date
+          description: The Monday of the reviewed week
+        weekEnd:
+          type: string
+          format: date
+          description: The Sunday of the reviewed week
+        status:
+          type: string
+          enum:
+            - pending
+            - ready
+            - quiet
+            - failed
+        generatedAt:
+          type: string
+          format: date-time
+          nullable: true
+        sections:
+          type: array
+          description: >-
+            Always short, mid, long in this order once built; empty while
+            pending or failed
+          items:
+            $ref: '#/components/schemas/PenzWeeklySection'
+    PenzWeeklySection:
+      type: object
+      required:
+        - sleeve
+        - horizonLabel
+        - storyCount
+        - sourceCount
+        - matters
+        - verdict
+        - body
+        - uncertainty
+        - noAction
+        - narratedBy
+        - stories
+      properties:
+        sleeve:
+          type: string
+          enum:
+            - short
+            - mid
+            - long
+        horizonLabel:
+          type: string
+          description: 'Fixed copy: 1–3 év · 5–10 év · 10+ év'
+        storyCount:
+          type: integer
+          description: Distinct stories of the week touching this sleeve (computed)
+        sourceCount:
+          type: integer
+          description: Distinct source names behind them (computed)
+        matters:
+          type: boolean
+          description: >-
+            True only when the model found a lasting change (validated); false
+            for fallback and quiet
+        verdict:
+          type: string
+          description: >-
+            One line: did the long-term picture of this horizon change (no
+            instruction)
+        body:
+          type: string
+          description: >-
+            The reading, paragraphs separated by a blank line; *emphasis*
+            allowed
+        uncertainty:
+          type: string
+          description: Where this could be wrong — never empty
+        noAction:
+          type: string
+          description: 'Why there is nothing to do, specific to this horizon'
+        narratedBy:
+          type: string
+          enum:
+            - model
+            - fallback
+            - quiet
+        coverageMonths:
+          type: integer
+          nullable: true
+          description: >-
+            long only: months of fixed costs the long sleeve covers, as Pénzem
+            computes it
+        stories:
+          type: array
+          description: >-
+            At most 6 — the stories the reading relies on first, then most
+            sources, then newest
+          items:
+            $ref: '#/components/schemas/PenzWeeklyStory'
+    PenzWeeklyStory:
+      type: object
+      required:
+        - id
+        - title
+        - kind
+        - sources
+      properties:
+        id:
+          type: string
+          description: The daily digest story id
+        title:
+          type: string
+          description: The headline the daily digest stored
+        holdingName:
+          type: string
+          nullable: true
+          description: From his ledger (holding stories only)
+        kind:
+          type: string
+          enum:
+            - holding
+            - fx
+            - rates
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/PenzWeeklySource'
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+    PenzWeeklySource:
+      type: object
+      required:
+        - name
+        - url
+      properties:
+        name:
+          type: string
+        url:
+          type: string
     SeasonSportSlot:
       type: object
       required:

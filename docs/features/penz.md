@@ -1,5 +1,5 @@
 ---
-title: Pénz — money foundation, portfolio and news digest (Boop Pénz L4–L6)
+title: Pénz — money foundation, portfolio, news digest and weekly review (Boop Pénz L4–L7)
 type: feature-domain
 status: done
 updated: 2026-11-21
@@ -9,6 +9,7 @@ key_files:
   - api/feature/penz/penz.yml
   - api/feature/penz/penz-sms.yml
   - api/feature/penz/penz-portfolio.yml
+  - api/feature/penz/penz-weekly.yml
   - backend/src/main/resources/db/changelog/1.1.0/script/202611201600_mezo-r36n9.104_penz_portfolio.sql
   - backend/src/main/resources/db/changelog/1.1.0/script/202611211400_mezo-r36n9.119_penz_invest_account_link.sql
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/PenzSmsLlmAdapter.java
@@ -17,7 +18,7 @@ key_files:
 related: [boop-ios, _platform-api-backend, _platform-auth-security, companion, dayclose]
 ---
 
-# Pénz — money foundation, portfolio and news digest (Boop Pénz L4–L6) — Feature Documentation
+# Pénz — money foundation, portfolio, news digest and weekly review (Boop Pénz L4–L7) — Feature Documentation
 
 > Backend feature, no screen yet; its future client is **Boop**'s Pénz area (L5). Backend ✅ done (2026-11-19,
 > `mezo-r36n9.102`, slice **L4 · adatalap**) · iOS: none until L5 (`mezo-r36n9.103`) · web: none (retired, #52).
@@ -28,7 +29,9 @@ related: [boop-ios, _platform-api-backend, _platform-auth-security, companion, d
 > more tags: `PenzPortfolio` and `PenzNews` (§3.6–§3.11). Builder calls:
 > [`2026-11-20-boop-penz-l6-build.md`](../superpowers/plans/2026-11-20-boop-penz-l6-build.md). **L7** (`mezo-r36n9.105`)
 > adds the **curated product catalog**, the **investment proposal flow** and the **monthly strategy** under tags
-> `PenzCatalog` and `PenzProposal` (§3.13).
+> `PenzCatalog` and `PenzProposal` (§3.13). **`mezo-r36n9.120`** (2026-11-21) adds the **weekly long-horizon
+> review** — "did anything this week change the long-term picture?", one section per horizon, built from the stored
+> daily digests — under tag `PenzWeekly` (§3.14); server side only, its place on the phone waits for the owner.
 
 ## 1. Summary
 
@@ -59,6 +62,10 @@ What L6 adds:
 - **The daily news digest**: the twice-daily poll, a deterministic holding / macro match, story grouping, figures
   computed from his own positions, one validated narration call, fallback copy (§3.9–§3.10).
 - **The provider-down alert** as a metric + vmalert rule (§3.11), and **seven `penz_*` tables** (§4.3).
+
+What `mezo-r36n9.120` adds: **the weekly long-horizon review** — the previous Monday–Sunday week's stored digest
+stories, per sleeve, narrated once a week by the cheap model under the same validator families, with honest fallback
+and quiet copy; one `penz_weekly_review` row per week, built by the existing news run (§3.14).
 
 Driving docs: spec [`2026-11-13-boop-penz-design.md`](../superpowers/specs/2026-11-13-boop-penz-design.md) §6, §7,
 §9, §10.1; plan [`2026-11-19-boop-penz-plan.md`](../superpowers/plans/2026-11-19-boop-penz-plan.md) §2; the old-app
@@ -549,6 +556,77 @@ accepts anything else). Builder calls: [`2026-11-20-boop-penz-l7-build.md`](../s
   0 with a note. `GET /api/penz/strategy` returns it with its inputs and the month's current monthly proposal;
   `POST /api/penz/proposals {kind: monthly}` splits exactly that figure. Recomputed on every read, no job, no push.
 
+### 3.14 The weekly long-horizon review (`mezo-r36n9.120`)
+
+Spec §5.1 designer's call: the daily digest reports *what moved and how it touches him*; the long-horizon "what
+actually matters" verdict is **weekly**, because the cadence is the filter (M1's relevance criteria — lasting
+industry structure, regulation, technology, long-run financials; reactionary noise dropped). Pure core in
+`service/news` (`WeeklyReviewSectioner`, `WeeklyFigures`, `WeeklyReviewPrompt`, `WeeklyReviewValidator`,
+`WeeklyReviewFallbackCopy`, `WeeklyReviewAssembler`), wiring in `PenzWeeklyReviewService`, `PenzWeeklyReviewStore`,
+`PenzWeeklyController` (tag `PenzWeekly`).
+
+1. **Source** — the owner's stored daily digests (`penz_digest.items`) of the **previous complete Monday–Sunday
+   week** of his today in his money timezone (`PenzSettings.timezone`; a digest's `digest_date` is already his local
+   date). Items are de-duplicated by story `id` across days — the latest day's copy wins; only items narrated by the
+   model or by fallback copy count (all stored items are one of the two). **No new feed fetch, no article bodies**,
+   and the stored model prose (verdict / body) is never fed back.
+2. **Sections** — always `short` (1–3 év), `mid` (5–10 év), `long` (10+ év), in order. A holding story belongs to
+   its stored sleeve (else the ledger's; a story of a holding no longer held and without a sleeve is dropped); an
+   `fx` story to every sleeve holding a non-HUF holding, a `rates` story to every sleeve holding a bond — by the
+   **current live holdings**. Within a section: most sources first, then newest.
+3. **Figures** (`WeeklyFigures`, deterministic, per sleeve): the week's story count, the distinct source names
+   (case- and diacritic-insensitive), the holdings the stories touch (ledger names: a holding story's holding; for
+   fx the sleeve's non-HUF holdings, for rates its bonds) and, for `long` only, the **coverage months** exactly as
+   Pénzem computes them (`PenzPortfolioService.longCoverageMonths` → `PortfolioEngine`, cached quotes; null when
+   fixed costs are unknown or the computation fails). Spelled like `DigestFigures` (plain digits, space-grouped).
+4. **Narration** — ONE call per review, outside any transaction, only when at least one sleeve had stories:
+   penz-owned port `PenzWeeklyReviewLlm`, adapter `companion/llm/PenzWeeklyReviewLlmAdapter` (1:1 the digest
+   adapter: cheap tier, tag `penz_weekly/narrate`, **payload-free** in the LLM audit log —
+   `LlmCallContext.FEATURE_PENZ_WEEKLY`; a budget refusal, throttle or provider error is an empty answer). Prompt
+   marker `BOOP_PENZ_WEEKLY_V1` (`WeeklyReviewPrompt`): Boop's voice, the six §6 boundaries, the weekly relevance
+   rule, the number / name rules, the schema; per non-quiet sleeve a `SECTION sleeve=…` header with `Horizont`,
+   `FIGURES` and the `Tételek:` it may name, then ≤ 12 stories, each fenced
+   `<<<STORY id=… kind=…>>> Tétel / Megbízhatóság / Cím (≤ 3 feed headlines; the stored card title when none) /
+   Forrás <<<END STORY …>>>`. Headlines, source names and ledger names pass `DigestPrompt.sanitizeUntrusted` (no
+   fence break, no fake `SECTION` / `FIGURES` line); story ids are stripped to `[A-Za-z0-9_-]`. No dates are given
+   (they would be numbers the model may not write). Scripted fake under `companion-fake`: a clean answer per section
+   (`matters: true` on its first story), `[fake-penz-weekly:<base64>]` in the user message, or
+   `FakeCompanionLlm.scriptPenzWeekly(raw)`.
+5. **Model output per sleeve** — `{sleeve, matters, storyIds, verdict ≤ 220, body ≤ 1 200, uncertainty ≤ 500,
+   noAction ≤ 300}`. `matters: false` is a normal, complete answer (*„Ezen a héten semmi nem változtatott a hosszú
+   távú képen"*).
+6. **Validate** (`WeeklyReviewValidator`, the `DigestValidator` rule families through its shared package helpers —
+   `checkTemporal`, `checkNumbers`, `checkSigned`, `checkEntities`, `checkBoundary`, `forbiddenTerms`; the digest's
+   own behaviour unchanged):
+
+   | Class | Rule |
+   |---|---|
+   | **Numerical Error** | every number is one of the section's figures (story count, source count, coverage months); no `%`; no scale word / other currency by a figure; horizon digits only inside the sleeve's own phrase; `HufAmountGuard.verdict` against an **empty** allowed set (the review has no forint figure, so any amount is invented; no derived sums); no spelled-out number beyond *egy..hat*, no bare `Ft`; digits inside the section's ledger names skipped |
+   | **Entity Swap** | only the section's holdings (its sleeve's live holdings + the stories' own) — no other holding's name or match terms |
+   | **Negation Flip** | no figure has a direction, so only the sign rule (no signed figure) |
+   | **Temporal Confusion** | no year, no weekday |
+   | **Boundary** | the digest's buy / sell / urge / promise stems (also letter-spaced), no URL, no markup but `*emphasis*`, no prompt-leak marker (the digest's + *story, section, sleeve*) |
+   | **Shape** | the four fields non-blank and within caps; `matters` a boolean; `matters: true` must cite at least one of the section's own story ids (unknown ids are ignored) |
+
+7. **Fallback / quiet** (`WeeklyReviewAssembler`, `WeeklyReviewFallbackCopy`): a sleeve with any violation, missing
+   from the answer, or no answer at all → fixed copy (`narratedBy: fallback`, `matters: false`): an honest *„nem
+   tudtam megbízhatóan összefoglalni"*, the story count in words (*Egy … Hat*, then *Hatnál több*), and a per-sleeve
+   *nincs teendőd* (10+ / 5–10 / 1–3 years differ). A sleeve with no stories → deterministic quiet copy
+   (`narratedBy: quiet`), never asked of the model. Every fixed string passes the validator (tested). Stories shown:
+   ≤ 6 per section — the ones the model relied on first, then most sources, newest.
+8. **Store** (`PenzWeeklyReviewStore.replace`, one short transaction): `penz_weekly_review`, one live row per owner
+   and `week_start`; `ready` (any sleeve had stories), `quiet` (none — no model call), `failed` (the build itself
+   broke — the next run rebuilds it). Rejections are logged as sleeve + rule names only.
+9. **When** — `PenzNewsRunner.buildFor`, after each user's daily digest (job run and manual refresh alike):
+   `buildIfMissing` builds the previous week's review if no non-failed row exists for it — so the **Monday 06:30**
+   run creates it and a later run fills a missed week; idempotent, one review per week. No new cron, no new switch,
+   **no push, no notification, no action button**.
+10. **API** — `GET /api/penz/weekly-review?week=` (§4.2): `week` = a Monday (another day means its week); without
+    it the latest stored review, else `pending` for the previous complete week. Response `{weekStart, weekEnd, status
+    pending|ready|quiet|failed, generatedAt, sections: [{sleeve, horizonLabel, storyCount, sourceCount, matters,
+    verdict, body, uncertainty, noAction, narratedBy model|fallback|quiet, coverageMonths?, stories: [{id, title,
+    holdingName, kind, sources: [{name, url}], publishedAt}]}]}`.
+
 ## 4. Data model & API
 
 ### 4.1 The money value type and THE one FX policy
@@ -581,7 +659,8 @@ Contract-first: [`api/feature/penz/penz.yml`](../../api/feature/penz/penz.yml) (
 [`penz-sms.yml`](../../api/feature/penz/penz-sms.yml) (tag `PenzSms`), and since L6
 [`penz-portfolio.yml`](../../api/feature/penz/penz-portfolio.yml) (tags `PenzPortfolio` and `PenzNews`, JWT), since L7
 [`penz-practice.yml`](../../api/feature/penz/penz-practice.yml) (tag `PenzPractice`, JWT), all in
-[`penz-proposals.yml`](../../api/feature/penz/penz-proposals.yml) (tags `PenzCatalog` and `PenzProposal`, JWT), all in
+[`penz-proposals.yml`](../../api/feature/penz/penz-proposals.yml) (tags `PenzCatalog` and `PenzProposal`, JWT), since
+`.120` [`penz-weekly.yml`](../../api/feature/penz/penz-weekly.yml) (tag `PenzWeekly`, JWT), all in
 `api/generate/merge.yml`.
 
 | Method · path | What |
@@ -604,6 +683,7 @@ Contract-first: [`api/feature/penz/penz.yml`](../../api/feature/penz/penz.yml) (
 | `GET /api/penz/portfolio?date=` | L6 Pénzem: totals, moves (price / currency), the three sleeves with holdings and coverage, price date + stale, timeline, practice row (refreshes due quotes first) |
 | `GET /api/penz/digest?date=` | L6 the day's digest (default his today); `pending` when not built; `newsHealthy` |
 | `POST /api/penz/digest/refresh` | L6 rebuild in the background → 202; 429 `PENZ_DIGEST_REFRESH_LIMITED` within 15 minutes |
+| `GET /api/penz/weekly-review?week=` | `.120` the weekly long-horizon review (§3.14): of `week`'s week (a Monday), else the latest stored; `pending` before any; three sleeve sections |
 | `GET /api/penz/practice?date=` | L7 Gyakorlás: cap, month P/L, avg R, tag counts + `noiseLine`, the eight tags, the week (figures + copy + curve + trades), open and planned trades |
 | `GET`/`POST /api/penz/practice/trades`, `PUT`/`DELETE …/{id}` | L7 the journal (newest first, `from`/`to`); create 201 idempotent on `clientRef` (optionally opened); edit planned only; soft delete |
 | `POST /api/penz/practice/trades/{id}/open` · `/close` · `/last-close` · `/cancel` | L7 the transitions (409 out of order); open checks the stop and the cap (422) |
@@ -664,6 +744,12 @@ L7 adds two tables in [`202611202010_mezo-r36n9.105_penz_proposals.sql`](../../b
 |---|---|
 | `penz_product` | the owner's curated list: `seed_key` (research seeds only, unique per owner incl. deleted rows), name, `kind` `state_bond|money_market|bond_etf|equity_etf|mixed_fund|deposit`, currency, `sleeves` jsonb, `what_it_is`, `ter_pct`, `entry_fee_pct`, `fee_note`, `distribution` `accumulating|distributing|interest`, isin, symbol, `source_name` / `source_url`, `reviewed_at`, `status` `suggested|approved|declined`, `suggested_by` `research|owner`, `approved_at` |
 | `penz_proposal` | `kind` `lump_sum|monthly`, `status` `proposed|accepted|dismissed|superseded`, `amount_huf_minor` (> 0), `month` 'YYYY-MM', `body` jsonb (`PenzProposalJson`: card lines, narration, facts, rules, sleeves with options), `plan` jsonb (his accepted steps), `accepted_at` |
+
+`.120` adds [`202611211600_mezo-r36n9.120_penz_weekly_review.sql`](../../backend/src/main/resources/db/changelog/1.1.0/script/202611211600_mezo-r36n9.120_penz_weekly_review.sql):
+
+| Table | Holds |
+|---|---|
+| `penz_weekly_review` | one live row per owner and `week_start` (a Monday — check constraint; partial unique index over live rows): status `ready|quiet|failed`, `sections` jsonb (contract-shaped `PenzWeeklySectionJson`, always three once built), `generated_at` |
 
 All registered in `support/ResetDatabase`; test rows through `PenzPopulator`.
 
@@ -761,6 +847,14 @@ Backend only (`-Dmezo.test.use-testcontainers=true`, `ArchitectureTest` in the `
 - L7 pure: `service/proposal/{PenzMonthlyInvestableTest (the old suggestInvestment / pullForwardRoomMinor /
   planning averages vectors),PenzProposalSplitterTest,PenzProductOptionsTest,PenzProposalValidatorTest (by
   taxonomy),PenzProposalFallbackCopyTest,PenzProposalPromptTest}`.
+- `.120` pure: `service/news/{PenzWeeklyReviewSectionerTest (week boundaries in his timezone, de-dup across days,
+  fx / rates attribution, figures),PenzWeeklyReviewPromptTest (fences, an injected headline cannot break one, no stored
+  prose, no dates),PenzWeeklyReviewValidatorTest (by taxonomy: sell / urge, an invented forint figure, a %, another
+  sleeve's holding, a year, a URL…),PenzWeeklyReviewFallbackCopyTest (passes the validator),PenzWeeklyReviewAssemblerTest}`,
+  `companion/llm/PenzWeeklyReviewFakeLlmTest`.
+- `.120` IT: `PenzWeeklyReviewIT` (companion-fake + WireMock: last week's digests → the run builds one review, GET
+  returns it, a second run does not duplicate, an obeying-injection answer → that sleeve falls back, empty week →
+  quiet without a model call, pending before any, a failed week is rebuilt, owner isolation).
 - L7 IT: `PenzProposalApiIT` (companion-fake: only approved products offered / accepted, every rule-breaking narration →
   fallback with figures unchanged, split rules, accept with his numbers + re-check, steps, supersede, dismiss, the
   monthly figure, seed once per owner, owner isolation, no money row written).
@@ -850,16 +944,18 @@ the old vectors. `matchInvestTxnForSms` (3) and the `runConvertSms` invest-buy a
   `invest_buy` / `invest_sell` row, §3.6) and adopting a bank-SMS invest buy (§3.4 step 7, old
   `linkSmsToInvestBuy` / `matchInvestTxnForSms`). Decided here: a linked target that is not his is a 404, not a
   409; deleting a holding releases its rows like deleting each transaction.
-- **Deferred after L6 (follow-up):** the **weekly long-horizon review** (spec §5.1 designer's call — the
-  daily digest never carries a call to act on the 5–10 / 10+ sleeves); trades, the practice P/L and "ennyit tudsz
-  befektetni" (L7).
+- **Done after L6 — `mezo-r36n9.120`:** the **weekly long-horizon review** (§3.14, spec §5.1 designer's call —
+  the daily digest never carries a call to act on the 5–10 / 10+ sleeves). Decided here: it reads only the stored
+  digests (no fetch, no bodies, no stored prose), a `failed` week is rebuilt by the next run, no dates enter the
+  prompt, `matters: true` must cite one of the section's own stories. **Its placement on the phone waits for the
+  owner** — the server ships it, no iOS screen reads it yet.
 - **Savings goals shipped in L5 as plain CRUD** (`mezo-r36n9.103`): `saved` is the owner's own figure, not linked to
   transactions or the savings-target account; the old app's `allocateGoals` / advice (§8.1) stay unported.
 
 ## 10. Key files
 
 - Contract: `api/feature/penz/penz.yml`, `api/feature/penz/penz-sms.yml`, `api/feature/penz/penz-portfolio.yml` (L6),
-  `api/feature/penz/penz-practice.yml` (L7)
+  `api/feature/penz/penz-practice.yml` (L7), `api/feature/penz/penz-weekly.yml` (`.120`)
 - L7 practice: `…/penz/service/practice/` (pure), `…/penz/service/PenzPracticeService.java`,
   `…/penz/controller/PenzPracticeController.java`, `…/penz/mapper/PenzPracticeMapper.java`,
   `…/202611202000_mezo-r36n9.105_penz_practice.sql`
@@ -873,6 +969,12 @@ the old vectors. `matchInvestTxnForSms` (3) and the `runConvertSms` invest-buy a
   `…/penz/config/{PenzNewsProperties,PenzNewsAsyncConfig}.java`, `…/penz/controller/PenzNewsController.java`,
   `…/penz/mapper/PenzDigestMapper.java`, `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/PenzDigestLlmAdapter.java`
 - Alert: `k8s/monitoring/vmrule-mezo.yaml` (`PenzNewsProviderDown`, `PenzQuotesProviderDown`)
+- Weekly review (`.120`): `…/penz/service/news/{WeeklyReviewSectioner,WeeklyFigures,WeeklySection,WeeklyModelSection,WeeklyReviewPrompt,WeeklyReviewValidator,WeeklyReviewFallbackCopy,WeeklyReviewAssembler}.java` (pure),
+  `…/penz/service/{PenzWeeklyReviewService,PenzWeeklyReviewStore,PenzWeeklyReviewLlm}.java`,
+  `…/penz/controller/PenzWeeklyController.java`, `…/penz/mapper/PenzWeeklyReviewMapper.java`,
+  `…/penz/entity/{PenzWeeklyReviewEntity,PenzWeeklySectionJson}.java`,
+  `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/PenzWeeklyReviewLlmAdapter.java`, contract
+  `api/feature/penz/penz-weekly.yml`, schema `…/202611211600_mezo-r36n9.120_penz_weekly_review.sql`
 - L7 catalog + proposals: `…/penz/service/proposal/` (pure), `…/penz/service/{PenzCatalogService,PenzCatalogSeed,PenzProposalService,PenzProposalStore,PenzStrategyService,PenzProposalLlm}.java`,
   `…/penz/controller/PenzProposalController.java`, `…/penz/mapper/PenzProposalMapper.java`,
   `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/PenzProposalLlmAdapter.java`, contract
