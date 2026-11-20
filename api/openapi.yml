@@ -38437,11 +38437,7 @@ components:
         excuse:
           type: string
           nullable: true
-          enum:
-            - kimelo
-            - skip
-            - null
-          description: Why it is excused
+          description: 'Why it is excused: kimelo or skip'
         kcal:
           type: integer
           nullable: true
