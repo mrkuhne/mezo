@@ -18048,8 +18048,9 @@ components:
           nullable: true
           pattern: '^[a-z0-9_]{2,16}$'
           description: >-
-            Key of a catalogued split for the chosen day count (GET
-            /meso-plans/splits); absent = the default split
+            Key of a catalogued split for the chosen day count (a candidate's
+            splitKey from POST /meso-plans/candidates); absent = the default
+            split
     MesoPlanEvaluateRequest:
       type: object
       required:

@@ -128,7 +128,23 @@ class CandidateRankerTest {
     }
 
     @Test
-    void nothingFitsWithoutTimeFailureAndSixDaysHasNoFixes() {
+    void nothingFitsPrefersTheSoundSplitOverTime() {
+        // three consecutive days: full body fits 60 min but is heavy back-to-back; the spreading split runs over
+        Split full3 = new Split("full3", "Teljes test ×3", List.of("Full", "Full", "Full"));
+        Split ulf = new Split("ulf", "Felső / Alsó / Teljes test", List.of("Upper", "Lower", "Full"));
+        Scored heavyFull = scored(full3, 60,
+            List.of(muscle("quad", Fit.INSIDE, 4, List.of(new ConsecutiveHeavy(0, 1, 4, 4)), 0, 1, 2)), 55, 55, 55);
+        Scored overUlf = scored(ulf, 60, List.of(ok("quad", 1, 2), ok("chest", 0, 2)), 68, 58, 62);
+
+        Ranked r = CandidateRanker.rank(List.of(heavyFull, overUlf));
+
+        assertThat(r.nothingFits()).isTrue();
+        assertThat(r.offered()).containsExactly(overUlf);
+        assertThat(r.fixes()).containsExactly(new Fix("more_minutes", 75), new Fix("more_days", null));
+    }
+
+    @Test
+    void nothingSoundAtSixDaysHasNoFixes() {
         Scored heavy = scored(PPL, null,
             List.of(muscle("quad", Fit.INSIDE, 5, List.of(new ConsecutiveHeavy(2, 3, 5, 5)), 2, 3)),
             50, 50, 50, 50, 50, 50);

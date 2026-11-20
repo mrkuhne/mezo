@@ -11,7 +11,7 @@ import java.util.List;
  * no group with a heavy load on two consecutive calendar days (the evaluator's {@code consecutiveHeavy}, which
  * already exempts core/mobility). Survivors are ranked by (1) fewest muscles outside their band, (2) shortest
  * longest day, (3) catalogue order (= input order); at most {@link #MAX_OFFERED}. When none passes, the closest one
- * (smallest overrun of the target, then the same order) comes back with the fixes the ranker can name on its own
+ * (among structurally sound splits if any: smallest overrun of the target, then the same order) comes back with the fixes the ranker can name on its own
  * ({@code more_minutes}, {@code more_days}); {@code fewer_emphasis} needs a re-generation, so the caller adds it.
  */
 public final class CandidateRanker {
@@ -53,11 +53,15 @@ public final class CandidateRanker {
         if (all.isEmpty()) {
             return new Ranked(List.of(), true, List.of());
         }
-        Scored closest = all.stream()
+        // closest = a structurally sound split (2×/week, no heavy back-to-back) with the smallest overrun; only when
+        // none is sound does any candidate qualify
+        List<Scored> sound = all.stream().filter(CandidateRanker::structurallySound).toList();
+        Scored closest = (sound.isEmpty() ? all : sound).stream()
             .sorted(Comparator.comparingInt(CandidateRanker::overrun).thenComparing(order(all))).findFirst()
             .orElseThrow();
         List<Fix> fixes = new ArrayList<>();
-        if (!fitsTime(closest)) {
+        // more minutes help only a split that fails on time alone; at 6 days with no sound split the list stays empty
+        if (structurallySound(closest) && !fitsTime(closest)) {
             fixes.add(new Fix(FIX_MORE_MINUTES, roundUpToFifteen(longestDay(closest))));
         }
         if (closest.split().types().size() < MAX_DAYS) {
@@ -67,7 +71,11 @@ public final class CandidateRanker {
     }
 
     public static boolean passes(Scored s) {
-        return fitsTime(s) && everyGroupTwice(s) && noHeavyConsecutive(s);
+        return fitsTime(s) && structurallySound(s);
+    }
+
+    private static boolean structurallySound(Scored s) {
+        return everyGroupTwice(s) && noHeavyConsecutive(s);
     }
 
     /**

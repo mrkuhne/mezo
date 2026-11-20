@@ -53,6 +53,8 @@ public class MesoPlanGeneratorService {
      *  slow-tier LLM round-trip below must never hold a DB connection open for its duration. The
      *  single repository read in {@link #candidates} is transactional on its own. */
     public MesoPlanGenerateResponse generate(UUID user, MesoPlanGenerateRequest req) {
+        // the Hangsúly cap 400 wins over an unknown split 400 (checked again inside draft, harmlessly)
+        PriorityGuard.checkEmphasizeCap(PriorityTier.normalize(req.getPriorities()), volumeProperties.bands().emphasizeMax());
         Draft draft = draft(user, req, resolveSplit(req));
         MesoPlanSkeleton.Skeleton skeleton = draft.skeleton();
         List<MesoPlanFiller.Candidate> candidates = draft.candidates();

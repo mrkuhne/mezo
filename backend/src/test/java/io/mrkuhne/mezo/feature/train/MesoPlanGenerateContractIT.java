@@ -214,4 +214,11 @@ class MesoPlanGenerateContractIT extends ApiIntegrationTest {
             .priorities(Map.of("back", "emphasize", "chest", "emphasize")).build(),
             ownerAuthHeaders(), HttpStatus.OK, MesoPlanGenerateResponse.class);
     }
+
+    @Test
+    void emphasizeCapWinsOverUnknownSplit() {
+        assertHasRequestError(postForBody(GENERATE, Map.of("daysOfWeek", List.of("Hét", "Sze", "Pén", "Szo"), "weeks", 6,
+            "split", "zzz", "priorities", Map.of("back", "emphasize", "chest", "emphasize", "quad", "emphasize")),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class), "TRAIN_MESO_EMPHASIZE_CAP");
+    }
 }
