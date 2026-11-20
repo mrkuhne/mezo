@@ -515,5 +515,20 @@
       "mezo-r36n9.67"
     ],
     "mi_valtozott": "Ha edzés közben cserélni akarsz egy gyakorlatot, Boop legfeljebb öt ajánlást ad, mindegyik mellett egy mondattal, miért az: ugyanazt a munkát végzi a tervben, kíméli, ami ma fáj, illik a blokk céljához, és látod, hol tartasz benne. Az „ehhez nincs eszközöm” kiveszi, amihez nincs felszerelésed, a „nem esik jól” feljegyzi, és Boop legközelebb is figyelembe veszi; mindkettő visszavonható. A teljes lista továbbra is választható, a kiszűrt gyakorlatok csendes jelöléssel. Az Edzés beállításaiban és a cserelapról is elérhető a „Mi van a termemben”: kilenc kapcsoló és a konkrétan hiányzó gépek listája. Javítás: a gyakorlat utáni három kérdés válaszai most pontosan úgy mentődnek, ahogy megnyomtad."
+  },
+  "f44693781": {
+    "cim": "A Pénz terület a telefonon — Ma és Költés",
+    "datum": "2026-11-20",
+    "verzio": "v3.16.0",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app",
+      "Háttérrendszer"
+    ],
+    "szakasz": "Életpanel",
+    "jegyek": [
+      "mezo-r36n9.103"
+    ],
+    "mi_valtozott": "A gyűrű Pénz gömbje most élő oldalt nyit: Ma · Pénzem · Költés · Gyakorlás · Boop. A Ma oldal megmondja, van-e ma dolgod a pénzeddel — a legtöbb nap nincs —, két gombbal és három számmal (a hét maradéka, a hónap maradéka, a napi összeg). A Költés oldalon nagyban látod a heti maradékot, soronként levezetve (a gyakorlás és az előző hónap hiánya külön sorban), a hónap állását, hogy mire megy el a pénzed, a mai tételeket az ellenőrzésre váró banki üzenetekkel, és hogy mire gyűjtesz (új: célok és vásárlási tervek). Készpénzt pár másodperc alatt rögzítesz a Pénz oldalról vagy a „+” gombról, net nélkül is — azonnal látszik, és később magától elmegy. Hónapzárás és keretek is innen. A Terv oldalon megjelent a heti maradék. A Pénzem és a Gyakorlás oldal még őszintén kiírja, hogy később jön."
   }
 }
