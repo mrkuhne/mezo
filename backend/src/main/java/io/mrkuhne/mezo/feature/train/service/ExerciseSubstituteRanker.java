@@ -40,13 +40,23 @@ public final class ExerciseSubstituteRanker {
                             BigDecimal stim, BigDecimal fatigue, boolean custom,
                             boolean available, PainLevel pain, boolean doneBefore) {}
 
-    /** The running block's goal preset (nullable), the swap's „nem esik jól", today's pain joints. */
-    public record Context(String goalPreset, boolean soreNow, Set<String> painJointsToday, Set<UUID> inWorkout) {}
+    /**
+     * The running block's goal preset (nullable), the swap's „nem esik jól", today's pain joints, the catalogue
+     * ids already in the day, and the coarse muscle groups under their weekly band (block day editor only).
+     */
+    public record Context(String goalPreset, boolean soreNow, Set<String> painJointsToday, Set<UUID> inWorkout,
+                          Set<String> underBandGroups) {
+
+        /** The workout swap's context: no under-band groups. */
+        public Context(String goalPreset, boolean soreNow, Set<String> painJointsToday, Set<UUID> inWorkout) {
+            this(goalPreset, soreNow, painJointsToday, inWorkout, Set.of());
+        }
+    }
 
     /** Stable codes of what put a suggestion where it is; {@link SubstituteReason} renders them. */
     public enum Signal {
         SAME_ROLE, OTHER_TYPE, SPARES_JOINT, GUIDED, MILD_BEFORE, PAIN_TODAY, GOAL_HYPERTROPHY,
-        GOAL_STRENGTH, GOAL_LOW_FATIGUE, LENGTHENED, DONE_BEFORE, NO_EQUIPMENT, HAS_EQUIPMENT, CUSTOM
+        GOAL_STRENGTH, GOAL_LOW_FATIGUE, LENGTHENED, DONE_BEFORE, NO_EQUIPMENT, HAS_EQUIPMENT, CUSTOM, UNDER_BAND
     }
 
     /** The quiet label a left-out exercise carries in the full catalogue list. */
@@ -74,6 +84,7 @@ public final class ExerciseSubstituteRanker {
     public static Result rank(Candidate out, List<Candidate> pool, Context ctx) {
         Set<UUID> inWorkout = ctx.inWorkout() == null ? Set.of() : ctx.inWorkout();
         Set<String> painJoints = ctx.painJointsToday() == null ? Set.of() : ctx.painJointsToday();
+        Set<String> underBand = ctx.underBandGroups() == null ? Set.of() : ctx.underBandGroups();
         Goal goal = goal(ctx.goalPreset());
 
         Map<UUID, Label> labels = new LinkedHashMap<>();
@@ -110,7 +121,8 @@ public final class ExerciseSubstituteRanker {
         List<Ranked> suggestions = picked.stream()
             .map(i -> score(out, pool.get(i), i, ctx.soreNow(), painJoints, gentle, goal))
             .sorted(ORDER).limit(MAX_SUGGESTIONS)
-            .map(s -> new Ranked(s.c().id(), signals(out, s.c(), ctx.soreNow(), painRelevant, painJoints, goal)))
+            .map(s -> new Ranked(s.c().id(),
+                signals(out, s.c(), ctx.soreNow(), painRelevant, painJoints, underBand, goal)))
             .toList();
         return new Result(suggestions, Map.copyOf(labels));
     }
@@ -173,14 +185,14 @@ public final class ExerciseSubstituteRanker {
 
     /** Role signal first, then the one signal that best explains the place (see the spec §6.2 step 4). */
     private static List<Signal> signals(Candidate out, Candidate c, boolean soreNow, boolean painRelevant,
-                                        Set<String> painJoints, Goal goal) {
+                                        Set<String> painJoints, Set<String> underBand, Goal goal) {
         Signal role = sameType(out, c) ? Signal.SAME_ROLE : Signal.OTHER_TYPE;
-        Signal second = secondSignal(out, c, soreNow, painRelevant, painJoints, goal);
+        Signal second = secondSignal(out, c, soreNow, painRelevant, painJoints, underBand, goal);
         return second == null ? List.of(role) : List.of(role, second);
     }
 
     private static Signal secondSignal(Candidate out, Candidate c, boolean soreNow, boolean painRelevant,
-                                       Set<String> painJoints, Goal goal) {
+                                       Set<String> painJoints, Set<String> underBand, Goal goal) {
         if (c.custom()) {
             return Signal.CUSTOM;
         }
@@ -197,6 +209,10 @@ public final class ExerciseSubstituteRanker {
         }
         if ((soreNow || painRelevant) && guided(c)) {
             return Signal.GUIDED;
+        }
+        // Block day editor (mezo-r36n9.116): explains, never moves — the order above ignores it.
+        if (underBand.contains(MuscleGroup.of(c.muscle()))) {
+            return Signal.UNDER_BAND;
         }
         switch (goal) {
             case HYPERTROPHY -> {

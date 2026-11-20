@@ -438,4 +438,41 @@ class ExerciseSubstituteRankerTest {
         assertThat(ranked(r, "Only Mine").signals()).containsExactly(Signal.SAME_ROLE, Signal.CUSTOM);
         assertThat(r.labels()).isEmpty();
     }
+
+    // ── the block day editor's under-band signal (mezo-r36n9.116, spec 2026-11-20 §6.3) ──
+
+    static Context underBand(String... groups) {
+        return new Context(null, false, Set.of(), Set.of(), Set.of(groups));
+    }
+
+    @Test
+    void rank_shouldExplainUnderBand_whenGroupIsUnderBandAndNoDiscomfort() {
+        var r = ExerciseSubstituteRanker.rank(BENCH, pool(DB_BENCH, MACHINE_PRESS), underBand("chest"));
+        assertThat(ranked(r, "Dumbbell Bench Press").signals()).containsExactly(Signal.SAME_ROLE, Signal.UNDER_BAND);
+        assertThat(ranked(r, "Machine Chest Press").signals()).containsExactly(Signal.SAME_ROLE, Signal.UNDER_BAND);
+    }
+
+    @Test
+    void rank_shouldNotExplainUnderBand_whenTheGroupIsNotUnderBand() {
+        var r = ExerciseSubstituteRanker.rank(BENCH, pool(MACHINE_PRESS), underBand("back"));
+        assertThat(ranked(r, "Machine Chest Press").signals())
+            .containsExactly(Signal.SAME_ROLE, Signal.GOAL_HYPERTROPHY);
+    }
+
+    @Test
+    void rank_shouldKeepTheDiscomfortSignal_overUnderBand() {
+        // a fresh fixture: the shared X constants are mutable builders
+        var r = ExerciseSubstituteRanker.rank(BENCH, pool(x("Sore Press").pain(PainLevel.MILD)), underBand("chest"));
+        assertThat(ranked(r, "Sore Press").signals()).containsExactly(Signal.SAME_ROLE, Signal.MILD_BEFORE);
+    }
+
+    @Test
+    void rank_shouldNeverLetUnderBandMoveAPlace() {
+        X[] xs = {x("Cable Fly").type("isolation").pattern("fly").equipment("cable").demand("low"),
+            x("Push-Up").equipment("bodyweight"), x("Pull-Over").muscle("back-lats").pattern("horizontal-push"),
+            MACHINE_PRESS, x("Floor Press").done()};
+        var plain = ExerciseSubstituteRanker.rank(BENCH, pool(xs), ctx());
+        var under = ExerciseSubstituteRanker.rank(BENCH, pool(xs), underBand("chest", "back"));
+        assertThat(names(under)).containsExactlyElementsOf(names(plain));
+    }
 }

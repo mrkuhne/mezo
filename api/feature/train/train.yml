@@ -286,6 +286,60 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/train/mesocycles/{id}/exercise-suggestions:
+    post:
+      tags: [Train]
+      operationId: getBlockExerciseSuggestions
+      summary: Ranked, reasoned add/swap suggestions for one day of a training block's plan (mezo-r36n9.116)
+      description: >-
+        The block day editor's suggestions — the workout swap's ranker over the block's goal, the gym profile and
+        the discomfort history, with today's check-in pain only when the edited day is today's weekday. Replace
+        ranks alternatives to an outgoing exercise; add ranks the catalogue rows of one coarse muscle group and
+        explains a muscle under its weekly band. Each suggestion carries the block style's prescription. Read-only.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlockExerciseSuggestionsRequest'
+      responses:
+        '200':
+          description: Suggestions and labels
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExerciseSubstitutesResponse'
+        '400':
+          description: Validation error (replace without outgoing, add without muscle)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Block not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: The block is archived
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/train/mesocycles/{id}/evaluation:
     get:
       tags: [Train]
@@ -3648,6 +3702,69 @@ components:
           nullable: true
           allOf:
             - $ref: '#/components/schemas/LastTopSet'
+        prescription:
+          nullable: true
+          description: >-
+            The block style's prescription for this exercise (block day editor only, mezo-r36n9.116); null on an
+            unstyled block, for a row the style never stamps (plyo), and always on the workout swap read
+          allOf:
+            - $ref: '#/components/schemas/SuggestionPrescription'
+    SuggestionPrescription:
+      type: object
+      required: [workingSets, repMin, repMax, targetRIR, restSec]
+      properties:
+        workingSets:
+          type: integer
+        repMin:
+          type: integer
+        repMax:
+          type: integer
+        targetRIR:
+          type: integer
+          description: Reps in reserve (tartalék)
+        restSec:
+          type: integer
+    BlockExerciseSuggestionsRequest:
+      type: object
+      required: [mode, dayIndex, dayCatalogIds]
+      properties:
+        mode:
+          type: string
+          enum: [replace, add]
+        dayIndex:
+          type: integer
+          minimum: 0
+          maximum: 6
+          description: Weekday of the edited day, 0 = Monday (Hét) … 6 = Sunday (Vas)
+        outgoing:
+          nullable: true
+          description: The exercise being replaced; required when mode = replace
+          allOf:
+            - $ref: '#/components/schemas/BlockSuggestionOutgoing'
+        muscle:
+          type: string
+          nullable: true
+          description: Coarse muscle group key (back, chest, quad, …); required when mode = add
+        dayCatalogIds:
+          type: array
+          description: Catalogue ids of the draft day's current exercises — never suggested
+          items:
+            type: string
+            format: uuid
+    BlockSuggestionOutgoing:
+      type: object
+      required: [name, muscle, type]
+      properties:
+        catalogId:
+          type: string
+          format: uuid
+          nullable: true
+        name:
+          type: string
+        muscle:
+          type: string
+        type:
+          type: string
     LastTopSet:
       type: object
       required: [weightKg, reps]
