@@ -12,6 +12,8 @@ key_files:
 related: [_platform-auth-security, _platform-design-system, companion, settings, _platform-api-backend]
 ---
 
+> **2026-11-20 — reviewed after the train default style (`mezo-r36n9.115`, no language-layer change).** Only the `mezo.meso-plan.default-training-style` key and the per-class reserves of `mezo.train.style.styles` were added to `application.yml`; no language mechanism or message bundle changed.
+
 > **2026-11-19 — reviewed after T3 (`mezo-r36n9.81`, no language-layer change).** The train technique planner added only its `mezo.train.technique.planner` block to `application.yml`; no language mechanism or message bundle changed.
 
 > **2026-11-18 — `mezo-r36n9.78` (no language change).** Four new error keys in `messages_hu`/`messages_en` (train, volume engine v2 S3, both bundles in parity): `TRAIN_MESO_NOT_FOUND` (404 on `GET …/week-proposals`), `TRAIN_WEEK_PROPOSAL_NOT_FOUND` (404), `TRAIN_WEEK_PROPOSAL_CLOSED` (409) and `TRAIN_WEEK_PROPOSAL_DECISION_INVALID` (400) on the decisions endpoint. The proposal's reason codes are enum values; their Hungarian wording is the client's. The bundle mechanics below are unchanged.
