@@ -12,7 +12,7 @@ key_files:
 related: [_platform-auth-security, _platform-design-system, companion, settings, _platform-api-backend]
 ---
 
-> **2026-11-20 — reviewed after the train default style (`mezo-r36n9.115`, no language-layer change).** Only the `mezo.meso-plan.default-training-style` key and the per-class reserves of `mezo.train.style.styles` were added to `application.yml`; no language mechanism or message bundle changed.
+> **2026-11-20 — reviewed after the train default style (`mezo-r36n9.115`, no language-layer change).** Only the `mezo.meso-plan.default-training-style` key and the per-class reserves of `mezo.train.style.styles` were added to `application.yml`; no language mechanism or message bundle changed (re-checked after the config comment edit).
 
 > **2026-11-19 — reviewed after T3 (`mezo-r36n9.81`, no language-layer change).** The train technique planner added only its `mezo.train.technique.planner` block to `application.yml`; no language mechanism or message bundle changed.
 
