@@ -721,7 +721,7 @@
     },
     "kezikonyv:07-edzes/03-edzeslejatszo": {
       "page_id": "4168968e-752b-8153-a900-cd5b2e535717",
-      "hash": "78d9c0d2a292"
+      "hash": "e45a0147474c"
     },
     "kezikonyv:07-edzes/04-progresszio-motor": {
       "page_id": "4168968e-752b-819d-94a9-cbea5d321e46",
@@ -1377,7 +1377,7 @@
     },
     "jegyek:mezo-r36n9.111": {
       "page_id": "41d8968e-752b-8184-b6db-ca0c0bffae45",
-      "hash": "d174464142af"
+      "hash": "8e8bfa0afd66"
     },
     "jegyek:mezo-r36n9.112": {
       "page_id": "41d8968e-752b-813b-955a-e8dc29dfcb1b",
@@ -1410,6 +1410,14 @@
     "jegyek:mezo-r36n9.113": {
       "page_id": "41e8968e-752b-8145-b144-e62b83f8070b",
       "hash": "894ca4268c08"
+    },
+    "dontesek:d-2026-11-20-csere-kimeles": {
+      "page_id": "41e8968e-752b-8121-9368-ccaea7c1e215",
+      "hash": "2ccc2a19142d"
+    },
+    "kiadasok:51cadbb0b": {
+      "page_id": "41e8968e-752b-81f8-8bbe-f978ff5425cb",
+      "hash": "35a1cb50ee6b"
     }
   }
 }
