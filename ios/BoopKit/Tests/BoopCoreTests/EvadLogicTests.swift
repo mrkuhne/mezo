@@ -37,9 +37,9 @@ struct EvadLogicTests {
             EvadLinkLine(from: "Étel", to: "Edzés", text: "szénhidrát az erőhöz"),
             EvadLinkLine(from: "Alvás", to: "Edzés", text: "kipihenten jobban edzel"),
         ])
-        #expect(mapLinkLines(o, lit: "suly").map(\.text) == ["\u{2212}0,4 kg/hét", "rossz alvás után többet eszel"],
-                "an unknown link key is left out")
-        #expect(mapLinkLines(o, lit: nil).count == 6)
+        #expect(mapLinkLines(o, lit: "suly").map(\.text) == ["\u{2212}0,4 kg/hét"],
+                "an unknown link key is left out, and so is sleep → food without the server's number")
+        #expect(mapLinkLines(o, lit: nil).count == 5)
     }
 
     @Test func linkWithoutANumberNeverInventsOne() {
@@ -111,5 +111,32 @@ struct EvadLogicTests {
         #expect(rows.first { $0.label == "Edzésnapon" }?.left == "2440 kcal", "a day's kcal stays ungrouped")
         #expect(!evadCompareRows(Self.numbers(nil), Self.numbers(nil)).contains { $0.label == "Heti összesen" },
                 "no weekly total from the server, no row")
+    }
+    // MARK: S2 — the server's sleep → food number, Hogy megy
+
+    @Test func sleepFoodLinkUsesTheServerNumberOrIsLeftOut() {
+        let link = { (v: Double?) in EvadMapLink(from: "alvas", to: "etel", key: "sleep_food", value: v) }
+        #expect(evadLinkText(link(nil), trajectory: "cut") == nil, "no computed effect, no line")
+        #expect(evadLinkText(link(283), trajectory: "cut") == "rövid éjszaka után +280 kcal", "rounded to 10 kcal")
+        #expect(evadLinkText(link(-120), trajectory: "cut") == "rövid éjszaka után \u{2212}120 kcal")
+    }
+
+    @Test func adherenceFactsArePlainCounts() {
+        let a = EvadAdherence(foodInBand: 5, foodJudged: 6, sessionsDone: 3, sessionsPlanned: 4, nightsOk: 4, nightsJudged: 7, excusedDays: 1)
+        let facts = evadAdherenceFacts(a, needMin: 450)
+        #expect(facts == [EvadFact(value: "5", target: "6", label: "napon belefértél a keretbe"),
+                          EvadFact(value: "3", target: "4", label: "edzés megvolt"),
+                          EvadFact(value: "4", target: "7", label: "éjjel aludtál 7,5 órát")])
+        #expect(evadAdherenceFacts(a, needMin: nil).last?.label == "éjjel aludtál eleget")
+        #expect(evadAdherenceFacts(a, needMin: 480).last?.label == "éjjel aludtál 8 órát")
+        // a fact with nothing to count is left out, never a 0 / 0
+        let quiet = EvadAdherence(foodInBand: 0, foodJudged: 0, sessionsDone: 0, sessionsPlanned: 2, nightsOk: 0, nightsJudged: 0, excusedDays: 0)
+        #expect(evadAdherenceFacts(quiet, needMin: 450).map(\.label) == ["edzés megvolt"])
+    }
+
+    @Test func excusedLineOnlyWhenADayWasLeftOut() {
+        #expect(evadExcusedLine(0) == "Ez nem pontszám, csak összesítés.")
+        #expect(evadExcusedLine(1) == "1 nap nem számít bele: a kímélő és az indokkal kihagyott napok kimaradnak. Ez nem pontszám, csak összesítés.")
+        #expect(evadExcusedLine(2).hasPrefix("2 nap nem számít bele"))
     }
 }
