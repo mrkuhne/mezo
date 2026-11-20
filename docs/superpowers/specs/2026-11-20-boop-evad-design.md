@@ -1,6 +1,6 @@
 # Boop B6 — Évad (the season: one plan that drives training, food, sleep and weight)
 
-- **Status:** draft for owner approval · **Date:** 2026-11-20 · **Issue:** `mezo-r36n9.16` · **Epic:** `mezo-r36n9`
+- **Status:** **approved by the owner 2026-11-20** (with the spike and the plan) · **Date:** 2026-11-20 · **Issue:** `mezo-r36n9.16` · **Epic:** `mezo-r36n9`
 - **Session:** `quizzical-williams-c8b052` · **Spike:** `ios/Boop/EvadDemo/EvadDemo.swift` (`-previewEvad YES`, throwaway,
   branch `feat/b6-evad`), screenshots `docs/superpowers/specs/assets/evad/01–13`.
 - **Builds on:** standalone spec `2026-11-11-boop-standalone-design.md` §5 / §5.1 (B6 row and its revision), decisions

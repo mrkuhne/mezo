@@ -159,13 +159,13 @@
     "munkamenet": "boop-b5-edzes"
   },
   "mezo-r36n9.16": {
-    "cim": "B6 A Terv — étrend, edzés és testsúlycél egy tervben",
+    "cim": "B6 Évad — edzés, étel, alvás és súly egy tervben",
     "tipus": "Szakasz",
     "szakasz": "B6 A Terv",
     "terulet": [
       "Terv"
     ],
-    "mit_kapsz": "Hetekre szóló terv testsúlycéllal, engedett receptekkel, edzésblokkal és szabályokkal; bevásárlólista; és annak mérése, mi hatott.",
+    "mit_kapsz": "Egy néhány hetes évad céllal, amelyből az edzés, az étkezés, az alvás és a súly is következik; minden módosításnál élőben látod, mire hat. Heti menü, bevásárlólista és kísérletek arról, mi hat rád.",
     "munkamenet": "quizzical-williams-c8b052"
   },
   "mezo-r36n9.17": {
