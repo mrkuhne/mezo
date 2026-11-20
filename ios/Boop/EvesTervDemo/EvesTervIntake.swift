@@ -21,7 +21,7 @@ struct ETEmptyState: View {
                 Text("Indíts egy újat: megmondod, hány hétre és mennyi időd van egy edzésre, én pedig hozok két-három lehetőséget, mindegyiknél azzal, hogy miért.")
                     .nkFont(15).foregroundStyle(.white.opacity(0.7)).fixedSize(horizontal: false, vertical: true)
                 VStack(alignment: .leading, spacing: 4) {
-                    Button { flow.intake = .fresh; flow.go(.alapok) } label: {
+                    Button { flow.intake = .fresh; flow.blocked = nil; flow.go(.alapok) } label: {
                         Text("Új blokk").nkFont(16, .semibold).foregroundStyle(NK.ground)
                             .padding(.horizontal, 28).frame(minHeight: 52).background(Capsule().fill(.white))
                     }
@@ -76,7 +76,7 @@ struct ETAlapokPage: View {
                         ETLabel("Meddig tarthat egy edzés")
                         HStack(spacing: 6) {
                             ForEach([45, 60, 75, 90], id: \.self) { m in
-                                ETChoice(text: "\(m)", on: flow.intake.minutes == m, sub: "perc") { flow.intake.minutes = m }
+                                ETChoice(text: "\(m)", on: flow.intake.minutes == m, sub: "perc") { flow.intake.minutes = m; flow.blocked = nil }
                             }
                         }
                         Text("Pihenővel, bemelegítéssel együtt. Ha egy lehetőség hosszabb, megmutatom, de nem vágok le a heti sorozatokból.")
@@ -97,13 +97,32 @@ struct ETAlapokPage: View {
 
                     VStack(alignment: .leading, spacing: 12) {
                         ETLabel("Izmok", trailing: "mire figyeljünk")
+                        ETBudgetBar(intake: flow.intake)
                         VStack(spacing: 0) {
                             ForEach(Array(ETIntake.muscles.enumerated()), id: \.element) { i, m in
                                 if i > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
-                                ETTierRow(name: planMuscleName(m), tier: flow.intake.tiers[m] ?? .grow) { flow.intake.tiers[m] = $0 }
-                                    .padding(.vertical, 10)
+                                VStack(alignment: .leading, spacing: 8) {
+                                    ETTierRow(name: planMuscleName(m), tier: flow.intake.tiers[m] ?? .grow,
+                                              disabled: { flow.intake.blockReason(m, to: $0) != nil }) { t in
+                                        if let reason = flow.intake.blockReason(m, to: t) {
+                                            flow.blocked = ETBlocked(muscle: m, text: reason)
+                                        } else {
+                                            flow.intake.tiers[m] = t
+                                            flow.blocked = nil
+                                        }
+                                    }
+                                    if let b = flow.blocked, b.muscle == m {
+                                        HStack(alignment: .top, spacing: 8) {
+                                            PlanMark(.shield, color: planWarn, size: 14).padding(.top, 2)
+                                            Text(b.text).nkFont(13).foregroundStyle(planWarn).fixedSize(horizontal: false, vertical: true)
+                                        }
+                                        .transition(.opacity)
+                                    }
+                                }
+                                .padding(.vertical, 10)
                             }
                         }
+                        .animation(.snappy, value: flow.blocked)
                         .padding(.horizontal, 16).padding(.vertical, 6)
                         .nkGlass(22)
                         Text("Hangsúly: itt építünk a legtöbbet. Építés: rendesen nő. Tartás: megtartja, amit eddig felépítettél.")
@@ -126,13 +145,14 @@ struct ETAlapokPage: View {
 struct ETTierRow: View {
     let name: String
     let tier: MuscleTier
+    var disabled: (MuscleTier) -> Bool = { _ in false }
     let set: (MuscleTier) -> Void
 
     var body: some View {
         HStack(spacing: 10) {
             Text(name).nkFont(15).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.8)
                 .frame(width: 96, alignment: .leading)
-            ETTierSwitch(tier: tier, set: set).frame(maxWidth: 240)
+            ETTierSwitch(tier: tier, disabled: disabled, set: set).frame(maxWidth: 240)
                 .frame(maxWidth: .infinity, alignment: .trailing)
         }
     }
@@ -141,6 +161,7 @@ struct ETTierRow: View {
 /// Tartás · Építés · Hangsúly — the builder's switch (`BuilderTierSwitch`), copied.
 struct ETTierSwitch: View {
     let tier: MuscleTier
+    var disabled: (MuscleTier) -> Bool = { _ in false }
     let set: (MuscleTier) -> Void
     private let all: [MuscleTier] = [.maintain, .grow, .emphasize]
 
@@ -149,7 +170,7 @@ struct ETTierSwitch: View {
             ForEach(all, id: \.self) { item in
                 Button { withAnimation(.snappy) { set(item) } } label: {
                     Text(item.hungarian).nkFont(12.5, .semibold)
-                        .foregroundStyle(item == tier ? NK.ground : .white.opacity(0.7))
+                        .foregroundStyle(item == tier ? NK.ground : .white.opacity(disabled(item) ? 0.22 : 0.7))
                         .lineLimit(1).minimumScaleFactor(0.8)
                         .frame(maxWidth: .infinity, minHeight: 34)
                         .background { if item == tier { Capsule().fill(item == .maintain ? .white : planTierColor(item)) } }
@@ -157,10 +178,79 @@ struct ETTierSwitch: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityAddTraits(item == tier ? .isSelected : [])
+                .accessibilityHint(disabled(item) ? "Most nem fér bele a heti keretbe" : "")
             }
         }
         .padding(3)
         .background(Capsule().fill(.white.opacity(0.08)))
+    }
+}
+
+/// „Heti keret": the heaviest week's sets against what fits in the training days × minutes, split by tier colour,
+/// with the Hangsúly counter.
+struct ETBudgetBar: View {
+    let intake: ETIntake
+    var compact = false
+
+    private var over: Bool { intake.used > intake.capacity }
+    private var full: Bool { intake.capacity - intake.used < 2 }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: compact ? 7 : 10) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                if compact {
+                    Text("HETI KERET").nkFont(10, .semibold, design: .monospaced).tracking(1.2).foregroundStyle(.white.opacity(0.6))
+                }
+                Text("\(intake.used)").font(.nkNumber(compact ? 18 : 28)).foregroundStyle(over ? planWarn : .white)
+                    .contentTransition(.numericText())
+                Text("/ \(intake.capacity) sorozat").nkFont(compact ? 12 : 14).foregroundStyle(.white.opacity(0.75))
+                    .lineLimit(1).fixedSize()
+                Spacer(minLength: 6)
+                emphasisCounter
+            }
+            GeometryReader { geo in
+                let total = CGFloat(max(intake.capacity, intake.used))
+                HStack(spacing: 2) {
+                    segment(intake.sets(.emphasize), total, geo.size.width, planTierColor(.emphasize))
+                    segment(intake.sets(.grow), total, geo.size.width, planTierColor(.grow))
+                    segment(intake.sets(.maintain), total, geo.size.width, .white.opacity(0.55))
+                    Spacer(minLength: 0)
+                }
+                .frame(width: geo.size.width, alignment: .leading)
+                .background(Capsule().fill(.white.opacity(0.08)))
+                .clipShape(Capsule())
+            }
+            .frame(height: compact ? 6 : 10)
+            if !compact {
+                Text(over ? "Túllépi a keretet: vegyél le egy izmot Tartásra, vagy adj hozzá időt."
+                          : (full ? "A keret tele: feljebb csak úgy tehetsz egy izmot, ha egy másikat lejjebb veszel."
+                                  : "a legnehezebb héten · \(etTrainingDays) × \(intake.minutes) perc · még \(intake.capacity - intake.used) sorozat fér bele"))
+                    .nkFont(12, design: over || full ? .default : .monospaced)
+                    .foregroundStyle(over ? planWarn : .white.opacity(0.55))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(compact ? 12 : 16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .nkGlass(compact ? 18 : 22)
+        .animation(.snappy, value: intake.used)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var emphasisCounter: some View {
+        let n = intake.emphasizeCount
+        return HStack(spacing: 5) {
+            Text("Hangsúly").nkFont(compact ? 11 : 12).foregroundStyle(.white.opacity(0.65))
+            Text("\(n) / \(etEmphasizeMax)").nkFont(compact ? 11 : 12, .semibold, design: .monospaced)
+                .foregroundStyle(n >= etEmphasizeMax ? NK.ground : .white.opacity(0.9))
+                .padding(.horizontal, 6).padding(.vertical, 2)
+                .background(Capsule().fill(n >= etEmphasizeMax ? planTierColor(.emphasize) : .white.opacity(0.14)))
+        }
+        .lineLimit(1).fixedSize()
+    }
+
+    private func segment(_ sets: Int, _ total: CGFloat, _ width: CGFloat, _ color: Color) -> some View {
+        Rectangle().fill(color).frame(width: max(0, width * CGFloat(sets) / total - 2))
     }
 }
 
@@ -318,6 +408,7 @@ struct ETMusclesPage: View {
                     ETHead(eyebrow: "EGY HÉT · IZMONKÉNT", title: etCandidates[flow.chosen].name,
                            sentence: "Mindegyik izom a sávjában. Koppints egyre, és megmutatom, miért ennyi.",
                            back: true) { flow.go(.jeloltek) }
+                    ETBudgetBar(intake: .fresh, compact: true)
                     VStack(spacing: 0) {
                         ForEach(Array(etMuscles.enumerated()), id: \.element.id) { i, m in
                             if i > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }

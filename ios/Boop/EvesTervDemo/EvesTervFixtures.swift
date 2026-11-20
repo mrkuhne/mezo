@@ -20,10 +20,83 @@ struct ETIntake: Equatable {
         "quad": .grow, "ham": .grow, "glute": .grow, "calf": .maintain, "core": .maintain,
     ], fromMap: false)
 
+    /// The budget full on both counts: two muscles at Hangsúly, 71 of 72 sets at the heaviest week.
+    static let full: ETIntake = {
+        var i = ETIntake.fresh
+        i.tiers["chest"] = .emphasize
+        return i
+    }()
+
     /// The year map's block 3 (Mell + váll): its focus at Hangsúly, the rest at Tartás.
     static let fromMap = ETIntake(weeks: 6, minutes: 60, tiers: Dictionary(uniqueKeysWithValues: muscles.map {
         ($0, ["chest", "shoulder"].contains($0) ? MuscleTier.emphasize : .maintain)
     }), fromMap: true)
+}
+
+// MARK: - The weekly budget (S1 item 7, „Heti keret")
+
+/// Approximate weekly working sets at the heaviest loading week, per muscle, for Tartás · Építés · Hangsúly
+/// (spike only: the real numbers are the server's evaluator).
+let etTierCost: [String: (Int, Int, Int)] = [
+    "back": (4, 9, 14), "chest": (4, 8, 13), "shoulder": (3, 8, 13), "biceps": (2, 6, 10), "triceps": (2, 6, 10),
+    "quad": (4, 8, 13), "ham": (3, 6, 10), "glute": (2, 5, 9), "calf": (3, 6, 10), "core": (2, 4, 6),
+]
+let etTrainingDays = 4
+let etEmphasizeMax = 2
+
+func etCost(_ muscle: String, _ tier: MuscleTier) -> Int {
+    let c = etTierCost[muscle] ?? (2, 5, 8)
+    switch tier {
+    case .maintain: return c.0
+    case .grow: return c.1
+    case .emphasize: return c.2
+    }
+}
+
+func etRank(_ tier: MuscleTier) -> Int {
+    switch tier {
+    case .maintain: 0
+    case .grow: 1
+    case .emphasize: 2
+    }
+}
+
+/// How many working sets fit in a week of four sessions of this length (minutes model v2, rest included).
+func etCapacity(minutes: Int) -> Int {
+    let perSession: Int = switch minutes {
+    case ..<50: 13
+    case ..<65: 18
+    case ..<80: 23
+    default: 28
+    }
+    return etTrainingDays * perSession
+}
+
+extension ETIntake {
+    var used: Int { ETIntake.muscles.reduce(0) { $0 + etCost($1, tiers[$1] ?? .grow) } }
+    var capacity: Int { etCapacity(minutes: minutes) }
+    var emphasizeCount: Int { tiers.values.filter { $0 == .emphasize }.count }
+    func sets(_ tier: MuscleTier) -> Int {
+        ETIntake.muscles.filter { (tiers[$0] ?? .grow) == tier }.reduce(0) { $0 + etCost($1, tier) }
+    }
+
+    /// Why raising this muscle to this tier is not allowed now; nil = allowed. Lowering is always allowed.
+    func blockReason(_ muscle: String, to tier: MuscleTier) -> String? {
+        let current = tiers[muscle] ?? .grow
+        guard etRank(tier) > etRank(current) else { return nil }
+        if tier == .emphasize && emphasizeCount >= etEmphasizeMax {
+            return "Már \(etEmphasizeMax) izom van Hangsúlyon — előbb vegyél le egyet."
+        }
+        if used - etCost(muscle, current) + etCost(muscle, tier) > capacity {
+            return "Ez már nem fér a heti \(etTrainingDays) × \(minutes) percbe. Vegyél le egy izmot Tartásra, vagy adj hozzá időt."
+        }
+        return nil
+    }
+}
+
+struct ETBlocked: Equatable {
+    let muscle: String
+    let text: String
 }
 
 // MARK: - The candidates (S1/S2 Jelöltek)
@@ -100,15 +173,15 @@ struct ETMuscleRow: Identifiable {
 let etMuscles: [ETMuscleRow] = [
     ETMuscleRow(muscle: "back", tier: .emphasize, sets: 14, low: 14, high: 22, spread: [("Hétfő", 7), ("Kedd", 3), ("Csütörtök", 4)],
                 hint: "A hát két egymást követő napon kap kemény sorozatot (H, K): kedden a román felhúzás is dolgoztatja. Ha teheted, a csütörtöki húzásból tegyél át egy sorozatot péntekre."),
-    ETMuscleRow(muscle: "chest", tier: .grow, sets: 11, low: 10, high: 16, spread: [("Hétfő", 6), ("Csütörtök", 5)], hint: nil),
-    ETMuscleRow(muscle: "shoulder", tier: .grow, sets: 10, low: 10, high: 16, spread: [("Hétfő", 4), ("Csütörtök", 6)], hint: nil),
-    ETMuscleRow(muscle: "biceps", tier: .grow, sets: 9, low: 8, high: 14, spread: [("Hétfő", 4), ("Csütörtök", 5)], hint: nil),
-    ETMuscleRow(muscle: "triceps", tier: .grow, sets: 8, low: 8, high: 14, spread: [("Hétfő", 4), ("Csütörtök", 4)], hint: nil),
-    ETMuscleRow(muscle: "quad", tier: .grow, sets: 12, low: 10, high: 16, spread: [("Kedd", 6), ("Péntek", 6)], hint: nil),
-    ETMuscleRow(muscle: "ham", tier: .grow, sets: 9, low: 8, high: 14, spread: [("Kedd", 4), ("Péntek", 5)], hint: nil),
-    ETMuscleRow(muscle: "glute", tier: .grow, sets: 8, low: 6, high: 12, spread: [("Kedd", 4), ("Péntek", 4)], hint: nil),
+    ETMuscleRow(muscle: "chest", tier: .grow, sets: 8, low: 8, high: 14, spread: [("Hétfő", 4), ("Csütörtök", 4)], hint: nil),
+    ETMuscleRow(muscle: "shoulder", tier: .grow, sets: 8, low: 8, high: 14, spread: [("Hétfő", 4), ("Csütörtök", 4)], hint: nil),
+    ETMuscleRow(muscle: "biceps", tier: .grow, sets: 6, low: 6, high: 12, spread: [("Hétfő", 3), ("Csütörtök", 3)], hint: nil),
+    ETMuscleRow(muscle: "triceps", tier: .grow, sets: 6, low: 6, high: 12, spread: [("Hétfő", 3), ("Csütörtök", 3)], hint: nil),
+    ETMuscleRow(muscle: "quad", tier: .grow, sets: 8, low: 8, high: 14, spread: [("Kedd", 4), ("Péntek", 4)], hint: nil),
+    ETMuscleRow(muscle: "ham", tier: .grow, sets: 6, low: 6, high: 12, spread: [("Kedd", 3), ("Péntek", 3)], hint: nil),
+    ETMuscleRow(muscle: "glute", tier: .grow, sets: 5, low: 5, high: 10, spread: [("Kedd", 2), ("Péntek", 3)], hint: nil),
     ETMuscleRow(muscle: "calf", tier: .maintain, sets: 3, low: 3, high: 7, spread: [("Kedd", 3)], hint: nil),
-    ETMuscleRow(muscle: "core", tier: .maintain, sets: 4, low: 2, high: 5, spread: [("Péntek", 4)], hint: nil),
+    ETMuscleRow(muscle: "core", tier: .maintain, sets: 2, low: 2, high: 5, spread: [("Péntek", 2)], hint: nil),
 ]
 
 /// The builder's arc wants the server's band type, which only decodes (spike only).

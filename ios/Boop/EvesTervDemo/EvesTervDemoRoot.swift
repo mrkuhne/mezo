@@ -9,15 +9,17 @@ import BoopDesign
 // `-evesTervScroll Y` opens a long screen scrolled down by Y points (for the screenshots).
 
 enum ETScreen: String, CaseIterable, Identifiable {
-    case ures = "1", alapok = "2", jeloltek = "3", miert = "4", letrehozas = "5", terkep = "6", blokk = "6b", kovetkezik = "7"
+    case ures = "1", alapok = "2", keret = "2b", jeloltek = "3", miert = "4", izmok = "4b", letrehozas = "5", terkep = "6", blokk = "6b", kovetkezik = "7"
     var id: String { rawValue }
 
     var title: String {
         switch self {
         case .ures: "Nincs futó blokk"
         case .alapok: "Új blokk · Alapok"
+        case .keret: "Alapok · a keret tele"
         case .jeloltek: "Új blokk · Jelöltek"
         case .miert: "Izom „miért?”"
+        case .izmok: "A blokk izmai · heti keret"
         case .letrehozas: "Éves terv létrehozása"
         case .terkep: "Éves térkép"
         case .blokk: "Éves térkép · egy blokk"
@@ -33,11 +35,18 @@ enum ETScreen: String, CaseIterable, Identifiable {
     var chosen = 0
     var sheetMuscle: String?
     var sheetBlock: Int?
+    /// The raise he just tried that the budget or the Hangsúly cap does not allow.
+    var blocked: ETBlocked?
 
     init(screen: ETScreen?) {
         self.screen = screen
         switch screen {
         case .miert: sheetMuscle = "back"
+        case .izmok: self.screen = .miert
+        case .keret:
+            self.screen = .alapok
+            intake = .full
+            blocked = ETBlocked(muscle: "calf", text: intake.blockReason("calf", to: .grow) ?? "")
         case .blokk: self.screen = .terkep; sheetBlock = 5
         default: break
         }
@@ -48,6 +57,7 @@ enum ETScreen: String, CaseIterable, Identifiable {
     /// „Indítás" on the Következik card: the intake pre-filled from the year map.
     func startFromMap() {
         intake = .fromMap
+        blocked = nil
         screen = .alapok
     }
 }
@@ -66,9 +76,9 @@ struct EvesTervDemoRoot: View {
             switch flow.screen {
             case nil: index
             case .ures: ETEmptyState(flow: flow)
-            case .alapok: ETAlapokPage(flow: flow)
+            case .alapok, .keret: ETAlapokPage(flow: flow)
             case .jeloltek: ETJeloltekPage(flow: flow)
-            case .miert: ETMusclesPage(flow: flow)
+            case .miert, .izmok: ETMusclesPage(flow: flow)
             case .letrehozas: ETCreateYearPage(flow: flow)
             case .terkep, .blokk: ETYearMapPage(flow: flow)
             case .kovetkezik: ETKovetkezikRoom(flow: flow)
