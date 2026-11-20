@@ -1247,5 +1247,15 @@
     ],
     "mit_kapsz": "A blokképítő Napok lapján a saját képedre szabhatsz egy napot: hozzáadhatsz gyakorlatot (Boop ajánl olyat, ami illik a naphoz, a termedhez és ahhoz, ami fájt), törölhetsz, a blokk végéig cserélhetsz, húzással átrendezhetsz, és beállíthatod az ismétléstartományt, a tartalékot és a kezdősúlyt. A heti sorozatszám azonnal követi, egy gombbal mented. Egy üres napból így edzésnap lehet.",
     "munkamenet": "mezo-nippard-exercise-selection"
+  },
+  "mezo-r36n9.118": {
+    "cim": "Kis telefonon levágódik a blokképítő fő gombjának felirata",
+    "tipus": "Hiba",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "A legkisebb iPhone-okon a blokképítő alsó gombján a „Nincs mit menteni” felirat nem fér ki. A javítás után minden telefonméreten olvasható.",
+    "munkamenet": "mezo-nippard-exercise-selection"
   }
 }
