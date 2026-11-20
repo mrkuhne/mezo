@@ -40,13 +40,23 @@ public final class ExerciseSubstituteRanker {
                             BigDecimal stim, BigDecimal fatigue, boolean custom,
                             boolean available, PainLevel pain, boolean doneBefore) {}
 
-    /** The running block's goal preset (nullable), the swap's „nem esik jól", today's pain joints. */
-    public record Context(String goalPreset, boolean soreNow, Set<String> painJointsToday, Set<UUID> inWorkout) {}
+    /**
+     * The running block's goal preset (nullable), the swap's „nem esik jól", today's pain joints, the catalogue
+     * ids already in the day, and the coarse muscle groups under their weekly band (block day editor only).
+     */
+    public record Context(String goalPreset, boolean soreNow, Set<String> painJointsToday, Set<UUID> inWorkout,
+                          Set<String> underBandGroups) {
+
+        /** The workout swap's context: no under-band groups. */
+        public Context(String goalPreset, boolean soreNow, Set<String> painJointsToday, Set<UUID> inWorkout) {
+            this(goalPreset, soreNow, painJointsToday, inWorkout, Set.of());
+        }
+    }
 
     /** Stable codes of what put a suggestion where it is; {@link SubstituteReason} renders them. */
     public enum Signal {
         SAME_ROLE, OTHER_TYPE, SPARES_JOINT, GUIDED, MILD_BEFORE, PAIN_TODAY, GOAL_HYPERTROPHY,
-        GOAL_STRENGTH, GOAL_LOW_FATIGUE, LENGTHENED, DONE_BEFORE, NO_EQUIPMENT, HAS_EQUIPMENT, CUSTOM
+        GOAL_STRENGTH, GOAL_LOW_FATIGUE, LENGTHENED, DONE_BEFORE, NO_EQUIPMENT, HAS_EQUIPMENT, CUSTOM, UNDER_BAND
     }
 
     /** The quiet label a left-out exercise carries in the full catalogue list. */
@@ -73,17 +83,7 @@ public final class ExerciseSubstituteRanker {
 
     public static Result rank(Candidate out, List<Candidate> pool, Context ctx) {
         Set<UUID> inWorkout = ctx.inWorkout() == null ? Set.of() : ctx.inWorkout();
-        Set<String> painJoints = ctx.painJointsToday() == null ? Set.of() : ctx.painJointsToday();
-        Goal goal = goal(ctx.goalPreset());
-
-        Map<UUID, Label> labels = new LinkedHashMap<>();
-        for (Candidate c : pool) {
-            if (!c.available()) {
-                labels.put(c.id(), Label.NO_EQUIPMENT);
-            } else if (c.pain() == PainLevel.STRONG) {
-                labels.put(c.id(), Label.HURT_BEFORE);
-            }
-        }
+        Map<UUID, Label> labels = labels(pool);
 
         List<Integer> picked = new ArrayList<>();
         for (int i = 0; i < pool.size(); i++) {
@@ -102,7 +102,50 @@ public final class ExerciseSubstituteRanker {
                 }
             }
         }
+        return finish(out, pool, picked, labels, ctx);
+    }
 
+    /**
+     * The block day editor's add (mezo-r36n9.116, spec 2026-11-20 §6.3): ranks every eligible pool row of one
+     * coarse muscle group ({@link MuscleGroup#of}) — never one token of it. The slot is a muscle-less, pattern-less
+     * outgoing exercise of {@code preferredType}, so the existing tiers apply unchanged: role (same type, attributed
+     * over custom; the muscle term is constant within the group) → discomfort → fit (always 0) → goal →
+     * trackability → lengthened → pool position. Same labels and eligibility as {@link #rank}.
+     */
+    public static Result rankForGroup(String group, String preferredType, List<Candidate> pool, Context ctx) {
+        Candidate slot = new Candidate(null, null, preferredType, null, null, null, null, null, null, null, null,
+            false, true, PainLevel.NONE, false);
+        Set<UUID> inWorkout = ctx.inWorkout() == null ? Set.of() : ctx.inWorkout();
+        Map<UUID, Label> labels = labels(pool);
+        List<Integer> picked = new ArrayList<>();
+        for (int i = 0; i < pool.size(); i++) {
+            Candidate c = pool.get(i);
+            if (group != null && group.equals(MuscleGroup.of(c.muscle())) && eligible(slot, c, inWorkout, labels)) {
+                picked.add(i);
+            }
+        }
+        return finish(slot, pool, picked, labels, ctx);
+    }
+
+    /** Left out of the suggestions, labelled for the full list: unavailable kit, then a recent strong pain. */
+    private static Map<UUID, Label> labels(List<Candidate> pool) {
+        Map<UUID, Label> labels = new LinkedHashMap<>();
+        for (Candidate c : pool) {
+            if (!c.available()) {
+                labels.put(c.id(), Label.NO_EQUIPMENT);
+            } else if (c.pain() == PainLevel.STRONG) {
+                labels.put(c.id(), Label.HURT_BEFORE);
+            }
+        }
+        return labels;
+    }
+
+    /** Scores, orders and explains the picked pool rows against {@code out}. */
+    private static Result finish(Candidate out, List<Candidate> pool, List<Integer> picked, Map<UUID, Label> labels,
+                                 Context ctx) {
+        Set<String> painJoints = ctx.painJointsToday() == null ? Set.of() : ctx.painJointsToday();
+        Set<String> underBand = ctx.underBandGroups() == null ? Set.of() : ctx.underBandGroups();
+        Goal goal = goal(ctx.goalPreset());
         // Today's pain only moves or explains a place when some joint in play actually loads it.
         boolean painRelevant = hitsPainToday(out, painJoints)
             || picked.stream().anyMatch(i -> hitsPainToday(pool.get(i), painJoints));
@@ -110,7 +153,8 @@ public final class ExerciseSubstituteRanker {
         List<Ranked> suggestions = picked.stream()
             .map(i -> score(out, pool.get(i), i, ctx.soreNow(), painJoints, gentle, goal))
             .sorted(ORDER).limit(MAX_SUGGESTIONS)
-            .map(s -> new Ranked(s.c().id(), signals(out, s.c(), ctx.soreNow(), painRelevant, painJoints, goal)))
+            .map(s -> new Ranked(s.c().id(),
+                signals(out, s.c(), ctx.soreNow(), painRelevant, painJoints, underBand, goal)))
             .toList();
         return new Result(suggestions, Map.copyOf(labels));
     }
@@ -173,14 +217,14 @@ public final class ExerciseSubstituteRanker {
 
     /** Role signal first, then the one signal that best explains the place (see the spec §6.2 step 4). */
     private static List<Signal> signals(Candidate out, Candidate c, boolean soreNow, boolean painRelevant,
-                                        Set<String> painJoints, Goal goal) {
+                                        Set<String> painJoints, Set<String> underBand, Goal goal) {
         Signal role = sameType(out, c) ? Signal.SAME_ROLE : Signal.OTHER_TYPE;
-        Signal second = secondSignal(out, c, soreNow, painRelevant, painJoints, goal);
+        Signal second = secondSignal(out, c, soreNow, painRelevant, painJoints, underBand, goal);
         return second == null ? List.of(role) : List.of(role, second);
     }
 
     private static Signal secondSignal(Candidate out, Candidate c, boolean soreNow, boolean painRelevant,
-                                       Set<String> painJoints, Goal goal) {
+                                       Set<String> painJoints, Set<String> underBand, Goal goal) {
         if (c.custom()) {
             return Signal.CUSTOM;
         }
@@ -197,6 +241,10 @@ public final class ExerciseSubstituteRanker {
         }
         if ((soreNow || painRelevant) && guided(c)) {
             return Signal.GUIDED;
+        }
+        // Block day editor (mezo-r36n9.116): explains, never moves — the order above ignores it.
+        if (underBand.contains(MuscleGroup.of(c.muscle()))) {
+            return Signal.UNDER_BAND;
         }
         switch (goal) {
             case HYPERTROPHY -> {

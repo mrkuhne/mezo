@@ -121,7 +121,7 @@ struct EdzesRoom: View {
                 if let block { BlockLoadPage(block: block, hue: hue, age: store?.blockAgeText) { page = nil } }
             case .builder:
                 if let plan {
-                    BlockBuilderPage(model: builder ?? BlockBuilderModel(client: plan)) {
+                    BlockBuilderPage(model: builder ?? BlockBuilderModel(client: plan), lockedDay: openWorkoutDay) {
                         page = nil
                         Task { await store?.loadBlock(); await weekReview?.load(); await prepareBuilder(fresh: true) }
                     }
@@ -374,6 +374,13 @@ struct EdzesRoom: View {
 
     /// True while a session is open, whether the player is on screen or minimised.
     private var running: Bool { store?.session != nil }
+
+    /// Today's workout while it is open (started, not finished — on the server or only on the phone yet): the block
+    /// builder keeps that day read-only (mezo-r36n9.116).
+    private var openWorkoutDay: BlockBuilderModel.LockedDay? {
+        guard let w = workout, running || w.open?.status == .active else { return nil }
+        return .init(dayId: (w.open?.templateSessionId ?? w.templateSessionId)?.uuidString, weekday: w.dayLabel)
+    }
 
     /// „Indítás" when nothing is running, „Folytatom" when something is. Starting also tells
     /// the server — through the outbox, so a basement gym changes nothing.

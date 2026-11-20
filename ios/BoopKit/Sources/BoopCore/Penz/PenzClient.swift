@@ -131,6 +131,6 @@ public func penzErrorText(_ error: PlanFetchError) -> String {
         case "PENZ_PROPOSAL_AMOUNT_INVALID": "Ez az összeg így nem jó: minden rekesz nulla vagy több legyen, és legalább egybe kerüljön valami."
         default: "A szerver ezt most nem fogadta el."
         }
-    case .server: "A szerver most nem válaszolt rendesen. Próbáld újra."
+    case .server, .dayWorkoutRunning: "A szerver most nem válaszolt rendesen. Próbáld újra."
     }
 }

@@ -59,6 +59,7 @@ public final class SubstituteReason {
             case NO_EQUIPMENT -> "eszköz nélkül is megy";
             case HAS_EQUIPMENT -> "és ehhez van eszközöd";
             case CUSTOM -> "saját gyakorlat — erről még keveset tudok";
+            case UNDER_BAND -> "ezen a héten kevés jut erre az izomra";
         };
     }
 

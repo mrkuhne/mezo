@@ -235,6 +235,7 @@ func planErrorText(_ error: PlanFetchError) -> String {
     case .notFound: "Ezt a blokkot már nem találom."
     case .rejected: "A szerver ezt így nem fogadta el."
     case .conflict: "Ez közben lezárult, ezért nem változott."
+    case .dayWorkoutRunning: "Ezen a napon most fut az edzésed — utána szerkesztheted."
     case .server: "Valami elakadt a szerveren. Próbáld újra kicsit később."
     }
 }

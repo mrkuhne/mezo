@@ -13,6 +13,8 @@ key_files:
 related: [_platform-data-layer, _platform-auth-security, _platform-notifications, train, today, fuel, ritual, companion]
 ---
 
+> **2026-11-20 — reviewed after the Boop block day editor (`mezo-r36n9.116`, no platform change).** Two new train error keys in both `messages_hu` and `messages_en` (parity kept, bundles now 313 keys each): `TRAIN_SUGGESTIONS_REQUEST_INVALID` (400, the day-suggestions request) and `TRAIN_DAY_WORKOUT_RUNNING` (409, a day with a running workout cannot be edited). Mechanics unchanged. See [`train.md`](train.md).
+
 # Platform · API Contract & Backend Architecture — Feature Documentation
 
 > **2026-11-20 — Boop Pénz L7 (`mezo-r36n9.105`, additive contract).** Two more fragments in `api/generate/merge.yml`: `api/feature/penz/penz-practice.yml` (paper trades, `/api/penz/practice/**`) and `penz-proposals.yml` (catalog, proposals, strategy); `api/openapi.yml` regenerated. Ten new `PENZ_*` codes in both bundles (`PENZ_PAPER_TRADE_*`, `PENZ_PRACTICE_*`, `PENZ_PRODUCT_*`, `PENZ_PROPOSAL_*`); the cap and state refusals are 422 / 409 with a message code, which the iOS transport now maps to coded rejections. No techcore mechanism changed. See [`penz.md`](penz.md) §4.2.

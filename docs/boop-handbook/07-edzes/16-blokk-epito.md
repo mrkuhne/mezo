@@ -38,6 +38,24 @@ Ha a hét már életbe lépett, a kártya azt mutatja: „Indulhat, a hét szám
   egymondatos véleménye, és egy „Ezt választom” gomb. **Technika és kihívás együtt is lehet** ugyanazon a gyakorlaton: előbb a
   technika, utána a félismétléses kihívás; a megdöntendő számot csak az ugyanígy végzett korábbi alkalmakhoz méri. Ha egy izomra
   egy napon túl sok jut, sárgán szól.
+
+  **A nap szerkesztése.** A napok lapján a gyakorlatokat magad is átalakíthatod:
+  - **Sorrend:** a gyakorlat bal szélén lévő **≡ fogónál** fogva húzod feljebb vagy lejjebb.
+  - **„⋯” menü** gyakorlatonként: **Csere** · **Beállítások** · **Törlés**. A törlés után a sor helyén egy visszavonó sor marad,
+    amíg meg nem gondolod magad. Ha kitörölsz mindent, a nap **pihenőnap helyett edzésnap marad** üres listával — nem tűnik el.
+  - **„＋ Gyakorlat hozzáadása”:** előbb izmot választasz (kis címkék; elöl az, amelyikre ezen a héten **„kevés”** jut, aztán a nap
+    többi izma, végül „Más izom”). Alatta legfeljebb öt **indokolt javaslat** áll, mindegyiken egy mondat arról, miért ez (például
+    „ezen a héten kevés jut erre az izomra”, vagy hogy kíméli azt az ízületet, amelyik fájt), alatta pedig a **teljes lista
+    kereséssel**. Ha a javaslatok nem érkeznek meg, a teljes lista egy rövid megjegyzéssel is használható.
+  - **Csere:** ugyanilyen javaslatokat kapsz a kicserélendő helyett. A csere **a blokk hátralévő részére** szól, és **megtartja
+    azt, amit te állítottál** (sorozatszám, tartomány, kezdősúly).
+  - **Beállítások** (a gyakorlat sorára koppintva is): **ismétléstartomány**, **tartalék**, **kezdősúly**, **bemelegítés**.
+    Amit te állítottál át az edzésmódhoz képest, azon **„TE ÁLLÍTOTTAD”** jelzés áll, a **„Visszaállítom az edzésmódra”** gomb
+    pedig visszaadja az edzésmód értékeit.
+  - **Zárolt nap:** amíg az adott nap edzése fut, a nap lapja csak olvasható — a telefonon is, és a szerver sem fogad el rajta
+    szerkezeti változtatást.
+  - **Függő heti javaslat:** ha a „Mentés” olyan napot érint, amelyiken egy még el nem döntött heti javaslat is változtatna,
+    mentés előtt rákérdez, hogy biztosan így akarod-e.
 - **Blokk** — az **edzésmód** négy közül (Kiegyensúlyozott · Sok ismétlés · Nagyobb súly · Két sorozat bukásig), két kapcsoló
   (**Technikák** be/ki, **A heti javaslatot én hagyom jóvá**), a blokk heteinek sorozatszáma és izmonként az út hétről hétre.
 
@@ -46,7 +64,8 @@ Az építő és a pakli abból a gombból, illetve kártyából **nagyul ki**, a
 
 Egyetlen fő gomb van: ha változtattál valamit, **„Mentés”** — így soha nem kell elfogadnod egy sorozat-javaslatot ahhoz,
 hogy egy beállítást elments; ha nincs mit menteni, de valamelyik izom kilóg, **„Igazítsd a sávba”** (minden kilógó izomra
-alkalmazza a javaslatot). Ha a „Két sorozat bukásig” módról váltanál, előtte szól, hogy a gyakorlatok két sorozaton maradnak.
+alkalmazza a javaslatot). Ha a „Két sorozat bukásig” módról váltanál, előtte szól, hogy a gyakorlatok két sorozaton maradnak. Kisebb telefonon,
+ha a „Nincs mit menteni” felirat nem fér el a gombon, helyette „Nincs változás” áll.
 
 ## Hogyan működik
 1. A telefon lekéri a futó blokkot és a gyakorlatok adatait (melyik stabil, melyiknél biztonságos a félismétlés).
@@ -62,6 +81,12 @@ alkalmazza a javaslatot). Ha a „Két sorozat bukásig” módról váltanál, 
    héten, a technika a blokk 3. hetétől), és ha a mesterséges intelligencia finomította, egy mondatban meg is indokolja a csempén.
 6. Ha egy új szerver-oldali változás olyan javaslat-fajtát vagy okot küld, amit a telefon még nem ismer, a csempe akkor is
    megjelenik (egyszerű „mennyiről mennyire” formában), csak címke nélkül — sosem tűnik el a pakli miatta.
+
+7. **A javaslatokat a szerver adja**, a blokk edzésmódjának számaival (sorozat, ismétlés, tartalék) együtt, így a heti
+   sorozatszámok már **mentés előtt** pontosak. Egy új gyakorlat tehát nem „3 × 10”-ként érkezik, hanem úgy, ahogy az edzésmód
+   beállítaná.
+8. **Egyetlen „Mentés” van**: a gyakorlat-, sorrend- és beállításváltozások a többivel együtt mennek el. A változtatás **a
+   következő edzéstől él**; a már megkezdett edzést nem írja át.
 
 ## Miért így
 - A tulajdonos döntései: az app **javasol, te döntesz**; a heti átnézés gyakorlatonként, „Elfogadom átnézés nélkül” gombbal; a
@@ -87,8 +112,10 @@ alkalmazza a javaslatot). Ha a „Két sorozat bukásig” módról váltanál, 
 
 ## Mi jön még
 - A technika és a kihívás edzés közben (lépésenként mit csinálj, a legyőzendő szám) — külön jegy, a technika-tervező után.
+- **Lefedettség-jelzések:** az építő szól, ha a blokkból hiányzik egy kiegészítő mozgás (például hátsó vállat vagy alkart érő
+  gyakorlat), és egy **„Hozzáadom”** gombbal ugyanaz a hozzáadó lap nyílik meg — a következő jegy.
 - Új blokk összerakása a semmiből a telefonon (időkeret, tapasztalat, 2–3 felosztás-javaslat — a tulajdonos 49. döntése).
 
 ## Mi marad ki
-- Gyakorlat hozzáadása, törlése vagy cseréje az építőben (a cserét edzés közben a lejátszó tudja).
+- Napot hozzáadni, átnevezni vagy másik napra áthelyezni még nem lehet (ehhez a szerveren is kell egy kiegészítés).
 - A régi „A blokk terhelése” oldal saját számolása egyelőre marad; később beolvad az építőbe.
