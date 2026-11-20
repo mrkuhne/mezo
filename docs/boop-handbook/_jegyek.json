@@ -1227,5 +1227,25 @@
       "Edzés"
     ],
     "mit_kapsz": "Holtbogár, plank, Pallof és hasonló gyakorlatoknál a „hány ismétlés maradjon tartalékban” cél értelmetlen. A javítás után a stílus ezeknél nem állít be ilyen célt, így egy nap szerkesztése sem írja át őket."
+  },
+  "mezo-r36n9.114": {
+    "cim": "Hiányzó kiegészítő mozgások jelzése a blokképítőben",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "A blokképítő szól, ha egy izomnál a heti tervből hiányzik egy hasznos kiegészítő mozgás — például csípőből hajlítás van, de lábhajlítás nincs. Mellé egy javaslatot ad és megmondja, miért. Ez tanács, nem szabály: elfogadhatod vagy figyelmen kívül hagyhatod, a szinten tartott izmoknál pedig nem szól.",
+    "munkamenet": "mezo-nippard-exercise-selection"
+  },
+  "mezo-r36n9.116": {
+    "cim": "Napi gyakorlatszerkesztő a futó blokkban",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "A blokképítő Napok lapján a saját képedre szabhatsz egy napot: hozzáadhatsz gyakorlatot (Boop ajánl olyat, ami illik a naphoz, a termedhez és ahhoz, ami fájt), törölhetsz, a blokk végéig cserélhetsz, húzással átrendezhetsz, és beállíthatod az ismétléstartományt, a tartalékot és a kezdősúlyt. A heti sorozatszám azonnal követi, egy gombbal mented. Egy üres napból így edzésnap lehet.",
+    "munkamenet": "mezo-nippard-exercise-selection"
   }
 }
