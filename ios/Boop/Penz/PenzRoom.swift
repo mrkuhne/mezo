@@ -204,10 +204,28 @@ struct PenzRoom: View {
     return .loading
 }
 
-/// The empty page's one honest card: how money arrives here.
+/// The empty page's one honest card: how money arrives here — and, with no account at all (a fresh production start),
+/// the one tap that makes the cash account right on the card, so he never has to hunt for it.
 struct PenzEmptyCard: View {
+    @Environment(PenzStore.self) private var store: PenzStore?
+    @State private var creating = false
+    @State private var error: String?
+
     var body: some View {
+        let needsAccount = store?.value != nil && store?.cashAccount == nil
         NKHighlight(hue: penzHue, label: "Még üres", text: "Még nincs itt pénzmozgás",
-                    sub: "A pénzed két úton érkezik ide: a banki SMS-ekből a parancsikonon át, és amit készpénzben kézzel beírsz. Az első készpénzes kiadásnál a *Kiadás* gomb egy érintéssel létrehozza a „Készpénz” számlát.")
+                    sub: needsAccount
+                        ? (error ?? "A pénzed két úton érkezik ide: a banki SMS-ekből a parancsikonon át, és amit készpénzben kézzel beírsz. A készpénzhez előbb egy „Készpénz” számla kell — egy érintés, és utána a *Kiadás* gombbal rögzíthetsz.")
+                        : "A pénzed két úton érkezik ide: a banki SMS-ekből a parancsikonon át, és amit készpénzben kézzel beírsz a *Kiadás* gombbal.",
+                    actions: needsAccount
+                        ? [NKHighlightAction(creating ? "Létrehozom…" : "Készpénz számla létrehozása") {
+                              guard !creating else { return }
+                              Task { @MainActor in
+                                  creating = true
+                                  error = await store?.createCashAccount()
+                                  creating = false
+                              }
+                          }]
+                        : [])
     }
 }
