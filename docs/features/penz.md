@@ -2,7 +2,7 @@
 title: Pénz — money foundation, portfolio and news digest (Boop Pénz L4–L6)
 type: feature-domain
 status: done
-updated: 2026-11-20
+updated: 2026-11-21
 tags: [backend, boop, penz, data-layer, auth]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/penz
@@ -153,6 +153,10 @@ minor unit (the old app kept the fraction; 1/100 Ft is invisible).
 - **Accounts** (`AccountRules.planSave`, old `planAccountSave`): exactly one non-archived default, exactly one savings
   target among non-archived `savings` accounts, promoted automatically on archive; flags written clear-first so the
   partial unique indexes never see two holders; archiving the last active account is 409 `PENZ_LAST_ACTIVE_ACCOUNT`.
+  **The currency is locked** once the account carries a live transaction or recurring rule: changing it is 409
+  `PENZ_ACCOUNT_CURRENCY_LOCKED` (every row is in its account's currency, so a change would recreate the mismatch
+  and make the balances skip those rows); other fields stay editable, and deleting the rows unlocks it
+  (`mezo-r36n9.108`).
 - **Transactions** (`PenzTransactionService`): `clientRef` writes are idempotent (native insert + read-back); a
   transfer is a `transfer_out` + `transfer_in` pair sharing `transfer_pair_id` (editing a leg moves both, deleting a
   leg deletes both — a month close's leg included, the close keeps its figures); an update re-books the HUF twin
@@ -569,7 +573,7 @@ Error codes (both bundles): `PENZ_ACCOUNT_NOT_FOUND`, `PENZ_CATEGORY_NOT_FOUND`,
 `PENZ_TRANSACTION_NOT_FOUND`, `PENZ_RECURRING_RULE_NOT_FOUND`, `PENZ_TRANSFER_SAME_ACCOUNT`, `PENZ_FX_UNAVAILABLE`,
 `PENZ_MONTH_NOT_OVER`, `PENZ_EARLIER_MONTH_OPEN`, `PENZ_MONTH_ALREADY_CLOSED`, `PENZ_LAST_ACTIVE_ACCOUNT`,
 `PENZ_NO_SAVINGS_TARGET_ACCOUNT`, `PENZ_SMS_KEY_NOT_FOUND`, `PENZ_SMS_KEY_INVALID`, `PENZ_SMS_RATE_LIMITED`,
-`PENZ_CURRENCY_MISMATCH`, `PENZ_CLIENT_REF_CONFLICT`, `PENZ_SAVINGS_GOAL_NOT_FOUND` (L5), and L6:
+`PENZ_CURRENCY_MISMATCH`, `PENZ_CLIENT_REF_CONFLICT`, `PENZ_ACCOUNT_CURRENCY_LOCKED` (`.108`), `PENZ_SAVINGS_GOAL_NOT_FOUND` (L5), and L6:
 `PENZ_HOLDING_NOT_FOUND`, `PENZ_INVEST_TXN_NOT_FOUND`, `PENZ_HOLDING_EVENT_NOT_FOUND`, `PENZ_SYMBOL_UNKNOWN`,
 `PENZ_SELL_EXCEEDS_POSITION`, `PENZ_DIGEST_REFRESH_LIMITED`, and L7: `PENZ_PAPER_TRADE_NOT_FOUND`,
 `PENZ_PRACTICE_CAP_EXCEEDED` (422), `PENZ_PAPER_TRADE_STATE` (409), `PENZ_PAPER_TRADE_INVALID_STOP`,

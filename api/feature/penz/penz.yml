@@ -77,7 +77,7 @@ paths:
         '400': { description: 'Validation failure', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '404': { description: 'No such account of the caller', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '409': { description: 'It is the last non-archived account (PENZ_LAST_ACTIVE_ACCOUNT)', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '409': { description: 'It is the last non-archived account (PENZ_LAST_ACTIVE_ACCOUNT), or the currency changes while the account has transactions or recurring rules (PENZ_ACCOUNT_CURRENCY_LOCKED)', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/penz/accounts/{id}/archive:
     post:
       tags: [Penz]

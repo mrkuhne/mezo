@@ -13984,7 +13984,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
         '409':
-          description: It is the last non-archived account (PENZ_LAST_ACTIVE_ACCOUNT)
+          description: >-
+            It is the last non-archived account (PENZ_LAST_ACTIVE_ACCOUNT), or
+            the currency changes while the account has transactions or recurring
+            rules (PENZ_ACCOUNT_CURRENCY_LOCKED)
           content:
             application/json:
               schema:

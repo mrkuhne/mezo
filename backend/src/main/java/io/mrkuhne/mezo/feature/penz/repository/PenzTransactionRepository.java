@@ -19,6 +19,9 @@ public interface PenzTransactionRepository extends OwnedRepository<PenzTransacti
 
     Optional<PenzTransactionEntity> findByIdAndCreatedByAndDeletedFalse(UUID id, UUID createdBy);
 
+    /** Whether the account carries any live transaction (its currency is then locked, mezo-r36n9.108). */
+    boolean existsByAccountIdAndDeletedFalse(UUID accountId);
+
     Optional<PenzTransactionEntity> findByCreatedByAndClientRefAndDeletedFalse(UUID createdBy, UUID clientRef);
 
     List<PenzTransactionEntity> findByCreatedByAndTransferPairIdAndDeletedFalse(UUID createdBy, UUID transferPairId);
