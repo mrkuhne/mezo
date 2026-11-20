@@ -289,6 +289,27 @@ tags:
       (source sms, needsReview true); the same SMS again answers `duplicate` and
       never doubles. Keys are managed with the normal JWT; the plaintext key is
       returned ONCE, at creation.
+  - name: PenzPortfolio
+    description: >
+      Boop Pénz L6 (mezo-r36n9.104) — the portfolio by horizon. A holding is one
+      product in one sleeve (short = 1–3 év, mid = 5–10 év, long = 10+ év); the
+      same product in two sleeves is two holdings. Buys and sells keep lot-level
+      (FIFO) cost basis; every amount is a PenzMoney (own currency + HUF twin
+      booked once at the transaction's date by the L4 FX policy). The portfolio
+      read values holdings at the latest cached quote (Yahoo chart endpoint,
+      daily close) and the latest cached FX quote (CURHUF=X) — the VALUATION
+      policy, distinct from the booking policy — and splits the move since the
+      previous close into price and currency. Every figure is computed here;
+      nothing is generated.
+  - name: PenzNews
+    description: >
+      Boop Pénz L6 (mezo-r36n9.104) — the daily news digest at the bottom of Ma.
+      Only stories touching the caller's own holdings (plus macro moves that
+      touch something they own), grouped with a source count. Every figure in an
+      item (effectHufMinor, changePct) is computed by the backend and passed
+      through verbatim; the model writes only the prose, which is validated
+      (amount guard, numbers, entities, direction, boundary words) and replaced
+      by fixed copy when it fails. No verdict, no buy/sell. No push.
 paths:
   /api/auth/login:
     post:
@@ -14779,6 +14800,428 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: No such key of the caller
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/penz/holdings:
+    get:
+      tags:
+        - PenzPortfolio
+      operationId: listPenzHoldings
+      summary: >-
+        The caller's holdings (archived included, flagged), by sleeve then
+        position
+      responses:
+        '200':
+          description: Holdings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PenzHoldingResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - PenzPortfolio
+      operationId: createPenzHolding
+      summary: >
+        Create a holding — idempotent on clientRef. A symbol is checked against
+        the quote source once; an unknown symbol is 400 PENZ_SYMBOL_UNKNOWN, an
+        unreachable source accepts the holding unpriced.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PenzHoldingRequest'
+      responses:
+        '201':
+          description: The stored holding (also the answer to a replayed clientRef)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzHoldingResponse'
+        '400':
+          description: Validation failure / PENZ_SYMBOL_UNKNOWN
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/penz/holdings/{id}':
+    put:
+      tags:
+        - PenzPortfolio
+      operationId: updatePenzHolding
+      summary: >-
+        Update a holding (clientRef ignored; the currency cannot change once a
+        transaction exists)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PenzHoldingRequest'
+      responses:
+        '200':
+          description: The updated holding
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzHoldingResponse'
+        '400':
+          description: Validation failure / PENZ_SYMBOL_UNKNOWN / PENZ_CURRENCY_MISMATCH
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_HOLDING_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - PenzPortfolio
+      operationId: deletePenzHolding
+      summary: Soft-delete a holding with its transactions and events
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_HOLDING_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/penz/holdings/{id}/transactions':
+    get:
+      tags:
+        - PenzPortfolio
+      operationId: listPenzInvestTransactions
+      summary: 'One holding''s buys and sells, newest first'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Investment transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PenzInvestTxnResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_HOLDING_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/penz/invest-transactions:
+    post:
+      tags:
+        - PenzPortfolio
+      operationId: createPenzInvestTransaction
+      summary: >
+        Record a buy or a sell he already made on his own platform — idempotent
+        on clientRef. The currency is the holding's; a sell above the open
+        quantity (or, without quantities, above the open cost) is 400
+        PENZ_SELL_EXCEEDS_POSITION. Non-HUF amounts are booked at the date's ECB
+        rate (503 PENZ_FX_UNAVAILABLE).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PenzInvestTxnRequest'
+      responses:
+        '201':
+          description: The stored transaction (also the answer to a replayed clientRef)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzInvestTxnResponse'
+        '400':
+          description: >-
+            Validation failure / PENZ_SELL_EXCEEDS_POSITION /
+            PENZ_CURRENCY_MISMATCH
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_HOLDING_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '503':
+          description: PENZ_FX_UNAVAILABLE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/penz/invest-transactions/{id}':
+    delete:
+      tags:
+        - PenzPortfolio
+      operationId: deletePenzInvestTransaction
+      summary: >-
+        Soft-delete a buy or sell (refused when it would leave a later sell
+        above the open position)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '400':
+          description: PENZ_SELL_EXCEEDS_POSITION
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_INVEST_TXN_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/penz/holding-events:
+    get:
+      tags:
+        - PenzPortfolio
+      operationId: listPenzHoldingEvents
+      summary: 'The caller''s portfolio events from a date (default today), soonest first'
+      parameters:
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PenzHoldingEventResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - PenzPortfolio
+      operationId: createPenzHoldingEvent
+      summary: >-
+        Add a maturity / coupon / dividend / earnings date — idempotent on
+        clientRef
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PenzHoldingEventRequest'
+      responses:
+        '201':
+          description: The stored event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzHoldingEventResponse'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_HOLDING_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/penz/holding-events/{id}':
+    delete:
+      tags:
+        - PenzPortfolio
+      operationId: deletePenzHoldingEvent
+      summary: Soft-delete an event
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_HOLDING_EVENT_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/penz/portfolio:
+    get:
+      tags:
+        - PenzPortfolio
+      operationId: getPenzPortfolio
+      summary: >-
+        Pénzem — totals, the three sleeves with their holdings, the forward
+        timeline and the practice row
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: The portfolio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzPortfolioResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/penz/digest:
+    get:
+      tags:
+        - PenzNews
+      operationId: getPenzDigest
+      summary: >-
+        The day's news digest (default today in the caller's money timezone);
+        status pending until built
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: The digest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzDigestResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/penz/digest/refresh:
+    post:
+      tags:
+        - PenzNews
+      operationId: refreshPenzDigest
+      summary: >-
+        Rebuild today's digest for the caller in the background (quotes + news +
+        narration); at most every 15 minutes
+      responses:
+        '202':
+          description: Accepted — read GET /api/penz/digest again later
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '429':
+          description: PENZ_DIGEST_REFRESH_LIMITED
           content:
             application/json:
               schema:
@@ -34375,3 +34818,632 @@ components:
         plaintext:
           type: string
           description: 'mzp_<base64url 32 bytes> — shown once, never stored'
+    PenzHoldingRequest:
+      type: object
+      required:
+        - name
+        - assetType
+        - platform
+        - sleeve
+        - currency
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        assetType:
+          type: string
+          pattern: ^(bond|etf|stock|fund|crypto|cash)$
+        symbol:
+          type: string
+          nullable: true
+          pattern: '^[A-Za-z0-9.\-=^]{1,20}$'
+          description: 'Yahoo symbol, e.g. OTP.BD, VWCE.DE; null = not quoted (bond, cash)'
+        platform:
+          type: string
+          pattern: ^(mbh|revolut|other)$
+        platformName:
+          type: string
+          nullable: true
+          maxLength: 40
+        sleeve:
+          type: string
+          pattern: ^(short|mid|long)$
+        currency:
+          type: string
+          pattern: ^(HUF|EUR|USD|GBP|CHF)$
+        bondRatePct:
+          type: number
+          nullable: true
+          minimum: 0
+          maximum: 100
+          description: Simple-interest accrual for an unquoted bond
+        newsTerms:
+          type: array
+          maxItems: 8
+          description: Extra words that tie a news story to this holding (aliases)
+          items:
+            type: string
+            minLength: 2
+            maxLength: 40
+        note:
+          type: string
+          nullable: true
+          maxLength: 500
+        position:
+          type: integer
+          nullable: true
+          minimum: 0
+        archived:
+          type: boolean
+          nullable: true
+        clientRef:
+          type: string
+          format: uuid
+          nullable: true
+    PenzHoldingResponse:
+      type: object
+      required:
+        - id
+        - name
+        - assetType
+        - platform
+        - sleeve
+        - currency
+        - newsTerms
+        - position
+        - archived
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        assetType:
+          type: string
+          enum:
+            - bond
+            - etf
+            - stock
+            - fund
+            - crypto
+            - cash
+        symbol:
+          type: string
+          nullable: true
+        platform:
+          type: string
+          enum:
+            - mbh
+            - revolut
+            - other
+        platformName:
+          type: string
+          nullable: true
+        sleeve:
+          type: string
+          enum:
+            - short
+            - mid
+            - long
+        currency:
+          type: string
+        bondRatePct:
+          type: number
+          nullable: true
+        newsTerms:
+          type: array
+          items:
+            type: string
+        note:
+          type: string
+          nullable: true
+        position:
+          type: integer
+        archived:
+          type: boolean
+        clientRef:
+          type: string
+          format: uuid
+          nullable: true
+    PenzInvestTxnRequest:
+      type: object
+      required:
+        - holdingId
+        - side
+        - amountMinor
+        - date
+      properties:
+        holdingId:
+          type: string
+          format: uuid
+        side:
+          type: string
+          pattern: ^(buy|sell)$
+        quantity:
+          type: number
+          nullable: true
+          exclusiveMinimum: true
+          minimum: 0
+          description: Units; null for a bond or cash held by value
+        amountMinor:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100000000000
+          description: 'Total paid / received in the holding currency, minor units'
+        date:
+          type: string
+          format: date
+        note:
+          type: string
+          nullable: true
+          maxLength: 500
+        clientRef:
+          type: string
+          format: uuid
+          nullable: true
+    PenzInvestTxnResponse:
+      type: object
+      required:
+        - id
+        - holdingId
+        - side
+        - amount
+        - date
+      properties:
+        id:
+          type: string
+          format: uuid
+        holdingId:
+          type: string
+          format: uuid
+        side:
+          type: string
+          enum:
+            - buy
+            - sell
+        quantity:
+          type: number
+          nullable: true
+        amount:
+          $ref: '#/components/schemas/PenzMoney'
+        fxRateDate:
+          type: string
+          format: date
+          nullable: true
+        date:
+          type: string
+          format: date
+        note:
+          type: string
+          nullable: true
+        realizedHufMinor:
+          type: integer
+          format: int64
+          nullable: true
+          description: >-
+            A sell only: proceeds minus the FIFO cost of the lots it consumed
+            (HUF minor)
+        clientRef:
+          type: string
+          format: uuid
+          nullable: true
+    PenzHoldingEventRequest:
+      type: object
+      required:
+        - holdingId
+        - kind
+        - date
+      properties:
+        holdingId:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          pattern: ^(maturity|coupon|dividend|earnings|other)$
+        date:
+          type: string
+          format: date
+        amountMinor:
+          type: integer
+          format: int64
+          nullable: true
+          minimum: 1
+          maximum: 100000000000
+          description: 'Expected amount in the holding currency, minor units'
+        note:
+          type: string
+          nullable: true
+          maxLength: 200
+        clientRef:
+          type: string
+          format: uuid
+          nullable: true
+    PenzHoldingEventResponse:
+      type: object
+      required:
+        - id
+        - holdingId
+        - holdingName
+        - sleeve
+        - kind
+        - date
+      properties:
+        id:
+          type: string
+          format: uuid
+        holdingId:
+          type: string
+          format: uuid
+        holdingName:
+          type: string
+        sleeve:
+          type: string
+          enum:
+            - short
+            - mid
+            - long
+        kind:
+          type: string
+          enum:
+            - maturity
+            - coupon
+            - dividend
+            - earnings
+            - other
+        date:
+          type: string
+          format: date
+        amountMinor:
+          type: integer
+          format: int64
+          nullable: true
+        currency:
+          type: string
+          nullable: true
+        amountHufMinor:
+          type: integer
+          format: int64
+          nullable: true
+          description: Valued at the latest FX quote (valuation policy)
+        note:
+          type: string
+          nullable: true
+    PenzPortfolioResponse:
+      type: object
+      required:
+        - date
+        - totalHufMinor
+        - priceMoveHufMinor
+        - fxMoveHufMinor
+        - sleeves
+        - events
+        - practice
+        - stale
+        - unpricedCount
+      properties:
+        date:
+          type: string
+          format: date
+        totalHufMinor:
+          type: integer
+          format: int64
+          description: >-
+            Everything he has in the three sleeves now; the practice money is
+            NOT in it
+        costHufMinor:
+          type: integer
+          format: int64
+          nullable: true
+        priceMoveHufMinor:
+          type: integer
+          format: int64
+          description: 'Since the previous close: the instruments'' own move'
+        fxMoveHufMinor:
+          type: integer
+          format: int64
+          description: 'Since the previous close: the currency part'
+        priceMovePct:
+          type: number
+          nullable: true
+          description: 'priceMove / the quoted holdings'' previous value, percent, 1 decimal'
+        fxMovePct:
+          type: number
+          nullable: true
+        pricesAsOf:
+          type: string
+          format: date
+          nullable: true
+          description: The oldest quote date among the priced holdings
+        stale:
+          type: boolean
+          description: 'pricesAsOf older than 3 days, or the quote source failing'
+        unpricedCount:
+          type: integer
+          description: 'Holdings valued at cost (no quote, no rate)'
+        fixedCostsMonthlyHufMinor:
+          type: integer
+          format: int64
+          nullable: true
+          description: The allowance engine's fixedCosts line for the month
+        sleeves:
+          type: array
+          description: 'Always three, in order short, mid, long'
+          items:
+            $ref: '#/components/schemas/PenzSleeve'
+        events:
+          type: array
+          description: 'The next 12 months, soonest first'
+          items:
+            $ref: '#/components/schemas/PenzHoldingEventResponse'
+        practice:
+          $ref: '#/components/schemas/PenzPracticeRow'
+    PenzSleeve:
+      type: object
+      required:
+        - sleeve
+        - valueHufMinor
+        - sharePct
+        - priceMoveHufMinor
+        - fxMoveHufMinor
+        - holdings
+      properties:
+        sleeve:
+          type: string
+          enum:
+            - short
+            - mid
+            - long
+        valueHufMinor:
+          type: integer
+          format: int64
+        costHufMinor:
+          type: integer
+          format: int64
+        sharePct:
+          type: number
+          description: 'Share of the total, percent, 1 decimal'
+        priceMoveHufMinor:
+          type: integer
+          format: int64
+        fxMoveHufMinor:
+          type: integer
+          format: int64
+        coverageMonths:
+          type: integer
+          nullable: true
+          description: >
+            The long sleeve only: as it stands today, with no growth assumed,
+            how many whole months of the current fixed costs it covers
+            (floor(value / fixedCostsMonthly)); null without fixed costs or for
+            other sleeves.
+        holdings:
+          type: array
+          items:
+            $ref: '#/components/schemas/PenzPosition'
+    PenzPosition:
+      type: object
+      required:
+        - holdingId
+        - name
+        - assetType
+        - platform
+        - currency
+        - valueHufMinor
+        - costHufMinor
+        - sharePct
+        - priced
+      properties:
+        holdingId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        assetType:
+          type: string
+          enum:
+            - bond
+            - etf
+            - stock
+            - fund
+            - crypto
+            - cash
+        symbol:
+          type: string
+          nullable: true
+        platform:
+          type: string
+          enum:
+            - mbh
+            - revolut
+            - other
+        platformName:
+          type: string
+          nullable: true
+        currency:
+          type: string
+        quantity:
+          type: number
+          nullable: true
+        valueHufMinor:
+          type: integer
+          format: int64
+        costHufMinor:
+          type: integer
+          format: int64
+          description: FIFO cost of the open lots (HUF twins)
+        sharePct:
+          type: number
+          description: 'Share of its sleeve, percent, 1 decimal'
+        priceMoveHufMinor:
+          type: integer
+          format: int64
+        fxMoveHufMinor:
+          type: integer
+          format: int64
+        changePct:
+          type: number
+          nullable: true
+          description: 'Price change since the previous close, percent, 2 decimals'
+        priced:
+          type: boolean
+          description: false = valued at cost (no quote / no FX rate)
+        valuation:
+          type: string
+          enum:
+            - quote
+            - accrual
+            - cost
+        priceAsOf:
+          type: string
+          format: date
+          nullable: true
+    PenzPracticeRow:
+      type: object
+      required:
+        - monthlyHufMinor
+      properties:
+        monthlyHufMinor:
+          type: integer
+          format: int64
+          description: The Gyakorlás monthly cap from the settings
+        monthPnlHufMinor:
+          type: integer
+          format: int64
+          nullable: true
+          description: Sum of the month's closed practice trades — null until L7
+    PenzDigestResponse:
+      type: object
+      required:
+        - date
+        - status
+        - items
+        - newsHealthy
+      properties:
+        date:
+          type: string
+          format: date
+        status:
+          type: string
+          enum:
+            - pending
+            - ready
+            - quiet
+            - failed
+        generatedAt:
+          type: string
+          format: date-time
+          nullable: true
+        pricesAsOf:
+          type: string
+          format: date
+          nullable: true
+        newsHealthy:
+          type: boolean
+          description: false when every news source failed its last fetch
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PenzDigestItem'
+    PenzDigestItem:
+      type: object
+      required:
+        - id
+        - kind
+        - title
+        - effectHufMinor
+        - effectNote
+        - confidence
+        - verdict
+        - body
+        - uncertainty
+        - noAction
+        - sources
+        - narratedBy
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+          enum:
+            - holding
+            - fx
+            - rates
+        holdingId:
+          type: string
+          format: uuid
+          nullable: true
+        holdingName:
+          type: string
+          nullable: true
+          description: 'From his ledger, never from the model'
+        sleeve:
+          type: string
+          nullable: true
+          enum:
+            - short
+            - mid
+            - long
+        title:
+          type: string
+        effectHufMinor:
+          type: integer
+          format: int64
+          description: Computed by the backend from his own positions (signed)
+        effectNote:
+          type: string
+          description: 'Fixed backend copy: what the effect is measured on'
+        changePct:
+          type: number
+          nullable: true
+          description: 'Computed move behind the effect, percent, 1 decimal'
+        confidence:
+          type: integer
+          minimum: 0
+          maximum: 2
+          description: 0 alacsony · 1 közepes · 2 magas
+        verdict:
+          type: string
+          description: 'One line: what Boop makes of it (no instruction)'
+        body:
+          type: string
+          description: >-
+            The reading, paragraphs separated by a blank line; *emphasis*
+            allowed
+        uncertainty:
+          type: string
+          description: Where this could be wrong — never empty
+        noAction:
+          type: string
+          description: 'Why there is nothing to do, specific to this item'
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/PenzDigestSource'
+        narratedBy:
+          type: string
+          enum:
+            - model
+            - fallback
+    PenzDigestSource:
+      type: object
+      required:
+        - name
+        - title
+        - url
+      properties:
+        name:
+          type: string
+        title:
+          type: string
+        url:
+          type: string
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
