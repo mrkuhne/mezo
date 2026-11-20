@@ -1321,7 +1321,7 @@
     },
     "jegyek:mezo-r36n9.104": {
       "page_id": "41d8968e-752b-81bb-aa41-dcb786757d9b",
-      "hash": "63d6e3fa4fce"
+      "hash": "1e0fad609f31"
     },
     "jegyek:mezo-r36n9.103": {
       "page_id": "41d8968e-752b-814a-8403-e3df0518adf3",
@@ -1434,6 +1434,14 @@
     "kezikonyv:11-penz/03-portfolio-hirek": {
       "page_id": "41e8968e-752b-81ee-819e-d92332c66ce5",
       "hash": "3dc952d42297"
+    },
+    "kiadasok:299d4045d": {
+      "page_id": "41e8968e-752b-816b-85d3-d6d0d1c118e2",
+      "hash": "4fcb0e8cdbc4"
+    },
+    "kiadasok:9bee9ab61": {
+      "page_id": "41e8968e-752b-8191-8c35-d02a926c3682",
+      "hash": "8387b67fe89a"
     }
   }
 }
