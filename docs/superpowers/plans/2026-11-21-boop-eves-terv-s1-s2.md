@@ -30,7 +30,7 @@ builder on it. S3 (year map) and S4 (following it) get their own plan after S2 s
 - Phone: every number is the server's (minutes, bands, budget, ranks, raise costs); hand-decoded `PlanClient`/`PlanWire`, not the generated client; Hungarian copy; no emoji; never "Mezo"; smallest iPhone width; reduced motion.
 - Muscle names on screen = the builder's existing names (`BlockDraft.longName`), not the spike's.
 - ArchUnit: `@Service` in `service/`, config in `config/`, no class-level `@Transactional`; ITs with `-Dmezo.test.use-testcontainers=true`; regenerate `docs/CODEMAP.md` after every merge.
-- **Collision:** Tasks 3–4 edit `PlanEvaluator`, `MesoPlanEvaluateService`, `MuscleEvaluation` — files `mezo-r36n9.114` plans to touch. Start Task 3 only after `.114` merged to main (rebase first) or with that session's written OK in a bd comment. Tasks 1–2 and 5 do not touch them.
+- **Collision:** Tasks 3–4 edit `PlanEvaluator`, `MesoPlanEvaluateService`, `MuscleEvaluation` — files `mezo-r36n9.114` plans to touch. Ruling 2026-11-21: `.114` is still design-only (no code on main or a branch), so Tasks 3–5 proceed with **additive** fields only; a bd comment on `.114` lists them; whoever lands second rebases. Tasks 1–2 do not touch them.
 
 ## Review Focus
 
@@ -106,7 +106,7 @@ Labels Hungarian (`Felső / Alsó`, `Teljes test ×4`, …).
 
 Formula when `styled` and the day has exercises: `Σ workingSets × (setSeconds + restSeconds_or_flatEquivalent)/60 + Σ warmupSets × minutesPerWarmupSet + exerciseCount × transitionMinutes + sessionOverheadMinutes`, HALF_UP; an exercise with `restSeconds == null` in a styled plan uses `minutesPerWorkingSet × 60 − setSeconds` as its rest. Unstyled: today's formula exactly.
 
-- [ ] **Step 1: Failing tests** — `styledReferenceDay()`: 5 exercises × 3 working sets, rests 150,150,90,90,90, 2 warm-ups each at 1.0, set 40 s → `round(15×… )` computed in the test from the formula = **54**; assert 54 and that it lies in 35..60 (Fitbod sanity); `unstyledUnchanged()`: same day unstyled = `2.4×15 + 10 + 6` = 52; `styledNullRestFallsBack()`.
+- [ ] **Step 1: Failing tests** — `styledReferenceDay()`: 5 exercises × 3 working sets, rests 150,150,90,90,90, 2 warm-ups each at 1.0, set 40 s → `round(15×… )` = 6×190/60 + 9×130/60 + 10 + 5 + 6 = 59.5 → **60** (HALF_UP); assert 60 and that it lies in 35..60 (Fitbod sanity); `unstyledUnchanged()`: same day unstyled = `2.4×15 + 10 + 6` = 52; `styledNullRestFallsBack()`.
 - [ ] **Step 2: Run** `./mvnw -q -pl backend test -Dtest=PlanEvaluatorTest` → FAIL.
 - [ ] **Step 3: Implement.**
 - [ ] **Step 4: Run** `PlanEvaluatorTest` + `MesoPlanEvaluate*IT` (testcontainers) → PASS; existing unstyled IT minute values unchanged.
