@@ -835,5 +835,29 @@
     "miert": "A kiadás előtti átnézés megmutatta, hogy a gomb megnyomása után többnyire csak az indokló mondat változott, a sorrend nem — a mozdulat hasonlósága minden kíméleti szempontot megelőzött.",
     "levaltotta": "Azt a sorrendet, amelyben a mozdulat hasonlósága a szerep része volt, és megelőzte a kíméletet.",
     "kovetkezmeny": "Egy kímélő izolált gyakorlat ettől még nem kerül egy összetett gyakorlat elé, ha összetett gyakorlatot cserélsz."
+  },
+  "d-2026-11-20-hianyjelzes-hozzaadassal": {
+    "cim": "A hiányjelzés gombbal jön: meg is fogadhatod",
+    "datum": "2026-11-20",
+    "suly": "Kicsi",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "Ha a blokképítő szól, hogy egy izomnál hiányzik egy kiegészítő mozgás, egy konkrét gyakorlatot is ajánl, és egy „Hozzáadom” gombbal be is teszi a tervbe.",
+    "miert": "Egy tanács, amit egy koppintással meg lehet fogadni, hasznos; a gomb nélküli jelzés csak egy újabb figyelmeztetés lenne.",
+    "levaltotta": "—",
+    "kovetkezmeny": "Ehhez a blokképítőnek előbb meg kell tanulnia gyakorlatot hozzáadni — ezért a napi szerkesztő jön előbb."
+  },
+  "d-2026-11-20-teljes-blokkepito": {
+    "cim": "A teljes blokképítő a telefonra jön, a napi szerkesztővel kezdve",
+    "datum": "2026-11-20",
+    "suly": "Közepes",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "A blokképítő minden része elkészül a telefonon, lépésenként: először a futó blokk napi szerkesztője (hozzáadás, törlés, csere, átrendezés, ismétlés, tartalék, kezdősúly), utána a hiányjelzés, majd az új blokk összerakása, a lezárás és a sablonok, végül az egyedi edzés és a heti beosztás.",
+    "miert": "A mostani blokk az első hetében jár, így a futó blokk átszabása a sürgős; az új blokk összerakásán egy másik munkamenet már dolgozik.",
+    "levaltotta": "Azt, hogy a blokképítőben csak a sorozatszám volt állítható.",
+    "kovetkezmeny": "A szerkesztés a blokképítő meglévő Napok lapjára kerül, egy közös mentéssel. Napot átnevezni vagy áthelyezni ebben a lépésben még nem lehet."
   }
 }
