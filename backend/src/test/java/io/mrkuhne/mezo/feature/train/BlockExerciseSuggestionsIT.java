@@ -131,6 +131,10 @@ class BlockExerciseSuggestionsIT extends ApiIntegrationTest {
                 assertThat(MuscleGroup.of(s.getExercise().getMuscle())).isEqualTo("back");
                 assertThat(s.getReasonText()).endsWith(".");
             });
+        // the whole group, not one token: a day without back work gets rows/pulldowns, not only lower back
+        assertThat(res.getSuggestions()).extracting(s -> s.getExercise().getMuscle())
+            .anyMatch(m -> !"back-lower".equals(m))
+            .satisfies(muscles -> assertThat(muscles.stream().distinct().count()).isGreaterThan(1));
     }
 
     @Test

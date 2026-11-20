@@ -21,7 +21,6 @@ import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import io.mrkuhne.mezo.techcore.persistence.OwnershipGuard;
 import java.time.LocalDate;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -38,7 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
  * {@link ExerciseSubstituteRanker} fed from a block's draft day instead of a running workout. The block's goal,
  * the gym profile and the discomfort history always apply; today's check-in pain only when the edited day is
  * today's weekday; nobody is "sore now" while planning. {@code replace} ranks alternatives to the outgoing row;
- * {@code add} ranks only the chosen coarse group's catalogue rows against a synthetic outgoing exercise. Muscles
+ * {@code add} ranks every catalogue row of the chosen coarse group ({@link ExerciseSubstituteRanker#rankForGroup}). Muscles
  * under their weekly band (the run evaluation's own numbers) are explained, never reordered. Each suggestion
  * carries the block style's prescription, computed read-only with {@link StyleStamper}. Pure read.
  */
@@ -80,20 +79,15 @@ public class BlockSuggestionService {
             : req.getDayCatalogIds().stream().filter(Objects::nonNull).collect(Collectors.toSet());
 
         List<ExerciseCatalogEntity> all = reads.pool(userId);
-        List<ExerciseCatalogEntity> pool;
-        Candidate out;
-        if (replace) {
-            pool = all;
-            out = replaceOut(all, req.getOutgoing());
-        } else {
-            String group = req.getMuscle().strip();
-            pool = all.stream().filter(c -> group.equals(MuscleGroup.of(c.getMuscle()))).toList();
-            out = addOut(pool, group, inDay);
-        }
+        String group = replace ? null : req.getMuscle().strip();
+        // Add: the chosen group's rows only — the suggestions and the full list filtered to that muscle.
+        List<ExerciseCatalogEntity> pool = replace ? all
+            : all.stream().filter(c -> group.equals(MuscleGroup.of(c.getMuscle()))).toList();
+        Candidate out = replace ? replaceOut(all, req.getOutgoing()) : null;
 
-        // History only for rows that can ever rank: the outgoing muscle's body region.
-        String region = ExerciseSubstituteRanker.region(out.muscle());
-        List<ExerciseCatalogEntity> relevant = pool.stream()
+        // History only for rows that can ever rank: the outgoing muscle's body region, or the whole group.
+        String region = replace ? ExerciseSubstituteRanker.region(out.muscle()) : null;
+        List<ExerciseCatalogEntity> relevant = !replace ? pool : pool.stream()
             .filter(c -> Objects.equals(region, ExerciseSubstituteRanker.region(c.getMuscle())))
             .toList();
         GymAvailability gym = gymProfileService.availability(userId);
@@ -104,12 +98,13 @@ public class BlockSuggestionService {
         boolean editsToday = req.getDayIndex() != null && req.getDayIndex() == weekdayIndex(today);
         Set<String> painJoints = editsToday ? reads.painJointsToday(userId, today) : Set.of();
         Context ctx = new Context(block.getGoalPreset(), false, painJoints, inDay, underBandGroups(userId, mesoId));
-        Result result = ExerciseSubstituteRanker.rank(out, candidates, ctx);
+        Result result = replace ? ExerciseSubstituteRanker.rank(out, candidates, ctx)
+            : ExerciseSubstituteRanker.rankForGroup(group, preferredType(pool, inDay), candidates, ctx);
 
         TrainingStyle style = TrainingStyle.fromWire(block.getTrainingStyle());
         CatalogAttributes.Lookup stability = style == null ? CatalogAttributes.Lookup.EMPTY
             : catalogAttributes.load(result.suggestions().stream().map(Ranked::id).toList());
-        return reads.response(viewer, pool, result, SubstituteReads.painJointHu(painJoints, out.joints()), topSets,
+        return reads.response(viewer, pool, result, SubstituteReads.painJointHu(painJoints, out == null ? null : out.joints()), topSets,
             c -> prescription(c, style, stability.stable(c.getId()), styleProps));
     }
 
@@ -128,21 +123,10 @@ public class BlockSuggestionService {
                 true, true, PainLevel.NONE, false);
     }
 
-    /**
-     * The synthetic outgoing exercise of an add: the group's most common catalogue token among the day's rows
-     * (else the group's first catalogue token), a compound unless the day already has a compound of that group,
-     * every attribute null. {@code pool} is already the group's rows.
-     */
-    static Candidate addOut(List<ExerciseCatalogEntity> pool, String group, Set<UUID> inDay) {
-        List<ExerciseCatalogEntity> dayRows = pool.stream().filter(c -> inDay.contains(c.getId())).toList();
-        Map<String, Integer> counts = new LinkedHashMap<>(); // first-seen order breaks ties
-        dayRows.forEach(c -> counts.merge(c.getMuscle(), 1, Integer::sum));
-        String token = counts.entrySet().stream()
-            .reduce((a, b) -> b.getValue() > a.getValue() ? b : a).map(Map.Entry::getKey)
-            .orElse(pool.isEmpty() ? group : pool.get(0).getMuscle());
-        String type = dayRows.stream().anyMatch(c -> "compound".equals(c.getType())) ? "isolation" : "compound";
-        return new Candidate(null, token, type, null, null, null, null, null, null, null, null,
-            false, true, PainLevel.NONE, false);
+    /** An add fills the slot with a compound unless the day already has a compound of the group ({@code pool}). */
+    static String preferredType(List<ExerciseCatalogEntity> pool, Set<UUID> inDay) {
+        return pool.stream().anyMatch(c -> inDay.contains(c.getId()) && "compound".equals(c.getType()))
+            ? "isolation" : "compound";
     }
 
     /** Coarse groups whose weekly sets in the stored block are below their band's low end (the run evaluation). */
@@ -165,10 +149,11 @@ public class BlockSuggestionService {
         }
         GymExerciseJson base = new GymExerciseJson(null, c.getName(), c.getMuscle(), null, BASE_SETS, BASE_REP_MIN,
             BASE_REP_MAX, BASE_RIR, null, c.getType(), null, c.getId(), null, null, null, null, null, null, null);
-        GymExerciseJson s = StyleStamper.stamp(base, style, stable, props);
-        if (s == base) { // the stamper left it alone: plyo / not counting toward volume
+        // The rows the stamper never styles (spec §11.3): not counting toward volume, or no style class (plyo).
+        if (!base.countsTowardVolume() || ExerciseClass.of(base.type(), stable) == null) {
             return null;
         }
+        GymExerciseJson s = StyleStamper.stamp(base, style, stable, props);
         return new SuggestionPrescription().workingSets(s.workingSets()).repMin(s.repMin()).repMax(s.repMax())
             .targetRIR(s.targetRir()).restSec(s.restSec());
     }

@@ -83,18 +83,7 @@ public final class ExerciseSubstituteRanker {
 
     public static Result rank(Candidate out, List<Candidate> pool, Context ctx) {
         Set<UUID> inWorkout = ctx.inWorkout() == null ? Set.of() : ctx.inWorkout();
-        Set<String> painJoints = ctx.painJointsToday() == null ? Set.of() : ctx.painJointsToday();
-        Set<String> underBand = ctx.underBandGroups() == null ? Set.of() : ctx.underBandGroups();
-        Goal goal = goal(ctx.goalPreset());
-
-        Map<UUID, Label> labels = new LinkedHashMap<>();
-        for (Candidate c : pool) {
-            if (!c.available()) {
-                labels.put(c.id(), Label.NO_EQUIPMENT);
-            } else if (c.pain() == PainLevel.STRONG) {
-                labels.put(c.id(), Label.HURT_BEFORE);
-            }
-        }
+        Map<UUID, Label> labels = labels(pool);
 
         List<Integer> picked = new ArrayList<>();
         for (int i = 0; i < pool.size(); i++) {
@@ -113,7 +102,50 @@ public final class ExerciseSubstituteRanker {
                 }
             }
         }
+        return finish(out, pool, picked, labels, ctx);
+    }
 
+    /**
+     * The block day editor's add (mezo-r36n9.116, spec 2026-11-20 §6.3): ranks every eligible pool row of one
+     * coarse muscle group ({@link MuscleGroup#of}) — never one token of it. The slot is a muscle-less, pattern-less
+     * outgoing exercise of {@code preferredType}, so the existing tiers apply unchanged: role (same type, attributed
+     * over custom; the muscle term is constant within the group) → discomfort → fit (always 0) → goal →
+     * trackability → lengthened → pool position. Same labels and eligibility as {@link #rank}.
+     */
+    public static Result rankForGroup(String group, String preferredType, List<Candidate> pool, Context ctx) {
+        Candidate slot = new Candidate(null, null, preferredType, null, null, null, null, null, null, null, null,
+            false, true, PainLevel.NONE, false);
+        Set<UUID> inWorkout = ctx.inWorkout() == null ? Set.of() : ctx.inWorkout();
+        Map<UUID, Label> labels = labels(pool);
+        List<Integer> picked = new ArrayList<>();
+        for (int i = 0; i < pool.size(); i++) {
+            Candidate c = pool.get(i);
+            if (group != null && group.equals(MuscleGroup.of(c.muscle())) && eligible(slot, c, inWorkout, labels)) {
+                picked.add(i);
+            }
+        }
+        return finish(slot, pool, picked, labels, ctx);
+    }
+
+    /** Left out of the suggestions, labelled for the full list: unavailable kit, then a recent strong pain. */
+    private static Map<UUID, Label> labels(List<Candidate> pool) {
+        Map<UUID, Label> labels = new LinkedHashMap<>();
+        for (Candidate c : pool) {
+            if (!c.available()) {
+                labels.put(c.id(), Label.NO_EQUIPMENT);
+            } else if (c.pain() == PainLevel.STRONG) {
+                labels.put(c.id(), Label.HURT_BEFORE);
+            }
+        }
+        return labels;
+    }
+
+    /** Scores, orders and explains the picked pool rows against {@code out}. */
+    private static Result finish(Candidate out, List<Candidate> pool, List<Integer> picked, Map<UUID, Label> labels,
+                                 Context ctx) {
+        Set<String> painJoints = ctx.painJointsToday() == null ? Set.of() : ctx.painJointsToday();
+        Set<String> underBand = ctx.underBandGroups() == null ? Set.of() : ctx.underBandGroups();
+        Goal goal = goal(ctx.goalPreset());
         // Today's pain only moves or explains a place when some joint in play actually loads it.
         boolean painRelevant = hitsPainToday(out, painJoints)
             || picked.stream().anyMatch(i -> hitsPainToday(pool.get(i), painJoints));
