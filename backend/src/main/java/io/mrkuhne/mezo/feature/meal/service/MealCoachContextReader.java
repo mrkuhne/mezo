@@ -12,6 +12,7 @@ import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
 import io.mrkuhne.mezo.feature.medication.entity.MedicationEntity;
+import io.mrkuhne.mezo.feature.meal.port.SeasonContextPort;
 import io.mrkuhne.mezo.feature.medication.repository.MedicationRepository;
 import io.mrkuhne.mezo.feature.nutrition.service.SensitivityProfile;
 import io.mrkuhne.mezo.feature.nutrition.service.SensitivityService;
@@ -44,7 +45,16 @@ class MealCoachContextReader {
                          BigDecimal bodyFatPct, String activityLevel,
                          String goalTrajectory, List<String> goalGuards,
                          Sleep sleep, String medication, List<CheckIn> checkIns,
-                         SensitivityProfile sensitivity) {
+                         SensitivityProfile sensitivity, String seasonRules) {
+
+        /** The pre-season shape — no season rules. */
+        PersonContext(String sex, Integer age, BigDecimal heightCm, BigDecimal weightKg,
+                      BigDecimal bodyFatPct, String activityLevel, String goalTrajectory,
+                      List<String> goalGuards, Sleep sleep, String medication, List<CheckIn> checkIns,
+                      SensitivityProfile sensitivity) {
+            this(sex, age, heightCm, weightKg, bodyFatPct, activityLevel, goalTrajectory, goalGuards,
+                sleep, medication, checkIns, sensitivity, "");
+        }
 
         /** The pre-sensitivity shape — {@code sensitivity} null = the profile is not known. */
         PersonContext(String sex, Integer age, BigDecimal heightCm, BigDecimal weightKg,
@@ -61,7 +71,13 @@ class MealCoachContextReader {
 
         PersonContext withSensitivity(SensitivityProfile profile) {
             return new PersonContext(sex, age, heightCm, weightKg, bodyFatPct, activityLevel,
-                goalTrajectory, goalGuards, sleep, medication, checkIns, profile);
+                goalTrajectory, goalGuards, sleep, medication, checkIns, profile, seasonRules);
+        }
+
+        /** Boop B6 Évad: the active season's rules ({@code "[Évad] "} lines; "" without a season). */
+        PersonContext withSeasonRules(String rules) {
+            return new PersonContext(sex, age, heightCm, weightKg, bodyFatPct, activityLevel,
+                goalTrajectory, goalGuards, sleep, medication, checkIns, sensitivity, rules == null ? "" : rules);
         }
     }
 
@@ -89,6 +105,8 @@ class MealCoachContextReader {
     private final CheckInRepository checkIns;
     private final MedicationRepository medications;
     private final SensitivityService sensitivityService;
+    /** Boop B6 Évad S2 (mezo-r36n9.16): the season's food rules for the coach. */
+    private final SeasonContextPort seasonContext;
 
     @Transactional(readOnly = true)
     PersonContext read(UUID userId, LocalDate date) {
@@ -120,7 +138,7 @@ class MealCoachContextReader {
             profile == null ? null : profile.getActivityLevel(),
             goal == null ? null : goal.getTrajectory(),
             goal == null || goal.getGuards() == null ? List.of() : List.copyOf(goal.getGuards()),
-            sleep, medication, dayCheckIns, sensitivityService.profile(userId));
+            sleep, medication, dayCheckIns, sensitivityService.profile(userId), seasonContext.render(userId, date));
     }
 
     private static Sleep toSleep(SleepLogEntity s) {

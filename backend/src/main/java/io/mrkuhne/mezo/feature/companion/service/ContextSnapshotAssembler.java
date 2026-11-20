@@ -18,6 +18,7 @@ import io.mrkuhne.mezo.feature.biometrics.profile.repository.BiometricProfileRep
 import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.sleep.service.SleepAnchorPort;
+import io.mrkuhne.mezo.feature.companion.port.SeasonContextPort;
 import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.weight.service.WeightTrendService;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
@@ -137,6 +138,8 @@ public class ContextSnapshotAssembler {
     private final PeopleSnapshotBlock peopleSnapshotBlock;
     private final LifeGoalSnapshotBlock lifeGoalSnapshotBlock;
     private final CompanionProperties properties;
+    /** Boop B6 Évad S2 (mezo-r36n9.16): the season's rules, right after the goal block. */
+    private final SeasonContextPort seasonContext;
 
     /**
      * The chat-turn variant — nine blocks, {@code [Emberek]} ({@link PeopleSnapshotBlock}) sitting
@@ -147,6 +150,7 @@ public class ContextSnapshotAssembler {
         return HEADER + today + "):\n"
                 + profileBlock(userId, today, true) + '\n'
                 + goalBlock(userId, today) + '\n'
+                + seasonLines(userId, today)
                 + lifeGoalLine(userId, today)
                 + trainBlock(userId, today) + '\n'
                 + practiceBlock(userId, today) + '\n'
@@ -165,6 +169,13 @@ public class ContextSnapshotAssembler {
     private String peopleLine(UUID userId, LocalDate today) {
         String block = peopleSnapshotBlock.render(userId, today);
         return block.isEmpty() ? "" : block + '\n';
+    }
+
+    /** Boop B6 Évad S2: the [Évad] lines in BOTH variants (the season's rules shape every answer and the morning
+     *  message alike); "" without an active season, so no stray blank line is left behind. */
+    private String seasonLines(UUID userId, LocalDate today) {
+        String block = seasonContext.render(userId, today);
+        return block == null || block.isBlank() ? "" : block.strip() + '\n';
     }
 
     /** mezo-iizd.10: [Célok] MINDKÉT variánsban — user-döntés: a reggeli cél-emlékeztető kívánt,
@@ -186,6 +197,7 @@ public class ContextSnapshotAssembler {
         return HEADER + today + "):\n"
                 + profileBlock(userId, today, false) + '\n'
                 + goalBlock(userId, today) + '\n'
+                + seasonLines(userId, today)
                 + lifeGoalLine(userId, today)
                 + trainBlock(userId, today) + '\n'
                 + practiceBlock(userId, today) + '\n'

@@ -112,6 +112,10 @@ final class BoopPrompts {
             b.append("[Ütközés] ").append(conflict.text()).append('\n');
         }
         b.append("[Lefekvési cél] ").append(RuleVerdicts.hhmm(d.bedtimeTarget())).append('\n');
+        if (d.seasonRules() != null && !d.seasonRules().isBlank()) {
+            // Boop B6 Évad S2: the season's rules (goal, days, kcal, recipe / NOVA rule, sleep need) as [Évad] lines
+            b.append(d.seasonRules().strip()).append('\n');
+        }
         if (d.recovery() != null) {
             b.append("[Kímélő mód] ").append(d.recovery().reason()).append(", ")
                 .append(d.recovery().day()).append(". nap\n");

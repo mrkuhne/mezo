@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.boop.service;
 
+import io.mrkuhne.mezo.feature.boop.port.SeasonContextPort;
 import io.mrkuhne.mezo.api.dto.CheckInResponse;
 import io.mrkuhne.mezo.api.dto.FuelDayResponse;
 import io.mrkuhne.mezo.api.dto.IntentionDayResponse;
@@ -114,6 +115,8 @@ public class BoopDayAssembler {
     private final PatternRepository patterns;
     private final RecoveryPeriodService recoveryPeriods;
     private final WeightTrendQuery weightTrend;
+    /** Boop B6 Évad S2 (mezo-r36n9.16): the season's rules for the brief. */
+    private final SeasonContextPort seasonContext;
 
     public BoopDay assemble(UUID user, LocalDate date) {
         ZoneId zone = ZoneId.of(wearableProperties.zone());
@@ -173,7 +176,8 @@ public class BoopDayAssembler {
             observations(user),
             calendar(user, date, zone),
             weight(user, date),
-            recovery(user, date));
+            recovery(user, date),
+            seasonContext.render(user, date));
     }
 
     // ------------------------------------------------------------------ sleep
