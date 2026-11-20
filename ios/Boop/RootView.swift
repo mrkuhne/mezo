@@ -24,6 +24,8 @@ struct RootView: View {
             // Simulator review of the shared area-page kit: every block on one page, no sign-in needed.
             if UserDefaults.standard.bool(forKey: "previewKit") {
                 KitGallery()
+            } else if UserDefaults.standard.bool(forKey: "previewEvad") {
+                EvadDemoRoot()   // B6 Évad spike (mezo-r36n9.16), throwaway
             } else if UserDefaults.standard.bool(forKey: "previewBlokk") {
                 // The block builder and the weekly review on fixtures (mezo-r36n9.83).
                 PlanPreviewRoot()
