@@ -301,6 +301,8 @@ The delivery-infra counterpart to the proactive epic (§ `Proactive` row above):
 
 **Weekly fact merge** (`mezo-d6ivw.10`) adds `FactMergeJob` (Monday 07:30, `mezo.companion.fact-merge.cron`), gated by `FeaturesConfiguration.FACT_MERGE_JOB_SWITCH` (`mezo.techcore.cron.fact-merge-job.enabled`); off ⇒ the bean does not exist. See [companion.md „Heti tény-összevonás”](companion.md).
 
+**Boop Pénz news poll** (`mezo-r36n9.104`) adds `PenzNewsJob` (06:30 and 13:30 Europe/Budapest, `mezo.penz.news.cron`), gated by `FeaturesConfiguration.PENZ_NEWS_SWITCH` (`mezo.penz.news.enabled`) + `PENZ_NEWS_JOB_SWITCH` (`mezo.techcore.cron.penz-news-job.enabled`); it only hands off to its own single-thread `penzNewsExecutor`. Its outbound client is `feature/penz/service/net/PenzHttpFetcher` — the `WebPageClient` SSRF guard tightened with a per-call host allow-list and an every-address public check — used for the Yahoo quotes and the news feeds. See [penz.md §3.8–§3.9](penz.md).
+
 **A napom overnight pre-warm** (`mezo-yjzhw.1`) adds no new API surface — `DayReviewWarmupJob` (`feature/companion/service/DayReviewWarmupJob.java`, nightly 02:30) calls the existing `DayReviewService.assemble` per user × finished day so the first "Mai" load of the morning hits a warm cache instead of paying the LLM latency live. Gated by `FeaturesConfiguration.DAY_REVIEW_WARMUP_JOB_SWITCH` (`mezo.techcore.cron.day-review-warmup-job.enabled`); off ⇒ the bean does not exist. See [companion.md §"DayReviewWarmupJob"](companion.md) and [today.md](today.md).
 
 This is the most load-bearing section — every seam, bidirectionally, with the crossing type.
