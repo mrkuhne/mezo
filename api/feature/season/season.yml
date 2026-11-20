@@ -56,7 +56,7 @@ paths:
       summary: >
         The single source of day judgement (food inside the day's band, the planned session done, the night long enough),
         served for every day whether or not a season exists (without one the food budget is the goal's served target).
-        Today, kímélő days (fuel guidance/estimate mode) and unlogged days are not judged; reasoned skips excuse a session.
+        Today, kímélő days (any fuel recovery mode — the same rule as the Étel Hét tab) and unlogged days are not judged; reasoned skips excuse a session.
       parameters:
         - { name: from, in: query, required: true, schema: { type: string, format: date } }
         - { name: to, in: query, required: true, schema: { type: string, format: date } }
