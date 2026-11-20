@@ -511,4 +511,33 @@ class ExerciseSubstituteRankerTest {
         assertThat(ranked(r, "Pull-Up").signals()).containsExactly(Signal.SAME_ROLE, Signal.UNDER_BAND);
         assertThat(r.labels()).hasSize(2).containsValues(Label.NO_EQUIPMENT, Label.HURT_BEFORE);
     }
+
+    // ── the multi-select add: fine tokens across groups (mezo-r36n9.127) ──
+
+    @Test
+    void rankForTokens_shouldShowEveryPickedToken_whenOneTokenHasMoreBetterRows() {
+        var r = ExerciseSubstituteRanker.rankForTokens(List.of("back-mid", "chest-upper"), "compound", pool(
+            x("Seated Row").muscle("back-mid").pattern("horizontal-pull").equipment("cable"),
+            x("Machine Row").muscle("back-mid").pattern("horizontal-pull").equipment("machine"),
+            x("Chest Supported Row").muscle("back-mid").pattern("horizontal-pull").equipment("machine"),
+            x("T-Bar Row").muscle("back-mid").pattern("horizontal-pull").equipment("barbell"),
+            x("Cable Row").muscle("back-mid").pattern("horizontal-pull").equipment("cable"),
+            x("Low-to-High Fly").muscle("chest-upper").type("isolation").pattern("fly").equipment("cable"),
+            x("Pulldown").muscle("back-wide").pattern("vertical-pull").equipment("cable")), ctx());
+        assertThat(names(r)).hasSize(5).contains("Low-to-High Fly").doesNotContain("Pulldown");
+        // round-robin: the other token's best row is second, not pushed out by five rows
+        assertThat(names(r).get(1)).isEqualTo("Low-to-High Fly");
+        assertThat(ranked(r, "Low-to-High Fly").signals().get(0)).isEqualTo(Signal.OTHER_TYPE);
+    }
+
+    @Test
+    void rankForTokens_shouldEqualTheTokensOrder_forOneToken() {
+        var pool = pool(
+            x("Back Extension").muscle("back-lower").type("isolation").pattern("hinge").equipment("bench"),
+            x("Rack Pull").muscle("back-lower").pattern("hinge").equipment("barbell"),
+            x("Seated Row").muscle("back-mid").pattern("horizontal-pull").equipment("cable"));
+        var r = ExerciseSubstituteRanker.rankForTokens(Set.of("back-lower"), "compound", pool, ctx());
+        assertThat(names(r)).containsExactly("Rack Pull", "Back Extension");
+        assertThat(ExerciseSubstituteRanker.rankForTokens(List.of(), "compound", pool, ctx()).suggestions()).isEmpty();
+    }
 }

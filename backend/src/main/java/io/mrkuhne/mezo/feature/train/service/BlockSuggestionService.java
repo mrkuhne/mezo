@@ -37,7 +37,9 @@ import org.springframework.transaction.annotation.Transactional;
  * {@link ExerciseSubstituteRanker} fed from a block's draft day instead of a running workout. The block's goal,
  * the gym profile and the discomfort history always apply; today's check-in pain only when the edited day is
  * today's weekday; nobody is "sore now" while planning. {@code replace} ranks alternatives to the outgoing row;
- * {@code add} ranks every catalogue row of the chosen coarse group ({@link ExerciseSubstituteRanker#rankForGroup}). Muscles
+ * {@code add} ranks the catalogue rows of the picked fine tokens ({@link ExerciseSubstituteRanker#rankForTokens},
+ * mezo-r36n9.127), else of one coarse group ({@link ExerciseSubstituteRanker#rankForGroup}), else of the week's
+ * under-band groups' tokens. Muscles
  * under their weekly band (the run evaluation's own numbers) are explained, never reordered. Each suggestion
  * carries the block style's prescription, computed read-only with {@link StyleStamper}. Pure read.
  */
@@ -71,7 +73,9 @@ public class BlockSuggestionService {
                 SystemMessage.error(ExerciseTechniqueService.RUN_NOT_EDITABLE).build(), HttpStatus.CONFLICT);
         }
         boolean replace = req.getMode() == BlockExerciseSuggestionsRequest.ModeEnum.REPLACE;
-        if (replace ? req.getOutgoing() == null : req.getMuscle() == null || req.getMuscle().isBlank()) {
+        List<String> tokens = req.getMuscles() == null ? List.of()
+            : req.getMuscles().stream().filter(Objects::nonNull).map(String::strip).distinct().toList();
+        if (replace ? req.getOutgoing() == null : !MuscleGroup.TOKENS.containsAll(tokens)) {
             throw new SystemRuntimeErrorException(SystemMessage.error(REQUEST_INVALID).build(), HttpStatus.BAD_REQUEST);
         }
         LocalDate today = LocalDate.now();
@@ -79,10 +83,18 @@ public class BlockSuggestionService {
             : req.getDayCatalogIds().stream().filter(Objects::nonNull).collect(Collectors.toSet());
 
         List<ExerciseCatalogEntity> all = reads.pool(userId);
-        String group = replace ? null : req.getMuscle().strip();
-        // Add: the chosen group's rows only — the suggestions and the full list filtered to that muscle.
+        Set<String> underBand = underBandGroups(userId, mesoId);
+        // Add (mezo-r36n9.127): the picked fine tokens; else the legacy coarse group; else — nothing picked — the
+        // tokens of the week's under-band groups. The pool is those rows only.
+        String group = replace || !tokens.isEmpty() || req.getMuscle() == null || req.getMuscle().isBlank() ? null
+            : req.getMuscle().strip();
+        Set<String> wanted = replace || group != null ? Set.of()
+            : !tokens.isEmpty() ? Set.copyOf(tokens)
+            : all.stream().map(ExerciseCatalogEntity::getMuscle)
+                .filter(m -> m != null && underBand.contains(MuscleGroup.of(m))).collect(Collectors.toSet());
         List<ExerciseCatalogEntity> pool = replace ? all
-            : all.stream().filter(c -> group.equals(MuscleGroup.of(c.getMuscle()))).toList();
+            : all.stream().filter(c -> group != null ? group.equals(MuscleGroup.of(c.getMuscle()))
+                : wanted.contains(c.getMuscle())).toList();
         Candidate out = replace ? replaceOut(all, req.getOutgoing()) : null;
 
         // History only for rows that can ever rank: the outgoing muscle's body region, or the whole group.
@@ -97,9 +109,10 @@ public class BlockSuggestionService {
 
         boolean editsToday = req.getDayIndex() != null && req.getDayIndex() == weekdayIndex(today);
         Set<String> painJoints = editsToday ? reads.painJointsToday(userId, today) : Set.of();
-        Context ctx = new Context(block.getGoalPreset(), false, painJoints, inDay, underBandGroups(userId, mesoId));
+        Context ctx = new Context(block.getGoalPreset(), false, painJoints, inDay, underBand);
         Result result = replace ? ExerciseSubstituteRanker.rank(out, candidates, ctx)
-            : ExerciseSubstituteRanker.rankForGroup(group, preferredType(pool, inDay), candidates, ctx);
+            : group != null ? ExerciseSubstituteRanker.rankForGroup(group, preferredType(pool, inDay), candidates, ctx)
+            : ExerciseSubstituteRanker.rankForTokens(wanted, preferredType(pool, inDay), candidates, ctx);
 
         TrainingStyle style = TrainingStyle.fromWire(block.getTrainingStyle());
         CatalogAttributes.Lookup stability = style == null ? CatalogAttributes.Lookup.EMPTY

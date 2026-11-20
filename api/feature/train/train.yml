@@ -294,8 +294,10 @@ paths:
       description: >-
         The block day editor's suggestions — the workout swap's ranker over the block's goal, the gym profile and
         the discomfort history, with today's check-in pain only when the edited day is today's weekday. Replace
-        ranks alternatives to an outgoing exercise; add ranks the catalogue rows of one coarse muscle group and
-        explains a muscle under its weekly band. Each suggestion carries the block style's prescription. Read-only.
+        ranks alternatives to an outgoing exercise; add ranks the catalogue rows of the chosen fine muscle tokens
+        (`muscles`, mezo-r36n9.127), else of one coarse muscle group (`muscle`), else — both absent — of the week's
+        under-band groups, and explains a muscle under its weekly band. Each suggestion carries the block style's
+        prescription. Read-only.
       parameters:
         - name: id
           in: path
@@ -317,7 +319,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ExerciseSubstitutesResponse'
         '400':
-          description: Validation error (replace without outgoing, add without muscle)
+          description: Validation error (replace without outgoing, add with an unknown muscle token)
           content:
             application/json:
               schema:
@@ -3757,7 +3759,19 @@ components:
         muscle:
           type: string
           nullable: true
-          description: Coarse muscle group key (back, chest, quad, …); required when mode = add
+          description: >-
+            Coarse muscle group key (back, chest, quad, …) for add; superseded by `muscles` when that is non-empty.
+            Kept for older phones.
+        muscles:
+          type: array
+          nullable: true
+          description: >-
+            Add mode (mezo-r36n9.127): the fine catalogue muscle tokens picked in the add sheet (back-mid,
+            chest-upper, …). Candidates are the catalogue rows whose token is one of these, spread so every token
+            shows up near the top. Absent or empty together with `muscle`: the week's under-band groups' tokens.
+            An unknown token is a 400.
+          items:
+            type: string
         dayCatalogIds:
           type: array
           description: Catalogue ids of the draft day's current exercises — never suggested

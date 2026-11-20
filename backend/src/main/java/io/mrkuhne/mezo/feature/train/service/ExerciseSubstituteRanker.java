@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.train.service;
 
 import java.math.BigDecimal;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -10,6 +11,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 /**
  * Deterministic ranking of swap suggestions for an outgoing exercise (spec 2026-11-17 §6.2
@@ -102,7 +104,7 @@ public final class ExerciseSubstituteRanker {
                 }
             }
         }
-        return finish(out, pool, picked, labels, ctx);
+        return finish(out, pool, picked, labels, ctx, false);
     }
 
     /**
@@ -113,6 +115,25 @@ public final class ExerciseSubstituteRanker {
      * trackability → lengthened → pool position. Same labels and eligibility as {@link #rank}.
      */
     public static Result rankForGroup(String group, String preferredType, List<Candidate> pool, Context ctx) {
+        return rankSlot(c -> group != null && group.equals(MuscleGroup.of(c.muscle())), false, preferredType, pool,
+            ctx);
+    }
+
+    /**
+     * The block day editor's multi-select add (mezo-r36n9.127): ranks every eligible pool row whose fine catalogue
+     * token is one of {@code tokens} — tokens of different groups mix freely. Same slot, tiers, labels and
+     * eligibility as {@link #rankForGroup}; the ordered rows are then dealt round-robin by token (each token in the
+     * order of its best row), so every picked muscle shows up near the top instead of one token filling all five.
+     */
+    public static Result rankForTokens(Collection<String> tokens, String preferredType, List<Candidate> pool,
+                                       Context ctx) {
+        Set<String> wanted = tokens == null ? Set.of() : Set.copyOf(tokens);
+        return rankSlot(c -> c.muscle() != null && wanted.contains(c.muscle()), true, preferredType, pool, ctx);
+    }
+
+    /** The add slot: a muscle-less, pattern-less outgoing exercise of {@code preferredType} over the matching rows. */
+    private static Result rankSlot(Predicate<Candidate> matches, boolean spread, String preferredType,
+                                   List<Candidate> pool, Context ctx) {
         Candidate slot = new Candidate(null, null, preferredType, null, null, null, null, null, null, null, null,
             false, true, PainLevel.NONE, false);
         Set<UUID> inWorkout = ctx.inWorkout() == null ? Set.of() : ctx.inWorkout();
@@ -120,11 +141,11 @@ public final class ExerciseSubstituteRanker {
         List<Integer> picked = new ArrayList<>();
         for (int i = 0; i < pool.size(); i++) {
             Candidate c = pool.get(i);
-            if (group != null && group.equals(MuscleGroup.of(c.muscle())) && eligible(slot, c, inWorkout, labels)) {
+            if (matches.test(c) && eligible(slot, c, inWorkout, labels)) {
                 picked.add(i);
             }
         }
-        return finish(slot, pool, picked, labels, ctx);
+        return finish(slot, pool, picked, labels, ctx, spread);
     }
 
     /** Left out of the suggestions, labelled for the full list: unavailable kit, then a recent strong pain. */
@@ -142,7 +163,7 @@ public final class ExerciseSubstituteRanker {
 
     /** Scores, orders and explains the picked pool rows against {@code out}. */
     private static Result finish(Candidate out, List<Candidate> pool, List<Integer> picked, Map<UUID, Label> labels,
-                                 Context ctx) {
+                                 Context ctx, boolean spread) {
         Set<String> painJoints = ctx.painJointsToday() == null ? Set.of() : ctx.painJointsToday();
         Set<String> underBand = ctx.underBandGroups() == null ? Set.of() : ctx.underBandGroups();
         Goal goal = goal(ctx.goalPreset());
@@ -150,13 +171,31 @@ public final class ExerciseSubstituteRanker {
         boolean painRelevant = hitsPainToday(out, painJoints)
             || picked.stream().anyMatch(i -> hitsPainToday(pool.get(i), painJoints));
         boolean gentle = ctx.soreNow() || painRelevant;
-        List<Ranked> suggestions = picked.stream()
+        List<Scored> ordered = picked.stream()
             .map(i -> score(out, pool.get(i), i, ctx.soreNow(), painJoints, gentle, goal))
-            .sorted(ORDER).limit(MAX_SUGGESTIONS)
+            .sorted(ORDER).toList();
+        List<Ranked> suggestions = (spread ? byToken(ordered) : ordered).stream().limit(MAX_SUGGESTIONS)
             .map(s -> new Ranked(s.c().id(),
                 signals(out, s.c(), ctx.soreNow(), painRelevant, painJoints, underBand, goal)))
             .toList();
         return new Result(suggestions, Map.copyOf(labels));
+    }
+
+    /** Round-robin over the fine tokens, each token in the order of its best row; within a token the order holds. */
+    private static List<Scored> byToken(List<Scored> ordered) {
+        Map<String, ArrayDeque<Scored>> buckets = new LinkedHashMap<>();
+        for (Scored s : ordered) {
+            buckets.computeIfAbsent(String.valueOf(s.c().muscle()), k -> new ArrayDeque<>()).add(s);
+        }
+        List<Scored> out = new ArrayList<>(ordered.size());
+        while (out.size() < ordered.size()) {
+            for (ArrayDeque<Scored> b : buckets.values()) {
+                if (!b.isEmpty()) {
+                    out.add(b.poll());
+                }
+            }
+        }
+        return out;
     }
 
     /** null / unknown / sport / erohipertrofia → hypertrophy; cut-prep and recovery → low fatigue. */

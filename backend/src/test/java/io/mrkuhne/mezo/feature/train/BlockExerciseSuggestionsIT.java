@@ -154,6 +154,42 @@ class BlockExerciseSuggestionsIT extends ApiIntegrationTest {
         assertThat(res.getSuggestions()).allSatisfy(s -> assertThat(s.getReasonText()).doesNotStartWith("Ugyanazt"));
     }
 
+    private BlockExerciseSuggestionsRequest addTokens(List<String> muscles, UUID... dayCatalogIds) {
+        return add(null, dayCatalogIds).muscles(muscles);
+    }
+
+    @Test
+    void testSuggestions_shouldSuggestOnlyThePickedTokens_whenAddingSeveralSubMuscles() {
+        ExerciseSubstitutesResponse res = read(addTokens(List.of("back-mid", "chest-upper"), benchCatalog.getId()));
+
+        assertThat(res.getSuggestions()).isNotEmpty().hasSizeLessThanOrEqualTo(5)
+            .allSatisfy(s -> assertThat(s.getExercise().getMuscle()).isIn("back-mid", "chest-upper"));
+        // two groups' tokens mix: both show up near the top
+        assertThat(res.getSuggestions()).extracting(s -> s.getExercise().getMuscle())
+            .contains("back-mid", "chest-upper");
+    }
+
+    @Test
+    void testSuggestions_shouldSuggestForTheUnderBandGroups_whenNothingIsPicked() {
+        // back trained below its band (one 3-set row) — the only groups ever judged are the trained ones
+        trainPopulator.createExercise(user, day.getId(), "Seated Row", 1, "back-mid", "compound", null);
+
+        ExerciseSubstitutesResponse res = read(addTokens(List.of(), benchCatalog.getId()));
+
+        assertThat(res.getSuggestions()).isNotEmpty().allSatisfy(s -> {
+            assertThat(MuscleGroup.of(s.getExercise().getMuscle())).isIn("back", "chest");
+            assertThat(s.getSignals()).contains("UNDER_BAND");
+        });
+        assertThat(res.getSuggestions()).extracting(s -> MuscleGroup.of(s.getExercise().getMuscle()))
+            .contains("back");
+    }
+
+    @Test
+    void testSuggestions_shouldReturn400_whenAMuscleTokenIsUnknown() {
+        postForBody(uri(block), addTokens(List.of("back-mid", "lats-ish")), auth, HttpStatus.BAD_REQUEST,
+            String.class);
+    }
+
     @Test
     void testSuggestions_shouldNeverSuggestTheDraftDaysExercises() {
         UUID db = catalog("DB Bench Press").getId();
