@@ -73,7 +73,7 @@ paths:
         '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '409': { description: SEASON_PREVIEW_STALE or SEASON_NOT_EDITABLE, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '409': { description: 'SEASON_PREVIEW_STALE, SEASON_NOT_EDITABLE, or SEASON_BLOCK_DAYS_LOCKED (the gym days differ from the season''s while its block is running — the block''s weekdays would no longer match; changes once the block can be re-arranged)', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/seasons/{id}/activate:
     parameters:
       - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
@@ -221,6 +221,7 @@ components:
         band: { allOf: [{ $ref: '#/components/schemas/SeasonBand' }], nullable: true }
         gymPerWeek: { type: integer }
         sportPerWeek: { type: integer }
+        weekKcal: { type: integer, nullable: true, description: 'The week''s total planned intake: trainDayKcal × active days + restDayKcal × rest days (active = distinct weekdays with gym or sport). Moves when a session or sport day is added even though each day''s own target does not' }
     SeasonTodo:
       type: object
       required: [key, title, body]

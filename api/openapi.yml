@@ -15413,7 +15413,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
         '409':
-          description: SEASON_PREVIEW_STALE or SEASON_NOT_EDITABLE
+          description: >-
+            SEASON_PREVIEW_STALE, SEASON_NOT_EDITABLE, or
+            SEASON_BLOCK_DAYS_LOCKED (the gym days differ from the season's
+            while its block is running — the block's weekdays would no longer
+            match; changes once the block can be re-arranged)
           content:
             application/json:
               schema:
@@ -36079,6 +36083,14 @@ components:
           type: integer
         sportPerWeek:
           type: integer
+        weekKcal:
+          type: integer
+          nullable: true
+          description: >-
+            The week's total planned intake: trainDayKcal × active days +
+            restDayKcal × rest days (active = distinct weekdays with gym or
+            sport). Moves when a session or sport day is added even though each
+            day's own target does not
     SeasonTodo:
       type: object
       required:
