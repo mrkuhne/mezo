@@ -195,6 +195,21 @@ struct BlockDraftEditTests {
         #expect(!d.days[0].exercises[3].pickedByBoop)
     }
 
+    @Test(.timeLimit(.minutes(1))) func pickingRestPauseMakesTheWholeExerciseTwentyReps() {
+        var d = PlanFixtures.draft
+        d.techniquesEnabled = true
+        d.add(day: 0, catalog: Self.curl, prescription: nil)
+        #expect(d.days[0].exercises[3].allowedTechniques.contains(.restPause))
+        d.setTechnique(day: 0, exercise: 3, .restPause)
+        let row = d.days[0].exercises[3]
+        #expect(row.technique == .restPause && row.repMin == 20 && row.repMax == 20)
+        #expect(row.overrides.contains("repRange"))
+        let input = d.dayInput(d.days[0], forSave: true).exercises[3]
+        #expect(input.technique == "rest_pause" && input.repMin == 20 && input.repMax == 20)
+        d.setTechnique(day: 0, exercise: 3, .myo)
+        #expect(d.days[0].exercises[3].repMin == 20, "taking it off leaves the range as it is")
+    }
+
     @Test(.timeLimit(.minutes(1))) func catalogIdCaseDoesNotMakeANewIdentity() throws {
         let json = PlanFixtures.blocksJSON().replacingOccurrences(of: "\"catalogId\":\"\(PlanFixtures.catCurl)\"",
                                                                    with: "\"catalogId\":\"\(PlanFixtures.catCurl.uppercased())\"")

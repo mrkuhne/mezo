@@ -21,7 +21,7 @@ func techniqueMark(_ t: SetTechnique) -> PlanMark.Kind {
     case .none: .keep
     case .restDrop: .timer
     case .drop: .drop
-    case .myo: .myo
+    case .myo, .restPause: .myo
     case .partials: .partials
     }
 }
@@ -35,7 +35,7 @@ enum TechniqueLines {
         var lines = [mainLine(plan)]
         var current = 0
         switch technique {
-        case .myo:
+        case .myo, .restPause:
             // Four identical mini-sets would be eight lines; they read as one rest and one repeating step.
             let minis = plan.legs.filter { $0.kind == .mini }
             guard let mini = minis.first else { break }

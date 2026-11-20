@@ -41,8 +41,9 @@ struct BlockDraftTests {
         d.cycleTechnique(day: 0, exercise: 0)
         #expect(d.days[0].exercises[0].technique == .none, "techniques off: no change")
         d.techniquesEnabled = true
-        let seen = (0..<4).map { _ -> SetTechnique in d.cycleTechnique(day: 0, exercise: 0); return d.days[0].exercises[0].technique }
-        #expect(seen == [.restDrop, .drop, .myo, .none], "no half reps on a non-lengthened exercise")
+        let seen = (0..<5).map { _ -> SetTechnique in d.cycleTechnique(day: 0, exercise: 0); return d.days[0].exercises[0].technique }
+        #expect(seen == [.restDrop, .drop, .myo, .restPause, .none], "no half reps on a non-lengthened exercise")
+        #expect(d.days[0].exercises[0].repMin == 20 && d.days[0].exercises[0].repMax == 20, "rest pause pinned the reps")
         d.cycleTechnique(day: 1, exercise: 0)
         #expect(d.days[1].exercises[0].technique == .none, "free weight: never a technique")
         #expect(d.days[0].exercises[2].allowedTechniques == [.none], "core is not judged")

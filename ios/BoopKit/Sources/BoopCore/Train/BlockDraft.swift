@@ -41,7 +41,10 @@ public enum BlockStyle: String, CaseIterable, Sendable, Equatable {
 
 /// What may sit on an exercise's last set (T2). The wire spells `rest_drop`.
 public enum SetTechnique: String, CaseIterable, Codable, Sendable, Equatable {
-    case none, restDrop = "rest_drop", drop, myo, partials
+    case none, restDrop = "rest_drop", drop, myo, restPause = "rest_pause", partials
+
+    /// The owner's fixed rest-pause makes the whole exercise this many reps (mezo-r36n9.125; the server pins it too).
+    public static let restPauseReps = 20
 
     public init(wire: String?) { self = SetTechnique(rawValue: wire ?? "none") ?? .none }
 
@@ -56,6 +59,7 @@ public enum SetTechnique: String, CaseIterable, Codable, Sendable, Equatable {
         case .restDrop: "Pihenős drop"
         case .drop: "Drop set"
         case .myo: "Myo set"
+        case .restPause: "Rest pause"
         case .partials: "Félismétlések"
         }
     }
@@ -67,6 +71,7 @@ public enum SetTechnique: String, CaseIterable, Codable, Sendable, Equatable {
         case .restDrop: "Az utolsó sorozat bukásig, 30 mp pihenő, aztán 30%-kal kisebb súllyal ugyanannyi ismétlés. Kevesebb idő alatt ugyanannyi munka."
         case .drop: "Az utolsó sorozat bukásig, majd pihenő nélkül 20%-kal kisebb súllyal újra bukásig."
         case .myo: "Az utolsó sorozat majdnem bukásig, aztán 20 mp-es pihenőkkel 3–5 ismétléses mini-sorozatok, amíg megy."
+        case .restPause: "20 ismétlés, aztán 10 mp pihenő és 5 ismétlés, ezt négyszer. Fix menet, nem áll le magától. Az egész gyakorlat 20 ismétlésre áll."
         case .partials: "Az utolsó teljes sorozat után azonnal félismétlések a nyújtott helyzetben, amennyi megy. Csak ott, ahol ez biztonságos."
         }
     }
@@ -77,6 +82,7 @@ public enum SetTechnique: String, CaseIterable, Codable, Sendable, Equatable {
         case .restDrop: ["Bukásig", "30 mp pihenő", "30%-kal kevesebb súly, ugyanannyi"]
         case .drop: ["Bukásig", "Azonnal 20%-kal kevesebb", "Újra bukásig"]
         case .myo: ["Majdnem bukásig", "20 mp pihenő", "3–5 ismétlés, amíg megy"]
+        case .restPause: ["20 ismétlés", "10 mp pihenő", "5 ismétlés, négyszer"]
         case .partials: ["Az utolsó teljes sorozat", "Azonnal félismétlések", "Amennyi megy"]
         }
     }
@@ -193,7 +199,7 @@ public struct DraftExercise: Identifiable, Equatable, Sendable {
     /// The techniques it may carry: none on a free-weight lift, half reps only where the stretched position is safe.
     public var allowedTechniques: [SetTechnique] {
         guard stable, judged else { return [.none] }
-        return lengthened ? [.none, .restDrop, .drop, .myo, .partials] : [.none, .restDrop, .drop, .myo]
+        return lengthened ? [.none, .restDrop, .drop, .myo, .restPause, .partials] : [.none, .restDrop, .drop, .myo, .restPause]
     }
 
     public var canTakeChallenge: Bool { stable && lengthened && judged }
@@ -346,7 +352,7 @@ public struct BlockDraft: Equatable, Sendable {
         let options = ex.allowedTechniques
         guard options.count > 1 else { return }
         let i = options.firstIndex(of: ex.technique) ?? 0
-        days[day].exercises[exercise].technique = options[(i + 1) % options.count]
+        setTechnique(day: day, exercise: exercise, options[(i + 1) % options.count])
     }
 
     /// Picks a technique from the picker (an offered one only). The day's challenge stays: since 2026-11-19 an exercise
@@ -355,6 +361,12 @@ public struct BlockDraft: Equatable, Sendable {
         guard techniquesEnabled, days.indices.contains(day), days[day].exercises.indices.contains(exercise),
               days[day].exercises[exercise].allowedTechniques.contains(technique) else { return }
         days[day].exercises[exercise].technique = technique
+        if technique == .restPause {
+            // the whole exercise becomes 20 reps and the range is his (owner 2026-11-20, mezo-r36n9.125)
+            days[day].exercises[exercise].repMin = SetTechnique.restPauseReps
+            days[day].exercises[exercise].repMax = SetTechnique.restPauseReps
+            days[day].exercises[exercise].overrides.insert("repRange")
+        }
     }
 
     /// Puts the day's challenge on this exercise (taking it from any other that day; its technique stays) or takes it off.
