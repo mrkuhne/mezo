@@ -118,6 +118,9 @@ public func penzErrorText(_ error: PlanFetchError) -> String {
         case "PENZ_SELL_EXCEEDS_POSITION": "Ennyit nem adhatsz el belőle: több lenne, mint amennyi a nyilvántartás szerint van belőle."
         case "PENZ_FX_UNAVAILABLE": "Arra a napra most nem érem el a hivatalos árfolyamot, ezért nem tudom forintra váltani. Próbáld újra kicsit később."
         case "PENZ_HOLDING_NOT_FOUND": "Ezt a befektetést már nem találom a szerveren."
+        // mezo-r36n9.119 — a buy or sell linked to a money account
+        case "PENZ_SMS_LINK_MISMATCH": "Ez a banki terhelés már nem illik ehhez a vásárláshoz — válaszd újra, vagy rögzítsd nélküle."
+        case "PENZ_TRANSACTION_INVEST_LINKED": "Ez a tétel egy rögzített befektetéshez tartozik — a befektetést töröld, ha javítani akarod."
         // L7 — practice, catalog, proposals
         case "PENZ_PRACTICE_CAP_EXCEEDED": penzCapExceededText(nil)
         case "PENZ_PAPER_TRADE_NOT_FOUND": "Ezt a kereskedést már nem találom a szerveren."

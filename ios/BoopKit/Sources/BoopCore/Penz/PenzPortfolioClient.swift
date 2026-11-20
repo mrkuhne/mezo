@@ -30,6 +30,13 @@ extension PenzClient {
         try await raw.get("/api/penz/holding-events" + (from.map { "?from=\($0)" } ?? ""), operationID: "listPenzHoldingEvents")
     }
 
+    /// Bank-SMS debits on `accountId` with exactly `amountMinor` (the account's currency) within ±3 days of `date` —
+    /// the rows a buy may adopt (`mezo-r36n9.119`). Empty when the account receives no bank SMS. Closest date first.
+    public func smsCandidates(accountId: String, amountMinor: Int64, date: String) async throws(PlanFetchError) -> [PenzTransaction] {
+        try await raw.get("/api/penz/invest-transactions/sms-candidates?accountId=\(accountId)&amountMinor=\(amountMinor)&date=\(date)",
+                          operationID: "listPenzInvestSmsCandidates")
+    }
+
     // MARK: - Writes (online)
 
     /// Asks the server to rebuild today's digest in the background (202). At most every 15 minutes: a 429

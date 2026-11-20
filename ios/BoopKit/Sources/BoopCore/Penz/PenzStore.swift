@@ -283,10 +283,19 @@ public final class PenzStore {
             if newHolding != nil { await reloadPortfolio() }
             return penzErrorText(error)
         }
-        await reloadPortfolio()
+        // paid from / into a money account (mezo-r36n9.119): the allowance and Költés moved too, so everything is read
+        // again (the full read includes Pénzem); otherwise Pénzem alone, as in L6
+        if request.accountId != nil { await load(force: true) } else { await reloadPortfolio() }
         // his first holding: the digest has something to look for now
         if hadNone, portfolio?.value.isEmpty == false { digestRefreshWanted = true }
         return nil
+    }
+
+    /// The bank-SMS debits a buy may adopt (`mezo-r36n9.119`); empty when there is none, no net or the read fails —
+    /// the offer is a convenience, never a blocker.
+    public func smsCandidates(accountId: String, amountMinor: Int64, date: String) async -> [PenzTransaction] {
+        guard let client else { return [] }
+        return (try? await client.smsCandidates(accountId: accountId, amountMinor: amountMinor, date: date)) ?? []
     }
 
     public func addEvent(_ request: PenzHoldingEventRequest) async -> String? {

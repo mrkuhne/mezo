@@ -439,9 +439,29 @@ struct PenzPreviewTransport: ClientTransport {
                 return try json(h)
             case "createPenzInvestTransaction":
                 let r = try JSONDecoder().decode(PenzInvestTxnRequest.self, from: sent)
-                if let code = m.record(r) { return refuse(code == "PENZ_FX_UNAVAILABLE" ? 503 : (code == "PENZ_HOLDING_NOT_FOUND" ? 404 : 400), code) }
+                if let link = r.linkTransactionId {
+                    guard let i = m.transactions.firstIndex(where: { $0.id == link && $0.kind == "expense" }) else {
+                        return refuse(409, "PENZ_SMS_LINK_MISMATCH")
+                    }
+                    if let code = m.record(r) { return refuse(code == "PENZ_FX_UNAVAILABLE" ? 503 : (code == "PENZ_HOLDING_NOT_FOUND" ? 404 : 400), code) }
+                    m.transactions[i].kind = "invest_buy"
+                } else if let code = m.record(r) {
+                    return refuse(code == "PENZ_FX_UNAVAILABLE" ? 503 : (code == "PENZ_HOLDING_NOT_FOUND" ? 404 : 400), code)
+                }
                 return try json(PenzInvestTxn(id: UUID().uuidString.lowercased(), holdingId: r.holdingId, side: r.side, quantity: r.quantity,
                                               amount: PenzMoney(minor: r.amountMinor), date: r.date, clientRef: r.clientRef))
+            case "listPenzInvestSmsCandidates":
+                // mezo-r36n9.119: bank-SMS expenses on that account with exactly that amount within ±3 days
+                let q = Dictionary(uniqueKeysWithValues: (URLComponents(string: path)?.queryItems ?? []).map { ($0.name, $0.value ?? "") })
+                let f = DateFormatter(); f.calendar = Calendar(identifier: .gregorian); f.locale = Locale(identifier: "en_US_POSIX")
+                f.dateFormat = "yyyy-MM-dd"
+                guard let day = f.date(from: q["date"] ?? ""), let minor = Int64(q["amountMinor"] ?? "") else { return try json([PenzTransaction]()) }
+                let found = m.transactions.filter { t in
+                    guard t.accountId == q["accountId"], t.source == "sms", t.kind == "expense", t.amount.minor == minor,
+                          let d = f.date(from: t.date) else { return false }
+                    return abs(d.timeIntervalSince(day)) <= 3 * 86_400 + 3_600
+                }
+                return try json(found)
             case "createPenzHoldingEvent":
                 let r = try JSONDecoder().decode(PenzHoldingEventRequest.self, from: sent)
                 guard let l = m.lines.first(where: { $0.holding.id == r.holdingId }) else { return refuse(404, "PENZ_HOLDING_NOT_FOUND") }

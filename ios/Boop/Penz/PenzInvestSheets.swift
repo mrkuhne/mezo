@@ -65,6 +65,12 @@ struct PenzRecordSheet: View {
     @State private var quantity = ""
     @State private var amount = ""
     @State private var date = Date()
+    // paid from / into (mezo-r36n9.119): "none" = not given, exactly the L6 record
+    @State private var accountChoice: String? = "none"
+    @State private var candidates: [PenzTransaction] = []
+    @State private var linkChoice: String? = "none"
+    /// Bumped after a failed save, so a stale bank row is looked up again.
+    @State private var lookupNonce = 0
 
     @State private var saving = false
     @State private var error: String?
@@ -77,6 +83,17 @@ struct PenzRecordSheet: View {
     private var chosen: PenzHoldingChoice? { choices.first { $0.id == holdingId } }
     private var unit: String { isNew ? (currency ?? "HUF") : (chosen?.currency ?? "HUF") }
     private var amountMinor: Int64? { penzParseAmount(amount) }
+    private var payable: [PenzAccount] { penzPayableAccounts(store.accounts) }
+    private var account: PenzAccount? { payable.first { $0.id == accountChoice } }
+    private var lookupAmount: Int64? {
+        penzSmsLookupAmount(side: side ?? "buy", account: account, holdingCurrency: unit, amountMinor: amountMinor)
+    }
+    /// What the bank-SMS lookup depends on; a change re-asks (debounced).
+    private var lookupKey: String { "\(account?.id ?? "-")|\(lookupAmount.map(String.init) ?? "-")|\(penzDay(date))|\(lookupNonce)" }
+    private var linkedId: String? {
+        guard side == "buy", account != nil, let id = linkChoice, candidates.contains(where: { $0.id == id }) else { return nil }
+        return id
+    }
     private var ready: Bool {
         guard amountMinor != nil, quantity.isEmpty || penzParseQuantity(quantity) != nil else { return false }
         if isNew { return !name.trimmingCharacters(in: .whitespaces).isEmpty && assetType != nil && sleeve != nil && currency != nil && platform != nil }
@@ -116,8 +133,10 @@ struct PenzRecordSheet: View {
                 PenzField(prompt: "Darabszám, ha van (pl. 12 vagy 3,5)", text: $quantity, keyboard: .decimalPad)
                 DatePicker("Mikor", selection: $date, in: ...Date(), displayedComponents: .date)
                     .nkFont(15).foregroundStyle(.white).tint(penzHue.glow)
+                if !payable.isEmpty { accountBlock }
             }
         }
+        .task(id: lookupKey) { await lookUpBankRows() }
         .safeAreaInset(edge: .bottom) {
             VStack(spacing: 6) {
                 if let error {
@@ -150,6 +169,42 @@ struct PenzRecordSheet: View {
         PenzChoiceChips(options: penzCurrencies.map { ($0, $0 == "HUF" ? "Forint" : $0) }, selected: $currency)
     }
 
+    /// MELYIK SZÁMLÁDRÓL / SZÁMLÁDRA, and for a buy the bank SMS it may have been (`mezo-r36n9.119`).
+    @ViewBuilder private var accountBlock: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            NKMono(side == "sell" ? "MELYIK SZÁMLÁDRA" : "MELYIK SZÁMLÁDRÓL")
+            PenzChoiceChips(options: [("none", "Nem adom meg")] + payable.map { ($0.id, $0.currency == "HUF" ? $0.name : "\($0.name) · \($0.currency)") },
+                            selected: $accountChoice)
+            if let account, account.currency != unit {
+                Text("A számládon a szerver az aznapi hivatalos árfolyamon számolja át.")
+                    .nkFont(12).foregroundStyle(.white.opacity(0.5)).fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        if side == "buy", account != nil, !candidates.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                NKMono("EZ VOLT A BANKI TERHELÉS?")
+                PenzChoiceChips(options: candidates.map { ($0.id, penzSmsCandidateLabel($0)) } + [("none", "Egyik sem")],
+                                selected: $linkChoice)
+                Text("Ha kiválasztod, a banki tétel lesz a vásárlás — nem kerül be kétszer.")
+                    .nkFont(12).foregroundStyle(.white.opacity(0.5)).fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private func lookUpBankRows() async {
+        // never offer a row found for another amount, account or day while the new answer is on its way
+        candidates = []
+        guard let account, let minor = lookupAmount else {
+            linkChoice = "none"
+            return
+        }
+        do { try await Task.sleep(for: .milliseconds(450)) } catch { return }
+        let found = await store.smsCandidates(accountId: account.id, amountMinor: minor, date: penzDay(date))
+        guard !Task.isCancelled else { return }
+        candidates = found
+        if !found.contains(where: { $0.id == linkChoice }) { linkChoice = "none" }
+    }
+
     private func card<C: View>(_ label: String, @ViewBuilder _ content: () -> C) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             NKMono(label)
@@ -169,9 +224,11 @@ struct PenzRecordSheet: View {
             platformName: platform == "other" && !platformName.isEmpty ? platformName : nil, sleeve: sleeve ?? "long",
             currency: currency ?? "HUF") : nil
         let txn = PenzInvestTxnRequest(clientRef: txnRef.uuidString.lowercased(), holdingId: "", side: side ?? "buy",
-                                       quantity: penzParseQuantity(quantity), amountMinor: minor, date: penzDay(date))
+                                       quantity: penzParseQuantity(quantity), amountMinor: minor, date: penzDay(date),
+                                       accountId: account?.id, linkTransactionId: linkedId)
         if let e = await store.recordInvestment(newHolding: newRequest, holdingId: isNew ? nil : holdingId, transaction: txn) {
             error = e
+            if account != nil { lookupNonce += 1 }
         } else {
             onDone(side == "sell" ? "Eladás rögzítve" : "Vétel rögzítve")
         }

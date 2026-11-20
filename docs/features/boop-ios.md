@@ -399,6 +399,18 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     another; both refs live for the sheet so a retry never doubles); `PenzEventSheet` → POST holding-events. Pénzem is
     re-read after each. `PENZ_SYMBOL_UNKNOWN` / `PENZ_SELL_EXCEEDS_POSITION` / `PENZ_FX_UNAVAILABLE` are said in
     Hungarian (`penzErrorText`); `RawJSONClient` maps a 503 that carries a message code to `.conflict(code)`.
+  - **Paid from / into a money account (`mezo-r36n9.119`, 2026-11-21)**: under the date the record sheet offers
+    *MELYIK SZÁMLÁDRÓL* (a sell: *MELYIK SZÁMLÁDRA*) — *Nem adom meg* (default: no `accountId`, the L6 request
+    byte-for-byte) plus his live checking and cash accounts, default first (`penzPayableAccounts`); hidden when he has
+    none. An account in another currency than the holding gets one quiet line (the server converts at the day's
+    official rate; no second amount field). For a buy whose account shares the holding's currency, the sheet asks
+    `GET invest-transactions/sms-candidates` (debounced on account · amount · day, `penzSmsLookupAmount`) and, when
+    any match, shows *EZ VOLT A BANKI TERHELÉS?* (chips "nov. 19. · Spar", *Egyik sem* default) → `linkTransactionId`,
+    so the bank row becomes the buy instead of counting twice. `PenzInvestTxnRequest` gained `accountId` /
+    `accountAmountMinor` / `linkTransactionId` (sent only when set), `PenzInvestTxn` decodes `accountId` /
+    `transactionId`; a save with an account re-reads the whole snapshot (the allowance and Költés moved), not only
+    Pénzem. New refusals in Hungarian: `PENZ_SMS_LINK_MISMATCH` (the sheet looks the bank rows up again) and
+    `PENZ_TRANSACTION_INVEST_LINKED` (editing / deleting a money row that belongs to a recorded investment).
   - **Data**: `PenzPortfolioWire.swift` (lenient), `PenzPortfolioClient.swift` (portfolio, digest, holdings CRUD,
     invest-transactions, `holdings/{id}/transactions`, holding-events), `PenzStore.portfolio` / `.digest` read beside the
     snapshot, each with its own problem/offline flags, cached in `ServerCache` (`penz/portfolio` "current", `penz/digest`
