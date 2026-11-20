@@ -1277,5 +1277,15 @@
     "szulo": "mezo-r36n9.33",
     "cim": "Pénz · heti áttekintés: mi számít tényleg hosszú távon",
     "mit_kapsz": "Hetente egyszer egy rövid összefoglaló rekeszenként arról, mi az, ami a hosszú távú pénzedet tényleg érinti — a napi hírek zajától elkülönítve. Értesítés nélkül, teendő-gomb nélkül."
+  },
+  "mezo-r36n9.121": {
+    "tipus": "Karbantartás",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Alapok"
+    ],
+    "szulo": "mezo-r36n9.33",
+    "cim": "Pénz · javaslatok: ismeretlen termék nevének kiszűrése",
+    "mit_kapsz": "Ha Boop egy javaslat szövegében olyan terméket említene, ami nincs is a termékjegyzékedben, a szöveg akkor is fennakad az ellenőrzésen, és a rögzített, biztonságos szöveg jelenik meg helyette."
   }
 }
