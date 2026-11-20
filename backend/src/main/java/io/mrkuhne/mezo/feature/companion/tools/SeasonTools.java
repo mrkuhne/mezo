@@ -32,7 +32,7 @@ public class SeasonTools {
     @Tool(name = "get_season", description = "Az aktív évad (egy több hetes terv, ami összeköti az edzést, az étkezést, "
             + "az alvást és a súlycélt). scope=overview (alapértelmezés) — hányadik hétnél tart, hogyan halad a "
             + "súly a tervhez képest, az elmúlt 7 nap betartása (étel a kereten belül, megtartott edzések, elég "
-            + "alvás, kímélő/indokolt kihagyás miatt kivett napok) és amit Boop észrevett. scope=rules — az évad "
+            + "alvás, a kímélő napok száma; egy indokolt kihagyás csak az edzést menti fel) és amit Boop észrevett. scope=rules — az évad "
             + "szabályai: cél és tempó vagy sáv, e heti edzés- és sportnapok, edzés- és pihenőnapi kcal és fehérje, "
             + "a kiválasztott receptek szabálya, a feldolgozottsági (NOVA) szabály, alvásigény és lefekvés. "
             + "Használd, amikor a user az évadáról, a terve szabályairól, vagy arról kérdez, hogy hogyan halad.")

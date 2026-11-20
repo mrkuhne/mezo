@@ -80,15 +80,53 @@ class AdherenceServiceIT extends AbstractIntegrationTest {
         Result skipped = adherence.range(owner, monday, monday);
         Result missed = adherence.range(owner, previousMonday, previousMonday);
 
-        assertThat(skipped.days().get(0).excused()).isTrue();
+        assertThat(skipped.days().get(0).excused()).as("a skip excuses the session, not the day").isFalse();
         assertThat(skipped.days().get(0).excuse()).isEqualTo("skip");
         assertThat(skipped.days().get(0).sessionDone()).isNull();
         assertThat(skipped.summary().sessionsPlanned()).isZero();
-        assertThat(skipped.summary().excusedDays()).isEqualTo(1);
+        assertThat(skipped.summary().excusedDays()).isZero();
         assertThat(missed.days().get(0).sessionPlanned()).isTrue();
         assertThat(missed.days().get(0).sessionDone()).isFalse();
         assertThat(missed.summary().sessionsPlanned()).isEqualTo(1);
         assertThat(missed.summary().sessionsDone()).isZero();
+    }
+
+    @Test
+    void reasonedSkipKeepsFoodAndSleepCounted() {
+        UUID owner = fixture.owner("adherence-skip-food@test.local");
+        LocalDate monday = lastBefore(today, 0);
+        skipPopulator.create(owner, monday, Kind.GYM, null, null, null, Reason.ILLNESS);
+        meal(owner, monday, servedTarget(owner, monday));
+        sleepLogPopulator.createSleepLog(owner, monday, new BigDecimal("8.00"), 3);
+
+        Result r = adherence.range(owner, monday, monday);
+
+        AdherenceDay d = r.days().get(0);
+        assertThat(d.excused()).isFalse();
+        assertThat(d.excuse()).isEqualTo("skip");
+        assertThat(d.judged()).isTrue();
+        assertThat(d.foodInBand()).isTrue();
+        assertThat(d.sleepOk()).isTrue();
+        assertThat(d.sessionDone()).isNull();
+        assertThat(r.summary().foodJudged()).isEqualTo(1);
+        assertThat(r.summary().foodInBand()).isEqualTo(1);
+        assertThat(r.summary().nightsJudged()).isEqualTo(1);
+        assertThat(r.summary().nightsOk()).isEqualTo(1);
+        assertThat(r.summary().excusedDays()).isZero();
+        assertThat(r.summary().sessionsPlanned()).isZero();
+        assertThat(r.summary().sessionsDone()).isZero();
+    }
+
+    @Test
+    void todaysNightIsNotJudged() {
+        UUID owner = fixture.owner("adherence-tonight@test.local");
+        sleepLogPopulator.createSleepLog(owner, today, new BigDecimal("8.00"), 3);
+
+        Result r = adherence.range(owner, today, today);
+
+        assertThat(r.days().get(0).sleepMin()).isEqualTo(480);
+        assertThat(r.days().get(0).sleepOk()).isNull();
+        assertThat(r.summary().nightsJudged()).isZero();
     }
 
     @Test

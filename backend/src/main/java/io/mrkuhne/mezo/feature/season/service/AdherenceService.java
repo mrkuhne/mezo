@@ -32,10 +32,11 @@ import org.springframework.transaction.annotation.Transactional;
  *   <li><b>foodInBand</b> = judged and |kcal − target| ≤ 10 % of the day's served target;</li>
  *   <li><b>sessionPlanned</b> = a weekly gym / sport slot on that weekday or a planned run; <b>sessionDone</b> = a
  *       completed workout, sport session or run that date (null when nothing was planned, excused, or today+);</li>
- *   <li><b>sleepOk</b> = the night ending that morning ≥ the need − 15 min; the need is the active season's, else
+ *   <li><b>sleepOk</b> = the night ending that morning ≥ the need − 15 min (not judged today or later); the need is the active season's, else
  *       his own sleep goal (null when neither exists — never a default);</li>
- *   <li><b>excused</b> = a kímélő day ({@code kimelo}) or a reasoned gym / sport / run skip ({@code skip}).
- *       Excused days leave every count of the summary.</li>
+ *   <li><b>excused</b> = a kímélő day ({@code excuse = kimelo}) — it leaves every count of the summary. A reasoned
+ *       gym / sport / run skip ({@code excuse = skip}) excuses only the session: {@code sessionDone} is null and the
+ *       session leaves the session counts, while the day's food and night still count.</li>
  * </ul>
  */
 @Service
@@ -102,14 +103,14 @@ public class AdherenceService {
             LocalDate d = f.date();
             boolean past = d.isBefore(today);
             boolean skip = skipped.contains(d);
-            boolean excused = f.kimelo() || skip;
+            boolean excused = f.kimelo();
             String excuse = f.kimelo() ? "kimelo" : skip ? "skip" : null;
             boolean judged = past && !f.kimelo() && f.kcal() != null;
             Boolean inBand = judged ? Math.abs(f.kcal() - f.targetKcal()) * 10 <= f.targetKcal() : null;
             boolean sessionPlanned = planned.contains(d) || skip;
-            Boolean sessionDone = !sessionPlanned || excused || !past ? null : done.contains(d);
+            Boolean sessionDone = !sessionPlanned || excused || skip || !past ? null : done.contains(d);
             Integer sleepMin = sleep.get(d);
-            Boolean sleepOk = sleepMin == null || need == null ? null : sleepMin >= need - SLEEP_GRACE_MIN;
+            Boolean sleepOk = !past || sleepMin == null || need == null ? null : sleepMin >= need - SLEEP_GRACE_MIN;
             out.add(new AdherenceDay(d, judged, excused, excuse, f.kcal(), f.targetKcal(), f.proteinG(),
                 f.targetProteinG(), inBand, sessionPlanned, sessionDone, sleepMin, need, sleepOk));
         }

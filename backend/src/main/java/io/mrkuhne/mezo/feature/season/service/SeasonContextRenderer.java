@@ -70,7 +70,7 @@ public class SeasonContextRenderer {
             // The overview needs the engine's numbers; without them (no profile) it would throw through a
             // transactional proxy and poison the caller's transaction — say only the week then.
             if (compute(owner, s.get(), previewService.currentDraft(owner, s.get())).isEmpty()) {
-                return PREFIX + s.get().getTitle() + " · " + SeasonOverviewService.weekOf(s.get(), today) + ". hét / "
+                return PREFIX + title(s.get().getTitle()) + " · " + SeasonOverviewService.weekOf(s.get(), today) + ". hét / "
                     + s.get().getWeeks();
             }
             return standing(overviewService.overview(owner));
@@ -84,7 +84,7 @@ public class SeasonContextRenderer {
         SeasonDraftJson draft = previewService.currentDraft(owner, s);
         Optional<SeasonPreviewService.Computed> computed = compute(owner, s, draft);
         List<String> lines = new ArrayList<>();
-        lines.add(s.getTitle() + " · " + SeasonOverviewService.weekOf(s, today) + ". hét / " + s.getWeeks());
+        lines.add(title(s.getTitle()) + " · " + SeasonOverviewService.weekOf(s, today) + ". hét / " + s.getWeeks());
         lines.add(goal(draft, computed));
         lines.add(training(draft));
         computed.map(SeasonPreviewService.Computed::numbers).ifPresent(n -> lines.add(food(n)));
@@ -164,7 +164,7 @@ public class SeasonContextRenderer {
 
     private static String standing(SeasonOverview o) {
         List<String> lines = new ArrayList<>();
-        lines.add(o.getHead().getTitle() + " · " + o.getHead().getWeek() + ". hét / " + o.getHead().getWeeks() + ", "
+        lines.add(title(o.getHead().getTitle()) + " · " + o.getHead().getWeek() + ". hét / " + o.getHead().getWeeks() + ", "
             + trajectoryHu(o.getHead().getTrajectory().getValue()));
         lines.add("Haladás: " + statusHu(o.getHead().getStatus().getValue()));
         SeasonAdherence a = o.getAdherence();
@@ -174,12 +174,17 @@ public class SeasonContextRenderer {
             lines.add("Az elmúlt 7 nap: étel a kereten belül " + a.getFoodInBand() + "/" + a.getFoodJudged()
                 + " értékelt napon, edzés " + a.getSessionsDone() + "/" + a.getSessionsPlanned()
                 + ", elég alvás " + a.getNightsOk() + "/" + a.getNightsJudged() + " éjszakán"
-                + (a.getExcusedDays() > 0 ? ", kivett nap (kímélő vagy indokolt kihagyás): " + a.getExcusedDays() : ""));
+                + (a.getExcusedDays() > 0 ? ", kímélő nap: " + a.getExcusedDays() : ""));
         }
         for (SeasonInsight i : o.getInsights()) {
             lines.add("Észrevétel: " + i.getTitle() + " — " + i.getBody());
         }
         return lines.stream().map(l -> PREFIX + l).collect(Collectors.joining("\n"));
+    }
+
+    /** The user-typed title as one inert line: no brackets (no fake [Block] tag), whitespace collapsed. */
+    static String title(String raw) {
+        return raw == null ? "" : raw.replaceAll("[\\[\\]]", "").replaceAll("\\s+", " ").strip();
     }
 
     private static String trajectoryHu(String trajectory) {

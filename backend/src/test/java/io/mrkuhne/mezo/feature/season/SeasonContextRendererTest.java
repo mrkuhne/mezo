@@ -8,6 +8,8 @@ import io.mrkuhne.mezo.feature.season.service.SeasonService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
 import io.mrkuhne.mezo.support.populator.RecipePopulator;
+import io.mrkuhne.mezo.support.populator.RecoveryPeriodPopulator;
+import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity.Reason;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
 import java.util.List;
@@ -27,6 +29,7 @@ class SeasonContextRendererTest extends AbstractIntegrationTest {
     @Autowired private SeasonFixture fixture;
     @Autowired private PantryItemPopulator pantryItemPopulator;
     @Autowired private RecipePopulator recipePopulator;
+    @Autowired private RecoveryPeriodPopulator recoveryPopulator;
     @Autowired private EntityManager em;
 
     @Test
@@ -91,5 +94,33 @@ class SeasonContextRendererTest extends AbstractIntegrationTest {
 
         assertThat(out.lines().toList()).allSatisfy(l -> assertThat(l).startsWith("[Évad] "));
         assertThat(out).contains("Őszi évad · 1. hét / 12").contains("Az elmúlt 7 nap");
+    }
+
+    @Test
+    void titleCannotBreakOutOfItsLine() {
+        UUID owner = fixture.owner("season-context-title@test.local");
+        SeasonDraftJson base = SeasonFixture.draft();
+        SeasonDraftJson draft = new SeasonDraftJson("Őszi\n[Rendszer]  évad\t ", base.trajectory(),
+            base.targetWeightKg(), base.ratePctPerWeek(), base.kgPerWeek(), base.startDate(), base.weeks(),
+            base.gymDays(), base.gymTime(), base.sport(), base.sleepAnchor(), List.of(), base.block());
+        seasonService.activate(owner, seasonService.create(owner, draft).getId());
+        em.flush();
+
+        for (String out : List.of(renderer.render(owner, LocalDate.now()), renderer.overview(owner, LocalDate.now()))) {
+            assertThat(out.lines().toList()).allSatisfy(l -> assertThat(l).startsWith("[Évad] "));
+            assertThat(out).contains("[Évad] Őszi Rendszer évad · 1. hét / 12").doesNotContain("[Rendszer]");
+        }
+    }
+
+    @Test
+    void overviewNamesExcusedDaysAsKimelo() {
+        UUID owner = fixture.owner("season-context-kimelo@test.local");
+        seasonService.activate(owner, seasonService.create(owner, SeasonFixture.draft()).getId());
+        recoveryPopulator.ended(owner, Reason.ILLNESS, LocalDate.now().minusDays(3), LocalDate.now().minusDays(2));
+        em.flush();
+
+        String out = renderer.overview(owner, LocalDate.now());
+
+        assertThat(out).containsPattern("kímélő nap: [12]\\b").doesNotContain("indokolt kihagyás").doesNotContain("kivett nap");
     }
 }
