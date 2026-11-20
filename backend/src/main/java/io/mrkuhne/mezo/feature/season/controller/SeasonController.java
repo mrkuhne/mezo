@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.season.controller;
 
 import io.mrkuhne.mezo.api.controller.SeasonApi;
+import io.mrkuhne.mezo.api.dto.SeasonAdherenceResponse;
 import io.mrkuhne.mezo.api.dto.SeasonApply;
 import io.mrkuhne.mezo.api.dto.SeasonDraft;
 import io.mrkuhne.mezo.api.dto.SeasonOverview;
@@ -9,6 +10,7 @@ import io.mrkuhne.mezo.api.dto.SeasonResponse;
 import io.mrkuhne.mezo.api.dto.SeasonRules;
 import io.mrkuhne.mezo.feature.season.service.SeasonApiService;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -60,6 +62,11 @@ public class SeasonController implements SeasonApi {
     @Override
     public SeasonResponse applySeason(UUID id, SeasonApply seasonApply) {
         return service.apply(currentUserId.get(), id, seasonApply);
+    }
+
+    @Override
+    public SeasonAdherenceResponse getAdherence(LocalDate from, LocalDate to) {
+        return service.adherence(currentUserId.get(), from, to);
     }
 
     @Override

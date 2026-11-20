@@ -41,7 +41,8 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * The one read model the Évad tab renders (spec §5.4) — composed server-side from the active season, the engine's
  * numbers for the season as it stands, the weight trend, the block and the sleep log. 404 without an active season
- * (the phone shows the empty state). {@code adherence} is null and {@code insights} empty until S2.
+ * (the phone shows the empty state). {@code adherence} = the last seven days ending yesterday
+ * ({@link AdherenceService#lastWeek}), null only when nothing at all could be judged.
  *
  * <p>Head status: {@code no_data} with fewer than 4 weigh-in days in the last 21; a maintain season is
  * {@code in_band} / {@code out_of_band} by the latest trend point; cut / bulk compare the engine's trend rate with
@@ -63,6 +64,7 @@ public class SeasonOverviewService {
     private final SeasonTrainPort trainPort;
     private final SeasonMetricsPort metricsPort;
     private final SeasonMapper mapper;
+    private final AdherenceService adherenceService;
 
     @Transactional(readOnly = true)
     public SeasonOverview overview(UUID owner) {
@@ -139,7 +141,7 @@ public class SeasonOverviewService {
                     .band(SeasonMapper.band(n.bandLowKg(), n.bandHighKg()))
                     .build())
                 .build())
-            .adherence(null)
+            .adherence(adherenceService.lastWeek(owner, today).map(mapper::toDto).orElse(null))
             .insights(new ArrayList<>())
             .upcoming(upcoming(s, block, week))
             .build();

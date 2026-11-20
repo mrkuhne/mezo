@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.season;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.api.dto.SeasonAdherenceResponse;
 import io.mrkuhne.mezo.api.dto.SeasonApply;
 import io.mrkuhne.mezo.api.dto.SeasonDraft;
 import io.mrkuhne.mezo.api.dto.SeasonOverview;
@@ -10,6 +11,7 @@ import io.mrkuhne.mezo.api.dto.SeasonResponse;
 import io.mrkuhne.mezo.api.dto.SeasonRules;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -117,5 +119,31 @@ class SeasonApiIT extends ApiIntegrationTest {
 
         postForBody("/api/seasons/" + created.getId() + "/activate", null, b.headers(), HttpStatus.NOT_FOUND, String.class);
         assertThat(getForList("/api/seasons", b.headers(), HttpStatus.OK, SeasonResponse.class)).isEmpty();
+    }
+
+    @Test
+    void adherenceWorksWithoutASeasonAndCapsTheRange() {
+        RegisteredUser u = registerUser("EvadAdherence");
+        fixture.owner(u.email());
+        LocalDate today = LocalDate.now();
+
+        SeasonAdherenceResponse r = getForBody("/api/seasons/adherence?from=" + today.minusDays(7) + "&to=" + today,
+            u.headers(), HttpStatus.OK, SeasonAdherenceResponse.class);
+        assertThat(r.getDays()).hasSize(8);
+        assertThat(r.getDays().get(7).getDate()).isEqualTo(today);
+        assertThat(r.getDays().get(7).getJudged()).isFalse();
+        assertThat(r.getDays().get(7).getSessionDone()).isNull();
+        assertThat(r.getDays()).allSatisfy(d -> assertThat(d.getTargetKcal()).isNotNull());
+        // every weekday once before today: the fixture's four slot weekdays; today itself is never judged
+        assertThat(r.getSummary().getSessionsPlanned()).isEqualTo(4);
+        assertThat(r.getSummary().getSessionsDone()).isZero();
+
+        getForBody("/api/seasons/adherence?from=" + today.minusDays(61) + "&to=" + today, u.headers(), HttpStatus.OK,
+            SeasonAdherenceResponse.class);
+        String tooLong = getForBody("/api/seasons/adherence?from=" + today.minusDays(62) + "&to=" + today,
+            u.headers(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasFieldError(tooLong, "to", "VALIDATION_INVALID_VALUE");
+        getForBody("/api/seasons/adherence?from=" + today + "&to=" + today.minusDays(1), u.headers(),
+            HttpStatus.BAD_REQUEST, String.class);
     }
 }

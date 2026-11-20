@@ -11,7 +11,9 @@ import io.mrkuhne.mezo.feature.season.port.SeasonMetricsPort;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -64,6 +66,18 @@ public class SeasonMetricsAdapter implements SeasonMetricsPort {
         BigDecimal sum = hours.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
         return sum.multiply(BigDecimal.valueOf(60)).divide(BigDecimal.valueOf(hours.size()), 0, RoundingMode.HALF_UP)
             .intValue();
+    }
+
+    @Override
+    public Map<LocalDate, Integer> sleepMinutes(UUID owner, LocalDate from, LocalDate to) {
+        Map<LocalDate, Integer> out = new LinkedHashMap<>();
+        for (SleepLogEntity s : sleepLogRepository.findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(owner, from, to)) {
+            if (s.getDurationH() != null && s.getDurationH().signum() > 0) {
+                out.putIfAbsent(s.getDate(), s.getDurationH().multiply(BigDecimal.valueOf(60))
+                    .setScale(0, RoundingMode.HALF_UP).intValue());
+            }
+        }
+        return out;
     }
 
     @Override
