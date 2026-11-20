@@ -530,5 +530,20 @@
       "mezo-r36n9.103"
     ],
     "mi_valtozott": "A gyűrű Pénz gömbje most élő oldalt nyit: Ma · Pénzem · Költés · Gyakorlás · Boop. A Ma oldal megmondja, van-e ma dolgod a pénzeddel — a legtöbb nap nincs —, két gombbal és három számmal (a hét maradéka, a hónap maradéka, a napi összeg). A Költés oldalon nagyban látod a heti maradékot, soronként levezetve (a gyakorlás és az előző hónap hiánya külön sorban), a hónap állását, hogy mire megy el a pénzed, a mai tételeket az ellenőrzésre váró banki üzenetekkel, és hogy mire gyűjtesz (új: célok és vásárlási tervek). Készpénzt pár másodperc alatt rögzítesz a Pénz oldalról vagy a „+” gombról, net nélkül is — azonnal látszik, és később magától elmegy. Hónapzárás és keretek is innen. A Terv oldalon megjelent a heti maradék. A Pénzem és a Gyakorlás oldal még őszintén kiírja, hogy később jön."
+  },
+  "51cadbb0b": {
+    "cim": "A cserénél a „nem esik jól” tényleg átrendezi az ajánlásokat",
+    "datum": "2026-11-20",
+    "verzio": "v3.17.0",
+    "tipus": "Javítás",
+    "hova": [
+      "Háttérrendszer",
+      "iPhone app"
+    ],
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.111"
+    ],
+    "mi_valtozott": "Ha gyakorlatcserénél megnyomod a „nem esik jól” gombot, Boop mostantól előbb azt nézi, mi kíméli azt, ami fáj, és csak utána azt, mennyire hasonló a mozdulat — eddig többnyire csak az indokló mondat változott, a sorrend nem. Az izom és az, hogy a gyakorlat összetett vagy izolált, továbbra is az első szempont. A reggel jelzett fájdalom csak akkor számít, ha a cserélt gyakorlat környékét érinti. Ugyanezzel a kiadással a Boop friss változata felkerült a telefonra, így az indokolt csere és a „Mi van a termemben” már ott is elérhető."
   }
 }
