@@ -217,7 +217,7 @@
     },
     "jegyek:mezo-r36n9.16": {
       "page_id": "4168968e-752b-81dd-967e-fe6305d85e18",
-      "hash": "397b7f3d3dbe"
+      "hash": "3468fb520e05"
     },
     "jegyek:mezo-r36n9.17": {
       "page_id": "4168968e-752b-81d9-9448-c7846b8b3377",
@@ -597,7 +597,7 @@
     },
     "kezikonyv:04-terv/00-attekintes": {
       "page_id": "4168968e-752b-81c6-a15f-d115f1a8c6e1",
-      "hash": "32cc80544237"
+      "hash": "bcb29548edbb"
     },
     "kezikonyv:04-terv/01-terv-keret": {
       "page_id": "4168968e-752b-8197-a22b-c72ced5647ab",
@@ -1437,7 +1437,7 @@
     },
     "jegyek:mezo-r36n9.116": {
       "page_id": "41e8968e-752b-816c-b2f4-ebb286228601",
-      "hash": "1b1fa9cf9992"
+      "hash": "97ab39dac9f7"
     },
     "jegyek:mezo-r36n9.114": {
       "page_id": "41e8968e-752b-8120-9f47-ff64d36d5325",
@@ -1470,6 +1470,22 @@
     "jegyek:mezo-r36n9.119": {
       "page_id": "41e8968e-752b-8161-b685-e07597b183df",
       "hash": "9108c2f96f72"
+    },
+    "dontesek:d-2026-11-20-evad-a-kozeppont": {
+      "page_id": "41e8968e-752b-813f-a156-c94a0ae8c731",
+      "hash": "3c73e514b8ff"
+    },
+    "dontesek:d-2026-11-20-evad-mind-a-tiz-motor": {
+      "page_id": "41e8968e-752b-8105-9bfa-e4a3c60042cc",
+      "hash": "81b65051d239"
+    },
+    "dontesek:d-2026-11-20-heti-menu": {
+      "page_id": "41e8968e-752b-810b-b4fe-de60109daf5a",
+      "hash": "2fbf9a0f6058"
+    },
+    "dontesek:d-2026-11-20-kiserlet-boop-javasol": {
+      "page_id": "41e8968e-752b-81b6-b52f-eae03ada0eb1",
+      "hash": "c2dd6f8cb2d9"
     }
   }
 }
