@@ -61,8 +61,8 @@ class PenzDigestFakeLlmTest {
 
         assertThat(fake.penzDigestCallCount()).isEqualTo(1);
         assertThat(items).extracting(PenzDigestItemJson::narratedBy).containsExactly("model", "model");
-        assertThat(items.get(0).verdict()).contains("−18 400 Ft");
-        assertThat(items.get(1).verdict()).contains("+7 200 Ft");
+        assertThat(items.get(0).verdict()).contains("18 400 Ft").doesNotContain("−");
+        assertThat(items.get(1).verdict()).contains("7 200 Ft").doesNotContain("+");
     }
 
     @Test

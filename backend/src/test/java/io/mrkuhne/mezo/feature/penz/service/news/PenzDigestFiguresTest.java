@@ -27,14 +27,14 @@ class PenzDigestFiguresTest {
     }
 
     @Test
-    void testAllowedNumbers_shouldHoldEffectPctValueAndSleeveNumbers() {
-        assertThat(DigestFixtures.WORLD_FIGURES.allowedNumbers()).containsExactlyInAnyOrder("18400", "1.1", "1240000",
-            "10");
+    void testAllowedNumbers_shouldHoldEffectPctAndValue_horizonOnlyInItsPhrase() {
+        assertThat(DigestFixtures.WORLD_FIGURES.allowedNumbers()).containsExactlyInAnyOrder("18400", "1.1", "1240000");
+        assertThat(DigestFixtures.WORLD_FIGURES.horizonPhrase().matcher("a 10+ éves pénz").find()).isTrue();
         assertThat(DigestFixtures.WORLD_FIGURES.allowedHufMinor()).containsExactlyInAnyOrder(1_840_000L, 124_000_000L);
         assertThat(new DigestFigures(DigestKind.HOLDING, "short", 0, null, null).allowedNumbers())
-            .containsExactlyInAnyOrder("0", "1", "3");
+            .containsExactlyInAnyOrder("0");
         assertThat(new DigestFigures(DigestKind.HOLDING, "mid", 0, new BigDecimal("2"), null).allowedNumbers())
-            .containsExactlyInAnyOrder("0", "2", "5", "10");
+            .containsExactlyInAnyOrder("0", "2");
     }
 
     @Test
@@ -48,12 +48,13 @@ class PenzDigestFiguresTest {
     @Test
     void testFigureLines_shouldCarryEffectDirectionMoveValueAndHorizon() {
         assertThat(DigestFixtures.WORLD_FIGURES.figureLines()).containsExactly(
-            "Hatás: −18 400 Ft (a te részeden)",
+            "Hatás: 18 400 Ft (a te részeden)",
             "Irány: csökkenés",
-            "Elmozdulás: −1,1%",
+            "Elmozdulás: 1,1%",
             "A tételed értéke: 1 240 000 Ft",
             "Horizont: 10+ év");
-        assertThat(DigestFixtures.RATES_FIGURES.figureLines()).containsExactly("Hatás: 0 Ft (változatlan hozam)");
+        assertThat(DigestFixtures.RATES_FIGURES.figureLines()).containsExactly("Hatás: 0 Ft (változatlan hozam)",
+            "Irány: változatlan");
         assertThat(DigestFixtures.WORLD_FIGURES.changePctRounded()).isEqualByComparingTo("-1.1");
     }
 }

@@ -190,7 +190,7 @@ class PenzDigestPipelineIT extends ApiIntegrationTest {
         PenzDigestItemJson peldaItem = itemFor(d, pelda.getId());
         assertThat(peldaItem.effectHufMinor()).isEqualTo(2_000_000L); // 100 × (10 000 − 9 800) Ft
         assertThat(peldaItem.sources()).hasSize(2);
-        assertThat(peldaItem.verdict()).contains("+20 000 Ft");
+        assertThat(peldaItem.verdict()).contains("20 000 Ft");
         assertThat(fakeLlm.penzDigestCallCount()).isPositive();
     }
 

@@ -34,7 +34,7 @@ class PenzDigestAssemblerTest {
         assertThat(i.title()).isEqualTo(DigestFixtures.GOOD_TITLE);
         assertThat(i.narratedBy()).isEqualTo("model");
         assertThat(i.publishedAt()).isEqualTo(WORLD.story().newest());
-        assertThat(i.sources()).extracting(PenzDigestItemJson.Source::url).containsExactly("https://example.com/w1");
+        assertThat(i.sources()).extracting(PenzDigestItemJson.Source::url).containsExactly("https://www.cnbc.com/w1");
     }
 
     @Test
@@ -52,7 +52,7 @@ class PenzDigestAssemblerTest {
     }
 
     @Test
-    void testAssemble_shouldDropKeepFalse_ignoreUnknownIds_andFallBackForMissingStories() {
+    void testAssemble_shouldDropKeepFalseMacro_ignoreUnknownIds_andFallBackForMissingStories() {
         DigestModelItem dropFx = new DigestModelItem(FX.id(), false, "x", "x", "x", 1, "x", "x");
         DigestModelItem unknown = new DigestModelItem("holding-zzzzzzzzzz", true, "x", "x", "x", 1, "x", "x");
 

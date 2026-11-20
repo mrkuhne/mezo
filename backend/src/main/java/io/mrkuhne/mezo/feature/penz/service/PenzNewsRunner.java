@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -69,23 +70,37 @@ public class PenzNewsRunner {
 
     /**
      * The caller's manual refresh: accepted at most once per cooldown (else {@code PENZ_DIGEST_REFRESH_LIMITED},
-     * 429), then quotes + feeds + his digest on the news executor.
+     * 429), then quotes + feeds + his digest on the news executor. The cooldown is stamped only when the executor
+     * took the run; a full executor answers the same 429 and leaves the next attempt free.
      */
     public void requestRefresh(UUID owner) {
         Instant now = Instant.now(clock());
         Duration cooldown = Duration.ofMinutes(props.refreshCooldownMinutes());
-        boolean[] accepted = {false};
+        boolean[] free = {false};
+        Instant[] previous = {null};
         lastRefresh.compute(owner, (k, last) -> {
             if (last != null && now.isBefore(last.plus(cooldown))) {
                 return last;
             }
-            accepted[0] = true;
+            free[0] = true;
+            previous[0] = last;
             return now;
         });
-        if (!accepted[0]) {
+        if (!free[0]) {
             throw PenzErrors.tooManyRequests("PENZ_DIGEST_REFRESH_LIMITED");
         }
-        executor.execute(() -> refreshNow(owner, ZonedDateTime.now(clock().withZone(ZoneId.of(props.zone())))));
+        try {
+            executor.execute(() -> refreshNow(owner, ZonedDateTime.now(clock().withZone(ZoneId.of(props.zone())))));
+        } catch (RejectedExecutionException e) {
+            // not accepted: the cooldown must not start (security review #13) — the same 429, try again later
+            if (previous[0] == null) {
+                lastRefresh.remove(owner, now);
+            } else {
+                lastRefresh.replace(owner, now, previous[0]);
+            }
+            log.warn("Penz digest refresh for owner {} rejected: the news executor is full", owner);
+            throw PenzErrors.tooManyRequests("PENZ_DIGEST_REFRESH_LIMITED");
+        }
     }
 
     /** The refresh body for one owner — package-visible so ITs can run it synchronously. */

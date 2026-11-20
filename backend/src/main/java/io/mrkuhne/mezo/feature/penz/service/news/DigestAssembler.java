@@ -18,8 +18,11 @@ import tools.jackson.databind.json.JsonMapper;
  * <ul>
  *   <li>The figures, the holding id / ledger name / sleeve, the sources and the date come from the backend, never
  *       from the model; the model supplies only title, verdict, body, confidence, uncertainty, noAction.</li>
- *   <li>{@code keep: false} drops the story (M1's relevance rule); an unknown story id is ignored; the first entry per
- *       id wins; a story the model left out gets the fallback.</li>
+ *   <li>{@code keep: false} drops the story (M1's relevance rule) — except a holding story whose effect is not 0 Ft,
+ *       which gets the fallback instead (security review #9: an injection must not hide news about his money); an
+ *       unknown story id is ignored; the first entry per id wins; a story the model left out gets the fallback.</li>
+ *   <li>Sources: only the urls {@link DigestStory#linkable} accepts (https, the feed's own article hosts — review
+ *       #7), names and titles cleaned of control / format characters.</li>
  *   <li>An entry with any {@link DigestValidator} violation is replaced whole by the fallback ({@code narratedBy:
  *       fallback}, confidence 0).</li>
  *   <li>A story narrated without any article body (headlines only) is capped at confidence 1.</li>
@@ -59,6 +62,10 @@ public final class DigestAssembler {
                 continue;
             }
             if (!m.keep()) {
+                if (s.kind() == DigestKind.HOLDING && s.figures().direction() != 0) {
+                    // news that moved his money is never hidden — an injected keep:false gets the honest stand-in
+                    items.add(fallback(s));
+                }
                 continue;
             }
             List<DigestViolation> violations = DigestValidator.validate(m, s, holdings);
@@ -87,12 +94,19 @@ public final class DigestAssembler {
         DigestFigures f = s.figures();
         boolean holding = s.kind() == DigestKind.HOLDING;
         List<PenzDigestItemJson.Source> sources = s.story().articles().stream()
-            .map(a -> new PenzDigestItemJson.Source(a.sourceName(), a.title(), a.url(), a.publishedAt()))
+            .filter(a -> s.linkable(a.url()))
+            .map(a -> new PenzDigestItemJson.Source(cleanLine(a.sourceName()), cleanLine(a.title()), a.url(),
+                a.publishedAt()))
             .toList();
         return new PenzDigestItemJson(s.id(), s.kind().wire(), s.story().key().holdingId(),
             holding ? s.holdingName() : null, holding ? f.sleeve() : null, title, f.effectHufMinor(),
             DigestFallbackCopy.effectNote(s.kind(), f.effectHufMinor()), f.changePctRounded(), confidence, verdict, body,
             uncertainty, noAction, s.story().newest(), sources, narratedBy);
+    }
+
+    /** Untrusted one-line text for display: control / format characters removed, whitespace collapsed. */
+    private static String cleanLine(String s) {
+        return s == null ? "" : NewsText.clean(s).replaceAll("\\s+", " ").strip();
     }
 
     /** The model's entries by story id (first wins); anything unreadable → empty. Never throws. */

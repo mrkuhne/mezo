@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.penz.service.news;
 
+import java.text.Normalizer;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -59,14 +60,17 @@ public final class DigestPrompt {
         a forint or interest-rate story, when it reports an actual rate decision or currency move. Reactionary \
         short-term noise (a day's price chatter, an analyst one-liner, clickbait, a rumour) gets "keep": false.
 
-        Numbers: the ONLY numbers you may write are the ones in that story's FIGURES block, exactly as written there \
-        (same digits, spaces, decimal comma, "Ft"). Never another number, never a year, a date or a weekday, never a \
-        figure you computed, rounded or converted. Write any count in words. The figures were computed from his own \
-        records; you narrate them, you do not produce them.
+        Numbers: write no numbers at all except the strings of that story's FIGURES block, exactly as written there \
+        (same digits, spaces, decimal comma, "Ft", "%"); never spell a number out (no "tíz", "ezer", "millió", \
+        "kétmillió") and never add a unit, a scale word or another currency to a figure. Never a year, a date or a \
+        weekday, never a figure you computed, rounded or converted, and never write a + or − sign before a number: \
+        the app prints the signed effect itself, the "Irány" line tells you the direction in words. The figures were \
+        computed from his own records; you narrate them, you do not produce them.
         Names: name the holding only as written after "Tétel:". Never name any other holding of his, or a company \
         from an article as if he owned it.
-        Direction: in a holding story the "Irány" line is the truth. Never write rising words (emelkedett, nőtt, \
-        erősödött) when it says csökkenés, nor falling words (esett, csökkent, gyengült) when it says emelkedés.
+        Direction: the "Irány" line is the truth about his money. Never write rising or gaining words (emelkedett, \
+        nőtt, erősödött, nyertél, gyarapodott) when it says csökkenés, nor falling or losing words (esett, csökkent, \
+        gyengült, veszítettél, veszteség) when it says emelkedés — in any field.
         """ + UNTRUSTED_RULE + "\n" + """
         Format: plain text only — no links, no HTML, no markdown except *emphasis* with single asterisks.
 
@@ -82,9 +86,10 @@ public final class DigestPrompt {
         Answer with ONE JSON object and nothing else, one entry per STORY, using its id exactly:
         """ + SCHEMA;
 
-    private static final Pattern INVISIBLE = Pattern.compile("[\\p{Cf}\\p{Cc}&&[^\\n\\t]]");
-    private static final Pattern OPEN_RUN = Pattern.compile("<{2,}");
-    private static final Pattern CLOSE_RUN = Pattern.compile(">{2,}");
+    private static final Pattern INVISIBLE = Pattern.compile("[\\p{Cf}\\p{Cc}\\p{Cs}&&[^\\n\\t]]");
+    /** Two or more opening angle marks (ASCII, single guillemet, fullwidth, small form), spaces between allowed. */
+    private static final Pattern OPEN_RUN = Pattern.compile("[<‹＜﹤](?:\\s*[<‹＜﹤])+");
+    private static final Pattern CLOSE_RUN = Pattern.compile("[>›＞﹥](?:\\s*[>›＞﹥])+");
     private static final int SOURCE_MAX = 60;
     private static final int NAME_MAX = 80;
 
@@ -136,14 +141,16 @@ public final class DigestPrompt {
     }
 
     /**
-     * Untrusted text made safe to fence: invisible format and control characters removed, runs of {@code <<} or
-     * {@code >>} replaced by one guillemet, whitespace collapsed to single spaces (one line); null → empty.
+     * Untrusted text made safe to fence: NFKC-normalized (fullwidth / small-form brackets become ASCII), invisible
+     * format and control characters and lone surrogates removed, runs of two or more opening or closing angle marks —
+     * ASCII, guillemet, fullwidth, small form, with or without spaces between — replaced by one guillemet,
+     * whitespace collapsed to single spaces (one line); null → empty (security review #10).
      */
     public static String sanitizeUntrusted(String s) {
         if (s == null) {
             return "";
         }
-        String t = INVISIBLE.matcher(s).replaceAll("");
+        String t = INVISIBLE.matcher(Normalizer.normalize(s, Normalizer.Form.NFKC)).replaceAll("");
         t = OPEN_RUN.matcher(t).replaceAll("‹");
         t = CLOSE_RUN.matcher(t).replaceAll("›");
         return t.replaceAll("\\s+", " ").strip();

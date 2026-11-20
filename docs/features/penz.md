@@ -292,9 +292,13 @@ the status or a short reason, never a body):
 - a **host allow-list per call** (the host equals an allowed one or is its subdomain — `evilcnbc.com` and
   `cnbc.com.evil.io` fail for `cnbc.com`);
 - **every** resolved address must be public (loopback, private, link-local, any-local, multicast, CGNAT, ULA,
-  reserved refused) — `pantry/WebPageClient` checks only the first;
+  reserved, the IPv4 documentation nets, Teredo `2001::/32` and `2001:db8::/32` refused; an IPv4 embedded in IPv6 —
+  `::a.b.c.d`, NAT64 `64:ff9b::/96`, 6to4 `2002::/16` — is judged by that IPv4) — `pantry/WebPageClient` checks only
+  the first;
 - **redirects are never followed** (a 30x is a failure); the body is streamed and dropped the moment it crosses the
-  cap; explicit timeouts (`mezo.penz.fetch-timeout-ms`).
+  cap; explicit timeouts (`mezo.penz.fetch-timeout-ms`) **and an overall per-fetch deadline**
+  (`mezo.penz.fetch-deadline-ms`, 20 s): a watchdog closes the stream at the deadline, so a slow drip cannot hold the
+  single news thread; a body cut off there is a failure (`deadline`), never a partial body.
 
 **Not pinned:** like `WebPageClient`, the connection is not pinned to the checked address (the request factory
 resolves again on connect). The DNS-rebinding window this leaves is bounded by the allow-list, which admits only a
@@ -311,7 +315,12 @@ Pure core in `service/news` (no Spring), wiring in `PenzNewsClient`, `PenzDigest
    RSS search (Hungarian edition) per distinct holding term of every user's live holdings (de-duplicated, ≤ 40), each
    through the fetcher with the feed's own host and a 2 MB cap; `RssParser` (RSS + Atom, regex — no XML parser, so
    no entity-expansion surface — CDATA, entities, http(s) links only); upsert by url (native `ON CONFLICT (url) DO
-   NOTHING`); prune articles older than 30 days.
+   NOTHING`); prune articles older than 30 days. **Input hardening** (security review #5 / #6): the parser reads at
+   most the first 512 KB of a feed and is linear by construction (`indexOf` scans for blocks, tags, links and CDATA,
+   `<[^<>]*>` for tag stripping) — a run of 100 000 `<` or an unterminated tag costs milliseconds, not seconds;
+   titles, summaries and article text lose control characters (NUL included), format / bidi characters and lone
+   surrogates (`NewsText.clean`), and a link carrying one is refused; one item the database refuses is logged by
+   feed key and skipped, and a feed's health is its fetch + parse, not the store.
 2. **Match** (`NewsMatcher`, deterministic — no model decides relevance): articles of the last **36 h** whose title or
    summary names a holding term (the symbol root `OTP.BD` → `OTP`, exact; distinctive name words ≥ 3 characters
    minus generic / issuer / index words like *ETF, Nyrt, UCITS, Vanguard, MSCI, world, világ*, with Hungarian case
@@ -324,10 +333,12 @@ Pure core in `service/news` (no Spring), wiring in `PenzNewsClient`, `PenzDigest
 4. **Figures** (`PenzDigestService.figures`, from `PenzPortfolioService.positions` — cached quotes only, the run
    refreshes first): holding → its `priceMoveHufMinor`, `changePct`, value; **fx** → Σ `fxMoveHufMinor` over his
    non-HUF holdings, the % from the pair of the currency he holds the most of (by HUF value); **rates** → 0 with the
-   fixed note *változatlan hozam*. `effectNote` is fixed copy (`DigestFallbackCopy`). Spelling (`DigestFigures`):
+   fixed note *változatlan hozam*. A forint story whose pair % points the other way than the summed effect shows no %
+(`DigestFigures.fx`). `effectNote` is fixed copy (`DigestFallbackCopy`). Spelling (`DigestFigures`):
    whole forints, plain-space grouping, real minus sign — `−18 400 Ft`; percent `1,1%`.
 5. **Bodies**: ≤ 2 article pages per story, only from that feed's article hosts (`NewsSources.isAllowedArticleUrl`),
-   HTML → text (`ArticleText`, ≤ 4 000 chars, < 600 = a paywall stub, no body). Google News links are redirects —
+   HTML → text (`ArticleText`: the first 256 KB, cleaned, parsed by jsoup — linear — instead of regexes; ≤ 4 000
+   chars, < 600 = a paywall stub, no body). Google News links are redirects —
    never fetched; those stories are narrated from headlines, and a story with no body is capped at confidence 1.
 6. **Narrate**: ONE call per digest, outside any transaction — penz-owned port `PenzDigestLlm`, adapter
    `companion/llm/PenzDigestLlmAdapter` (cheap tier, tag `penz_digest/narrate`, **payload-free** in the LLM audit
@@ -339,6 +350,10 @@ Pure core in `service/news` (no Spring), wiring in `PenzNewsClient`, `PenzDigest
    ignored; a story the model left out, an entry with any violation, or no answer at all → **fallback copy**
    (`narratedBy: fallback`, confidence 0, an honest "could not summarise reliably", the source count in words, and a
    per-kind / per-sleeve *nincs teendőd*).
+   A **holding story whose effect is not 0 Ft is never dropped**: the model's `keep: false` turns it into the fallback
+   item instead (an injection must not hide news about his money); zero-effect and macro stories still drop. Source
+   links are stored only when the url is https on that feed's article hosts (Google News: `news.google.com`) — the
+   rest of the source is omitted; source names and titles are cleaned of control / format characters.
 8. **Store** (`PenzDigestStore.replace`, one short transaction: hard-delete the day's row, save the new one):
    `ready` (items), `quiet` (no story touched his holdings, or every story `keep: false`), `failed` (the build itself
    broke). The GET answers `pending` when no row exists for the day, and `newsHealthy = !allFailing(news)`.
@@ -353,7 +368,8 @@ poll and a refresh never overlap and the size-1 scheduler pool is never held by 
 held quotes → poll the feeds → `UserFanOut.forEachActiveUser` → build each user's digest for **his own today** (money
 timezone); each step has its own try/catch. **Refresh** (`POST /api/penz/digest/refresh`): 202, the same three steps
 for the caller on the same executor; a second call within 15 minutes (`refresh-cooldown-minutes`, in memory per
-user) is 429 `PENZ_DIGEST_REFRESH_LIMITED`.
+user) is 429 `PENZ_DIGEST_REFRESH_LIMITED`. The cooldown starts only when the executor took the run; a full queue
+answers the same 429 and leaves the next attempt free (the job logs a dropped poll).
 
 ### 3.10 Untrusted text and the validator (L6)
 
@@ -365,16 +381,23 @@ ledger name get the same treatment. The untrusted-data rule is stated in the sys
 the articles; the only numbers the model may write are the story's `FIGURES` lines, verbatim; the holding is named
 from the ledger (`Tétel:`), and an `Irány:` line states the direction of the effect.
 
+**Before the prompt**, `sanitizeUntrusted` also NFKC-normalizes (fullwidth `＜` / small-form `﹤` become `<`) and
+collapses runs of two or more angle marks of any kind — ASCII, `‹ ›`, fullwidth, small form, spaced (`< < <`) — and
+strips lone surrogates. The FIGURES carry **no signs** (`Hatás: 18 400 Ft`, `Elmozdulás: 1,1%`) and an `Irány:` line
+for every story (*változatlan* when the effect rounds to 0 Ft); the prompt says to write no number but the FIGURES
+strings, never spell one out and never put a sign before a figure.
+
 **After the model — the real defence** (`DigestValidator`, every field, any violation → fallback), by the spec §6
-taxonomy:
+taxonomy (hardened after the L6 security review — its probe phrases are regression tests in
+`PenzDigestHardeningTest`):
 
 | Class | Rule |
 |---|---|
-| **Numerical Error** | every number in the prose (Hungarian formats normalized: `18 400`, `18.400`, `1,1`) is one of the story's figures (effect, %, value, the sleeve label's numbers like `10+`); `HufAmountGuard.verdict` passes every field against the same figures (no derived sums); digits inside his own ledger name are skipped |
+| **Numerical Error** | every number in the prose (Hungarian formats normalized: `18 400`, `18.400`, `1,1`) is one of the story's figures (effect, %, value); a `%` / *százalék* only on the story's own percentage; no scale word (*ezer, millió, milliárd, mrd, mn, bn, k, m, e*) or other currency (*euró, dollár, frank, font, $, €, £*) next to a figure, even an allowed one; the horizon digits only inside the story's own horizon phrase (*10+ éves*, *5–10 év*, *1–3 év*); `HufAmountGuard.verdict` on every field (no derived sums); no spelled-out number beyond *egy..hat* (*tíz, húsz, száz, ezer, tizennyolcezer, kétmillió…*) and no `Ft` / `HUF` that does not follow a digit figure; digits inside his own ledger name are skipped |
 | **Entity Swap** | no other holding's name or match terms; a macro story may name the holdings it moves (fx: non-HUF, rates: bonds) |
-| **Negation Flip** | holding story with a non-zero effect: no rise word (*emelkedett, nőtt, erősödött, drágult, szárnyalt*, EN) with a negative effect, no fall word (*esett, csökkent, gyengült, zuhant, visszaesett*, EN) with a positive one — in title + verdict |
+| **Negation Flip** | no signed figure at all (`+`, `−`, `-`, `–` before a digit — the card prints the signed effect); holding story with a non-zero effect (in whole forints): no rise / gain word (*emelkedett, nőtt, erősödött, drágult, szárnyalt, nyertél, nyereség, gyarapodott, gazdagabb, profit*, EN) with a negative effect, no fall / loss word (*esett, csökkent, gyengült, zuhant, visszaesett, veszített, veszteség, mínusz, kár*, EN) with a positive one — in **every** field; forint story: the same for the words about his money only (the currency's own *erősödött / gyengült* is inverted for foreign holdings) |
 | **Temporal Confusion** | no year and no weekday name (other dates are numbers → caught above) |
-| **Boundary** (§6) | no buy / sell / urge / promise wording (*vedd meg, vegyél, add el, eladni, most kell, azonnal, sürgős, garantált, biztos nyereség*, *buy, sell, urgent, guaranteed*), no URL, no markup but `*emphasis*`, no prompt-leak marker (*BOOP_PENZ, ARTICLE, utasítás, instruction, ignore, system, prompt, FIGURES*) |
+| **Boundary** (§6) | no buy / sell / urge / promise wording, matched as word-start stems on the folded text **and** on a copy with letter-spaced words joined (`a d d  e l` → *add el*): *vedd meg, vegyél, vásárol-, add el, elad-, megválni, realizál-, pozíciód, növeld, csökkentsd, bővítsd, haladéktalan, mielőtt késő, most kell, azonnal, sürgős, garantál-, biztos nyereség*, EN *buy, sell, trim, exit, take profit, offload, dump, reduce / increase your, add to your, urgent, guarantee, act now*; no URL (incl. `domain.tld/` forms like `bit.ly/x`), no markup but `*emphasis*`, no prompt-leak marker (*BOOP_PENZ, ARTICLE, utasítás, instruction, ignore, system, prompt, FIGURES*). *eladás* in a news title is blocked too — accepted |
 | **Shape** | every text field non-blank; title ≤ 120, verdict ≤ 220, body ≤ 1 800, uncertainty ≤ 500, noAction ≤ 300; confidence 0..2 |
 
 The injection test (`PenzDigestInjectionTest`, `PenzDigestPipelineIT`): an article body carrying a fence breaker, an
@@ -624,6 +647,10 @@ the old vectors. `matchInvestTxnForSms` (3) and the `runConvertSms` invest-buy a
   only what a trade cost is booked and stored.
 - **L6 — "since the last look" = since the previous close**, labelled so; a per-view baseline would make the number
   depend on how often he opens the app.
+- **Known, not fixed (security review, L6):** a company the owner does *not* hold, named in the narration as if it
+  were his (Entity Swap only knows his own holdings — a heuristic would block ordinary news context); the DNS-
+  rebinding window of the unpinned fetcher (§3.8, bounded by the allow-list); Google News receives his holdings'
+  match terms as search queries (a design choice: names of products he holds, nothing else about him).
 - **L6 — the strict validator means visible fallback.** Any number outside the figures, a "sell-off", a source domain
   like *portfolio.hu*, an index name with digits (*S&P 500*) or a careful "nem kell eladni" sends the item to fallback
   copy. Expect a noticeable share of `narratedBy: fallback` items in real use; loosening a rule needs a test that

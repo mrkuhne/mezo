@@ -63,6 +63,8 @@ class PenzNewsProviderAlertIT extends ApiIntegrationTest {
     @Autowired private AppUserRepository users;
     @Autowired private OwnerProperties ownerProperties;
     @Autowired private ApplicationContext context;
+    @Autowired private PenzNewsClient news;
+    @Autowired private io.mrkuhne.mezo.feature.penz.repository.PenzNewsArticleRepository articles;
 
     private UUID owner;
 
@@ -127,5 +129,28 @@ class PenzNewsProviderAlertIT extends ApiIntegrationTest {
     void testJob_shouldBeAbsent_whenItsSwitchIsOff() {
         assertThat(context.getBeanProvider(PenzNewsJob.class).getIfAvailable()).isNull();
         assertThat(context.getBean(PenzNewsRunner.class)).isNotNull();
+    }
+
+    @Test
+    void testPoll_shouldStoreAndRecordTheOtherFeeds_whenOneFeedCarriesControlCharacters() {
+        NewsSource bad = NewsSources.SEED.get(0);
+        NewsSource good = NewsSources.SEED.get(1);
+        String when = java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME.format(java.time.ZonedDateTime.now(
+            java.time.ZoneOffset.UTC).minusHours(1));
+        MOCK.stubFor(get(com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo(
+                java.net.URI.create(bad.url()).getPath())).atPriority(1)
+            .willReturn(aResponse().withBody("<rss><item><title>Rossz\u0000 cím\u202E</title><link>" + MOCK.baseUrl()
+                + "/a/bad</link><pubDate>" + when + "</pubDate></item></rss>")));
+        MOCK.stubFor(get(com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo(
+                java.net.URI.create(good.url()).getPath())).atPriority(1)
+            .willReturn(aResponse().withBody("<rss><item><title>Jó cím</title><link>" + MOCK.baseUrl()
+                + "/a/good</link><pubDate>" + when + "</pubDate></item></rss>")));
+
+        news.poll(java.time.Instant.now());
+
+        assertThat(articles.findAll()).extracting(a -> a.getTitle())
+            .contains("Rossz cím", "Jó cím");
+        assertThat(health.failStreak(PenzNewsClient.providerKey(bad))).isZero();
+        assertThat(health.failStreak(PenzNewsClient.providerKey(good))).isZero();
     }
 }

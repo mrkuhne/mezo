@@ -23,7 +23,7 @@ class PenzDigestPromptTest {
 
         assertThat(msg).contains(
             "STORY id=holding-aaaaaaaaaa kind=holding\nTétel: Mintavilág ETF\n" + DigestPrompt.FIGURES_HEADER
-                + "\n- Hatás: −18 400 Ft (a te részeden)\n",
+                + "\n- Hatás: 18 400 Ft (a te részeden)\n- Irány: csökkenés\n",
             "<<<ARTICLE id=1 source=\"Példa Hírek\">>>\nCím: Global equities slip on rate outlook\n"
                 + "Összefoglaló: Stocks fell.\nSzöveg: Kitalált cikk szöveg.\n<<<END ARTICLE 1>>>\n",
             "STORY id=fx-bbbbbbbbbb kind=fx\nTéma: a forint árfolyama",

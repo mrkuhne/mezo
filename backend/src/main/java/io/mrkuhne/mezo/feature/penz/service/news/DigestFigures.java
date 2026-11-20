@@ -36,6 +36,24 @@ public record DigestFigures(DigestKind kind, String sleeve, long effectHufMinor,
     static final Pattern NUMBER = Pattern.compile(
         "\\d{1,3}(?:[ \\u00A0\\u202F\\u2009.]\\d{3})+(?:,\\d+)?(?!\\d)|\\d+(?:[.,]\\d+)?");
 
+    /**
+     * The forint story's figures (security review #14): the summed currency effect and the pair's % — dropped when
+     * its sign contradicts the effect's (a rising pair with a falling forint effect would put two opposite directions
+     * on one card).
+     */
+    public static DigestFigures fx(long effectHufMinor, BigDecimal pairChangePct) {
+        BigDecimal pct = pairChangePct;
+        if (pct != null && effectHufMinor != 0 && pct.signum() != 0 && pct.signum() != Long.signum(effectHufMinor)) {
+            pct = null;
+        }
+        return new DigestFigures(DigestKind.FX, null, effectHufMinor, pct, null);
+    }
+
+    /** -1 / 0 / +1 of the effect as printed (whole forints): an effect that rounds to 0 Ft has no direction. */
+    public int direction() {
+        return Long.signum(wholeForints(effectHufMinor));
+    }
+
     /** {@code −18 400 Ft} / {@code +7 200 Ft} / {@code 0 Ft}: whole forints, signed. */
     public static String huf(long minor) {
         long whole = wholeForints(minor);
@@ -107,26 +125,39 @@ public record DigestFigures(DigestKind kind, String sleeve, long effectHufMinor,
         if (holdingValueHufMinor != null) {
             out.add(String.valueOf(Math.abs(wholeForints(holdingValueHufMinor))));
         }
-        String label = sleeveLabel();
-        if (label != null) {
-            Matcher m = NUMBER.matcher(label);
-            while (m.find()) {
-                out.add(normalizeNumber(m.group()));
-            }
-        }
         return out;
     }
 
-    /** The FIGURES lines of the prompt, Hungarian, each figure in its one spelling. */
+    /** The percent token the prose may write with {@code %} / {@code százalék}, normalized; null without a %. */
+    public String allowedPercent() {
+        return changePct == null ? null : normalizeNumber(pct(changePct).replace("%", ""));
+    }
+
+    /**
+     * The story's own horizon phrase ({@code 10+ év…}, {@code 5–10 év…}, {@code 1–3 év…}, any ending): its digits are
+     * allowed only inside it (security review #3). Null without a sleeve.
+     */
+    public Pattern horizonPhrase() {
+        if (sleeve == null) {
+            return null;
+        }
+        return switch (sleeve) {
+            case "short" -> Pattern.compile("(?<!\\d)1\\s?[–-]\\s?3\\s?év\\p{L}*");
+            case "mid" -> Pattern.compile("(?<!\\d)5\\s?[–-]\\s?10\\s?év\\p{L}*");
+            case "long" -> Pattern.compile("(?<!\\d)10\\s?\\+\\s?év\\p{L}*");
+            default -> null;
+        };
+    }
+
+    /** The FIGURES lines of the prompt, Hungarian: magnitudes only (no sign — the direction is the Irány line). */
     public List<String> figureLines() {
         List<String> lines = new ArrayList<>();
-        lines.add("Hatás: " + effectText() + " (" + DigestFallbackCopy.effectNote(kind, effectHufMinor) + ")");
-        if (kind == DigestKind.HOLDING) {
-            lines.add("Irány: " + (effectHufMinor < 0 ? "csökkenés" : effectHufMinor > 0 ? "emelkedés" : "változatlan"));
-        }
+        lines.add("Hatás: " + hufMagnitude(effectHufMinor) + " (" + DigestFallbackCopy.effectNote(kind, effectHufMinor)
+            + ")");
+        int dir = direction();
+        lines.add("Irány: " + (dir < 0 ? "csökkenés" : dir > 0 ? "emelkedés" : "változatlan"));
         if (changePct != null) {
-            int sign = changePct.signum();
-            lines.add("Elmozdulás: " + (sign < 0 ? String.valueOf(MINUS) : sign > 0 ? "+" : "") + changePctText());
+            lines.add("Elmozdulás: " + changePctText());
         }
         if (holdingValueHufMinor != null) {
             lines.add("A tételed értéke: " + holdingValueText());

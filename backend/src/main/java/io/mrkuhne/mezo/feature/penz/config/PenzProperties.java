@@ -28,6 +28,8 @@ import org.springframework.validation.annotation.Validated;
  * @param fetchUserAgent              the user-agent of the guarded fetch (Yahoo answers bots with 429).
  * @param allowLoopbackForTests       TEST ONLY: lets the guarded fetch reach a loopback WireMock (any port).
  *                                    Never set outside an IT property source; production keeps false.
+ * @param fetchDeadlineMs             the overall budget of one guarded fetch, body included: a slow drip is cut
+ *                                    off here, so it cannot hold the single news thread (security review #12).
  */
 @Validated
 @ConfigurationProperties(prefix = "mezo.penz")
@@ -45,5 +47,6 @@ public record PenzProperties(
         @DefaultValue("60") @Min(1) @Max(1_440) int quoteRefetchMinutes,
         @DefaultValue("8000") @Min(100) @Max(30_000) int fetchTimeoutMs,
         @DefaultValue("Mozilla/5.0") @NotBlank String fetchUserAgent,
-        @DefaultValue("false") boolean allowLoopbackForTests) {
+        @DefaultValue("false") boolean allowLoopbackForTests,
+        @DefaultValue("20000") @Min(500) @Max(120_000) int fetchDeadlineMs) {
 }

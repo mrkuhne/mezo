@@ -30,7 +30,7 @@ class PenzHttpFetcherTest {
 
     private static PenzProperties props(boolean allowLoopback) {
         return new PenzProperties("http://fx.invalid", 1000, 1000, "test", 7, 2_000_000L, 20, 500,
-            "http://quotes.invalid", "quotes.invalid", 60, 2000, "Mozilla/5.0", allowLoopback);
+            "http://quotes.invalid", "quotes.invalid", 60, 2000, "Mozilla/5.0", allowLoopback, 20000);
     }
 
     @BeforeAll

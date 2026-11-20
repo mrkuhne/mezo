@@ -31,7 +31,7 @@ final class DigestFixtures {
     static final DigestFigures RATES_FIGURES = new DigestFigures(DigestKind.RATES, null, 0L, null, null);
 
     static final String GOOD_TITLE = "A világ-ETF-ed 1,1%-ot csökkent";
-    static final String GOOD_VERDICT = "Egy rövid mozgás a 10+ éves pénznél nem jelent sokat: a te részeden −18 400 Ft.";
+    static final String GOOD_VERDICT = "Egy rövid mozgás a 10+ éves pénznél nem jelent sokat: a te részeden 18 400 Ft.";
     static final String GOOD_BODY = "A mozgás a kamatvárakozások átárazódásából jött, nem egyetlen cégből.\n\n"
         + "Az alapod a piaccal együtt mozgott, ahogy ilyenkor szokott. *Ezt a számot a te tételeidből számoltuk.*";
     static final String GOOD_UNCERTAINTY = "Az ár tény, a miértje elemzői értelmezés, és a források sem értenek egyet.";
@@ -41,7 +41,7 @@ final class DigestFixtures {
     }
 
     static NewsArticle article(String n, String source, String title, String summary) {
-        return new NewsArticle("https://example.com/" + n, source, title, summary, NOW.minusSeconds(3600));
+        return new NewsArticle("https://www.cnbc.com/" + n, source, title, summary, NOW.minusSeconds(3600));
     }
 
     static DigestStory worldStory(String body) {

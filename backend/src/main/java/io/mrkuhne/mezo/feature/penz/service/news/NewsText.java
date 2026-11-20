@@ -27,6 +27,7 @@ public final class NewsText {
 
     private static final Pattern ENTITY = Pattern.compile("&(#[xX][0-9a-fA-F]{1,6}|#\\d{1,7}|[A-Za-z]{2,8});");
     private static final Pattern MARKS = Pattern.compile("\\p{M}+");
+    private static final Pattern UNSAFE = Pattern.compile("[\\p{Cc}&&[^\\n\\t]]|\\p{Cf}|\\p{Cs}");
 
     private NewsText() {
     }
@@ -58,6 +59,16 @@ public final class NewsText {
         }
         m.appendTail(out);
         return out.toString();
+    }
+
+    /**
+     * Untrusted text with the characters that must never reach the database, a prompt or a screen removed (security
+     * review #6): control characters except newline and tab ({@code \u0000} would fail a Postgres text column and
+     * abort the poll), format characters (zero-width, bidi overrides U+202A–U+202E and isolates U+2066–U+2069) and
+     * lone surrogates. Valid surrogate pairs (emoji) stay. Null → null.
+     */
+    public static String clean(String s) {
+        return s == null ? null : UNSAFE.matcher(s).replaceAll("");
     }
 
     /** Lower case, diacritics dropped (ő → o, é → e), whitespace collapsed — the form every match runs on. */

@@ -13,24 +13,24 @@ import java.util.regex.Pattern;
 
 /**
  * RSS {@code <item>} + Atom {@code <entry>} parser (Boop Pénz L6, mezo-r36n9.104) — a port of the old app's
- * {@code base44/shared/news.ts parseFeed}: regex-based on purpose (no XML parser, so no entity-expansion or DTD
- * attack surface), CDATA kept literally, other text entity-decoded, tags stripped. Extended with the summary
- * ({@code description} / {@code summary} / {@code content}) and an http(s)-only link. Anything that is not a feed
- * yields an empty list.
+ * {@code base44/shared/news.ts parseFeed}: no XML parser on purpose (no entity-expansion or DTD surface), CDATA kept
+ * literally, other text entity-decoded, tags stripped. Extended with the summary ({@code description} /
+ * {@code summary} / {@code content}) and an http(s)-only link. Anything that is not a feed yields an empty list.
+ *
+ * <p><b>Linear by construction</b> (security review #5): the input is cut to {@link #MAX_INPUT_CHARS}, blocks, tags,
+ * links and CDATA sections are found with {@code indexOf} scans that never revisit text (an open tag without its
+ * close ends the scan), and the only regexes left run over bounded attribute strings or use {@code <[^<>]*>}, which
+ * cannot backtrack across a run of {@code <}. Every output string goes through {@link NewsText#clean} (review #6).
  */
 public final class RssParser {
 
     /** Same as the {@code penz_news_article} columns. */
     public static final int TITLE_MAX = 300;
     public static final int SUMMARY_MAX = 600;
+    /** Only the first 512 KB of a feed is parsed (the newest items come first). */
+    public static final int MAX_INPUT_CHARS = 512 * 1024;
 
-    private static final Pattern BLOCK = Pattern.compile("<(item|entry)\\b[^>]*>([\\s\\S]*?)</\\1>",
-        Pattern.CASE_INSENSITIVE);
-    private static final Pattern CDATA_SPLIT = Pattern.compile("(<!\\[CDATA\\[[\\s\\S]*?]]>)");
-    private static final Pattern TAG = Pattern.compile("<[^>]*>");
-    private static final Pattern LINK_SELF_CLOSING = Pattern.compile("<link\\b([^>]*?)/>", Pattern.CASE_INSENSITIVE);
-    private static final Pattern LINK_PAIRED = Pattern.compile("<link\\b([^>]*)>([\\s\\S]*?)</link>",
-        Pattern.CASE_INSENSITIVE);
+    private static final Pattern TAG = Pattern.compile("<[^<>]*>");
     private static final Pattern WEEKDAY_PREFIX = Pattern.compile("^[A-Za-z]{3,9},\\s*");
 
     private RssParser() {
@@ -41,37 +41,113 @@ public final class RssParser {
         if (xml == null || xml.isEmpty()) {
             return out;
         }
-        Matcher m = BLOCK.matcher(xml);
-        while (m.find()) {
-            String block = m.group(2);
-            String rawTitle = firstTag(block, "title");
-            String title = rawTitle == null ? "" : cap(cleanText(rawTitle, true), TITLE_MAX);
-            String link = pickLink(block);
-            if (title.isEmpty() || !isHttp(link)) {
-                continue;
+        String src = xml.length() > MAX_INPUT_CHARS ? xml.substring(0, MAX_INPUT_CHARS) : xml;
+        String lower = asciiLower(src);
+        int from = 0;
+        while (true) {
+            int[] open = nextOpen(lower, from, "item", "entry");
+            if (open == null) {
+                break;
             }
-            String rawSummary = firstTag(block, "description", "summary", "content");
-            String summary = rawSummary == null ? null : cap(cleanText(rawSummary, true), SUMMARY_MAX);
-            out.add(new RssItem(title, link, summary == null || summary.isEmpty() ? null : summary,
-                parseDate(firstTag(block, "pubDate", "published", "updated"))));
+            String name = lower.startsWith("<item", open[0]) ? "item" : "entry";
+            int close = lower.indexOf("</" + name, open[1]);
+            if (close < 0) {
+                break; // no close anywhere after: nothing more can match
+            }
+            String block = src.substring(open[1], close);
+            from = close + name.length() + 2;
+            RssItem item = item(block, asciiLower(block));
+            if (item != null) {
+                out.add(item);
+            }
         }
         return out;
+    }
+
+    private static RssItem item(String block, String lower) {
+        String rawTitle = firstTag(block, lower, "title");
+        String title = rawTitle == null ? "" : cap(cleanText(rawTitle, true), TITLE_MAX);
+        String link = pickLink(block, lower);
+        if (title.isEmpty() || !isHttp(link)) {
+            return null;
+        }
+        String rawSummary = firstTag(block, lower, "description", "summary", "content");
+        String summary = rawSummary == null ? null : cap(cleanText(rawSummary, true), SUMMARY_MAX);
+        return new RssItem(title, link, summary == null || summary.isEmpty() ? null : summary,
+            parseDate(firstTag(block, lower, "pubdate", "published", "updated")));
+    }
+
+    /**
+     * The next {@code <name} (one of {@code names}) followed by whitespace, {@code >} or {@code /}, at or after
+     * {@code from}: {start, index after the open tag's {@code >}}; null when none (or the open tag never ends).
+     */
+    private static int[] nextOpen(String lower, int from, String... names) {
+        int i = lower.indexOf('<', from);
+        while (i >= 0) {
+            for (String n : names) {
+                int after = i + n.length() + 1;
+                if (lower.startsWith(n, i + 1)) {
+                    char c = after < lower.length() ? lower.charAt(after) : '>';
+                    if (c == '>' || c == '/' || Character.isWhitespace(c)) {
+                        int gt = indexOfTagEnd(lower, after);
+                        return gt < 0 ? null : new int[] {i, gt + 1};
+                    }
+                }
+            }
+            i = lower.indexOf('<', i + 1);
+        }
+        return null;
+    }
+
+    /** The {@code >} closing a tag that started before {@code from}, or -1 when a {@code <} comes first / none. */
+    private static int indexOfTagEnd(String s, int from) {
+        for (int i = from; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c == '>') {
+                return i;
+            }
+            if (c == '<') {
+                return -1;
+            }
+        }
+        return -1;
+    }
+
+    /** The raw content of the first {@code <name …>…</name>} of {@code names} present; null when none. */
+    private static String firstTag(String block, String lower, String... names) {
+        for (String n : names) {
+            int[] open = nextOpen(lower, 0, n);
+            if (open == null) {
+                continue;
+            }
+            int close = lower.indexOf("</" + n, open[1]);
+            if (close >= 0) {
+                return block.substring(open[1], close);
+            }
+        }
+        return null;
     }
 
     /** CDATA kept literally (tags stripped from it when asked), other text entity-decoded; trimmed, collapsed. */
     static String cleanText(String raw, boolean stripTags) {
         StringBuilder sb = new StringBuilder();
-        Matcher m = CDATA_SPLIT.matcher(raw);
-        int last = 0;
-        while (m.find()) {
-            sb.append(plain(raw.substring(last, m.start()), stripTags));
-            String inner = m.group().substring(9, m.group().length() - 3);
-            // CDATA content is HTML in practice (descriptions): strip its tags, decode its entities
+        int at = 0;
+        while (true) {
+            int start = raw.indexOf("<![CDATA[", at);
+            if (start < 0) {
+                break;
+            }
+            int end = raw.indexOf("]]>", start + 9);
+            if (end < 0) {
+                break; // an unterminated CDATA is plain text from here on
+            }
+            sb.append(plain(raw.substring(at, start), stripTags));
+            String inner = raw.substring(start + 9, end);
             sb.append(stripTags ? NewsText.decodeEntities(TAG.matcher(inner).replaceAll(" ")) : inner);
-            last = m.end();
+            at = end + 3;
         }
-        sb.append(plain(raw.substring(last), stripTags));
-        return sb.toString().replaceAll("\\s+", " ").trim();
+        sb.append(plain(raw.substring(at), stripTags));
+        return NewsText.clean(sb.toString()).replaceAll("\\s+", " ").trim();
     }
 
     private static String plain(String part, boolean stripTags) {
@@ -89,37 +165,56 @@ public final class RssParser {
         return m.group(1) != null ? m.group(1) : m.group(2);
     }
 
-    private record LinkCandidate(String href, String rel) {
+    /** Every {@code <link>} of the block in order: the first with no rel or rel=alternate wins. */
+    private static String pickLink(String block, String lower) {
+        int at = 0;
+        while (true) {
+            int[] open = nextOpen(lower, at, "link");
+            if (open == null) {
+                return "";
+            }
+            String attrs = block.substring(open[0] + 5, open[1] - 1);
+            boolean selfClosing = attrs.endsWith("/");
+            String href = attr(attrs, "href");
+            String rel = attr(attrs, "rel");
+            String value;
+            if (href != null) {
+                value = NewsText.decodeEntities(href.trim());
+                at = open[1];
+            } else if (selfClosing) {
+                value = "";
+                at = open[1];
+            } else {
+                int close = lower.indexOf("</link", open[1]);
+                if (close < 0) {
+                    return "";
+                }
+                value = linkText(block.substring(open[1], close));
+                at = close + 6;
+            }
+            if (!value.isEmpty() && (rel == null || rel.equalsIgnoreCase("alternate"))) {
+                return value;
+            }
+        }
     }
 
-    private static String pickLink(String block) {
-        List<LinkCandidate> cands = new ArrayList<>();
-        Matcher self = LINK_SELF_CLOSING.matcher(block);
-        while (self.find()) {
-            String href = attr(self.group(1), "href");
-            if (href != null && !href.isBlank()) {
-                cands.add(new LinkCandidate(NewsText.decodeEntities(href.trim()), attr(self.group(1), "rel")));
-            }
+    /**
+     * A link element's text: CDATA unwrapped, entities decoded, trimmed — NOT cleaned, so a link carrying a control
+     * or format character is refused by {@link #isHttp} instead of being silently repaired into another url.
+     */
+    private static String linkText(String raw) {
+        String t = raw.strip();
+        if (t.startsWith("<![CDATA[") && t.endsWith("]]>")) {
+            t = t.substring(9, t.length() - 3);
         }
-        Matcher paired = LINK_PAIRED.matcher(block);
-        while (paired.find()) {
-            String href = attr(paired.group(1), "href");
-            String value = href != null ? NewsText.decodeEntities(href.trim()) : cleanText(paired.group(2), false);
-            if (!value.isEmpty()) {
-                cands.add(new LinkCandidate(value, attr(paired.group(1), "rel")));
-            }
-        }
-        return cands.stream()
-            .filter(c -> c.rel() == null || c.rel().equalsIgnoreCase("alternate"))
-            .map(LinkCandidate::href)
-            .findFirst()
-            .orElse("");
+        return NewsText.decodeEntities(t).strip();
     }
 
     private static boolean isHttp(String link) {
         String l = link.toLowerCase(Locale.ROOT);
         return (l.startsWith("https://") || l.startsWith("http://")) && link.length() > 8 && link.length() <= 1000
-            && link.chars().noneMatch(Character::isWhitespace);
+            && link.chars().noneMatch(c -> Character.isWhitespace(c) || Character.isISOControl(c)
+                || Character.getType(c) == Character.FORMAT || Character.isSurrogate((char) c));
     }
 
     private static Instant parseDate(String raw) {
@@ -141,15 +236,15 @@ public final class RssParser {
         }
     }
 
-    private static String firstTag(String block, String... names) {
-        for (String n : names) {
-            Matcher m = Pattern.compile("<" + n + "\\b[^>]*>([\\s\\S]*?)</" + n + ">", Pattern.CASE_INSENSITIVE)
-                .matcher(block);
-            if (m.find()) {
-                return m.group(1);
+    /** ASCII-only lower case: same length as the input, so indexes carry over. */
+    private static String asciiLower(String s) {
+        char[] c = s.toCharArray();
+        for (int i = 0; i < c.length; i++) {
+            if (c[i] >= 'A' && c[i] <= 'Z') {
+                c[i] = (char) (c[i] + 32);
             }
         }
-        return null;
+        return new String(c);
     }
 
     private static String cap(String s, int max) {

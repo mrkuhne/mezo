@@ -140,7 +140,11 @@ public class PenzDigestService {
             s.articles().stream().filter(a -> bodies.containsKey(a.url()))
                 .forEach(a -> storyBodies.put(a.url(), bodies.get(a.url())));
             PenzPositionView p = s.key().kind() == DigestKind.HOLDING ? byId.get(s.key().holdingId()) : null;
-            out.add(new DigestStory(s, p == null ? null : p.name(), figures(s.key(), p, positions), storyBodies));
+            Set<String> linkable = new LinkedHashSet<>();
+            s.articles().stream().filter(a -> news.linkable(a.url(), sourceKeyByUrl.get(a.url())))
+                .forEach(a -> linkable.add(a.url()));
+            out.add(new DigestStory(s, p == null ? null : p.name(), figures(s.key(), p, positions), storyBodies,
+                linkable));
         }
         return out;
     }
@@ -155,7 +159,7 @@ public class PenzDigestService {
                 List<PenzPositionView> foreign = positions.stream()
                     .filter(p -> p.currency() != null && !PenzFxService.HUF.equals(p.currency())).toList();
                 long effect = foreign.stream().mapToLong(PenzPositionView::fxMoveHufMinor).sum();
-                yield new DigestFigures(DigestKind.FX, null, effect, pairChangePct(foreign), null);
+                yield DigestFigures.fx(effect, pairChangePct(foreign));
             }
             case RATES -> new DigestFigures(DigestKind.RATES, null, 0L, null, null);
         };

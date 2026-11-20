@@ -13,6 +13,7 @@ import io.mrkuhne.mezo.feature.penz.service.news.NewsHolding;
 import io.mrkuhne.mezo.feature.penz.service.news.NewsMatcher;
 import io.mrkuhne.mezo.feature.penz.service.news.NewsSource;
 import io.mrkuhne.mezo.feature.penz.service.news.NewsSources;
+import io.mrkuhne.mezo.feature.penz.service.news.NewsText;
 import io.mrkuhne.mezo.feature.penz.service.news.RssItem;
 import io.mrkuhne.mezo.feature.penz.service.news.RssParser;
 import java.net.URI;
@@ -77,8 +78,8 @@ public class PenzNewsClient {
             Optional<List<RssItem>> items = fetchFeed(source);
             if (items.isPresent()) {
                 ok++;
-                inserted += store(source, items.get(), now);
                 health.recordSuccess(providerKey(source), PenzProviderHealth.KIND_NEWS);
+                inserted += storeSafely(source, items.get(), now);
             } else {
                 failed++;
             }
@@ -91,7 +92,7 @@ public class PenzNewsClient {
                 Optional<List<RssItem>> items = fetchFeed(search);
                 if (items.isPresent()) {
                     anyOk = true;
-                    inserted += store(search, items.get(), now);
+                    inserted += storeSafely(search, items.get(), now);
                 }
             }
             if (anyOk) {
@@ -141,6 +142,22 @@ public class PenzNewsClient {
             }
         }
         return out;
+    }
+
+    /**
+     * True when {@code url} of an article from feed {@code sourceKey} may be stored as an openable source link
+     * (security review #7): https only, on that feed's article hosts (a Google News search: {@code news.google.com}).
+     */
+    public boolean linkable(String url, String sourceKey) {
+        if (url == null || sourceKey == null) {
+            return false;
+        }
+        if (penzProps.allowLoopbackForTests() && isLoopback(url)) {
+            return true; // the IT WireMock; the switch is false outside tests
+        }
+        List<String> hosts = sourceKey.startsWith("gnews-") ? List.of(NewsSources.GOOGLE_NEWS_HOST)
+            : articleHosts(sourceKey);
+        return url.startsWith("https://") && NewsSources.isAllowedArticleUrl(url, hosts);
     }
 
     /** The seed feed's article hosts; none for a Google News search or an unknown key. */
@@ -203,15 +220,37 @@ public class PenzNewsClient {
         return b + original.getRawPath() + (original.getRawQuery() == null ? "" : "?" + original.getRawQuery());
     }
 
+    /**
+     * Stores a feed's items; one bad item (a value the database refuses) is logged by feed key and skipped, never
+     * aborting the feed or the poll (security review #6). The feed's health is the fetch + parse, not the store.
+     */
     private int store(NewsSource source, List<RssItem> items, Instant now) {
         String name = source.name().length() > SOURCE_NAME_MAX ? source.name().substring(0, SOURCE_NAME_MAX)
             : source.name();
         int inserted = 0;
+        int failed = 0;
         for (RssItem item : items) {
-            inserted += articles.insertIfAbsent(item.link(), source.key(), name, item.title(), item.summary(),
-                item.publishedAt(), now);
+            try {
+                inserted += articles.insertIfAbsent(item.link(), source.key(), name, NewsText.clean(item.title()),
+                    NewsText.clean(item.summary()), item.publishedAt(), now);
+            } catch (RuntimeException e) {
+                failed++;
+            }
+        }
+        if (failed > 0) {
+            log.warn("Penz news feed {}: {} item(s) could not be stored", source.key(), failed);
         }
         return inserted;
+    }
+
+    /** {@link #store}, with anything unexpected contained to this feed. */
+    private int storeSafely(NewsSource source, List<RssItem> items, Instant now) {
+        try {
+            return store(source, items, now);
+        } catch (RuntimeException e) {
+            log.warn("Penz news feed {}: storing failed ({})", source.key(), e.getClass().getSimpleName());
+            return 0;
+        }
     }
 
     /** The distinct match terms of every live holding of anyone, capped. */
