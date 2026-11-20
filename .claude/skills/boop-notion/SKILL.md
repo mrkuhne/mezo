@@ -24,6 +24,7 @@ live under *Adatbázisok (ne nyúlj hozzá)*; the dashboard pages (Jegyek, Kézi
 | Session works on it | `munkamenet` in the overlay row (the session's short name) |
 | Owner decision | new entry in `_dontesek.json` (key never changes) — mirror of `docs/superpowers/research/boop-standalone/14-decisions.md` + spec decisions |
 | Merge to main the owner can feel | new entry in `_kiadasok.json`, key = merge commit short sha; `verzio` = the release tag if the backend shipped |
+| A server feature reaches the app, a slice starts building it, or a new backend feature lands | its row in `docs/boop-handbook/_funkciok.json` (Szerverfunkciók — the rebuild tracker): `app` = `Kész` · `Részben kész` · `Épül` · `Tervben` · `Nincs még` · `Nem kell`, plus `app_megjegyzes`, `jegyek`, `kezikonyv`. `terulet` is one of the eight areas in the script (`FEATURE_AREAS`) |
 | A feature appears / changes / is cut | edit its page under `docs/boop-handbook/NN-terulet/` (format: `docs/boop-handbook/README.md`): state, *Mit csinál*, *Hogyan működik*, *Beállítások*, *Adattáblák*, *Mi jön még* |
 
 Privacy: no personal health values, ever. Examples are invented and marked „például”.
@@ -43,7 +44,7 @@ For each pending op:
 - **update** — `node scripts/boop-notion-sync.mjs payload update '<key>'` prints `{page_id, icon, properties, content}`;
   call `notion-update-page` twice: `update_properties` (properties + icon) and `replace_content` (content). Then `record`.
 
-`<db>` is one of `jegyek`, `dontesek`, `kiadasok`, `kezikonyv`. Create in that order (tickets first, so relations
+`<db>` is one of `jegyek`, `dontesek`, `kiadasok`, `kezikonyv`, `funkciok`. Create in that order (tickets first, so relations
 resolve). Rows created in the same pass carry their relations on the **next** `plan` as updates — repeat
 `plan → apply → record` until `node scripts/boop-notion-sync.mjs check` exits 0. Large passes (the whole handbook)
 go to a subagent with this skill as its brief.

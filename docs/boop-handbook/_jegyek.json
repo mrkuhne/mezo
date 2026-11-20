@@ -1330,5 +1330,15 @@
     ],
     "mit_kapsz": "Új technika a választóban: 20 ismétlés, aztán négyszer 10 mp pihenő és 5 ismétlés, fixen, magától nem áll le. Ha ezt választod, az egész gyakorlat 20 ismétlésre áll.",
     "munkamenet": "rest-pause-set-technique"
+  },
+  "mezo-r36n9.126": {
+    "cim": "Notion: Szerverfunkciók — mi van meg az appban és mi nincs",
+    "tipus": "Karbantartás",
+    "szakasz": "Újratervezés",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Egy új Notion-oldal, ahol területenként (edzés, étel, alvás, napló, célok, Boop, pénz, alapok) fel van sorolva a szerver minden funkciója, és mindegyiknél látod, hol tart az iPhone-appban: kész, részben kész, épül, tervben, nincs még, vagy nem kell.",
+    "munkamenet": "notion-feature-tracker"
   }
 }

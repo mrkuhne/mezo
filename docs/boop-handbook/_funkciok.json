@@ -1,0 +1,3747 @@
+{
+  "_leiras": "Szerverfunkciók — az újraépítés követője (mezo-r36n9.126). A szerver minden funkciója területenként, és hol tart az iPhone-appban. app: Kész | Részben kész | Épül | Tervben | Nincs még | Nem kell. Egy sor = egy funkció; a sorrend a Notion-oldal sorrendje területen belül. Felmérve: 2026-11-21.",
+  "auth-belepes": {
+    "cim": "Belépés e-maillel és jelszóval",
+    "terulet": "Alapok",
+    "app": "Kész",
+    "mit_tud": "Beléptet e-maillel és jelszóval, 30 napos belépőjegyet ad, és a letiltott fiókot nem engedi be.",
+    "app_megjegyzes": "Az app belépő képernyője ezt használja, a belépőjegyet a telefon biztonságos tárolója őrzi.",
+    "jegyek": [
+      "mezo-r36n9.11"
+    ],
+    "kezikonyv": [
+      "01-alapok/fiok-es-belepes"
+    ],
+    "csomag": "auth"
+  },
+  "auth-regisztracio": {
+    "cim": "Regisztráció meghívókóddal",
+    "terulet": "Alapok",
+    "app": "Kész",
+    "mit_tud": "Új fiókot hoz létre egy egyszer használható meghívókóddal, névvel, e-maillel és jelszóval.",
+    "app_megjegyzes": "A „Van meghívókódom” gombbal az appban regisztrálható.",
+    "jegyek": [],
+    "kezikonyv": [
+      "01-alapok/fiok-es-belepes"
+    ],
+    "csomag": "auth"
+  },
+  "auth-fiokom": {
+    "cim": "A fiókom adatai",
+    "terulet": "Alapok",
+    "app": "Kész",
+    "mit_tud": "Visszaadja, ki vagy: név, e-mail, nyelv, és hogy megvan-e már a bemutatkozás vagy jelszócsere kell.",
+    "app_megjegyzes": "Az app induláskor ebből dönti el, hol tartasz, és a fiók lapon mutatja a nevet és az e-mailt.",
+    "jegyek": [],
+    "kezikonyv": [
+      "01-alapok/fiok-lap",
+      "01-alapok/fiok-es-belepes"
+    ],
+    "csomag": "auth"
+  },
+  "auth-bemutatkozas": {
+    "cim": "Bemutatkozás befejezése",
+    "terulet": "Alapok",
+    "app": "Kész",
+    "mit_tud": "Megjegyzi, hogy az első indítás bemutatkozó lépései megvannak, így legközelebb már nem jönnek elő.",
+    "app_megjegyzes": "Az első lépések végén az app jelzi a szervernek, hogy kész.",
+    "jegyek": [
+      "mezo-r36n9.2"
+    ],
+    "kezikonyv": [
+      "01-alapok/elso-lepesek"
+    ],
+    "csomag": "auth"
+  },
+  "auth-fiok-modositas": {
+    "cim": "Név és e-mail átírása",
+    "terulet": "Alapok",
+    "app": "Nincs még",
+    "mit_tud": "Átírja a fiók nevét és e-mail-címét; Boop ezt a nevet használja megszólításkor.",
+    "app_megjegyzes": "A fiók lap csak mutatja a nevet és az e-mailt, átírni nem lehet.",
+    "jegyek": [],
+    "kezikonyv": [
+      "01-alapok/fiok-lap"
+    ],
+    "csomag": "auth"
+  },
+  "auth-jelszocsere": {
+    "cim": "Jelszócsere",
+    "terulet": "Alapok",
+    "app": "Nincs még",
+    "mit_tud": "Lecseréli a jelszót, és kikényszeríti a cserét, ha a fiók ideiglenes jelszót kapott.",
+    "app_megjegyzes": "Az appban nincs jelszócsere, és az ideiglenes jelszó utáni kötelező cserét sem kezeli.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "auth"
+  },
+  "auth-nyelv": {
+    "cim": "Nyelvválasztás (magyar / angol)",
+    "terulet": "Alapok",
+    "app": "Nincs még",
+    "mit_tud": "Tárolja, hogy magyarul vagy angolul kéred az appot, és a szerver üzenetei és az AI válaszai ezt a nyelvet követik.",
+    "app_megjegyzes": "Az app mindig magyar, regisztráláskor magyart küld, nyelvet váltani nem lehet.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "auth"
+  },
+  "auth-meghivok": {
+    "cim": "Meghívókódok kezelése",
+    "terulet": "Alapok",
+    "app": "Nincs még",
+    "mit_tud": "A tulajdonos meghívókódot készíthet, listázhatja és törölheti őket, hogy új ember regisztrálhasson.",
+    "app_megjegyzes": "Az appban nincs ilyen felület; a régi webes adminfelület a webbel együtt megszűnt, a szerver része megmaradt.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "auth"
+  },
+  "auth-felhasznalok": {
+    "cim": "Felhasználók kezelése",
+    "terulet": "Alapok",
+    "app": "Nincs még",
+    "mit_tud": "A tulajdonos látja a fiókokat, ideiglenes jelszót adhat egy fióknak, és letilthat vagy visszaengedhet egy felhasználót.",
+    "app_megjegyzes": "Az appban nincs ilyen felület; a régi webes adminfelület a webbel együtt megszűnt, a szerver része megmaradt.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "auth"
+  },
+  "notification-telefon-bejelentes": {
+    "cim": "A telefon bejelentése értesítésekhez",
+    "terulet": "Alapok",
+    "app": "Kész",
+    "mit_tud": "Megjegyzi a telefon értesítési címét belépéskor, és kilépéskor elfelejti, hogy később a szerver értesítést küldhessen.",
+    "app_megjegyzes": "Az app magától bejelenti a telefont; a szerver viszont még nem küld értesítést, ennek kipróbálása a fizetős Apple-fiókra vár.",
+    "jegyek": [
+      "mezo-r36n9.19",
+      "mezo-r36n9.11"
+    ],
+    "kezikonyv": [
+      "01-alapok/ertesitesek"
+    ],
+    "csomag": "notification"
+  },
+  "appnotification-ertesitesi-lista": {
+    "cim": "Az alkalmazáson belüli értesítési lista (csengő)",
+    "terulet": "Alapok",
+    "app": "Nem kell",
+    "mit_tud": "Gyűjti a háttérben készült dolgokról szóló jelzéseket (új minta, emlékjelölt, célra tett javaslat, heti összegzés), olvasottnak jelöli őket egyenként vagy mind.",
+    "app_megjegyzes": "A webes csengő a webbel együtt megszűnik (2026-11-19-i döntés); a kivezetése most zajlik, a jóváhagyások később Boop javaslatkártyáiként jönnek vissza.",
+    "jegyek": [
+      "mezo-r36n9.97"
+    ],
+    "kezikonyv": [
+      "01-alapok/ertesitesek"
+    ],
+    "csomag": "appnotification"
+  },
+  "train-mai-edzes": {
+    "cim": "A mai edzés előírással",
+    "terulet": "Edzés",
+    "app": "Kész",
+    "mit_tud": "Összerakja a mai edzést a tervből: gyakorlatok sorrendben, bemelegítő és munkasorozatok előírt súllyal, ismétléssel és tartalékkal, és megindokolja, mit változtatott.",
+    "app_megjegyzes": "Az Edzés szoba és az eligazítás ezt mutatja, net nélkül a legutóbb látott tervvel.",
+    "jegyek": [
+      "mezo-r36n9.15"
+    ],
+    "kezikonyv": [
+      "07-edzes/01-mozgas-szoba-ma",
+      "07-edzes/13-eligazitas"
+    ],
+    "csomag": "train"
+  },
+  "train-edzes-rogzitese": {
+    "cim": "Edzés vezetése és rögzítése",
+    "terulet": "Edzés",
+    "app": "Részben kész",
+    "mit_tud": "Elindítja az edzést, sorozatonként elmenti a súlyt és ismétlést, a javításokat, a gyakorlat utáni visszajelzést és a jegyzeteket, majd lezárja az edzést.",
+    "app_megjegyzes": "A lejátszó mindezt használja (net nélkül is, utólagos küldéssel); egy rögzített sorozat törlése még nincs a telefonon.",
+    "jegyek": [
+      "mezo-r36n9.15",
+      "mezo-r36n9.96",
+      "mezo-r36n9.67"
+    ],
+    "kezikonyv": [
+      "07-edzes/03-edzeslejatszo"
+    ],
+    "csomag": "train"
+  },
+  "train-gyakorlat-kihagyas-csere": {
+    "cim": "Gyakorlat kihagyása, cseréje, „nem esik jól”",
+    "terulet": "Edzés",
+    "app": "Kész",
+    "mit_tud": "Edzés közben kihagyhatsz vagy lecserélhetsz egy gyakorlatot; a csere ajánlásai a blokk céljához, az eszközeidhez és a jelzett fájdalomhoz igazodnak, egy mondatos indokkal.",
+    "app_megjegyzes": "A csere-lap és a „nem esik jól” gomb a lejátszóban él; további finomítások nyitottak.",
+    "jegyek": [
+      "mezo-r36n9.66",
+      "mezo-r36n9.111",
+      "mezo-r36n9.112"
+    ],
+    "kezikonyv": [
+      "07-edzes/17-mi-van-a-termemben"
+    ],
+    "csomag": "train"
+  },
+  "train-eszkozlista": {
+    "cim": "Mi van a termemben (eszközlista)",
+    "terulet": "Edzés",
+    "app": "Kész",
+    "mit_tud": "Megjegyzi, milyen eszköz hiányzik a termedből és melyik gyakorlatot nem tudod megcsinálni, és a cserék ehhez igazodnak.",
+    "app_megjegyzes": "A kilenc kapcsolós lista az Edzés beállításaiban van.",
+    "jegyek": [
+      "mezo-r36n9.66"
+    ],
+    "kezikonyv": [
+      "07-edzes/17-mi-van-a-termemben"
+    ],
+    "csomag": "train"
+  },
+  "train-plusz-sorozat-a-tervbe": {
+    "cim": "Plusz sorozat beírása a tervbe edzés közben",
+    "terulet": "Edzés",
+    "app": "Nincs még",
+    "mit_tud": "Egy edzés közben hozzáadott munkasorozatot a tervbe is be tud írni, hogy a következő héten is ott legyen.",
+    "app_megjegyzes": "A telefon ezt a lehetőséget nem használja.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "train"
+  },
+  "train-elozmenyek": {
+    "cim": "Edzés-előzmények",
+    "terulet": "Edzés",
+    "app": "Kész",
+    "mit_tud": "Listázza a lezárt edzéseidet időszakra, és egy edzés minden sorozatát részletesen visszaadja.",
+    "app_megjegyzes": "Az előzmények és a lezáró kép ebből olvas.",
+    "jegyek": [
+      "mezo-r36n9.15"
+    ],
+    "kezikonyv": [
+      "07-edzes/06-gyakorlatok-elozmenyek"
+    ],
+    "csomag": "train"
+  },
+  "train-rekordok": {
+    "cim": "Rekordok gyakorlatonként",
+    "terulet": "Edzés",
+    "app": "Kész",
+    "mit_tud": "Gyakorlatonként kiszámolja a legjobb teljesítményeidet (legnehezebb sorozat, becsült maximum).",
+    "app_megjegyzes": "A lejátszó és a lezáró kép mutatja a megdöntött csúcsokat.",
+    "jegyek": [
+      "mezo-r36n9.15"
+    ],
+    "kezikonyv": [
+      "07-edzes/06-gyakorlatok-elozmenyek"
+    ],
+    "csomag": "train"
+  },
+  "train-gyakorlat-katalogus": {
+    "cim": "Gyakorlat-katalógus képekkel",
+    "terulet": "Edzés",
+    "app": "Kész",
+    "mit_tud": "Több mint 160 beépített gyakorlatot tárol izomcsoporttal, eszközzel, besorolással és képpel.",
+    "app_megjegyzes": "A blokképítő, a csere és az eligazítás a katalógusból dolgozik, képekkel.",
+    "jegyek": [
+      "mezo-r36n9.83",
+      "mezo-r36n9.66"
+    ],
+    "kezikonyv": [
+      "07-edzes/06-gyakorlatok-elozmenyek"
+    ],
+    "csomag": "train"
+  },
+  "train-katalogus-szerkesztes": {
+    "cim": "Saját gyakorlat felvétele, videó és kép hozzáadása",
+    "terulet": "Edzés",
+    "app": "Nincs még",
+    "mit_tud": "Új gyakorlatot vehetsz fel, meglévőt szerkeszthetsz vagy törölhetsz, és videót vagy képeket csatolhatsz hozzá.",
+    "app_megjegyzes": "A telefonon nincs gyakorlat-szerkesztő; a katalógus csak olvasható.",
+    "jegyek": [],
+    "kezikonyv": [
+      "07-edzes/06-gyakorlatok-elozmenyek"
+    ],
+    "csomag": "train"
+  },
+  "train-blokk-attekintes": {
+    "cim": "A futó edzésblokk és az izmonkénti ív",
+    "terulet": "Edzés",
+    "app": "Kész",
+    "mit_tud": "Megmutatja a futó (vagy tervezett) több hetes blokkot, és izmonként hétről hétre a tervezett és a megcsinált sorozatok ívét.",
+    "app_megjegyzes": "Az Edzés Blokk füle ebből rajzol.",
+    "jegyek": [
+      "mezo-r36n9.83"
+    ],
+    "kezikonyv": [
+      "07-edzes/02-mezociklus-terv",
+      "07-edzes/05-heti-volumen"
+    ],
+    "csomag": "train"
+  },
+  "train-blokk-epito": {
+    "cim": "Blokképítő és a terv mérése",
+    "terulet": "Edzés",
+    "app": "Kész",
+    "mit_tud": "A futó blokkot izmonként (hangsúly), naponként és egészében (edzésmód, technikák, heti átnézés módja) állíthatod, és a szerver mentés előtt megméri a tervet az izmok sávjaihoz.",
+    "app_megjegyzes": "A blokképítő a telefonon él; a hiányzó kiegészítő mozgások jelzése még épül.",
+    "jegyek": [
+      "mezo-r36n9.83",
+      "mezo-r36n9.65",
+      "mezo-r36n9.77",
+      "mezo-r36n9.92",
+      "mezo-r36n9.114",
+      "mezo-r36n9.118"
+    ],
+    "kezikonyv": [
+      "07-edzes/16-blokk-epito"
+    ],
+    "csomag": "train"
+  },
+  "train-napi-gyakorlatszerkeszto": {
+    "cim": "Napi gyakorlatszerkesztő a futó blokkban",
+    "terulet": "Edzés",
+    "app": "Épül",
+    "mit_tud": "Egy edzésnap gyakorlatait lecserélheted, hozzáadhatsz, törölhetsz és átrendezhetsz, a szerver pedig a nap céljához illő ajánlásokat ad a stílus szerinti előírással.",
+    "app_megjegyzes": "Az ajánlások és a nap mentése már be van kötve, a teljes szerkesztő épül (jóváhagyásodra vár).",
+    "jegyek": [
+      "mezo-r36n9.116"
+    ],
+    "kezikonyv": [
+      "07-edzes/16-blokk-epito"
+    ],
+    "csomag": "train"
+  },
+  "train-heti-atnezes": {
+    "cim": "Heti átnézés (javasolt változtatások)",
+    "terulet": "Edzés",
+    "app": "Kész",
+    "mit_tud": "Hetente gyakorlatonként javasolja, hol nőjön vagy csökkenjen a sorozatszám, súly vagy ismétlés, indokkal; egyenként vagy egyben elfogadható, vagy magától érvényesül.",
+    "app_megjegyzes": "A hétfői kártyapakli a telefonon él; több kisebb javítás nyitott.",
+    "jegyek": [
+      "mezo-r36n9.78",
+      "mezo-r36n9.83",
+      "mezo-r36n9.87",
+      "mezo-r36n9.88",
+      "mezo-r36n9.90",
+      "mezo-r36n9.91"
+    ],
+    "kezikonyv": [
+      "07-edzes/16-blokk-epito",
+      "07-edzes/05-heti-volumen"
+    ],
+    "csomag": "train"
+  },
+  "train-volumen-savok": {
+    "cim": "Izmonkénti sávok és könnyített hét",
+    "terulet": "Edzés",
+    "app": "Részben kész",
+    "mit_tud": "Minden izomcsoportnak heti sorozat-sávot ad (sport mellett a lábnak lejjebb), hétről hétre legfeljebb egy-két sorozatot léptet, és könnyített hetet iktat be.",
+    "app_megjegyzes": "A blokképítő és a heti átnézés ebből dolgozik; néhány javítás és takarítás még nyitott.",
+    "jegyek": [
+      "mezo-r36n9.77",
+      "mezo-r36n9.75",
+      "mezo-r36n9.68",
+      "mezo-r36n9.69",
+      "mezo-r36n9.70",
+      "mezo-r36n9.71",
+      "mezo-r36n9.73",
+      "mezo-r36n9.76"
+    ],
+    "kezikonyv": [
+      "07-edzes/05-heti-volumen"
+    ],
+    "csomag": "train"
+  },
+  "train-progresszio-motor": {
+    "cim": "Súly- és ismétlés-progresszió",
+    "terulet": "Edzés",
+    "app": "Kész",
+    "mit_tud": "A legutóbbi azonos gyakorlatból szabályokkal számolja a következő súlyt és ismétlést, AI nélkül, mindig megindokolva.",
+    "app_megjegyzes": "Az előírt súlyokat és az indoklást a lejátszó mutatja.",
+    "jegyek": [
+      "mezo-r36n9.79"
+    ],
+    "kezikonyv": [
+      "07-edzes/04-progresszio-motor"
+    ],
+    "csomag": "train"
+  },
+  "train-hianyzo-sulyok": {
+    "cim": "Hiányzó súlyok megjegyzése a gépen",
+    "terulet": "Edzés",
+    "app": "Kész",
+    "mit_tud": "Megtanulja a rögzített sorozataidból, melyik súly hiányzik egy gépen, és a következő előírásnál a meglévő súlyra kerekít.",
+    "app_megjegyzes": "A háttérben működik, külön képernyő nem kell hozzá.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "train"
+  },
+  "train-edzesstilus": {
+    "cim": "Edzésstílus és fokozódó erőfeszítés",
+    "terulet": "Edzés",
+    "app": "Részben kész",
+    "mit_tud": "A blokkhoz választott stílus állítja az ismétlés-tartományt, a tartalékot és a pihenőt, és hétről hétre fokozza az erőfeszítést.",
+    "app_megjegyzes": "A stílus a blokképítőben választható; az elakadási javaslatok még nem látszanak külön.",
+    "jegyek": [
+      "mezo-r36n9.79",
+      "mezo-r36n9.115",
+      "mezo-r36n9.117"
+    ],
+    "kezikonyv": [
+      "07-edzes/14-edzesstilus"
+    ],
+    "csomag": "train"
+  },
+  "train-elakadas": {
+    "cim": "Elakadás felismerése izmonként",
+    "terulet": "Edzés",
+    "app": "Részben kész",
+    "mit_tud": "Észreveszi, ha egy izomnál hetek óta nem nő sem a súly, sem az ismétlés, és technikát vagy más megoldást ajánl rá.",
+    "app_megjegyzes": "Csak a heti átnézés javaslataiban jelenik meg, külön jelzés nincs.",
+    "jegyek": [
+      "mezo-r36n9.81"
+    ],
+    "kezikonyv": [
+      "07-edzes/14-edzesstilus"
+    ],
+    "csomag": "train"
+  },
+  "train-technikak-kihivas": {
+    "cim": "Intenzitás-technikák és a napi kihívás",
+    "terulet": "Edzés",
+    "app": "Kész",
+    "mit_tud": "Az utolsó sorozat helyett technikát (pihenős drop, drop set, myo set, rest pause, félismétlések) vagy kihívást ír elő, és szabály szerint maga is elhelyezi őket a blokkban.",
+    "app_megjegyzes": "A technika-választó és a lejátszó lépéskártyái élnek; a rest pause élesítésre vár.",
+    "jegyek": [
+      "mezo-r36n9.80",
+      "mezo-r36n9.81",
+      "mezo-r36n9.84",
+      "mezo-r36n9.94",
+      "mezo-r36n9.98",
+      "mezo-r36n9.99",
+      "mezo-r36n9.125"
+    ],
+    "kezikonyv": [
+      "07-edzes/15-technikak"
+    ],
+    "csomag": "train"
+  },
+  "train-ai-technika-finomitas": {
+    "cim": "AI-finomítás a heti átnézésben",
+    "terulet": "Edzés",
+    "app": "Kész",
+    "mit_tud": "A heti átnézés technika-javaslatait Boop (AI) a háttérben átnézi és finomítja, egy mondatos indokkal.",
+    "app_megjegyzes": "A heti átnézés kártyáin jelenik meg; az első éles AI-hét ellenőrzése még hátravan.",
+    "jegyek": [
+      "mezo-r36n9.82",
+      "mezo-r36n9.100"
+    ],
+    "kezikonyv": [
+      "07-edzes/15-technikak"
+    ],
+    "csomag": "train"
+  },
+  "train-tervgenerator": {
+    "cim": "Tervgenerátor (Boop összerak egy blokkot)",
+    "terulet": "Edzés",
+    "app": "Épül",
+    "mit_tud": "Néhány kérdés alapján összerak egy több hetes blokkot a választott napokra és kiemelt izmokra, szabályokkal és opcionálisan AI-választással.",
+    "app_megjegyzes": "A tervajánló (időkeret, edzettségi szint, 2–3 tervjelölt) épül a blokképítőbe.",
+    "jegyek": [
+      "mezo-r36n9.113"
+    ],
+    "kezikonyv": [
+      "07-edzes/02-mezociklus-terv"
+    ],
+    "csomag": "train"
+  },
+  "train-sablonok-futamok": {
+    "cim": "Sablonok, blokk indítása és újrafuttatása",
+    "terulet": "Edzés",
+    "app": "Tervben",
+    "mit_tud": "A terveket sablonként menti, egy sablonból új blokkot indít, egy régi blokkot újrafuttat vagy aktivál.",
+    "app_megjegyzes": "Döntés szerint a teljes blokképítő a telefonra jön, a sablonok a későbbi lépések között vannak.",
+    "jegyek": [],
+    "kezikonyv": [
+      "07-edzes/02-mezociklus-terv"
+    ],
+    "csomag": "train"
+  },
+  "train-blokk-lezaras-jelentes": {
+    "cim": "Blokk lezárása és zárójelentés AI-értékeléssel",
+    "terulet": "Edzés",
+    "app": "Tervben",
+    "mit_tud": "Lezárja a blokkot, elkészít egy megfagyasztott zárójelentést (haladás, rekordok, volumen), és AI-val szöveges értékelést ír hozzá.",
+    "app_megjegyzes": "A telefonon még nincs lezárás és zárójelentés; a döntés szerint a blokképítő későbbi lépése.",
+    "jegyek": [],
+    "kezikonyv": [
+      "07-edzes/06-gyakorlatok-elozmenyek"
+    ],
+    "csomag": "train"
+  },
+  "train-heti-beosztas": {
+    "cim": "Heti edzés- és sportnapok beosztása",
+    "terulet": "Edzés",
+    "app": "Részben kész",
+    "mit_tud": "Tárolja, a hét mely napjain és hánykor edzel a teremben, és mikor sportolsz rendszeresen.",
+    "app_megjegyzes": "Az Évad beállításakor kerül a szerverre; külön szerkesztő nincs, és az edzésnap-váltás még nem rendezi át a blokkot.",
+    "jegyek": [
+      "mezo-r36n9.122"
+    ],
+    "kezikonyv": [
+      "07-edzes/10-sport-futas"
+    ],
+    "csomag": "train"
+  },
+  "train-sport-naplo": {
+    "cim": "Sport-napló és sport-események",
+    "terulet": "Edzés",
+    "app": "Részben kész",
+    "mit_tud": "Rögzíti a sportalkalmakat (röplabda, kerékpár, úszás…), az egyszeri sporteseményeket és a kihagyott sportnapokat.",
+    "app_megjegyzes": "A telefon el tudja küldeni egy sportalkalom rögzítését; a sportlista, az események és a kihagyott sportnapok nincsenek.",
+    "jegyek": [
+      "mezo-r36n9.15"
+    ],
+    "kezikonyv": [
+      "07-edzes/10-sport-futas"
+    ],
+    "csomag": "train"
+  },
+  "train-futoblokk": {
+    "cim": "Futóblokkok és futás-napló",
+    "terulet": "Edzés",
+    "app": "Tervben",
+    "mit_tud": "Hetekre bontott intervallumos futóterveket kezel (bemelegítés, munka, pihenő, levezetés), és naplózza a lefutott alkalmakat.",
+    "app_megjegyzes": "A Sport és futás oldal tervezve van, a telefonon még nincs.",
+    "jegyek": [
+      "mezo-r36n9.15"
+    ],
+    "kezikonyv": [
+      "07-edzes/10-sport-futas"
+    ],
+    "csomag": "train"
+  },
+  "train-sajat-edzesek": {
+    "cim": "Saját edzések blokkon kívül",
+    "terulet": "Edzés",
+    "app": "Tervben",
+    "mit_tud": "Blokktól független, bármikor ismételhető saját edzéseket menthetsz és indíthatsz.",
+    "app_megjegyzes": "Az Edzés áttekintő a tervezett részek között sorolja, a telefonon még nincs.",
+    "jegyek": [],
+    "kezikonyv": [
+      "07-edzes/00-attekintes",
+      "07-edzes/02-mezociklus-terv"
+    ],
+    "csomag": "train"
+  },
+  "train-kihagyas": {
+    "cim": "Edzés kihagyása okkal",
+    "terulet": "Edzés",
+    "app": "Kész",
+    "mit_tud": "Egy tervezett edzést okkal kihagyhatsz, és vissza is vonhatod; a kihagyás beszámít a tervbe.",
+    "app_megjegyzes": "A kihagyás-lap a telefonon él.",
+    "jegyek": [],
+    "kezikonyv": [
+      "07-edzes/11-kihagyas-kimelo"
+    ],
+    "csomag": "train"
+  },
+  "train-kimelo-mod": {
+    "cim": "Kímélő mód és fokozatos visszatérés",
+    "terulet": "Edzés",
+    "app": "Részben kész",
+    "mit_tud": "Betegség, sérülés vagy utazás alatt kímélő időszakot vezet napi rákérdezéssel, és visszatéréskor könnyített, fokozatosan erősödő edzéseket ír elő.",
+    "app_megjegyzes": "Indítás, napi rákérdezés és a visszatérés jelzése él; egy nap feloldása, a „mégsem vagyok jól” visszavonás és a könnyítés elengedése még nincs.",
+    "jegyek": [],
+    "kezikonyv": [
+      "02-ma/kimelo-mod",
+      "07-edzes/11-kihagyas-kimelo"
+    ],
+    "csomag": "train"
+  },
+  "train-reggeli-keszenlet": {
+    "cim": "Reggeli készenlét (könnyebb nap ajánlása)",
+    "terulet": "Edzés",
+    "app": "Tervben",
+    "mit_tud": "A reggeli check-in válaszaiból eldönti, ajánl-e könnyebb edzést, és a fájó testrészhez tartozó gyakorlatokat megjelöli.",
+    "app_megjegyzes": "A telefon még nem kéri le és nem kínálja fel a könnyítést.",
+    "jegyek": [
+      "mezo-r36n9.15"
+    ],
+    "kezikonyv": [
+      "07-edzes/11-kihagyas-kimelo"
+    ],
+    "csomag": "train"
+  },
+  "train-idotartam-becsles": {
+    "cim": "Edzés hosszának becslése",
+    "terulet": "Edzés",
+    "app": "Részben kész",
+    "mit_tud": "A lezárt edzéseidből megtanulja, mennyi ideig tart nálad egy sorozat és a pihenő, és ebből megbecsüli a mai edzés hosszát.",
+    "app_megjegyzes": "Az eligazítás mutatja a becsült időt; a megtanult időprofil maga nem látszik.",
+    "jegyek": [],
+    "kezikonyv": [
+      "07-edzes/13-eligazitas"
+    ],
+    "csomag": "train"
+  },
+  "train-zaro-gyakorlatok": {
+    "cim": "Záró gyakorlatok minden edzésnap végén",
+    "terulet": "Edzés",
+    "app": "Kész",
+    "mit_tud": "Minden edzésnap végére automatikusan odateszi a beállított záró gyakorlatokat.",
+    "app_megjegyzes": "A lejátszóban megjelennek a nap végén.",
+    "jegyek": [],
+    "kezikonyv": [
+      "07-edzes/03-edzeslejatszo"
+    ],
+    "csomag": "train"
+  },
+  "train-felbehagyott-edzes-zarasa": {
+    "cim": "Félbehagyott edzés automatikus lezárása",
+    "terulet": "Edzés",
+    "app": "Kész",
+    "mit_tud": "Ha egy elkezdett edzés nap végéig nyitva marad, magától lezárja: ha volt rögzített sorozat, megcsináltnak, különben kihagyottnak számít.",
+    "app_megjegyzes": "A háttérben működik.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "train"
+  },
+  "train-edzes-energia": {
+    "cim": "Edzés és sport energiája a tervhez",
+    "terulet": "Edzés",
+    "app": "Kész",
+    "mit_tud": "A heti edzésekből és sportból kiszámolja a mozgás energiaigényét, és átadja a súlycél- és étkezésszámításnak.",
+    "app_megjegyzes": "Az Évad számai ebből számolnak.",
+    "jegyek": [
+      "mezo-r36n9.16"
+    ],
+    "kezikonyv": [
+      "04-terv/06-terv-csomag"
+    ],
+    "csomag": "train"
+  },
+  "train-ermek": {
+    "cim": "Érmek",
+    "terulet": "Edzés",
+    "app": "Nem kell",
+    "mit_tud": "A rögzített sorozataidból díszítő érmeket számol.",
+    "app_megjegyzes": "Döntés: játékosítás nincs a Boopban; a valódi rekordok megmaradnak.",
+    "jegyek": [
+      "mezo-r36n9.97"
+    ],
+    "kezikonyv": [
+      "07-edzes/12-ami-kimarad"
+    ],
+    "csomag": "train"
+  },
+  "wearable-edzesek-egeszsegbol": {
+    "cim": "Edzések az Egészségből, duplikáció nélkül",
+    "terulet": "Edzés",
+    "app": "Kész",
+    "mit_tud": "Fogadja az órád vagy más app által rögzített edzéseket, és ha ugyanazt a Boopban is vezetted, csak egyszer számolja.",
+    "app_megjegyzes": "A telefon küldi; az összevonás a szerveren történik.",
+    "jegyek": [
+      "mezo-r36n9.11"
+    ],
+    "kezikonyv": [
+      "07-edzes/09-edzesek-a-healthbol",
+      "08-adatok/07-edzesek-az-egeszsegbol"
+    ],
+    "csomag": "wearable"
+  },
+  "companion-blokkzaro-ertekeles": {
+    "cim": "AI-értékelés az edzésblokk végén",
+    "terulet": "Edzés",
+    "app": "Nincs még",
+    "mit_tud": "Egy edzésblokk lezárásakor a szerver összegyűjti a blokk heteinek alvását, evését, energiáját és terhelését, és AI-val értékelést ír róla.",
+    "app_megjegyzes": "Az app nem mutatja a blokkzáró jelentést és értékelést.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "companion"
+  },
+  "proactive-edzes-kihivasok": {
+    "cim": "Edzés előtti kihívások (régi)",
+    "terulet": "Edzés",
+    "app": "Nem kell",
+    "mit_tud": "Edzés előtt gyakorlatonkénti kis kihívásokat ajánlott (csúcs, mélység, mennyiség, a nap legnagyobb ugrása), és az edzés után kiértékelte őket.",
+    "app_megjegyzes": "Kikapcsolják; az iPhone edzés-lejátszója az Edzés terület saját, új kihívását használja.",
+    "jegyek": [
+      "mezo-r36n9.97"
+    ],
+    "kezikonyv": [],
+    "csomag": "proactive"
+  },
+  "meal-ai-vazlat": {
+    "cim": "Étkezés vázlata fotóból, szövegből, vonalkódból",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "Egy fotóból, szabad szövegből vagy vonalkódból Boop kiolvassa, mit ettél, és a kamrádhoz, receptjeidhez köti a tételeket. Egy jóváhagyandó vázlatot ad, semmit nem ment magától.",
+    "app_megjegyzes": "Az app rögzítője fotót és szöveget együtt küld, a vázlatot jóváhagyásra mutatja, net nélkül is sorba állítja.",
+    "jegyek": [
+      "mezo-r36n9.14",
+      "mezo-r36n9.52",
+      "mezo-r36n9.95"
+    ],
+    "kezikonyv": [
+      "06-etel/02-etkezes-rogzitese"
+    ],
+    "csomag": "meal"
+  },
+  "meal-rogzites": {
+    "cim": "Étkezés mentése",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "A jóváhagyott étkezést elmenti a tételeivel, és a tápértékeket a mentés pillanatában rögzíti, így később sem változnak. Az időpont visszamenőleg is megadható.",
+    "app_megjegyzes": "Az app ment, visszamenőleges időponttal is, és net nélkül is (később küldi fel).",
+    "jegyek": [
+      "mezo-r36n9.14"
+    ],
+    "kezikonyv": [
+      "06-etel/02-etkezes-rogzitese"
+    ],
+    "csomag": "meal"
+  },
+  "meal-javitas-torles": {
+    "cim": "Rögzített étkezés javítása és törlése",
+    "terulet": "Étel",
+    "app": "Nincs még",
+    "mit_tud": "Egy már elmentett étkezés tételei utólag átírhatók, vagy az egész étkezés törölhető.",
+    "app_megjegyzes": "Az appban egy elmentett étkezést még nem lehet átírni vagy törölni; erre nincs külön jegy.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "meal"
+  },
+  "meal-napi-keret": {
+    "cim": "Napi keret: cél, eddig, maradék",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "A nap kalória-, fehérje-, szénhidrát- és zsírcélját mutatja a már megevett mennyiséggel és a maradékkal, a nap étkezéseivel együtt.",
+    "app_megjegyzes": "Az Étel szoba Ma füle ebből mutatja a keretet, a makrókat és a nap görbéjét.",
+    "jegyek": [
+      "mezo-r36n9.14",
+      "mezo-r36n9.101"
+    ],
+    "kezikonyv": [
+      "06-etel/01-etel-szoba-ma",
+      "06-etel/04-napi-keret"
+    ],
+    "csomag": "meal"
+  },
+  "meal-heti-kep": {
+    "cim": "Heti étkezési kép",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "Hét napra összesíti a célokat és az elfogyasztott mennyiséget, ebből jön a heti átlag és a heti megfigyelés.",
+    "app_megjegyzes": "Az Étel szoba Hét füle használja.",
+    "jegyek": [
+      "mezo-r36n9.14",
+      "mezo-r36n9.109"
+    ],
+    "kezikonyv": [
+      "06-etel/04-napi-keret"
+    ],
+    "csomag": "meal"
+  },
+  "meal-napi-terv-tipp": {
+    "cim": "Napi étkezési terv és „következő étkezés” tipp",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "Az ébredés, lefekvés és edzések köré idősávokat rak kerettel, és a maradék keretből konkrét javaslatot ad a következő étkezésre, lehetőleg a saját receptjeidből.",
+    "app_megjegyzes": "Az app a Ma fülön mutatja a tervezett étkezéseket és a tippet, a Megeszem / Kihagyom gombbal.",
+    "jegyek": [
+      "mezo-r36n9.14"
+    ],
+    "kezikonyv": [
+      "06-etel/01-etel-szoba-ma",
+      "06-etel/04-napi-keret"
+    ],
+    "csomag": "meal"
+  },
+  "meal-szokasosak": {
+    "cim": "Szokásos étkezéseid",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "Az elmúlt négy hét ismétlődő étkezéseiből rangsorolt listát ad, hogy egy koppintással újra rögzíthesd őket.",
+    "app_megjegyzes": "A rögzítő „Szokásos” gombja használja.",
+    "jegyek": [
+      "mezo-r36n9.14"
+    ],
+    "kezikonyv": [
+      "06-etel/02-etkezes-rogzitese"
+    ],
+    "csomag": "meal"
+  },
+  "meal-boop-ertekeles": {
+    "cim": "Boop szöveges értékelése az étkezésről",
+    "terulet": "Étel",
+    "app": "Részben kész",
+    "mit_tud": "Mentés után egy olcsó AI rövid, emberi értékelést ír az étkezésről (jelmondat, összefoglaló, javítási ötletek, vércukor-tipp), a pontszámon nem változtat.",
+    "app_megjegyzes": "Az app a napi értékeléseket mutatja; egy régebbi nap egyetlen étkezésének utólagos értékelését még nem kéri le.",
+    "jegyek": [
+      "mezo-r36n9.14",
+      "mezo-r36n9.86"
+    ],
+    "kezikonyv": [
+      "06-etel/03-etkezes-ertekelese"
+    ],
+    "csomag": "meal"
+  },
+  "meal-ertekeles-hatterben": {
+    "cim": "Értékelés megírása rögtön mentés után",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "Amint elmentesz egy étkezést, a háttérben azonnal elkészül Boop értékelése, hogy megnyitáskor már kész legyen.",
+    "app_megjegyzes": "Háttérmunka; az app a kész értékelést látja.",
+    "jegyek": [
+      "mezo-r36n9.14"
+    ],
+    "kezikonyv": [
+      "06-etel/03-etkezes-ertekelese"
+    ],
+    "csomag": "meal"
+  },
+  "meal-viz": {
+    "cim": "Víz rögzítése",
+    "terulet": "Étel",
+    "app": "Részben kész",
+    "mit_tud": "Egy koppintással rögzít egy adag vizet, és összeadja a napi vízfogyasztást a vízcélhoz mérve; egy tévedés visszavonható.",
+    "app_megjegyzes": "Az appban van +250 / +500 gomb, de a tévesen rögzített vizet még nem lehet visszavonni.",
+    "jegyek": [
+      "mezo-r36n9.14"
+    ],
+    "kezikonyv": [
+      "06-etel/04-napi-keret"
+    ],
+    "csomag": "meal"
+  },
+  "meal-etelfoto": {
+    "cim": "Ételfotó az étkezéshez",
+    "terulet": "Étel",
+    "app": "Részben kész",
+    "mit_tud": "Egy étkezéshez saját fotót csatol, visszaadja és törli; a fotó az étkezés soránál látszik.",
+    "app_megjegyzes": "Az app csatolja és mutatja a fotót, de egy fotót utólag még nem lehet törölni.",
+    "jegyek": [
+      "mezo-r36n9.14",
+      "mezo-r36n9.61"
+    ],
+    "kezikonyv": [
+      "06-etel/02-etkezes-rogzitese"
+    ],
+    "csomag": "meal"
+  },
+  "meal-osszes-foto-torles": {
+    "cim": "Összes ételfotó törlése egyben",
+    "terulet": "Étel",
+    "app": "Nincs még",
+    "mit_tud": "Egy lépésben törli az összes ételfotódat, az étkezések megmaradnak.",
+    "app_megjegyzes": "Az appban nincs ilyen gomb.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "meal"
+  },
+  "meal-recept-elozmeny": {
+    "cim": "Mikor etted ezt a receptet",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "Egy recepthez visszaadja a legutóbbi étkezéseket, amelyekben szerepelt.",
+    "app_megjegyzes": "A receptlap alján látszik.",
+    "jegyek": [
+      "mezo-r36n9.14"
+    ],
+    "kezikonyv": [
+      "06-etel/05-receptek"
+    ],
+    "csomag": "meal"
+  },
+  "meal-ujraszamolas": {
+    "cim": "Régi étkezések utólagos újraszámolása",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "Indításkor a régebbi étkezések pontszámát és hiányzó adatait (például telített zsír) a mai szabályokkal újraszámolja.",
+    "app_megjegyzes": "Háttérmunka, nincs külön felülete; az app a frissített számokat mutatja.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "meal"
+  },
+  "nutrition-napi-cel": {
+    "cim": "Napi étkezési cél kiszámítása",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "A súlycélból, az alap energiaigényből és a már rögzített edzésekből kiszámolja a napi kalória- és makrócélt; sosem megy a nyugalmi anyagcsere alá, kímélő napon enyhül.",
+    "app_megjegyzes": "Minden keret és pontszám az appban ebből a célból jön.",
+    "jegyek": [
+      "mezo-r36n9.14"
+    ],
+    "kezikonyv": [
+      "06-etel/04-napi-keret"
+    ],
+    "csomag": "nutrition"
+  },
+  "nutrition-pontozas": {
+    "cim": "Étkezés pontszáma nyolc szempont szerint",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "Szabályok alapján 0–100 pontot ad az étkezésre (makróarány, feldolgozottság, cukor és só, zsírminőség, rost, változatosság, energiasűrűség, napi helyzet), edzés körül más mércével; hiányzó adatnál őszintén „nincs adat”.",
+    "app_megjegyzes": "Az app a pontszámot gyűrűben és a nyolc szempontot kinyitható csempéken mutatja.",
+    "jegyek": [
+      "mezo-r36n9.14"
+    ],
+    "kezikonyv": [
+      "06-etel/03-etkezes-ertekelese",
+      "06-etel/01-etel-szoba-ma"
+    ],
+    "csomag": "nutrition"
+  },
+  "nutrition-etrendi-beallitasok": {
+    "cim": "Étrendi beállítások élő előnézettel",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "Makróarány, fehérjeszint, napi víz- és rostcél; mentés előtt megmutatja, milyen napi számok lennének belőle.",
+    "app_megjegyzes": "Az app beállításaiban szerkeszthető, élő előnézettel.",
+    "jegyek": [
+      "mezo-r36n9.14"
+    ],
+    "kezikonyv": [
+      "06-etel/04-napi-keret"
+    ],
+    "csomag": "nutrition"
+  },
+  "nutrition-erzekenyseg-profil": {
+    "cim": "Érzékenységi profil",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "Megadod, mire vagy érzékeny (allergia, intolerancia, kerülöm), és meddig mehet el a feldolgozottság.",
+    "app_megjegyzes": "Az app beállításaiban szerkeszthető.",
+    "jegyek": [
+      "mezo-r36n9.14"
+    ],
+    "kezikonyv": [
+      "06-etel/07-allergenek"
+    ],
+    "csomag": "nutrition"
+  },
+  "nutrition-erzekenyseg-jelzes": {
+    "cim": "Érzékenység-jelzés ételeken és javaslatokban",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "A profilod alapján minden alapanyagnál, receptnél és javaslatnál jelzi, mit tartalmaz, és kizárja, amit a szabályaid tiltanak; „nincs adat” esetén sem állítja, hogy mentes.",
+    "app_megjegyzes": "A kamra, a receptek és a javaslatok sárga jelzéssel mutatják.",
+    "jegyek": [
+      "mezo-r36n9.14",
+      "mezo-r36n9.48"
+    ],
+    "kezikonyv": [
+      "06-etel/07-allergenek"
+    ],
+    "csomag": "nutrition"
+  },
+  "nutrition-napi-terv-motor": {
+    "cim": "A napi étkezési terv motorja",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "Elhelyezi az étkezési idősávokat az ébredés, lefekvés és edzések köré, elosztja köztük a keretet, és receptet vagy szokásos ételt választ hozzájuk.",
+    "app_megjegyzes": "Háttérmotor; az app a Ma fül tervében és a tippben látja az eredményét.",
+    "jegyek": [
+      "mezo-r36n9.14"
+    ],
+    "kezikonyv": [
+      "06-etel/04-napi-keret"
+    ],
+    "csomag": "nutrition"
+  },
+  "fuel-etkezesi-ritmus": {
+    "cim": "Étkezési ritmus beállítása",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "Napi étkezésszám és a koffein határideje, amit a napi terv és a kiegészítők elhelyezése figyelembe vesz.",
+    "app_megjegyzes": "Az app ritmus-beállításában szerkeszthető.",
+    "jegyek": [
+      "mezo-r36n9.14"
+    ],
+    "kezikonyv": [
+      "06-etel/04-napi-keret"
+    ],
+    "csomag": "fuel"
+  },
+  "fuel-stack-lista": {
+    "cim": "Kiegészítő-stack: lista, hozzáadás, adag, törlés",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "A kiegészítőid listája napszakok szerint, adaggal; új tétel hozzáadható, adag módosítható, tétel törölhető, a korábbi változatok megmaradnak.",
+    "app_megjegyzes": "Az Étel szobában hozzáadható, adagolható és törölhető; a korábbi változatok listáját az app nem mutatja.",
+    "jegyek": [
+      "mezo-r36n9.14"
+    ],
+    "kezikonyv": [
+      "06-etel/09-taplalekkiegeszitok"
+    ],
+    "csomag": "fuel"
+  },
+  "fuel-bevetel": {
+    "cim": "Kiegészítő bevételének jelölése",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "Rögzíti, hogy bevettél egy kiegészítőt (az adagot magától átveszi), és egy téves koppintás visszavonható.",
+    "app_megjegyzes": "Az appban egy koppintás jelöli egy napszak csoportját bevettnek, és visszavonható.",
+    "jegyek": [
+      "mezo-r36n9.14"
+    ],
+    "kezikonyv": [
+      "06-etel/09-taplalekkiegeszitok"
+    ],
+    "csomag": "fuel"
+  },
+  "fuel-elhelyezes": {
+    "cim": "Kiegészítők automatikus elhelyezése a napban",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "Eldönti, melyik napszakba kerüljön egy kiegészítő: szabálytábla, ha az nem ismeri, AI-javaslat, végül tartalék szakasz; a koffein határidejét betartja.",
+    "app_megjegyzes": "Szerveroldali motor; az app az elhelyezett listát mutatja.",
+    "jegyek": [
+      "mezo-r36n9.14"
+    ],
+    "kezikonyv": [
+      "06-etel/09-taplalekkiegeszitok"
+    ],
+    "csomag": "fuel"
+  },
+  "fuel-kezi-athelyezes": {
+    "cim": "Kiegészítő kézi áthelyezése és rögzítése",
+    "terulet": "Étel",
+    "app": "Nem kell",
+    "mit_tud": "Egy kiegészítőt kézzel másik napszakba tehetsz és ott rögzítheted, vagy visszaadhatod a motornak.",
+    "app_megjegyzes": "Döntés szerint az elhelyező szerkesztő nem kerül át, csak a lista és a „bevettem”.",
+    "jegyek": [],
+    "kezikonyv": [
+      "06-etel/09-taplalekkiegeszitok"
+    ],
+    "csomag": "fuel"
+  },
+  "fuel-idosav-sablon": {
+    "cim": "Étkezési idősáv-sablonok napfajtánként",
+    "terulet": "Étel",
+    "app": "Nem kell",
+    "mit_tud": "Pihenő- és edzésnapra külön étkezési idősáv-sablont tárol, vagy visszaáll az automatikus ajánlásra.",
+    "app_megjegyzes": "Döntés szerint kimarad, a napi terv sablon nélkül készül.",
+    "jegyek": [],
+    "kezikonyv": [
+      "06-etel/10-ami-kimarad"
+    ],
+    "csomag": "fuel"
+  },
+  "fuel-sablon-ai-ertekeles": {
+    "cim": "Idősáv-terv AI-értékelése",
+    "terulet": "Étel",
+    "app": "Nem kell",
+    "mit_tud": "Egy idősáv-felosztásról AI mondja meg, mennyire illik a célhoz és az edzésekhez.",
+    "app_megjegyzes": "A sablonszerkesztővel együtt kimarad.",
+    "jegyek": [],
+    "kezikonyv": [
+      "06-etel/10-ami-kimarad"
+    ],
+    "csomag": "fuel"
+  },
+  "fuel-stack-indulo": {
+    "cim": "Induló kiegészítő-stack betöltése",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "Első indításkor betölt egy alap kiegészítő-stacket, hogy ne üres listáról indulj.",
+    "app_megjegyzes": "Háttérmunka, nincs külön felülete.",
+    "jegyek": [],
+    "kezikonyv": [
+      "06-etel/09-taplalekkiegeszitok"
+    ],
+    "csomag": "fuel"
+  },
+  "recipe-konyvtar": {
+    "cim": "Receptkönyvtár és receptlap",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "A saját receptjeid listája makrókkal, és egy recept teljes lapja hozzávalókkal, lépésekkel, adagonkénti tápértékkel.",
+    "app_megjegyzes": "A Receptek fül keresővel, szűrővel és receptlappal.",
+    "jegyek": [
+      "mezo-r36n9.14"
+    ],
+    "kezikonyv": [
+      "06-etel/05-receptek"
+    ],
+    "csomag": "recipe"
+  },
+  "recipe-javitas-torles": {
+    "cim": "Recept átírása és törlése",
+    "terulet": "Étel",
+    "app": "Nincs még",
+    "mit_tud": "Egy meglévő recept minden adata és hozzávalója átírható, vagy a recept törölhető.",
+    "app_megjegyzes": "Az appban egy elmentett receptet még nem lehet szerkeszteni vagy törölni.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "recipe"
+  },
+  "recipe-behuzas-link": {
+    "cim": "Recept behúzása weboldalról",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "Egy recept-oldal linkjéből kiolvassa a receptet (előbb a szabványos adatot, ha nincs, AI-val), és átnézhető vázlatot ad.",
+    "app_megjegyzes": "A Receptek fül „Linkből” útja.",
+    "jegyek": [
+      "mezo-r36n9.14"
+    ],
+    "kezikonyv": [
+      "06-etel/05-receptek"
+    ],
+    "csomag": "recipe"
+  },
+  "recipe-behuzas-szoveg-foto": {
+    "cim": "Recept behúzása szövegből vagy fotóból",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "Bemásolt szövegből vagy szakácskönyv-oldal fotójából AI olvassa ki a receptet átnézhető vázlatba; a fotót nem tartja meg.",
+    "app_megjegyzes": "A Receptek fül „Fotóból” útja és a szöveges behúzás.",
+    "jegyek": [
+      "mezo-r36n9.14"
+    ],
+    "kezikonyv": [
+      "06-etel/05-receptek"
+    ],
+    "csomag": "recipe"
+  },
+  "recipe-ezt-foztem": {
+    "cim": "„Ezt főztem” — recept abból, amit főztél",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "Diktált vagy beírt leírásból és legfeljebb hat fotóból kiolvassa a hozzávalókat, a kamrádhoz köti őket, és jelzi a bizonytalan vagy hiányzó sorokat.",
+    "app_megjegyzes": "Az app teljes átnézővel tudja, „Mentem, és rögzítem mára” lehetőséggel.",
+    "jegyek": [
+      "mezo-r36n9.63"
+    ],
+    "kezikonyv": [
+      "06-etel/05-receptek"
+    ],
+    "csomag": "recipe"
+  },
+  "recipe-receptmuhely": {
+    "cim": "Receptműhely AI-val",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "Beszélgetésben rakod össze Boopal a receptet: minden körben válaszol és visszaadja a frissített receptvázlatot.",
+    "app_megjegyzes": "A Receptek fül Receptműhely útja.",
+    "jegyek": [
+      "mezo-r36n9.14"
+    ],
+    "kezikonyv": [
+      "06-etel/05-receptek"
+    ],
+    "csomag": "recipe"
+  },
+  "recipe-recept-ertekeles": {
+    "cim": "Recept pontszáma és Boop értékelése",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "A recepthez pontszámot, szempontokat, „mire jó” ítéletet és AI-val írt rövid értékelést, javítási tippeket ad.",
+    "app_megjegyzes": "A receptlap „Boop értékelése” blokkja.",
+    "jegyek": [
+      "mezo-r36n9.14"
+    ],
+    "kezikonyv": [
+      "06-etel/05-receptek"
+    ],
+    "csomag": "recipe"
+  },
+  "recipe-receptfoto": {
+    "cim": "Receptfotó",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "Egy recepthez fotót csatol, visszaadja vagy törli.",
+    "app_megjegyzes": "Az app csatol, mutat és töröl receptfotót.",
+    "jegyek": [
+      "mezo-r36n9.32"
+    ],
+    "kezikonyv": [
+      "06-etel/05-receptek"
+    ],
+    "csomag": "recipe"
+  },
+  "recipe-allergen-osszesites": {
+    "cim": "Recept allergénjei a hozzávalókból",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "A hozzávalók allergénjeiből magától összesíti a recept allergénjeit, és indításkor a régieket is újraszámolja.",
+    "app_megjegyzes": "A recept soron és lapján megjelenő jelzések ebből jönnek.",
+    "jegyek": [
+      "mezo-r36n9.48"
+    ],
+    "kezikonyv": [
+      "06-etel/07-allergenek"
+    ],
+    "csomag": "recipe"
+  },
+  "recipe-frissul-a-kamraval": {
+    "cim": "Receptek frissülése a kamra pontosításakor",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "Ha egy alapanyag tápértéke pontosabb lesz, a receptek onnantól a pontos számokkal számolnak; a már rögzített étkezések nem változnak.",
+    "app_megjegyzes": "Háttérmunka; az app a frissült számokat látja.",
+    "jegyek": [
+      "mezo-r36n9.14"
+    ],
+    "kezikonyv": [
+      "06-etel/06-kamra"
+    ],
+    "csomag": "recipe"
+  },
+  "pantry-kamra-lista": {
+    "cim": "Kamra: lista és keresés",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "Az alapanyagaid és termékeid listája, keresés a saját kamrádban és a közös katalógusban.",
+    "app_megjegyzes": "A Kamra fül keresővel és kategóriaszűrővel.",
+    "jegyek": [
+      "mezo-r36n9.14"
+    ],
+    "kezikonyv": [
+      "06-etel/06-kamra"
+    ],
+    "csomag": "pantry"
+  },
+  "pantry-katalogusbol": {
+    "cim": "Felvétel a közös katalógusból",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "A közös katalógus egy tételét egy koppintással a saját kamrádba teszi.",
+    "app_megjegyzes": "A kamra keresőjéből és az „Ezt főztem” átnézőből használt.",
+    "jegyek": [
+      "mezo-r36n9.14"
+    ],
+    "kezikonyv": [
+      "06-etel/06-kamra"
+    ],
+    "csomag": "pantry"
+  },
+  "pantry-kezzel": {
+    "cim": "Tétel felvétele kézzel",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "Egy alapanyagot vagy kiegészítőt kézzel, saját tápértékekkel vesz fel.",
+    "app_megjegyzes": "A Kamra fül „Kézzel” útja.",
+    "jegyek": [
+      "mezo-r36n9.14"
+    ],
+    "kezikonyv": [
+      "06-etel/06-kamra"
+    ],
+    "csomag": "pantry"
+  },
+  "pantry-gyors-becsles": {
+    "cim": "Gyors felvétel név alapján, AI-becsléssel",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "Csak a nevet adod meg: ha megvan a közös listában, onnan veszi, ha nincs, AI becsüli meg a tápértékét „becsült” jelzéssel.",
+    "app_megjegyzes": "Az „Ezt főztem” átnéző „+ Kamrába” gombja használja.",
+    "jegyek": [
+      "mezo-r36n9.63"
+    ],
+    "kezikonyv": [
+      "06-etel/06-kamra"
+    ],
+    "csomag": "pantry"
+  },
+  "pantry-vonalkod": {
+    "cim": "Termék vonalkóddal vagy név szerint egy nyílt adatbázisból",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "Vonalkód vagy név alapján egy nyílt élelmiszer-adatbázisból kikeresi a terméket, és jóváhagyás után a kamrába teszi.",
+    "app_megjegyzes": "A Kamra fül és a rögzítő Vonalkód gombja.",
+    "jegyek": [
+      "mezo-r36n9.14"
+    ],
+    "kezikonyv": [
+      "06-etel/06-kamra"
+    ],
+    "csomag": "pantry"
+  },
+  "pantry-termekoldal": {
+    "cim": "Termék behúzása termékoldal linkjéből",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "Bármely webshop termékoldaláról AI olvassa ki a tápértéket egy jóváhagyandó vázlatba.",
+    "app_megjegyzes": "A Kamra fül „Link” útja.",
+    "jegyek": [
+      "mezo-r36n9.14"
+    ],
+    "kezikonyv": [
+      "06-etel/06-kamra"
+    ],
+    "csomag": "pantry"
+  },
+  "pantry-cimkefoto": {
+    "cim": "Termék behúzása címkefotóból",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "A tápérték-címke fotójából kiolvassa az adatokat egy vázlatba; a fotót nem tartja meg.",
+    "app_megjegyzes": "A Kamra fül „Címkefotó” útja, és ismeretlen vonalkódnál is felajánlja.",
+    "jegyek": [
+      "mezo-r36n9.14"
+    ],
+    "kezikonyv": [
+      "06-etel/06-kamra"
+    ],
+    "csomag": "pantry"
+  },
+  "pantry-pontositas": {
+    "cim": "Tétel adatainak pontosítása",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "Egy becsült vagy hibás tétel tápértékét pontos számokra cseréli vonalkóddal, címkefotóval vagy kézzel.",
+    "app_megjegyzes": "A tétel lapján a „Pontosítom” kártya.",
+    "jegyek": [
+      "mezo-r36n9.14"
+    ],
+    "kezikonyv": [
+      "06-etel/06-kamra"
+    ],
+    "csomag": "pantry"
+  },
+  "pantry-torles": {
+    "cim": "Tétel törlése a kamrából",
+    "terulet": "Étel",
+    "app": "Nincs még",
+    "mit_tud": "Egy tételt eltávolít a kamrádból.",
+    "app_megjegyzes": "Az appban még nem lehet tételt törölni a kamrából.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "pantry"
+  },
+  "pantry-tetel-pontszam": {
+    "cim": "Alapanyag saját pontszáma",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "Minden alapanyagra és katalógustételre pontszámot és öt szempontot ad, magyarázattal.",
+    "app_megjegyzes": "A kamra soron gyűrűben, a tétel lapján szempontokkal.",
+    "jegyek": [
+      "mezo-r36n9.14"
+    ],
+    "kezikonyv": [
+      "06-etel/06-kamra"
+    ],
+    "csomag": "pantry"
+  },
+  "pantry-kiegeszito-tetelek": {
+    "cim": "Kiegészítők és serkentők a kamrában",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "A kamra a kiegészítőket, serkentőket külön, adaggal tartja, ebből épül a stack.",
+    "app_megjegyzes": "Az app a kiegészítő-listához és új kiegészítő felvételéhez használja.",
+    "jegyek": [
+      "mezo-r36n9.14"
+    ],
+    "kezikonyv": [
+      "06-etel/09-taplalekkiegeszitok"
+    ],
+    "csomag": "pantry"
+  },
+  "pantry-ar-keszlet": {
+    "cim": "Árak, készlet, lejárat és olcsóbb alternatíva",
+    "terulet": "Étel",
+    "app": "Nem kell",
+    "mit_tud": "Tételenként árat, készletet és lejáratot tárol, és kategórián belül olcsóbb vagy kevésbé feldolgozott cserét javasol.",
+    "app_megjegyzes": "Döntés szerint kimarad az iPhone-appból.",
+    "jegyek": [],
+    "kezikonyv": [
+      "06-etel/10-ami-kimarad"
+    ],
+    "csomag": "pantry"
+  },
+  "pantry-katalogus-feltoltes": {
+    "cim": "Közös katalógus feltöltése és karbantartása",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "Indításkor betölti és karbantartja a közös alapanyag-listát, a polcuk szerint biztosan tudható allergénekkel és hiányzó adatokkal.",
+    "app_megjegyzes": "Háttérmunka; az app a kitöltött katalógust látja.",
+    "jegyek": [
+      "mezo-r36n9.48"
+    ],
+    "kezikonyv": [
+      "06-etel/07-allergenek"
+    ],
+    "csomag": "pantry"
+  },
+  "wearable-ejszakak": {
+    "cim": "Éjszakák fogadása az Apple Egészségből",
+    "terulet": "Alvás és egészség",
+    "app": "Kész",
+    "mit_tud": "Fogadja a telefon által összerakott éjszakákat (alvási szakaszok, források), és reggelenként egy érvényes éjszakát tart meg.",
+    "app_megjegyzes": "A telefon nyitáskor és a 60 napos visszatöltéskor küldi.",
+    "jegyek": [
+      "mezo-r36n9.2",
+      "mezo-r36n9.11",
+      "mezo-r36n9.23"
+    ],
+    "kezikonyv": [
+      "05-alvas/01-ejszakak-apple-healthbol",
+      "08-adatok/01-osszekotes-es-visszatoltes"
+    ],
+    "csomag": "wearable"
+  },
+  "wearable-napi-ertekek": {
+    "cim": "Napi összesítők (lépés, pulzus, HRV, energia)",
+    "terulet": "Alvás és egészség",
+    "app": "Kész",
+    "mit_tud": "Fogadja a napi összesített egészségadatokat (lépés, nyugalmi pulzus, HRV, aktív energia és társai).",
+    "app_megjegyzes": "A telefon automatikusan küldi.",
+    "jegyek": [
+      "mezo-r36n9.11"
+    ],
+    "kezikonyv": [
+      "08-adatok/02-szeles-adatkor"
+    ],
+    "csomag": "wearable"
+  },
+  "wearable-egyedi-meresek": {
+    "cim": "Egyedi mérések forrással",
+    "terulet": "Alvás és egészség",
+    "app": "Kész",
+    "mit_tud": "Fogadja az egyedi méréseket (például testsúly, testzsír, pulzusminták), és eltárolja, melyik app és eszköz írta őket.",
+    "app_megjegyzes": "A széles adatkör 23 féle adatot küld.",
+    "jegyek": [
+      "mezo-r36n9.11"
+    ],
+    "kezikonyv": [
+      "08-adatok/02-szeles-adatkor",
+      "08-adatok/04-forrasok-es-eszkozok"
+    ],
+    "csomag": "wearable"
+  },
+  "wearable-torlesek": {
+    "cim": "Törlések követése",
+    "terulet": "Alvás és egészség",
+    "app": "Részben kész",
+    "mit_tud": "Amit az Apple Egészségben törölsz, azt a szerveren is eltávolítja.",
+    "app_megjegyzes": "A telefon nyitáskor küldi a törléseket; a háttérben érkező jelzés a fizetős Apple-fiókra vár.",
+    "jegyek": [
+      "mezo-r36n9.19"
+    ],
+    "kezikonyv": [
+      "08-adatok/05-torlesek-kovetese"
+    ],
+    "csomag": "wearable"
+  },
+  "biometrics-testadatok": {
+    "cim": "Testadatok (magasság, kor, nem, aktivitás)",
+    "terulet": "Alvás és egészség",
+    "app": "Kész",
+    "mit_tud": "Egy helyen tárolja az alap testadataidat, amelyekből az energiaigény és a célok számolódnak.",
+    "app_megjegyzes": "Az első lépések és az étel-beállítások használják.",
+    "jegyek": [
+      "mezo-r36n9.11"
+    ],
+    "kezikonyv": [
+      "01-alapok/elso-lepesek"
+    ],
+    "csomag": "biometrics"
+  },
+  "biometrics-sulynaplo": {
+    "cim": "Súlynapló",
+    "terulet": "Alvás és egészség",
+    "app": "Kész",
+    "mit_tud": "Elmenti és listázza a mérlegeléseidet, és minden új mérésre újraszámolja a célt.",
+    "app_megjegyzes": "A telefon rögzít és listáz.",
+    "jegyek": [
+      "mezo-r36n9.16"
+    ],
+    "kezikonyv": [
+      "04-terv/03-testsuly-trend"
+    ],
+    "csomag": "biometrics"
+  },
+  "biometrics-suly-egeszsegbol": {
+    "cim": "Testsúly az Egészségből",
+    "terulet": "Alvás és egészség",
+    "app": "Kész",
+    "mit_tud": "A mérleg által az Apple Egészségbe írt súlyt magától a súlynaplóba teszi, kézi beírás nélkül.",
+    "app_megjegyzes": "Automatikusan működik az Egészség-szinkronnal.",
+    "jegyek": [
+      "mezo-r36n9.11"
+    ],
+    "kezikonyv": [
+      "08-adatok/08-testsuly-az-egeszsegbol"
+    ],
+    "csomag": "biometrics"
+  },
+  "biometrics-suly-trend": {
+    "cim": "Kisimított súlytrend és heti tempó",
+    "terulet": "Alvás és egészség",
+    "app": "Részben kész",
+    "mit_tud": "A mérésekből kisimított trendet és heti változási tempót számol, a súlycél ebből méri a valódi haladást.",
+    "app_megjegyzes": "Az Évad és a napi összefoglaló használja; külön trend-képernyő nincs.",
+    "jegyek": [
+      "mezo-r36n9.16"
+    ],
+    "kezikonyv": [
+      "04-terv/03-testsuly-trend"
+    ],
+    "csomag": "biometrics"
+  },
+  "biometrics-alvas-egy-ejszaka": {
+    "cim": "Egy dátum, egy éjszaka",
+    "terulet": "Alvás és egészség",
+    "app": "Kész",
+    "mit_tud": "Ha több forrásból is jön alvásadat ugyanarra a reggelre, szabály szerint egyetlen érvényes éjszakát tart meg.",
+    "app_megjegyzes": "A háttérben működik.",
+    "jegyek": [
+      "mezo-r36n9.23"
+    ],
+    "kezikonyv": [
+      "05-alvas/02-egy-datum-egy-ejszaka"
+    ],
+    "csomag": "biometrics"
+  },
+  "biometrics-kezi-alvasnaplo": {
+    "cim": "Kézi alvásnapló",
+    "terulet": "Alvás és egészség",
+    "app": "Nincs még",
+    "mit_tud": "Kézzel is beírhatsz egy éjszakát (lefekvés, ébredés, minőség), és listázza a korábbiakat.",
+    "app_megjegyzes": "A telefon az Egészségből olvas; kézi beírás nincs, ez a webes appban maradt.",
+    "jegyek": [],
+    "kezikonyv": [
+      "05-alvas/00-attekintes"
+    ],
+    "csomag": "biometrics"
+  },
+  "biometrics-alvas-kepernyokep": {
+    "cim": "Alvás beolvasása képernyőképről (AI)",
+    "terulet": "Alvás és egészség",
+    "app": "Nincs még",
+    "mit_tud": "Egy Sleep Cycle képernyőképből AI-val kiolvassa az éjszaka adatait, és jóváhagyásra kész piszkozatot ad.",
+    "app_megjegyzes": "A telefonon nincs; a webes appal együtt kikerült a használatból.",
+    "jegyek": [],
+    "kezikonyv": [
+      "05-alvas/00-attekintes"
+    ],
+    "csomag": "biometrics"
+  },
+  "biometrics-alvascel": {
+    "cim": "Alváscél és lefekvési idő",
+    "terulet": "Alvás és egészség",
+    "app": "Részben kész",
+    "mit_tud": "Tárolja, hány órát szeretnél aludni és mihez igazodik (ébredés vagy lefekvés), ebből számolja a lefekvési célt.",
+    "app_megjegyzes": "A lefekvési cél és az emlékeztető él, aktív évad alatt az Évad állítja; külön alváscél-beállítás nincs.",
+    "jegyek": [
+      "mezo-r36n9.16"
+    ],
+    "kezikonyv": [
+      "05-alvas/06-lefekvesi-emlekezteto",
+      "04-terv/06-terv-csomag"
+    ],
+    "csomag": "biometrics"
+  },
+  "biometrics-alvashiany": {
+    "cim": "Alváshiány a célmotornak",
+    "terulet": "Alvás és egészség",
+    "app": "Kész",
+    "mit_tud": "Kiszámolja az elmúlt időszak alváshiányát, és ezt a súlycél-motor figyelembe veszi.",
+    "app_megjegyzes": "A háttérben a célszámítás része, külön képernyő nélkül.",
+    "jegyek": [
+      "mezo-r36n9.16"
+    ],
+    "kezikonyv": [
+      "04-terv/02-sulycel-celmotor"
+    ],
+    "csomag": "biometrics"
+  },
+  "medication-gyogyszerek": {
+    "cim": "Gyógyszerek felvétele ciklussal",
+    "terulet": "Alvás és egészség",
+    "app": "Nem kell",
+    "mit_tud": "Felveheted a gyógyszereidet adagolási ciklussal (hány naponta, milyen fázisokkal).",
+    "app_megjegyzes": "Döntés: a gyógyszer-ciklus nem kerül a Boopba; a szerverről való kivezetéséről a tulajdonos még külön dönt. A szerverről való végleges törlést még neked kell jóváhagynod.",
+    "jegyek": [
+      "mezo-r36n9.97"
+    ],
+    "kezikonyv": [
+      "06-etel/10-ami-kimarad"
+    ],
+    "csomag": "medication"
+  },
+  "medication-adagok": {
+    "cim": "Bevett adagok rögzítése",
+    "terulet": "Alvás és egészség",
+    "app": "Nem kell",
+    "mit_tud": "Rögzíti és törli a bevett adagokat, és megmutatja a mai napot.",
+    "app_megjegyzes": "Döntés: nem kerül a Boopba. A szerverről való végleges törlést még neked kell jóváhagynod.",
+    "jegyek": [
+      "mezo-r36n9.97"
+    ],
+    "kezikonyv": [
+      "06-etel/10-ami-kimarad"
+    ],
+    "csomag": "medication"
+  },
+  "medication-ciklus-fazis": {
+    "cim": "Hol tartasz a ciklusban (AI háttér)",
+    "terulet": "Alvás és egészség",
+    "app": "Nem kell",
+    "mit_tud": "Kiszámolja, a ciklus hányadik napján és melyik fázisában vagy, és ezt háttérként átadja az AI-nak.",
+    "app_megjegyzes": "Döntés: nem kerül a Boopba; csak az AI-nak adna hátteret. A szerverről való végleges törlést még neked kell jóváhagynod.",
+    "jegyek": [
+      "mezo-r36n9.97"
+    ],
+    "kezikonyv": [
+      "06-etel/10-ami-kimarad"
+    ],
+    "csomag": "medication"
+  },
+  "proactive-diagnozis": {
+    "cim": "Jelenség-diagnózis (például miért vagy fáradt)",
+    "terulet": "Alvás és egészség",
+    "app": "Nincs még",
+    "mit_tud": "Kérésre jelentést ír egy jelenségről az elmúlt két hét adataiból: gyanúsítottak bizonyítékokkal, súly-számvetés, és bármelyik gyanúsítóból kísérletet indíthat.",
+    "app_megjegyzes": "Csak a webes app hívta; az appban nincs, és terv sincs rá.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "proactive"
+  },
+  "wearable-naptar": {
+    "cim": "Naptár-pillanatkép (csak időpontok)",
+    "terulet": "Napló és napi ritmus",
+    "app": "Kész",
+    "mit_tud": "Eltárolja az iPhone naptárából, mikor vagy elfoglalt, címek nélkül, hogy a nap tervezése számolhasson vele.",
+    "app_megjegyzes": "A telefon nyitáskor küldi.",
+    "jegyek": [
+      "mezo-r36n9.2"
+    ],
+    "kezikonyv": [
+      "08-adatok/06-naptar"
+    ],
+    "csomag": "wearable"
+  },
+  "wearable-checkin-pillanatkep": {
+    "cim": "Check-in pillanatkép (pulzus, HRV, lépés)",
+    "terulet": "Napló és napi ritmus",
+    "app": "Kész",
+    "mit_tud": "Egy check-in mellé elteszi, mit mutatott abban a pillanatban a pulzusod, a HRV-d, a lépéseid és az éjszakád.",
+    "app_megjegyzes": "A check-in kitöltésekor automatikusan készül.",
+    "jegyek": [
+      "mezo-r36n9.13"
+    ],
+    "kezikonyv": [
+      "08-adatok/11-checkin-pillanatkep",
+      "03-naplo/biomarker-pillanatkep"
+    ],
+    "csomag": "wearable"
+  },
+  "biometrics-checkin": {
+    "cim": "Check-in kitöltése és visszanézése",
+    "terulet": "Napló és napi ritmus",
+    "app": "Kész",
+    "mit_tud": "Elmenti a napi check-in válaszaidat (kipihentség, hangulat, energia és társai), és napra visszaadja őket.",
+    "app_megjegyzes": "A gömbös check-in a telefonon él, net nélkül is menthető.",
+    "jegyek": [
+      "mezo-r36n9.13",
+      "mezo-r36n9.31"
+    ],
+    "kezikonyv": [
+      "03-naplo/check-in"
+    ],
+    "csomag": "biometrics"
+  },
+  "biometrics-checkin-kerdesek": {
+    "cim": "Check-in kérdései és a nap kérdése",
+    "terulet": "Napló és napi ritmus",
+    "app": "Kész",
+    "mit_tud": "Összeállítja egy check-in kérdéseit, és naponta egy változó, a te helyzetedhez illő plusz kérdést választ.",
+    "app_megjegyzes": "A telefon ebből építi fel a kitöltést.",
+    "jegyek": [
+      "mezo-r36n9.13"
+    ],
+    "kezikonyv": [
+      "03-naplo/check-in",
+      "03-naplo/nap-kerdese"
+    ],
+    "csomag": "biometrics"
+  },
+  "journal-szabad-naplo": {
+    "cim": "Szabad szöveges napló",
+    "terulet": "Napló és napi ritmus",
+    "app": "Részben kész",
+    "mit_tud": "Szabad szöveges naplóbejegyzéseket ment egy naphoz, és lehet listázni, szerkeszteni, törölni őket.",
+    "app_megjegyzes": "Az app esti hangnaplóként és begépelve ment bejegyzést; korábbi bejegyzések böngészése, szerkesztése, törlése nincs.",
+    "jegyek": [
+      "mezo-r36n9.13"
+    ],
+    "kezikonyv": [
+      "03-naplo/hangnaplo",
+      "03-naplo/napok-lista"
+    ],
+    "csomag": "journal"
+  },
+  "journal-emlekezet": {
+    "cim": "A napló Boop emlékezetében",
+    "terulet": "Napló és napi ritmus",
+    "app": "Részben kész",
+    "mit_tud": "Minden naplóbejegyzés automatikusan bekerül Boop hosszú távú emlékezetébe, így később visszakereshető a beszélgetésben.",
+    "app_megjegyzes": "Az appból írt bejegyzések bekerülnek; a naplóból levont következtetések a B8 szakasz feladata.",
+    "jegyek": [
+      "mezo-r36n9.18"
+    ],
+    "kezikonyv": [
+      "03-naplo/hangnaplo"
+    ],
+    "csomag": "journal"
+  },
+  "journal-dontesnaplo": {
+    "cim": "Döntésnapló visszatekintéssel",
+    "terulet": "Napló és napi ritmus",
+    "app": "Nincs még",
+    "mit_tud": "Egy döntést a pillanatnyi helyzeteddel együtt rögzít, később emlékeztet, és visszanézheted, hogyan sült el.",
+    "app_megjegyzes": "Az appban nincs döntésnapló, és nincs rá terv.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "journal"
+  },
+  "journal-hala": {
+    "cim": "Hála-bejegyzések",
+    "terulet": "Napló és napi ritmus",
+    "app": "Nincs még",
+    "mit_tud": "Napi hála-sorokat ment, listáz és töröl.",
+    "app_megjegyzes": "Az appban nincs hála-rögzítés, és nincs rá terv.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "journal"
+  },
+  "dayclose-esti-zaras": {
+    "cim": "Esti zárás",
+    "terulet": "Napló és napi ritmus",
+    "app": "Kész",
+    "mit_tud": "Naponta egy zárási rekordot ment: a nap értékelése, esti energia, a nap célja és sikerült-e, Boop céljai és a napló hivatkozása; legfeljebb 7 nappal visszamenőleg.",
+    "app_megjegyzes": "Az esti zárás internet nélkül is működik, a kimenő sorból megy fel.",
+    "jegyek": [
+      "mezo-r36n9.13"
+    ],
+    "kezikonyv": [
+      "03-naplo/esti-zaras"
+    ],
+    "csomag": "dayclose"
+  },
+  "dayclose-napok-lista": {
+    "cim": "A lezárt napok listája",
+    "terulet": "Napló és napi ritmus",
+    "app": "Kész",
+    "mit_tud": "Egy időszak összes zárását visszaadja a visszanézéshez, a webes appban lezárt napokkal együtt.",
+    "app_megjegyzes": "A Napló az elmúlt 14 napot mutatja belőle.",
+    "jegyek": [
+      "mezo-r36n9.13"
+    ],
+    "kezikonyv": [
+      "03-naplo/napok-lista"
+    ],
+    "csomag": "dayclose"
+  },
+  "dayclose-boop-mondat": {
+    "cim": "Boop egy mondata a napról",
+    "terulet": "Napló és napi ritmus",
+    "app": "Kész",
+    "mit_tud": "Zárás után egy olcsó AI-modell egy mondatban reagál a napodra; ugyanarra a napra nem hívja kétszer.",
+    "app_megjegyzes": "Az esti zárás végén megjelenik, net nélkül később pótolja.",
+    "jegyek": [
+      "mezo-r36n9.13"
+    ],
+    "kezikonyv": [
+      "03-naplo/esti-zaras"
+    ],
+    "csomag": "dayclose"
+  },
+  "dayclose-checkin-mondat": {
+    "cim": "Boop mondata egy kitöltés után",
+    "terulet": "Napló és napi ritmus",
+    "app": "Kész",
+    "mit_tud": "Minden napi kitöltés után Boop egy rövid mondattal reagál.",
+    "app_megjegyzes": "A kitöltés végén megjelenik.",
+    "jegyek": [
+      "mezo-r36n9.13"
+    ],
+    "kezikonyv": [
+      "03-naplo/check-in"
+    ],
+    "csomag": "dayclose"
+  },
+  "dayclose-egy-helyen": {
+    "cim": "Az esti zárás egy helyen",
+    "terulet": "Napló és napi ritmus",
+    "app": "Tervben",
+    "mit_tud": "A zárást ma még a régi helyekre (szándék, régi esti rituálé, esti kitöltés) is beírja, hogy minden régi rész működjön; ezt kell egy helyre vonni.",
+    "app_megjegyzes": "Belső takarítás, amit nem látsz; nyitott jegy tervezi.",
+    "jegyek": [
+      "mezo-r36n9.26"
+    ],
+    "kezikonyv": [
+      "03-naplo/esti-zaras"
+    ],
+    "csomag": "dayclose"
+  },
+  "intention-napi-cel": {
+    "cim": "A nap célja (napi fókusz)",
+    "terulet": "Napló és napi ritmus",
+    "app": "Kész",
+    "mit_tud": "Naponta legfeljebb három konkrét fókuszt ment a napra, és ezek törölhetők, cserélhetők.",
+    "app_megjegyzes": "Az app ezt használja „A nap célja” sorként, szándékosan egy céllal.",
+    "jegyek": [
+      "mezo-r36n9.13"
+    ],
+    "kezikonyv": [
+      "03-naplo/napi-cel"
+    ],
+    "csomag": "intention"
+  },
+  "intention-hitvallas": {
+    "cim": "Állandó mottó",
+    "terulet": "Napló és napi ritmus",
+    "app": "Nincs még",
+    "mit_tud": "Egyetlen, bármikor átírható vezérmondatot tárol, amely minden nap emlékeztet.",
+    "app_megjegyzes": "Az appban nincs mottó, és nincs rá terv.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "intention"
+  },
+  "intention-esti-reflexio": {
+    "cim": "Esti visszatekintés a szándékra",
+    "terulet": "Napló és napi ritmus",
+    "app": "Kész",
+    "mit_tud": "Este egy igen / részben / nem választ ment arra, hogy szándékkal élted-e a napot.",
+    "app_megjegyzes": "Az esti zárás „A nap célja” lépése írja be; külön képernyő nem kell hozzá.",
+    "jegyek": [
+      "mezo-r36n9.13"
+    ],
+    "kezikonyv": [
+      "03-naplo/esti-zaras"
+    ],
+    "csomag": "intention"
+  },
+  "ritual-napzaras": {
+    "cim": "Napzárás (a régi esti rituálé)",
+    "terulet": "Napló és napi ritmus",
+    "app": "Nem kell",
+    "mit_tud": "A webes hatlépéses esti zárás: a nap története, nyitott ügyek lezárása, rövid visszatekintés és a nap lezárása.",
+    "app_megjegyzes": "Az új esti zárás váltotta ki; a #52 döntés szerint a rituálé kikerül, csak a régi zárások olvasása marad. A szerverről való végleges törlést még neked kell jóváhagynod.",
+    "jegyek": [
+      "mezo-r36n9.26",
+      "mezo-r36n9.97"
+    ],
+    "kezikonyv": [
+      "03-naplo/esti-zaras"
+    ],
+    "csomag": "ritual"
+  },
+  "ritual-regi-zarasok": {
+    "cim": "Régi webes zárások a Naplóban",
+    "terulet": "Napló és napi ritmus",
+    "app": "Kész",
+    "mit_tud": "A webes appban lezárt napok továbbra is megjelennek a napok listájában.",
+    "app_megjegyzes": "A Napló lista a webes zárásokat is mutatja.",
+    "jegyek": [
+      "mezo-r36n9.13"
+    ],
+    "kezikonyv": [
+      "03-naplo/napok-lista"
+    ],
+    "csomag": "ritual"
+  },
+  "habit-napi-rutin": {
+    "cim": "Reggeli és esti rutin",
+    "terulet": "Napló és napi ritmus",
+    "app": "Nem kell",
+    "mit_tud": "Reggeli és esti szokásláncokat ad, ahol egy-egy szokást kipipálsz vagy visszavonsz, napra lebontva.",
+    "app_megjegyzes": "A „szokások” elrejtéséről 2026-11-11-én döntöttél, és a #52 döntés kivezetésre jelölte; a végleges jóváhagyás az ellenőrzési ponton jön.",
+    "jegyek": [
+      "mezo-r36n9.97"
+    ],
+    "kezikonyv": [],
+    "csomag": "habit"
+  },
+  "habit-automatikus": {
+    "cim": "Magától kipipálódó szokások",
+    "terulet": "Napló és napi ritmus",
+    "app": "Nem kell",
+    "mit_tud": "Sok szokást a már rögzített adatokból pipál ki (edzés, mérlegelés, alvás), és éjszaka lezárja a napot.",
+    "app_megjegyzes": "A „szokások” elrejtéséről 2026-11-11-én döntöttél, és a #52 döntés kivezetésre jelölte; a végleges jóváhagyás az ellenőrzési ponton jön.",
+    "jegyek": [
+      "mezo-r36n9.97"
+    ],
+    "kezikonyv": [],
+    "csomag": "habit"
+  },
+  "habit-erosseg": {
+    "cim": "Szokás-erősség és összesítő",
+    "terulet": "Napló és napi ritmus",
+    "app": "Nem kell",
+    "mit_tud": "Megmutatja a szokások 28 napos erősségét, a sorozatokat és hogy egy szokás hogyan rögzül.",
+    "app_megjegyzes": "A „szokások” elrejtéséről 2026-11-11-én döntöttél, és a #52 döntés kivezetésre jelölte; a végleges jóváhagyás az ellenőrzési ponton jön.",
+    "jegyek": [
+      "mezo-r36n9.97"
+    ],
+    "kezikonyv": [],
+    "csomag": "habit"
+  },
+  "habit-rutinepito": {
+    "cim": "Rutinépítő",
+    "terulet": "Napló és napi ritmus",
+    "app": "Nem kell",
+    "mit_tud": "Saját szokásláncokat és szokásokat lehet létrehozni, szerkeszteni, sorrendezni és törölni egy kész szokáslistából.",
+    "app_megjegyzes": "A „szokások” elrejtéséről 2026-11-11-én döntöttél, és a #52 döntés kivezetésre jelölte; a végleges jóváhagyás az ellenőrzési ponton jön.",
+    "jegyek": [
+      "mezo-r36n9.97"
+    ],
+    "kezikonyv": [],
+    "csomag": "habit"
+  },
+  "habit-ai-javaslat": {
+    "cim": "AI szokásjavaslat",
+    "terulet": "Napló és napi ritmus",
+    "app": "Nem kell",
+    "mit_tud": "Az AI új szokásokat javasol a céljaidhoz.",
+    "app_megjegyzes": "A „szokások” elrejtéséről 2026-11-11-én döntöttél, és a #52 döntés kivezetésre jelölte; a végleges jóváhagyás az ellenőrzési ponton jön.",
+    "jegyek": [
+      "mezo-r36n9.97"
+    ],
+    "kezikonyv": [],
+    "csomag": "habit"
+  },
+  "needs-zaras-pillanatkep": {
+    "cim": "Életjel-körök a nap zárásakor",
+    "terulet": "Napló és napi ritmus",
+    "app": "Nem kell",
+    "mit_tud": "Napzáráskor elmenti a hat életjel (étel, víz, alvás, mozgás, kapcsolat, rend) aznapi szintjét, és ebből sorozatot számol.",
+    "app_megjegyzes": "Csak a webes app használta; a #52 döntés kivezetésre jelölte, a végleges jóváhagyás az ellenőrzési ponton jön.",
+    "jegyek": [
+      "mezo-r36n9.97"
+    ],
+    "kezikonyv": [],
+    "csomag": "needs"
+  },
+  "needs-osszegzes": {
+    "cim": "Életjel-sorozat összesítő",
+    "terulet": "Napló és napi ritmus",
+    "app": "Nem kell",
+    "mit_tud": "Visszaadja, hány napja vannak rendben az életjeleid egymás után.",
+    "app_megjegyzes": "Csak a webes app használta; a #52 döntés kivezetésre jelölte, a végleges jóváhagyás az ellenőrzési ponton jön.",
+    "jegyek": [
+      "mezo-r36n9.97"
+    ],
+    "kezikonyv": [],
+    "csomag": "needs"
+  },
+  "companion-heti-ertekeles": {
+    "cim": "Heti értékelés és trend",
+    "terulet": "Napló és napi ritmus",
+    "app": "Nincs még",
+    "mit_tud": "A szerver hétre összesíti a napjaid pontszámait és a trendet, a heti elemzéssel együtt.",
+    "app_megjegyzes": "Az appban nincs heti értékelő oldal.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "companion"
+  },
+  "companion-napertekeles": {
+    "cim": "Egy nap értékelése emberi szöveggel",
+    "terulet": "Napló és napi ritmus",
+    "app": "Nincs még",
+    "mit_tud": "Egy lezárt napra a szerver pontozott értékelést ad, és AI-val rövid, tegeződő szöveget ír hozzá; éjjel előre elkészíti az utolsó pár napét.",
+    "app_megjegyzes": "A Napló napjai az appban értékelés és szöveg nélkül jelennek meg.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "companion"
+  },
+  "boop-nap-terve-es-idovonal": {
+    "cim": "A nap terve és az idővonal adatai",
+    "terulet": "Napló és napi ritmus",
+    "app": "Kész",
+    "mit_tud": "Összerakja a nap állomásait (edzés, étkezések és makrók, kitöltések, a nap célja, naptár 15 perces sávokban, súly, kímélő mód) és Boop napi céljait, amiket este az adatokból ítél meg.",
+    "app_megjegyzes": "A Reggel „A mai terved” kártyája és a Napközben idővonal ebből épül.",
+    "jegyek": [
+      "mezo-r36n9.7",
+      "mezo-r36n9.12",
+      "mezo-r36n9.13"
+    ],
+    "kezikonyv": [
+      "02-ma/reggeli-terv",
+      "02-ma/napkozben-idovonal"
+    ],
+    "csomag": "boop"
+  },
+  "boop-edzes-utkozes-attolas": {
+    "cim": "Edzés–megbeszélés ütközés és az edzés áttolása",
+    "terulet": "Napló és napi ritmus",
+    "app": "Kész",
+    "mit_tud": "Szabállyal észreveszi, ha az utolsó megbeszélés túl közel ér véget az edzéshez, új időpontot javasol, és elfogadáskor eltárolja a mai edzés új idejét, ami vissza is vonható.",
+    "app_megjegyzes": "A javaslatkártya „Elfogadom / Most nem / miért?” gombjai és a visszaállítás is élnek az appban.",
+    "jegyek": [
+      "mezo-r36n9.7",
+      "mezo-r36n9.12"
+    ],
+    "kezikonyv": [
+      "02-ma/javaslatkartyak",
+      "10-ai/javaslatok-forrasa"
+    ],
+    "csomag": "boop"
+  },
+  "meal-celmotor-adat": {
+    "cim": "Megevett étel a súlycél-motornak",
+    "terulet": "Célok és évad",
+    "app": "Részben kész",
+    "mit_tud": "A ténylegesen megevett mennyiséget átadja a súlycél-motornak, hogy mérje a terv betartását és tanulja az energiaigényedet.",
+    "app_megjegyzes": "Az Évad áttekintése már mutat betartást; a teljes Évad-összekötés épül.",
+    "jegyek": [
+      "mezo-r36n9.16"
+    ],
+    "kezikonyv": [
+      "04-terv/02-sulycel-celmotor"
+    ],
+    "csomag": "meal"
+  },
+  "goal-sulycel": {
+    "cim": "Súlycél beállítása",
+    "terulet": "Célok és évad",
+    "app": "Részben kész",
+    "mit_tud": "Megadod, hogy fogyni, hízni vagy szinten maradni szeretnél, a kezdő- és célsúlyt, a tempót és az időablakot; egyszerre egy aktív cél él.",
+    "app_megjegyzes": "A célt az appban csak az Évadon keresztül állítod (új évad, módosítás); külön céllista, archiválás vagy törlés nincs.",
+    "jegyek": [
+      "mezo-r36n9.16"
+    ],
+    "kezikonyv": [
+      "04-terv/02-sulycel-celmotor",
+      "04-terv/06-terv-csomag"
+    ],
+    "csomag": "goal"
+  },
+  "goal-napi-keret": {
+    "cim": "Napi kalória- és makrócél hetekre bontva",
+    "terulet": "Célok és évad",
+    "app": "Kész",
+    "mit_tud": "A szerver a testadataidból, a heti edzés- és sportnapjaidból és a célból kiszámolja hétről hétre a napi kalória-, fehérje-, szénhidrát- és zsírcélt.",
+    "app_megjegyzes": "Az Évad oldal, az Étel szoba és a reggeli összefoglaló is ezt a számot mutatja.",
+    "jegyek": [
+      "mezo-r36n9.16"
+    ],
+    "kezikonyv": [
+      "04-terv/02-sulycel-celmotor"
+    ],
+    "csomag": "goal"
+  },
+  "goal-realis-tempo": {
+    "cim": "Reális-e a tempó",
+    "terulet": "Célok és évad",
+    "app": "Kész",
+    "mit_tud": "Megmondja, hogy a választott tempó reális, figyelmeztetésekkel elfogadható vagy túl gyors, és túl gyors tempónál reális céldátumot javasol.",
+    "app_megjegyzes": "Az Évad tempó-ítéletet mutat a fejben és a módosítás előnézetében.",
+    "jegyek": [
+      "mezo-r36n9.16"
+    ],
+    "kezikonyv": [
+      "04-terv/02-sulycel-celmotor"
+    ],
+    "csomag": "goal"
+  },
+  "goal-vedokorlatok": {
+    "cim": "Védőkorlátok (erő, izommunka, túl gyors fogyás)",
+    "terulet": "Célok és évad",
+    "app": "Kész",
+    "mit_tud": "Figyelmeztet, ha a terv mellett romlana az erőd, túl kevés lenne a heti izommunka, vagy túl gyorsan fogynál — csak figyelmeztet, nem tilt.",
+    "app_megjegyzes": "Az Évad módosításánál piros figyelmeztetésként jelenik meg; külön védőkorlát-oldal szándékosan nincs.",
+    "jegyek": [
+      "mezo-r36n9.16"
+    ],
+    "kezikonyv": [
+      "04-terv/02-sulycel-celmotor",
+      "04-terv/00-attekintes"
+    ],
+    "csomag": "goal"
+  },
+  "goal-attekintes": {
+    "cim": "Jó úton vagy-e a célod felé",
+    "terulet": "Célok és évad",
+    "app": "Kész",
+    "mit_tud": "Egy összefoglalóban megmondja, terv szerint halad-e a súlyod, mikor érsz célba, melyik szakaszban jársz és mi jön legközelebb.",
+    "app_megjegyzes": "Az Évad oldal fejében és súlygörbéjén látszik.",
+    "jegyek": [
+      "mezo-r36n9.16"
+    ],
+    "kezikonyv": [
+      "04-terv/01-terv-keret"
+    ],
+    "csomag": "goal"
+  },
+  "goal-tervkapcsolat": {
+    "cim": "Edzésblokk és futóterv a célhoz kötve",
+    "terulet": "Célok és évad",
+    "app": "Részben kész",
+    "mit_tud": "A célhoz edzésblokkot vagy futótervet lehet csatolni és leválasztani, így a számolás tudja, mikor változik a terv szakasza.",
+    "app_megjegyzes": "Az Évad elfogadása magától csatolja a blokkot; kézi csatolás, leválasztás vagy futóterv-csatolás nincs az appban.",
+    "jegyek": [
+      "mezo-r36n9.16"
+    ],
+    "kezikonyv": [
+      "04-terv/06-terv-csomag"
+    ],
+    "csomag": "goal"
+  },
+  "goal-ujraszamolas": {
+    "cim": "Automatikus újraszámolás",
+    "terulet": "Célok és évad",
+    "app": "Kész",
+    "mit_tud": "Mérlegeléskor, testadat- vagy étrendi beállítás változásakor, terv csatolásakor és cél aktiválásakor a szerver magától újraszámolja a célt.",
+    "app_megjegyzes": "A háttérben fut; az app mindig a friss számokat kapja.",
+    "jegyek": [
+      "mezo-r36n9.16"
+    ],
+    "kezikonyv": [
+      "04-terv/02-sulycel-celmotor"
+    ],
+    "csomag": "goal"
+  },
+  "goal-idovonal": {
+    "cim": "A cél története",
+    "terulet": "Célok és évad",
+    "app": "Nincs még",
+    "mit_tud": "Időrendben megmutatja, mi történt a céllal (létrehozás, módosítások, elfogadott javaslatok).",
+    "app_megjegyzes": "Az appban nincs a cél történetét mutató nézet; az Évad saját módosítás-naplója sem látszik még külön.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "goal"
+  },
+  "goal-heti-korrekcio": {
+    "cim": "Heti korrekciós javaslat",
+    "terulet": "Célok és évad",
+    "app": "Tervben",
+    "mit_tud": "Hétfő reggelente, ha a súlyod nem a terv szerint mozog, egy kis kalória-korrekciót javasol; előtte–utána előnézettel fogadod el vagy veted el.",
+    "app_megjegyzes": "Az Évad 2. szakaszában érkezik elfogad/elvet kártyaként a Ma falára.",
+    "jegyek": [
+      "mezo-r36n9.16"
+    ],
+    "kezikonyv": [
+      "04-terv/02-sulycel-celmotor",
+      "04-terv/00-attekintes"
+    ],
+    "csomag": "goal"
+  },
+  "goal-megtanult-energiaigeny": {
+    "cim": "Megtanult energiaigény",
+    "terulet": "Célok és évad",
+    "app": "Részben kész",
+    "mit_tud": "Az étkezéseidből és a mérlegelésből hétfőnként megtanulja a valódi napi energiaigényedet, és óvatos lépésekben ezt használja a képlet helyett.",
+    "app_megjegyzes": "A tanult érték már benne van az app számaiban, és az Évad szabályainál ki-be kapcsolható; a heti egy mondat még nincs meg.",
+    "jegyek": [
+      "mezo-r36n9.16"
+    ],
+    "kezikonyv": [
+      "04-terv/05-megtanult-energiaigeny"
+    ],
+    "csomag": "goal"
+  },
+  "goal-tanulas-heti-kartya": {
+    "cim": "Heti mondat a tanulásról",
+    "terulet": "Célok és évad",
+    "app": "Tervben",
+    "mit_tud": "Ha a héten érdemben változott a tanult energiaigény, egy heti kártyán elmondja, mi változott; a kártya eltüntethető.",
+    "app_megjegyzes": "A kézikönyv szerint a Boop legfeljebb egy heti mondatot mutat majd belőle; még nincs az appban.",
+    "jegyek": [
+      "mezo-r36n9.16"
+    ],
+    "kezikonyv": [
+      "04-terv/05-megtanult-energiaigeny"
+    ],
+    "csomag": "goal"
+  },
+  "goal-hogy-tanultam": {
+    "cim": "„Hogy tanultam?” részletes magyarázat",
+    "terulet": "Célok és évad",
+    "app": "Nem kell",
+    "mit_tud": "Hétről hétre megmutatja, milyen napokból és hogyan tanulta meg a rendszer az energiaigényedet.",
+    "app_megjegyzes": "A webes részletes oldal szándékosan kimarad a Boopból, a felület egy mondatra zsugorodik.",
+    "jegyek": [],
+    "kezikonyv": [
+      "04-terv/05-megtanult-energiaigeny"
+    ],
+    "csomag": "goal"
+  },
+  "goal-nap-jelolese": {
+    "cim": "Nap megjelölése teljesnek vagy hiányosnak",
+    "terulet": "Célok és évad",
+    "app": "Nincs még",
+    "mit_tud": "Egy napot megjelölhetsz úgy, hogy minden ételt beírtál vagy hiányos maradt, és a tanulás ehhez igazodva azonnal újraszámol.",
+    "app_megjegyzes": "Az appban nincs ilyen jelölés.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "goal"
+  },
+  "lifegoal-celok": {
+    "cim": "Életcélok",
+    "terulet": "Célok és évad",
+    "app": "Nem kell",
+    "mit_tud": "Szabad szöveges életcélokat vehetsz fel a jóllét hat területe szerint, állapottal (vázlat, aktív, parkoló, kész, archivált).",
+    "app_megjegyzes": "Az Évad kézikönyv szerint az életcélok termékként kimaradnak, és a webes app leállításáról szóló döntés (#52) is a kivezetendő részek közé sorolja; a végleges, területenkénti jóváhagyás még hátra van.",
+    "jegyek": [
+      "mezo-r36n9.97"
+    ],
+    "kezikonyv": [
+      "04-terv/00-attekintes"
+    ],
+    "csomag": "lifegoal"
+  },
+  "lifegoal-pillerek-jelek": {
+    "cim": "Pillérek és figyelt jelek",
+    "terulet": "Célok és évad",
+    "app": "Nem kell",
+    "mit_tud": "Minden célhoz egy–öt pillér tartozik, amely egy már rögzített adathoz kötődik (alvás, étel, edzés, súly, kitöltés), és látszik, melyik jel él.",
+    "app_megjegyzes": "Az Évad kézikönyv szerint az életcélok termékként kimaradnak, és a webes app leállításáról szóló döntés (#52) is a kivezetendő részek közé sorolja; a végleges, területenkénti jóváhagyás még hátra van.",
+    "jegyek": [
+      "mezo-r36n9.97"
+    ],
+    "kezikonyv": [
+      "04-terv/00-attekintes"
+    ],
+    "csomag": "lifegoal"
+  },
+  "lifegoal-ai-javaslat": {
+    "cim": "AI javaslat életcélhoz",
+    "terulet": "Célok és évad",
+    "app": "Nem kell",
+    "mit_tud": "A célod szövegéből az AI pilléreket javasol (internet nélkül sablonból).",
+    "app_megjegyzes": "Az Évad kézikönyv szerint az életcélok termékként kimaradnak, és a webes app leállításáról szóló döntés (#52) is a kivezetendő részek közé sorolja; a végleges, területenkénti jóváhagyás még hátra van.",
+    "jegyek": [
+      "mezo-r36n9.97"
+    ],
+    "kezikonyv": [
+      "04-terv/00-attekintes"
+    ],
+    "csomag": "lifegoal"
+  },
+  "lifegoal-haladas": {
+    "cim": "Életcél-haladás",
+    "terulet": "Célok és évad",
+    "app": "Nem kell",
+    "mit_tud": "Naponta pontozza a pilléreket, és a heti százalékot meg a 7 vs. 21 napos irányt mutatja, egy mai összesítővel.",
+    "app_megjegyzes": "Az Évad kézikönyv szerint az életcélok termékként kimaradnak, és a webes app leállításáról szóló döntés (#52) is a kivezetendő részek közé sorolja; a végleges, területenkénti jóváhagyás még hátra van.",
+    "jegyek": [
+      "mezo-r36n9.97"
+    ],
+    "kezikonyv": [
+      "04-terv/00-attekintes"
+    ],
+    "csomag": "lifegoal"
+  },
+  "lifegoal-ejszakai-ertekeles": {
+    "cim": "Éjszakai kiértékelés és értesítés",
+    "terulet": "Célok és évad",
+    "app": "Nem kell",
+    "mit_tud": "Éjszakánként kiértékeli az aktív célokat, és egy kitöltés vagy sport után jelez, ha egy pillér terve elakad.",
+    "app_megjegyzes": "Az Évad kézikönyv szerint az életcélok termékként kimaradnak, és a webes app leállításáról szóló döntés (#52) is a kivezetendő részek közé sorolja; a végleges, területenkénti jóváhagyás még hátra van.",
+    "jegyek": [
+      "mezo-r36n9.97"
+    ],
+    "kezikonyv": [
+      "04-terv/00-attekintes"
+    ],
+    "csomag": "lifegoal"
+  },
+  "lifegoal-boop-kontextus": {
+    "cim": "Életcélok Boop tudásában",
+    "terulet": "Célok és évad",
+    "app": "Nem kell",
+    "mit_tud": "Boop a beszélgetésben, a reggeli üzenetben és a heti áttekintésben ismeri az életcélokat, és emlékezetében is tárolja őket.",
+    "app_megjegyzes": "Az Évad kézikönyv szerint az életcélok termékként kimaradnak, és a webes app leállításáról szóló döntés (#52) is a kivezetendő részek közé sorolja; a végleges, területenkénti jóváhagyás még hátra van. Kivezetéskor ez is kikerül Boop tudásából.",
+    "jegyek": [
+      "mezo-r36n9.97"
+    ],
+    "kezikonyv": [],
+    "csomag": "lifegoal"
+  },
+  "season-oldal": {
+    "cim": "Az Évad oldal",
+    "terulet": "Célok és évad",
+    "app": "Kész",
+    "mit_tud": "Egy összefoglalóban adja az aktív évadot: hányadik hétnél tartasz, jó úton vagy-e, a súlygörbét, az évad tervét és a következő eseményeket.",
+    "app_megjegyzes": "Az Évad fül élesben van, internet nélkül az utolsó mentett állapotot mutatja.",
+    "jegyek": [
+      "mezo-r36n9.16"
+    ],
+    "kezikonyv": [
+      "04-terv/01-terv-keret",
+      "04-terv/00-attekintes"
+    ],
+    "csomag": "season"
+  },
+  "season-uj-evad": {
+    "cim": "Új évad indítása",
+    "terulet": "Célok és évad",
+    "app": "Kész",
+    "mit_tud": "A meglévő célodból, edzésblokkodból és heti napjaidból javaslatot állít össze az első évadra, előnézetet ad, majd elmenti és elindítja; egy új évad lezárja az előzőt.",
+    "app_megjegyzes": "Az öt lépéses Új évad élesben van; a mostani súly a cél lépésénél még hiányzik.",
+    "jegyek": [
+      "mezo-r36n9.16",
+      "mezo-r36n9.123"
+    ],
+    "kezikonyv": [
+      "04-terv/06-terv-csomag"
+    ],
+    "csomag": "season"
+  },
+  "season-modositas": {
+    "cim": "Évad módosítása élő előnézettel",
+    "terulet": "Célok és évad",
+    "app": "Kész",
+    "mit_tud": "Átállíthatod az edzések számát, a sportnapokat és a tempót; a szerver előtte–utána kiszámol mindent, és csak elfogadásra ment, elavult előnézetet visszautasít.",
+    "app_megjegyzes": "Élesben van; futó blokk alatt az edzésnapok zárolva, az átrendezés még tervben.",
+    "jegyek": [
+      "mezo-r36n9.16",
+      "mezo-r36n9.122"
+    ],
+    "kezikonyv": [
+      "04-terv/06-terv-csomag"
+    ],
+    "csomag": "season"
+  },
+  "season-szabalyok": {
+    "cim": "Évad szabályai",
+    "terulet": "Célok és évad",
+    "app": "Kész",
+    "mit_tud": "Kapcsolók az évadra: csak kevéssé feldolgozott ételek, könnyebb edzéshéten ne fogyj, megtanult égetés, kísérlet-ajánlás, menü időpontja.",
+    "app_megjegyzes": "Az Évad szabályai oldalon állítható; a szabályok Boop beszélgetéseiben a 2. szakaszban jönnek.",
+    "jegyek": [
+      "mezo-r36n9.16"
+    ],
+    "kezikonyv": [
+      "04-terv/06-terv-csomag"
+    ],
+    "csomag": "season"
+  },
+  "season-alvasigeny": {
+    "cim": "Alvásigény és lefekvés az évadból",
+    "terulet": "Célok és évad",
+    "app": "Kész",
+    "mit_tud": "A heti edzés- és sportnapokból kiszámolja az alvásigényt és a lefekvés idejét, és az évad végén visszaállítja az alapot.",
+    "app_megjegyzes": "Az Évad előnézete és elfogadása mutatja és beállítja.",
+    "jegyek": [
+      "mezo-r36n9.16"
+    ],
+    "kezikonyv": [
+      "04-terv/06-terv-csomag"
+    ],
+    "csomag": "season"
+  },
+  "season-blokk-kapu": {
+    "cim": "Edzésblokk csak évaddal indul",
+    "terulet": "Célok és évad",
+    "app": "Kész",
+    "mit_tud": "Új edzésblokkot csak aktív (vagy egy héten belül induló) évad mellett lehet indítani; a futó blokk zavartalanul fut tovább.",
+    "app_megjegyzes": "Ha nincs évad, Boop az Évad oldalra küld.",
+    "jegyek": [
+      "mezo-r36n9.16"
+    ],
+    "kezikonyv": [
+      "04-terv/06-terv-csomag"
+    ],
+    "csomag": "season"
+  },
+  "season-korabbi-evadok": {
+    "cim": "Évad lezárása és korábbi évadok",
+    "terulet": "Célok és évad",
+    "app": "Tervben",
+    "mit_tud": "Egy évadot le lehet zárni, és a szerver visszaadja az összes korábbi évadot.",
+    "app_megjegyzes": "Kézi lezárás és a Korábbi évadok oldal még nincs az appban.",
+    "jegyek": [
+      "mezo-r36n9.123"
+    ],
+    "kezikonyv": [
+      "04-terv/00-attekintes"
+    ],
+    "csomag": "season"
+  },
+  "companion-negyedeves-attekintes": {
+    "cim": "Negyedéves mély áttekintés",
+    "terulet": "Célok és évad",
+    "app": "Nincs még",
+    "mit_tud": "Minden negyedév után egy okos AI összeveti az elmúlt negyedévet az előzővel, javaslatot tesz a következő időszakra, és frissíti a rólad szóló képet.",
+    "app_megjegyzes": "A javaslatai a webes jóváhagyó listába mentek; az appban nincs felülete.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "companion"
+  },
+  "companion-eletcel-javaslat": {
+    "cim": "Életcél-javaslat AI-val",
+    "terulet": "Célok és évad",
+    "app": "Nincs még",
+    "mit_tud": "Az életcélhoz AI javasol irányt, pilléreket, akadályokat és ha–akkor terveket a meglévő listából.",
+    "app_megjegyzes": "Az appban nincs életcél-felület; az életcélok sorsáról a webes kivezetés egy későbbi lépésében kell dönteni.",
+    "jegyek": [
+      "mezo-r36n9.97"
+    ],
+    "kezikonyv": [],
+    "csomag": "companion"
+  },
+  "proactive-n1-kiserletek": {
+    "cim": "Saját kísérletek (régi)",
+    "terulet": "Célok és évad",
+    "app": "Tervben",
+    "mit_tud": "A mintáidra épülő egyszemélyes kísérleteket javasol, elfogadásra elindítja őket, és az ablak végén őszintén kiértékeli az eredményt.",
+    "app_megjegyzes": "Az Évad Hatás füle új kísérletekkel váltja ki (Boop is javasolhat); akkor a régi javaslatgyártás leáll.",
+    "jegyek": [
+      "mezo-r36n9.16"
+    ],
+    "kezikonyv": [
+      "04-terv/08-hataskovetes"
+    ],
+    "csomag": "proactive"
+  },
+  "companion-beszelgetes": {
+    "cim": "Beszélgetés Boop-pal",
+    "terulet": "Boop és AI",
+    "app": "Kész",
+    "mit_tud": "A szerver fogadja a kérdésedet, Boop hangján magyarul válaszol, és a kérdést meg a választ is elmenti, így a beszélgetés folytatható.",
+    "app_megjegyzes": "A Boop fülön a mai napról lehet kérdezni, net nélkül sorba állítva is; az oldal még ellenőrzés alatt áll.",
+    "jegyek": [
+      "mezo-r36n9.13"
+    ],
+    "kezikonyv": [
+      "09-boop/00-attekintes",
+      "09-boop/boop-ful-beszelgetes",
+      "09-boop/kerdes-net-nelkul"
+    ],
+    "csomag": "companion"
+  },
+  "companion-beszelgetesek-kezelese": {
+    "cim": "Korábbi beszélgetések listája, átnevezése, törlése",
+    "terulet": "Boop és AI",
+    "app": "Nincs még",
+    "mit_tud": "A szerver az összes eddigi beszélgetésedet listázza, és bármelyiket át lehet nevezni vagy törölni.",
+    "app_megjegyzes": "Az app csak a mai napi beszélgetést keresi meg és folytatja; korábbi beszélgetések böngészése, átnevezése vagy törlése nincs.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "companion"
+  },
+  "companion-elo-valasz": {
+    "cim": "Szavanként érkező válasz",
+    "terulet": "Boop és AI",
+    "app": "Nincs még",
+    "mit_tud": "A szerver a választ menet közben, darabokban is tudja küldeni, és jelzi, épp milyen adatnak néz utána.",
+    "app_megjegyzes": "Az app megvárja a teljes választ; a folyamatos, szavanként megjelenő változatot nem használja.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "companion"
+  },
+  "companion-mai-nap-blokk": {
+    "cim": "A mai nap Boop fejében, „Boop látja” és kész kérdések",
+    "terulet": "Boop és AI",
+    "app": "Kész",
+    "mit_tud": "Minden kérdéshez a szerver hozzáteszi a mai nap tömör összefoglalóját (alvás, pulzus, evés, edzés, naptár ideje), és ugyanebből ad pár címkét és három kész kérdést.",
+    "app_megjegyzes": "A Boop fül tetején a „Boop látja” sáv és a három kész kérdés innen jön; ellenőrzés alatt.",
+    "jegyek": [
+      "mezo-r36n9.13"
+    ],
+    "kezikonyv": [
+      "09-boop/boop-latja-es-kesz-kerdesek",
+      "09-boop/mit-tud-a-beszelgetes"
+    ],
+    "csomag": "companion"
+  },
+  "companion-hangbevitel": {
+    "cim": "Beszédből szöveg",
+    "terulet": "Boop és AI",
+    "app": "Kész",
+    "mit_tud": "A felvett hangot a szerver szöveggé alakítja, hogy kérdezni vagy naplózni beszéddel is lehessen.",
+    "app_megjegyzes": "A hangnapló és a Boop fül hangos kérdése ezt használja (ellenőrzés alatt).",
+    "jegyek": [
+      "mezo-r36n9.13"
+    ],
+    "kezikonyv": [
+      "09-boop/hangbevitel",
+      "03-naplo/hangnaplo"
+    ],
+    "csomag": "companion"
+  },
+  "companion-adatlekeres": {
+    "cim": "Boop maga néz utána az adataidnak",
+    "terulet": "Boop és AI",
+    "app": "Kész",
+    "mit_tud": "Ha a kérdéshez kell, Boop maga lekéri az edzésnaplót, a tervet, az alvást, az evést, a súlycélt, a rekordokat, az emlékeket és a heti egészségadatokat, csak olvasva.",
+    "app_megjegyzes": "A Boop fül kérdéseinél automatikusan működik, külön képernyő nem kell hozzá.",
+    "jegyek": [
+      "mezo-r36n9.13"
+    ],
+    "kezikonyv": [
+      "09-boop/mit-tud-a-beszelgetes"
+    ],
+    "csomag": "companion"
+  },
+  "companion-allando-hatterkep": {
+    "cim": "Állandó háttérkép rólad minden kérdésnél",
+    "terulet": "Boop és AI",
+    "app": "Kész",
+    "mit_tud": "Minden kérdéshez bekerülnek az alapadataid, az aktív célod, az edzésblokkod, a mai étel-állás, a fontos emberek és a megerősített tények, így nem kell újra elmondanod őket.",
+    "app_megjegyzes": "A Boop fül minden kérdésénél a háttérben működik.",
+    "jegyek": [
+      "mezo-r36n9.13"
+    ],
+    "kezikonyv": [
+      "09-boop/mit-tud-a-beszelgetes"
+    ],
+    "csomag": "companion"
+  },
+  "companion-valasz-ellenorzes": {
+    "cim": "Válasz-ellenőrzés és okos útvonal",
+    "terulet": "Boop és AI",
+    "app": "Kész",
+    "mit_tud": "A szerver eldönti, hogy egy kérdésre elég-e az olcsó modell vagy az okosabb kell, megtervezi az adatlekéréseket, és kiszűri a válaszból az orvosi diagnózist vagy a hamis „megcsináltam” állítást.",
+    "app_megjegyzes": "A Boop fül minden válaszán a háttérben fut.",
+    "jegyek": [],
+    "kezikonyv": [
+      "10-ai/melyik-ai-mire"
+    ],
+    "csomag": "companion"
+  },
+  "companion-ai-kapu": {
+    "cim": "Közös AI-kapu minden területnek",
+    "terulet": "Boop és AI",
+    "app": "Kész",
+    "mit_tud": "Egy helyen dől el, melyik AI-szolgáltató és melyik modell írja az egyes szövegeket (étel, recept, kamra, edzés, pénz, reggel), költségméréssel és tartalék szöveggel hiba esetére.",
+    "app_megjegyzes": "Az app összes AI-funkciója ezen keresztül megy.",
+    "jegyek": [],
+    "kezikonyv": [
+      "10-ai/melyik-ai-mire",
+      "10-ai/koltsegkeret-es-naplo"
+    ],
+    "csomag": "companion"
+  },
+  "companion-emlekezet": {
+    "cim": "Hosszú távú emlékezet és visszakeresés",
+    "terulet": "Boop és AI",
+    "app": "Kész",
+    "mit_tud": "A szerver megjegyzi a beszélgetéseket, naplót, kitöltés-jegyzeteket és összefoglalókat, és négyféle keresővel előveszi a kérdéshez legillőbb emlékeket.",
+    "app_megjegyzes": "A Boop chat és a reggeli szövegek a háttérben használják; a hosszabb előzményű fióknál a szöveges kereső néha lassú (nyitott hiba).",
+    "jegyek": [
+      "mezo-r36n9.10",
+      "mezo-r36n9.85"
+    ],
+    "kezikonyv": [
+      "10-ai/emlekezet"
+    ],
+    "csomag": "companion"
+  },
+  "companion-beagyazas": {
+    "cim": "Emlékek tartalom szerinti kereshetősége",
+    "terulet": "Boop és AI",
+    "app": "Kész",
+    "mit_tud": "Minden új szövegről a szerver egy jelentés-lenyomatot készít, hogy az emlékek ne csak szóegyezéssel, hanem tartalom szerint is előkerüljenek; éjjel pótolja a kimaradtakat.",
+    "app_megjegyzes": "Háttérfunkció, a Boop naplója és chatje is ebbe táplál.",
+    "jegyek": [
+      "mezo-r36n9.10"
+    ],
+    "kezikonyv": [
+      "10-ai/beagyazas-openai"
+    ],
+    "csomag": "companion"
+  },
+  "companion-napi-osszefoglalo": {
+    "cim": "Éjszakai napi, heti és havi összefoglaló",
+    "terulet": "Boop és AI",
+    "app": "Kész",
+    "mit_tud": "Minden éjjel összefoglalja a tegnapi napodat, hétfőnként a hetet, hó elején a hónapot, és ezek is az emlékezetbe kerülnek.",
+    "app_megjegyzes": "Háttérben fut, Boop ezekből emlékszik a múltra; külön képernyőn nem látszanak.",
+    "jegyek": [
+      "mezo-r36n9.10"
+    ],
+    "kezikonyv": [
+      "10-ai/emlekezet"
+    ],
+    "csomag": "companion"
+  },
+  "companion-emlekezet-attekintes": {
+    "cim": "Az emlékezet áttekintése és hasonló napok keresése",
+    "terulet": "Boop és AI",
+    "app": "Nincs még",
+    "mit_tud": "A szerver meg tudja mutatni, mi van az emlékezetben, listázza a napi és heti összefoglalókat, rákeres a mostanihoz hasonló napokra, és kimutatja, mennyi AI-költség ment az emlékezetre.",
+    "app_megjegyzes": "Az appban nincs emlékezet-áttekintő; a hasonló napokat csak Boop használja a válaszaiban.",
+    "jegyek": [],
+    "kezikonyv": [
+      "10-ai/00-attekintes"
+    ],
+    "csomag": "companion"
+  },
+  "companion-tenyek-gyujtese": {
+    "cim": "Tények rólad — gyűjtés és rendrakás",
+    "terulet": "Boop és AI",
+    "app": "Kész",
+    "mit_tud": "Beszélgetés után egy olcsó AI rövid tényjelölteket emel ki rólad, a megerősítettek minden szövegbe bekerülnek, hétfőnként pedig összefésüli az ismétlődőket.",
+    "app_megjegyzes": "Háttérben fut a Boop beszélgetésein is, a tények minden válaszba bekerülnek.",
+    "jegyek": [
+      "mezo-r36n9.10"
+    ],
+    "kezikonyv": [
+      "10-ai/tenyek-rolad"
+    ],
+    "csomag": "companion"
+  },
+  "companion-tenyek-kezelese": {
+    "cim": "Tények megnézése, javítása, jóváhagyása",
+    "terulet": "Boop és AI",
+    "app": "Nincs még",
+    "mit_tud": "A szerver listázza a rólad tudott tényeket és a jóváhagyásra váró jelölteket, és bármelyiket fel lehet venni, javítani, elfelejteni vagy a bizonyítékát megnézni.",
+    "app_megjegyzes": "Az appban nincs tény-lista vagy jelölt-jóváhagyás; a kézikönyv szerint ez még nincs szakaszhoz rendelve.",
+    "jegyek": [],
+    "kezikonyv": [
+      "10-ai/tenyek-rolad"
+    ],
+    "csomag": "companion"
+  },
+  "companion-elfelejtes": {
+    "cim": "Elfelejtés és elnémítás",
+    "terulet": "Boop és AI",
+    "app": "Részben kész",
+    "mit_tud": "Kérésre Boop elfelejt egy tényt, egy megfigyelést vagy mindent, amit egy beszélgetésből tanult (előbb megmutatja, mit), és egy témát el lehet némítani.",
+    "app_megjegyzes": "Beszélgetésben kérhető, hogy valamit ne jegyezzen meg; külön elfelejtés- vagy elnémítás-gomb az appban nincs.",
+    "jegyek": [],
+    "kezikonyv": [
+      "10-ai/emlekezet"
+    ],
+    "csomag": "companion"
+  },
+  "companion-valasz-mogott": {
+    "cim": "Mire emlékezett Boop ennél a válasznál",
+    "terulet": "Boop és AI",
+    "app": "Nincs még",
+    "mit_tud": "Egy válasz mellé a szerver megmutatja, mely emlékekből és tényekből dolgozott, és egy emberről szóló tényt egy koppintással rád is érvényesnek lehet jelölni.",
+    "app_megjegyzes": "Az app nem mutatja a válaszok hátterét.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "companion"
+  },
+  "companion-szemelyes-beallitasok": {
+    "cim": "„Rólam” szöveg és kommunikációs kérések",
+    "terulet": "Boop és AI",
+    "app": "Nincs még",
+    "mit_tud": "Megadhatod, mit tudjon rólad Boop és hogyan beszéljen veled, és pontosan megnézheted, milyen háttérszöveget kap a modell.",
+    "app_megjegyzes": "Az appban nincs ilyen beállítás; a régi, weben megadott szöveg továbbra is bekerül a válaszokba.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "companion"
+  },
+  "companion-beszedstilus-profil": {
+    "cim": "Tanult beszédstílus",
+    "terulet": "Boop és AI",
+    "app": "Kész",
+    "mit_tud": "Hetente összeállít egy rövid képet arról, hogyan szeretsz kommunikálni és dönteni, és ezt minden AI-szöveghez hozzáadja.",
+    "app_megjegyzes": "Háttérben fut, a Boop chat válaszai már ehhez igazodnak.",
+    "jegyek": [],
+    "kezikonyv": [
+      "09-boop/mit-tud-a-beszelgetes"
+    ],
+    "csomag": "companion"
+  },
+  "companion-emberek-a-beszelgetesbol": {
+    "cim": "Emberek felismerése a beszélgetésből",
+    "terulet": "Boop és AI",
+    "app": "Részben kész",
+    "mit_tud": "Ha megemlítesz valakit beszélgetésben vagy naplóban, a szerver felismeri, és tényeket jegyez meg róla, hogy Boop később tudja, kiről van szó.",
+    "app_megjegyzes": "A Boop beszélgetésein és naplóján is fut, de az appban nincs felület az emberek és a róluk tudott tények megnézésére.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "companion"
+  },
+  "companion-kapcsolati-halo": {
+    "cim": "Kapcsolati háló a háttérben",
+    "terulet": "Boop és AI",
+    "app": "Kész",
+    "mit_tud": "A szerver összeköti, mi mivel függ össze (minták, emberek, célok, életesemények), éjjel karbantartja, és ebből ad egy „Összefüggések” részt a válaszokhoz.",
+    "app_megjegyzes": "Háttérben működik a Boop chat válaszaiban.",
+    "jegyek": [],
+    "kezikonyv": [
+      "10-ai/emlekezet"
+    ],
+    "csomag": "companion"
+  },
+  "companion-eletesemenyek-kapcsolatok": {
+    "cim": "Életesemények és kapcsolatok kezelése",
+    "terulet": "Boop és AI",
+    "app": "Nincs még",
+    "mit_tud": "A szerver felismert életesemény-jelölteket ad jóváhagyásra, és a kapcsolati háló elemeit listázni, archiválni és visszaállítani lehet.",
+    "app_megjegyzes": "Az appban nincs jóváhagyó vagy kapcsolat-nézet, így az új életesemény-jelöltek nem kerülnek elfogadásra.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "companion"
+  },
+  "companion-mintak-boop-eszrevette": {
+    "cim": "Minták és hipotézisek — „Boop észrevette”",
+    "terulet": "Boop és AI",
+    "app": "Kész",
+    "mit_tud": "Éjjel a szerver összefüggéseket keres az adataidban, AI-val hipotéziseket fogalmaz és kritizál, a további napokkal erősíti vagy gyengíti őket; az „Igaz” vagy „Nem rólam szól” döntésed visszamegy.",
+    "app_megjegyzes": "A kezdőlap „Boop észrevette” kártyái ebből jönnek, és a húzással adott döntést az app elküldi.",
+    "jegyek": [
+      "mezo-r36n9.7"
+    ],
+    "kezikonyv": [
+      "10-ai/mintak-es-hipotezisek",
+      "02-ma/boop-eszrevette"
+    ],
+    "csomag": "companion"
+  },
+  "companion-mintak-attekintese": {
+    "cim": "Minták áttekintése és részletes nézete",
+    "terulet": "Boop és AI",
+    "app": "Tervben",
+    "mit_tud": "A szerver listázza az összes mintát állapot szerint, adat-egészség figyelőt és egy-egy összefüggés részletes, napokra bontott nézetét adja.",
+    "app_megjegyzes": "Az appban nincs minta-lista; a B8 a Napló „Minták” részébe tervez rövid, közép és hosszú távú következtetéseket.",
+    "jegyek": [
+      "mezo-r36n9.18"
+    ],
+    "kezikonyv": [
+      "09-boop/boop-mindent-lat",
+      "10-ai/az-egy-ai-b8"
+    ],
+    "csomag": "companion"
+  },
+  "companion-szovegjelek": {
+    "cim": "Hangulat, energia és feszültség a szövegeidből",
+    "terulet": "Boop és AI",
+    "app": "Kész",
+    "mit_tud": "A napló- és kitöltés-jegyzetekből AI-val kiolvassa a hangulatot, az energiát és a feszültséget, és ezek bekerülnek a mintakeresésbe.",
+    "app_megjegyzes": "Háttérben fut a Boopban írt és mondott jegyzeteken is.",
+    "jegyek": [],
+    "kezikonyv": [
+      "10-ai/mintak-es-hipotezisek"
+    ],
+    "csomag": "companion"
+  },
+  "companion-gyors-eszrevetel": {
+    "cim": "Gyors észrevételek és megfigyelés-folyam",
+    "terulet": "Boop és AI",
+    "app": "Nincs még",
+    "mit_tud": "Egy feltűnő bejegyzés után még aznap rövid észrevételt írhat, éjjel megfigyeléseket gyűjt egy folyamba, ezekre egy koppintással lehet válaszolni, és az elveszett megfigyeléseket vissza lehet hozni.",
+    "app_megjegyzes": "Az appban nincs megfigyelés-folyam; a régi értesítési csengő, ahová ezek mentek, éppen kikerül.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "companion"
+  },
+  "companion-hataskovetes": {
+    "cim": "Hatáskövetés",
+    "terulet": "Boop és AI",
+    "app": "Tervben",
+    "mit_tud": "A szerver méri, hogy bizonyos emberek vagy eseménytípusok után hogyan alakul a hangulatod, energiád és feszültséged, és egy-egy témát el lehet némítani.",
+    "app_megjegyzes": "Az appban még nincs; az Évad terv későbbi lépése ételekre és kiegészítőkre is kiterjesztené.",
+    "jegyek": [
+      "mezo-r36n9.16"
+    ],
+    "kezikonyv": [
+      "04-terv/08-hataskovetes"
+    ],
+    "csomag": "companion"
+  },
+  "companion-jelzesek": {
+    "cim": "Szabály alapú figyelmeztetések",
+    "terulet": "Boop és AI",
+    "app": "Nincs még",
+    "mit_tud": "Naponta szabályok nézik, van-e alváshiány, kimaradt edzés, gyors fogyás, tartós fájdalom, késői evés vagy stressz, és ezekhez illő beavatkozást keres.",
+    "app_megjegyzes": "A jelzések eddig a webes folyamba és a csapat-chatbe mentek, amelyek leálltak; az appban nem látszanak.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "companion"
+  },
+  "companion-jelzes-nyomkovetes": {
+    "cim": "Miért szólt a figyelmeztetés — napi nyomkövetés",
+    "terulet": "Boop és AI",
+    "app": "Nincs még",
+    "mit_tud": "Egy adott napra megmutatja, melyik szabály mit döntött és miért, időrendben.",
+    "app_megjegyzes": "A webes coaching-oldal volt a felülete; az appban nincs ilyen nézet.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "companion"
+  },
+  "companion-visszajelzes": {
+    "cim": "Visszajelzés az AI szövegeire és tanulás belőle",
+    "terulet": "Boop és AI",
+    "app": "Nincs még",
+    "mit_tud": "Bármely AI-szövegre lehet tetszik/nem tetszik jelzést adni, és a szerver hetente összesíti, mely fajta szövegek válnak be, hogy a jövőben ehhez igazodjon.",
+    "app_megjegyzes": "Az appban nincs tetszik/nem tetszik gomb, így az új szövegekről nem érkezik visszajelzés.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "companion"
+  },
+  "companion-emlek-visszajelzes-admin": {
+    "cim": "Emlékkeresés minősítése (tulajdonosi eszköz)",
+    "terulet": "Boop és AI",
+    "app": "Nem kell",
+    "mit_tud": "A tulajdonos egy-egy emlékkeresés találatait jónak vagy rossznak jelölhette, hogy hangolni lehessen a keresést.",
+    "app_megjegyzes": "A webes admin felületen volt, amit a webes app leállításával kivezettünk.",
+    "jegyek": [
+      "mezo-r36n9.97"
+    ],
+    "kezikonyv": [],
+    "csomag": "companion"
+  },
+  "companion-adatmegorzes": {
+    "cim": "Régi AI-részletek automatikus törlése",
+    "terulet": "Boop és AI",
+    "app": "Kész",
+    "mit_tud": "A válaszokhoz használt adatlekérések részleteit 90, az emlékkeresések naplóját 30 nap után magától törli.",
+    "app_megjegyzes": "Háttérben fut, az app adatait is érinti.",
+    "jegyek": [],
+    "kezikonyv": [
+      "09-boop/mit-tud-a-beszelgetes",
+      "10-ai/emlekezet"
+    ],
+    "csomag": "companion"
+  },
+  "boop-reggeli-osszefoglalo": {
+    "cim": "Reggeli összefoglaló",
+    "terulet": "Boop és AI",
+    "app": "Kész",
+    "mit_tud": "Minden nap összegyűjti az éjszakát, a pulzust, a lépéseket, az étkezéseket, a naptárat és a tervet, és ebből egy napi összefoglalót készít, amit naponta eltárol.",
+    "app_megjegyzes": "A Ma oldal teteje ebből épül, a telefon megnyitáskor, napváltáskor és Egészség-szinkron után kéri le.",
+    "jegyek": [
+      "mezo-r36n9.7",
+      "mezo-r36n9.24",
+      "mezo-r36n9.25"
+    ],
+    "kezikonyv": [
+      "02-ma/reggeli-itelet",
+      "10-ai/reggeli-osszefoglalo-szovege"
+    ],
+    "csomag": "boop"
+  },
+  "boop-pontszamok-gombok": {
+    "cim": "Forma és az öt gömb pontszámai",
+    "terulet": "Boop és AI",
+    "app": "Kész",
+    "mit_tud": "Szabályok számolják ki a Forma, Alvás, Mozgás, Étel és Pulzus pontot és a nap állapotát (jó, rendben, fáradt, még tanulom) — az AI nem pontoz.",
+    "app_megjegyzes": "Az öt gömb és a nagy felkelő gömb ezeket mutatja, adat nélkül „még tanulom” felirattal.",
+    "jegyek": [
+      "mezo-r36n9.7"
+    ],
+    "kezikonyv": [
+      "02-ma/reggeli-itelet"
+    ],
+    "csomag": "boop"
+  },
+  "boop-ai-mondatok": {
+    "cim": "Boop mondatai a reggeli számokhoz",
+    "terulet": "Boop és AI",
+    "app": "Kész",
+    "mit_tud": "Egy olcsó AI Boop hangján megfogalmazza a kiszámolt számokat, az esti tippet és a következő étkezés tippjét; ha 8 másodpercen belül nem válaszol, szabály alapú szöveg áll be, a késő AI-szöveg utólag beíródik.",
+    "app_megjegyzes": "A gömbök címei, mondatai és a felolvasható összefoglaló mind ebből jönnek.",
+    "jegyek": [
+      "mezo-r36n9.7",
+      "mezo-r36n9.13"
+    ],
+    "kezikonyv": [
+      "10-ai/reggeli-osszefoglalo-szovege"
+    ],
+    "csomag": "boop"
+  },
+  "boop-okos-ujrageneralas": {
+    "cim": "Újrakészítés csak változáskor",
+    "terulet": "Boop és AI",
+    "app": "Kész",
+    "mit_tud": "Az összefoglaló csak akkor készül újra, ha a bemenet változott (új éjszaka, étkezés, naptár, döntés) vagy fordul a napszak, így nincs felesleges AI-költség.",
+    "app_megjegyzes": "A háttérben működik a telefon minden lekérésénél.",
+    "jegyek": [
+      "mezo-r36n9.7",
+      "mezo-r36n9.24"
+    ],
+    "kezikonyv": [
+      "10-ai/reggeli-osszefoglalo-szovege"
+    ],
+    "csomag": "boop"
+  },
+  "boop-kezi-ujrakeres": {
+    "cim": "Összefoglaló kézi újrakérése",
+    "terulet": "Boop és AI",
+    "app": "Kész",
+    "mit_tud": "Kérésre azonnal új összefoglalót ír, naponta legfeljebb háromszor.",
+    "app_megjegyzes": "Az app hívja, a napi korlát elérésekor hibaüzenetet kap.",
+    "jegyek": [
+      "mezo-r36n9.7"
+    ],
+    "kezikonyv": [
+      "02-ma/reggeli-itelet"
+    ],
+    "csomag": "boop"
+  },
+  "boop-energiagorbe": {
+    "cim": "A nap energiagörbéje",
+    "terulet": "Boop és AI",
+    "app": "Kész",
+    "mit_tud": "Egy tipikus napi ívet a Forma, a késői ebéd és az edzés alapján feljebb-lejjebb told, és megjelöli a délutáni mélypontot — modell, nem mérés.",
+    "app_megjegyzes": "A „napod” lap nagyítós görbéje és a Napló pöttyös görbéje ezt mutatja; a napi terhelés beszámítása a B7-tel jön.",
+    "jegyek": [
+      "mezo-r36n9.7",
+      "mezo-r36n9.13"
+    ],
+    "kezikonyv": [
+      "02-ma/reszletes-lapok",
+      "03-naplo/energiagorbe-pottyok"
+    ],
+    "csomag": "boop"
+  },
+  "boop-reszletes-adatok": {
+    "cim": "Éjszaka, pulzus és heti sorok részletei",
+    "terulet": "Boop és AI",
+    "app": "Kész",
+    "mit_tud": "Az összefoglaló hordozza az alvás fázisait, a heti mélyalvást, a heti nyugalmi pulzust, a mai pulzus-tartományt, a lépéseket és az aktív kalóriát.",
+    "app_megjegyzes": "Az „éjszakád” és a „pulzusod” felcsúszó lapok ebből rajzolnak.",
+    "jegyek": [
+      "mezo-r36n9.7"
+    ],
+    "kezikonyv": [
+      "02-ma/reszletes-lapok"
+    ],
+    "csomag": "boop"
+  },
+  "boop-boop-eszrevette": {
+    "cim": "Boop észrevette — megfigyelések a reggeliben",
+    "terulet": "Boop és AI",
+    "app": "Kész",
+    "mit_tud": "Az összefoglalóba beteszi a legújabb, döntésre váró mintákat, amiket Boop rólad gyanít.",
+    "app_megjegyzes": "Legfeljebb három húzható kártya a Ma oldalon; a döntés visszamegy a memóriába.",
+    "jegyek": [
+      "mezo-r36n9.7"
+    ],
+    "kezikonyv": [
+      "02-ma/boop-eszrevette",
+      "10-ai/mintak-es-hipotezisek"
+    ],
+    "csomag": "boop"
+  },
+  "proactive-napi-hirfolyam": {
+    "cim": "Napi üzenetfolyam (reggel, dél, este)",
+    "terulet": "Boop és AI",
+    "app": "Nem kell",
+    "mit_tud": "Napszakonként rövid AI-üzenetet írt a napodról (reggel, délben, este, ivási emlékeztető, emberekről szóló üzenet), alkalmanként egy odaillő korábbi emlékkel.",
+    "app_megjegyzes": "A webes appé volt; a webes app leállítása után kikapcsolják, a Boop saját reggeli összefoglalót és élő falat használ.",
+    "jegyek": [
+      "mezo-r36n9.97"
+    ],
+    "kezikonyv": [],
+    "csomag": "proactive"
+  },
+  "proactive-alvas-suly-reakcio": {
+    "cim": "Azonnali reakció alvásra és mérlegelésre",
+    "terulet": "Boop és AI",
+    "app": "Nem kell",
+    "mit_tud": "Amikor rögzíted az alvást vagy megméred magad, Boop pár mondatban reagált rá.",
+    "app_megjegyzes": "A webes folyamhoz tartozott; az iPhone-ról érkező adatra se reagál többé, kikapcsolják.",
+    "jegyek": [
+      "mezo-r36n9.97"
+    ],
+    "kezikonyv": [],
+    "csomag": "proactive"
+  },
+  "proactive-tanacskartyak": {
+    "cim": "Tanácskártyák (beállítás-ellenőrzés, beavatkozások)",
+    "terulet": "Boop és AI",
+    "app": "Nem kell",
+    "mit_tud": "Napi egy edzői kártyát adott: ha a beállításaid ellentmondanak a céloknak (például az alvásterv nem fér bele a hetedbe), vagy egy figyelmeztető jel után a legjobban bevált tippet.",
+    "app_megjegyzes": "Csak a weben jelent meg; kikapcsolják, az iPhone élő fala és javaslatkártyái veszik át a szerepét.",
+    "jegyek": [
+      "mezo-r36n9.97"
+    ],
+    "kezikonyv": [],
+    "csomag": "proactive"
+  },
+  "proactive-egy-koppintasos-alkalmazas": {
+    "cim": "Tanács alkalmazása egy koppintással",
+    "terulet": "Boop és AI",
+    "app": "Nem kell",
+    "mit_tud": "Egy tanácskártya gombjával rögtön végrehajtott egy változtatást (például holnap könnyebb edzés, lefekvés eltolása, egy sportalkalom kihagyása).",
+    "app_megjegyzes": "Webes kártyákhoz kötött; az iPhone-on a javaslatok saját elfogadás-gombot kapnak.",
+    "jegyek": [
+      "mezo-r36n9.97"
+    ],
+    "kezikonyv": [],
+    "csomag": "proactive"
+  },
+  "proactive-egyszeri-kerdesek": {
+    "cim": "Egyszer feltett kérdések",
+    "terulet": "Boop és AI",
+    "app": "Nem kell",
+    "mit_tud": "Egyszer, soha nem ismételve rákérdezett dolgokra (például miért hagytad abba a naplózást), és a választ tényként megjegyezte.",
+    "app_megjegyzes": "A tanácskártyák csatornáján ment, azzal együtt kikapcsolják.",
+    "jegyek": [
+      "mezo-r36n9.97"
+    ],
+    "kezikonyv": [],
+    "csomag": "proactive"
+  },
+  "proactive-heti-tervjavaslat": {
+    "cim": "Heti tervjavaslat",
+    "terulet": "Boop és AI",
+    "app": "Nem kell",
+    "mit_tud": "Hétfőnként az előző hét alapján 2–3 konkrét javaslatot írt a kezdődő hétre.",
+    "app_megjegyzes": "Csak a weben látszott; kikapcsolják, a heti tervezést az Évad veszi át.",
+    "jegyek": [
+      "mezo-r36n9.97"
+    ],
+    "kezikonyv": [],
+    "csomag": "proactive"
+  },
+  "proactive-heti-attekintes": {
+    "cim": "Heti áttekintés",
+    "terulet": "Boop és AI",
+    "app": "Részben kész",
+    "mit_tud": "A lezárt hétről AI-összefoglalót és kiemeléseket ír hivatkozásokkal, jelzi, ha azóta új adat került be, és kérésre újraírja; mellette a hét nyers adatait is visszaadja.",
+    "app_megjegyzes": "Saját képernyő nincs, de Boop a beszélgetésben ismeri a hét összefoglalóját; a háttérben B8-ig fut.",
+    "jegyek": [
+      "mezo-r36n9.18",
+      "mezo-r36n9.97"
+    ],
+    "kezikonyv": [
+      "10-ai/az-egy-ai-b8"
+    ],
+    "csomag": "proactive"
+  },
+  "proactive-het-tanulsagai": {
+    "cim": "A hét tanulságai",
+    "terulet": "Boop és AI",
+    "app": "Nincs még",
+    "mit_tud": "A heti áttekintésből tényjelölteket emel ki rólad, amelyek megerősítés után Boop tudásába kerülnek.",
+    "app_megjegyzes": "Az appban nincs hely a tényjelöltek megerősítésére, így ezek most várakoznak.",
+    "jegyek": [],
+    "kezikonyv": [
+      "10-ai/tenyek-rolad"
+    ],
+    "csomag": "proactive"
+  },
+  "proactive-heti-memoar": {
+    "cim": "Heti memoár és archívum",
+    "terulet": "Boop és AI",
+    "app": "Nincs még",
+    "mit_tud": "Vasárnaponként rövid, irodalmi hangú történetet ír a hetedről, emlék-hivatkozásokkal, és a korábbiakat archívumban tartja.",
+    "app_megjegyzes": "Az appban nem látszik; a háttérben fut, mert a heti áttekintés alapanyaga.",
+    "jegyek": [
+      "mezo-r36n9.97"
+    ],
+    "kezikonyv": [],
+    "csomag": "proactive"
+  },
+  "proactive-elorejelzesek": {
+    "cim": "Heti előrejelzések",
+    "terulet": "Boop és AI",
+    "app": "Nincs még",
+    "mit_tud": "A megerősített mintáidból hétfőnként előrejelzést készít (például „a héten csökken a súlyod”), és naponta ellenőrzi, bejött-e.",
+    "app_megjegyzes": "Képernyő nincs; a háttérben fut, a heti áttekintés és a beszélgetés közvetve használja.",
+    "jegyek": [
+      "mezo-r36n9.97"
+    ],
+    "kezikonyv": [],
+    "csomag": "proactive"
+  },
+  "proactive-minta-hatasa": {
+    "cim": "Mi lett egy mintából",
+    "terulet": "Boop és AI",
+    "app": "Nincs még",
+    "mit_tud": "Egy mintához összegyűjti, mi lett belőle: a tény, és az összes ráépülő előrejelzés, kísérlet és kihívás.",
+    "app_megjegyzes": "A webes minta-oldalé volt; az appban nincs minta-részletező.",
+    "jegyek": [],
+    "kezikonyv": [
+      "10-ai/mintak-es-hipotezisek"
+    ],
+    "csomag": "proactive"
+  },
+  "character-ejszakai-erzekelok": {
+    "cim": "Éjszakai érzékelők és megfigyelések",
+    "terulet": "Boop és AI",
+    "app": "Részben kész",
+    "mit_tud": "Éjjel 47 szabály alapú érzékelő jeleket számol az adataidból, és a szakterületi szakértők rövid megfigyelést írnak a saját területükről.",
+    "app_megjegyzes": "Saját képernyő nincs, de az érzékelők adják a check-in kérdések egy részét és indoklását az appban.",
+    "jegyek": [
+      "mezo-r36n9.10"
+    ],
+    "kezikonyv": [
+      "10-ai/ejszakai-konzilium"
+    ],
+    "csomag": "character"
+  },
+  "character-napi-tanacs": {
+    "cim": "Napi tanács (esti konzílium)",
+    "terulet": "Boop és AI",
+    "app": "Tervben",
+    "mit_tud": "Esténként a szakértők javaslatot tesznek, vitatkoznak, a Szkeptikus bizonyíték alapján rostál, és állítások születnek rólad, napi AI-kerettel.",
+    "app_megjegyzes": "Ma csak a beszélgetésen át hat; a B8 egy kicsi, napra szabott tanácsot ad belőle a javaslatok „miért?” soraihoz.",
+    "jegyek": [
+      "mezo-r36n9.10",
+      "mezo-r36n9.18"
+    ],
+    "kezikonyv": [
+      "10-ai/ejszakai-konzilium",
+      "10-ai/az-egy-ai-b8"
+    ],
+    "csomag": "character"
+  },
+  "character-heti-havi-konzilium": {
+    "cim": "Heti és havi konzílium, kezdő mélyolvasás",
+    "terulet": "Boop és AI",
+    "app": "Tervben",
+    "mit_tud": "Vasárnap a lezárt hétről, havonta egyszer az összes állításról, egyszer pedig a teljes előzményedről tart konzíliumot, és frissíti a dossziét.",
+    "app_megjegyzes": "Az appban nem látszik; a B8 lekarcsúsítja arra, amit Boop meg is mutat.",
+    "jegyek": [
+      "mezo-r36n9.18"
+    ],
+    "kezikonyv": [
+      "10-ai/ejszakai-konzilium",
+      "10-ai/az-egy-ai-b8"
+    ],
+    "csomag": "character"
+  },
+  "character-dossze-a-beszelgetesben": {
+    "cim": "„Ki vagy te” dosszié a beszélgetésben",
+    "terulet": "Boop és AI",
+    "app": "Részben kész",
+    "mit_tud": "Az állításokat és a portrék lényegét minden Boop-beszélgetés elé odateszi, így Boop ismer téged.",
+    "app_megjegyzes": "A beszélgetés az appban használja, de a dossziét magát nem lehet megnézni.",
+    "jegyek": [
+      "mezo-r36n9.10"
+    ],
+    "kezikonyv": [
+      "10-ai/ejszakai-konzilium"
+    ],
+    "csomag": "character"
+  },
+  "character-dosszie-szakertoi-oldalak": {
+    "cim": "Dosszié-, portré- és szakértői oldalak",
+    "terulet": "Boop és AI",
+    "app": "Nem kell",
+    "mit_tud": "Területenként megmutatja a rólad szóló portrét és állításokat, a szakértőket, és egy hírfolyamot a változásokról.",
+    "app_megjegyzes": "Döntés: egy hang, Boop — a szakértői oldalak Boopban szándékosan nem jelennek meg.",
+    "jegyek": [],
+    "kezikonyv": [
+      "10-ai/csapatfal-kihagyva"
+    ],
+    "csomag": "character"
+  },
+  "character-allitas-visszajelzes": {
+    "cim": "Visszajelzés egy állításra",
+    "terulet": "Boop és AI",
+    "app": "Nem kell",
+    "mit_tud": "Egy rólad szóló állításra mondhatod, hogy talál, nem igaz, vagy pontosítod, és ez az állítás bizonyosságát módosítja.",
+    "app_megjegyzes": "A szakértői oldalakon élt, azokkal együtt kimarad az appból.",
+    "jegyek": [],
+    "kezikonyv": [
+      "10-ai/csapatfal-kihagyva"
+    ],
+    "csomag": "character"
+  },
+  "character-allitas-elozmeny-visszavonas": {
+    "cim": "Állítások előzménye és visszavonás",
+    "terulet": "Boop és AI",
+    "app": "Nem kell",
+    "mit_tud": "Minden állítás-változást előtte–utána naplóz, és a legutóbbi változás visszavonható.",
+    "app_megjegyzes": "Webes átláthatósági felület volt, Boopban kihagyva.",
+    "jegyek": [],
+    "kezikonyv": [
+      "10-ai/csapatfal-kihagyva"
+    ],
+    "csomag": "character"
+  },
+  "character-futasok-atlathatosag": {
+    "cim": "Futások és konzíliumok átláthatósága",
+    "terulet": "Boop és AI",
+    "app": "Nem kell",
+    "mit_tud": "Megmutatja minden éjszakai futás és konzílium menetét, eredményét és a tanács mai állapotát.",
+    "app_megjegyzes": "A webes átláthatósági felület Boopban szándékosan nem jelenik meg.",
+    "jegyek": [],
+    "kezikonyv": [
+      "10-ai/csapatfal-kihagyva"
+    ],
+    "csomag": "character"
+  },
+  "character-esti-kiadas": {
+    "cim": "Esti kiadás (csapatfal)",
+    "terulet": "Boop és AI",
+    "app": "Nem kell",
+    "mit_tud": "Esténként a szereplők a nap eseményeiből rövid bejegyzéseket írtak a csapatfalra.",
+    "app_megjegyzes": "A webes csapatfalé volt; kikapcsolják.",
+    "jegyek": [
+      "mezo-r36n9.97"
+    ],
+    "kezikonyv": [
+      "10-ai/csapatfal-kihagyva"
+    ],
+    "csomag": "character"
+  },
+  "character-csapat-chat": {
+    "cim": "Csapat-chat és ügyek",
+    "terulet": "Boop és AI",
+    "app": "Nem kell",
+    "mit_tud": "Egész nap szereplők szóltak hozzá a történésekhez ügyekként, válaszolhattál, egy gombbal intézhettél, és megjegyezte a kivételeidet.",
+    "app_megjegyzes": "A webes csapatfalé volt; kikapcsolják.",
+    "jegyek": [
+      "mezo-r36n9.97"
+    ],
+    "kezikonyv": [
+      "10-ai/csapatfal-kihagyva"
+    ],
+    "csomag": "character"
+  },
+  "character-valaszok-a-falon": {
+    "cim": "Válasz a szereplők bejegyzéseire",
+    "terulet": "Boop és AI",
+    "app": "Nem kell",
+    "mit_tud": "Egy bejegyzésre írt válaszodat a szereplő megválaszolta, és a beszélgetés bekerült az emlékezetbe.",
+    "app_megjegyzes": "Csak a weben lehetett válaszolni; Boopban kihagyva.",
+    "jegyek": [],
+    "kezikonyv": [
+      "10-ai/csapatfal-kihagyva"
+    ],
+    "csomag": "character"
+  },
+  "character-erettsegi-gorbe": {
+    "cim": "Érettségi görbe",
+    "terulet": "Boop és AI",
+    "app": "Nem kell",
+    "mit_tud": "Hetente kiszámolja, mennyire érett a dosszié egyes területei, és görbén mutatja.",
+    "app_megjegyzes": "Webes csapatfal-elem, Boopban kihagyva.",
+    "jegyek": [],
+    "kezikonyv": [
+      "10-ai/csapatfal-kihagyva"
+    ],
+    "csomag": "character"
+  },
+  "llmlog-ai-hivasnaplo": {
+    "cim": "AI-hívások naplója",
+    "terulet": "Boop és AI",
+    "app": "Kész",
+    "mit_tud": "Minden AI-hívásról feljegyzi, melyik funkció, melyik modell, mennyi idő, hány token, mennyibe került (a hívás pillanatának árán) és sikerült-e.",
+    "app_megjegyzes": "Az iPhone minden AI-funkciójára is fut a háttérben; képernyő nem kell hozzá.",
+    "jegyek": [
+      "mezo-r36n9.7"
+    ],
+    "kezikonyv": [
+      "10-ai/koltsegkeret-es-naplo"
+    ],
+    "csomag": "llmlog"
+  },
+  "llmlog-koltsegkeret": {
+    "cim": "AI-költségkeret és vészfék",
+    "terulet": "Boop és AI",
+    "app": "Kész",
+    "mit_tud": "Felhasználónként 30 napos keretet figyel: 70%-nál olcsó modellre vált, 90%-nál szüneteltet drága háttérmunkákat, 100%-nál megállít mindent.",
+    "app_megjegyzes": "Az iPhone AI-hívásait is védi a háttérben.",
+    "jegyek": [
+      "mezo-r36n9.10"
+    ],
+    "kezikonyv": [
+      "10-ai/koltsegkeret-es-naplo"
+    ],
+    "csomag": "llmlog"
+  },
+  "llmlog-szovegek-torlese": {
+    "cim": "AI-szövegek törlése 90 nap után",
+    "terulet": "Boop és AI",
+    "app": "Kész",
+    "mit_tud": "A kérdés–válasz szövegeket 90 nap után törli, a költség- és időadatok megmaradnak.",
+    "app_megjegyzes": "Háttérmunka, az app adatait is érinti.",
+    "jegyek": [],
+    "kezikonyv": [
+      "10-ai/koltsegkeret-es-naplo"
+    ],
+    "csomag": "llmlog"
+  },
+  "llmlog-koltseg-kimutatas": {
+    "cim": "AI-költség kimutatás",
+    "terulet": "Boop és AI",
+    "app": "Nem kell",
+    "mit_tud": "Összesítőt, időszakos bontást (funkció, modell), hívás-listát szűrőkkel és egy-egy hívás részleteit adja vissza.",
+    "app_megjegyzes": "A webes admin oldalé volt, ami leállt; Boopban költség-kijelzés nem tervezett.",
+    "jegyek": [
+      "mezo-r36n9.97"
+    ],
+    "kezikonyv": [
+      "10-ai/koltsegkeret-es-naplo"
+    ],
+    "csomag": "llmlog"
+  },
+  "llmlog-ai-vazlat-fogadtatas": {
+    "cim": "AI-vázlatok fogadtatása",
+    "terulet": "Boop és AI",
+    "app": "Nincs még",
+    "mit_tud": "Feljegyzi, hogy egy AI által készített vázlatot elfogadtál, átírtál vagy elvetettél, hogy mérhető legyen, mennyire jók.",
+    "app_megjegyzes": "Az app nem küldi; az eredményt mutató webes admin is leállt.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "llmlog"
+  },
+  "people-emberek-listaja": {
+    "cim": "Emberek listája és kezelése",
+    "terulet": "Boop és AI",
+    "app": "Nincs még",
+    "mit_tud": "Nyilvántartja az életedben fontos embereket: hozzáadás, szerkesztés, törlés, és egy áttekintő lista az említésekkel.",
+    "app_megjegyzes": "Az appban nincs Emberek képernyő, és terv sincs rá.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "people"
+  },
+  "people-emlitesek-felismerese": {
+    "cim": "Említések automatikus felismerése",
+    "terulet": "Boop és AI",
+    "app": "Részben kész",
+    "mit_tud": "A naplóbejegyzésekben, hálanaplóban és az esti zárásban név alapján felismeri, ha valakit megemlítesz, és feljegyzi a szövegrészletet.",
+    "app_megjegyzes": "Az appban írt napló és esti zárás szövegén a háttérben fut, de az eredmény sehol nem látszik.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "people"
+  },
+  "people-kezi-emlites": {
+    "cim": "Említés kézi rögzítése és törlése",
+    "terulet": "Boop és AI",
+    "app": "Nincs még",
+    "mit_tud": "Kézzel is rögzíthetsz egy találkozást vagy említést egy emberről, és törölheted.",
+    "app_megjegyzes": "Az appban nincs rá felület.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "people"
+  },
+  "people-javasolt-szemelyek": {
+    "cim": "Javasolt új személyek jóváhagyása",
+    "terulet": "Boop és AI",
+    "app": "Nincs még",
+    "mit_tud": "Ha valaki gyakran felbukkan, javasolja felvenni, te pedig elfogadod vagy elveted.",
+    "app_megjegyzes": "Az appban nincs rá felület.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "people"
+  },
+  "people-hangulat-iv": {
+    "cim": "Hangulat-ív emberenként",
+    "terulet": "Boop és AI",
+    "app": "Nincs még",
+    "mit_tud": "Kiszámolja, hogyan alakul a hangulatod egy-egy ember említése körül, irányt és magyar indoklást ad.",
+    "app_megjegyzes": "Csak a webes Emberek oldalon látszott.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "people"
+  },
+  "people-tenyek-emberekrol": {
+    "cim": "Tények az emberekről",
+    "terulet": "Boop és AI",
+    "app": "Nincs még",
+    "mit_tud": "A beszélgetésekből tényeket gyűjt a megemlített emberekről; ezek szerkeszthetők, visszavonhatók, ki-be kapcsolhatók, és jelzi az újakat.",
+    "app_megjegyzes": "Boop a beszélgetésben használja őket, de az appban nem lehet megnézni vagy javítani.",
+    "jegyek": [],
+    "kezikonyv": [
+      "10-ai/tenyek-rolad"
+    ],
+    "csomag": "people"
+  },
+  "people-emberek-a-beszelgetesben": {
+    "cim": "Emberek a Boop-beszélgetésben",
+    "terulet": "Boop és AI",
+    "app": "Részben kész",
+    "mit_tud": "A fontos emberek rövid, számított adatait és a róluk szóló tényeket odateszi a beszélgetés elé, így Boop óvatosan utalhat rájuk.",
+    "app_megjegyzes": "A beszélgetés az appban használja; kezelni őket az appból nem lehet.",
+    "jegyek": [],
+    "kezikonyv": [
+      "10-ai/tenyek-rolad"
+    ],
+    "csomag": "people"
+  },
+  "penz-heti-maradek": {
+    "cim": "Heti maradék és napi keret",
+    "terulet": "Pénz",
+    "app": "Kész",
+    "mit_tud": "Kiszámolja a hónap szabad pénzét tíz visszakövethető sorban, ebből a hét keretét, az eddigi költést és hogy ma mennyi jut egy napra.",
+    "app_megjegyzes": "A Költés oldal nagy száma, a „honnan jön ez a szám” levezetés és a Ma oldal három száma ebből jön.",
+    "jegyek": [
+      "mezo-r36n9.102",
+      "mezo-r36n9.103"
+    ],
+    "kezikonyv": [
+      "11-penz/01-adatalap",
+      "11-penz/02-terulet"
+    ],
+    "csomag": "penz"
+  },
+  "penz-kiadas-rogzites": {
+    "cim": "Készpénzes kiadás rögzítése",
+    "terulet": "Pénz",
+    "app": "Kész",
+    "mit_tud": "Felvesz egy kézzel beírt kiadást összeggel, kategóriával és megjegyzéssel, és egy újraküldés sosem duplázza meg.",
+    "app_megjegyzes": "A Kiadás gombbal pár másodperc alatt rögzíthető, net nélkül is — sorba áll és magától elmegy.",
+    "jegyek": [
+      "mezo-r36n9.103"
+    ],
+    "kezikonyv": [
+      "11-penz/02-terulet"
+    ],
+    "csomag": "penz"
+  },
+  "penz-tetelek": {
+    "cim": "Tételek listája, javítása és törlése",
+    "terulet": "Pénz",
+    "app": "Részben kész",
+    "mit_tud": "Havonta listázza a pénzmozgásokat, egy tétel összege, kategóriája, dátuma vagy megjegyzése javítható, egy tétel törölhető.",
+    "app_megjegyzes": "Az app listázza a havi és mai tételeket és javítani tud (kategória), de tételt törölni és bevételt kézzel felvenni nem lehet.",
+    "jegyek": [
+      "mezo-r36n9.103"
+    ],
+    "kezikonyv": [
+      "11-penz/02-terulet"
+    ],
+    "csomag": "penz"
+  },
+  "penz-banki-sms": {
+    "cim": "Banki SMS automatikus átvétele",
+    "terulet": "Pénz",
+    "app": "Kész",
+    "mit_tud": "A telefon parancsikonja továbbküldi a bank SMS-ét; a szerver olcsó AI-jal kiolvassa az összeget, a boltot és a dátumot, és „átnézendő” tételt készít, a kódos és reklám-SMS-eket szöveg nélkül eldobja.",
+    "app_megjegyzes": "Az átvétel a parancsikonon át megy (szándékosan nem az appon), az átnézésre váró tételek az appban jelennek meg.",
+    "jegyek": [
+      "mezo-r36n9.102"
+    ],
+    "kezikonyv": [
+      "11-penz/01-adatalap"
+    ],
+    "csomag": "penz"
+  },
+  "penz-sms-atnezes": {
+    "cim": "Banki tételek átnézése",
+    "terulet": "Pénz",
+    "app": "Kész",
+    "mit_tud": "Megjelöli az átnézésre váró, SMS-ből jött tételeket, és egy jóváhagyással (kategóriával) lezárja őket.",
+    "app_megjegyzes": "A Ma oldal első teendője az átnézés; kategóriát választasz, Rendben, és lekerül a listáról.",
+    "jegyek": [
+      "mezo-r36n9.103"
+    ],
+    "kezikonyv": [
+      "11-penz/02-terulet"
+    ],
+    "csomag": "penz"
+  },
+  "penz-sms-kulcs": {
+    "cim": "A parancsikon saját kulcsa",
+    "terulet": "Pénz",
+    "app": "Nincs még",
+    "mit_tud": "Külön, csak SMS-küldésre jó kulcsot ad a parancsikonnak; új kulcs kérésekor a régi megszűnik, és bármikor visszavonható.",
+    "app_megjegyzes": "Az appban nincs hely kulcsot kérni, listázni vagy visszavonni — ma csak kézzel, a szerveren át lehet.",
+    "jegyek": [],
+    "kezikonyv": [
+      "11-penz/01-adatalap"
+    ],
+    "csomag": "penz"
+  },
+  "penz-szamlak": {
+    "cim": "Számlák kezelése",
+    "terulet": "Pénz",
+    "app": "Részben kész",
+    "mit_tud": "Számlákat vesz fel és ír át (folyószámla, megtakarítás, készpénz, befektetés), kijelöli az alapszámlát és a megtakarítási számlát, és archiválja a már nem használtat.",
+    "app_megjegyzes": "Az app csak egy „Készpénz” számlát tud létrehozni egy érintéssel; átnevezni, archiválni, alap- vagy megtakarítási számlát jelölni nem lehet; épül egy szerveroldali védelem, hogy egy használt számla pénzneme ne változhasson.",
+    "jegyek": [
+      "mezo-r36n9.103",
+      "mezo-r36n9.108"
+    ],
+    "kezikonyv": [
+      "11-penz/01-adatalap",
+      "11-penz/02-terulet"
+    ],
+    "csomag": "penz"
+  },
+  "penz-kategoriak-keretek": {
+    "cim": "Kategóriák és havi keretek",
+    "terulet": "Pénz",
+    "app": "Részben kész",
+    "mit_tud": "15 magyar alapkategóriát hoz létre, és lehet újat felvenni, átnevezni, sorba rendezni, valamint kategóriánként havi keretet adni.",
+    "app_megjegyzes": "Az app mutatja a kategóriánkénti költést és a kereteket, de kategóriát felvenni, átírni vagy keretet beállítani nem lehet.",
+    "jegyek": [
+      "mezo-r36n9.103"
+    ],
+    "kezikonyv": [
+      "11-penz/02-terulet"
+    ],
+    "csomag": "penz"
+  },
+  "penz-ismetlodo": {
+    "cim": "Ismétlődő bevételek és fix kiadások",
+    "terulet": "Pénz",
+    "app": "Nincs még",
+    "mit_tud": "Fizetést, lakbért, előfizetést ismétlődő szabályként tárol (heti, havi, éves), és az esedékes napon magától tétellé alakítja.",
+    "app_megjegyzes": "A számolás már használja, de az appban nincs hely ismétlődő tételt felvenni, átírni vagy szüneteltetni.",
+    "jegyek": [
+      "mezo-r36n9.102"
+    ],
+    "kezikonyv": [
+      "11-penz/01-adatalap"
+    ],
+    "csomag": "penz"
+  },
+  "penz-atvezetes": {
+    "cim": "Átvezetés két számla között",
+    "terulet": "Pénz",
+    "app": "Nincs még",
+    "mit_tud": "Egy összeget az egyik számláról a másikra tesz egy összetartozó tételpárként, amit együtt lehet javítani vagy törölni.",
+    "app_megjegyzes": "Az appban nincs átvezetés gomb.",
+    "jegyek": [],
+    "kezikonyv": [],
+    "csomag": "penz"
+  },
+  "penz-honapzaras": {
+    "cim": "Hónapzárás",
+    "terulet": "Pénz",
+    "app": "Kész",
+    "mit_tud": "A lezáratlan hónapokat a legrégebbivel kezdve zárja, eltárolja a maradékot vagy a hiányt, és a maradékot kérésre átteszi a megtakarítási számlára.",
+    "app_megjegyzes": "Az app felajánlja a legrégebbi lezáratlan hónapot, és te döntöd el, mi legyen a maradékkal; a korábbi zárások listája nem látszik külön.",
+    "jegyek": [
+      "mezo-r36n9.102",
+      "mezo-r36n9.103"
+    ],
+    "kezikonyv": [
+      "11-penz/01-adatalap",
+      "11-penz/02-terulet"
+    ],
+    "csomag": "penz"
+  },
+  "penz-beallitasok": {
+    "cim": "Pénz-beállítások",
+    "terulet": "Pénz",
+    "app": "Részben kész",
+    "mit_tud": "Tárolja a havi megtakarítási célt, a havi gyakorlópénzt, a tartalék hónapjainak számát, az időzónát és hónaponkénti eltéréseket.",
+    "app_megjegyzes": "Az app a megtakarítási célt és a gyakorlópénzt tudja állítani; a tartalék hónapjai és a hónaponkénti eltérés nem állítható.",
+    "jegyek": [
+      "mezo-r36n9.103"
+    ],
+    "kezikonyv": [
+      "11-penz/02-terulet"
+    ],
+    "csomag": "penz"
+  },
+  "penz-mire-gyujtok": {
+    "cim": "Mire gyűjtök — célok és vásárlási tervek",
+    "terulet": "Pénz",
+    "app": "Kész",
+    "mit_tud": "Rövid, sorba rendezett listát vezet arról, mire gyűjtesz: cél vagy tervezett vásárlás, célösszeggel, eddig félretett összeggel, határidővel.",
+    "app_megjegyzes": "A Költés oldalon felvehető, átírható és törölhető, mindegyiknél látszik, hol tartasz.",
+    "jegyek": [
+      "mezo-r36n9.103"
+    ],
+    "kezikonyv": [
+      "11-penz/02-terulet"
+    ],
+    "csomag": "penz"
+  },
+  "penz-deviza": {
+    "cim": "Devizás tételek forintra váltása",
+    "terulet": "Pénz",
+    "app": "Részben kész",
+    "mit_tud": "Euróban, dollárban, fontban vagy frankban vezetett tételeket a napi hivatalos árfolyamon forintra számol, hogy minden összeadható legyen.",
+    "app_megjegyzes": "A szerver számol vele, de az appban csak forintos készpénzszámla hozható létre, devizás számlát felvenni nem lehet.",
+    "jegyek": [
+      "mezo-r36n9.102"
+    ],
+    "kezikonyv": [
+      "11-penz/01-adatalap"
+    ],
+    "csomag": "penz"
+  },
+  "penz-osszeg-or": {
+    "cim": "Kitalált összeg elleni őr",
+    "terulet": "Pénz",
+    "app": "Kész",
+    "mit_tud": "Minden AI által írt pénzes mondatot ellenőriz, és nem engedi tovább, ha olyan forintösszeget említ, amit a számolás nem adott ki.",
+    "app_megjegyzes": "Az app minden Boop-mondata (hírek, javaslatok) már ezen az őrön megy át, külön kezelőfelület nem kell hozzá.",
+    "jegyek": [
+      "mezo-r36n9.102"
+    ],
+    "kezikonyv": [
+      "11-penz/01-adatalap"
+    ],
+    "csomag": "penz"
+  },
+  "penz-portfolio": {
+    "cim": "A vagyonod időtávok szerint",
+    "terulet": "Pénz",
+    "app": "Kész",
+    "mit_tud": "Összesíti a befektetéseidet három rekeszben (1–3 év, 5–10 év, 10+ év), mutatja az előző záróárhoz képesti mozgást, és hogy a hosszú rekesz hány évnyi fix kiadásodat fedezi.",
+    "app_megjegyzes": "A Pénzem oldal teljesen erre épül, a régi árakat is jelzi.",
+    "jegyek": [
+      "mezo-r36n9.104"
+    ],
+    "kezikonyv": [
+      "11-penz/03-portfolio-hirek"
+    ],
+    "csomag": "penz"
+  },
+  "penz-befektetesek": {
+    "cim": "Befektetések és vételek-eladások rögzítése",
+    "terulet": "Pénz",
+    "app": "Kész",
+    "mit_tud": "Felveszi a befektetéseidet, a már megtörtént vételeket és eladásokat, és a legrégebbi tételt fogyasztva számolja a nyereséget vagy veszteséget.",
+    "app_megjegyzes": "A Befektetést rögzítek lapon felvehető, átírható és törölhető befektetés, vétel és eladás.",
+    "jegyek": [
+      "mezo-r36n9.104"
+    ],
+    "kezikonyv": [
+      "11-penz/03-portfolio-hirek"
+    ],
+    "csomag": "penz"
+  },
+  "penz-befektetes-esemenyek": {
+    "cim": "Befektetési események (lejárat, kamatforduló, osztalék)",
+    "terulet": "Pénz",
+    "app": "Kész",
+    "mit_tud": "Tárolja az általad megadott közelgő eseményeket, és idővonalon mutatja, mi jön a következő hónapokban.",
+    "app_megjegyzes": "A Pénzem oldal „ami jön” része és a rögzítő lap kezeli.",
+    "jegyek": [
+      "mezo-r36n9.104"
+    ],
+    "kezikonyv": [
+      "11-penz/03-portfolio-hirek"
+    ],
+    "csomag": "penz"
+  },
+  "penz-arfolyamok": {
+    "cim": "Napi árfolyamok a befektetésekhez",
+    "terulet": "Pénz",
+    "app": "Kész",
+    "mit_tud": "Naponta egyszer behozza a tőzsdei záróárakat egy ingyenes forrásból, biztonságosan szűrt címekről, és jelzi, ha a forrás elérhetetlen.",
+    "app_megjegyzes": "Az app ezekből az árakból mutatja a vagyon értékét; ha régiek, kiírja, mikoriak.",
+    "jegyek": [
+      "mezo-r36n9.104"
+    ],
+    "kezikonyv": [
+      "11-penz/03-portfolio-hirek"
+    ],
+    "csomag": "penz"
+  },
+  "penz-befektetes-szamlahoz": {
+    "cim": "Befektetés összekötése a bankszámlával",
+    "terulet": "Pénz",
+    "app": "Épül",
+    "mit_tud": "Egy rögzített vételt a bankszámlád tételéhez köt, hogy a havi keretben is látsszon, és a banki SMS-ben jött befektetési vásárlást párosítja vele.",
+    "app_megjegyzes": "Ma egy rögzített vétel nem csökkenti a havi keretet; ez a jegy most épül.",
+    "jegyek": [
+      "mezo-r36n9.119"
+    ],
+    "kezikonyv": [
+      "11-penz/03-portfolio-hirek"
+    ],
+    "csomag": "penz"
+  },
+  "penz-napi-hirek": {
+    "cim": "Napi pénzügyi hírösszefoglaló",
+    "terulet": "Pénz",
+    "app": "Kész",
+    "mit_tud": "Naponta kétszer összegyűjti a híreket, csak a te befektetéseidet tartósan érintőket tartja meg, kiszámolja a forinthatást, és Boop egy ellenőrzött mondattal, forrásokkal, ötrészes elemzéssel írja le; kérésre frissíthető.",
+    "app_megjegyzes": "A Ma oldal alján hírkártyák, megnyitható elemzéssel és Frissítés gombbal.",
+    "jegyek": [
+      "mezo-r36n9.104"
+    ],
+    "kezikonyv": [
+      "11-penz/03-portfolio-hirek"
+    ],
+    "csomag": "penz"
+  },
+  "penz-heti-hosszu-tav": {
+    "cim": "Heti áttekintés: mi számít hosszú távon",
+    "terulet": "Pénz",
+    "app": "Épül",
+    "mit_tud": "Egy hét híreiből rekeszenként megmondja, mi az, ami a hosszú távú befektetéseidnél tényleg számít — teendő és értesítés nélkül.",
+    "app_megjegyzes": "Még nincs meg; a jegy most épül.",
+    "jegyek": [
+      "mezo-r36n9.120"
+    ],
+    "kezikonyv": [
+      "11-penz/03-portfolio-hirek",
+      "11-penz/04-gyakorlas-javaslatok"
+    ],
+    "csomag": "penz"
+  },
+  "penz-gyakorlo-kereskedes": {
+    "cim": "Gyakorló kereskedés papíron",
+    "terulet": "Pénz",
+    "app": "Kész",
+    "mit_tud": "Valódi pénz nélküli kereskedést vezet: előbb terv (mit, miért, hol lépsz ki), aztán belépés, zárás címkékkel és hibajellel, és kiszámolja a nyereséget kockázategységben is.",
+    "app_megjegyzes": "A Gyakorlás oldalon a teljes út megvan: új kereskedés, nyitás, zárás, utolsó záróár, visszavonás.",
+    "jegyek": [
+      "mezo-r36n9.105"
+    ],
+    "kezikonyv": [
+      "11-penz/04-gyakorlas-javaslatok"
+    ],
+    "csomag": "penz"
+  },
+  "penz-gyakorlas-keret-visszanezes": {
+    "cim": "Gyakorlási keret és heti visszanézés",
+    "terulet": "Pénz",
+    "app": "Kész",
+    "mit_tud": "Őrzi a havi gyakorlási keretet (alapból 20 000 Ft), nem enged túllépni, és hetente fix szabályokkal megmondja, mi működött, mi volt a leggyakoribb hiba és mennyibe került.",
+    "app_megjegyzes": "A Gyakorlás oldal mutatja a keretet, a heti visszanézést és az „50 kereskedés alatt zaj” jelzést.",
+    "jegyek": [
+      "mezo-r36n9.105"
+    ],
+    "kezikonyv": [
+      "11-penz/04-gyakorlas-javaslatok"
+    ],
+    "csomag": "penz"
+  },
+  "penz-termekjegyzek": {
+    "cim": "Jóváhagyott termékjegyzék",
+    "terulet": "Pénz",
+    "app": "Részben kész",
+    "mit_tud": "Kutatásból induló, díjakkal és forrással ellátott termékjegyzéket tart, amiből Boop javasolhat; a terméket jóváhagyhatod, elutasíthatod, sajátot vehetsz fel, és átírhatod a díjakat.",
+    "app_megjegyzes": "Az appban jóváhagyni és elutasítani lehet; saját terméket felvenni vagy díjat átírni nem.",
+    "jegyek": [
+      "mezo-r36n9.105"
+    ],
+    "kezikonyv": [
+      "11-penz/04-gyakorlas-javaslatok"
+    ],
+    "csomag": "penz"
+  },
+  "penz-felosztas-javaslat": {
+    "cim": "Felosztási javaslat nagyobb összegre",
+    "terulet": "Pénz",
+    "app": "Kész",
+    "mit_tud": "Egy megadott összeget fix szabályokkal időtávonként feloszt (előbb a tartalék), rekeszenként legfeljebb három jóváhagyott terméket kínál költségösszevetéssel, Boop egy ellenőrzött szöveggel indokol; elfogadás után lépésenként kipipálható.",
+    "app_megjegyzes": "A Felosztást kérek / Nagyobb összeg út, az elfogadás saját számokkal és a lépések kipipálása megvan.",
+    "jegyek": [
+      "mezo-r36n9.105"
+    ],
+    "kezikonyv": [
+      "11-penz/04-gyakorlas-javaslatok"
+    ],
+    "csomag": "penz"
+  },
+  "penz-havi-strategia": {
+    "cim": "Havi befektetési stratégia",
+    "terulet": "Pénz",
+    "app": "Kész",
+    "mit_tud": "Kiszámolja, mennyit tudsz havonta befektetni az átlagos bevételeidből és kiadásaidból, és ezt az összeget ugyanúgy feloszthatod időtávonként.",
+    "app_megjegyzes": "A Havi stratégia elérhető az appban; az „ennyit tudsz befektetni” szám a Ma oldalra még csak terv (jegy nélkül).",
+    "jegyek": [
+      "mezo-r36n9.105"
+    ],
+    "kezikonyv": [
+      "11-penz/04-gyakorlas-javaslatok"
+    ],
+    "csomag": "penz"
+  },
+  "penz-javaslat-idegen-termek": {
+    "cim": "Idegen termék kiszűrése Boop javaslataiból",
+    "terulet": "Pénz",
+    "app": "Épül",
+    "mit_tud": "Kiszűri, ha Boop javaslatszövege olyan terméket nevezne meg, ami nincs a jegyzékedben (például egy kriptopénzt vagy egy részvényt).",
+    "app_megjegyzes": "A jegyzékben lévő, de nem felajánlott termékeket már kiszűri; a jegyzéken kívüliek szűrése most épül.",
+    "jegyek": [
+      "mezo-r36n9.121"
+    ],
+    "kezikonyv": [
+      "11-penz/04-gyakorlas-javaslatok"
+    ],
+    "csomag": "penz"
+  },
+  "penz-regi-app-import": {
+    "cim": "Adatok áthozása a régi pénzügyi appból",
+    "terulet": "Pénz",
+    "app": "Nem kell",
+    "mit_tud": "Egyszeri átköltöztetés lett volna a régi pénzügyi appból.",
+    "app_megjegyzes": "Döntés: a régi appot nem használtad, nincs mit áthozni, a Boop Pénz üresen indult.",
+    "jegyek": [
+      "mezo-r36n9.107"
+    ],
+    "kezikonyv": [
+      "11-penz/02-terulet"
+    ],
+    "csomag": "penz"
+  }
+}
