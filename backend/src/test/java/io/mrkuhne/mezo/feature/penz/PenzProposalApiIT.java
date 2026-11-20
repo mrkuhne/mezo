@@ -417,7 +417,13 @@ class PenzProposalApiIT extends ApiIntegrationTest {
     void theCatalogListsApprovesDeclinesAndTakesHisOwnProducts() {
         World w = world("penz catalog");
         HttpHeaders h = w.user().headers();
-        List<PenzProduct> list = getForList("/api/penz/catalog", h, HttpStatus.OK, PenzProduct.class);
+        // the researched seed (PenzCatalogSeed) arrives on the first read as suggestions; the world's own rows follow the order rule
+        List<PenzProduct> all = getForList("/api/penz/catalog", h, HttpStatus.OK, PenzProduct.class);
+        assertThat(all).filteredOn(p -> !p.getName().startsWith("Teszt"))
+            .hasSize(PenzCatalogSeed.SEEDS.size())
+            .allSatisfy(p -> { assertThat(p.getStatus()).isEqualTo(PenzProduct.StatusEnum.SUGGESTED);
+                assertThat(p.getSuggestedBy()).isEqualTo(PenzProduct.SuggestedByEnum.RESEARCH); });
+        List<PenzProduct> list = all.stream().filter(p -> p.getName().startsWith("Teszt")).toList();
         assertThat(list).extracting(PenzProduct::getStatus).containsExactly(
             PenzProduct.StatusEnum.APPROVED, PenzProduct.StatusEnum.APPROVED, PenzProduct.StatusEnum.APPROVED,
             PenzProduct.StatusEnum.APPROVED, PenzProduct.StatusEnum.APPROVED, PenzProduct.StatusEnum.SUGGESTED,
@@ -468,7 +474,8 @@ class PenzProposalApiIT extends ApiIntegrationTest {
             null, "Teszt forrás", "https://pelda.example/seed", today.minusDays(3));
         assertThat(catalogService.seed(u.id(), List.of(seed))).isEqualTo(1);
         assertThat(catalogService.seed(u.id(), List.of(seed))).isZero();
-        List<PenzProduct> list = getForList("/api/penz/catalog", u.headers(), HttpStatus.OK, PenzProduct.class);
+        List<PenzProduct> list = getForList("/api/penz/catalog", u.headers(), HttpStatus.OK, PenzProduct.class)
+            .stream().filter(p -> p.getName().equals("Kutatott Teszt Alap")).toList();
         assertThat(list).singleElement().satisfies(p -> {
             assertThat(p.getStatus()).isEqualTo(PenzProduct.StatusEnum.SUGGESTED);
             assertThat(p.getSuggestedBy()).isEqualTo(PenzProduct.SuggestedByEnum.RESEARCH);
@@ -493,7 +500,10 @@ class PenzProposalApiIT extends ApiIntegrationTest {
         PenzProposal p = lumpSum(a.user().headers(), 1_000_000 * FT);
 
         assertThat(getForList("/api/penz/proposals", b.headers(), HttpStatus.OK, PenzProposal.class)).isEmpty();
-        assertThat(getForList("/api/penz/catalog", b.headers(), HttpStatus.OK, PenzProduct.class)).isEmpty();
+        // b sees only his own copy of the researched seed, never a's products
+        assertThat(getForList("/api/penz/catalog", b.headers(), HttpStatus.OK, PenzProduct.class))
+            .hasSize(PenzCatalogSeed.SEEDS.size())
+            .allSatisfy(x -> assertThat(x.getSuggestedBy()).isEqualTo(PenzProduct.SuggestedByEnum.RESEARCH));
         assertHasRequestError(getForBody("/api/penz/proposals/" + p.getId(), b.headers(), HttpStatus.NOT_FOUND,
             String.class), "PENZ_PROPOSAL_NOT_FOUND");
         assertHasRequestError(postForBody("/api/penz/proposals/" + p.getId() + "/accept",
