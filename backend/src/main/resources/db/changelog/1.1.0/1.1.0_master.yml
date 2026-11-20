@@ -510,3 +510,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202611191900_mezo-r36n9.66_discomfort_index_naming.sql
+  - changeSet:
+      id: "1.1.0:202611201000_mezo-r36n9.103_penz_savings_goal"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202611201000_mezo-r36n9.103_penz_savings_goal.sql

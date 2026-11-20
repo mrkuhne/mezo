@@ -2,13 +2,14 @@
 title: Pénz — the money foundation (Boop Pénz L4)
 type: feature-domain
 status: done
-updated: 2026-11-19
+updated: 2026-11-20
 tags: [backend, boop, penz, data-layer, auth]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/penz
   - api/feature/penz/penz.yml
   - api/feature/penz/penz-sms.yml
   - backend/src/main/resources/db/changelog/1.1.0/script/202611191400_mezo-r36n9.102_penz.sql
+  - backend/src/main/resources/db/changelog/1.1.0/script/202611201000_mezo-r36n9.103_penz_savings_goal.sql
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/PenzSmsLlmAdapter.java
   - backend/src/test/java/io/mrkuhne/mezo/feature/penz
 related: [boop-ios, _platform-api-backend, _platform-auth-security, companion, dayclose]
@@ -18,7 +19,8 @@ related: [boop-ios, _platform-api-backend, _platform-auth-security, companion, d
 
 > Backend feature, no screen yet; its future client is **Boop**'s Pénz area (L5). Backend ✅ done (2026-11-19,
 > `mezo-r36n9.102`, slice **L4 · adatalap**) · iOS: none until L5 (`mezo-r36n9.103`) · web: none (retired, #52).
-> Two API tags: `Penz` (JWT) and `PenzSms` (the bank-SMS ingest, own API-key auth).
+> Two API tags: `Penz` (JWT) and `PenzSms` (the bank-SMS ingest, own API-key auth). L5 (`mezo-r36n9.103`, 2026-11-20)
+> added the **savings goals / purchase plans** backend (*mire gyűjtök*, §4.2, §4.3).
 
 ## 1. Summary
 
@@ -51,6 +53,10 @@ Nothing visible on the phone yet. What the owner can already rely on:
   within seconds, a replay never doubles it, an OTP / marketing SMS is dropped without keeping its text (§3.4).
 - `GET /api/penz/allowance` answers "how much is left this week, and today" with the full derivation — the
   numbers L5's **Költés** page will print.
+- **Savings goals / purchase plans** (*mire gyűjtök*, L5): the owner keeps a short, ordered list of things he
+  saves for — a `goal` (a pot filled over time) or a `purchase` (a planned buy) — each with a HUF target, the
+  amount saved so far (his own running figure, not derived from transactions), an optional due date and note.
+  A phone retry never doubles a goal (`clientRef`); delete is soft.
 - Recurring items appear as transactions on their due date the next time anything reads the money (no cron).
 - Past months close **oldest first**, a leftover optionally moved to the savings-target account.
 
@@ -244,6 +250,7 @@ Contract-first: [`api/feature/penz/penz.yml`](../../api/feature/penz/penz.yml) (
 | `GET /api/penz/transactions?month=` · `POST` · `PUT`/`DELETE …/{id}` · `POST …/{id}/reviewed` | one month newest first (materializes first); idempotent create on `clientRef`; soft delete |
 | `POST /api/penz/transfers` | a transfer pair, idempotent on `clientRef` |
 | `GET`/`POST /api/penz/recurring-rules`, `PUT`/`DELETE …/{id}` | recurring income and fixed costs (delete keeps produced txns) |
+| `GET`/`POST /api/penz/savings-goals`, `PUT`/`DELETE …/{id}` | savings goals / purchase plans (L5): by `position` then creation; create 201, idempotent on `clientRef`, no position = append at the end; update ignores `clientRef`, null position keeps it; soft delete 204 |
 | `GET /api/penz/allowance?date=` | month + week (`perDay`) + the 10 `lines[]` (materializes first) |
 | `GET /api/penz/month-closes` · `GET …/open` · `POST …/{month}` | closed months; open months with the figures a close would store; close (`leftoverAction`) |
 | `POST /api/penz/sms/ingest` | the Shortcut (API key, §3.4) |
@@ -253,7 +260,7 @@ Error codes (both bundles): `PENZ_ACCOUNT_NOT_FOUND`, `PENZ_CATEGORY_NOT_FOUND`,
 `PENZ_TRANSACTION_NOT_FOUND`, `PENZ_RECURRING_RULE_NOT_FOUND`, `PENZ_TRANSFER_SAME_ACCOUNT`, `PENZ_FX_UNAVAILABLE`,
 `PENZ_MONTH_NOT_OVER`, `PENZ_EARLIER_MONTH_OPEN`, `PENZ_MONTH_ALREADY_CLOSED`, `PENZ_LAST_ACTIVE_ACCOUNT`,
 `PENZ_NO_SAVINGS_TARGET_ACCOUNT`, `PENZ_SMS_KEY_NOT_FOUND`, `PENZ_SMS_KEY_INVALID`, `PENZ_SMS_RATE_LIMITED`,
-`PENZ_CURRENCY_MISMATCH`, `PENZ_CLIENT_REF_CONFLICT`.
+`PENZ_CURRENCY_MISMATCH`, `PENZ_CLIENT_REF_CONFLICT`, `PENZ_SAVINGS_GOAL_NOT_FOUND` (L5).
 
 ### 4.3 Tables
 
@@ -270,6 +277,7 @@ One changelog, [`202611191400_mezo-r36n9.102_penz.sql`](../../backend/src/main/r
 | `penz_fx_rate` | **global** rate cache: base, quote, `rate_date` (asked), `published_date`, rate |
 | `penz_sms_message` | sender, text (null when ignored), `text_hash` (unique per owner), received_at, status `parsed|ignored|failed|converted`, reason, the parsed fields, `transaction_id` |
 | `penz_api_key` | name, `key_hash` (SHA-256 hex, unique), `last4`, revoked, `last_used_at` |
+| `penz_savings_goal` | L5, own changelog [`202611201000_mezo-r36n9.103_penz_savings_goal.sql`](../../backend/src/main/resources/db/changelog/1.1.0/script/202611201000_mezo-r36n9.103_penz_savings_goal.sql): name, kind `goal|purchase`, `target_minor` (> 0) and `saved_minor` (≥ 0) HUF minor units, `due_date`, note, position, `client_ref` (unique per owner among live rows) |
 
 All registered in `support/ResetDatabase`; test rows through `PenzPopulator`.
 
@@ -367,8 +375,10 @@ budgets 2, txLogic 2, accountRules 14). Sum of the table's cases: 603.
 - **Rate limiter is in memory** — single replica; a second replica or a restart-sensitive limit needs a shared store.
 - **`CategoryBudgets` is pure and tested but not on the wire** — the allowance contract has no room; L5's Terv screen.
 - **Out of L4:** the one-shot **importer** from the old app (its data is in Base44's cloud; L5 cut-over, bd
-  `mezo-r36n9.107`); **savings goals / purchase plans** (*mire gyűjtök*, L5); holdings, quotes, news (L6);
+  `mezo-r36n9.107`); holdings, quotes, news (L6);
   **invest-buy adoption on SMS** (old `linkSmsToInvestBuy` / `matchInvestTxnForSms`, L6); every iOS screen (L5).
+- **Savings goals shipped in L5 as plain CRUD** (`mezo-r36n9.103`): `saved` is the owner's own figure, not linked to
+  transactions or the savings-target account; the old app's `allocateGoals` / advice (§8.1) stay unported.
 
 ## 10. Key files
 
@@ -378,6 +388,6 @@ budgets 2, txLogic 2, accountRules 14). Sum of the table's cases: 603.
   `…/penz/config/{PenzProperties,PenzSmsSecurityConfig,PenzSmsApiKeyFilter}.java`
 - Pure core: `…/penz/service/money/`, `…/penz/service/engine/`, `…/penz/service/guard/HufAmountGuard.java`,
   `…/penz/service/sms/`
-- Services: `…/penz/service/{PenzAllowanceService,PenzMonthCloseService,PenzRecurringMaterializer,PenzFxService,FrankfurterClient,PenzTransactionService,PenzAccountService,PenzSmsIngestService,PenzSmsKeyService,PenzSmsRateLimiter,PenzSmsStore}.java`
+- Services: `…/penz/service/{PenzAllowanceService,PenzMonthCloseService,PenzRecurringMaterializer,PenzFxService,FrankfurterClient,PenzTransactionService,PenzAccountService,PenzSmsIngestService,PenzSmsKeyService,PenzSmsRateLimiter,PenzSmsStore,PenzSavingsGoalService}.java`
 - LLM adapter: `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/PenzSmsLlmAdapter.java`
 - Tests: `backend/src/test/java/io/mrkuhne/mezo/feature/penz/`, `backend/src/test/resources/penz/`
