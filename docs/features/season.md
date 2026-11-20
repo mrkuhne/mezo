@@ -2,8 +2,8 @@
 title: Évad — the season (Boop B6)
 type: feature-domain
 status: in-progress
-updated: 2026-11-20
-tags: [backend, boop, season, goal, train, sleep, b6-evad]
+updated: 2026-11-21
+tags: [backend, boop, season, goal, train, sleep, fuel, companion, b6-evad]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/season
   - api/feature/season/season.yml
@@ -12,16 +12,19 @@ key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/GoalPrescriptionCalculator.java
   - backend/src/test/java/io/mrkuhne/mezo/feature/season
   - ios/BoopKit/Sources/BoopCore/Evad
-related: [boop-ios, goal-engine, train, fuel, _platform-api-backend]
+related: [boop-ios, goal-engine, train, fuel, companion, _platform-api-backend]
 ---
 
 # Évad — the season (Boop B6) — Feature Documentation
 
-> Boop's **Évad** place (the spine's second place, was Terv) and its backend feature `season`. **S1 of 4 shipped
-> (2026-11-20, `mezo-r36n9.16`)**: the season aggregate, the no-persist live preview with a fingerprinted accept, the
-> lifecycle, the mesocycle gate, the overview read model and the iPhone page (Évad tab, Módosítás, Szabályok, Új évad,
-> empty state). 🟣 S2 adherence + insights + season rules in every AI context + the wall · 🟣 S3 weekly menu + shopping
-> list · 🟣 S4 experiments. Backend ✅ (S1) · iOS ✅ (S1) · web: none (retired, #52).
+> Boop's **Évad** place (the spine's second place, was Terv) and its backend feature `season`. **S2 of 4 shipped
+> (2026-11-21, `mezo-r36n9.16`)**. S1 (2026-11-20): the season aggregate, the no-persist live preview with a
+> fingerprinted accept, the lifecycle, the mesocycle gate, the overview read model and the iPhone page (Évad tab,
+> Módosítás, Szabályok, Új évad, empty state). S2 (2026-11-21): **adherence as the single server source**
+> (`getAdherence`, read by the Évad tab *and* the Étel Hét tab), gated **insights**, the `sleep_food` link number, the
+> season's rules as **`[Évad]` lines in every AI context** (chat snapshot, morning brief, meal coach) + the
+> **`get_season`** tool, and the **`evad` wall source** on Ma. 🟣 S3 weekly menu + shopping list · 🟣 S4 experiments.
+> Backend ✅ (S1–S2) · iOS ✅ (S1–S2) · web: none (retired, #52).
 
 ## 1. Summary
 
@@ -38,7 +41,7 @@ the preview depended on moved since (the fingerprint). **No training block start
 
 Driving docs: spec [`2026-11-20-boop-evad-design.md`](../superpowers/specs/2026-11-20-boop-evad-design.md) §5 (owner-
 approved with the spike and the plan, 2026-11-20), plan [`2026-11-20-boop-evad.md`](../superpowers/plans/2026-11-20-boop-evad.md)
-(S1 = Tasks 1–11). Decisions #61–#64 (`docs/boop-handbook/_dontesek.json`).
+(S1 = Tasks 1–11, S2 = Tasks 12–16). Decisions #61–#64 (`docs/boop-handbook/_dontesek.json`).
 
 ## 2. User-facing behavior
 
@@ -48,8 +51,15 @@ The phone side lives in [`boop-ios.md`](boop-ios.md) §2 *Évad*; in short:
   the overview's `head.status`), **Mi mire hat** (the four pillars Edzés · Étel · Alvás · Súly with the computed
   links; a tap lights one), **Súly** (trend + target line, or a ±1 kg band for a maintain season), **Az évad terve**
   (block + sport days, training/rest-day kcal + protein, sleep need + bedtime, target + date), **Következik** (deload
-  weeks of the block, the season end), actions *Módosítás* · *Új évad*. *Hogy megy* and *Amit Boop észrevett* render
-  only when the overview carries them (S2).
+  weeks of the block, the season end), actions *Módosítás* · *Új évad*.
+- **Hogy megy** (S2) — the last seven days ending yesterday as plain counts, never a score: „4 / 5 napon belefértél a
+  keretbe", „3 / 4 edzés megvolt", „4 / 7 éjjel aludtál eleget" (for example). A fact with nothing to count is left out
+  (never „0 / 0"); a line under them says how many kímélő days were left out („1 kímélő nap nem számít bele. Ez nem
+  pontszám, csak összesítés."). The block is absent when the overview's `adherence` is null.
+- **Amit Boop észrevett** (S2) — at most three insights, each only past its data gate (§3.8).
+- **Mi mire hat → Alvás → Étel** (S2) — the `sleep_food` link now carries the server's number („rövid éjszaka után
+  +280 kcal", for example); without a computed effect the link says it has no number.
+- **Ma wall** (S2) — the `evad` source adds at most two cards (§3.10).
 - **Menü · Lista · Hatás** tabs show the "not live yet" card until S3 / S4.
 - **Módosítás** — sessions per week, sport days, weekly pace → *Ennyi változna* (Most | Utána: Edzésnapon,
   Pihenőnapon or „nincs pihenőnap", Szénhidrát edzésnapon, **Heti összesen**, Alvásigény, Lefekvés, Célba érsz / A
@@ -68,21 +78,31 @@ EvadPage → EvadStore (ServerCache "evad/overview") → EvadClient (RawJSONClie
       ├─ SeasonOverviewService      GET  /api/seasons/active/overview   (read-only)
       ├─ SeasonPreviewService       POST …/preview, …/draft/preview      (read-only, persists nothing)
       ├─ SeasonService              create / activate / apply / close / putRules  (the only writers)
-      └─ FirstSeasonAssembler       GET  /api/seasons/draft              (read-only)
+      ├─ FirstSeasonAssembler       GET  /api/seasons/draft              (read-only)
+      └─ AdherenceService (S2)      GET  /api/seasons/adherence?from&to  (read-only, with or without a season)
+  overview (S2) also reads: AdherenceService.lastWeek, SeasonInsights.compute (insights + sleep_food number)
   ports (season-owned, adapters in feature/season/service):
       SeasonGoalPort    → SeasonGoalAdapter    → GoalService, GoalPrescriptionCalculator (draft overload),
                                                  DayTargetProjector, GoalFeasibilityService, GoalPlanLinkService
       SeasonTrainPort   → SeasonTrainAdapter   → gym/sport schedule services, WeeklyScheduledActivityService
                                                  (draft EAT), MesoTemplateService (start a block)
       SeasonSleepPort   → SeasonSleepAdapter   → sleep_goal repository
-      SeasonMetricsPort → SeasonMetricsAdapter → weight trend, weigh-ins, sleep_log, recipe count
+      SeasonMetricsPort → SeasonMetricsAdapter → weight trend, weigh-ins, sleep_log (+ S2 nightly minutes), recipe count
+      SeasonMealPort    → SeasonMealAdapter    → FuelDayService.getWeek (S2: the very rollup the Étel Hét tab renders)
+      SeasonTrainPort  (S2 additions)          → planned / done / excused session days (slots, run windows, sessions,
+                                                 PlannedSkipService)
+      SeasonGoalPort   (S2 addition)           → learnedExpenditure (the goal's tdee_bootstrap, learned base only)
   train → season:  SeasonGatePort (train-owned) ← SeasonGateAdapter
+  companion / boop / meal → season (S2): each feature's own SeasonContextPort ← SeasonContextAdapter
+                                          → SeasonContextRenderer (render = rules, overview = standing)
 ```
 
 **Why the adapters live in `season`, not in the owning features.** The season sits *above* goal / train / biometrics
 in the feature graph and also implements train's `SeasonGatePort`; a goal- or train-side adapter would close a
-goal → season → goal (or train → season → train) cycle. Keeping all four adapters season-side adds no new feature
-cycle (ArchUnit store unchanged apart from the season's own edges).
+goal → season → goal (or train → season → train) cycle. Keeping all the adapters season-side adds no new feature
+cycle (ArchUnit store unchanged apart from the season's own edges). S2's `SeasonContextAdapter` follows the same rule:
+it implements the three consumer-owned `SeasonContextPort` interfaces (companion, boop, meal), so none of those
+features depends on `season`.
 
 ### 3.1 The live preview (spec §5.3)
 
@@ -194,12 +214,110 @@ values + six links: `train_food` = trainDayKcal − restDayKcal or null without 
 `food_weight` = kgPerWeek; `sleep_food` / `food_train` / `sleep_train` are null until their data gate exists — never
 an invented number), `weight` (trend series since the season start, a weekly projection to the season end that stops
 at the target and stays flat, trend / target / band / pace), `pillars` (block, food incl. allowed / total recipes and
-the NOVA max, sleep incl. 7-day average, weight), `adherence` (**null until S2**), `insights` (**empty until S2**),
-`upcoming` (deload weeks from the block's phase curve, the season end).
+the NOVA max, sleep incl. 7-day average, weight), `adherence` (S2: `AdherenceService.lastWeek` — the seven days
+ending yesterday; **null only when nothing at all could be judged** and no kímélő day was left out), `insights` (S2:
+`SeasonInsights`, §3.8), `upcoming` (deload weeks from the block's phase curve, the season end). Since S2 the
+`sleep_food` link carries the short-night intake difference when its gate passes (else still null).
 
 Head status: `no_data` with fewer than 4 weigh-in days in the last 21 (or no trend); maintain → `in_band` /
 `out_of_band` by the latest trend point; cut/bulk compare the engine's 14-day trend rate with the planned rate —
 < 50 % (or the wrong way) `slower`, > 150 % `faster`, else `on_course`.
+
+### 3.7 Adherence — the single source of day judgement (S2, spec §5.6)
+
+`AdherenceService.range(owner, from, to)` (`GET /api/seasons/adherence`) judges every day, **with or without a
+season** (without one the food budget is simply the goal's served target). The food side reads
+`SeasonMealPort.foodDays` → `FuelDayService.getWeek` — the same rollup the Étel Hét tab renders, so target, consumed
+kcal and the kímélő mark are the same numbers on both surfaces. Per day:
+
+- **judged** (the food side counts) = `date < today` **and** no fuel recovery mode that day (any mode — GUIDANCE,
+  ESTIMATE or MAINTENANCE — counts as kímélő) **and** consumed kcal > 0. This is exactly the Étel Hét tab's own rule,
+  which the phone keeps as its offline fallback.
+- **foodInBand** = judged and |kcal − target| ≤ **10 %** of the day's served target — symmetric. (The Hét tab's amber
+  warning pill still fires only **over 110 %**; the band is the summary's notion, the pill is a different signal.)
+- **sessionPlanned** = a weekly gym / sport slot on that weekday, or a `run` window of the running block that day
+  (`WorkoutWindowQueryService`), or a reasoned skip that day — **one flag per day**. **sessionDone** = a completed
+  workout instance, a sport session or a run log that date; null when nothing was planned, the session was skipped with
+  a reason, the day is kímélő, or it is today or later.
+- **sleepOk** = the night's minutes (`sleep_log`, the night ending that morning) ≥ **need − 15 min**; the need is the
+  active season's `sleep_need_min`, else his sleep goal **only when set** — null when neither exists (never a default).
+  A range ending today never judges today's night (the night is not over until the day is judged).
+- **excused** = a **kímélő day only** (`excuse: kimelo`): it leaves **every** count of the summary (food, sessions and
+  nights) and is counted in `excusedDays`. A reasoned gym / sport / run skip (`excuse: skip`, `excused: false`)
+  excuses **only the session** (`sessionDone` null, out of `sessionsPlanned`); that day's food and night still count.
+
+Summary = `foodInBand / foodJudged`, `sessionsDone / sessionsPlanned`, `nightsOk / nightsJudged`, `excusedDays`.
+Range: inclusive, `to ≥ from`, **at most 62 days**, else 400 `VALIDATION_INVALID_VALUE` (field `to`).
+`lastWeek(owner, today)` = the seven days ending yesterday, empty when nothing at all could be judged.
+
+**Known limitations:** (1) planned sessions are read from **today's** weekly slots (and the running block's run
+windows), not from what the schedule was on that day — a schedule change re-labels past days; (2) one flag per day —
+gym and sport planned on the same day count as **one** planned session (and one done).
+
+### 3.8 Insights — „Amit Boop észrevett" (S2, spec §5.6)
+
+`SeasonInsights.compute` returns at most three, each present only past its data gate, never a placeholder:
+
+1. **`learned_expenditure`** — when the season goal's engine serves a **learned** base (`tdee_bootstrap.learned`)
+   and it is at least **50 kcal** away from the planned (formula) expenditure (both rounded to 10). Title „Kevesebbet
+   / Többet égetsz, mint gondoltuk"; body „A terv napi X kcal-lal számolt, de a mérleged és az étkezéseid alapján
+   inkább Y körül égetsz." The spike's follow-up sentence about re-fitting the budget on Monday is **dropped** — that
+   weekly proposal is not built.
+2. **`short_night_intake`** — nights under 7 h vs the rest, paired with that day's intake over the last **60 days**
+   ending yesterday (judged days only, via `AdherenceService.days`); gate = `EffectLinkCalculator.compute` present
+   with |Cliff's delta| ≥ `SMALL` and a non-zero mean difference rounded to 10 kcal. Title „Rossz alvás után
+   többet / kevesebbet eszel"; body „Ha 7 óránál kevesebbet alszol, másnap átlagosan N kcal-lal többet eszel." +
+   „Vagyis a jobb alvás is segít fogyni." only for a cut season with a positive difference. The same number is the
+   map's `sleep_food` link value.
+3. **`guard`** — „Erre figyelek": the season's current preview warnings (strength, cut pace, muscles under their
+   floor), joined, in the preview's own Hungarian words.
+
+Without an active season the list is empty.
+
+### 3.9 The season in every AI context (S2, spec §5.10)
+
+`SeasonContextRenderer` renders Hungarian lines prefixed **`[Évad] `**:
+
+- **`render(owner, today)`** (the rules) — title + week („Őszi fogyás · 7. hét / 12"), goal + target + date + weekly
+  pace (maintain: the band), the week's gym / sport days, training / rest-day kcal + protein, the allowed-recipe rule
+  (only with allowed recipes), the NOVA rule (**omitted when the max is 4** — NOVA 4 allows everything), sleep need +
+  bedtime. Every number is the engine's for the season as it stands.
+- The season **title is whitespace-collapsed and bracket-stripped** before it goes into a prompt, so a typed title
+  cannot forge another `[…]` block.
+- **`overview(owner, today)`** (the standing) — week + trajectory, the head status in words, last week's adherence
+  (food in band / judged days, sessions done / planned, nights ok / judged, kímélő days left out), one „Észrevétel:"
+  line per insight.
+
+**Never throws:** without an active season it returns `""`; with no body profile the engine cannot compute, so the
+number lines are **left out** (never guessed) and the overview says only the week; any failure logs and renders `""`
+— a context renderer must not break a chat turn. Consumers, each through its own `SeasonContextPort`:
+
+| Consumer | Where | What |
+|---|---|---|
+| Chat snapshot | `ContextSnapshotAssembler` — **both** variants, right after the goal block | `render` |
+| Morning brief | `BoopDayAssembler` → `BoopDay.seasonRules` → `BoopPrompts` (after *[Lefekvési cél]*) | `render` |
+| Meal coach | `MealCoachContextReader.PersonContext.seasonRules` → `MealCoachPrompt` („AZ ÉVAD SZABÁLYAI …" block; absent without a season, never a „nincs adat" line) | `render` |
+| `get_season` tool | companion `SeasonTools` — `scope=overview` (default) → `overview`, `scope=rules` → `render`; „Évad: nincs aktív évad" without one | both |
+
+`get_season` scopes `menu` / `experiment` arrive with S3 / S4. **Cost:** while a season is active, every chat turn,
+morning brief and meal-coach call runs one read-only season computation (the engine's preview for the season as it
+stands); no LLM call is added, and without a season the cost is one indexed lookup.
+
+### 3.10 The wall source (S2, spec §5.11)
+
+The phone's `evadCandidates(overview, now:)` (`BoopCore/Evad/EvadWall.swift`, area `WallSources.evad`) turns the
+overview the Évad store already holds into wall candidates — the wall engine chooses; nothing here is `.expires`, so
+nothing rings (decision #35):
+
+- **`.improves`** — the `learned_expenditure` insight as a proposal, **at most once a week** (the candidate id is keyed
+  on the ISO week, so a settled card stays settled until next week): text = the insight's title, sub „Megmutatom, mi
+  változna, mielőtt bármi változik.", primary **„Átnézem"** → opens Évad → **Módosítás** (`evadWallOpens` →
+  `EvadStore.pendingSub`), *miért?* = the insight's body. **Rank 0.8** — beats the food tip (0.7), not a session
+  within two hours (0.9).
+- **`.happened`** — the season ends within **7 days** (today included): „*N nap múlva* véget ér az évad" / „*Ma* véget
+  ér az évad", *Megnézem* → the Évad page.
+
+No season (nil overview), no candidates. The Ma wall loads the overview once (cached offline).
 
 ## 4. Data model & API
 
@@ -218,6 +336,7 @@ Contract fragment [`api/feature/season/season.yml`](../../api/feature/season/sea
 | `closeSeason` | POST `/api/seasons/{id}/close` | status, summary, sleep base back | |
 | `previewSeason` | POST `/api/seasons/{id}/preview` | — | `{before, after, todo, warnings, fingerprint}` |
 | `putSeasonRules` | PUT `/api/seasons/{id}/rules` | rule columns | no preview |
+| `getAdherence` (S2) | GET `/api/seasons/adherence?from&to` | — | `SeasonAdherenceResponse {days[SeasonAdherenceDay], summary SeasonAdherence}`; with or without a season; 400 `VALIDATION_INVALID_VALUE` when `to < from` or > 62 days (§3.7) |
 
 Error codes (`messages_hu/en`): `SEASON_REQUIRED`, `SEASON_PREVIEW_STALE`, `SEASON_NOT_EDITABLE`,
 `SEASON_PROFILE_REQUIRED`, `SEASON_BLOCK_DAYS_LOCKED`, and `SEASON_ACTIVE_EXISTS` (reserved, not thrown — §3.3). Ownership always from the principal;
@@ -231,7 +350,7 @@ another owner's id is 404.
 | `season_allowed_recipe` | (season_id, recipe_id) — replaced as a whole on accept; the S3 menu draws only from these |
 | `season_revision` | one row per accepted change: `draft`, `before` / `after` `SeasonNumbers` snapshots |
 
-Entities `SeasonEntity`, `SeasonAllowedRecipeEntity`, `SeasonRevisionEntity`; typed jsonb records `SeasonDraftJson`,
+S2 adds no table: adherence and insights are computed on read. Entities `SeasonEntity`, `SeasonAllowedRecipeEntity`, `SeasonRevisionEntity`; typed jsonb records `SeasonDraftJson`,
 `SeasonNumbersJson`. Mapper `SeasonMapper`. Config record `SeasonProperties` (`mezo.season.*`).
 
 ## 5. Integrations
@@ -248,16 +367,24 @@ Entities `SeasonEntity`, `SeasonAllowedRecipeEntity`, `SeasonRevisionEntity`; ty
   count, average sleep, recipe count.
 - **← fuel** (indirect): the day targets Étel serves are the goal engine's; the season changes them only by writing the
   goal and the slots.
-- **← Boop iOS**: `EvadClient` / `EvadStore` (§2, [`boop-ios.md`](boop-ios.md)).
-- S2–S4 add: adherence (Étel reads it), `SeasonContextRenderer` into chat / morning brief / meal coach, the `evad` wall
-  source, menu / shopping / experiments.
+- **→ fuel** (S2, `SeasonMealPort` → `FuelDayService.getWeek`): adherence's food side; **← Étel Hét** reads
+  `getAdherence` for its judged / kímélő flags ([`boop-ios.md`](boop-ios.md), [`fuel.md`](fuel.md)).
+- **→ train** (S2): planned / done / excused session days (`PlannedSkipService.excusedDates`, `WorkoutWindowQueryService`).
+- **→ companion reflection** (S2): `EffectLinkCalculator` for the short-night insight.
+- **companion / boop / meal → season** (S2): `SeasonContextPort` (one per consumer) ← `SeasonContextAdapter` (§3.9) —
+  chat snapshot, `get_season`, morning brief, meal coach ([`companion.md`](companion.md), [`fuel.md`](fuel.md)).
+- **← Boop iOS**: `EvadClient` / `EvadStore` (§2, [`boop-ios.md`](boop-ios.md)); the Ma wall's `evad` source (§3.10).
+- S3–S4 add: menu / shopping / experiments.
 
 ## 6. How to use it (consume)
 
 From another backend feature, do not read `season` tables: add a consumer-owned port in your feature and let the
 season supply the adapter (the `SeasonGatePort` pattern), or read the season's effects where they already land (goal,
 slots, `sleep_goal`). On the phone, read `EvadStore.overview` (fresh or cached, `offline` + `ageText`), and treat
-`empty` as "no season" — never as a failure.
+`empty` as "no season" — never as a failure. For a day's judgement anywhere (a new surface, a new AI line) call
+`AdherenceService` / `getAdherence` — never re-derive „judged" or „in band" locally (the Étel Hét tab's local rule is
+only the offline fallback). An AI context that should know the season adds its own `SeasonContextPort` and lets
+`SeasonContextAdapter` implement it.
 
 ## 7. How to extend it
 
@@ -285,14 +412,27 @@ Backend (`./mvnw test -Dtest='Season*IT,Season*Test,MesocycleGateIT,GoalPrescrip
 - `MesocycleGateIT` (gate on) — template start without season 409, planned season in 5 days passes, too far ahead
   does not, activating a planned block without season 409, a running block keeps running, activating a season starts
   its template block through the gate.
-- `SeasonApiIT` (full HTTP flow, incoherent live goal still activates, another owner 404), `SeasonPortsIT`,
+- `AdherenceServiceIT` (S2) — kímélő day excused, a reasoned skip excuses only the session (food and night still count), a completed workout or sport
+  session counts, no season still judges food against the goal, today and unlogged days not judged, the ±10 % band,
+  sleepOk uses the season's need, the range validated, lastWeek empty when nothing could be judged.
+- `SeasonInsightsIT` (S2) — no learned insight before learning, the short-night insight needs an effect and a
+  difference, at most three, none without an active season.
+- `SeasonContextRendererTest` (S2) — empty without a season, NOVA + allowed-recipe rules, no recipe rule without
+  allowed recipes, the overview says where the season stands; `ContextSnapshotSeasonIT` (the block appears once),
+  `SeasonToolsRenderIT` (no season says so, `rules` scope vs the `overview` default), `CompanionToolRegistryIT`
+  (`get_season` registered), `BoopPromptsTest`, `MealCoachPromptTest` (the season block present / absent).
+- `SeasonApiIT` (full HTTP flow incl. `getAdherence` and its 400, incoherent live goal still activates, another owner 404), `SeasonPortsIT`,
   `SeasonRepositoryIT` (one-active index, planned coexist, allowed recipes), `SeasonTodoRulesTest`,
   `SleepNeedRuleTest`, `GoalPrescriptionDraftIT`, `WeeklyScheduledActivityDraftTest`.
 
 iOS (`BoopKit-Package`): `EvadClientTests` (contract paths, lenient decode incl. `weekKcal`, 409 mapping, refusal
 copy), `EvadStoreTests` (cache fallback, offline without cache, 404 = empty, start creates + activates once on retry),
 `EvadLogicTests` (verdicts, map lines never inventing a number, Hungarian formatting, no-rest-day text, gym stepper
-avoids sport days, accept only for the previewed draft, gym days locked while a block runs, the weekly-total row).
+avoids sport days, accept only for the previewed draft, gym days locked while a block runs, the weekly-total row; S2:
+Hogy megy facts leave out what has nothing to count, the kímélő-days line, the `sleep_food` line from the server number),
+`EvadWallTests` (S2: no candidates without a season, season end is `.happened`, the learned insight is `.improves`),
+`EvadClientTests` (S2: the adherence path). App `EtelHetTests` (S2): server days give the same week as the local rule,
+the server's kímélő day and judged flag win, a day the server did not answer keeps the local rule.
 
 ## 9. Decisions, gotchas & deferred
 
@@ -307,8 +447,19 @@ avoids sport days, accept only for the previewed draft, gym days locked while a 
   `mezo-r36n9.124`.
 - **Gate off in tests**: a new block-starting IT needs no season; a test of the gate must opt in like `MesocycleGateIT`.
 - **Closing restores the sleep base** only when the sleep goal still holds the season's value.
-- Deferred: S2 adherence (`adherence` null) and insights (empty), the season context renderer + `get_season` tool, the
-  wall source; S3 menu + shopping list (Menü / Lista "not live yet"); S4 experiments (Hatás "not live yet");
+- **One judgement, one place (S2):** „judged" and „in band" are computed only in `AdherenceService`; the Étel Hét tab
+  takes the server's flags per day and keeps its own identical rule only for days the server did not answer
+  (offline, an older server). The band is symmetric ±10 %, while the Hét tab's amber pill stays „over 110 %".
+- **Planned sessions come from today's schedule** (§3.7) — a schedule change re-labels past days. Fixing it needs a
+  dated schedule history; not built.
+- **Kímélő excuses the day, a skip excuses the session:** only a kímélő day leaves every count (and `excusedDays`); a
+  reasoned skip takes just that day's session out — its food and night are still judged (owner review, 2026-11-21).
+- **One planned session per day** (§3.7): gym + sport on the same day are one flag, so a two-session day counts once.
+- **The renderer never throws** and leaves out what it cannot compute; adding a line must keep that (a context
+  failure would break every chat turn).
+- **Per-turn cost** of the `[Évad]` block (§3.9): one read-only engine computation per chat turn / brief / coach call
+  while a season is active.
+- Deferred: S3 menu + shopping list (Menü / Lista "not live yet"); S4 experiments (Hatás "not live yet");
   `mezo-r36n9.123` — the *Korábbi évadok* page and the current weight in Új évad step 1.
 
 ## 10. Key files
@@ -316,16 +467,21 @@ avoids sport days, accept only for the previewed draft, gym days locked while a 
 - **API:** `api/feature/season/season.yml`, `api/generate/merge.yml`.
 - **Backend:** `backend/src/main/java/io/mrkuhne/mezo/feature/season/{controller,service,port,entity,repository,mapper,config}/` —
   `SeasonService`, `SeasonPreviewService`, `SeasonOverviewService`, `SeasonFingerprint`, `SleepNeedRule`,
-  `SeasonTodoRules`, `SeasonDraftMath`, `FirstSeasonAssembler`, `Season{Goal,Train,Sleep,Metrics,Gate}Adapter`.
+  `SeasonTodoRules`, `SeasonDraftMath`, `FirstSeasonAssembler`, `Season{Goal,Train,Sleep,Metrics,Gate,Meal}Adapter`;
+  S2: `AdherenceService`, `SeasonInsights`, `SeasonContextRenderer`, `SeasonContextAdapter`, `port/SeasonMealPort`.
 - **Cross-feature:** `feature/train/port/SeasonGatePort.java`, `feature/train/service/TrainService.java`
   (`requireSeason`), `feature/train/service/WeeklyScheduledActivityService.java` (draft EAT),
-  `feature/goal/engine/service/{GoalPrescriptionCalculator,GoalProjectionService}.java` (draft overloads).
+  `feature/goal/engine/service/{GoalPrescriptionCalculator,GoalProjectionService}.java` (draft overloads);
+  S2: `feature/{companion,boop,meal}/port/SeasonContextPort.java`, `feature/companion/tools/SeasonTools.java`,
+  `feature/companion/service/ContextSnapshotAssembler.java`, `feature/boop/service/{BoopDay,BoopDayAssembler,BoopPrompts}.java`,
+  `feature/meal/service/{MealCoachContextReader,MealCoachPrompt}.java`.
 - **DB / config:** `backend/src/main/resources/db/changelog/1.1.0/script/202611211000_mezo-r36n9.16_season.sql`,
   `application.yml` (`mezo.season.*`), `src/test/resources/application.properties` (gate off),
   `messages_hu/en.properties` (`SEASON_*`), `src/test/java/io/mrkuhne/mezo/support/ResetDatabase.java`.
 - **Tests:** `backend/src/test/java/io/mrkuhne/mezo/feature/season/*`, `feature/goal/GoalPrescriptionDraftIT.java`,
   `feature/train/WeeklyScheduledActivityDraftTest.java`.
-- **iOS:** `ios/BoopKit/Sources/BoopCore/Evad/{EvadClient,EvadStore,EvadWire,EvadLogic}.swift`,
+- **iOS:** `ios/BoopKit/Sources/BoopCore/Evad/{EvadClient,EvadStore,EvadWire,EvadLogic,EvadWall}.swift`,
+  `ios/Boop/Etel/{EtelHet,EtelRoom}.swift` (S2: server adherence), `ios/Boop/Nap/MaWall.swift` (S2: the `evad` source),
   `ios/Boop/Evad/{EvadPage,EvadOverviewTab,EvadSystemMap,EvadWhatIf,EvadRules,EvadNewSeason,EvadPreview}.swift`.
 - **Docs:** spec `docs/superpowers/specs/2026-11-20-boop-evad-design.md`, plan
   `docs/superpowers/plans/2026-11-20-boop-evad.md`, handbook `docs/boop-handbook/04-terv/`.
