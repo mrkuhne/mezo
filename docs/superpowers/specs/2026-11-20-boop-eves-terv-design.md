@@ -30,6 +30,8 @@ near-zero consolidation. A machine that builds *and checks* every block fixes th
    map → S4 following it.
 6. **A new block attaches to the active season** (not "every block a new season").
 7. **The year ends with a 2-week light maintenance block** (not a free week, not the ATLAS 4 near-zero weeks).
+8. **Tier budget:** the time budget limits how many groups can be Építés/Hangsúly, and at most 2 are Hangsúly
+   (not fixed counts, not warnings only).
 
 My calls (stated to the owner, not objected to — confirm at the spec OK):
 - **No experience-level question.** Single user, trained; the engine's one (RP intermediate) landmark table stays.
@@ -126,7 +128,18 @@ trip, no LLM cost per candidate, ranking stays on the server.
 6. **Recovery spacing hint.** `DayEvaluation`/`MuscleEvaluation` flag a group trained with hard sets on two
    consecutive calendar days (core/mobility exempt) — a hint, never a block.
 
-7. **The builder** renders: the minutes per day (now with rest), the per-muscle *why* sheet, the consecutive-day hint.
+7. **Tier budget (owner decision 2026-11-20, „Időkeret + legfeljebb 2 Hangsúly”).** The evaluation gains
+   `budget {capacitySets, usedSets, emphasizeCount, emphasizeMax}`: `capacitySets` = how many working sets fit in the
+   training days × `sessionMinutesTarget` under minutes model v2; `usedSets` = the plan's **peak (heaviest loading)
+   week** total for the chosen tiers (the ramp grows Építés/Hangsúly, so the peak week must fit, not week 1);
+   `emphasizeMax` = config `mezo.volume.bands.emphasize-max: 2` (book PDF 458–490 prioritisation; RP's warning
+   against many priority muscles). The phone shows a „Heti keret” bar and **disables raising a tier** that would
+   exceed the budget or the Hangsúly cap, with the reason; lowering is always allowed. Applies to the new-block
+   intake **and** the running block's builder (its minutes pills supply the target). The server also rejects a
+   generate/candidates request over the Hangsúly cap (400) — the budget itself is advisory on the server (a plan
+   edited by hand may exceed it; the evaluator flags it).
+
+8. **The builder** renders: the minutes per day (now with rest), the per-muscle *why* sheet, the consecutive-day hint.
 
 ### S2 — a new block on the phone
 
