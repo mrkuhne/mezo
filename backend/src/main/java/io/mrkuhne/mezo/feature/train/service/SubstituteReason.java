@@ -7,13 +7,17 @@ import java.util.List;
  * Renders a suggestion's {@link Signal}s into one Hungarian sentence (spec 2026-11-17 §6.2 step 4).
  * Pure, fixed phrases: never "legjobb", never a number, never an exercise or coach name. Sentence =
  * role phrase + „, " + second phrase + „." ({@link Signal#MILD_BEFORE} joins with „; "), capitalised
- * once; a custom exercise always reads the fixed {@link #CUSTOM_LINE}.
+ * once; a custom exercise always reads the fixed {@link #CUSTOM_LINE}. The block day editor's add has no outgoing
+ * exercise, so {@link #addSentence} drops the role phrase (mezo-r36n9.127).
  */
 public final class SubstituteReason {
 
     private SubstituteReason() {}
 
     static final String CUSTOM_LINE = "Saját gyakorlat — erről még keveset tudok.";
+
+    /** An add with nothing but the role signal: neutral, it compares with nothing. */
+    static final String ADD_LINE = "Illik ehhez a naphoz.";
 
     /** Same as {@link #sentence(List, String, String)} without the candidate type. */
     public static String sentence(List<Signal> signals, String painJointHu) {
@@ -37,6 +41,34 @@ public final class SubstituteReason {
                 sb.append(s == Signal.MILD_BEFORE ? "; " : ", ");
             }
             sb.append(phrase(s, painJointHu, candidateType));
+        }
+        sb.append('.');
+        return Character.toUpperCase(sb.charAt(0)) + sb.substring(1);
+    }
+
+    /**
+     * The add-mode sentence (block day editor, mezo-r36n9.127): there is no outgoing exercise, so the role phrase
+     * („Ugyanazt a munkát végzi a tervben" / „Ugyanazt az izmot éri, de …") is dropped and the second signal's phrase
+     * stands alone, capitalised, with a full stop; without one it is the neutral {@link #ADD_LINE}. A custom exercise
+     * still reads {@link #CUSTOM_LINE}.
+     */
+    public static String addSentence(List<Signal> signals, String painJointHu, String candidateType) {
+        if (signals != null && signals.contains(Signal.CUSTOM)) {
+            return CUSTOM_LINE;
+        }
+        List<Signal> rest = signals == null ? List.of()
+            : signals.stream().filter(s -> s != Signal.SAME_ROLE && s != Signal.OTHER_TYPE).toList();
+        if (rest.isEmpty()) {
+            return ADD_LINE;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (Signal s : rest) {
+            if (!sb.isEmpty()) {
+                sb.append(s == Signal.MILD_BEFORE ? "; " : ", ");
+            }
+            // „és ehhez van eszközöd" joins a role phrase; at the head of the sentence the „és" goes
+            sb.append(sb.isEmpty() && s == Signal.HAS_EQUIPMENT ? "ehhez van eszközöd"
+                : phrase(s, painJointHu, candidateType));
         }
         sb.append('.');
         return Character.toUpperCase(sb.charAt(0)) + sb.substring(1);

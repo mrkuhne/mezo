@@ -130,6 +130,8 @@ class BlockExerciseSuggestionsIT extends ApiIntegrationTest {
             .allSatisfy(s -> {
                 assertThat(MuscleGroup.of(s.getExercise().getMuscle())).isEqualTo("back");
                 assertThat(s.getReasonText()).endsWith(".");
+                // an add has no outgoing exercise: never the replace role phrase
+                assertThat(s.getReasonText()).doesNotStartWith("Ugyanazt");
             });
         // the whole group, not one token: a day without back work gets rows/pulldowns, not only lower back
         assertThat(res.getSuggestions()).extracting(s -> s.getExercise().getMuscle())
@@ -147,8 +149,9 @@ class BlockExerciseSuggestionsIT extends ApiIntegrationTest {
 
         assertThat(res.getSuggestions()).anySatisfy(s -> {
             assertThat(s.getSignals()).contains("UNDER_BAND");
-            assertThat(s.getReasonText()).contains("ezen a héten kevés jut erre az izomra");
+            assertThat(s.getReasonText()).isEqualTo("Ezen a héten kevés jut erre az izomra.");
         });
+        assertThat(res.getSuggestions()).allSatisfy(s -> assertThat(s.getReasonText()).doesNotStartWith("Ugyanazt"));
     }
 
     @Test

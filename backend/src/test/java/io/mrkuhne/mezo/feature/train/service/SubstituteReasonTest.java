@@ -70,6 +70,52 @@ class SubstituteReasonTest {
             .isEqualTo("Ezt már csináltad, így látod, hol tartasz.");
     }
 
+    // ---- add mode (block day editor): no outgoing exercise, so no role phrase ---------------------------------
+
+    @Test
+    void addSentence_shouldBeTheSecondPhraseAlone() {
+        assertThat(SubstituteReason.addSentence(List.of(Signal.SAME_ROLE, Signal.UNDER_BAND), null, "compound"))
+            .isEqualTo("Ezen a héten kevés jut erre az izomra.");
+        assertThat(SubstituteReason.addSentence(List.of(Signal.OTHER_TYPE, Signal.DONE_BEFORE), null, "isolation"))
+            .isEqualTo("Ezt már csináltad, így látod, hol tartasz.");
+        assertThat(SubstituteReason.addSentence(List.of(Signal.SAME_ROLE, Signal.GOAL_HYPERTROPHY), null, "compound"))
+            .isEqualTo("Stabil, könnyű benne terhelni — izomépítéshez jó.");
+        assertThat(SubstituteReason.addSentence(List.of(Signal.SAME_ROLE, Signal.PAIN_TODAY), "a válladat", "compound"))
+            .isEqualTo("Kíméli a válladat, amit ma jeleztél.");
+        assertThat(SubstituteReason.addSentence(List.of(Signal.SAME_ROLE, Signal.MILD_BEFORE), null, "compound"))
+            .isEqualTo("Legutóbb enyhén érezted.");
+        // „és ehhez van eszközöd" joins a role phrase; alone it drops the „és"
+        assertThat(SubstituteReason.addSentence(List.of(Signal.SAME_ROLE, Signal.HAS_EQUIPMENT), null, "compound"))
+            .isEqualTo("Ehhez van eszközöd.");
+        assertThat(SubstituteReason.addSentence(List.of(Signal.SAME_ROLE, Signal.NO_EQUIPMENT), null, "compound"))
+            .isEqualTo("Eszköz nélkül is megy.");
+    }
+
+    @Test
+    void addSentence_shouldBeTheNeutralLine_withoutASecondSignal() {
+        assertThat(SubstituteReason.addSentence(List.of(Signal.SAME_ROLE), null, "compound"))
+            .isEqualTo("Illik ehhez a naphoz.");
+        assertThat(SubstituteReason.addSentence(List.of(Signal.OTHER_TYPE), null, "isolation"))
+            .isEqualTo("Illik ehhez a naphoz.");
+    }
+
+    @Test
+    void addSentence_shouldKeepTheFixedLine_forCustom() {
+        assertThat(SubstituteReason.addSentence(List.of(Signal.SAME_ROLE, Signal.CUSTOM), null, null))
+            .isEqualTo("Saját gyakorlat — erről még keveset tudok.");
+    }
+
+    @Test
+    void addSentences_shouldNeverStartWithTheRolePhrase() {
+        for (Signal s : Signal.values()) {
+            for (Signal role : new Signal[] {Signal.SAME_ROLE, Signal.OTHER_TYPE}) {
+                String t = SubstituteReason.addSentence(List.of(role, s), "a válladat", "compound");
+                assertThat(t).doesNotStartWith("Ugyanazt").endsWith(".")
+                    .doesNotContainIgnoringCase("legjobb").doesNotContainPattern("\\d");
+            }
+        }
+    }
+
     @Test
     void phrases_shouldNeverPromiseRankOrNameAnExercise() throws Exception {
         List<String> texts = new ArrayList<>();
@@ -77,6 +123,7 @@ class SubstituteReasonTest {
             for (String type : new String[] {"compound", "isolation", null}) {
                 texts.add(SubstituteReason.sentence(List.of(Signal.SAME_ROLE, s), "a válladat", type));
                 texts.add(SubstituteReason.sentence(List.of(Signal.OTHER_TYPE, s), null, type));
+                texts.add(SubstituteReason.addSentence(List.of(Signal.SAME_ROLE, s), "a válladat", type));
             }
         }
         List<String> names = new ArrayList<>();

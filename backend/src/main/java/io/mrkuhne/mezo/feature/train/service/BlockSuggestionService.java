@@ -105,7 +105,7 @@ public class BlockSuggestionService {
         CatalogAttributes.Lookup stability = style == null ? CatalogAttributes.Lookup.EMPTY
             : catalogAttributes.load(result.suggestions().stream().map(Ranked::id).toList());
         return reads.response(viewer, pool, result, SubstituteReads.painJointHu(painJoints, out == null ? null : out.joints()), topSets,
-            c -> prescription(c, style, stability.stable(c.getId()), styleProps));
+            c -> prescription(c, style, stability.stable(c.getId()), styleProps), !replace);
     }
 
     /** 0 = Monday (Hét) … 6 = Sunday (Vas), the request's {@code dayIndex}. */
