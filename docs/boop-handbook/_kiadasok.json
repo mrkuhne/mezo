@@ -559,5 +559,35 @@
       "mezo-r36n9.115"
     ],
     "mi_valtozott": "A Kiegyensúlyozott edzésstílusban a szabad súlyos alapgyakorlatok 2 ismétlés tartalékot kapnak (lábgyakorlatok 3), a gépes összetett és az izolációs gyakorlatok 1-et — Jeff Nippard könyvének tanácsa szerint. A heti javaslat mostantól azt is észreveszi, ha egy gyakorlat túl nehéz lett (két vagy több ismétléssel elmaradtál), és akkor nem tesz rá új sorozatot. A futó blokkodban 14 gyakorlat állt át 2-ről 1-re a jóváhagyásoddal; a lábgyakorlatok, az ugrások és a törzs- és prevenciós gyakorlatok változatlanok. A szerver által tervezett új blokk mostantól alapból Kiegyensúlyozott — ezt a készülő tervajánló fogja használni."
+  },
+  "299d4045d": {
+    "cim": "Pénz: a vagyonod időtávok szerint és a napi hírek, amik téged érintenek",
+    "datum": "2026-11-20",
+    "verzio": "v3.19.0",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app",
+      "Háttérrendszer",
+      "Telefonra telepítve"
+    ],
+    "szakasz": "Életpanel",
+    "jegyek": [
+      "mezo-r36n9.104"
+    ],
+    "mi_valtozott": "Elkészült a Pénzem oldal: a befektetéseid három rekeszben (1–3 év, 5–10 év, 10+ év), mindegyik értékével és arányával, a 10+ éves rekesznél azzal, hány év és hónap fix kiadásodat fedezi növekedés nélkül. Külön látszik, mennyit mozdultak a befektetések és mennyi volt ebből az árfolyam; ha az árak régiek, kiírja. A vételeidet és eladásaidat itt rögzíted, az eseményeket (lejárat, kamatforduló) is. A Ma oldal alján naponta kétszer frissülő hírösszefoglaló: csak az, ami a befektetéseidet érinti, a forintösszeget a rendszer számolja, és minden hír megnyitható elemzésre — mit jelent neked, mit gondol Boop, mennyire biztos és hol tévedhet, honnan van, és miért nincs teendőd. Értesítés nincs, vedd meg / add el gomb sehol."
+  },
+  "9bee9ab61": {
+    "cim": "Pénz: a hírösszefoglaló a telefonról is újrakérhető",
+    "datum": "2026-11-20",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app",
+      "Telefonra telepítve"
+    ],
+    "szakasz": "Életpanel",
+    "jegyek": [
+      "mezo-r36n9.104"
+    ],
+    "mi_valtozott": "Ha a napi összefoglaló még nem készült el, vagy épp most rögzítetted az első befektetésedet, a Ma oldal magától kéri az újat, és pár percen belül megjelenik — nem kell a következő reggelig várni."
   }
 }
