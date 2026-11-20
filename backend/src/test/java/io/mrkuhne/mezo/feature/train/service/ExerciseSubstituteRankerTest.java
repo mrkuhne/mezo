@@ -338,6 +338,46 @@ class ExerciseSubstituteRankerTest {
         assertThat(names(r)).containsExactly("Burdened Press", "Gifted Fly");
     }
 
+    /** Owner decision #58 (mezo-r36n9.111): comfort outranks the finer role terms (pattern, overlap). */
+    @Test
+    void rank_shouldPutDiscomfortAbovePatternAndOverlap_withinMuscleAndType() {
+        List<Candidate> pool = pool(
+            x("Twin Press").secondary("triceps-lateral", "shoulder-front").joints("shoulder", "elbow"),
+            x("Kind Press").pattern("vertical-push").secondary("biceps-long").joints("wrist"));
+        assertThat(names(ExerciseSubstituteRanker.rank(BENCH, pool, ctx())))
+            .containsExactly("Twin Press", "Kind Press");
+
+        var sore = ExerciseSubstituteRanker.rank(BENCH, pool, new Context(null, true, Set.of(), Set.of()));
+        assertThat(names(sore)).containsExactly("Kind Press", "Twin Press");
+        assertThat(ranked(sore, "Kind Press").signals()).containsExactly(Signal.SAME_ROLE, Signal.SPARES_JOINT);
+    }
+
+    @Test
+    void rank_shouldPutMildPainBelowAPainFreeOtherPattern_withinMuscleAndType() {
+        var r = ExerciseSubstituteRanker.rank(BENCH, pool(
+            x("Twin Press").secondary("triceps-lateral", "shoulder-front").pain(PainLevel.MILD),
+            x("Other Press").pattern("vertical-push").secondary("biceps-long")), ctx());
+        assertThat(names(r)).containsExactly("Other Press", "Twin Press");
+    }
+
+    /** Pain today that no joint in play loads must not reorder by gentleness over the same movement. */
+    @Test
+    void rank_shouldNotLetUnrelatedPainTodayOutrankPattern() {
+        List<Candidate> pool = pool(
+            x("Gentle Other").pattern("vertical-push").equipment("machine").demand("low").joints("elbow"),
+            x("Floor Press").demand("high").joints("elbow"));
+        var r = ExerciseSubstituteRanker.rank(BENCH, pool, new Context("strength", false, Set.of("knee"), Set.of()));
+        assertThat(names(r)).containsExactly("Floor Press", "Gentle Other");
+    }
+
+    @Test
+    void rank_shouldKeepTypeAboveDiscomfort_whenSoreNow() {
+        var r = ExerciseSubstituteRanker.rank(BENCH, pool(
+            x("Sparing Fly").type("isolation").pattern("fly").equipment("cable").demand("low").joints("wrist"),
+            x("Shared Press").joints("shoulder", "elbow")), new Context(null, true, Set.of(), Set.of()));
+        assertThat(names(r)).containsExactly("Shared Press", "Sparing Fly");
+    }
+
     @Test
     void rank_shouldWorkOnTheHackSquatSlot() {
         var r = ExerciseSubstituteRanker.rank(HACK, pool(

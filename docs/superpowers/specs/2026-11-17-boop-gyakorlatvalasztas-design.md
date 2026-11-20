@@ -180,17 +180,19 @@ everything available), one profile per user. Several gyms is a possible later ex
 2. **Left out of the suggestions** (never out of the full list): needs an equipment kind he switched off · he
    reported *Erős* joint pain on it in any of its last three feedbacks · plyometric when the outgoing is not.
 3. **Order**, strongest signal first:
-   1. **Role** — same type (compound stays compound, isolation stays isolation), then same `pattern`, then
-      overlap in `secondaryMuscles`.
-   2. **Discomfort** — exercises with *Enyhe* in their recent feedback, or loading a joint that maps to a pain
+   1. **Role** — same muscle, same type (compound stays compound, isolation stays isolation).
+   2. **Discomfort** *(moved above the finer fit terms by owner decision #58, 2026-11-20, `mezo-r36n9.111`: with
+      pattern and overlap inside the role tier, one overlap point outranked every discomfort signal and *nem esik
+      jól* almost never reordered anything)* — exercises with *Enyhe* in their recent feedback, or loading a joint that maps to a pain
       region in today's check-in (a new region → joint map; today's `PainRegionMap` only maps regions to muscle
       groups), or (after *nem esik jól*) sharing the outgoing exercise's `joints`, move down;
       lower `demand` and guided equipment (machine, cable) move up in those cases.
-   3. **Goal** (from the running block; no block or no goal = hypertrophy):
+   3. **Fit** — same `pattern`, then overlap in `secondaryMuscles`.
+   4. **Goal** (from the running block; no block or no goal = hypertrophy):
       hypertrophy / erohipertrofia → higher stimulus for the fatigue it costs, stable and easy to load, and
       `lengthened` as the tie-breaker · strength → free-weight compounds of the same pattern, closest to the
       outgoing movement · cut-prep / recovery → lower fatigue first · sport → as hypertrophy.
-   4. **Trackability** — he has logged it before (a previous top set exists) ranks above a never-done exercise
+   5. **Trackability** — he has logged it before (a previous top set exists) ranks above a never-done exercise
       of equal fit.
 4. **The reason sentence** is assembled from the one or two signals that put the exercise where it is, from a
    fixed set of Hungarian phrases — e.g. *„Ugyanazt a mozgást adja kézisúlyzóval, ehhez van eszközöd.”* ·

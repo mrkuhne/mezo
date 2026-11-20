@@ -823,5 +823,17 @@
     "miert": "A tulajdonos kérte: „vegyük ki a paradicsomos képet”.",
     "levaltotta": "Azt, hogy az Étel fejlécén a konyhafotó áll (a „fotó az égen” szabály ennél a területnél).",
     "kovetkezmeny": "Az Étel fejléce nyugodtabb; a többi terület fotója nem változik. A tányérok, receptek és étkezések saját fotója marad."
+  },
+  "d-2026-11-20-csere-kimeles": {
+    "cim": "A cserénél a kímélet megelőzi a mozdulat hasonlóságát",
+    "datum": "2026-11-20",
+    "suly": "Kicsi",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "Ha a cserénél megnyomod a „nem esik jól” gombot (vagy korábban fájdalmat jeleztél), Boop előbb azt nézi, mi kíméli azt, ami fáj, és csak utána azt, mennyire hasonló a mozdulat. Az izom és az, hogy a gyakorlat összetett vagy izolált, továbbra is az első szempont.",
+    "miert": "A kiadás előtti átnézés megmutatta, hogy a gomb megnyomása után többnyire csak az indokló mondat változott, a sorrend nem — a mozdulat hasonlósága minden kíméleti szempontot megelőzött.",
+    "levaltotta": "Azt a sorrendet, amelyben a mozdulat hasonlósága a szerep része volt, és megelőzte a kíméletet.",
+    "kovetkezmeny": "Egy kímélő izolált gyakorlat ettől még nem kerül egy összetett gyakorlat elé, ha összetett gyakorlatot cserélsz."
   }
 }
