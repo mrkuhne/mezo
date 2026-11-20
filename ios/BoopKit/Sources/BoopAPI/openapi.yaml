@@ -14537,6 +14537,134 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/penz/savings-goals:
+    get:
+      tags:
+        - Penz
+      operationId: listPenzSavingsGoals
+      summary: >-
+        The caller's savings goals and purchase plans (L5, mezo-r36n9.103), by
+        position then creation
+      responses:
+        '200':
+          description: Savings goals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PenzSavingsGoalResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - Penz
+      operationId: createPenzSavingsGoal
+      summary: >-
+        Create a savings goal or purchase plan — idempotent on clientRef (a
+        replay returns the stored row)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PenzSavingsGoalRequest'
+      responses:
+        '201':
+          description: The stored savings goal (also the answer to a replayed clientRef)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzSavingsGoalResponse'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/penz/savings-goals/{id}':
+    put:
+      tags:
+        - Penz
+      operationId: updatePenzSavingsGoal
+      summary: >-
+        Update a savings goal (clientRef is ignored; a null position keeps the
+        current one)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PenzSavingsGoalRequest'
+      responses:
+        '200':
+          description: The updated savings goal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzSavingsGoalResponse'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No such savings goal of the caller (PENZ_SAVINGS_GOAL_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - Penz
+      operationId: deletePenzSavingsGoal
+      summary: Delete a savings goal (soft)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No such savings goal of the caller (PENZ_SAVINGS_GOAL_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/penz/sms/ingest:
     post:
       tags:
@@ -34075,6 +34203,93 @@ components:
         leftoverAction:
           type: string
           pattern: ^(transferred|kept|none)$
+    PenzSavingsGoalResponse:
+      type: object
+      description: >
+        A savings goal ("goal" — a pot filled over time) or purchase plan
+        ("purchase" — a planned buy). target and saved are HUF (minor =
+        hufMinor, currency HUF); saved is the owner's own running figure.
+      required:
+        - id
+        - name
+        - kind
+        - target
+        - saved
+        - position
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        kind:
+          type: string
+          enum:
+            - goal
+            - purchase
+        target:
+          $ref: '#/components/schemas/PenzMoney'
+        saved:
+          $ref: '#/components/schemas/PenzMoney'
+        dueDate:
+          type: string
+          format: date
+          nullable: true
+        note:
+          type: string
+          nullable: true
+        position:
+          type: integer
+        clientRef:
+          type: string
+          format: uuid
+          nullable: true
+    PenzSavingsGoalRequest:
+      type: object
+      required:
+        - name
+        - kind
+        - targetHufMinor
+      properties:
+        clientRef:
+          type: string
+          format: uuid
+          nullable: true
+          description: Idempotency key of a phone write (ignored on update)
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        kind:
+          type: string
+          pattern: ^(goal|purchase)$
+        targetHufMinor:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100000000000
+        savedHufMinor:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100000000000
+          nullable: true
+          description: Defaults to 0
+        dueDate:
+          type: string
+          format: date
+          nullable: true
+        note:
+          type: string
+          maxLength: 500
+          nullable: true
+        position:
+          type: integer
+          minimum: 0
+          nullable: true
+          description: >-
+            Defaults to the end of the list on create; null keeps the current
+            one on update
     PenzSmsIngestRequest:
       type: object
       description: >-
