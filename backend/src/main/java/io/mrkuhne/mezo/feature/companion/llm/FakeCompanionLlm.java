@@ -661,6 +661,23 @@ public class FakeCompanionLlm implements CompanionLlm {
     private final java.util.concurrent.atomic.AtomicInteger penzDigestCalls = new java.util.concurrent.atomic.AtomicInteger();
     public int penzDigestCallCount() { return penzDigestCalls.get(); }
 
+    /** Mirror of penz ProposalPrompt.MARKER (Boop Pénz L7, mezo-r36n9.105) — LITERAL, like the digest mirror. */
+    public static final String PENZ_PROPOSAL_MARKER_MIRROR = "BOOP_PENZ_PROPOSAL_V1";
+    /** The unscripted proposal narration: valid, validator-clean (no number, no product name, no boundary word). */
+    public static final String PENZ_PROPOSAL_CANNED_ANSWER = """
+            {"summary":"Ez a teszt-modell összefoglalója a felosztásról.",\
+            "sleeves":[{"sleeve":"short","why":"A teszt-modell indoklása a rövid rekeszhez."},\
+            {"sleeve":"mid","why":"A teszt-modell indoklása a középtávú rekeszhez."},\
+            {"sleeve":"long","why":"A teszt-modell indoklása a hosszú rekeszhez."}],\
+            "uncertainty":"Ez a teszt-modell válasza, a termékeket valójában nem vizsgálta."}""";
+    private final java.util.concurrent.atomic.AtomicInteger penzProposalCalls = new java.util.concurrent.atomic.AtomicInteger();
+    /** An IT scripts the next proposal answers here (null = the canned answer); a blank script = the model failed. */
+    private final java.util.concurrent.atomic.AtomicReference<String> penzProposalScript = new java.util.concurrent.atomic.AtomicReference<>();
+    private volatile String lastPenzProposalUserMessage;
+    public int penzProposalCallCount() { return penzProposalCalls.get(); }
+    public void scriptPenzProposal(String rawAnswer) { penzProposalScript.set(rawAnswer); }
+    public String lastPenzProposalUserMessage() { return lastPenzProposalUserMessage; }
+
     /** Default Boop brief answer — valid, complete, Hungarian, Boop voice. */
     public static final String BOOP_CANNED_ANSWER = """
             {"forma":{"headline":"Jó formában vagy","sentence":"Kipihented magad, ma bírni fogod a terhelést."},
@@ -981,6 +998,12 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (systemPrompt.startsWith(PENZ_DIGEST_MARKER_MIRROR)) {
             penzDigestCalls.incrementAndGet();
             return penzDigestAnswer(userMessage);
+        }
+        if (systemPrompt.startsWith(PENZ_PROPOSAL_MARKER_MIRROR)) {
+            penzProposalCalls.incrementAndGet();
+            lastPenzProposalUserMessage = userMessage;
+            String scripted = penzProposalScript.get();
+            return scripted == null ? PENZ_PROPOSAL_CANNED_ANSWER : scripted;
         }
         if (systemPrompt.startsWith(CHECKIN_LINE_MARKER_MIRROR)) {
             return CHECKIN_LINE_CANNED_ANSWER;
