@@ -142,7 +142,7 @@ extension PenzStore {
             }
             return .success(p)
         } catch {
-            return .failure(PenzStoreRefusal(penzErrorText(error)))
+            return .failure(PenzStoreRefusal(penzProposalCreateErrorText(error, kind: request.kind)))
         }
     }
 
@@ -192,4 +192,13 @@ extension PenzStore {
 public struct PenzStoreRefusal: Error, Equatable, Sendable {
     public let text: String
     public init(_ text: String) { self.text = text }
+}
+
+/// A refused *ask for a proposal*: the server's 400 `PENZ_PROPOSAL_AMOUNT_INVALID` here means the amount itself (under
+/// 1 000 Ft, or a monthly figure of 0), not a sleeve he set — so it is said for what he just asked.
+public func penzProposalCreateErrorText(_ error: PlanFetchError, kind: String) -> String {
+    guard error == .rejected("PENZ_PROPOSAL_AMOUNT_INVALID") else { return penzErrorText(error) }
+    return kind == "monthly"
+        ? "Ebben a hónapban most nem marad szabad összeg, amit befektetésre feloszthatnék — ezért havi javaslatot sem tudok adni."
+        : "Ezt az összeget nem tudom felosztani: legalább 1\u{202F}000\u{00A0}Ft kell hozzá."
 }

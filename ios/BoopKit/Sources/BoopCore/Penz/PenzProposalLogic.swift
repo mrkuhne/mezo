@@ -1,8 +1,9 @@
 import Foundation
 
 // Pénz L7 (`mezo-r36n9.105`) — the proposal flow, the catalog and the monthly strategy as he reads them, pure and
-// unit-tested. The split, the shares, the options and their yearly cost are the server's; the phone adds what only
-// it knows: the amounts he is adjusting (±10 000 Ft steps or typed) and the request that carries exactly those.
+// unit-tested. The split, the shares, the options and their yearly cost are the server's (the cost is always shown for
+// the proposed amount, never recomputed); the phone adds what only it knows: the amounts he is adjusting (±10 000 Ft
+// steps or typed) and the request that carries exactly those.
 //
 // Copy rules (spec §6): Boop never buys and never moves money, never urges, never promises a return, always says why.
 
@@ -34,27 +35,18 @@ public func penzDistributionName(_ d: String) -> String {
 /// `0,20%` — a fee percentage with a decimal comma (two decimals).
 public func penzFeePct(_ pct: Double) -> String { penzPct(pct, decimals: 2, signed: false) + "%" }
 
-/// The yearly running cost of `amount` at `terPct` — amount × TER, rounded to 10 Ft (the server's rule, so an amount
-/// he adjusts shows the same figure the server would compute for it). nil without a TER.
-public func penzYearlyCost(amountHufMinor: Int64, terPct: Double?) -> Int64? {
-    guard let terPct else { return nil }
-    let ft = Double(amountHufMinor) / 100 * terPct / 100
-    return Int64((ft / 10).rounded()) * 10 * 100
-}
-
-/// The option's yearly cost for the amount on screen: the server's figure while the amount is the proposed one, the
-/// same formula once he moved it.
-public func penzOptionYearlyCost(_ o: PenzProductOption, amountHufMinor: Int64, proposedHufMinor: Int64) -> Int64? {
-    if amountHufMinor == proposedHufMinor, let server = o.yearlyCostHufMinor { return server }
-    return penzYearlyCost(amountHufMinor: amountHufMinor, terPct: o.terPct)
-}
-
-/// "évi 0,20% · kb. 800 Ft/év ennél az összegnél · belépéskor 1,00% · ellenőrizve: 2026. nov. 20."
+/// "évi 0,20% · kb. 800 Ft/év a javasolt 400 000 Ft-ra · belépéskor 1,00% · ellenőrizve: 2026. nov. 20."
+///
+/// The yearly cost is only ever the server's figure (every figure on screen is the backend's), and it is always labelled
+/// with the amount it was computed for — the sleeve's proposed amount — so moving the amount never makes the phone
+/// invent a new money figure.
 public func penzFeeLine(terPct: Double?, entryFeePct: Double?, feeNote: String?, yearlyCostHufMinor: Int64?,
-                        reviewedAt: String) -> String {
+                        forAmountHufMinor: Int64? = nil, reviewedAt: String) -> String {
     var parts: [String] = []
     if let terPct { parts.append("évi \(penzFeePct(terPct))") }
-    if let y = yearlyCostHufMinor, terPct != nil { parts.append("kb. \(penzFtUnit(y))/év ennél az összegnél") }
+    if let y = yearlyCostHufMinor, terPct != nil, let amount = forAmountHufMinor, amount > 0 {
+        parts.append("kb. \(penzFtUnit(y))/év a javasolt \(penzFtUnit(amount))-ra")
+    }
     if let e = entryFeePct, e > 0 { parts.append("belépéskor \(penzFeePct(e))") }
     if let note = feeNote, !note.isEmpty { parts.append(note) }
     if parts.isEmpty { parts.append("a költségét még nem rögzítettük") }
@@ -62,11 +54,10 @@ public func penzFeeLine(terPct: Double?, entryFeePct: Double?, feeNote: String?,
     return parts.joined(separator: " · ")
 }
 
-/// One option's cost line for the amount on screen.
-public func penzOptionFeeLine(_ o: PenzProductOption, amountHufMinor: Int64, proposedHufMinor: Int64) -> String {
-    penzFeeLine(terPct: o.terPct, entryFeePct: o.entryFeePct, feeNote: o.feeNote,
-                yearlyCostHufMinor: penzOptionYearlyCost(o, amountHufMinor: amountHufMinor, proposedHufMinor: proposedHufMinor),
-                reviewedAt: o.reviewedAt)
+/// One option's cost line: the server's yearly cost, for the sleeve's proposed amount (whatever he has set since).
+public func penzOptionFeeLine(_ o: PenzProductOption, proposedHufMinor: Int64) -> String {
+    penzFeeLine(terPct: o.terPct, entryFeePct: o.entryFeePct, feeNote: o.feeNote, yearlyCostHufMinor: o.yearlyCostHufMinor,
+                forAmountHufMinor: proposedHufMinor, reviewedAt: o.reviewedAt)
 }
 
 /// "Részvény-ETF · EUR · felhalmozó"
@@ -94,6 +85,20 @@ public func penzProductFeeLine(_ p: PenzProduct) -> String {
 public func penzCatalogGroups(_ products: [PenzProduct]) -> (suggested: [PenzProduct], approved: [PenzProduct], declined: [PenzProduct]) {
     (products.filter { $0.status == "suggested" }, products.filter { $0.status == "approved" },
      products.filter { $0.status == "declined" })
+}
+
+/// Boop's suggestions (the researched list is seeded as ten of them on the first read), grouped by the shortest horizon
+/// each fits — 1–3 év, then 5–10 év, then 10+ év — keeping the server's order inside a group, so he decides horizon by
+/// horizon instead of scrolling one long list. A product with no known sleeve comes last, under an empty title.
+public func penzCatalogSuggestedBySleeve(_ suggested: [PenzProduct]) -> [(sleeve: String, title: String, products: [PenzProduct])] {
+    let order = PenzSleeveKey.allCases.map(\.rawValue)
+    func first(_ p: PenzProduct) -> String { order.first { p.sleeves.contains($0) } ?? "" }
+    var groups: [(sleeve: String, title: String, products: [PenzProduct])] = []
+    for key in order + [""] {
+        let ps = suggested.filter { first($0) == key }
+        if !ps.isEmpty { groups.append((key, key.isEmpty ? "" : penzSleeveTitle(key), ps)) }
+    }
+    return groups
 }
 
 // MARK: - Proposals on Pénz Ma

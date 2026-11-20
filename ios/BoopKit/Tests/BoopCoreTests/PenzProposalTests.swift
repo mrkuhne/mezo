@@ -91,18 +91,19 @@ struct PenzProposalTests {
         #expect(penzDraftShare(31_000_000, of: 32_000_000) == 97)
     }
 
-    @Test func costLinesAreTheServersUntilHeMovesTheAmount() {
+    @Test func theYearlyCostIsOnlyTheServersAndSaysWhichAmountItIsFor() {
         let o = PenzProductOption(productId: "pr1", name: "Világ-ETF", terPct: 0.2, yearlyCostHufMinor: 80_000, reviewedAt: "2026-11-20")
-        #expect(penzOptionFeeLine(o, amountHufMinor: 40_000_000, proposedHufMinor: 40_000_000)
-            == "évi 0,20% · kb. 800\u{00A0}Ft/év ennél az összegnél · ellenőrizve: 2026. nov. 20.")
-        // 410 000 Ft × 0,20% = 820 Ft
-        #expect(penzOptionYearlyCost(o, amountHufMinor: 41_000_000, proposedHufMinor: 40_000_000) == 82_000)
-        // 123 456 Ft × 0,07% = 86,4 → 90 Ft (to 10 Ft)
-        #expect(penzYearlyCost(amountHufMinor: 12_345_600, terPct: 0.07) == 9_000)
-        #expect(penzYearlyCost(amountHufMinor: 12_345_600, terPct: nil) == nil)
+        // the figure is the server's, labelled with the sleeve's proposed amount — whatever he has typed since
+        #expect(penzOptionFeeLine(o, proposedHufMinor: 40_000_000)
+            == "évi 0,20% · kb. 800\u{00A0}Ft/év a javasolt 400\u{202F}000\u{00A0}Ft-ra · ellenőrizve: 2026. nov. 20.")
+        // no server figure: no money figure at all (never recomputed on the phone)
+        let noFigure = PenzProductOption(productId: "pr1", name: "Világ-ETF", terPct: 0.2, reviewedAt: "2026-11-20")
+        #expect(penzOptionFeeLine(noFigure, proposedHufMinor: 40_000_000) == "évi 0,20% · ellenőrizve: 2026. nov. 20.")
+        // a zero sleeve has no amount to name
+        #expect(penzOptionFeeLine(o, proposedHufMinor: 0) == "évi 0,20% · ellenőrizve: 2026. nov. 20.")
         let bond = PenzProductOption(productId: "pr2", name: "MÁP Plusz", entryFeePct: 0, feeNote: "nincs díja, ha lejáratig tartod",
                                      reviewedAt: "2026-11-18")
-        #expect(penzOptionFeeLine(bond, amountHufMinor: 1, proposedHufMinor: 1)
+        #expect(penzOptionFeeLine(bond, proposedHufMinor: 1)
             == "nincs díja, ha lejáratig tartod · ellenőrizve: 2026. nov. 18.")
     }
 
@@ -157,10 +158,17 @@ struct PenzProposalTests {
 
     @Test func aRefusedProposalIsHisSentence() async {
         let stub = StubTransport()
-        stub.on("createPenzProposal", .json(400, #"{"messages":[{"code":"PENZ_PROPOSAL_AMOUNT_INVALID"}]}"#))
+        // the server's body: a bare SystemMessage array
+        stub.on("createPenzProposal", .json(400, #"[{"level":"ERROR","code":"PENZ_PROPOSAL_AMOUNT_INVALID","type":"REQUEST"}]"#))
+        stub.on("createPenzProposal", .json(400, #"[{"level":"ERROR","code":"PENZ_PROPOSAL_AMOUNT_INVALID","type":"REQUEST"}]"#))
         let store = PenzStore(client: PenzClient(raw: Self.raw(stub)), cache: nil)
         let r = await store.createProposal(.lumpSum(100))
-        #expect(r == .failure(PenzStoreRefusal(penzErrorText(.rejected("PENZ_PROPOSAL_AMOUNT_INVALID")))))
+        #expect(r == .failure(PenzStoreRefusal("Ezt az összeget nem tudom felosztani: legalább 1\u{202F}000\u{00A0}Ft kell hozzá.")))
+        let m = await store.createProposal(.monthly)
+        #expect(m == .failure(PenzStoreRefusal(penzProposalCreateErrorText(.rejected("PENZ_PROPOSAL_AMOUNT_INVALID"), kind: "monthly"))))
+        #expect(penzProposalCreateErrorText(.rejected("PENZ_PROPOSAL_AMOUNT_INVALID"), kind: "monthly").contains("havi javaslatot"))
+        // any other refusal is the shared sentence
+        #expect(penzProposalCreateErrorText(.offline, kind: "lump_sum") == penzErrorText(.offline))
         #expect(penzProposalAmount("500 000") == 50_000_000 && penzProposalAmount("500") == nil)
     }
 }

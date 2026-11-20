@@ -37,7 +37,7 @@ extension PenzClient {
     }
 
     public func recordLastClose(id: String, _ request: PenzLastCloseRequest) async throws(PlanFetchError) -> PenzPaperTrade {
-        try await raw.send(.post, "/api/penz/practice/trades/\(id)/last-close", operationID: "recordPenzPaperTradeLastClose",
+        try await raw.send(.post, "/api/penz/practice/trades/\(id)/last-close", operationID: "setPenzPaperTradeLastClose",
                            body: request)
     }
 

@@ -66,7 +66,7 @@ struct PenzPracticeTests {
     @Test func writesHitTheContractPathsWithTheRightBodies() async throws {
         let stub = StubTransport()
         let trade = #"{"id":"t9","status":"open","instrument":"OTP","stop":{"minor":1980000}}"#
-        for op in ["createPenzPaperTrade", "openPenzPaperTrade", "closePenzPaperTrade", "recordPenzPaperTradeLastClose",
+        for op in ["createPenzPaperTrade", "openPenzPaperTrade", "closePenzPaperTrade", "setPenzPaperTradeLastClose",
                    "cancelPenzPaperTrade"] { stub.on(op, .json(200, trade)) }
         stub.on("listPenzPaperTrades", .json(200, "[\(trade)]"))
         let c = PenzClient(raw: Self.raw(stub))

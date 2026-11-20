@@ -147,6 +147,12 @@ final class PenzPreviewL7: @unchecked Sendable {
         ]
     }
 
+    /// The stub server's yearly running cost (amount × TER, rounded to 10 Ft) — the server computes this, never the app.
+    private func penzYearlyCost(amountHufMinor: Int64, terPct: Double?) -> Int64? {
+        guard let terPct else { return nil }
+        return Int64((Double(amountHufMinor) / 100 * terPct / 100 / 10).rounded()) * 10 * 100
+    }
+
     private func option(_ id: String, amount: Int64, differs: [String]) -> PenzProductOption {
         let p = catalog.first { $0.id == id }!
         return PenzProductOption(productId: p.id, name: p.name, whatItIs: p.whatItIs, kind: p.kind, currency: p.currency,
@@ -284,7 +290,7 @@ final class PenzPreviewL7: @unchecked Sendable {
 
     private func refuse(_ status: Int, _ code: String) -> (HTTPResponse, HTTPBody?) {
         var h = HTTPFields(); h[.contentType] = "application/json"
-        return (HTTPResponse(status: .init(code: status), headerFields: h), HTTPBody(#"{"messages":[{"code":"\#(code)"}]}"#))
+        return (HTTPResponse(status: .init(code: status), headerFields: h), HTTPBody(#"[{"level":"ERROR","code":"\#(code)","type":"REQUEST"}]"#))
     }
 
     /// nil = not an L7 operation.
@@ -340,7 +346,7 @@ final class PenzPreviewL7: @unchecked Sendable {
                 trades[i].stopRespected = longSide ? r.exitMinor >= trades[i].stop.minor : r.exitMinor <= trades[i].stop.minor
                 Self.settle(&trades[i])
                 return try json(trades[i])
-            case "recordPenzPaperTradeLastClose":
+            case "setPenzPaperTradeLastClose":
                 guard let i = tradeIndex() else { return refuse(404, "PENZ_PAPER_TRADE_NOT_FOUND") }
                 let r = try dec.decode(PenzLastCloseRequest.self, from: sent)
                 trades[i].lastClose = PenzMoney(minor: r.closeMinor, currency: trades[i].currency); trades[i].lastCloseDate = r.date
@@ -389,10 +395,13 @@ final class PenzPreviewL7: @unchecked Sendable {
                 return try json(proposals[i])
             case "dismissPenzProposal":
                 guard let i = proposalIndex() else { return refuse(404, "PENZ_PROPOSAL_NOT_FOUND") }
+                guard proposals[i].status == "proposed" else { return refuse(409, "PENZ_PROPOSAL_STATE") }
                 proposals[i].status = "dismissed"
                 return try json(proposals[i])
             case "setPenzProposalStep":
-                guard let i = proposalIndex(), let n = Int(segments.last ?? ""), proposals[i].plan.indices.contains(n) else {
+                guard let i = proposalIndex() else { return refuse(404, "PENZ_PROPOSAL_NOT_FOUND") }
+                guard proposals[i].status == "accepted" else { return refuse(409, "PENZ_PROPOSAL_STATE") }
+                guard let n = Int(segments.last ?? ""), proposals[i].plan.indices.contains(n) else {
                     return refuse(404, "PENZ_PROPOSAL_NOT_FOUND")
                 }
                 let r = try dec.decode(PenzStepRequest.self, from: sent)

@@ -257,7 +257,7 @@ struct PenzProposalPage: View {
                 if !o.whatItIs.isEmpty {
                     Text(o.whatItIs).nkFont(13.5).foregroundStyle(.white.opacity(0.78)).fixedSize(horizontal: false, vertical: true)
                 }
-                Text(penzOptionFeeLine(o, amountHufMinor: amount, proposedHufMinor: s.amountHufMinor))
+                Text(penzOptionFeeLine(o, proposedHufMinor: s.amountHufMinor))
                     .nkFont(12.5, .medium).foregroundStyle(.white.opacity(0.7)).fixedSize(horizontal: false, vertical: true)
                 ForEach(o.differs, id: \.self) { d in
                     HStack(alignment: .top, spacing: 7) {
@@ -499,8 +499,19 @@ struct PenzCatalogPage: View {
                         if g.suggested.isEmpty {
                             NKHueText("Most nincs új javaslatom a listára.", hue: hue, size: 13.5, opacity: 0.6)
                                 .frame(maxWidth: .infinity, alignment: .leading)
+                        } else {
+                            NKHueText("Ezeket néztem meg neked, a díjukkal és a forrásukkal együtt. Hagyd jóvá, amiből javasolhatok — a többire mondd, hogy *nem kell*.",
+                                      hue: hue, size: 13.5, opacity: 0.65)
+                                .frame(maxWidth: .infinity, alignment: .leading)
                         }
-                        ForEach(g.suggested) { p in card(p) }
+                        ForEach(penzCatalogSuggestedBySleeve(g.suggested), id: \.sleeve) { group in
+                            if !group.title.isEmpty {
+                                Text(group.title.uppercased()).nkFont(11.5, .semibold, design: .monospaced)
+                                    .foregroundStyle(.white.opacity(0.5)).padding(.top, 4)
+                                    .accessibilityAddTraits(.isHeader)
+                            }
+                            ForEach(group.products) { p in card(p) }
+                        }
                     }
                 }
                 .nkStale(store.catalogOffline ? penzAgeText(store.catalog.map { Date().timeIntervalSince($0.fetchedAt) }).map { NKStale(age: $0, loud: true) } : nil)
