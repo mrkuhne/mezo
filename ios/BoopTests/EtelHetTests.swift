@@ -155,4 +155,61 @@ struct EtelHetTests {
         #expect(hetVerdict(w, level: 0.2).headline == "Még kevés a rögzítés a héten")
         #expect(hetDateLabel("2026-11-18") == "november 18.")
     }
+    // MARK: the server's day judgement (B6 S2, mezo-r36n9.16 Task 12)
+
+    /// What `GET /api/seasons/adherence` says about the same seven days under the rule the tab used to apply itself:
+    /// today and kímélő days are not judged, a day with nothing logged is not judged.
+    private func serverDays(_ w: FuelWeek, today: String, kimelo: Set<String> = []) -> [EvadAdherenceDay] {
+        w.days.map { r in
+            let k = kimelo.contains(r.date) || r.fuelMode != nil
+            return EvadAdherenceDay(date: r.date, judged: r.date != today && !k && r.consumed.kcal > 0, excused: k, excuse: k ? "kimelo" : nil)
+        }
+    }
+
+    @Test func serverDaysGiveTheSameWeekAsTheLocalRule() {
+        // parity: every case the tab's own tests cover, read through the server's days, is the same week
+        var unlogged = week(); unlogged.days[4].consumed = set(0, 0)
+        let cases: [(FuelWeek, [String: Int], Set<String>)] = [
+            (week(skipped: ["2026-11-09": 300], planned: ["2026-11-08": 300], targets: [2350, 2650, 2350, 2350, 2350, 2350, 2350]), [:], []),
+            (week(mode: ["2026-11-10": "GUIDANCE"]), ["2026-11-09": 80, "2026-11-10": 70], []),
+            (week(mode: ["2026-11-12": "MAINTENANCE"]), [:], []),
+            (week(), ["2026-11-07": 71], ["2026-11-08", "2026-11-09"]),
+            (week(mode: ["2026-11-10": "GUIDANCE"]), [:], ["2026-11-10"]),
+            (unlogged, [:], []),
+        ]
+        for (w, scores, failures) in cases {
+            let local = hetWeek(w, scores: scores, today: "2026-11-13", scoreFailures: failures)
+            let served = hetWeek(w, scores: scores, today: "2026-11-13", scoreFailures: failures,
+                                 adherence: serverDays(w, today: "2026-11-13"))
+            #expect(served == local)
+        }
+    }
+
+    @Test func theServersKimeloDayWinsOverTheLocalRule() {
+        // the server knows a recovery the week rollup does not carry: the day is marked, not judged, without a score
+        let w = week()
+        let h = hetWeek(w, scores: ["2026-11-12": 80], today: "2026-11-13", adherence: serverDays(w, today: "2026-11-13", kimelo: ["2026-11-12"]))
+        #expect(h.days[5].kimelo && !h.days[5].judged && h.days[5].scorePoints == nil)
+        #expect(h.days[5].note.contains("kímélő nap") && h.days[5].note.contains("nem értékelem"))
+        #expect(h.judgedDays == 5 && h.kimeloDays == 1 && h.markedIndices == [5])
+        #expect(h.averageKcal == (2200 + 2620 + 2390 + 2150 + 2410) / 5)
+    }
+
+    @Test func theServersJudgedFlagDecidesTheAverages() {
+        // a logged day the server does not judge leaves the averages; a reasoned skip still counts for food
+        let w = week()
+        var days = serverDays(w, today: "2026-11-13")
+        days[0] = EvadAdherenceDay(date: "2026-11-07", judged: false, excused: false, excuse: nil)
+        days[1] = EvadAdherenceDay(date: "2026-11-08", judged: true, excused: true, excuse: "skip")
+        let h = hetWeek(w, scores: [:], today: "2026-11-13", adherence: days)
+        #expect(!h.days[0].judged && !h.days[0].kimelo)
+        #expect(h.days[1].judged && !h.days[1].kimelo)
+        #expect(h.judgedDays == 5 && h.averageKcal == (2620 + 2390 + 2150 + 2410 + 2280) / 5)
+    }
+
+    @Test func aDayTheServerDidNotAnswerKeepsTheLocalRule() {
+        let w = week(mode: ["2026-11-10": "GUIDANCE"])
+        let partial = Array(serverDays(w, today: "2026-11-13").prefix(2))
+        #expect(hetWeek(w, scores: [:], today: "2026-11-13", adherence: partial) == hetWeek(w, scores: [:], today: "2026-11-13"))
+    }
 }

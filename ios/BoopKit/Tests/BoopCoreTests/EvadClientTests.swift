@@ -147,4 +147,21 @@ struct EvadClientTests {
         let r = try JSONDecoder().decode(EvadRules.self, from: Data(#"{"processedFoodMaxNova":2,"deloadMaintain":true,"useLearnedExpenditure":true,"proposeExperiments":false,"menuTime":"18:00"}"#.utf8))
         #expect(r.menuDay == nil)
     }
+    @Test func adherenceUsesTheContractPathAndDecodesNulls() async throws {
+        let stub = StubTransport()
+        stub.on("getAdherence", .json(200, #"""
+        {"days":[{"date":"2026-11-18","judged":true,"excused":false,"excuse":null,"kcal":2300,"targetKcal":2350,"proteinG":150,
+                  "targetProteinG":165,"foodInBand":true,"sessionPlanned":true,"sessionDone":true,"sleepMin":470,"needMin":486,"sleepOk":true},
+                 {"date":"2026-11-19","judged":false,"excused":true,"excuse":"kimelo","sessionPlanned":false},
+                 {"date":"2026-11-20","judged":false,"excused":false,"sessionPlanned":false,"aFieldFromTheFuture":1}],
+         "summary":{"foodInBand":1,"foodJudged":1,"sessionsDone":1,"sessionsPlanned":1,"nightsOk":1,"nightsJudged":1,"excusedDays":1}}
+        """#))
+        let r = try await EvadClient(raw: Self.raw(stub)).adherence(from: "2026-11-14", to: "2026-11-20")
+        #expect(stub.sent[0].op == "getAdherence")
+        #expect(stub.sent[0].path == "/api/seasons/adherence?from=2026-11-14&to=2026-11-20")
+        #expect(r.days.count == 3 && r.summary.excusedDays == 1)
+        #expect(r.days[0].judged && r.days[0].foodInBand == true && r.days[0].sleepOk == true)
+        #expect(r.days[1].excused && r.days[1].excuse == "kimelo" && r.days[1].kcal == nil && r.days[1].foodInBand == nil)
+        #expect(r.days[2].sessionDone == nil, "an absent nullable field decodes as nil")
+    }
 }

@@ -16,6 +16,12 @@ public struct EvadClient: Sendable {
         try await raw.get("/api/seasons/active/overview", operationID: "getSeasonOverview")
     }
 
+    /// The server's judgement of each day `from…to` (inclusive, `yyyy-MM-dd`, at most 62 days) — with or without a
+    /// season. The Étel room's Hét tab reads its judged / kímélő flags from here (B6 S2, Task 12).
+    public func adherence(from: String, to: String) async throws(PlanFetchError) -> EvadAdherenceResponse {
+        try await raw.get("/api/seasons/adherence?from=\(from)&to=\(to)", operationID: "getAdherence")
+    }
+
     /// A first season assembled from his live goal, running block, weekly slots and sleep goal. Saves nothing.
     public func firstDraft() async throws(PlanFetchError) -> EvadDraft {
         try await raw.get("/api/seasons/draft", operationID: "getFirstSeasonDraft")

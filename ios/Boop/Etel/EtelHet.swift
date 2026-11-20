@@ -96,14 +96,21 @@ private func mean(_ values: [Int]) -> Int? {
 /// the server's `yyyy-MM-dd`. Today is still going, so it never joins the averages; a kímélő day (any recovery mode) is
 /// marked and not judged — no verdict words, no score, left out of the averages; a day with nothing logged is a
 /// missing day, never a zero.
-func hetWeek(_ week: FuelWeek, scores: [String: Int], today: String, scoreFailures: Set<String> = []) -> HetWeek {
+///
+/// `adherence` is the server's judgement of the same days (`GET /api/seasons/adherence`, B6 S2 — the single source):
+/// a day it answered takes its judged flag and its kímélő excuse from there; a day it did not answer (the call failed,
+/// offline, an older server) keeps the rule above, so the tab never goes blank.
+func hetWeek(_ week: FuelWeek, scores: [String: Int], today: String, scoreFailures: Set<String> = [],
+             adherence: [EvadAdherenceDay] = []) -> HetWeek {
+    let served = Dictionary(adherence.map { ($0.date, $0) }, uniquingKeysWith: { a, _ in a })
     let days: [HetDay] = week.days.map { r in
         let weekday = hetWeekday(r.date)
         let isToday = r.date == today
-        let kimelo = r.fuelMode != nil
+        let server = served[r.date]
+        let kimelo = server.map { $0.excused && $0.excuse == "kimelo" } ?? (r.fuelMode != nil)
         let logged = r.consumed.kcal > 0
         let kcal = logged ? Int(r.consumed.kcal.rounded()) : nil
-        let judged = !isToday && !kimelo && logged
+        let judged = server?.judged ?? (!isToday && !kimelo && logged)
         var parts: [String] = []
         if isToday { parts.append("még tart") }
         if kimelo {
@@ -132,7 +139,7 @@ func hetWeek(_ week: FuelWeek, scores: [String: Int], today: String, scoreFailur
         judgedDays: judged.count, kimeloDays: days.filter(\.kimelo).count,
         skippedDays: skipped.count, skippedKcal: skipped.reduce(0) { $0 + $1.skippedKcal },
         targetsVary: Set(targets).count > 1,
-        scoreGaps: week.days.filter { $0.fuelMode == nil && scoreFailures.contains($0.date) }.count)
+        scoreGaps: days.filter { !$0.kimelo && scoreFailures.contains($0.date) }.count)
 }
 
 // MARK: - What the week says, in words and numbers
@@ -205,7 +212,8 @@ struct EtelHet: View {
     }
 
     private var week: HetWeek? {
-        store.week.map { hetWeek($0, scores: store.weekScores, today: store.ymd, scoreFailures: store.weekScoreFailures) }
+        store.week.map { hetWeek($0, scores: store.weekScores, today: store.ymd, scoreFailures: store.weekScoreFailures,
+                                 adherence: store.weekAdherence) }
     }
 
     var body: some View {

@@ -319,6 +319,56 @@ public struct EvadAdherence: Codable, Equatable, Sendable {
     public let excusedDays: Int
 }
 
+/// One day as the server judges it (`SeasonAdherenceDay`, `GET /api/seasons/adherence`) — the single source of day
+/// judgement, with or without a season. Every field the phone does not need to decide the day is optional.
+public struct EvadAdherenceDay: Codable, Equatable, Sendable {
+    public let date: String
+    /// The food side counts: not today, not a kímélő day, something logged.
+    public let judged: Bool
+    /// A kímélő day or a reasoned skip — left out of every count.
+    public let excused: Bool
+    /// `kimelo` · `skip`; nil when not excused.
+    public let excuse: String?
+    public let kcal: Int?
+    public let targetKcal: Int?
+    public let foodInBand: Bool?
+    public let sessionPlanned: Bool
+    public let sessionDone: Bool?
+    public let sleepMin: Int?
+    public let needMin: Int?
+    public let sleepOk: Bool?
+
+    public init(date: String, judged: Bool, excused: Bool, excuse: String?, kcal: Int? = nil, targetKcal: Int? = nil,
+                foodInBand: Bool? = nil, sessionPlanned: Bool = false, sessionDone: Bool? = nil, sleepMin: Int? = nil,
+                needMin: Int? = nil, sleepOk: Bool? = nil) {
+        self.date = date; self.judged = judged; self.excused = excused; self.excuse = excuse; self.kcal = kcal
+        self.targetKcal = targetKcal; self.foodInBand = foodInBand; self.sessionPlanned = sessionPlanned
+        self.sessionDone = sessionDone; self.sleepMin = sleepMin; self.needMin = needMin; self.sleepOk = sleepOk
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        date = try c.decode(String.self, forKey: .date)
+        judged = try c.decodeIfPresent(Bool.self, forKey: .judged) ?? false
+        excused = try c.decodeIfPresent(Bool.self, forKey: .excused) ?? false
+        excuse = try c.decodeIfPresent(String.self, forKey: .excuse)
+        kcal = try c.decodeIfPresent(Int.self, forKey: .kcal)
+        targetKcal = try c.decodeIfPresent(Int.self, forKey: .targetKcal)
+        foodInBand = try c.decodeIfPresent(Bool.self, forKey: .foodInBand)
+        sessionPlanned = try c.decodeIfPresent(Bool.self, forKey: .sessionPlanned) ?? false
+        sessionDone = try c.decodeIfPresent(Bool.self, forKey: .sessionDone)
+        sleepMin = try c.decodeIfPresent(Int.self, forKey: .sleepMin)
+        needMin = try c.decodeIfPresent(Int.self, forKey: .needMin)
+        sleepOk = try c.decodeIfPresent(Bool.self, forKey: .sleepOk)
+    }
+}
+
+/// `SeasonAdherenceResponse`: the days and their counts.
+public struct EvadAdherenceResponse: Codable, Equatable, Sendable {
+    public let days: [EvadAdherenceDay]
+    public let summary: EvadAdherence
+}
+
 public struct EvadInsight: Codable, Equatable, Sendable {
     public let key: String
     public let title: String
