@@ -116,6 +116,17 @@ struct PenzClientTests {
         #expect(stub.sent[2].path == "/api/penz/savings-goals/g9")
     }
 
+    @Test func createCashAccountPostsAForintCashAccountAsDefault() async throws {
+        let stub = StubTransport()
+        stub.on("createPenzAccount", .json(201, #"{"id":"a-new","name":"Készpénz","type":"cash","currency":"HUF","openingBalanceMinor":0,"isDefault":true,"isSavingsTarget":false,"archived":false}"#))
+        let a = try await PenzClient(raw: Self.raw(stub)).createAccount(.cash)
+        #expect(a.id == "a-new" && a.type == "cash" && a.isDefault)
+        #expect(stub.sent[0].path == "/api/penz/accounts")
+        #expect(stub.sent[0].body?.contains(#""type":"cash""#) == true)
+        #expect(stub.sent[0].body?.contains(#""currency":"HUF""#) == true)
+        #expect(stub.sent[0].body?.contains(#""isDefault":true"#) == true)
+    }
+
     // MARK: the cash outbox
 
     @Test func payloadRoundTripsThroughTheOutboxItem() throws {

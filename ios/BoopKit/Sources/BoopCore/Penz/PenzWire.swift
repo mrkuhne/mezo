@@ -352,3 +352,18 @@ public struct PenzGoalRequest: Encodable, Equatable, Sendable {
         self.savedHufMinor = savedHufMinor; self.dueDate = dueDate; self.note = note; self.position = position
     }
 }
+
+/// `POST /api/penz/accounts` — L5 only ever creates the one forint cash account, on his tap, when he has none.
+public struct PenzAccountRequest: Encodable, Equatable, Sendable {
+    public var name: String
+    public var type: String
+    public var currency: String
+    public var isDefault: Bool?
+
+    public init(name: String, type: String, currency: String = "HUF", isDefault: Bool? = nil) {
+        self.name = name; self.type = type; self.currency = currency; self.isDefault = isDefault
+    }
+
+    /// „Készpénz", forint, the default account (the first account becomes the default anyway).
+    public static let cash = PenzAccountRequest(name: "Készpénz", type: "cash", currency: "HUF", isDefault: true)
+}

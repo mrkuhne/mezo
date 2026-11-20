@@ -24,7 +24,8 @@ A gömb nem mutat számot — annyira telik meg, amennyi a heti pénzedből még
   ellenőrzésre váró banki üzenetekkel, és **mire gyűjtök** — a céljaid és vásárlási terveid, mindegyiknél hol
   tartasz.
 - **Készpénz rögzítése** a *Kiadás* gombbal, a Pénz oldalról vagy a „+” gombról: összeg, kategória, ha akarod egy
-  megjegyzés. Térerő nélkül is működik: a tétel azonnal megjelenik a mai tételek között („küldésre vár”), a heti
+  megjegyzés. Ha még nincs számlád a Boopban, az első alkalommal egy érintéssel létrehozza a „Készpénz” számlát.
+  Térerő nélkül is működik: a tétel azonnal megjelenik a mai tételek között („küldésre vár”), a heti
   maradék rögtön csökken vele, és amikor újra van net, magától elmegy.
 - **Banki üzenetek átnézése:** kategóriát választasz, *Rendben*, és a tétel lekerül a listáról.
 - **Hónap lezárása:** a legrégebbi lezáratlan hónap számaival; te döntöd el, mi legyen a maradékkal (átteszed a
