@@ -42,7 +42,7 @@ class WorkoutTodayStyleSwitchOffIT extends AbstractIntegrationTest {
         UUID owner = databasePopulator.populateUser(ownerProperties.ownerEmail());
         MesocycleEntity meso = train.createActiveMeso(owner);
         meso.setPhaseCurve(List.of("MAV", "MAV", "MAV", "MAV", "MAV", "Deload"));
-        meso.setCurrentWeek(5); // last loading week: the ramp would take reserve 2 → 0
+        meso.setCurrentWeek(5); // last loading week: the ramp would take reserve 1 → 0
         meso.setTrainingStyle("balanced");
         meso.setVolumeRecompute(new VolumeRecomputeJson("W999", "W1000", "batch", List.of()));
         mesocycleRepository.saveAndFlush(meso);
@@ -55,7 +55,7 @@ class WorkoutTodayStyleSwitchOffIT extends AbstractIntegrationTest {
 
         TodayExercise t = workoutService.getToday(owner, null).getExercises().get(0);
 
-        assertThat(t.getTargetRIR()).isEqualTo(2); // the balanced stamp, not the ramped 0
+        assertThat(t.getTargetRIR()).isEqualTo(1); // the balanced stable-compound stamp, not the ramped 0
         assertThat(t.getPrescribedSets()).isNull();
     }
 }

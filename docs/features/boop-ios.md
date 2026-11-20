@@ -18,7 +18,7 @@ related: [penz, fuel, pantry, recipe, dayclose, intention, journal, companion, p
 
 # Boop — native iOS app — Feature Documentation
 
-> **2026-11-20 — Pénz cash account on first use (`mezo-r36n9.103`).** Production starts with no Pénz account (the old app's import is `mezo-r36n9.107`), so the cash sheet offers *Készpénz számla létrehozása* when no forint account exists: `PenzClient.createAccount(.cash)` → `POST /api/penz/accounts` `{name: "Készpénz", type: "cash", currency: "HUF", isDefault: true}`, then a forced reload shows the form.
+> **2026-11-20 — Pénz cash account on first use (`mezo-r36n9.103`).** Production starts with no Pénz account (the old app's import is `mezo-r36n9.107`), so the cash sheet offers *Készpénz számla létrehozása* when no forint account exists: `PenzClient.createAccount(.cash)` → `POST /api/penz/accounts` `{name: "Készpénz", type: "cash", currency: "HUF", isDefault: true}`, then a forced reload shows the form. *Kiadás* stays active with no account (so the sheet that creates it can open), and the empty Pénz card carries the same *Készpénz számla létrehozása* button itself while no account exists (`PenzRoom.swift`), so the create step is never hidden behind *Kiadás*.
 
 > **2026-11-20 — Boop Pénz L5 (`mezo-r36n9.103`).** `BoopAPI/openapi.yaml` re-synced with the savings-goal paths (server v3.16.0); the generator filter still excludes every Pénz operation — the area reads them through the hand-written `BoopCore/Penz/PenzClient` (see *The Pénz area* below).
 

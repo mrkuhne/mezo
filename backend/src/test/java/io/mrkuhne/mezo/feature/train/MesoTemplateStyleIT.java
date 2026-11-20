@@ -81,12 +81,12 @@ class MesoTemplateStyleIT extends ApiIntegrationTest {
 
         assertThat(t.getTrainingStyle()).isEqualTo(TrainingStyle.BALANCED);
         List<GymExercise> e = t.getDays().get(0).getExercises();
-        // balanced, stable compound: 6–10 at reserve 2, 150 s, the plan's sets
-        assertStamp(e.get(0), 6, 10, 3, 2, 150, TrainingStyle.BALANCED);
-        // balanced leg compound: the leg reserve 3
+        // balanced, stable compound: 6–10 at the stable-compound reserve 1 (mezo-r36n9.115), 150 s, the plan's sets
+        assertStamp(e.get(0), 6, 10, 3, 1, 150, TrainingStyle.BALANCED);
+        // balanced (stable) leg compound: the leg reserve 3 outranks the stable-compound reserve
         assertStamp(e.get(1), 6, 10, 3, 3, 150, TrainingStyle.BALANCED);
-        // balanced isolation: 10–15, 90 s
-        assertStamp(e.get(2), 10, 15, 3, 2, 90, TrainingStyle.BALANCED);
+        // balanced isolation: 10–15 at the isolation reserve 1, 90 s
+        assertStamp(e.get(2), 10, 15, 3, 1, 90, TrainingStyle.BALANCED);
         // all-out on a FREE compound falls back to heavy at reserve 1 and says so
         assertStamp(e.get(3), 5, 8, 3, 1, 180, TrainingStyle.HEAVY);
         assertThat(e.get(3).getTrainingStyle()).isEqualTo(TrainingStyle.ALLOUT);
@@ -114,8 +114,8 @@ class MesoTemplateStyleIT extends ApiIntegrationTest {
             HttpStatus.OK, MesoTemplateResponse.class);
 
         GymExercise saved = t.getDays().get(0).getExercises().get(0);
-        // overridden: kept; not overridden: stamped (balanced reserve 2, the exercise's own style)
-        assertStamp(saved, 12, 15, 3, 2, 200, TrainingStyle.BALANCED);
+        // overridden: kept; not overridden: stamped (balanced stable-compound reserve 1, the exercise's own style)
+        assertStamp(saved, 12, 15, 3, 1, 200, TrainingStyle.BALANCED);
         assertThat(saved.getTrainingStyle()).isEqualTo(TrainingStyle.BALANCED);
         assertThat(saved.getOverrides()).containsExactly(StyleOverride.REP_RANGE, StyleOverride.REST_SEC);
 
@@ -230,7 +230,7 @@ class MesoTemplateStyleIT extends ApiIntegrationTest {
         assertThat(jdbcTemplate.queryForObject(
             "select training_style from mesocycle where id = ?", String.class, run.getId())).isEqualTo("balanced");
         List<GymExercise> e = run.getDays().get(0).getExercises();
-        assertStamp(e.get(0), 12, 15, 3, 2, 150, TrainingStyle.BALANCED);
+        assertStamp(e.get(0), 12, 15, 3, 1, 150, TrainingStyle.BALANCED);
         assertThat(e.get(0).getOverrides()).containsExactly(StyleOverride.REP_RANGE);
         assertStamp(e.get(1), 5, 8, 3, 1, 180, TrainingStyle.HEAVY);
         assertThat(e.get(1).getTrainingStyle()).isEqualTo(TrainingStyle.ALLOUT);
@@ -304,10 +304,10 @@ class MesoTemplateStyleIT extends ApiIntegrationTest {
 
         List<GymExercise> e = edited.getExercises();
         // carried override: the owner's range stays
-        assertStamp(e.get(0), 12, 15, 3, 2, 150, TrainingStyle.BALANCED);
+        assertStamp(e.get(0), 12, 15, 3, 1, 150, TrainingStyle.BALANCED);
         assertThat(e.get(0).getOverrides()).containsExactly(StyleOverride.REP_RANGE);
-        // carried exercise style, no override: re-stamped back to heavy isolation
-        assertStamp(e.get(1), 8, 12, 3, 2, 120, TrainingStyle.HEAVY);
+        // carried exercise style, no override: re-stamped back to heavy isolation (isolation reserve 1)
+        assertStamp(e.get(1), 8, 12, 3, 1, 120, TrainingStyle.HEAVY);
         assertThat(e.get(1).getTrainingStyle()).isEqualTo(TrainingStyle.HEAVY);
         // the new exercise is stamped under the run's style (leg reserve)
         assertStamp(e.get(2), 6, 10, 3, 3, 150, TrainingStyle.BALANCED);

@@ -1208,5 +1208,15 @@
       "Edzés"
     ],
     "mit_kapsz": "Új blokk tervezésekor Boop megkérdezi, mennyi időd van egy edzésre és mennyire vagy edzett, és ugyanarra a célra két-három tervet mutat becsült idővel. Te választasz, kezdőként kisebb, könnyebben tartható induló adaggal."
+  },
+  "mezo-r36n9.115": {
+    "cim": "Új blokk alapból Kiegyensúlyozott, és a nehéz alapgyakorlatok több tartalékot kapnak",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "A rendszer által tervezett új blokk már edzésstílussal indul, így az erőfeszítés hétről hétre fokozódik, a lazító hét pedig valóban könnyebb. A szabad súlyos alapgyakorlatok (guggolás, fekvenyomás) 2–3 ismétlés tartalékot kapnak, a gépes és izolációs gyakorlatok 1-et. A heti javaslat azt is észreveszi, ha egy gyakorlat túl nehéz lett.",
+    "munkamenet": "mezo-training-audit"
   }
 }

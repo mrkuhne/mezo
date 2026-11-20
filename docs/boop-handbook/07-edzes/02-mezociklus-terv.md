@@ -70,7 +70,8 @@ Az AI csak gyakorlatot választ, a terhelésről soha nem dönt.
 | `mezo.meso-plan.max-exercises-per-group-per-day` | Izomcsoportonként legfeljebb ennyi gyakorlat egy napon | 2 |
 | `mezo.meso-plan.compound-rep-min/max` | Összetett gyakorlat ismétlés-tartománya | 8–10 |
 | `mezo.meso-plan.isolation-rep-min/max` | Izolációs gyakorlat ismétlés-tartománya | 12–15 |
-| `mezo.meso-plan.target-rir` | Cél-tartalék (hány ismétlés maradjon „a tankban”) | 1 |
+| `mezo.meso-plan.default-training-style` | A tervezett blokk stílusa; ez adja az ismétlés-tartományt, a tartalékot és a pihenőt | Kiegyensúlyozott |
+| `mezo.meso-plan.target-rir` | Cél-tartalék, ha a stílus ki van kapcsolva | 1 |
 | `mezo.meso-plan.compound-warmup` / `isolation-warmup` | Bemelegítő sorozatok száma | 2 / 1 |
 | `mezo.train.gym-default-minutes` | Edzés feltételezett hossza (a beosztásnak nincs hossza) | 60 perc |
 | `mezo.volume.bands.sport-low-shift` / `sport-high-shift` | Sporttal terhelt izomcsoportnál ennyivel lejjebb kerül a sáv alja / teteje | 1 / 2 |

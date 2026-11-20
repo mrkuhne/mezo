@@ -13,7 +13,8 @@ public final class StyleTable {
     /**
      * ALLOUT needs a stable exercise; a free compound or free isolation under ALLOUT takes the HEAVY row
      * with the all-out-free reserve and {@code effectiveStyle = HEAVY}. The leg reserve applies only to
-     * compound classes with {@code legs}.
+     * compound classes with {@code legs}; otherwise a stable compound takes the row's stable-compound reserve
+     * and an isolation its isolation reserve, each falling back to the row's reserve (mezo-r36n9.115).
      */
     public static Stamp stamp(TrainingStyle style, ExerciseClass cls, boolean stable, boolean legs,
                               TrainStyleProperties p) {
@@ -26,6 +27,10 @@ public final class StyleTable {
             reserve = p.alloutFreeReserve();
         } else if (compound && legs && row.legReserve() != null) {
             reserve = row.legReserve();
+        } else if (cls == ExerciseClass.COMPOUND_STABLE && row.stableCompoundReserve() != null) {
+            reserve = row.stableCompoundReserve();
+        } else if (cls == ExerciseClass.ISOLATION && row.isolationReserve() != null) {
+            reserve = row.isolationReserve();
         } else {
             reserve = row.reserve();
         }

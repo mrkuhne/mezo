@@ -21,5 +21,6 @@ class MesoPlanPropertiesBindingIT extends AbstractIntegrationTest {
         assertThat(props.targetRir()).isEqualTo(1);
         assertThat(props.compoundWarmup()).isEqualTo(2);
         assertThat(props.isolationWarmup()).isEqualTo(1);
+        assertThat(props.defaultTrainingStyleOrNull()).isEqualTo("balanced");
     }
 }

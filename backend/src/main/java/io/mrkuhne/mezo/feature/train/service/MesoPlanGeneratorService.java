@@ -6,8 +6,10 @@ import io.mrkuhne.mezo.api.dto.MesoPlanGenerateRequest;
 import io.mrkuhne.mezo.api.dto.MesoPlanGenerateResponse;
 import io.mrkuhne.mezo.api.dto.MesoTemplateUpsertRequest;
 import io.mrkuhne.mezo.feature.train.config.MesoPlanProperties;
+import io.mrkuhne.mezo.feature.train.config.TrainStyleProperties;
 import io.mrkuhne.mezo.feature.train.config.VolumeProperties;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseCatalogEntity;
+import io.mrkuhne.mezo.feature.train.entity.json.GymExerciseJson;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseCatalogRepository;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -25,7 +27,9 @@ import org.springframework.stereotype.Service;
  * Skeleton (pure) → deterministic fill (pure) → optional LLM pick through the train-owned
  * {@link MesoPlanLlm} port (absent when the AI/companion switch is off) → merge (pure) → a
  * {@code MesoTemplateUpsertRequest} the FE posts back to {@code createMesoTemplate} unchanged.
- * Nothing is persisted here.
+ * Nothing is persisted here. The template carries the configured default training style
+ * ({@code mezo.meso-plan.default-training-style}, mezo-r36n9.115) and its exercises come back already
+ * stamped by {@link StyleStamper} — the same stamp the template save applies, so posting it back is a no-op.
  */
 @Service
 @RequiredArgsConstructor
@@ -38,6 +42,8 @@ public class MesoPlanGeneratorService {
     private final ExerciseCatalogRepository catalogRepository;
     private final VolumeProperties volumeProperties;
     private final MesoPlanProperties props;
+    private final TrainStyleProperties styleProps;
+    private final CatalogAttributes catalogAttributes;
     private final ObjectProvider<MesoPlanLlm> llm;
 
     /** No {@code @Transactional} here on purpose (mirrors {@code HabitAiService.suggest}): the
@@ -121,6 +127,10 @@ public class MesoPlanGeneratorService {
             dayInputs.add(MesoDayInput.builder().day(frame.day()).type(frame.type()).muscle(accent)
                 .exercises(filled.picks().stream().map(this::toExercise).toList()).build());
         }
+        TrainingStyle style = TrainingStyle.fromWire(props.defaultTrainingStyleOrNull());
+        if (style != null) {
+            dayInputs = stamp(dayInputs, style);
+        }
         String title = "Hypertrophy · " + season(LocalDate.now());
         return MesoTemplateUpsertRequest.builder()
             .title(title).shortTitle("Hypertrophy").goal("Izomtömeg építés").goalPreset(GOAL_PRESET)
@@ -130,7 +140,33 @@ public class MesoPlanGeneratorService {
             .notes(req.getGoalText() == null || req.getGoalText().isBlank() ? null : req.getGoalText().strip())
             .volumePerMuscle(null) // volume engine v2: landmarks are never stored in a template
             .days(dayInputs)
+            .trainingStyle(style == null ? null : io.mrkuhne.mezo.api.dto.TrainingStyle.fromValue(style.wire()))
             .build();
+    }
+
+    /**
+     * Stamps every generated exercise under the block style through {@link StyleStamper} (rep range,
+     * reserve, rest; working sets only where the style row fixes them), with the catalog stability read
+     * once for the whole plan. Techniques stay off: nothing here sets one.
+     */
+    private List<MesoDayInput> stamp(List<MesoDayInput> days, TrainingStyle style) {
+        CatalogAttributes.Lookup stability = catalogAttributes.load(days.stream()
+            .flatMap(d -> d.getExercises().stream()).map(GymExerciseInput::getCatalogId).toList());
+        return days.stream().map(d -> {
+            d.setExercises(d.getExercises().stream().map(e -> {
+                GymExerciseJson stamped = StyleStamper.stamp(new GymExerciseJson(null, e.getName(), e.getMuscle(),
+                    e.getWarmupSets(), e.getWorkingSets(), e.getRepMin(), e.getRepMax(), e.getTargetRIR(), null,
+                    e.getType().getValue(), null, e.getCatalogId(), e.getCountsTowardVolume(), null, null, null,
+                    null, null, null), style, stability.stable(e.getCatalogId()), styleProps);
+                e.setWorkingSets(stamped.workingSets());
+                e.setRepMin(stamped.repMin());
+                e.setRepMax(stamped.repMax());
+                e.setTargetRIR(stamped.targetRir());
+                e.setRestSec(stamped.restSec());
+                return e;
+            }).toList());
+            return d;
+        }).toList();
     }
 
     private GymExerciseInput toExercise(MesoPlanFiller.Pick p) {

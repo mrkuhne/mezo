@@ -42,7 +42,7 @@ sorral (lásd [Heti volumen](05-heti-volumen.md)). Ez a motor a súlyt és az is
 (a tartalék a blokk elején a stílus értéke, a közepén eggyel kevesebb, az utolsó terhelő héten kettővel kevesebb, a
 terhelés-csökkentő héten kettővel több; szabad súlyos gyakorlatnál sosem megy 1 alá), **megmondja a pihenőt** minden sorozathoz,
 és a tartomány tetején a stílusnak megfelelő számú ismétlést épít, mielőtt súlyt emel (4 / 3 / 2). Ha a tartalék 0–1, a motor
-nem hisz a becsült tartaléknak: „őrlésnek” számít, ha két vagy több ismétlést hagytál ki az előírthoz képest.
+nem hisz a becsült tartaléknak: „őrlésnek” számít, ha két vagy több ismétlést hagytál ki az előírthoz képest. Ugyanezt a szabályt használja a heti javaslat is: ha egy izomcsoport gyakorlata így „őrlés” lett, a következő héten nem kap új sorozatot.
 
 A **technikás sorozatot** (lásd [Technikák](15-technikak.md)) a motor nem veszi kiindulásnak és nem tekinti őrlésnek: a rendes sorozataidból számol.
 
