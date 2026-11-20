@@ -217,7 +217,7 @@
     },
     "jegyek:mezo-r36n9.16": {
       "page_id": "4168968e-752b-81dd-967e-fe6305d85e18",
-      "hash": "417669b755ef"
+      "hash": "3ba1d9a4d3e5"
     },
     "jegyek:mezo-r36n9.17": {
       "page_id": "4168968e-752b-81d9-9448-c7846b8b3377",
@@ -717,7 +717,7 @@
     },
     "kezikonyv:07-edzes/02-mezociklus-terv": {
       "page_id": "4168968e-752b-81c0-9ca3-e89afff341e8",
-      "hash": "ab16faea62c2"
+      "hash": "8a51e9486ab6"
     },
     "kezikonyv:07-edzes/03-edzeslejatszo": {
       "page_id": "4168968e-752b-8153-a900-cd5b2e535717",
@@ -1225,7 +1225,7 @@
     },
     "kezikonyv:07-edzes/16-blokk-epito": {
       "page_id": "41d8968e-752b-81cc-818e-dc11d0726e8f",
-      "hash": "43c04245d99d"
+      "hash": "f6a275d9a04f"
     },
     "kiadasok:78e52679e": {
       "page_id": "41d8968e-752b-8127-9b15-d0288d125bd0",
@@ -1317,7 +1317,7 @@
     },
     "jegyek:mezo-r36n9.105": {
       "page_id": "41d8968e-752b-8169-9f58-f659c1370d4a",
-      "hash": "a3231204cb69"
+      "hash": "41542cea8ddf"
     },
     "jegyek:mezo-r36n9.104": {
       "page_id": "41d8968e-752b-81bb-aa41-dcb786757d9b",
@@ -1369,7 +1369,7 @@
     },
     "kezikonyv:11-penz/00-attekintes": {
       "page_id": "41d8968e-752b-812e-a57d-dd4e8e2bb3c6",
-      "hash": "811b5f7fb1d2"
+      "hash": "0db7de8bca5c"
     },
     "kezikonyv:11-penz/01-adatalap": {
       "page_id": "41d8968e-752b-81a8-9511-dfeddb3c5bfa",
@@ -1437,7 +1437,7 @@
     },
     "jegyek:mezo-r36n9.116": {
       "page_id": "41e8968e-752b-816c-b2f4-ebb286228601",
-      "hash": "97ab39dac9f7"
+      "hash": "70e64a89f856"
     },
     "jegyek:mezo-r36n9.114": {
       "page_id": "41e8968e-752b-8120-9f47-ff64d36d5325",
@@ -1445,7 +1445,7 @@
     },
     "jegyek:mezo-r36n9.118": {
       "page_id": "41e8968e-752b-8158-8e7e-f33c9c9c7c21",
-      "hash": "798423219b78"
+      "hash": "cc7fc2da67d1"
     },
     "dontesek:d-2026-11-20-hianyjelzes-hozzaadassal": {
       "page_id": "41e8968e-752b-8144-8199-e9fcf69500b0",
@@ -1486,6 +1486,18 @@
     "dontesek:d-2026-11-20-kiserlet-boop-javasol": {
       "page_id": "41e8968e-752b-81b6-b52f-eae03ada0eb1",
       "hash": "c2dd6f8cb2d9"
+    },
+    "jegyek:mezo-r36n9.121": {
+      "page_id": "41e8968e-752b-810b-8cb5-d693907f9414",
+      "hash": "c0d79e65cb13"
+    },
+    "kiadasok:d39b823de": {
+      "page_id": "41e8968e-752b-8199-a03e-eaa51cd6526a",
+      "hash": "59403c77c26b"
+    },
+    "kezikonyv:11-penz/04-gyakorlas-javaslatok": {
+      "page_id": "41e8968e-752b-814e-a3ce-f7b3dfbae302",
+      "hash": "605c8f017577"
     }
   }
 }
