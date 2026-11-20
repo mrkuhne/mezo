@@ -29,6 +29,9 @@ struct MaWall: View {
     @AppStorage("wallActed") private var actedRaw = ""
     @AppStorage("wallSettled") private var settledRaw = ""
     @State private var why: WallCandidate?
+    /// The season (B6 Évad): its overview feeds the `evad` source; a tap on its card opens the Évad place.
+    @Environment(EvadStore.self) private var evad: EvadStore?
+    @Environment(\.openPlace) private var openPlace
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var today: String { brief.date }
@@ -48,6 +51,9 @@ struct MaWall: View {
         })
         r.register(WallSource(id: "brief") { [brief] input in
             briefWallCandidates(brief, now: input.now)
+        })
+        r.register(WallSource(id: WallSources.evad) { [overview = evad?.overview] input in
+            evadCandidates(overview, now: input.now)
         })
         return r
     }
@@ -107,6 +113,8 @@ struct MaWall: View {
         }
         .animation(reduceMotion ? nil : .smooth(duration: 0.35), value: wall.cards.map(\.id))
         .sheet(item: $why) { c in whySheet(c) }
+        // the season's overview is read once (cached offline) so the wall knows what the Évad page knows
+        .task(id: evad.map(ObjectIdentifier.init)) { await evad?.load() }
     }
 
     @State private var settledOpen = false
@@ -139,6 +147,7 @@ struct MaWall: View {
         if c.id.hasPrefix("etel-window") || c.id == "etel-tip" { onMeal() }
         else if c.id == "etel-supplements" { onEtelRoom() }
         else if c.id == "edzes-keszulj" { onDrill(.mozgas) }
+        else if c.area == WallSources.evad { evad?.pendingSub = evadWallOpens(c.id); openPlace(.terv) }
         settle(id: c.id, line: c.settled)
     }
 
@@ -191,6 +200,7 @@ func hue(_ area: String) -> Hue {
     case WallSources.edzes: .mozgas
     case WallSources.alvas: .alvas
     case WallSources.energia: .pulzus
+    case WallSources.evad: evadHue
     default: .forma
     }
 }

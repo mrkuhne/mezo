@@ -20,6 +20,9 @@ public final class EvadStore {
     /// Why the last read gave no answer (nil while an answer — fresh, cached or "no season" — is on screen).
     public private(set) var problem: PlanFetchError?
     public private(set) var loading = false
+    /// A sub-page someone outside the page asked for (the Ma wall's „Átnézem" → `modositas`): the Évad page opens it
+    /// once it is on screen and clears it.
+    public var pendingSub: String?
 
     /// A cached overview older than this is not shown: a month-old season week is not this week.
     public static let maxAge: TimeInterval = 14 * 86_400
