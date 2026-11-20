@@ -1104,9 +1104,9 @@
       "Alapok"
     ],
     "szulo": "mezo-r36n9.33",
-    "allapot": "Később",
     "cim": "Pénz 3. · a vagyonod és a napi hírek",
-    "mit_kapsz": "Látod a befektetéseidet időtávok szerint szétosztva, és hogy a hosszú rekesz hány évnyi fix kiadásodat fedezi. Minden reggel megkapod, mi mozdult, ami téged érint — forintban, forrásokkal, és megnyitható elemzéssel, amiben az is benne van, mennyire biztos és hol tévedhet."
+    "mit_kapsz": "Látod a befektetéseidet időtávok szerint szétosztva, és hogy a hosszú rekesz hány évnyi fix kiadásodat fedezi. Minden reggel megkapod, mi mozdult, ami téged érint — forintban, forrásokkal, és megnyitható elemzéssel, amiben az is benne van, mennyire biztos és hol tévedhet.",
+    "munkamenet": "boop-penz-l6"
   },
   "mezo-r36n9.105": {
     "tipus": "Funkció",
