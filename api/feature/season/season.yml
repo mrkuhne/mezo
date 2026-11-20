@@ -175,13 +175,13 @@ components:
         fingerprint: { type: string }
     SeasonRules:
       type: object
-      required: [processedFoodMaxNova, deloadMaintain, useLearnedExpenditure, proposeExperiments, menuDay, menuTime]
+      required: [processedFoodMaxNova, deloadMaintain, useLearnedExpenditure, proposeExperiments, menuTime]
       properties:
         processedFoodMaxNova: { type: integer, minimum: 1, maximum: 4 }
         deloadMaintain: { type: boolean }
         useLearnedExpenditure: { type: boolean }
         proposeExperiments: { type: boolean }
-        menuDay: { type: integer, minimum: 0, maximum: 6, nullable: true, description: 'null = no weekly menu' }
+        menuDay: { type: integer, minimum: 0, maximum: 6, nullable: true, description: 'null (or absent) = no weekly menu' }
         menuTime: { type: string, pattern: '^\d{2}:\d{2}$' }
     SeasonResponse:
       type: object

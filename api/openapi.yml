@@ -35951,7 +35951,6 @@ components:
         - deloadMaintain
         - useLearnedExpenditure
         - proposeExperiments
-        - menuDay
         - menuTime
       properties:
         processedFoodMaxNova:
@@ -35969,7 +35968,7 @@ components:
           minimum: 0
           maximum: 6
           nullable: true
-          description: null = no weekly menu
+          description: null (or absent) = no weekly menu
         menuTime:
           type: string
           pattern: '^\d{2}:\d{2}$'
