@@ -76,7 +76,6 @@ Boop csak akkor fogadja el, ha betű szerint benne van az üzenetben.
 | `penz_api_key` | a parancsikon kulcsa (csak egy ujjlenyomata, maga a kulcs nem) |
 
 ## Mi jön még
-- A régi appod adatainak egyszeri átköltöztetése.
 - (A Pénz oldal a telefonon, a „mire gyűjtök” rész és a keretek elkészültek — lásd: *A terület*.)
 
 ## Mi marad ki

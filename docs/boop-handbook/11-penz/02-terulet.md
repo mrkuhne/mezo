@@ -65,10 +65,11 @@ nélkül, a heti maradék azonnal 32 610 Ft-ot mutat.
 
 ## Mi jön még
 - A Gyakorlás oldal és Boop javaslatai (*Befektetnék*, *Nagyobb összeg*, *Havi stratégia*) — 4. lépés.
-- A régi appod adatainak egyszeri átköltöztetése, utána a régi app kikapcsolása.
 - Pénz-kártya a Pénz oldalon kívül (a régi Terv-kártya az Évaddal megszűnt) — ha kell, a Ma falán kap helyet.
 
 ## Mi marad ki
 - Időpont a tételek mellett: a bank és a kézi rögzítés csak napot ad.
 - Boop vásárlási tanácsa a „mire gyűjtök” soroknál (melyik hónapban, melyik lehetőség) — a javaslatokkal jön.
 - Értesítés a pénzedről — nem lesz.
+- A régi pénzügyi app adatainak átköltöztetése — nem volt mit áthozni, mert a régi appot nem használtad; a Boop Pénz
+  üresen indult, a régi app kikapcsolható.

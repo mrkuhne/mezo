@@ -333,11 +333,11 @@
     },
     "jegyek:mezo-r36n9.41": {
       "page_id": "4178968e-752b-813e-b0fe-da10e19925c0",
-      "hash": "cba313ec99d5"
+      "hash": "2d18731259dc"
     },
     "jegyek:mezo-r36n9.42": {
       "page_id": "4178968e-752b-811b-8dcf-dc61bab11031",
-      "hash": "01a40fa1b6c6"
+      "hash": "81f768cf1fdd"
     },
     "jegyek:mezo-r36n9.43": {
       "page_id": "4178968e-752b-8163-8a1d-f7c8325c6aab",
@@ -1361,7 +1361,7 @@
     },
     "jegyek:mezo-r36n9.107": {
       "page_id": "41d8968e-752b-8136-b037-d86ac83fbfd2",
-      "hash": "94b153599144"
+      "hash": "27f1d948cde2"
     },
     "jegyek:mezo-r36n9.108": {
       "page_id": "41d8968e-752b-8176-b39c-e1f34feee7f7",
@@ -1373,7 +1373,7 @@
     },
     "kezikonyv:11-penz/01-adatalap": {
       "page_id": "41d8968e-752b-81a8-9511-dfeddb3c5bfa",
-      "hash": "f76140564e46"
+      "hash": "a870b6433dff"
     },
     "jegyek:mezo-r36n9.111": {
       "page_id": "41d8968e-752b-8184-b6db-ca0c0bffae45",
@@ -1405,11 +1405,11 @@
     },
     "kezikonyv:11-penz/02-terulet": {
       "page_id": "41e8968e-752b-8171-a852-d37806bbe84f",
-      "hash": "3b5db60b7fcd"
+      "hash": "ea91ae9f27cc"
     },
     "jegyek:mezo-r36n9.113": {
       "page_id": "41e8968e-752b-8145-b144-e62b83f8070b",
-      "hash": "894ca4268c08"
+      "hash": "6ad10a528ccf"
     },
     "dontesek:d-2026-11-20-csere-kimeles": {
       "page_id": "41e8968e-752b-8121-9368-ccaea7c1e215",
@@ -1518,6 +1518,10 @@
     "kiadasok:a1b15069c": {
       "page_id": "41e8968e-752b-814c-96b3-c1985d14a5ef",
       "hash": "3ad4d31c3aa2"
+    },
+    "dontesek:d-2026-11-20-penz-nincs-atkoltoztetes": {
+      "page_id": "41e8968e-752b-819a-9a2e-e2e672448739",
+      "hash": "b84db45cb9d8"
     }
   }
 }

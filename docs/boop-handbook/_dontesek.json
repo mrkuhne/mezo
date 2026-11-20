@@ -911,5 +911,17 @@
     "miert": "Így nem sikkadnak el az új dolgok, a döntés mégis a tiéd marad.",
     "levaltotta": "—",
     "kovetkezmeny": "A régi automatikus kísérlet-javaslatok kikapcsolnak, hogy egyszerre csak egy kísérlet fusson."
+  },
+  "d-2026-11-20-penz-nincs-atkoltoztetes": {
+    "datum": "2026-11-20",
+    "terulet": [
+      "Alapok"
+    ],
+    "cim": "A régi pénzügyi appból nem hozunk át adatot",
+    "suly": "Kicsi",
+    "valasztas": "A régi pénzügyi appot nem használtad, így nincs mit átköltöztetni. Nem készül átköltöztető, a Boop Pénz üresen indult, és a régi app bármikor kikapcsolható.",
+    "miert": "Üres adatra átköltöztetőt építeni felesleges munka lenne.",
+    "levaltotta": "—",
+    "kovetkezmeny": "A régi appot nyugodtan kikapcsolhatod. Ha a banki SMS-ek automatikus rögzítését szeretnéd, a telefonod parancsikonját egyszer be kell állítani a Boopra."
   }
 }

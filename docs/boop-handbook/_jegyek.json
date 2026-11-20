@@ -409,7 +409,7 @@
       "Alapok"
     ],
     "mit_kapsz": "A havi kereted, a kategóriáid és a tételeid bekerülnek a Boopba, a banki üzeneteidből magától rögzül a költés, és beépül egy védelem, ami elkapja, ha az AI nagyobb összeget mondana, mint amennyi van.",
-    "allapot": "Később"
+    "allapot": "Lezárva"
   },
   "mezo-r36n9.42": {
     "cim": "L5 · A Pénz szoba",
@@ -419,7 +419,7 @@
       "Alapok"
     ],
     "mit_kapsz": "Egy képernyőn látod, hol tartasz a havi kerettel, mire megy el, mi jön még, és mennyi marad szabadon — ugyanolyan felületen, mint az alvás vagy az étel.",
-    "allapot": "Később"
+    "allapot": "Lezárva"
   },
   "mezo-r36n9.43": {
     "cim": "L6 · A Boop a pénzedet és a leveleidet is látja",
@@ -1149,7 +1149,9 @@
     ],
     "szulo": "mezo-r36n9.33",
     "cim": "Pénz · a régi pénzügyi app adatainak átköltöztetése",
-    "mit_kapsz": "Amikor a Pénz oldal elkészül, a régi pénzügyi appodban rögzített számláid és tételeid egyszer, egy megbeszélt napon átköltöznek a Boopba, így nem kell semmit újra beírnod. Előtte megnézzük, mennyi adat van a régi appban, és csak a jóváhagyásoddal írunk az éles adatbázisba."
+    "munkamenet": "boop-penz-import",
+    "mit_kapsz": "Amikor a Pénz oldal elkészül, a régi pénzügyi appodban rögzített számláid és tételeid egyszer, egy megbeszélt napon átköltöznek a Boopba, így nem kell semmit újra beírnod. Előtte megnézzük, mennyi adat van a régi appban, és csak a jóváhagyásoddal írunk az éles adatbázisba.",
+    "allapot": "Lezárva"
   },
   "mezo-r36n9.109": {
     "cim": "Étel: a Hét fül új, melegebb elrendezése",
