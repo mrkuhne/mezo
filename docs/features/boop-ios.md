@@ -18,6 +18,8 @@ related: [penz, fuel, pantry, recipe, dayclose, intention, journal, companion, p
 
 # Boop — native iOS app — Feature Documentation
 
+> **2026-11-20 — Boop Pénz L5 (`mezo-r36n9.103`).** `BoopAPI/openapi.yaml` re-synced with the savings-goal paths (server v3.16.0); the generator filter still excludes every Pénz operation — the area reads them through the hand-written `BoopCore/Penz/PenzClient` (see *The Pénz area* below).
+
 > **2026-11-19 — Boop Pénz L4 (`mezo-r36n9.102`, no app change).** `ios/BoopKit/Sources/BoopAPI/openapi.yaml` was regenerated with the new Pénz paths (again after the review round added amount caps and two error codes); the openapi-generator filter does not include them, so no Swift client code changed. The Pénz area's screens are L5 (`mezo-r36n9.103`); the backend they will read is [`penz.md`](penz.md).
 
 > **Owner-facing handbook (2026-11-12, `mezo-r36n9.29`):** a Hungarian, business-language handbook of every Boop

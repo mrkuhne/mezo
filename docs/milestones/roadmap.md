@@ -73,6 +73,19 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
   Spec [2026-11-17-boop-gyakorlatvalasztas-design](../superpowers/specs/2026-11-17-boop-gyakorlatvalasztas-design.md);
   [`train.md`](../features/train.md) §4, [`boop-ios.md`](../features/boop-ios.md).
 
+- **2026-11-20 — Boop Pénz L5: the area on the phone (`mezo-r36n9.103`).**
+  The Pénz area is live in Boop: `NKAreaPage(hue: .penz, display: nil)` with the bar *Ma · Pénzem · Költés ·
+  Gyakorlás* + Boop, the orb filling with the week's remaining share and carrying no number. **Költés** = the weekly
+  remainder hero, the derivation rows (*Gyakorlás* and the previous month's deficit as their own lines), the month
+  standing, the category breakdown, today's items with the needs-review row and its review sheet, *mire gyűjtök*
+  (new server table `penz_savings_goal` + `GET/POST/PUT/DELETE /api/penz/savings-goals`, v3.16.0), month close and
+  budgets; **Ma** = the verdict rule (needs review → an open month → „Ma nincs dolgod a pénzeddel"), two buttons and
+  three computed numbers (the investable figure is not computed yet, so the third is the per-day figure). Cash capture
+  is offline-first: `OutboxKind.penzExpense` → `POST /api/penz/transactions` with `clientRef` = the outbox item id,
+  shown at once and subtracted from the week until delivered; also on the global „+". Pénzem / Gyakorlás are
+  `NKNotLiveYet` (L6/L7); a read-only Pénz card on Terv; `NKBare(glyph:)` added to the kit. Hand-written lenient client
+  (`BoopCore/Penz/`), no generator change. [`boop-ios.md`](../features/boop-ios.md), [`penz.md`](../features/penz.md).
+
 - **2026-11-19 — Boop Pénz L4: the money foundation (`mezo-r36n9.102`).**
   Backend only, no screen. A money value type (minor units + currency + a HUF twin computed once at write time from
   the frankfurter.dev ECB rate of the row's date and stored, global per-date rate cache, 7-day fallback, else 503
