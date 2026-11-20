@@ -8,6 +8,7 @@
 //   docs/boop-handbook/_dontesek.json         → Döntések
 //   docs/boop-handbook/_kiadasok.json         → Kiadások
 //   docs/boop-handbook/NN-*/**.md             → Kézikönyv
+//   docs/boop-handbook/_funkciok.json         → Szerverfunkciók (every backend feature per domain + its iPhone-app status)
 // State: docs/boop-handbook/_notion-state.json (Notion ids + per-record content hash; committed).
 //
 // Usage:
@@ -170,6 +171,40 @@ function buildReleases() {
   }));
 }
 
+// ---------- Szerverfunkciók ----------
+// The rebuild tracker (mezo-r36n9.126): every server capability, grouped by domain, with where it stands in the
+// iPhone app. One row per feature in _funkciok.json; the order of the file is the order on the page.
+const FEATURE_AREAS = ['Alapok', 'Edzés', 'Étel', 'Alvás és egészség', 'Napló és napi ritmus', 'Célok és évad', 'Boop és AI', 'Pénz'];
+const APP_STATES = ['Kész', 'Részben kész', 'Épül', 'Tervben', 'Nincs még', 'Nem kell'];
+const APP_ICON = { 'Kész': '✅', 'Részben kész': '🟡', 'Épül': '🔨', 'Tervben': '🗺️', 'Nincs még': '⬜', 'Nem kell': '🚫' };
+const APP_COLOR = { 'Kész': 'green_bg', 'Részben kész': 'yellow_bg', 'Épül': 'orange_bg', 'Tervben': 'blue_bg', 'Nincs még': 'gray_bg', 'Nem kell': 'gray_bg' };
+
+function buildFeatures() {
+  const file = join(HB, '_funkciok.json');
+  if (!existsSync(file) || !ids.data_sources.funkciok) return [];
+  const d = readJson(file);
+  return Object.entries(d).filter(([k]) => !k.startsWith('_')).map(([k, v], idx) => {
+    if (!FEATURE_AREAS.includes(v.terulet)) throw new Error(`_funkciok.json ${k}: unknown terulet "${v.terulet}"`);
+    if (!APP_STATES.includes(v.app)) throw new Error(`_funkciok.json ${k}: unknown app state "${v.app}"`);
+    return {
+      key: `funkciok:${k}`, db: 'funkciok', icon: APP_ICON[v.app],
+      props: {
+        'Funkció': v.cim, 'Terület': v.terulet, 'Az appban': v.app, 'Mit tud a szerver': v.mit_tud,
+        'Az appban most': v.app_megjegyzes ?? '', 'Sorrend': (FEATURE_AREAS.indexOf(v.terulet) + 1) * 1000 + idx,
+        'Gépi azonosító': k,
+      },
+      rel: {
+        'Jegyek': (v.jegyek ?? []).map((j) => `jegyek:${j}`),
+        'Kézikönyv': (v.kezikonyv ?? []).map((h) => `kezikonyv:${h}`),
+      },
+      content: [
+        `<callout icon="${APP_ICON[v.app]}" color="${APP_COLOR[v.app]}">\n**Az appban: ${v.app}.** ${escapeTags(v.app_megjegyzes ?? '')}\n</callout>`,
+        `## 🖥️ Mit tud a szerver\n${escapeTags(v.mit_tud)}`,
+      ].join('\n\n'),
+    };
+  });
+}
+
 // ---------- Kézikönyv ----------
 function parseFrontmatter(text) {
   const m = text.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
@@ -254,7 +289,7 @@ function resolve(row) {
 
 function plan(only) {
   const { rows: tickets, missing } = buildTickets();
-  let rows = [...tickets, ...buildDecisions(), ...buildReleases(), ...buildHandbook(tickets)];
+  let rows = [...tickets, ...buildDecisions(), ...buildReleases(), ...buildHandbook(tickets), ...buildFeatures()];
   if (only) rows = rows.filter((r) => only.includes(r.db));
   const ops = [];
   for (const row of rows) {
@@ -311,7 +346,7 @@ if (cmd === 'plan' || cmd === 'check') {
   } else if (kind === 'relations') {
     // second-pass rows whose only change is relations to rows created in the same pass:
     // send just these properties with update_properties (content and other properties are already in Notion)
-    const REL = ['Szülő', 'Jegyek'];
+    const REL = ['Szülő', 'Jegyek', 'Kézikönyv'];
     const ops = last.ops.filter((o) => o.op === 'update' && (!target || o.db === target) && state.records[o.key]?.hash === 'pending-relations');
     console.log(JSON.stringify(ops.map((o) => ({
       key: o.key, page_id: o.page_id,

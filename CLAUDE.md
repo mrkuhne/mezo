@@ -93,9 +93,11 @@ result:**
 > for the product — what is being built, what is done, what is planned, how and why every feature works, every
 > decision, every release. He reads only that. It applies to **every session**, not only `/boop` ones.
 
-The space (root page id in `docs/boop-handbook/_notion-state.json`) has four parts, all in Hungarian business
+The space (root page id in `docs/boop-handbook/_notion-state.json`) has five parts, all in Hungarian business
 language: **Jegyek** (Jira-like board of every work item), **Kézikönyv** (every section / feature / small feature:
-what it does, how, why, settings, data tables, what comes next, what is left out), **Döntések**, **Kiadások**.
+what it does, how, why, settings, data tables, what comes next, what is left out), **Döntések**, **Kiadások**, and
+**Szerverfunkciók** (the rebuild tracker: every backend feature per domain with its iPhone-app status, source
+`docs/boop-handbook/_funkciok.json` — when a slice brings a server feature into the app, flip its `app` there).
 
 **How it stays true.** Notion is written by the machine from the repo, one way: tickets from **bd** (+ Hungarian
 overlay `docs/boop-handbook/_jegyek.json`, state via `allapot:<slug>` labels), everything else from
@@ -114,6 +116,7 @@ plan, its look) keeps the space true **in the same session**:
 4. **A feature added, changed or cut** → its page under `docs/boop-handbook/NN-terulet/` (format in that folder's
    README) — the handbook must describe the product as it is on `main`.
 5. **Merge to main the owner can feel** → a row in `_kiadasok.json` (key = merge commit short sha).
+   A server feature reaching the app (or a new backend feature) → update its row in `_funkciok.json`.
 6. **Before you report:** sync (`plan` → apply → `check` exits 0) and commit `_notion-state.json` with your change.
    No Notion tools in the session → say so in the report and file a `notion-sync` bd issue under the epic; never
    skip silently.
