@@ -166,7 +166,7 @@
       "Terv"
     ],
     "mit_kapsz": "Egy néhány hetes évad céllal, amelyből az edzés, az étkezés, az alvás és a súly is következik; minden módosításnál élőben látod, mire hat. Heti menü, bevásárlólista és kísérletek arról, mi hat rád.",
-    "munkamenet": "quizzical-williams-c8b052"
+    "munkamenet": "ecstatic-babbage-7fa58b"
   },
   "mezo-r36n9.17": {
     "cim": "B7 Napi kapacitás — mennyit bír ma a napod",
@@ -1278,6 +1278,36 @@
     "szulo": "mezo-r36n9.33",
     "cim": "Pénz · heti áttekintés: mi számít tényleg hosszú távon",
     "mit_kapsz": "Hetente egyszer egy rövid összefoglaló rekeszenként arról, mi az, ami a hosszú távú pénzedet tényleg érinti — a napi hírek zajától elkülönítve. Értesítés nélkül, teendő-gomb nélkül."
+  },
+  "mezo-r36n9.122": {
+    "cim": "Évad: az edzésnapok módosítása a futó blokkot is átrendezi",
+    "tipus": "Feladat",
+    "szakasz": "B6 A Terv",
+    "terulet": [
+      "Terv"
+    ],
+    "mit_kapsz": "Ha az Évadban másik napokra vagy több edzésre váltasz, egyetlen elfogadással a futó edzésblokk is átrendeződik. Addig, amíg fut a blokk, az edzésnapok zárolva vannak.",
+    "szulo": "mezo-r36n9.16"
+  },
+  "mezo-r36n9.123": {
+    "cim": "Évad: korábbi évadok és a mostani súly az új évad céljánál",
+    "tipus": "Apróságok",
+    "szakasz": "B6 A Terv",
+    "terulet": [
+      "Terv"
+    ],
+    "mit_kapsz": "Visszanézheted a lezárt évadjaidat, és az új évad első lépése a mostani súlyodtól a célig mutatja az utat.",
+    "szulo": "mezo-r36n9.16"
+  },
+  "mezo-r36n9.124": {
+    "cim": "Évad: belső rendrakás az étkezési cél számításában",
+    "tipus": "Karbantartás",
+    "szakasz": "B6 A Terv",
+    "terulet": [
+      "Terv"
+    ],
+    "mit_kapsz": "Nincs látható változás: egy ideiglenes belső megoldás tisztább formát kap, hogy a későbbi bővítések biztonságosak legyenek.",
+    "szulo": "mezo-r36n9.16"
   },
   "mezo-r36n9.121": {
     "tipus": "Karbantartás",

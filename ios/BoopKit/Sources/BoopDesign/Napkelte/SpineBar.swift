@@ -1,9 +1,9 @@
 import SwiftUI
 
-/// The spine's bottom bar: Ma · Terv · Napló · Boop as icons only (names stay for VoiceOver) on a glass capsule,
+/// The spine's bottom bar: Ma · Évad · Napló · Boop as icons only (names stay for VoiceOver) on a glass capsule,
 /// and the "+" as its own glass circle beside it.
 public struct NKSpineBar: View {
-    public static let labels = ["Ma", "Terv", "Napló", "Boop"]
+    public static let labels = ["Ma", "Évad", "Napló", "Boop"]
     private static let glyphs = ["sun-ink", "chart-deep", "book-sage"]
     @Binding var selected: Int
     let onPlus: () -> Void

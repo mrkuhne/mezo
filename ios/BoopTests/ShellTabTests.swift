@@ -21,7 +21,7 @@ struct ShellTabTests {
 
     @Test func eachPlaceHasItsSky() {
         let panels = shellPanels([:])
-        #expect(panels.map(\.hue) == [.forma, .fuel, .alvas, .forma])
+        #expect(panels.map(\.hue) == [.forma, .forma, .alvas, .forma], "Évad paints the violet dusk")
         let maOnSleep = shellPanels([.ma: NKBackdrop(hue: .alvas, heroHeight: 900, scrollY: 0)])
         #expect(maOnSleep[0].hue == .alvas)
         #expect(maOnSleep[0].heroHeight == 900)

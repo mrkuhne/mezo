@@ -2,7 +2,7 @@
 cim: Súlycél és célmotor
 szint: Funkció
 terulet: Terv
-allapot: Tervezve
+allapot: Élesben
 hol: [iPhone app, Háttérrendszer]
 szulo: 00-attekintes
 szakasz: [B6]
@@ -17,7 +17,8 @@ osszefoglalo: Megadod, hová szeretnél eljutni és milyen tempóban, a motor ki
 - **Védőkorlátok:** figyelmeztet, ha az erő vagy a heti izommunka veszélybe kerül, vagy túl gyors a fogyás (csak figyelmeztet,
   nem tilt).
 
-A motor ma a webes appnak dolgozik; a Boop B6-ban kap hozzá felületet (addig a webes appban állítod be).
+A célt a Boopban **az évadon keresztül** állítod: az Új évad első lépésében választod az irányt, a Módosításban a heti tempót,
+és a motor minden lépésnél azonnal újraszámol. A célnak nincs külön oldala — az évad az egyetlen hely, ahol változik.
 
 ## Hogyan működik
 1. **Nyugalmi anyagcsere (BMR):** ha ismert a testzsír-százalék, a Katch-McArdle képlet (a sovány testtömegből), egyébként a
@@ -30,9 +31,12 @@ A motor ma a webes appnak dolgozik; a Boop B6-ban kap hozzá felületet (addig a
    energiaigény ± a tempóból adódó napi különbség (1 kg ≈ 7700 kcal alapon), de soha nem a BMR alá.
 5. **Fehérje:** testsúly-kilogrammonként (alapból 2,0 g), a zsír a választott makróarányból (legalább 0,5 g/kg), a szénhidrát a maradék.
 6. **Tempó-sávok:** hetente a testsúly 0,7%-a a cél; 1,0% fölött túl gyors.
-7. **Újraszámolás** azonnal: cél aktiválásakor, mérlegeléskor, testadat-változáskor, étrendi beállítás mentésekor, terv csatolásakor.
+7. **Újraszámolás** azonnal: cél aktiválásakor, mérlegeléskor, testadat-változáskor, étrendi beállítás mentésekor, terv csatolásakor,
+   és amikor elfogadsz egy évad-módosítást.
+   - **Próbaszámolás (évad-előnézet):** a motor egy még el nem mentett heti edzés- és sportbeosztásra is ki tud számolni
+     mindent — ugyanazzal a módszerrel, de semmit nem ment el. Ebből lesz a Módosítás „Ennyi változna” része.
 8. **Heti felülvizsgálat:** hétfő reggel kis lépésű korrekciós javaslat, ha a valóság eltér a tervtől (alvás-adósság esetén óvatosabban).
-   Ezeket a Boop egy elfogad/elvet kártyaként mutatja.
+   A Boopban ez elfogad/elvet kártyaként az évad 2. szakaszával érkezik a Ma falára.
 
 ## Miért így
 Minden számítás a szerveren van, ezért a Boopnak semmilyen matekot nem kell átvennie (kutatás 10 §1). A céldátumot és a
@@ -65,7 +69,7 @@ megvalósíthatóságot is a szerver adja, így a telefon és a web nem mondhat 
 
 ## Mi jön még
 - Testösszetétel: a Health-ből jövő friss testzsír a BMR-be (lásd [Test kártya](04-test-kartya.md)).
-- B6: célbeállító a Boopban (profil + cél + tempó → előnézet → létrehozás egy lépésben) és a súlycél a Terv-csomag része.
+- A célsúly és az évad hossza is állítható lesz a Módosításban (ma: az irány az Új évadban, a tempó a Módosításban).
 - Nyitott (spec §7): ha a B5 átalakítja az edzés-oldalt, a motor edzés-energiáját meg kell tartani, vagy a Health aktív energiájára váltani.
 
 ## Mi marad ki

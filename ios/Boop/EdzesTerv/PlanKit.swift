@@ -234,6 +234,7 @@ func planErrorText(_ error: PlanFetchError) -> String {
     case .unauthorized: "Lejárt a bejelentkezésed. Lépj be újra."
     case .notFound: "Ezt a blokkot már nem találom."
     case .rejected: "A szerver ezt így nem fogadta el."
+    case .conflict("SEASON_REQUIRED"): "Edzésblokk csak évadhoz indulhat. Az Évad oldalon indíthatsz egyet."
     case .conflict: "Ez közben lezárult, ezért nem változott."
     case .dayWorkoutRunning: "Ezen a napon most fut az edzésed — utána szerkesztheted."
     case .server: "Valami elakadt a szerveren. Próbáld újra kicsit később."

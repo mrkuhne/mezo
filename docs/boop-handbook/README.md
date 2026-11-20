@@ -15,7 +15,7 @@ Epic: `mezo-r36n9` · tükör jegy: `mezo-r36n9.29`.
 | `01-alapok/` | Alapok — fiók, telepítés, kinézet, navigáció, értesítések |
 | `02-ma/` | Ma — a kezdőlap: reggel, napközben, este |
 | `03-naplo/` | Napló — check-in, napi cél, napló, esti zárás története |
-| `04-terv/` | Terv — célok, testsúly, Test kártya, étrend + edzésterv |
+| `04-terv/` | Terv — az **Évad** (a Terv új neve, 2026-11-20): az évad, célok, testsúly, Test kártya, étrend + edzésterv. A Notion-terület neve marad „Terv”, hogy a jegyek és az oldalak egy csoportban maradjanak |
 | `05-alvas/` | Alvás |
 | `06-etel/` | Étel |
 | `07-edzes/` | Edzés — edzés + Apple Watch |

@@ -30,7 +30,7 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 | Epic | State | What it is |
 |---|---|---|
-| `mezo-r36n9` — **Boop native iOS app** | ◐ S1, S2, S2.5, S3 shipped (2026-11-10); B0 deployed, B1 Adatalap (free team) + B2 Gerinc shipped (2026-11-11); B3 Napi ritmus shipped (2026-11-12); B4 Étel shipped (2026-11-13); **a kezdőlap (nyolc gömb körben), a közös területváz (L0) és az élő Ma-fal (L0/b) shipped (2026-11-16); **B5 Edzés — a terület, az eligazítás, a lejátszó és a lezárás — shipped (2026-11-17); a Gyakorlatok, az Előzmények, az Egyedi edzés, a Live Activity és a Watch még hátra; az edzésmotor magja (volumen-motor v2, S1: a terv a szám, `mezo-r36n9.65`) shipped (2026-11-18), a további szeletek (sáv-értékelő, heti javaslat API, stílus és technikák, Boop-képernyők) még hátra** | The native SwiftUI iPhone app in the Napkelte look (since S2.5; Lágy before) that replaces the web app once complete; S1 = frame (auth, onboarding, shell, weekly install); S2 = Apple Health + calendar data; S3 = the morning brief and the real Nap · Mai; B3 = the offline-first daily loop; B4 = the food room (Étel). **Re-planned 2026-11-11** as a standalone app, slices B0–B8 ([spec](../superpowers/specs/2026-11-11-boop-standalone-design.md)). [`boop-ios.md`](../features/boop-ios.md). |
+| `mezo-r36n9` — **Boop native iOS app** | ◐ S1, S2, S2.5, S3 shipped (2026-11-10); B0 deployed, B1 Adatalap (free team) + B2 Gerinc shipped (2026-11-11); B3 Napi ritmus shipped (2026-11-12); B4 Étel shipped (2026-11-13); **a kezdőlap (nyolc gömb körben), a közös területváz (L0) és az élő Ma-fal (L0/b) shipped (2026-11-16); **B5 Edzés — a terület, az eligazítás, a lejátszó és a lezárás — shipped (2026-11-17); a Gyakorlatok, az Előzmények, az Egyedi edzés, a Live Activity és a Watch még hátra; az edzésmotor magja (volumen-motor v2, S1: a terv a szám, `mezo-r36n9.65`) shipped (2026-11-18), a további szeletek (sáv-értékelő, heti javaslat API, stílus és technikák, Boop-képernyők) még hátra**; **B6 Évad S1 — a Terv helyén az Évad: az évad, az élő következmény-előnézet, az edzésblokk-kapu — shipped (2026-11-20, `mezo-r36n9.16`); S2–S4 (tervhűség + AI, heti menü + bevásárlólista, kísérletek) még hátra** | The native SwiftUI iPhone app in the Napkelte look (since S2.5; Lágy before) that replaces the web app once complete; S1 = frame (auth, onboarding, shell, weekly install); S2 = Apple Health + calendar data; S3 = the morning brief and the real Nap · Mai; B3 = the offline-first daily loop; B4 = the food room (Étel). **Re-planned 2026-11-11** as a standalone app, slices B0–B8 ([spec](../superpowers/specs/2026-11-11-boop-standalone-design.md)). [`boop-ios.md`](../features/boop-ios.md). |
 | `mezo-b3pp` — **Phase 5 deep memory** | ◐ 37/41 (90%) | See the Phase 5 bullet above. |
 | `mezo-1gim` — **Karakter (character dossier)** | ◐ 15/18 (83%) | 7-dimension user profile + the AI profiling „konzílium". [`character.md`](../features/character.md). |
 | `mezo-6dii` — **Shared RAG memory platform** | ◐ 9/9 (100%, not yet closed) | The canonical `memory_item`/`memory_vector` retrieval projection every AI consumer will read, plus the chat pilot behind an `OLD`/`SHADOW`/`NEW` switch. [ADR 0036](../decisions/0036-shared-memory-platform-with-gradual-consumer-adoption.md), [`companion.md`](../features/companion.md) §4. |
@@ -73,6 +73,23 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
   Not yet: adding/renaming/moving days (needs a server addition); coverage hints are `mezo-r36n9.114`. Plan
   [2026-11-20-boop-blokk-szerkeszto](../superpowers/plans/2026-11-20-boop-blokk-szerkeszto.md); docs
   [`boop-ios.md`](../features/boop-ios.md), [`train.md`](../features/train.md).
+- **2026-11-20 — Boop B6 Évad S1: the season replaces Terv (`mezo-r36n9.16`).**
+  New backend feature `season` (contract `api/feature/season/season.yml`, tag `Season`; tables `season`,
+  `season_allowed_recipe`, `season_revision`): one N-week season that owns its goal (1:1), writes the weekly gym + sport
+  slots and the sleep need on accept and attaches its block through `goal_plan_link`. A no-persist live preview runs the
+  goal engine's new draft overload over the draft schedule (training/rest-day kcal, protein, carbs, the week's total
+  `weekKcal`, sleep need + bedtime, target date or maintain band, guard warnings, the *Ehhez ezt kell tenned* rules);
+  the accept is fingerprinted (409 `SEASON_PREVIEW_STALE`) and one transaction with a revision row. Sleep need = his
+  sleep goal (else 7 h 30) + 6 min per weekly session, cap 8 h 30 (Boop's starting rule); closing gives the base back.
+  Gym days are locked while the season's block runs (409 `SEASON_BLOCK_DAYS_LOCKED`; the one-accept block re-arrange is
+  `mezo-r36n9.122`). **No new training block without a season** (409 `SEASON_REQUIRED`,
+  `mezo.season.mesocycle-gate.enabled`, planned seasons within 7 days count; running blocks untouched). The overview
+  read model feeds the phone's **Évad** place (spine label „Évad", was Terv): head + verdict, Mi mire hat, Súly, Az évad
+  terve, Következik, Módosítás, Szabályok, Új évad, the empty state, offline from `ServerCache`. Menü / Lista / Hatás say
+  „hamarosan" until S3 / S4; adherence and insights arrive in S2. The Terv frame's Pénz card left with Terv.
+  Spec [2026-11-20-boop-evad-design](../superpowers/specs/2026-11-20-boop-evad-design.md), plan
+  [2026-11-20-boop-evad](../superpowers/plans/2026-11-20-boop-evad.md); [`season.md`](../features/season.md),
+  [`boop-ios.md`](../features/boop-ios.md), [`goal-engine.md`](../features/goal-engine.md), [`train.md`](../features/train.md).
 
 - **2026-11-20 — Train: per-class reserve, reachable weekly grind, generated blocks default to balanced (`mezo-r36n9.115`, closes `mezo-s5sd4`).**
   From the Muscle Ladder re-check (owner choice „Alapstílus + tartalék”): style rows gain optional

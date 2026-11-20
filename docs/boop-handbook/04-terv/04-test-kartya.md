@@ -6,11 +6,11 @@ allapot: Tervezve
 hol: [iPhone app, Apple Health, Háttérrendszer]
 szulo: 00-attekintes
 szakasz: [Test]
-osszefoglalo: A Feelfit mérleg súlya, testzsírja és sovány testtömege egy kártyán a Tervben, és a friss testzsír pontosítja a kalóriacélt.
+osszefoglalo: A Feelfit mérleg súlya, testzsírja és sovány testtömege egy kártyán az Évadban, és a friss testzsír pontosítja a kalóriacélt.
 ---
 
 ## Mit csinál
-Egy új **„Test”** kártya (vagy szoba) a Terv oldalon, a szokásos szobaváz szerint:
+Egy új **„Test”** kártya (vagy szoba) az Évad oldalon, a szokásos szobaváz szerint:
 
 1. **Ítélet-mondat**, például: „A súlyod a terv szerint csökken; a zsírszázalék két hét alatt kicsit lejjebb ment.”
 2. **Súlytrend** a cél vízvonalával, alatta halkabban a **testzsír-százalék** és a **sovány testtömeg**.

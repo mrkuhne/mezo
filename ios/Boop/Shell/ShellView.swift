@@ -2,7 +2,7 @@ import SwiftUI
 import BoopCore
 import BoopDesign
 
-/// The four places of the spine, in bar order: Ma · Terv · Napló · Boop.
+/// The four places of the spine, in bar order: Ma · Évad · Napló · Boop (Évad was Terv; its key stays `terv`).
 enum ShellTab: Int, CaseIterable {
     case ma, terv, naplo, boop
 
@@ -11,7 +11,7 @@ enum ShellTab: Int, CaseIterable {
     /// What the scene storage held: the new keys map to themselves, anything else (the old domain names) lands on Ma.
     static func restored(_ raw: String) -> ShellTab { ShellTab(key: raw) ?? .ma }
     /// The colour world the place paints until its page reports another.
-    var defaultHue: Hue { [.forma, .fuel, .alvas, .forma][rawValue] }
+    var defaultHue: Hue { [.forma, evadHue, .alvas, .forma][rawValue] }
 }
 
 /// Lets a page send the owner to another place of the spine, as if he had tapped the bar (the day page's
@@ -224,7 +224,7 @@ struct ShellView: View {
     @ViewBuilder private func page(_ tab: ShellTab) -> some View {
         switch tab {
         case .ma: KezdolapView()
-        case .terv: TervView()
+        case .terv: EvadPage()
         case .naplo: NaploView()
         case .boop: BoopTabView()
         }
@@ -267,3 +267,6 @@ func greeting(_ date: Date = Date(), calendar: Calendar = .current) -> String {
     default: "Jó estét"
     }
 }
+
+/// "12,4" — one decimal, Hungarian comma.
+func hungarianKg(_ kg: Double) -> String { String(format: "%.1f", locale: Locale(identifier: "hu_HU"), kg) }

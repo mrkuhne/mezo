@@ -2,16 +2,21 @@
 title: Goal Engine (G5–G6)
 type: feature-domain
 status: done
-updated: 2026-11-18
-tags: [goal, engine, backend, tdee, projection, guards, adaptive]
+updated: 2026-11-20
+tags: [goal, engine, season, backend, tdee, projection, guards, adaptive]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/goal
   - backend/src/main/java/io/mrkuhne/mezo/feature/train/service/WeeklyScheduledActivityService.java
   - api/feature/goal/goal.yml
-related: [me, fuel, lifegoal, _platform-api-backend, _platform-data-layer, ../research/entities/exist-io.md, ../research/concepts/trend-arrows-and-baselines.md, ../research/concepts/idempotent-daily-recompute.md]
+related: [season, me, fuel, lifegoal, _platform-api-backend, _platform-data-layer, ../research/entities/exist-io.md, ../research/concepts/trend-arrows-and-baselines.md, ../research/concepts/idempotent-daily-recompute.md]
 ---
 
 # Goal Engine (G5–G6) — Feature Documentation
+
+> **2026-11-20 — Boop B6 Évad S1 (`mezo-r36n9.16`).** A **draft calculation** for the season's live preview: a 4-arg
+> `GoalPrescriptionCalculator.calculate(…, draftEat)` and a 5-arg `GoalProjectionService.project(…, draftScheduledEat)`
+> price an UNSAVED gym + sport schedule on a detached goal, persisting nothing (§3 *Draft calculation*). While a season
+> is active it owns the sleep need, so `sleepTargetH` follows the season (§5). Feature doc: [`season.md`](season.md).
 
 > One-line: the backend **TDEE-bootstrap → segmented projection → soft-guards → feasibility-graded prescription** engine that turns a `Cél` goal + its plan timeline + the EWMA weight trend into a per-segment "recept". **Status: ✅ backend done (goal-system G5, `mezo-g1u`)**; FE surfacing is the recept card in Me/`Cél` (see [`me.md`](me.md) §2). This is a *domain* feature with no route of its own — it produces data the `Cél` surface renders. **Adaptive TDEE has landed** (Diet Plan slice 5, `mezo-r4n7`): a Monday weekly review compares the observed EWMA rate to the goal's target rate and proposes a smoothed kcal correction; once accepted, `prescription.basis="adaptive"` (§3/§9). **Learned expenditure Part 1 has landed** (`mezo-zz91i`): a small Kalman filter learns the user's real non-exercise base from logged intake + the weight trend and serves it automatically as `neatBaselineKcal`, no approve step, exclusive per user with the adaptive-correction suggestion (§3/§9). **Learned expenditure Part 2 has landed** (`mezo-3n2so`): the weekly „Heti tanulás" card + dismiss, the „Hogy tanultam?" week-by-week history page, per-day COMPLETE/INCOMPLETE marks with an immediate re-chain of the affected + every later week, and a per-user learning switch in diet settings — see §3 „Learned expenditure Part 2". Only the Phase-3 **AI evaluator** (replacing the heuristic gate) and the Profile TDEE card's formula-only display (`mezo-qnsl9`, §9) stay deferred.
 
@@ -74,6 +79,33 @@ Service responsibilities (all `@Service`, constructor-injected, stateless):
 **Derived weekly rate (G6 `mezo-06n`).** `rateTargetPctPerWeek` is **server-derived**, not a client input: `GoalService.applyUpsert` calls `GoalFeasibilityService.deriveRatePctPerWeek(...)` on every create/update (stored as an unsigned magnitude; the G5 engine applies the trajectory sign). It was dropped from `GoalUpsertRequest` and stays on `GoalResponse`.
 
 `GoalEngineService` is the *only* `@Transactional` link (it writes the goal); every other service is pure/read-only so it is trivially testable in isolation.
+
+### Draft calculation — an unsaved weekly schedule (Boop B6 Évad, `mezo-r36n9.16`)
+
+The season's live preview ([`season.md`](season.md) §3.1) needs the numbers a **not-yet-accepted** gym + sport
+schedule would give, on a goal that may not exist yet. Nothing is persisted on this path:
+
+- **`GoalPrescriptionCalculator.calculate(userId, goal, draftPreferences, draftEat)`** — the 4-arg overload. `draftEat`
+  maps the rest energy (kcal/hour, possibly null) to the draft's gym + sport EAT (kcal/day). When non-null, the
+  calculator swaps **only the scheduled (gym + sport) part** of the weekly EAT for it — `total − scheduled + draft` in
+  the bootstrap — so the owner's active running block is still added as today; with `draftEat == null` it is the plain
+  3-arg call. `goal` may be a detached, never-saved entity (with `createdBy` set).
+- **`GoalProjectionService.project(goal, userId, bootstrap, trend, draftScheduledEat)`** — the 5-arg overload; every
+  segment's maintenance uses `draftScheduledEat.apply(restKcalPerHour)` instead of
+  `WeeklyScheduledActivityService.scheduledWeeklyEatKcalPerDay` (running EAT per segment unchanged).
+- **`WeeklyScheduledActivityService.draftWeeklyEatKcalPerDay(List<DraftSlot>, rest)`** / `draftSlotKcal` — the same
+  net activity-energy model and rounding as the scheduled sum, over given slots instead of the repositories (a gym slot
+  with `durationMin = 0` uses the configured default). Pinned by `WeeklyScheduledActivityDraftTest`
+  (`draftEatEqualsScheduledEatForSameSlots`, `fifthGymSlotRaisesEat`).
+- **The draft reaches the 3-arg body through a ThreadLocal** (`DRAFT_EAT`), set and removed in `try/finally` around
+  the call: the frozen biometrics↔goal ArchUnit cycle (archunit-store) records that body's biometrics reads by
+  signature and source order, so the body could not move or change signature. Tech debt **`mezo-r36n9.124`**
+  (an explicit parameter + ArchUnit re-freeze).
+- The season's adapter (`feature/season/service/SeasonGoalAdapter`, season-side to avoid a goal → season cycle) runs
+  the draft prescription through the same `DayTargetProjector` the Fuel day uses, so the preview's training-day /
+  rest-day kcal are what the day will serve (each day = base + that day's movement + the goal balance; an extra weekly
+  session moves the week total, not the training-day target). Covered by `GoalPrescriptionDraftIT`
+  (`draftWithMoreSessionsRaisesSegmentKcal`).
 
 ### Recompute triggers
 
@@ -283,7 +315,7 @@ The engine is a **consumer hub** — it reads three other domains and writes one
 - **← Biometrics/weight (the spine).** *Contract:* `WeightTrendResponse` (EWMA series + rates + sufficiency) from `WeightTrendService.computeTrend(userId)`. The projection uses it for rate reconciliation; the muscle guard uses `last4wRateKgPerWeek` for the rate-cap. The same service backs `GET /api/biometrics/weight/trend`, which the FE `useWeight` folds into `weightTrends` ([`_platform-data-layer.md`](_platform-data-layer.md) §4).
 - **← Biometrics/weight, raw daily means (the learned-expenditure filter's scale input, `mezo-zz91i`).** *Contract:* `WeightTrendQuery.dailyMeanWeightKg(userId, from, to)` (`techcore/query/WeightTrendQuery.java`, implemented by `WeightTrendService`) — the owner's weigh-ins in a range, same-day entries averaged, a day without one absent. Read through the **same feature-neutral techcore seam** the Goal Hub overview already uses (above), deliberately, so `ExpenditureLearningService` gains no new direct edge into biometrics (the frozen goal↔biometrics cycle, `mezo-ah18.15`). This is a *different* read than the EWMA trend: the filter wants raw daily means, not the smoothed spine.
 - **← Biometrics/profile.** *Contract:* `BiometricProfileEntity` (sex, heightCm, birthDate, bodyFatPct, **activityLevel**) → the TDEE bootstrap. A missing profile is the graceful path (no throw).
-- **← Biometrics/sleep (the sleep-target port, mezo-3g5w).** *Contract:* the sleep-owned **`SleepTargetPort.targetHours(userId)`** (`feature/biometrics/sleep/service`, implemented by `SleepAnchorResolver`) resolves the prescription's `sleepTargetH` from the user's saved `sleep_goal.targetMinutes`, or the config ghost `mezo.sleep.default-target-min` (8.0h) when no sleep-goal row exists — replacing the old hardcoded `DEFAULT_SLEEP_TARGET_H` seed inside `GoalEvaluationService.assemble` (which keeps only a defensive null-fallback of 8.0 for a careless caller). Never null by contract. Covered by `feature/biometrics/sleep/service/SleepTargetResolverTest` (goal-row vs config-ghost resolution) and `GoalEvaluationServiceIT.testAssemble_shouldCarryProvidedSleepTarget_whenSegmentsEmitted` (the resolved value rides onto every segment).
+- **← Biometrics/sleep (the sleep-target port, mezo-3g5w).** *Contract:* the sleep-owned **`SleepTargetPort.targetHours(userId)`** (`feature/biometrics/sleep/service`, implemented by `SleepAnchorResolver`) resolves the prescription's `sleepTargetH` from the user's saved `sleep_goal.targetMinutes`, or the config ghost `mezo.sleep.default-target-min` (8.0h) when no sleep-goal row exists — replacing the old hardcoded `DEFAULT_SLEEP_TARGET_H` seed inside `GoalEvaluationService.assemble` (which keeps only a defensive null-fallback of 8.0 for a careless caller). Never null by contract. Covered by `feature/biometrics/sleep/service/SleepTargetResolverTest` (goal-row vs config-ghost resolution) and `GoalEvaluationServiceIT.testAssemble_shouldCarryProvidedSleepTarget_whenSegmentsEmitted` (the resolved value rides onto every segment). **Since Boop B6 Évad S1 (`mezo-r36n9.16`) the sleep need is owned by the season while one is active:** the season writes its derived need (base + 6 min per weekly gym / sport session, cap 8 h 30 — [`season.md`](season.md) §3.4) into `sleep_goal.target_minutes` on activate / accept and gives the base back on close, so `sleepTargetH` (and the adaptive review's sleep-debt goal-hours, which read the same row) follow the season with no goal-side change. Without an active season the sleep goal behaves as before.
 - **← Biometrics/sleep (the adaptive-review sleep-adequacy port, Diet Plan slice 5 `mezo-r4n7`, ADR [0012](../decisions/0012-consumer-owned-llm-ports.md)).** *Contract:* the goal-owned **`SleepAdequacyPort.sleepDebted(userId, today)`** (`engine/port/SleepAdequacyPort.java`), implemented by `GoalSleepAdequacyAdapter` (`feature/biometrics/sleep/service`) — asks "is the owner in sleep debt?" without depending on companion (which owns a *different* flag variant, `FlagEvaluator.sleepDebt`, and may be switched off). Same deficit math, reimplemented independently over the review's own window (`mezo.goal.adaptive.sleepDebtNights` = 7 vs the companion flag's 3-night window) — see §3 for the full math and the sign-convention self-review note. Covered by `GoalSleepAdequacyAdapterIT`.
 - **← Train (mesocycles + running blocks).** *Contract:* the goal's `GoalPlanLinkEntity` rows + the linked `MesocycleEntity.phaseCurve` (the per-week phase class) / `RunningBlockEntity.structure` (sessions-per-week) read via the Train repos (ownership-checked), and `MuscleGroupVolumeLogEntity` + `ExerciseSetEntity`/`ExerciseRepository` for the guards (the strength leg reuses `ExerciseRecordService`'s identity idiom, and both now share the same `OneRepMax` eligibility/e1RM gate). See [`train.md`](train.md) for those aggregates.
 - **← Train (meso lifecycle event — the meso→diet suggestion bridge, Diet Plan slice 4 `mezo-ktg8`).** *Contract:* Train publishes `MesocycleActivated`/`MesocycleClosed` (`feature/train/MesocycleActivated.java`/`MesocycleClosed.java`) on the real activate (`TrainService.activateMesocycle`) / close (`TrainService.closeMesocycle`, `MesocycleReportService.regenerate`) branches only, never on an idempotent re-activate/re-close. The goal-owned `MesoLifecycleSuggestionListener` (`feature/goal/service/`, `@Async @TransactionalEventListener(AFTER_COMMIT)` — the same `MesoReviewListener` idiom the companion uses for `MesocycleClosed`, [`train.md`](train.md) §5) resolves the owner's active goal and calls `GoalSuggestionTriggerService.onMesoLifecycle` — a **suggestion probe**, not `evaluate` (§3's recompute-trigger table). One-way: Goal never imports Train's write path for this event, it only reads Train's repos elsewhere (above).
@@ -326,6 +358,8 @@ Add a tunable, a guard leg, or a projection input — always config-first, contr
 5. **Test** integration-first ([`testing_standards.md`](../references/testing_standards.md)) against real Postgres; add data via populators; both FE test modes stay green.
 
 ## 8. Testing
+
+- **Draft calculation (Boop B6 Évad, `mezo-r36n9.16`):** `feature/goal/GoalPrescriptionDraftIT` (a draft with more weekly sessions raises the segment kcal, nothing saved) and `feature/train/WeeklyScheduledActivityDraftTest`; the season-side callers in `feature/season/SeasonPreviewIT` ([`season.md`](season.md) §8).
 
 **Backend (integration-first, real Postgres — `cd backend && ./mvnw clean test`):**
 - Per-service ITs: `feature/goal/engine/service/TdeeBootstrapServiceIT` (MSJ vs Katch branch, NEAT-band lookup + weekly-EAT add), `GoalProjectionServiceIT` (segment collapse, running boundary delta, meso-phase zero-delta, `dailyEnergyBalanceKcal`, trend reconciliation), `GuardEvaluationServiceIT` (e1RM trend + breach, muscle floor, rate-cap, deferred protein), `GoalEvaluationServiceIT` (rate grading, conflict rule, protein target, missing-profile artifact — since Diet Plan slice 1 also `testAssemble_shouldPrescribeCarbsAndFat_fromBalancedGhost`, asserting the balanced-ghost split's prescribed `carbsG`/`fatG`), `GoalFeasibilityServiceIT` (G6 — shared rate derivation, `verdictForRate` band boundaries, over-cap suggested date). The HTTP preview round-trip is in `GoalContractIT`.
@@ -375,7 +409,7 @@ Add a tunable, a guard leg, or a projection input — always config-first, contr
 
 **Deferred to Phase 3** (post-G5):
 - **AI evaluator** (Spring AI) replacing the heuristic gate; a living-narrative recompute; a **weekly scheduled re-fit** (only event-driven recompute today — the adaptive review, above, is job-driven but suggestion-only, not a silent re-fit of the prescription itself).
-- **Cross-domain bridges** (§5) — `sleepTargetH` → Sleep stays emitted-but-unconsumed (nothing on the Sleep side reads it back) and `restDays`/deload → Train/Today is still fully deferred; `prescription.kcal/proteinG` → Fuel is long since wired (§5). **The meso→diet bridge is dropped from this deferred list** — since Diet Plan slice 4 (`mezo-ktg8`) `MesoLifecycleSuggestionListener` + `GoalSuggestionTriggerService` (§5) close that loop live, surfaced as suggestions on the `Cél` page and the Fuel banner. Since `mezo-ricj.4`, every newly committed suggestion also appears in the in-app bell feed; only OS push stays deferred because `GOAL_SUGGESTION.familyKey` is null. **Adaptive TDEE is dropped from this deferred list too** (Diet Plan slice 5, above) — `basis="adaptive"` is live.
+- **Cross-domain bridges** (§5) — `sleepTargetH` → Sleep stays emitted-but-unconsumed (nothing on the Sleep side reads it back; since B6 Évad the season writes the sleep need *into* the sleep goal instead, [`season.md`](season.md) §3.4) and `restDays`/deload → Train/Today is still fully deferred; `prescription.kcal/proteinG` → Fuel is long since wired (§5). **The meso→diet bridge is dropped from this deferred list** — since Diet Plan slice 4 (`mezo-ktg8`) `MesoLifecycleSuggestionListener` + `GoalSuggestionTriggerService` (§5) close that loop live, surfaced as suggestions on the `Cél` page and the Fuel banner. Since `mezo-ricj.4`, every newly committed suggestion also appears in the in-app bell feed; only OS push stays deferred because `GOAL_SUGGESTION.familyKey` is null. **Adaptive TDEE is dropped from this deferred list too** (Diet Plan slice 5, above) — `basis="adaptive"` is live.
 
 ## 10. Key files
 

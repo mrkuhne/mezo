@@ -31,7 +31,7 @@ A gömb nem mutat számot — annyira telik meg, amennyi a heti pénzedből még
 - **Hónap lezárása:** a legrégebbi lezáratlan hónap számaival; te döntöd el, mi legyen a maradékkal (átteszed a
   megtakarításba, megtartod) — magától semmi nem történik.
 - **Keretek:** a kategóriák havi kerete és hogy mennyit költöttél belőlük.
-- **A Terv oldalon** megjelenik egy kártya a heti maradékkal és a napi összeggel.
+- A Terv oldal heti-maradék kártyája megszűnt, amikor a Terv helyét az Évad vette át (2026-11-20); a heti maradék a Pénz oldalon látszik.
 - A **Pénzem** oldal és a Ma oldal alján a napi hírek a 3. lépésben készültek el (lásd: *A vagyonod és a napi
   hírek*). A **Gyakorlás** oldal őszintén kiírja, hogy még nem készült el — kitalált szám nincs rajta.
 
@@ -66,7 +66,7 @@ nélkül, a heti maradék azonnal 32 610 Ft-ot mutat.
 ## Mi jön még
 - A Gyakorlás oldal és Boop javaslatai (*Befektetnék*, *Nagyobb összeg*, *Havi stratégia*) — 4. lépés.
 - A régi appod adatainak egyszeri átköltöztetése, utána a régi app kikapcsolása.
-- A Terv kártyájáról egy érintéssel a Pénz oldalra jutni — amikor a Terv oldal elkészül.
+- Pénz-kártya a Pénz oldalon kívül (a régi Terv-kártya az Évaddal megszűnt) — ha kell, a Ma falán kap helyet.
 
 ## Mi marad ki
 - Időpont a tételek mellett: a bank és a kézi rögzítés csak napot ad.

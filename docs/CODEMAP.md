@@ -24,7 +24,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 | [companion](#companion) | ✓ | 5 | [character](features/character.md), [companion](features/companion.md), [dayclose](features/dayclose.md), [journal](features/journal.md), [lifegoal](features/lifegoal.md), [me](features/me.md), [penz](features/penz.md), [today](features/today.md), [_platform-language](features/_platform-language.md) |
 | [dayclose](#dayclose) | ✓ | 1 | [boop-ios](features/boop-ios.md), [dayclose](features/dayclose.md) |
 | [fuel](#fuel) | ✓ | 2 | [fuel](features/fuel.md) |
-| [goal](#goal) | ✓ | 1 | [goal-engine](features/goal-engine.md), [me](features/me.md) |
+| [goal](#goal) | ✓ | 1 | [goal-engine](features/goal-engine.md), [me](features/me.md), [season](features/season.md) |
 | [habit](#habit) | ✓ | 1 | [habit](features/habit.md) |
 | [intention](#intention) | ✓ | 1 | [intention](features/intention.md) |
 | [journal](#journal) | ✓ | 1 | [journal](features/journal.md) |
@@ -41,7 +41,8 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 | [proactive](#proactive) | ✓ | 2 | [contextual-feed-evaluation](features/contextual-feed-evaluation.md), [proactive](features/proactive.md) |
 | [recipe](#recipe) | ✓ | 4 | [recipe](features/recipe.md) |
 | [ritual](#ritual) | ✓ | 1 | [ritual](features/ritual.md) |
-| [train](#train) | ✓ | 5 | [fuel](features/fuel.md), [goal-engine](features/goal-engine.md), [train](features/train.md) |
+| [season](#season) | ✓ | 1 | [season](features/season.md) |
+| [train](#train) | ✓ | 5 | [fuel](features/fuel.md), [goal-engine](features/goal-engine.md), [season](features/season.md), [train](features/train.md) |
 | [wearable](#wearable) | ✓ | 1 | [boop-ios](features/boop-ios.md) |
 
 ## Features
@@ -91,7 +92,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### biometrics
 
-*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-11-19, mixed)
+*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-11-20, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics`
   - **sub-features:** `checkin`, `profile`, `sleep`, `weight`
@@ -271,7 +272,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   [docs/features/dayclose.md](features/dayclose.md) (updated 2026-11-20, done) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-11-19, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-11-19, in-progress) ·
-  [docs/features/me.md](features/me.md) (updated 2026-11-19, mixed) ·
+  [docs/features/me.md](features/me.md) (updated 2026-11-20, mixed) ·
   [docs/features/penz.md](features/penz.md) (updated 2026-11-20, done) ·
   [docs/features/today.md](features/today.md) (updated 2026-11-19, mixed) ·
   [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-11-20, mixed)
@@ -582,8 +583,9 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### goal
 
-*BE + API* · read next: [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-11-18, done) ·
-  [docs/features/me.md](features/me.md) (updated 2026-11-19, mixed)
+*BE + API* · read next: [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-11-20, done) ·
+  [docs/features/me.md](features/me.md) (updated 2026-11-20, mixed) ·
+  [docs/features/season.md](features/season.md) (updated 2026-11-20, in-progress)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/goal`
   - **sub-features:** `engine`
@@ -620,15 +622,16 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     POST /api/goals/{id}/plans · DELETE /api/goals/{id}/plans/{linkId} · GET /api/goals/{id}/suggestions ·
     GET /api/goals/{id}/suggestions/{suggestionId}/preview · POST /api/goals/{id}/suggestions/{suggestionId}/accept ·
     POST /api/goals/{id}/suggestions/{suggestionId}/dismiss
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/goal` — 29 IT + 16 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/goal` — 30 IT + 16 unit
   - **ITs:** `ActivityModelMigrationRunnerIT`, `AdaptiveReviewJobNotificationIT`, `AdaptiveReviewServiceIT`,
     `EnergyBalanceAdapterIT`, `ExpenditureEstimateRepositoryIT`, `ExpenditureExplanationControllerIT`,
     `ExpenditureInsightControllerIT`, `ExpenditureInsightServiceIT`, `ExpenditureLearningServiceIT`,
     `ExpenditureRolloutRunnerIT`, `GoalContractIT`, `GoalEnginePropertiesIT`, `GoalEngineRecomputeIT`,
     `GoalEvaluationServiceIT`, `GoalFeasibilityServiceIT`, `GoalOverviewApiIT`, `GoalPlanLinkServiceIT`,
-    `GoalProjectionServiceIT`, `GoalReevaluateRunnerIT`, `GoalServiceIT`, `GoalSuggestionNotificationIT`,
-    `GoalSuggestionPreviewApiIT`, `GoalSuggestionServiceIT`, `GoalSuggestionTriggerIT`, `GoalTimelineContractIT`,
-    `GoalTimelineServiceIT`, `GuardEvaluationServiceIT`, `IntakeDayMarkRepositoryIT`, `IntakeDayMarkServiceIT`
+    `GoalPrescriptionDraftIT`, `GoalProjectionServiceIT`, `GoalReevaluateRunnerIT`, `GoalServiceIT`,
+    `GoalSuggestionNotificationIT`, `GoalSuggestionPreviewApiIT`, `GoalSuggestionServiceIT`, `GoalSuggestionTriggerIT`,
+    `GoalTimelineContractIT`, `GoalTimelineServiceIT`, `GuardEvaluationServiceIT`, `IntakeDayMarkRepositoryIT`,
+    `IntakeDayMarkServiceIT`
   - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPlanLinkPopulator`, `GoalPopulator`,
     `GoalSuggestionPopulator`, `MealPopulator`, `RunningPopulator`, `TrainPopulator`, `UserPopulator`,
     `WeightLogPopulator`
@@ -1009,7 +1012,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### people
 
-*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-11-19, mixed)
+*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-11-20, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/people`
   - **entities→tables:** `MentionEntity`→`mention`, `PersonEntity`→`person`, `PersonFactEntity`→`person_fact`
@@ -1178,13 +1181,42 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `RitualReflectionEventIT`, `RitualSwitchOffIT`
   - **populators:** `RitualPopulator`, `SleepGoalPopulator`, `UserPopulator`
 
+### season
+
+*BE + API* · read next: [docs/features/season.md](features/season.md) (updated 2026-11-20, in-progress)
+
+- **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/season`
+  - **sub-features:** `port`
+  - **entities→tables:** `SeasonAllowedRecipeEntity`→`season_allowed_recipe`, `SeasonEntity`→`season`,
+    `SeasonRevisionEntity`→`season_revision`
+  - **repositories:** `SeasonAllowedRecipeRepository`, `SeasonRepository`, `SeasonRevisionRepository`
+  - **services:** `FirstSeasonAssembler`, `SeasonApiService`, `SeasonDraftMath`, `SeasonFingerprint`, `SeasonFormat`,
+    `SeasonGateAdapter`, `SeasonGoalAdapter`, `SeasonMetricsAdapter`, `SeasonOverviewService`, `SeasonPreviewService`,
+    `SeasonService`, `SeasonSleepAdapter`, `SeasonTodoRules`, `SeasonTrainAdapter`, `SleepNeedRule`
+  - **controllers→contract:** `SeasonController`→`SeasonApi`
+  - **mappers:** `SeasonMapper`
+  - **config:** `SeasonProperties`
+  - **other:** `SeasonDraftJson`, `SeasonGoalPort`, `SeasonMetricsPort`, `SeasonNumbersJson`, `SeasonSleepPort`,
+    `SeasonTrainPort`
+- **Contract** `api/feature/season/season.yml` — 10 operations
+  - **endpoints:** GET /api/seasons · POST /api/seasons · GET /api/seasons/draft · POST /api/seasons/draft/preview ·
+    GET /api/seasons/active/overview · PUT /api/seasons/{id} · POST /api/seasons/{id}/activate ·
+    POST /api/seasons/{id}/close · POST /api/seasons/{id}/preview · PUT /api/seasons/{id}/rules
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/season` — 7 IT + 3 unit
+  - **ITs:** `MesocycleGateIT`, `SeasonApiIT`, `SeasonOverviewIT`, `SeasonPortsIT`, `SeasonPreviewIT`,
+    `SeasonRepositoryIT`, `SeasonServiceIT`
+  - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPopulator`, `MesoTemplatePopulator`,
+    `SleepGoalPopulator`, `TrainPopulator`, `WeightLogPopulator`
+
 ### train
 
 *BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-19, done) ·
-  [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-11-18, done) ·
+  [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-11-20, done) ·
+  [docs/features/season.md](features/season.md) (updated 2026-11-20, in-progress) ·
   [docs/features/train.md](features/train.md) (updated 2026-11-20, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/train`
+  - **sub-features:** `port`
   - **entities→tables:** `ExerciseCatalogEntity`→`exercise_catalog`, `ExerciseDiscomfortEntity`→`exercise_discomfort`,
     `ExerciseEntity`→`exercise`, `ExerciseFeedbackEntity`→`exercise_feedback`, `ExerciseSetEntity`→`exercise_set`,
     `ExerciseSetLegEntity`→`exercise_set_leg`, `ExerciseWeightGapEntity`→`exercise_weight_gap`,
@@ -1240,9 +1272,9 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   - **events/listeners:** `MesocycleClosed`
   - **other:** `ClosingBlockGate`, `ExerciseCatalogLoader`, `GymExerciseJson`, `HypertrophyDriveGate`,
     `MesoContextJson`, `MesoDayJson`, `MesoReportJson`, `MesoReviewGate`, `MesocycleActivated`, `ProvenanceEnvelope`,
-    `RestoreEntryJson`, `RunningBlockStructure`, `RunningSeedData`, `TrainSeedData`, `VolumeAmountMigrationRunner`,
-    `VolumeBaselineJson`, `VolumeProgressionGate`, `VolumeRecomputeJson`, `WeekProposalGroupJson`,
-    `WeekProposalLineJson`
+    `RestoreEntryJson`, `RunningBlockStructure`, `RunningSeedData`, `SeasonGatePort`, `TrainSeedData`,
+    `VolumeAmountMigrationRunner`, `VolumeBaselineJson`, `VolumeProgressionGate`, `VolumeRecomputeJson`,
+    `WeekProposalGroupJson`, `WeekProposalLineJson`
 - **Contract** `api/feature/train/train-readiness.yml` — 3 operations
   - **endpoints:** GET /api/train/readiness/today · POST /api/train/readiness/today ·
     DELETE /api/train/readiness/today
@@ -1285,7 +1317,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     POST /api/train/running-blocks · PUT /api/train/running-blocks/{id} · DELETE /api/train/running-blocks/{id} ·
     POST /api/train/running-blocks/{id}/activate · POST /api/train/running-blocks/{id}/close ·
     GET /api/train/run-sessions · POST /api/train/run-sessions · GET /api/train/timing-profile
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 133 IT + 50 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 133 IT + 51 unit
   - **ITs:** `BlockExerciseSuggestionsIT`, `CatalogMediaResolutionIT`, `CatalogWriteContractIT`, `ClosingBlockIT`,
     `ClosingBlockSwitchOffIT`, `ClosingBlockVolumeFlagIT`, `ComebackTodayIT`, `CrossDayWorkoutIT`, `CustomWorkoutIT`,
     `ExerciseCatalogContractIT`, `ExerciseCatalogLoaderIT`, `ExerciseCatalogPermissionIT`, `ExerciseCatalogSlugRaceIT`,
