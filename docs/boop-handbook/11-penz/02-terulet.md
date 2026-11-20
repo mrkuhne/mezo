@@ -32,8 +32,8 @@ A gömb nem mutat számot — annyira telik meg, amennyi a heti pénzedből még
   megtakarításba, megtartod) — magától semmi nem történik.
 - **Keretek:** a kategóriák havi kerete és hogy mennyit költöttél belőlük.
 - **A Terv oldalon** megjelenik egy kártya a heti maradékkal és a napi összeggel.
-- A **Pénzem** és a **Gyakorlás** oldal őszintén kiírja, hogy még nem készült el, és mi kell hozzá — kitalált szám
-  nincs rajtuk.
+- A **Pénzem** oldal és a Ma oldal alján a napi hírek a 3. lépésben készültek el (lásd: *A vagyonod és a napi
+  hírek*). A **Gyakorlás** oldal őszintén kiírja, hogy még nem készült el — kitalált szám nincs rajta.
 
 ## Hogyan működik
 Minden szám a háttérrendszer számolásából jön (lásd: *Az adatalap*); a telefon csak összeadja a kategóriákat és a
@@ -64,7 +64,6 @@ nélkül, a heti maradék azonnal 32 610 Ft-ot mutat.
 | `penz_transaction` | a készpénzes tétel is ide kerül, egy azonosítóval, hogy kétszer soha ne legyen meg |
 
 ## Mi jön még
-- A Pénzem oldal (befektetések időtávok szerint) és a napi hírösszefoglaló a Ma oldal alján — 3. lépés.
 - A Gyakorlás oldal és Boop javaslatai (*Befektetnék*, *Nagyobb összeg*, *Havi stratégia*) — 4. lépés.
 - A régi appod adatainak egyszeri átköltöztetése, utána a régi app kikapcsolása.
 - A Terv kártyájáról egy érintéssel a Pénz oldalra jutni — amikor a Terv oldal elkészül.
