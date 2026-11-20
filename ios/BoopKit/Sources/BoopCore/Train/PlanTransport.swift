@@ -58,6 +58,8 @@ public struct RawJSONClient: Sendable {
         case 401: throw .unauthorized
         case 404: throw .notFound
         case 400: throw .rejected(Self.messageCode(data))
+        // A 422 that names its rule (Pénz's PENZ_PRACTICE_CAP_EXCEEDED) is a content refusal he can read.
+        case 422 where Self.messageCode(data) != nil: throw .rejected(Self.messageCode(data))
         case 409: throw .conflict(Self.messageCode(data))
         // A 503 that names its reason (Pénz's PENZ_FX_UNAVAILABLE) is a refusal he can read, not a bare fault.
         case 503 where Self.messageCode(data) != nil: throw .conflict(Self.messageCode(data))

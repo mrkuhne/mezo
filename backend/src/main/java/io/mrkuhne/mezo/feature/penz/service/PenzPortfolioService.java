@@ -41,7 +41,8 @@ import org.springframework.stereotype.Service;
  *       outside any transaction, throttled); a quote in another currency than the holding's is not used.</li>
  *   <li>Fixed costs = the allowance engine's {@code fixedCosts} line of the asked month
  *       ({@link PenzAllowanceService#monthly}, the same figure the allowance shows — not recomputed here).</li>
- *   <li>Events: the next 12 months from the asked date. Practice: the settings' monthly cap; P/L null until L7.</li>
+ *   <li>Events: the next 12 months from the asked date. Practice: the settings' monthly cap and the month's closed
+ *       paper P/L ({@link PenzPracticeService#monthPnlHufMinor}, L7).</li>
  *   <li>Stale: the engine's 3-day rule, or the quote source failing while he holds a quoted holding.</li>
  * </ul>
  */
@@ -56,6 +57,7 @@ public class PenzPortfolioService {
     private final PenzAllowanceService allowance;
     private final PenzSettingsService settings;
     private final PenzHoldingEventService events;
+    private final PenzPracticeService practice;
     private final PenzPortfolioMapper mapper;
 
     /** The portfolio on {@code date} (null = the owner's today), quotes refreshed first. */
@@ -69,7 +71,7 @@ public class PenzPortfolioService {
         boolean failing = quoted && health.failStreak(PenzQuoteService.PROVIDER_KEY) > 0;
         PortfolioResult result = PortfolioEngine.build(d, valued.positions(), fixedCosts(owner, d), failing);
         return mapper.portfolio(result, valued.byId(), events.between(owner, d, d.plusMonths(12)),
-            settings.ensure(owner).getPracticeMonthlyMinor());
+            settings.ensure(owner).getPracticeMonthlyMinor(), practice.monthPnlHufMinor(owner, YearMonth.from(d)));
     }
 
     /**

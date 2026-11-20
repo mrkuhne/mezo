@@ -118,6 +118,17 @@ public func penzErrorText(_ error: PlanFetchError) -> String {
         case "PENZ_SELL_EXCEEDS_POSITION": "Ennyit nem adhatsz el belőle: több lenne, mint amennyi a nyilvántartás szerint van belőle."
         case "PENZ_FX_UNAVAILABLE": "Arra a napra most nem érem el a hivatalos árfolyamot, ezért nem tudom forintra váltani. Próbáld újra kicsit később."
         case "PENZ_HOLDING_NOT_FOUND": "Ezt a befektetést már nem találom a szerveren."
+        // L7 — practice, catalog, proposals
+        case "PENZ_PRACTICE_CAP_EXCEEDED": penzCapExceededText(nil)
+        case "PENZ_PAPER_TRADE_NOT_FOUND": "Ezt a kereskedést már nem találom a szerveren."
+        case "PENZ_PAPER_TRADE_STATE": "Ez a lépés ennél a kereskedésnél már nem lehetséges — frissítsd az oldalt."
+        case "PENZ_PAPER_TRADE_INVALID_STOP": "A stop rossz oldalon van: hosszú kereskedésnél a belépő alatt, rövidnél fölötte kell lennie."
+        case "PENZ_PRACTICE_TAG_UNKNOWN": "Ezt a címkét nem ismerem. Válassz a nyolc közül."
+        case "PENZ_PRODUCT_NOT_FOUND": "Ezt a terméket már nem találom a termékjegyzékben."
+        case "PENZ_PRODUCT_NOT_APPROVED": "Ez a termék már nincs jóváhagyva, ezért nem kerülhet a tervbe. Válassz másikat, vagy hagyd jóvá újra a termékjegyzékben."
+        case "PENZ_PROPOSAL_NOT_FOUND": "Ezt a javaslatot már nem találom."
+        case "PENZ_PROPOSAL_STATE": "Ezt a javaslatot már elfogadtad, félretetted, vagy egy újabb váltotta fel."
+        case "PENZ_PROPOSAL_AMOUNT_INVALID": "Ez az összeg így nem jó: minden rekesz nulla vagy több legyen, és legalább egybe kerüljön valami."
         default: "A szerver ezt most nem fogadta el."
         }
     case .server: "A szerver most nem válaszolt rendesen. Próbáld újra."

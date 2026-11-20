@@ -13,6 +13,8 @@ key_files:
 related: [companion, proactive, insights, me, _platform-api-backend]
 ---
 
+> **2026-11-20 — reviewed after Boop Pénz L7 (`mezo-r36n9.105`, no dossier change).** The shared `1.1.0/script` folder gained `202611202000_mezo-r36n9.105_penz_practice.sql` (`penz_paper_trade`) and `202611202010_mezo-r36n9.105_penz_proposals.sql` (`penz_product`, `penz_proposal`) — owned by [`penz.md`](penz.md); no Karakter table, detector or signal reads paper trades, the catalog or proposals.
+
 > **2026-11-20 — reviewed after Boop Pénz L6 (`mezo-r36n9.104`, no dossier change).** The shared `1.1.0/script` folder gained `202611201600_mezo-r36n9.104_penz_portfolio.sql` (seven `penz_*` tables: holdings, investment transactions, holding events, quotes, news articles, digests, provider status — owned by [`penz.md`](penz.md)); no Karakter table, detector or signal reads money or news.
 
 > **2026-11-19 — reviewed after `mezo-r36n9.66`:** the new `exercise_discomfort` / `gym_profile` changesets under `backend/src/main/resources/db/changelog/1.1.0/script` are train-owned and not part of the character dossier; no character behaviour changed (see [`train.md`](train.md) §4).

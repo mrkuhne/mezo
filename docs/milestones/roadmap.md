@@ -83,6 +83,19 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
   Spec [2026-11-17-boop-gyakorlatvalasztas-design](../superpowers/specs/2026-11-17-boop-gyakorlatvalasztas-design.md);
   [`train.md`](../features/train.md) §4, [`boop-ios.md`](../features/boop-ios.md).
 
+- **2026-11-20 — Boop Pénz L7: practice, catalog, proposals, monthly strategy (`mezo-r36n9.105`) — built, not yet deployed.**
+  Gyakorlás is real: paper-trading with a plan before entry (what · why · where I exit), one line after with eight
+  fixed tags and a mistake mark, R, a deterministic weekly look-back naming the week's commonest mistake and its cost,
+  a noise line under 50 tagged trades, and the 20 000 Ft monthly cap (the same figure as Költés's *Gyakorlás* line)
+  that never takes from other money; every price is typed, nothing is real. A researched per-owner product catalog
+  (*Termékjegyzék*: suggested → one-tap approve, each fee with its check date and source), investment proposals
+  (*Befektetnék* / *Felosztást kérek* / *Nagyobb összeg*) split per horizon by fixed rules (reserve first, then 40 %
+  mid / 60 % long) with two–three approved options per horizon and validated AI wording (fallback copy), accepted as
+  a self-ticked checklist, and *Havi stratégia* from the old investable-amount formula. Server `feature/penz`
+  (`service/practice`, `service/proposal`, `PenzCatalogSeed`); phone `Penz/` + `BoopCore/Penz/`. Build notes
+  [2026-11-20-boop-penz-l7-build](../superpowers/plans/2026-11-20-boop-penz-l7-build.md);
+  [`boop-ios.md`](../features/boop-ios.md), [`penz.md`](../features/penz.md).
+
 - **2026-11-20 — Boop Pénz L5: the area on the phone (`mezo-r36n9.103`).**
   The Pénz area is live in Boop: `NKAreaPage(hue: .penz, display: nil)` with the bar *Ma · Pénzem · Költés ·
   Gyakorlás* + Boop, the orb filling with the week's remaining share and carrying no number. **Költés** = the weekly

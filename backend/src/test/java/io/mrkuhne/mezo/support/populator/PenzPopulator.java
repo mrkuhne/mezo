@@ -7,6 +7,8 @@ import io.mrkuhne.mezo.feature.penz.entity.PenzHoldingEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzHoldingEventEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzInvestTxnEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzMonthCloseEntity;
+import io.mrkuhne.mezo.feature.penz.entity.PenzPaperTradeEntity;
+import io.mrkuhne.mezo.feature.penz.entity.PenzProductEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzQuoteEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzRecurringRuleEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzSavingsGoalEntity;
@@ -19,6 +21,8 @@ import io.mrkuhne.mezo.feature.penz.repository.PenzHoldingEventRepository;
 import io.mrkuhne.mezo.feature.penz.repository.PenzHoldingRepository;
 import io.mrkuhne.mezo.feature.penz.repository.PenzInvestTxnRepository;
 import io.mrkuhne.mezo.feature.penz.repository.PenzMonthCloseRepository;
+import io.mrkuhne.mezo.feature.penz.repository.PenzPaperTradeRepository;
+import io.mrkuhne.mezo.feature.penz.repository.PenzProductRepository;
 import io.mrkuhne.mezo.feature.penz.repository.PenzQuoteRepository;
 import io.mrkuhne.mezo.feature.penz.repository.PenzRecurringRuleRepository;
 import io.mrkuhne.mezo.feature.penz.repository.PenzSavingsGoalRepository;
@@ -29,6 +33,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.test.context.TestComponent;
@@ -53,6 +58,8 @@ public class PenzPopulator {
     private final PenzInvestTxnRepository investTxnRepository;
     private final PenzHoldingEventRepository holdingEventRepository;
     private final PenzQuoteRepository quoteRepository;
+    private final PenzPaperTradeRepository paperTradeRepository;
+    private final PenzProductRepository productRepository;
 
     public PenzSettingsEntity settings(UUID owner, long savingsTargetMinor) {
         PenzSettingsEntity e = new PenzSettingsEntity();
@@ -176,6 +183,32 @@ public class PenzPopulator {
         return savingsGoalRepository.saveAndFlush(e);
     }
 
+    /**
+     * A catalog product (L7, mezo-r36n9.105) with an invented name and fee, checked "today": {@code status}
+     * suggested|approved|declined, {@code sleeves} ⊆ short|mid|long, {@code terPct} null = no running cost known.
+     */
+    public PenzProductEntity product(UUID owner, String name, String kind, String currency, List<String> sleeves,
+                                     String terPct, String distribution, String status) {
+        PenzProductEntity e = new PenzProductEntity();
+        e.setCreatedBy(owner);
+        e.setName(name);
+        e.setKind(kind);
+        e.setCurrency(currency);
+        e.setSleeves(new ArrayList<>(sleeves));
+        e.setWhatItIs("Kitalált termék a tesztekhez: " + name);
+        e.setTerPct(terPct == null ? null : new BigDecimal(terPct));
+        e.setDistribution(distribution);
+        e.setSourceName("Teszt forrás");
+        e.setSourceUrl("https://pelda.example/termek");
+        e.setReviewedAt(LocalDate.now(ZoneId.of("Europe/Budapest")).minusDays(30));
+        e.setStatus(status);
+        e.setSuggestedBy(PenzProductEntity.BY_RESEARCH);
+        if (PenzProductEntity.STATUS_APPROVED.equals(status)) {
+            e.setApprovedAt(Instant.now());
+        }
+        return productRepository.saveAndFlush(e);
+    }
+
     /** A holding (L6, mezo-r36n9.104) on platform {@code other}, position 0, no news terms. */
     public PenzHoldingEntity holding(UUID owner, String name, String assetType, String symbol, String sleeve,
                                      String currency, BigDecimal bondRatePct) {
@@ -243,5 +276,38 @@ public class PenzPopulator {
         e.setAsOf(asOf);
         e.setFetchedAt(Instant.now());
         return quoteRepository.saveAndFlush(e);
+    }
+
+    /**
+     * A closed HUF paper trade (L7, mezo-r36n9.105): long {@code qty} units from {@code entryMinor} with the stop
+     * {@code stopMinor}, exited at {@code exitMinor} on {@code exitDate} — P/L, R and cost computed like the service
+     * (HUF: twins = amounts, no fx). Prices invented.
+     */
+    public PenzPaperTradeEntity closedPaperTrade(UUID owner, String instrument, long entryMinor, long stopMinor,
+                                                 long exitMinor, long qty, LocalDate exitDate, boolean mistake,
+                                                 List<String> tags) {
+        PenzPaperTradeEntity e = new PenzPaperTradeEntity();
+        e.setCreatedBy(owner);
+        e.setStatus(PenzPaperTradeEntity.CLOSED);
+        e.setInstrument(instrument);
+        e.setDirection("long");
+        e.setWhy("Tesztterv");
+        e.setCurrency("HUF");
+        e.setQuantity(BigDecimal.valueOf(qty));
+        e.setStopMinor(stopMinor);
+        e.setEntryMinor(entryMinor);
+        e.setEntryDate(exitDate);
+        e.setCostHufMinor(entryMinor * qty);
+        e.setRiskMinor(Math.abs(entryMinor - stopMinor) * qty);
+        e.setRiskHufMinor(Math.abs(entryMinor - stopMinor) * qty);
+        e.setExitMinor(exitMinor);
+        e.setExitDate(exitDate);
+        e.setPnlMinor((exitMinor - entryMinor) * qty);
+        e.setPnlHufMinor((exitMinor - entryMinor) * qty);
+        e.setRMultiple(BigDecimal.valueOf(exitMinor - entryMinor)
+            .divide(BigDecimal.valueOf(Math.abs(entryMinor - stopMinor)), 2, java.math.RoundingMode.HALF_UP));
+        e.setMistake(mistake);
+        e.setTags(new ArrayList<>(tags));
+        return paperTradeRepository.saveAndFlush(e);
     }
 }

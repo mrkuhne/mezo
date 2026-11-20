@@ -59,7 +59,8 @@ public interface PenzPortfolioMapper {
 
     /** Pénzem: the engine's result with the holdings' own fields, the forward timeline and the practice row. */
     default PenzPortfolioResponse portfolio(PortfolioResult r, Map<UUID, PenzHoldingEntity> holdings,
-                                            List<PenzHoldingEventResponse> events, long practiceMonthlyHufMinor) {
+                                            List<PenzHoldingEventResponse> events, long practiceMonthlyHufMinor,
+                                            long practiceMonthPnlHufMinor) {
         List<PenzSleeve> sleeves = new ArrayList<>();
         for (SleeveResult s : r.sleeves()) {
             sleeves.add(new PenzSleeve()
@@ -86,7 +87,8 @@ public interface PenzPortfolioMapper {
             .fixedCostsMonthlyHufMinor(r.fixedCostsMonthlyHufMinor())
             .sleeves(sleeves)
             .events(events)
-            .practice(new PenzPracticeRow().monthlyHufMinor(practiceMonthlyHufMinor).monthPnlHufMinor(null));
+            .practice(new PenzPracticeRow().monthlyHufMinor(practiceMonthlyHufMinor)
+                .monthPnlHufMinor(practiceMonthPnlHufMinor));
     }
 
     default PenzPosition position(PositionResult p, PenzHoldingEntity h) {

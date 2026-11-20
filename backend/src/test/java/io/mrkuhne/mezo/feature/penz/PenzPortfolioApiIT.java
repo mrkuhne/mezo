@@ -380,7 +380,7 @@ class PenzPortfolioApiIT extends ApiIntegrationTest {
         assertThat(p.getUnpricedCount()).isEqualTo(1);
         assertThat(p.getFixedCostsMonthlyHufMinor()).isEqualTo(30_000_000L);
         assertThat(p.getPractice().getMonthlyHufMinor()).isEqualTo(2_000_000L);
-        assertThat(p.getPractice().getMonthPnlHufMinor()).isNull();
+        assertThat(p.getPractice().getMonthPnlHufMinor()).isZero(); // L7: no closed paper trade yet
 
         assertThat(p.getSleeves()).extracting(PenzSleeve::getSleeve).containsExactly(PenzSleeve.SleeveEnum.SHORT,
             PenzSleeve.SleeveEnum.MID, PenzSleeve.SleeveEnum.LONG);
