@@ -1257,5 +1257,25 @@
     ],
     "mit_kapsz": "A legkisebb iPhone-okon a blokképítő alsó gombján a „Nincs mit menteni” felirat nem fér ki. A javítás után minden telefonméreten olvasható.",
     "munkamenet": "mezo-nippard-exercise-selection"
+  },
+  "mezo-r36n9.119": {
+    "tipus": "Funkció",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Alapok"
+    ],
+    "szulo": "mezo-r36n9.33",
+    "cim": "Pénz · befektetés a számládról, és a banki üzenetből",
+    "mit_kapsz": "Ha egy befektetést rögzítesz, megadhatod, melyik számládról ment — így a havi keretben is látszik, mennyit tettél félre befektetésre. Ha a bank SMS-ben jelzi a vásárlást, Boop felismeri és összeköti a rögzített befektetéssel."
+  },
+  "mezo-r36n9.120": {
+    "tipus": "Funkció",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Alapok"
+    ],
+    "szulo": "mezo-r36n9.33",
+    "cim": "Pénz · heti áttekintés: mi számít tényleg hosszú távon",
+    "mit_kapsz": "Hetente egyszer egy rövid összefoglaló rekeszenként arról, mi az, ami a hosszú távú pénzedet tényleg érinti — a napi hírek zajától elkülönítve. Értesítés nélkül, teendő-gomb nélkül."
   }
 }
