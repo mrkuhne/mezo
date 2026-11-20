@@ -1289,6 +1289,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            A structural change (reorder/add/remove/swap) while that day's
+            workout is running (DAY_WORKOUT_RUNNING)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/train/mesocycles/{id}/rerun':
     post:
       tags:
