@@ -620,5 +620,21 @@
       "mezo-r36n9.16"
     ],
     "mi_valtozott": "Az alsó sáv második helye mostantól az Évad. Ha még nincs évadod, Boop a mostani súlycélodból, edzésblokkodból, heti edzés- és sportnapjaidból és alvási célodból összeállít egy javaslatot; csak akkor indul el, ha az „Indulhat az évad” gombbal jóváhagyod. Az Évad lapon látod, mi mire hat (edzés, étel, alvás, súly), a súlyod menetét (súlytartásnál a sávot), az évad tervét és a következő fontos heteket. A Módosításban élőben látod, mi változna: edzés- és pihenőnapi kalória, a hét összes kalóriája, alvásigény, lefekvés, a cél dátuma, és hogy mit kell ehhez tenned; csak az Elfogadom után változik bármi. Amíg fut az edzésblokkod, az edzésnapok nem módosíthatók (a blokk napjai ezekhez igazodnak). Új edzésblokk csak évaddal indulhat; a mostani blokkod fut tovább. A Menü, a Lista és a Hatás lap később jön."
+  },
+  "a1b15069c": {
+    "cim": "Pénz: gyakorlás papíron, termékjegyzék és havi befektetési javaslat",
+    "datum": "2026-11-20",
+    "verzio": "v3.20.0",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app",
+      "Háttérrendszer",
+      "Telefonra telepítve"
+    ],
+    "szakasz": "Életpanel",
+    "jegyek": [
+      "mezo-r36n9.105"
+    ],
+    "mi_valtozott": "A Pénz területen elkészült a Gyakorlás fül: papíron (valódi pénz nélkül) tervezel egy ügyletet — belépő, stop, cél, miért —, utána lezárod, megjelölöd nyolc címke közül és hogy hibáztál-e; Boop kiszámolja, hányszorosát nyerted vagy vesztetted a vállalt kockázatnak, és hetente összefoglalja, mi ment jól és mi nem. A havi gyakorló keret kemény plafon (például 20 000 Ft), a felhasznált részt mindig látod. Új a termékjegyzék: tíz kikutatott, ellenőrzési dátummal ellátott termék (állampapírok és ETF-ek, költséggel), amit egy koppintással jóváhagysz vagy kihagysz. A havi javaslat a rendszer által számolt összeget osztja szét a tartalék, a közép- és a hosszútáv között, és csak jóváhagyott, legolcsóbb termékeket ajánl; Boop csak a kiszámolt számokat mondja el. A havi stratégia oldal mutatja, mennyi fektethető be ebben a hónapban és miért. Vásárlás, utalás, bróker-kapcsolat nincs."
   }
 }

@@ -1317,7 +1317,7 @@
     },
     "jegyek:mezo-r36n9.105": {
       "page_id": "41d8968e-752b-8169-9f58-f659c1370d4a",
-      "hash": "41542cea8ddf"
+      "hash": "f8ebdd315224"
     },
     "jegyek:mezo-r36n9.104": {
       "page_id": "41d8968e-752b-81bb-aa41-dcb786757d9b",
@@ -1497,7 +1497,7 @@
     },
     "kezikonyv:11-penz/04-gyakorlas-javaslatok": {
       "page_id": "41e8968e-752b-814e-a3ce-f7b3dfbae302",
-      "hash": "605c8f017577"
+      "hash": "71ceb3e44161"
     },
     "jegyek:mezo-r36n9.124": {
       "page_id": "41e8968e-752b-81e4-939f-d692b715e62e",
@@ -1514,6 +1514,10 @@
     "jegyek:mezo-r36n9.122": {
       "page_id": "41e8968e-752b-8190-a8bd-feb5a12420e2",
       "hash": "6749a5d9a156"
+    },
+    "kiadasok:a1b15069c": {
+      "page_id": "41e8968e-752b-814c-96b3-c1985d14a5ef",
+      "hash": "3ad4d31c3aa2"
     }
   }
 }

@@ -2,7 +2,7 @@
 cim: Gyakorlás és javaslatok — gyakorló kereskedés papíron, termékjegyzék, felosztás nagyobb összegre
 szint: Funkció
 terulet: Pénz
-allapot: Ellenőrzés
+allapot: Élesben
 hol: [iPhone app, Háttérrendszer, AI]
 szulo: 00-attekintes
 szakasz: [Életpanel]
