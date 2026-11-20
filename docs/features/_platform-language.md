@@ -12,6 +12,8 @@ key_files:
 related: [_platform-auth-security, _platform-design-system, companion, settings, _platform-api-backend]
 ---
 
+> **2026-11-20 — reviewed after Boop B6 Évad S1 (`mezo-r36n9.16`, no language-layer change).** Six `SEASON_*` error keys in both bundles (`SEASON_REQUIRED`, `SEASON_PREVIEW_STALE`, `SEASON_NOT_EDITABLE`, `SEASON_ACTIVE_EXISTS`, `SEASON_PROFILE_REQUIRED`, `SEASON_BLOCK_DAYS_LOCKED`) and the `mezo.season.mesocycle-gate.*` block in `application.yml`; the season's own Hungarian copy (warnings, *Ehhez ezt kell tenned*) is server-built Hungarian like the other Boop surfaces. See [`season.md`](season.md).
+
 > **2026-11-20 — reviewed after Boop Pénz L6 (`mezo-r36n9.104`, no language-layer change).** Six `PENZ_*` error keys in both bundles (`PENZ_HOLDING_NOT_FOUND`, `PENZ_INVEST_TXN_NOT_FOUND`, `PENZ_HOLDING_EVENT_NOT_FOUND`, `PENZ_SYMBOL_UNKNOWN`, `PENZ_SELL_EXCEEDS_POSITION`, `PENZ_DIGEST_REFRESH_LIMITED` — see [`penz.md`](penz.md) §4.2) and the `mezo.penz.news.*` / `penz-news-job` switches in `application.yml`. **Known gap, same as B4's:** the daily news digest is Hungarian-only — the model is told to write Hungarian and the fallback copy (`DigestFallbackCopy`) and effect notes are Java literals, not `UserMessages` keys; acceptable only because the sole consumer is the Hungarian-only native app. The bundle count line below was corrected to 311 keys each.
 
 > **2026-11-20 — reviewed after the train default style (`mezo-r36n9.115`, no language-layer change).** Only the `mezo.meso-plan.default-training-style` key and the per-class reserves of `mezo.train.style.styles` were added to `application.yml`; no language mechanism or message bundle changed (re-checked after the config comment edit).

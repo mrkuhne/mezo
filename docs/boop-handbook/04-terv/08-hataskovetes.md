@@ -32,7 +32,7 @@ Nincs még.
 Nincs még. Épít rá: `meal`, `meal_item`, `health_sample`, és a meglévő hatáskövetés táblái.
 
 ## Mi jön még
-B6; a mélyebb következtetések a Napló „Minták” részében a B8-ban.
+Az évad 4. szakasza (az Évad oldal „Hatás” füle addig „hamarosan” lapot mutat); a mélyebb következtetések a Napló „Minták” részében a B8-ban.
 
 ## Mi marad ki
 Nincs.

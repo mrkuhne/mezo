@@ -43,7 +43,7 @@ marad, a felület egy mondatra zsugorodik.
 | `intake_day_mark` | A tanulásból kézzel kizárt napok |
 
 ## Mi jön még
-B6: egy heti mondat a Tervben („Ezen a héten 50 kcal-lal feljebb vettem az alapodat — biztosabb lettem”), mindig „miért?”-tel.
+Az évad 2. szakasza: egy heti mondat az Évad oldal „Amit Boop észrevett” blokkjában („Ezen a héten 50 kcal-lal feljebb vettem az alapodat — biztosabb lettem”), mindig „miért?”-tel.
 
 ## Mi marad ki
 A „Hogy tanultam?” oldal, a heti tanulás-kártyák és a napok kézi kizárása a Boopban.

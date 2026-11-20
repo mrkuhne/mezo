@@ -1,52 +1,68 @@
 ---
-cim: Terv
+cim: Évad
 szint: Fő szekció
 terulet: Terv
 allapot: Részben kész
 hol: [iPhone app, Háttérrendszer, Apple Health, AI]
 szulo:
 szakasz: [B2, Test, B6]
-osszefoglalo: A Terv az, amihez Boop a napjaidat igazítja — súlycél, étrend és edzésterv egy helyen, és a testsúlyod a mérlegről.
+osszefoglalo: Az Évad néhány hetes terv, amiből minden más következik — a célod, az edzésed, az étkezésed és az alvásod együtt mozog, és minden változtatásnál élőben látod, mire hat.
 ---
 
 ## Mit csinál
-A Terv az alsó sáv második helye (Ma · **Terv** · Napló · Boop). Az aktív terveidet mutatja háttérként: a súlycélt, az étrendet
-és az edzéstervet (mezociklus vagy futóblokk), a szabályaikat és azt, hogyan tartod őket.
+Az Évad az alsó sáv második helye (Ma · **Évad** · Napló · Boop) — régen Terv volt a neve (döntés, 2026-11-20). Egy évad
+néhány hétig tart (4–24 hét), és benne van a súlycélod, az edzésblokkod, a heti edzés- és sportnapjaid és az alvásigényed.
+Ezekből számolja Boop, mennyit egyél edzésnapon és pihenőnapon, mennyit aludj, mikor feküdj le, és merre halad a súlyod.
 
-- **Ma (B2 óta élesben):** egy egyszerű keret — a mai mért súlyod és a trend, a mai edzés, és egy kártya, ami a webes appba
-  visz, ahol a tervek beállíthatók.
-- **Hamarosan (Testösszetétel szakasz):** egy „Test” kártya a Feelfit mérleg adataival az Apple Health-ből — súlytrend a cél
-  vízvonalával, testzsír-százalék, sovány testtömeg.
-- **B6-ban — a neve Évad lesz (döntés, 2026-11-20):** egy néhány hetes terv céllal, amely magában foglalja az edzésblokkot és a heti edzés- és sportnapokat, és ebből számolja az étkezést, az alvásigényt és a súly menetét; minden módosításnál élőben mutatja, mire hat; heti menü, bevásárlólista és kísérletek. Edzésblokk csak évaddal indulhat. Részletek: a „Terv-csomag” oldal.
-- **Az eredeti B6-terv (A Terv):** a Terv szerkesztővé válik: több hetes terv súlycéllal, engedélyezett receptekkel és alapanyagokkal,
-  csatolt edzésblokkal, szabályokkal; több terv, egy aktív; tervhűség; bevásárlólista; hatáskövetés.
+**Ami ma élesben van (az évad első szakasza, 2026-11-20):**
+- **Az Évad oldal** a fejjel (hányadik hétnél tartasz, jó úton vagy-e), a „Mi mire hat” térképpel, a súlygörbével, az évad
+  tervével és a következő eseményekkel (könnyebb edzéshét, az évad vége) — lásd [Az Évad oldal](01-terv-keret.md).
+- **Módosítás élő előnézettel:** ha átállítod, hány edzésed legyen, mely napokon sportolsz vagy milyen tempóban fogyj, Boop
+  azonnal megmutatja, mi változna, és mit kell ehhez tenned. Amíg el nem fogadod, semmi sem változik — lásd
+  [Az évad](06-terv-csomag.md).
+- **Új évad** öt lépésben, a mostani célodból és edzésblokkodból előre kitöltve; és egy üres állapot, ha még nincs évadod.
+- **Szabályok:** az évad kapcsolói (például csak kevéssé feldolgozott ételek, könnyebb edzéshéten ne fogyj).
+- **Edzésblokk csak évaddal indulhat.** A már futó blokk fut tovább.
+- A súlycél-motor számol mindent (lásd [Súlycél és célmotor](02-sulycel-celmotor.md)).
+
+**Ami még jön:**
+- **2. szakasz:** „Hogy megy” (az elmúlt hét tényei pontszám nélkül), „Amit Boop észrevett”, az évad szabályai Boop minden
+  beszélgetésében és a reggeli összefoglalóban, és az évad kártyái a Ma falán.
+- **3. szakasz:** heti menü a kiválasztott receptekből és bevásárlólista (a „Menü” és „Lista” fül addig „hamarosan” lapot mutat).
+- **4. szakasz:** kísérletek — kipróbálsz valamit, és Boop megnézi, tényleg hat-e (a „Hatás” fül addig „hamarosan”).
+- **Korábbi évadok** oldal és a mostani súlyod az Új évad első lépésében.
 
 ## Hogyan működik
-A számok a webes appnak ma is működő **súlycél-motorból** jönnek: a súlycélból (fogyás / tömegnövelés / szinten tartás) és a
-testadataidból kiszámolja a napi energiaigényt, heti szakaszokra bontja a tervet, ebből lesz a napi kalória- és makrócél, amihez
-az étkezések pontozása mér. A motor minden mérlegelésre újraszámol. A Boop eddig csak olvassa (a reggeli összefoglalóból); a
-szerkesztés a B6-ig a webes appban marad.
+A számok a háttérrendszer **súlycél-motorjából** jönnek: a célból, a testadataidból és a heti edzés- és sportnapjaidból
+kiszámolja a napi kalória- és makrócélt. Az évad ezt a motort hívja meg — külön számolás nincs, így az Étel szoba, a reggeli
+összefoglaló és az Évad oldal mindig ugyanazt a számot mondja. Az oldal a telefonon elmenti az utolsó állapotot, így internet
+nélkül is látod (az adat korával), csak módosítani nem tudsz.
 
 ## Miért így
-- A Terv a B2–B5 alatt szándékosan csak olvasható; a tervek felállítása a B6-ban költözik át a webes appból (spec §3, §6).
-- A tulajdonos a mérlegét az Apple Health-en át akarja bekötni, külön importálás vagy Bluetooth nélkül (döntés #7).
+- A tulajdonos kérése: az edzés, az étel, az alvás és a súly **egy rendszer**, szinkronban; minden változtatásnál lássa a
+  következményeket, és ne lehessen edzésblokkot terv nélkül indítani (döntések #61–#64).
+- A webes app megszűnt (#52), így eddig sehol nem lehetett súlycélt vagy tervet állítani — az Évad ezt pótolja.
+- A mérleg az Apple Health-en át jön, külön importálás nélkül (döntés #7).
 
 ## Beállítások
-Az egyes funkcióoldalak tartalmazzák (`mezo.goal.*`).
+Az egyes funkcióoldalak tartalmazzák (`mezo.season.*`, `mezo.goal.*`).
 
 ## Adattáblák
 | Tábla | Mit tárol |
 |---|---|
+| `season` | Az évad: név, állapot (tervezett / aktív / lezárt), kezdet, hossz hetekben, a hozzá tartozó súlycél, alvásigény, szabályok |
+| `season_revision` | Minden elfogadott módosítás: mi változott, és a számok előtte és utána |
+| `season_allowed_recipe` | Az évadban kiválasztott receptek (a heti menü ezekből áll majd össze) |
 | `goal` | A súlycél és a motor kimenete (energiaigény, heti szakaszok, megvalósíthatóság) |
 | `weight_log` | Mérlegelések (kézi vagy Apple Health) |
 | `biometric_profile` | Testadatok: nem, magasság, születési dátum, testzsír, életmód |
-| `health_sample` | Health-minták, köztük testzsír és sovány testtömeg |
-| `goal_plan_link` | A súlycélhoz csatolt mezociklus vagy futóblokk |
+| `goal_plan_link` | Az évad súlycéljához csatolt edzésblokk |
 
 ## Mi jön még
-- **Testösszetétel** (B3 után): a Test kártya és a Health-testzsír a motorban.
-- **B6 A Terv**: a terv-csomag, szerkesztő, bevásárlólista, hatáskövetés.
+- Az évad 2–4. szakasza (lásd fent).
+- Egy elfogadással az edzésblokk napjai is átrendeződnek, ha az edzésnapok változnak (addig futó blokk alatt az edzésnapok zárolva).
+- **Testösszetétel:** a Test kártya és a Health-testzsír a motorban.
 
 ## Mi marad ki
-A webes app szakasz-, tervsáv- és védőkorlát-oldalai nem kerülnek át külön oldalként; a javaslatok egy elfogad/elvet kártyává
-egyszerűsödnek (kutatás 10). Életcélok (PERMAH-pillérek) termékként kimaradnak.
+A webes app szakasz-, tervsáv- és védőkorlát-oldalai nem kerülnek át külön oldalként. Életcélok (PERMAH-pillérek) termékként
+kimaradnak. Napi szintű újratervezés („rosszul aludtál, ma könnyebb edzés”) nem az évad dolga — az a 7. szakaszé.

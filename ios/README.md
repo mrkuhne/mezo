@@ -40,7 +40,7 @@ Pass them after the bundle id: `xcrun simctl launch <sim> io.mrkuhne.boop -previ
 | `-previewNotify checkin\|este` | rings the real check-in / close reminder at the next whole minute (background the app; a tap opens the cover) |
 | `-preview shell` / `-preview onboarding` | signs in a local preview user; the brief and Health endpoints answer from `PreviewTransport` |
 | `-previewEmpty YES` | Nap shows the empty states instead of the brief |
-| `-previewTab ma\|terv\|naplo\|boop` | opens that place of the spine |
+| `-previewTab ma\|terv\|naplo\|boop` | opens that place of the spine (`terv` is the Évad place since B6 S1; the key kept its old name) |
 | `-previewPhase reggel\|napkozben\|este` | Ma's clock reads 08:10 / 13:40 / 21:10 today (the phase strip, plan card, MOST, close-out follow) |
 | `-previewWhy YES` | opens the first proposal's *miért?* page |
 | `-previewOrb alvas` | opens Ma on that orb (`forma`, `alvas`, `mozgas`, `fuel`, `pulzus`) |
@@ -63,6 +63,7 @@ Pass them after the bundle id: `xcrun simctl launch <sim> io.mrkuhne.boop -previ
 | `-previewHome edzes -previewEdzesSwap YES` | starts today's preview workout and opens the player on the swap sheet of the first exercise (`-previewEdzesSwapAt N`: the N-th, from 0 — 3 is the curl that asks which kit is missing); the preview answers suggestions, the gym profile and „nem esik jól" statefully |
 | `-previewEdzesSwapFail YES` | the preview's suggestions answer 503: the swap sheet's fallback line over the plain list |
 | `-previewHome penz -penzTab Ma\|Pénzem\|Költés\|Gyakorlás` | the Pénz area (L5) on invented figures; `-penzState review\|calm\|close\|empty\|offline\|error`, `-penzSheet capture\|review\|edit\|close\|budgets\|goal\|invest\|month`, `-penzPending 1890` (a typed cash row; with `-previewOffline YES` it waits), `-previewOpen penzCapture` (the "+" Kiadás sheet); L6: `-penzPortfolio full\|empty\|stale\|unpriced\|error`, `-penzDigest ready\|pending\|quiet\|unhealthy\|failed\|limited\|error` (`pending` turns `ready` after the refresh ask; `limited` answers it 429), `-penzPage news1\|news2\|news3\|sleeve\|sleeve-short\|sleeve-mid`, `-penzSheet record\|event\|allocation` |
+| `-previewTab terv -evadState full\|maintain\|empty\|offline\|error` | the Évad page (B6 S1) on invented figures from `Evad/EvadPreview.swift`: a cut season in week 7 / a maintain season inside its band / no season yet (empty state → Új évad) / no net (cache primed five hours old) / the server failing; `-previewOffline YES` = `offline`. `-evadTab Évad\|Menü\|Lista\|Hatás`, `-evadOpen modositas\|szabalyok\|uj` (opens the sub-page), `-evadLit 0…3` (lights a pillar of Mi mire hat), `-evadSessions 5` / `-evadPace 0.6` (pre-set Módosítás), `-evadStale YES` (the first accept answers 409 SEASON_PREVIEW_STALE), `-evadAutoAccept YES` (taps Elfogadom once the first changed preview is in), `-evadBottom YES` (sub-pages open scrolled to their actions) |
 | `-previewSwitch terv\|naplo\|boop` | switches to that place after 3 s and back to Ma 3 s later (record the backdrop slide + blend without taps) |
 
 Adding an API operation: add its `operationId` to `BoopKit/Sources/BoopAPI/openapi-generator-config.yaml`

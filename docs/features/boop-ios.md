@@ -3,7 +3,7 @@ title: Boop — native iOS app
 type: feature-domain
 status: in-progress
 updated: 2026-11-20
-tags: [ios, penz, l5-penz, blokk-epito, heti-atnezes, kezdolap, area-kit, l0, elo-fal, l0b, b4-etel, food, barcode, meal-photos, sensitivities, b3-napi-ritmus, offline-first, outbox, dayclose, b1-adatalap, health-samples, apns, swiftui, boop, napkelte, lagy, auth, onboarding, healthkit, eventkit, wearable, morning-brief, energy-curve, voice]
+tags: [ios, evad, b6-evad, season, penz, l5-penz, blokk-epito, heti-atnezes, kezdolap, area-kit, l0, elo-fal, l0b, b4-etel, food, barcode, meal-photos, sensitivities, b3-napi-ritmus, offline-first, outbox, dayclose, b1-adatalap, health-samples, apns, swiftui, boop, napkelte, lagy, auth, onboarding, healthkit, eventkit, wearable, morning-brief, energy-curve, voice]
 key_files:
   - ios/Boop
   - ios/BoopKit/Sources
@@ -13,10 +13,15 @@ key_files:
   - api/feature/boop/boop.yml
   - backend/src/main/java/io/mrkuhne/mezo/feature/dayclose
   - api/feature/dayclose/dayclose.yml
-related: [penz, fuel, pantry, recipe, dayclose, intention, journal, companion, proactive, _platform-auth-security, _platform-api-backend, me, today]
+related: [season, penz, fuel, pantry, recipe, dayclose, intention, journal, companion, proactive, _platform-auth-security, _platform-api-backend, me, today]
 ---
 
 # Boop — native iOS app — Feature Documentation
+
+> **2026-11-20 — Boop B6 Évad S1 (`mezo-r36n9.16`).** The spine's second place is **Évad** (was Terv; the tab key stays
+> `terv`, the VoiceOver label is „Évad"): `Terv/TervView` is deleted and `EvadPage` takes its place — see **Évad** in §2.
+> The old Terv frame's weight, today's-session and read-only Pénz cards are gone with it (the Pénz area itself is
+> unchanged). Backend: [`season.md`](season.md).
 
 > **2026-11-20 — Pénz cash account on first use (`mezo-r36n9.103`).** Production starts with no Pénz account (the old app's import is `mezo-r36n9.107`), so the cash sheet offers *Készpénz számla létrehozása* when no forint account exists: `PenzClient.createAccount(.cash)` → `POST /api/penz/accounts` `{name: "Készpénz", type: "cash", currency: "HUF", isDefault: true}`, then a forced reload shows the form. *Kiadás* stays active with no account (so the sheet that creates it can open), and the empty Pénz card carries the same *Készpénz számla létrehozása* button itself while no account exists (`PenzRoom.swift`), so the create step is never hidden behind *Kiadás*.
 
@@ -55,7 +60,7 @@ related: [penz, fuel, pantry, recipe, dayclose, intention, journal, companion, p
 Boop is built in four slices (spec §, plan "Slice map"): **S1 Alap**, **S2 Adatok** (Apple Health +
 calendar ingestion), **S2.5 Napkelte** (the look) and **S3 Reggel** (the morning brief: five orbs, Boop's voice,
 energy curve, paths) are this doc's base state; **B2 Gerinc** (2026-11-11) then replaced the five-domain shell with the
-spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (2026-11-12) then added the offline-first daily loop (check-in, goal, evening close, journal, Boop chat, reminders); **B4 Étel** (2026-11-13) then added the food room (Ma · Receptek · Kamra · Hét, offline-first meal capture, barcode, photos, sensitivities); and the **home screen + area-page kit** (2026-11-16) put a ring of eight area orbs in front of Ma and gave every area one frame to be built from, with **Ma itself becoming a living wall** of at most three cards; B5–B8 follow. The web PWA keeps running until Boop covers it.
+spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (2026-11-12) then added the offline-first daily loop (check-in, goal, evening close, journal, Boop chat, reminders); **B4 Étel** (2026-11-13) then added the food room (Ma · Receptek · Kamra · Hét, offline-first meal capture, barcode, photos, sensitivities); and the **home screen + area-page kit** (2026-11-16) put a ring of eight area orbs in front of Ma and gave every area one frame to be built from, with **Ma itself becoming a living wall** of at most three cards; **B6 Évad S1** (2026-11-20) turned Terv into **Évad** — the season page with its live consequence preview; B5's remaining parts, B6 S2–S4, B7 and B8 follow. The web PWA keeps running until Boop covers it.
 
 ## 2. User-facing behavior
 
@@ -110,12 +115,12 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   - **Bedtime reminder:** the Alvás pill (and the bedtime card's "Emlékeztess") asks notification permission on the
     first tap, then a nightly local notification at **bedtime target − 30 min** ("Emlékeztetlek HH:mm-kor"); tap
     again to cancel; a changed target moves it; denied permission stays off with a gentle line pointing at Beállítások.
-  - **Place switch (since B2: Ma · Terv · Napló · Boop):** the places share **one painted landscape** (`NKBackdropPanorama`, three
+  - **Place switch (since B2: Ma · Terv · Napló · Boop; Terv is Évad since B6 S1):** the places share **one painted landscape** (`NKBackdropPanorama`, three
     screens wide, no seams): switching pans left/right by bar order with the sky cross-fading (0.95 s), a sliding
     nav pill and a sequenced content fade (owner OK 2026-11-10).
 
 - **The spine (B2 Gerinc, 2026-11-11, `mezo-r36n9.12`):** one home, four places. `ShellView` hosts a glass bar
-  (`NKSpineBar`) **Ma · Terv · Napló · Boop** with icons only (names are accessibility labels; Boop's icon is a small
+  (`NKSpineBar`) **Ma · Terv · Napló · Boop** (the second place is **Évad** since B6 S1, 2026-11-20) with icons only (names are accessibility labels; Boop's icon is a small
   `StillOrb`) and the **"+"** as its own glass circle beside it. The shipped backdrop motion is kept: switching places slides the
   painted landscape (`NKBackdropPanorama`) toward the tapped place while the two skies blend (reduced motion = cross-fade),
   and a mini-orb tap still cross-fades the page sky. While a room is open the bar slides away.
@@ -142,7 +147,7 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   - **"+" capture sheet** (`Capture/CaptureSheet`): the food chips are real since B4 (Fotó · Szöveg · Vonalkód · Recept · Kamra open the meal composer at the matching entrance, `CapturePick.mealStart` → `Entrance.openingStage`); the other items (edzés, súly, ...) still say "hamarosan".
   - **Account sheet** (`Shell/AccountSheet`, opened from the avatar on Ma's title row, accessibility label "Fiók"): the account card with the confirmed sign-out
     (the old Én account section, `EnAccountSection`).
-  - **Placeholders:** Terv (`Terv/TervView`) is an honest frame until B6; Napló and the Boop tab became real in B3 (see **The daily loop**).
+  - **Placeholders:** Terv (`Terv/TervView`) was an honest frame until B6 — replaced by the Évad page on 2026-11-20 (see **Évad** below); Napló and the Boop tab became real in B3 (see **The daily loop**).
   - **Presentations stay at page level** (§9): the detail sheet and miért? hang outside the room stack, so they reach Ma and every room.
   - **DEBUG flags:** `-previewTab`, `-previewOpen`, `-previewSwitch`, `-previewPhase`, `-previewDrill`, `-previewWhy` — see `ios/README.md`.
   - **Known gaps:** between 00:00 and 04:00 Este still shows on the *day* sky (`isEvening` is hour ≥ 18).
@@ -177,7 +182,7 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   case (candidates in the spec §3). `KezdolapView` is the Ma place's root (`Kezdolap/`), and it is where the brief is fetched and
   kept fresh (`MorningTriggers` moved here from `NapView`). Tapping "Ma" in the bar while Ma is open brings the ring
   back from anywhere (`\.kezdolapHomeReset`). **The map it settles:** the ring does the job the Terv area grid was
-  invented for, so the bar keeps its four places and **Terv becomes his plan**, not a second area menu — this
+  invented for, so the bar keeps its four places and **Terv becomes his plan** (since B6 S1 named **Évad**), not a second area menu — this
   overturns life-dashboard decision #3.
   *Motion, each with a still branch under Reduce Motion:* the orbs **arrive out of the fog** one after the other
   (`FogArrival`); a tap **zooms the ring into that orb** and cross-fades to the area; coming back fades it out.
@@ -321,7 +326,7 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     `month-closes/open`, settings, `savings-goals` (L5 server half: `{id, name, kind: goal|purchase, target, saved,
     dueDate?, note?, position, clientRef?}`); PUT settings, PUT transaction + POST `…/reviewed` (category first, then
     reviewed), POST `month-closes/{month}`, POST/PUT/DELETE goals. `PenzStore` (one per user, `RootView`, shared by the
-    room, the Terv card and the capture) caches the whole read in `ServerCache` (`penz/snapshot`, 14 days): offline =
+    room and the capture; the Terv card it also fed left with B6 S1) caches the whole read in `ServerCache` (`penz/snapshot`, 14 days): offline =
     the cached answer with `NKStale` ("5 órás adat"), no cache = said; a fault is reported as itself. Money =
     `PenzMoney`, printed as whole forints of `hufMinor / 100` (`penzFt`: narrow no-break space, U+2212 minus). Pure,
     tested builders in `PenzLogic.swift`.
@@ -333,14 +338,14 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     expense chips, note, one button riding above the keyboard) is on Ma, Költés, the menu and the global "+" (*Kiadás*
     tile). The row shows at once and the week's remaining drops by unsent cash (`penzPendingAdjusted`; a delivered
     `clientRef` never counts twice). `PenzTriggers` (`RootView`, app-wide, page open or not) re-reads the outbox into
-    the store on every capture, delivery or refusal and re-reads the server on capture and delivery, so the Terv card
+    the store on every capture, delivery or refusal and re-reads the server on capture and delivery, so every Pénz figure
     counts unsent cash too; a refused cash row opens *Újra küldöm* / *Törlöm a telefonról*. The store re-runs a forced
     reload that arrived mid-read, retries a first read that found no net, keeps a failed transactions read's old rows
     only when they are this month's, takes "today" from the device clock, and builds a settings save from a fresh GET
     (or sends only the two edited lines). Today's rows leave review rows to the aggregate row; the month list counts
     what it shows (no transfer legs, no empty days).
-  - **Terv** carries a read-only glass card "PÉNZ · EZEN A HÉTEN · 34 500 Ft maradt · napi X Ft" (no way to open an
-    area from Terv yet), hidden without Pénz data.
+  - **Terv** carried a read-only glass card "PÉNZ · EZEN A HÉTEN · 34 500 Ft maradt · napi X Ft" until B6 S1
+    (2026-11-20) replaced Terv with the Évad page; the card left with it (no Pénz card outside the area now).
   - **Review (DEBUG):** `-preview shell -previewHome penz -penzTab Ma|Pénzem|Költés|Gyakorlás`,
     `-penzState review|calm|close|empty|offline|error`, `-penzSheet capture|review|edit|close|budgets|goal|invest|month`,
     `-penzPending 1890` (+ `-previewOffline YES` keeps it waiting), `-previewOpen penzCapture` (the "+" route); invented
@@ -393,6 +398,63 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   - **Review (DEBUG)**: `-penzPortfolio full|empty|stale|unpriced|error`, `-penzDigest ready|pending|quiet|unhealthy|failed|limited|error`,
     `-penzPage news1|news2|news3|sleeve|sleeve-short|sleeve-mid`, `-penzSheet record|event|allocation`; the preview
     refuses the symbol `NOPE`, a sell above the value, and a non-forint buy dated on a Sunday (no FX rate).
+- **Évad — the season (B6 S1, `mezo-r36n9.16`, 2026-11-20; spec
+  [`2026-11-20-boop-evad-design.md`](../superpowers/specs/2026-11-20-boop-evad-design.md) §5.1, backend
+  [`season.md`](season.md)).** **Terv → Évad:** the spine's second place renders `EvadPage` (`ShellView.page(.terv)`;
+  the `ShellTab` key stays `terv` so scene storage and `-previewTab terv` keep working; `NKSpineBar.labels[1]` =
+  „Évad"; the place's default hue is `evadHue` = `.forma`). A spine place, not a ring-opened room: an `NKAreaPage`
+  **without** its own `NKAreaBar` (two bottom bars would stack), inner tabs `NKAreaTabs` **Évad · Menü · Lista ·
+  Hatás** at the top of the content, *Szabályok* as the head's corner action, sub-pages as page-level
+  `fullScreenCover(item: EvadSub)` (`modositas | szabalyok | uj`, §9).
+  - **Head:** orb level = week / N, eyebrow „Őszi fogyás · 12 hétből a 7." (`evadEyebrow`), serif verdict + one hue
+    sentence from the overview's `head.status` (`evadVerdict`: on course / slower / faster / no data; maintain „Tartod
+    a súlyod" / „Kicsit kijjebb mentél a sávból") — never free text.
+  - **Évad tab** (`EvadOverviewTab`): **Mi mire hat** (`EvadSystemMap`: four orbs Edzés · Étel · Alvás · Súly, dotted
+    links with a light running cause → effect, still under reduced motion; a tap lights one pillar and lists its links
+    with the server's numbers — a link without a number says so, never an invented one), **Súly** (trend curve with
+    the target line and the dashed plan after now; a band for a maintain season; trend, target, weekly pace +
+    feasibility word), **Az évad terve** (block + sport days · training/rest-day kcal + protein · sleep need +
+    bedtime · target + date), **Hogy megy** / **Amit Boop észrevett** only when the overview carries adherence /
+    insights (S2; today null / empty, so they are absent), **Következik** (deload weeks, season end), actions
+    *Módosítás* (offline: „Ehhez internet kell.") · *Új évad*. *Korábbi évadok* is `mezo-r36n9.123`.
+  - **Menü · Lista · Hatás:** `NKNotLiveYet` cards until S3 (menu, shopping list) and S4 (experiments).
+  - **Módosítás** (`EvadWhatIf`, „Mi változna?"): stepper *Edzések hetente* (the kit's plus glyph and a drawn minus,
+    no system symbols; picks gym days that avoid the sport days), sport-day chips, *Heti fogyás / hízás* slider (not
+    for maintain). Every change re-previews (debounced, `POST /api/seasons/{id}/preview`) → **Ennyi változna**
+    (`NKCompareColumns` Most | Utána: Edzésnapon, Pihenőnapon or „nincs pihenőnap", Szénhidrát edzésnapon,
+    **Heti összesen** (`weekKcal`), Alvásigény, Lefekvés, then Célba érsz + A tempó, or A sáv), red guard lines
+    (`EvadWarningBox`), **Ehhez ezt kell tenned** (the server's `todo[]`), *Elfogadom* / *Mégsem*. Each day's own
+    target is base + that day's movement + the goal balance, so a 5th session does **not** change the training-day
+    kcal — it changes *Heti összesen*, the sleep need and the bedtime. *Elfogadom* only accepts the draft the preview
+    on screen was made for (`evadCanAccept`); a 409 `SEASON_PREVIEW_STALE` re-previews with „Közben változott valami,
+    újraszámoltam." **While the season's block runs the gym days are locked** (`evadGymDaysLocked`: the *Edzések hetente*
+    stepper is disabled, `evadGymDaysLockedLine` explains — „Amíg fut az edzésblokk, az edzésnapok maradnak…");
+    sport days, pace and gym time stay editable; the server enforces the same with 409 `SEASON_BLOCK_DAYS_LOCKED`.
+  - **Szabályok** (`EvadRules`): switches „Csak kevéssé feldolgozott ételek" (NOVA max), „Vasárnap este kérem a jövő
+    heti menüt", „Könnyebb edzéshéten ne fogyjak", „A valódi égetésemmel számoljon", „Ajánljon kísérletet, ha valami
+    újat kezdek" → `PUT …/rules`; read-only rows *Kiválasztott receptek*, *Blokk*, *Alvásigény* („az edzésből
+    számolva"), *Súlycél*.
+  - **Új évad** (`EvadNewSeason`, „Jöhet a következő évad"): five steps (A cél · Az edzés · Az étel · Az alvás ·
+    Összesítve) prefilled from `GET /api/seasons/draft` and summarised by `POST /api/seasons/draft/preview`;
+    *Indulhat az évad* = `EvadStore.start` (create once, then activate; a retry after a failed activate reuses the
+    planned season, never a second) / *Később*.
+  - **No season yet** (`EvadEmpty`, the overview's 404): „Még nincs évadod · Indítsunk egy évadot", a note that a
+    draft from the current goal and block is ready, *Megnézem* → Új évad. Nothing is written before *Indulhat az évad*.
+  - **The Blokk builder's gate copy:** starting a block without a season is refused (409 `SEASON_REQUIRED`) and
+    `planErrorText` says „Edzésblokk csak évadhoz indulhat. Az Évad oldalon indíthatsz egyet."
+  - **Data** (`BoopCore/Evad/`): `EvadWire` (lenient, hand-decoded — enums are strings; `weekKcal` and `menuDay`
+    may be missing) + `EvadClient` over `RawJSONClient` (no generator change; typed `PlanFetchError`, 404 =
+    `.notFound`, 409 → `.conflict(code)`, `evadErrorText` per `SEASON_*` code) + `EvadStore` (one per user in
+    `RootView`): the overview cached in `ServerCache` endpoint **`evad/overview`** (max 14 days); offline = the cached
+    copy with its age (`NKStale`, „5 órás adat") and every change says it needs the net; 404 = the empty state, never
+    a failure; a refusal or fault reported as itself. Pure builders in `EvadLogic.swift`.
+  - **Review (DEBUG, `-preview shell -previewTab terv`)** — `Evad/EvadPreview.swift` answers the season API locally
+    with the spike's invented figures: `-evadState full|maintain|empty|offline|error` (default `full`; `offline`
+    primes the cache five hours old), `-previewOffline YES` (= `offline`), `-evadTab Évad|Menü|Lista|Hatás`,
+    `-evadOpen modositas|szabalyok|uj` (opens the sub-page after 1.2 s), `-evadLit 0…3` (lights a pillar),
+    `-evadSessions N` / `-evadPace 0.6` (pre-set Módosítás), `-evadStale YES` (the first accept answers 409
+    `SEASON_PREVIEW_STALE`), `-evadAutoAccept YES` (taps *Elfogadom* once the first changed preview is in),
+    `-evadBottom YES` (sub-pages open scrolled to their actions).
 - **The Edzés room (B5 phase 1, `mezo-r36n9.15`)** — the same page, with its own data. Edzés left `AreaRoom`
   for `ios/Boop/Edzes/EdzesRoom.swift`, branched beside `EtelRoom()` in `NapView`, because the morning brief
   cannot carry what the training API knows. **The frame is still the kit's** (`NKAreaPage`, the area's own bar,
@@ -979,6 +1041,7 @@ New API call: add the operationId to the generator config, run `sync-openapi.sh`
 - **B3 backend** (`-Dmezo.test.use-testcontainers=true`): `DayCloseServiceIT`, `DayCloseApiIT`, `CheckInBoopIT`, `WearableCheckInBiomarkerSourceIT`, `IntentionFocusClientRefIT`, `JournalClientRefIT`, `BoopDayContextIT`, `BoopChannelChatIT`, `BoopSessionDoneIT`, `BoopPromptsTest`, `BiometricsContractIT`, `ArchitectureTest`.
 - **B4 backend** (`-Dmezo.test.use-testcontainers=true`): `SensitivityServiceTest`, `RecipeAllergenRollupTest`, `OffClientTest`, `PantryImportBarcodeIT`, `PantryCatalogServiceIT` (barcode race), `MealCoachPolicyTest` / `MealCoachPromptTest`, the day-plan units (`WindowPlacerTest`, `BudgetSplitterTest`, `SuggestionPickerTest`, `UsualMealRankerTest`, values copied from the web planner's own pinned cases) + `FuelPlanIT`, `UsualMealsIT`, `ImageStoreTest` + `MealPhotoIT`, `RecipeImportIT` (+ SSRF / switch-off / LLM-unavailable variants) + `RecipeJsonLdParserTest`, `RecipeImageIT`, `ClientRefIdempotencyIT` (a real two-thread race), `PurgeRestartScriptIT`, `ArchitectureTest`. The full suite was 7575 tests.
 - **B4 BoopKit / app** (`BoopKit-Package`, `Boop` scheme; run on a simulator): `FoodClientTests`, `FoodRecipeClientTests`, `SensitivityRulesTests`, `FoodOutboxTests` (offline capture keeps its own date after midnight, photo beside the queue, confirmation card not a saved meal, 7-day failed with values kept), app `EtelMaTests`, `EtelStoreTests`, `MealComposerTests`, `DraftNoticeTests`, `ServingConfirmTests`, `RecipeImportReviewTests`, `EtelKamraTests`, `EtelHetTests`, the settings/skip/supplement tests and `MaFoodRowsTests`. Last recorded: app 359, BoopKit 385 + 67. Two B3 tests (`MorningClientTests.olderLoadNeverOverwritesNewer`, `VoiceJournalTests.slowOnDeviceRecognitionTimesOutToTheUpload`) flake under machine load and pass idle. `swift test` on macOS fails (CMMotionManager) — use `xcodebuild` on the package scheme.
+- **B6 Évad S1** (`BoopKit-Package`): `EvadClientTests`, `EvadStoreTests`, `EvadLogicTests` (see [`season.md`](season.md) §8); app `ShellTabTests` and kit `NapkelteSpineTests` pin the „Évad" label.
 - Not in CI (`ci.yml` does not build `ios/`); run locally.
 
 ## 9. Decisions, gotchas & deferred
@@ -1100,7 +1163,7 @@ S3: `api/feature/boop/boop.yml` · `backend/…/feature/boop/service/{BoopDayAss
 `…/feature/boop/controller/BoopController.java` · `…/feature/boop/config/BoopProperties.java` · `backend/src/main/resources/db/changelog/1.1.0/script/202611101300_mezo-r36n9.7_boop_brief.sql` ·
 `ios/BoopKit/Sources/BoopCore/Morning/{Brief,MorningClient,PathBuilder,Lens,BoopVoice}.swift` · `ios/Boop/Nap/{MaiView,MaiTiles,MaiPath,LensActionRow,ObservationStack,SessionMove,MaiMode,BedtimeReminder,DetailSheet,SleepSheet,PulseSheet,DaySheet,ANapomView,NapView}.swift` ·
 `ios/Boop/Shell/ShellView.swift` · `ios/BoopKit/Sources/BoopDesign/Napkelte/Frames.swift` (`NKBackdropPanorama`) ·
-B2: `ios/Boop/Shell/{ShellView,PlacePage,AccountSheet}.swift` · `ios/Boop/Capture/CaptureSheet.swift` · `ios/Boop/{Terv,Naplo,BoopChat}/*` ·
+B2: `ios/Boop/Shell/{ShellView,PlacePage,AccountSheet}.swift` · `ios/Boop/Capture/CaptureSheet.swift` · `ios/Boop/{Naplo,BoopChat}/*` (`Terv/` deleted in B6 S1) ·
 `ios/Boop/Nap/{MaPhases,MaDrill,ProposalDesk,RoomSwipeBack}.swift` · `ios/BoopKit/Sources/BoopCore/Morning/{DayPhase,DayPlan,Proposals}.swift` ·
 `ios/BoopKit/Sources/BoopDesign/Napkelte/{SpineBar,Proposal,Drill}.swift` ·
 B1: `ios/BoopKit/Sources/BoopCore/Health/{HealthKitReader,HealthReader,HealthSync,HealthBackground,SleepNightBuilder,WorkoutMapper}.swift` · `…/Push/PushRegistrar.swift` · `ios/Boop/App/{BoopAppDelegate,BackgroundSyncHost}.swift` · `ios/Boop.entitlements` · `ios/Boop-Paid.entitlements` · `backend/…/feature/wearable/service/{HealthSampleService,WearableDeletionService,WorkoutReconciler}.java` · `backend/…/feature/biometrics/sleep/service/SleepNightMerge.java` · `api/feature/device/device.yml` · `scripts/ops/boop-b1-merge-accounts*.sql`
@@ -1108,6 +1171,8 @@ B1: `ios/BoopKit/Sources/BoopCore/Health/{HealthKitReader,HealthReader,HealthSyn
 Blokképítő + heti átnézés: `ios/Boop/EdzesTerv/{BlockBuilderPage,WeekReviewDeck,PlanKit,PlanEnvironment,PlanPreview}.swift` · `ios/BoopKit/Sources/BoopCore/Train/{PlanTransport,PlanWire,PlanClient,BlockDraft,WeekReview,BlockBuilderModel}.swift` · `backend/…/feature/train/service/{TrainService#updateSettings,ExerciseStyler#restampRows}`
 
 L0/b (az élő fal): `ios/BoopKit/Sources/BoopCore/Morning/{Wall,WallSources}.swift` · `ios/BoopKit/Sources/BoopDesign/Napkelte/Wall.swift` · `ios/Boop/Nap/{MaWall,MaPhases,MaiView}.swift`
+
+B6 Évad S1: `ios/Boop/Evad/{EvadPage,EvadOverviewTab,EvadSystemMap,EvadWhatIf,EvadRules,EvadNewSeason,EvadPreview}.swift` · `ios/BoopKit/Sources/BoopCore/Evad/{EvadClient,EvadStore,EvadWire,EvadLogic}.swift` · backend [`season.md`](season.md)
 
 L5 Pénz: `ios/Boop/Penz/{PenzRoom,PenzTabs,PenzSheets,PenzFaces,PenzPreview}.swift` · `ios/BoopKit/Sources/BoopCore/Penz/{PenzWire,PenzClient,PenzStore,PenzLogic,PenzOutbox}.swift` · `OutboxKind.penzExpense` in `Ritmus/{Outbox,RitmusPayloads,RitmusClient}.swift` · tests `BoopCoreTests/{PenzLogicTests,PenzClientTests}.swift`, `BoopTests/PenzRoomTests.swift`
 

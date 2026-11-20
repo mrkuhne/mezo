@@ -13,7 +13,7 @@ osszefoglalo: A mérlegelés automatikusan jön az Apple Health-ből, a rendszer
 - **Mérlegelés:** az első súlyt a regisztrációkor adod meg; utána a mérleged (például Feelfit) az Apple Health-be ír, és a Boop
   onnan automatikusan átveszi. Kézzel a webes appban is rögzíthetsz.
 - **Trend:** a napi ingadozást kisimító súlytrend, heti változás és egy jelzés, mennyire megbízható az adat.
-- A Terv és a reggeli összefoglaló a „mért → trend” párt mutatja.
+- A reggeli összefoglaló a „mért → trend” párt mutatja, az Évad oldal a trend görbéjét a célvonallal.
 
 ## Hogyan működik
 1. A telefon a Health-ből olvassa a testsúlyt (60 napra visszamenőleg, utána csak az újakat). Minden mérés a háttérrendszerbe kerül

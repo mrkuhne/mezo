@@ -1,49 +1,99 @@
 ---
-cim: A Terv-csomag (étrend + edzés + súlycél)
+cim: Az évad (cél + edzés + étel + alvás)
 szint: Funkció
 terulet: Terv
-allapot: Tervezve
+allapot: Részben kész
 hol: [iPhone app, Háttérrendszer, AI]
 szulo: 00-attekintes
 szakasz: [B6]
-osszefoglalo: Egy terv N hétre — súlycél, engedélyezett receptek és alapanyagok, csatolt edzésblokk és szabályok —, amit Boop mindenhol figyelembe vesz.
+osszefoglalo: Egy néhány hetes terv, amely magában foglalja a célt, az edzésblokkot, a heti napokat és az alvásigényt — minden módosításnál élőben mutatja, mire hat, és csak az elfogadásod után változtat.
 ---
 
 ## Mit csinál
-A B6-ban a Terv oldal szerkesztővé válik. Egy terv:
+Egy **évad** 4–24 hétig tart, és ezeket fogja össze:
 
-- **N hétre** szól, kezdő és záró dátummal;
-- tartalmazza a **súlycélt**;
-- megadja az **engedélyezett recepteket és alapanyagokat** („csak ezek a receptek 4 hétig”);
-- **csatolja az edzésblokkot** (mezociklus vagy futóblokk);
-- **szabályokat** tartalmaz.
+- a **súlycélt** (fogyás, súlytartás vagy izomépítés, tempóval);
+- az **edzésblokkot** (a futó blokkot átveszi, vagy újat indít egy sablonból);
+- a **heti edzés- és sportnapokat** (például heti 4 edzés + kedden és csütörtökön röplabda);
+- az **alvásigényt** és a lefekvés idejét;
+- a **szabályokat** és a **kiválasztott recepteket** (a heti menü a 3. szakaszban épül rájuk).
 
-Több terved lehet, egyszerre egy aktív. A Terv mutatja a **tervhűséget** (mennyire tartod), és a terv szabályai bekerülnek
-**minden AI-háttérbe**: a beszélgetésbe, a reggeli összefoglalóba, az étkezés-értékelésbe és a javaslatokba.
+Ebből számol: edzésnapi és pihenőnapi kalória, fehérje, szénhidrát edzésnapon, a **heti összes** kalória, alvásigény,
+lefekvés, céldátum és tempó (súlytartásnál a súlysáv).
 
-## Hogyan működik (terv)
-1. Ma ilyen „terv” egyáltalán nincs a rendszerben: az étrendi beállítás csak makróarány és fehérjeszint, a súlycélhoz pedig csak
-   csatolni lehet egy mezociklust (kalória-hatás nélkül). Az AI a recepteket és a kamrát eszközként látja, de terv-szabályt nem.
-2. A B6 új terv-entitást épít, a pontos formát a B6 indító ötletelése dönti el (a kutatás egyik kérdése: új egység legyen, vagy a
-   súlycél bővítése).
-3. A recept-alapanyag a receptműhelyből jön (az étrend „csak ezekből” része feltételezi, hogy elég recept van).
-4. A tervek felállítása ekkor költözik át a webes appból.
+**Módosítás — „Mi változna?”** Átállíthatod, hány edzésed legyen hetente, mely napokon sportolsz, és milyen tempóban fogyj vagy
+híz. Minden változtatás után Boop azonnal megmutatja:
+- **Ennyi változna** — „Most” és „Utána” oszlop: edzésnapon, pihenőnapon (vagy „nincs pihenőnap”, ha minden nap mozogsz),
+  szénhidrát edzésnapon, **heti összesen**, alvásigény, lefekvés, célba érés és tempó (vagy a sáv);
+- piros figyelmeztetés, ha a motor szerint baj lenne (például „Ilyen tempónál izmot is veszítenél, nem csak zsírt.”);
+- **Ehhez ezt kell tenned** — például „Korábbi lefekvés: 21:55 körül feküdj le. Az esti emlékeztetőt is ehhez igazítom.”, vagy
+  hogy a blokkot át kell tenni heti 5 napra;
+- **Elfogadom** / **Mégsem**. Amíg nem fogadod el, semmi sem változik.
+
+Egy fontos részlet: **egy plusz edzés nem emeli az edzésnapi kalóriát.** Minden nap célja az alap + azon a napon végzett mozgás
++ a cél miatti különbség. A plusz edzés egy pihenőnapot edzésnappá tesz, így a **heti összes** kalória nő (például 16 800-ról
+17 000-re), az alvásigény nő, és korábban kell feküdni — ezt a három sort érdemes nézni.
+
+**Amíg fut az edzésblokk, az edzésnapok zárolva vannak:** a blokk napjai ezekhez igazodnak. Az „Edzések hetente”
+léptető ilyenkor szürke, és egy sor elmondja, miért. A sportnapok, a tempó és az edzés időpontja szabadon változtatható.
+
+**Edzésblokk csak évaddal indulhat.** Ha nincs évad (vagy egy héten belül induló tervezett évad), az új blokk indítását a
+rendszer elutasítja, és Boop az Évad oldalra küld. A már futó blokk zavartalanul fut tovább.
+
+## Hogyan működik
+1. **Előnézet:** a telefon elküldi a tervezett változatot; a háttérrendszer a súlycél-motorral kiszámolja előtte és utána az
+   összes számot — **semmit nem ment el**.
+2. **Elfogadás:** egy lépésben átírja a súlycélt, a heti edzés- és sportnapokat, az alvásigényt (és a lefekvést), szükség esetén
+   csatolja a blokkot, és feljegyzi a változást az előtte–utána számokkal.
+3. **Ujjlenyomat:** az előnézet megjegyzi, milyen állapotból számolt (cél, heti napok, legutóbbi mérlegelés, alvás, blokk). Ha
+   közben valami változott — például mérlegeltél —, az elfogadást a rendszer visszautasítja, a telefon újraszámol, és ezt írja:
+   „Közben változott valami, újraszámoltam.” Így soha nem kerül be elavult szám.
+4. **Alvásigény (Boop szabálya):** alap = a saját alváscélod, ha beállítottad, különben 7 óra 30 perc; minden heti edzés és sport
+   +6 perc; legfeljebb 8 óra 30 perc. Lefekvés = ébredés − alvásigény − 15 perc elalvás. Például heti 4 edzés + 2 sport mellett
+   7 óra 30 perces alapból 8 óra 6 perc lesz. Az általános ajánlás felnőtteknek 7–9 óra, sportolóknak inkább a sáv teteje; a
+   pontos lépésköz Boop kiinduló szabálya, nem mért érték. Az alapot az évad megjegyzi, így ismételt módosításnál nem
+   halmozódik; az évad lezárásakor az alváscél visszaáll az alapra (hacsak közben magad nem írtad át).
+5. **Életciklus:** tervezett → aktív → lezárt. Egyszerre egy aktív évad lehet; egy új évad indítása lezárja az előzőt.
+6. **Az első évad** a meglévő súlycélodból, a futó blokkodból, a heti napjaidból és az alvásodból áll össze javaslatként; élesbe
+   csak az „Indulhat az évad” gombra kerül.
 
 ## Miért így
-A tulajdonos alapkérése, hogy az étrend, az edzés és a súlycél **egy** egység legyen, és az AI „személyi edző + dietetikus”
-módon a terv szabályai szerint beszéljen (kutatás 02, 03, 10 — mindhárom „hiányzik”-nak jelölte).
+- A tulajdonos alapkérése: az étrend, az edzés, a súly és az alvás **egy** egység legyen, és minden változtatásnál lássa a
+  következményt (döntések #61–#64).
+- Az étkezési számot a heti edzés- és sportnapok mozgatják, nem maga a blokk — ezért az évad birtokolja a heti napokat.
+- Az elfogadás egy lépés, hogy soha ne legyen olyan pillanat, amikor a kalória már 5 edzéssel számol, a többi még 4-gyel.
+- Az edzésnapok zárolása futó blokk alatt átmeneti: amíg a blokk napjait nem lehet ugyanazzal az elfogadással átrendezni, így
+  nem csúszhat szét a blokk és a heti beosztás.
 
 ## Beállítások
-Nincs még.
+| Beállítás | Mit állít | Alapérték |
+|---|---|---|
+| `mezo.season.mesocycle-gate.enabled` | Be/ki kapcsolja, hogy edzésblokk csak évaddal indulhasson | be |
+| `mezo.season.mesocycle-gate.planned-lead-days` | Ennyi napon belül induló tervezett évad is elég a blokk indításához | 7 nap |
+| `processed_food_max_nova` (évad-szabály) | Csak kevéssé feldolgozott ételek (1–4-es skálán meddig) | 2 |
+| `deload_maintain` (évad-szabály) | Könnyebb edzéshéten ne fogyj | be |
+| `use_learned_expenditure` (évad-szabály) | A valódi, megtanult égetéssel számoljon | be |
+| `propose_experiments` (évad-szabály) | Ajánljon kísérletet, ha valami újat kezdesz | be |
+| `menu_day` / `menu_time` (évad-szabály) | Mikor kéred a jövő heti menüt | vasárnap 18:00 |
 
 ## Adattáblák
-Nincs még — új tábla(k) a B6-ban. A meglévők, amelyekre épül: `goal`, `goal_plan_link`, `recipe`, `pantry_item`, `mesocycle`,
-`running_block`, `diet_settings`.
+| Tábla | Mit tárol |
+|---|---|
+| `season` | Az évad: név, állapot, kezdet, hossz, a súlycél, alvásigény és annak alapja, szabályok, az utoljára elfogadott változat |
+| `season_revision` | Minden elfogadott változás, az előtte és utána számokkal |
+| `season_allowed_recipe` | A kiválasztott receptek |
+| `goal` | A súlycél (az évad hozza létre és írja át) |
+| `goal_plan_link` | Az évadhoz csatolt edzésblokk |
+| `gym_schedule_slot` / `sport_schedule_slot` | A heti edzés- és sportnapok (az évad írja elfogadáskor) |
+| `sleep_goal` | Az alváscél (aktív évad alatt az évad alvásigénye) |
 
 ## Mi jön még
-- B6: a terv-csomag, a szerkesztő, a tervhűség, a bevásárlólista (lásd [Bevásárlólista](07-bevasarlolista.md)) és a hatáskövetés
-  (lásd [Hatáskövetés](08-hataskovetes.md)).
-- B7: az élő javaslatok a terv szabályain belül maradnak.
+- 2. szakasz: tervhűség („Hogy megy”), Boop észrevételei, az évad szabályai minden beszélgetésben és a reggeli összefoglalóban, kártyák a Ma falán.
+- 3. szakasz: heti menü és bevásárlólista (lásd [Bevásárlólista](07-bevasarlolista.md)).
+- 4. szakasz: kísérletek (lásd [Hatáskövetés](08-hataskovetes.md)).
+- Egy elfogadással a futó blokk napjai is átrendeződnek, ha az edzésnapok változnak.
+- A célsúly, az évad hossza és az ébredési idő állítása a Módosításban; Korábbi évadok oldal.
 
 ## Mi marad ki
-Életcélok (PERMAH-pillérek, jelkatalógus, „ha–akkor” szabályok) termékként; a „napi cél” a Napló/Ma része lesz.
+Életcélok (PERMAH-pillérek, jelkatalógus, „ha–akkor” szabályok) termékként; napi szintű újratervezés (7. szakasz); futóblokk az
+évadban (döntés #44).
