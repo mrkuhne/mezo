@@ -47,4 +47,11 @@ public struct PlanClient: Sendable {
     public func saveSettings(blockId: String, _ request: WireSettingsRequest) async throws(PlanFetchError) -> WireBlock {
         try await raw.send(.put, "/api/train/mesocycles/\(blockId)/settings", operationID: "updateMesocycleSettings", body: request)
     }
+
+    /// Add / swap suggestions for one day of the block, best fit first, each with the style's prescription (mezo-r36n9.116).
+    /// Read-only; a 409 (`TRAIN_RUN_NOT_EDITABLE`) means the block is archived.
+    public func suggestions(blockId: String, _ request: WireSuggestionsRequest) async throws(PlanFetchError) -> WireSuggestions {
+        try await raw.send(.post, "/api/train/mesocycles/\(blockId)/exercise-suggestions",
+                           operationID: "getBlockExerciseSuggestions", body: request)
+    }
 }

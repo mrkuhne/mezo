@@ -349,7 +349,7 @@ components:
       required: [monthlyHufMinor]
       properties:
         monthlyHufMinor: { type: integer, format: int64, description: 'The Gyakorlás monthly cap from the settings' }
-        monthPnlHufMinor: { type: integer, format: int64, nullable: true, description: 'Sum of the month''s closed practice trades — null until L7' }
+        monthPnlHufMinor: { type: integer, format: int64, nullable: true, description: 'Sum of the month''s closed paper trades (HUF twins, L7)' }
     PenzDigestResponse:
       type: object
       required: [date, status, items, newsHealthy]

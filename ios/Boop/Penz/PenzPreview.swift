@@ -35,6 +35,9 @@ enum PenzPreview {
         try? await cache.put(model.snapshot(), endpoint: "penz/snapshot", date: "current")
         try? await cache.put(model.portfolio(), endpoint: "penz/portfolio", date: "current")
         try? await cache.put(model.digest(), endpoint: "penz/digest", date: model.today)
+        try? await cache.put(PenzPreviewL7.shared.overview(), endpoint: "penz/practice", date: "current")
+        try? await cache.put(PenzPreviewL7.shared.proposals, endpoint: "penz/proposals", date: "current")
+        try? await cache.put(PenzPreviewL7.shared.catalog, endpoint: "penz/catalog", date: "current")
     }
 }
 
@@ -457,6 +460,8 @@ struct PenzPreviewTransport: ClientTransport {
                 m.goals.append(goal)
                 return try json(goal)
             default:
+                // L7: practice, catalog, proposals, strategy (`PenzPreviewL7.swift`)
+                if let answer = try PenzPreviewL7.shared.answer(operationID, segments: segments, sent: sent) { return answer }
                 return (HTTPResponse(status: .notFound), nil)
             }
         }

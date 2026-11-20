@@ -20,6 +20,8 @@ public enum PlanFetchError: Error, Equatable, Sendable {
     case rejected(String?)
     /// The server refused the state (409) — the week has closed, the block is archived, techniques are off.
     case conflict(String?)
+    /// A day save was refused because a workout of that day is running (409 `TRAIN_DAY_WORKOUT_RUNNING`) — edit it afterwards.
+    case dayWorkoutRunning
     case server
 }
 
@@ -58,7 +60,11 @@ public struct RawJSONClient: Sendable {
         case 401: throw .unauthorized
         case 404: throw .notFound
         case 400: throw .rejected(Self.messageCode(data))
-        case 409: throw .conflict(Self.messageCode(data))
+        // A 422 that names its rule (Pénz's PENZ_PRACTICE_CAP_EXCEEDED) is a content refusal he can read.
+        case 422 where Self.messageCode(data) != nil: throw .rejected(Self.messageCode(data))
+        case 409:
+            let code = Self.messageCode(data)
+            throw code == "TRAIN_DAY_WORKOUT_RUNNING" ? .dayWorkoutRunning : .conflict(code)
         // A 503 that names its reason (Pénz's PENZ_FX_UNAVAILABLE) is a refusal he can read, not a bare fault.
         case 503 where Self.messageCode(data) != nil: throw .conflict(Self.messageCode(data))
         // A rate limit that names itself (Pénz's PENZ_DIGEST_REFRESH_LIMITED) is a state answer, not a fault.

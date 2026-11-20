@@ -1116,9 +1116,9 @@
       "Alapok"
     ],
     "szulo": "mezo-r36n9.33",
-    "allapot": "Később",
     "cim": "Pénz 4. · Gyakorlás és a befektetési javaslatok",
-    "mit_kapsz": "A day trading gyakorlóhelye: terv mielőtt belépsz, egy sor utána, és heti visszanézés Booptól arról, mi működött és mi volt a hét hibája — valódi pénz nélkül. És amikor nagyobb összeged van, Boop előáll egy felosztással, időtávonként két-három konkrét lehetőséggel, amin te igazítasz."
+    "mit_kapsz": "A day trading gyakorlóhelye: terv mielőtt belépsz, egy sor utána, és heti visszanézés Booptól arról, mi működött és mi volt a hét hibája — valódi pénz nélkül. És amikor nagyobb összeged van, Boop előáll egy felosztással, időtávonként két-három konkrét lehetőséggel, amin te igazítasz.",
+    "munkamenet": "boop-penz-l7"
   },
   "mezo-r36n9.106": {
     "cim": "Notion: hiányzó jegyek pótlása a tábládon",
@@ -1310,12 +1310,13 @@
     "szulo": "mezo-r36n9.16"
   },
   "mezo-r36n9.121": {
-    "cim": "Pénz: a javaslat ne nevezhessen meg a listádon kívüli terméket",
-    "tipus": "Apróságok",
+    "tipus": "Karbantartás",
     "szakasz": "Életpanel",
     "terulet": [
-      "Pénz"
+      "Alapok"
     ],
-    "mit_kapsz": "Boop befektetési javaslata csak az általad jóváhagyott termékek közül választhat; ha mégis mást említene, a javaslat helyett egy biztonságos szöveg jelenik meg."
+    "szulo": "mezo-r36n9.33",
+    "cim": "Pénz · javaslatok: ismeretlen termék nevének kiszűrése",
+    "mit_kapsz": "Ha Boop egy javaslat szövegében olyan terméket említene, ami nincs is a termékjegyzékedben, a szöveg akkor is fennakad az ellenőrzésen, és a rögzített, biztonságos szöveg jelenik meg helyette."
   }
 }

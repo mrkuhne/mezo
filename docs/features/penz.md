@@ -25,7 +25,9 @@ related: [boop-ios, _platform-api-backend, _platform-auth-security, companion, d
 > 2026-11-20) added the **portfolio by horizon** (*Pénzem*: holdings in three sleeves, FIFO lots, a valuation policy,
 > Yahoo quotes) and the **daily news digest** (*Ma*: feeds → deterministic match → validated narration), under two
 > more tags: `PenzPortfolio` and `PenzNews` (§3.6–§3.11). Builder calls:
-> [`2026-11-20-boop-penz-l6-build.md`](../superpowers/plans/2026-11-20-boop-penz-l6-build.md).
+> [`2026-11-20-boop-penz-l6-build.md`](../superpowers/plans/2026-11-20-boop-penz-l6-build.md). **L7** (`mezo-r36n9.105`)
+> adds the **curated product catalog**, the **investment proposal flow** and the **monthly strategy** under tags
+> `PenzCatalog` and `PenzProposal` (§3.13).
 
 ## 1. Summary
 
@@ -417,6 +419,91 @@ alerts **`PenzNewsProviderDown`** on `min(…{kind="news"}) >= 3` (every news so
 **`PenzQuotesProviderDown`** for the quote source. The digest's `newsHealthy` is false while every news provider's
 last fetch failed.
 
+### 3.12 Practice — paper trading (L7)
+
+Gyakorlás is day trading as learning, **on paper** (`penz_paper_trade.paper` is `NOT NULL DEFAULT true`; the API never
+accepts anything else). Builder calls: [`2026-11-20-boop-penz-l7-build.md`](../superpowers/plans/2026-11-20-boop-penz-l7-build.md)
+§1 calls 1–9. `PenzPracticeService` maps rows; the arithmetic is pure in `service/practice/`:
+
+- **The plan is the row** — `planned` → `open` (typed entry + date) → `closed` (exit, ≥ 1 of the eight fixed
+  `PracticeTag`s, mistake flag, one line ≤ 140); a plan may be `cancelled`. Any other step is 409
+  `PENZ_PAPER_TRADE_STATE`, so "no plan, no trade" is structural. Create may open in the same call (`entryMinor`).
+  The stop must be on the losing side of the (planned) entry: 400 `PENZ_PAPER_TRADE_INVALID_STOP`.
+- **The entry date** lies in the owner's current month, up to today: later, or before the month's first day, is 400
+  `VALIDATION_INVALID_VALUE` on `entryDate` — nothing is booked into a closed month (L7 review I1).
+- **Delete** — planned, open and cancelled rows may be (soft-)deleted (an open one frees its committed cost: it
+  never happened); a **closed** row is history and is refused with 409 `PENZ_PAPER_TRADE_STATE`, so its P/L — and a
+  loss counted in the cap — can never vanish (L7 review I3).
+- **Overflow is a 400, never a 500**: an |R| beyond `r_multiple numeric(10,2)` (> 99 999 999,99) is a field error on
+  `exitMinor`; a risk HUF twin beyond a `long` is a field error on `quantity` (as `PenzFxService.toHufMinor`).
+- **`PaperTradeMath`** — risk = |entry − stop| × qty, P/L long/short, R = P/L ÷ risk (computed from the prices, so
+  exact), stored with 2 decimals; `stopRespected` = the exit did not go beyond the stop.
+- **HUF twins** by THE booking policy (§4.1, `PenzFxService.book`): cost and risk at the entry date, P/L at the exit
+  date, the unrealized P/L at the typed last close's date; the plan's per-unit figures at today's rate until opened.
+  No market data at all — every price is typed; without a typed close an open trade is valued at entry (0).
+- **The cap (`PracticeCap`)** — `C = practice_monthly_minor`, the same field as the allowance's `practice` line
+  (§3.1). For the month: used = Σ `cost_huf` of open trades + max(0, −Σ `pnl_huf` closed this month); left =
+  max(0, C − used). Opening above left → **422 `PENZ_PRACTICE_CAP_EXCEEDED`**. Gains never raise it; nothing reads a
+  holding, a savings goal, the allowance or income. The month is always the owner's **current** month (`today`),
+  never the entry's. **The lock**: create, edit and open first take a per-owner transaction advisory lock
+  (`PenzPaperTradeRepository.lockOwner`, `pg_advisory_xact_lock(hashtext('penz_practice:' || owner))`), so two
+  concurrent opens are serialized and cannot both pass the cap (`PenzPracticeApiIT` races two).
+- **The week (`WeeklyReview`)** — Monday-start (the owner's money timezone): win rate (R > 0), by setup, distribution
+  (≥ +2R · −1,2R…0 · < −1,5R; healthy = none below −1,5R), the most common mistake (the most frequent tag among the
+  week's mistake-flagged trades, ties → the costlier; cost = −Σ their HUF P/L when negative) and the cumulative curve.
+- **The copy (`PracticeCopy`)** — deterministic Hungarian templates over those figures, no model call: headline / sub
+  (null without a closed trade this week), 0–3 observations, and under 50 tagged trades the `noiseLine`. Forints as
+  the digest formats them (`DigestFigures.hufMagnitude`), R with a decimal comma (`+0,8R`). Boundary (spec §6): never
+  urges, promises a return or says sell — `PenzPracticeCopyTest` guards it.
+- Pénzem's practice row (`PenzPracticeRow.monthPnlHufMinor`) reads the same month P/L.
+### 3.13 Catalog and proposals (L7)
+
+`PenzProposalController` (tags `PenzCatalog` + `PenzProposal`) → `PenzCatalogService` / `PenzProposalService` /
+`PenzStrategyService` → the pure package `service/proposal` (no Spring). Builder calls 10–16 of
+[`2026-11-20-boop-penz-l7-build.md`](../superpowers/plans/2026-11-20-boop-penz-l7-build.md).
+
+- **The catalog** (`penz_product`, per owner): seeded once per owner and seed key from `PenzCatalogSeed.SEEDS`
+  (native insert, `ON CONFLICT DO NOTHING` on `uq_penz_product_created_by_seed_key`, which ignores `is_deleted` — a
+  declined or deleted seed never returns; a seed added to the code later appears as a new suggestion). Seeds are
+  `suggested` / `research` with fee fields, source and `reviewed_at`. **The list is empty for now** (the product facts
+  are being verified). He approves / declines with one tap (idempotent), adds his own (`approved` / `owner`,
+  `reviewed_at` = his today) or edits fees (`reviewed_at` = his today, status kept). The model never writes this table.
+- **The split** (`ProposalSplitter`): emergency target = `emergency_fund_months` × the allowance engine's `fixedCosts`
+  line of the month (none → no target); the short sleeve gets `min(A, max(0, target − shortValue))` (short value =
+  Σ short-sleeve positions from `PenzPortfolioService.positions`, cached quotes); the rest 40 % mid / 60 % long;
+  short and mid round down to 1 000 Ft, every rounding rest goes to long (the three always sum to A). A shortfall
+  below 1 000 Ft rounds the short sleeve to 0 — the fallback says no money goes there this time, never "0 Ft".
+- **Options** (`ProductOptions`): approved products of that sleeve only (status re-checked in the pure code), TER
+  ascending (unknown last), then entry fee, then name, at most 3; fewer than 2 → `optionsNote`. Per option: the
+  yearly running cost for the sleeve amount (`amount × TER`, HALF_../ to 10 Ft, null without TER) and the server-
+  computed "differs" lines (cost delta vs the cheapest — "the lowest" only for a strictly cheapest option, never on a
+  TER tie or a 0 Ft amount — currency and distribution only when the options differ, entry fee).
+- **Narration** = one call per proposal (`PenzProposalLlm`, adapter `PenzProposalLlmAdapter`, cheap tier, tag
+  `penz_proposal/narrate`, payload-free) on `ProposalPrompt` → `ProposalNarration.parse` →
+  `ProposalNarration.normalised` (`NewsText.clean`, NFKC, `\p{Cf}` out, every `\p{Z}` → a space; the text is validated
+  AND stored in this form, so a zero-width space, soft hyphen, no-break space or full-width digit hides nothing) →
+  `ProposalValidator` (the digest validator's sibling: every number from `ProposalFigures` — forint figures incl. the
+  cost deltas, percentages, the months — with `HufAmountGuard.verdict` on every field; `%` / `százalék` / `percent`
+  only right after an allowed digit figure; a sleeve's "why" names only that sleeve's options, summary / uncertainty
+  only offered options, no other catalog product ever — by full name, ticker root, ISIN or a distinctive short form
+  such as "MSCI World", "S&P 500", "LifeStrategy", "All-World" (a short form that also occurs in a name allowed there
+  is left alone); boundary stems HU + EN for buy-imperative, sell, urge, countdown, return promise and forecast —
+  `hozam` only inside the server's own option wording ("újrabefekteti / kifizeti a hozamot") and the fallback's
+  no-claim sentence; no URL, no markup but `*emphasis*`, no prompt-leak marker).
+  Any failure anywhere → the whole narration is `ProposalFallbackCopy` (`narratedBy: fallback`), built from the same
+  figures and proven to pass the validator. Title, sub, facts and rules are always computed copy.
+- **Lifecycle** (`penz_proposal`): created `proposed` (a newer one of the same kind supersedes a still-proposed
+  older one; an accepted one is never superseded) → `accepted` with HIS numbers (each sleeve once, amount ≥ 0, a
+  product must be one of that sleeve's offered options AND still approved now, else 409 `PENZ_PRODUCT_NOT_APPROVED`;
+  total > 0) or `dismissed`. The plan = the sleeves with an amount, in horizon order; `steps/{i}` ticks done/undone.
+  **Nothing moves money**: no proposal endpoint writes a transaction, holding or investment row.
+- **The monthly strategy** (`MonthlyInvestable`, a port of the old app's `suggestInvestment` / `pullForwardRoomMinor`
+  / `planning.ts` averages with their vitest vectors): `available = min(avgIncome − avgExpenses − savingsTarget,
+  freeBeforeInvest)`, 25 % before / 60 % after the emergency fund (short value ≥ target), last month's excess over
+  last month's accepted monthly proposal trims it by at most half, floored to 1 000 Ft; no complete tracked month →
+  0 with a note. `GET /api/penz/strategy` returns it with its inputs and the month's current monthly proposal;
+  `POST /api/penz/proposals {kind: monthly}` splits exactly that figure. Recomputed on every read, no job, no push.
+
 ## 4. Data model & API
 
 ### 4.1 The money value type and THE one FX policy
@@ -447,7 +534,9 @@ The engine works only on the HUF twins; the allowance is HUF-based. Money on the
 
 Contract-first: [`api/feature/penz/penz.yml`](../../api/feature/penz/penz.yml) (tag `Penz`, JWT) and
 [`penz-sms.yml`](../../api/feature/penz/penz-sms.yml) (tag `PenzSms`), and since L6
-[`penz-portfolio.yml`](../../api/feature/penz/penz-portfolio.yml) (tags `PenzPortfolio` and `PenzNews`, JWT), all in
+[`penz-portfolio.yml`](../../api/feature/penz/penz-portfolio.yml) (tags `PenzPortfolio` and `PenzNews`, JWT), since L7
+[`penz-practice.yml`](../../api/feature/penz/penz-practice.yml) (tag `PenzPractice`, JWT), all in
+[`penz-proposals.yml`](../../api/feature/penz/penz-proposals.yml) (tags `PenzCatalog` and `PenzProposal`, JWT), all in
 `api/generate/merge.yml`.
 
 | Method · path | What |
@@ -469,6 +558,12 @@ Contract-first: [`api/feature/penz/penz.yml`](../../api/feature/penz/penz.yml) (
 | `GET /api/penz/portfolio?date=` | L6 Pénzem: totals, moves (price / currency), the three sleeves with holdings and coverage, price date + stale, timeline, practice row (refreshes due quotes first) |
 | `GET /api/penz/digest?date=` | L6 the day's digest (default his today); `pending` when not built; `newsHealthy` |
 | `POST /api/penz/digest/refresh` | L6 rebuild in the background → 202; 429 `PENZ_DIGEST_REFRESH_LIMITED` within 15 minutes |
+| `GET /api/penz/practice?date=` | L7 Gyakorlás: cap, month P/L, avg R, tag counts + `noiseLine`, the eight tags, the week (figures + copy + curve + trades), open and planned trades |
+| `GET`/`POST /api/penz/practice/trades`, `PUT`/`DELETE …/{id}` | L7 the journal (newest first, `from`/`to`); create 201 idempotent on `clientRef` (optionally opened); edit planned only; soft delete |
+| `POST /api/penz/practice/trades/{id}/open` · `/close` · `/last-close` · `/cancel` | L7 the transitions (409 out of order); open checks the stop and the cap (422) |
+| `GET`/`POST /api/penz/catalog`, `PUT …/{id}`, `POST …/{id}/approve` · `…/decline` | L7 the curated product list (seeded once per owner; approved, suggested, declined); own product 201 approved; edit sets `reviewedAt` today |
+| `GET /api/penz/strategy?date=` | L7 the monthly strategy figure + inputs + the month's current monthly proposal |
+| `GET`/`POST /api/penz/proposals?status=`, `GET …/{id}`, `POST …/{id}/accept` · `…/dismiss` · `…/steps/{index}` | L7 proposals: create 201 (lump_sum amount ≥ 1 000 Ft or monthly = the strategy figure, else 400 `PENZ_PROPOSAL_AMOUNT_INVALID`), accept with his numbers (409 `PENZ_PRODUCT_NOT_APPROVED` / `PENZ_PROPOSAL_STATE`), steps tick |
 
 Error codes (both bundles): `PENZ_ACCOUNT_NOT_FOUND`, `PENZ_CATEGORY_NOT_FOUND`, `PENZ_CATEGORY_NAME_TAKEN`,
 `PENZ_TRANSACTION_NOT_FOUND`, `PENZ_RECURRING_RULE_NOT_FOUND`, `PENZ_TRANSFER_SAME_ACCOUNT`, `PENZ_FX_UNAVAILABLE`,
@@ -476,7 +571,11 @@ Error codes (both bundles): `PENZ_ACCOUNT_NOT_FOUND`, `PENZ_CATEGORY_NOT_FOUND`,
 `PENZ_NO_SAVINGS_TARGET_ACCOUNT`, `PENZ_SMS_KEY_NOT_FOUND`, `PENZ_SMS_KEY_INVALID`, `PENZ_SMS_RATE_LIMITED`,
 `PENZ_CURRENCY_MISMATCH`, `PENZ_CLIENT_REF_CONFLICT`, `PENZ_SAVINGS_GOAL_NOT_FOUND` (L5), and L6:
 `PENZ_HOLDING_NOT_FOUND`, `PENZ_INVEST_TXN_NOT_FOUND`, `PENZ_HOLDING_EVENT_NOT_FOUND`, `PENZ_SYMBOL_UNKNOWN`,
-`PENZ_SELL_EXCEEDS_POSITION`, `PENZ_DIGEST_REFRESH_LIMITED`.
+`PENZ_SELL_EXCEEDS_POSITION`, `PENZ_DIGEST_REFRESH_LIMITED`, and L7: `PENZ_PAPER_TRADE_NOT_FOUND`,
+`PENZ_PRACTICE_CAP_EXCEEDED` (422), `PENZ_PAPER_TRADE_STATE` (409), `PENZ_PAPER_TRADE_INVALID_STOP`,
+`PENZ_PRACTICE_TAG_UNKNOWN`.
+`PENZ_SELL_EXCEEDS_POSITION`, `PENZ_DIGEST_REFRESH_LIMITED`, and L7: `PENZ_PRODUCT_NOT_FOUND`,
+`PENZ_PRODUCT_NOT_APPROVED`, `PENZ_PROPOSAL_NOT_FOUND`, `PENZ_PROPOSAL_STATE`, `PENZ_PROPOSAL_AMOUNT_INVALID`.
 
 ### 4.3 Tables
 
@@ -507,6 +606,18 @@ L6 adds seven tables in [`202611201600_mezo-r36n9.104_penz_portfolio.sql`](../..
 | `penz_digest` | one live row per owner and `digest_date`: status `ready|quiet|failed`, `items` jsonb (contract-shaped `PenzDigestItemJson`), `generated_at`, `prices_as_of` |
 | `penz_provider_status` | **global** health per outbound provider: `provider_key` (unique), kind `news|quotes`, last success / failure, `fail_streak`, `last_error` (§3.11) |
 
+L7 adds [`202611202000_mezo-r36n9.105_penz_practice.sql`](../../backend/src/main/resources/db/changelog/1.1.0/script/202611202000_mezo-r36n9.105_penz_practice.sql):
+
+| Table | Holds |
+|---|---|
+| `penz_paper_trade` | `paper` (always true), status `planned|open|closed|cancelled`, instrument, direction `long|short`, why, currency, quantity, per-unit `planned_entry` / `stop` / `target` / `entry` / `exit` / `last_close` minor units, plan / exit / last-close fx rate + date, `risk_minor` + `risk_huf_minor`, `cost_huf_minor`, `pnl_minor` + `pnl_huf_minor`, `r_multiple`, `unrealized_huf_minor`, `tags` jsonb (read in Java only), `mistake`, `line`, `client_ref` (unique per owner among live rows) |
+L7 adds two tables in [`202611202010_mezo-r36n9.105_penz_proposals.sql`](../../backend/src/main/resources/db/changelog/1.1.0/script/202611202010_mezo-r36n9.105_penz_proposals.sql):
+
+| Table | Holds |
+|---|---|
+| `penz_product` | the owner's curated list: `seed_key` (research seeds only, unique per owner incl. deleted rows), name, `kind` `state_bond|money_market|bond_etf|equity_etf|mixed_fund|deposit`, currency, `sleeves` jsonb, `what_it_is`, `ter_pct`, `entry_fee_pct`, `fee_note`, `distribution` `accumulating|distributing|interest`, isin, symbol, `source_name` / `source_url`, `reviewed_at`, `status` `suggested|approved|declined`, `suggested_by` `research|owner`, `approved_at` |
+| `penz_proposal` | `kind` `lump_sum|monthly`, `status` `proposed|accepted|dismissed|superseded`, `amount_huf_minor` (> 0), `month` 'YYYY-MM', `body` jsonb (`PenzProposalJson`: card lines, narration, facts, rules, sleeves with options), `plan` jsonb (his accepted steps), `accepted_at` |
+
 All registered in `support/ResetDatabase`; test rows through `PenzPopulator`.
 
 ## 5. Integrations
@@ -519,6 +630,10 @@ All registered in `support/ResetDatabase`; test rows through `PenzPopulator`.
 - **frankfurter.dev** (outbound HTTP, `FrankfurterClient`, `OffClient` shape: explicit timeouts, typed error).
 - **Yahoo chart endpoint and the news feeds** (L6, outbound through `PenzHttpFetcher`, §3.7–§3.9) — free, no key;
   WireMock in every IT.
+- **Companion → LLM (proposal narration, L7).** Penz-owned port `PenzProposalLlm`, adapter
+  `companion/llm/PenzProposalLlmAdapter` (cheap tier, tag `penz_proposal/narrate`, payload-free:
+  `LlmCallContext.FEATURE_PENZ_PROPOSAL`); the `companion-fake` profile answers a canned valid narration, scriptable
+  per IT (`FakeCompanionLlm.scriptPenzProposal`).
 - **Companion → LLM (digest narration, L6).** Penz-owned port `PenzDigestLlm`, adapter
   `companion/llm/PenzDigestLlmAdapter` (cheap tier, tag `penz_digest/narrate`, payload-free audit:
   `LlmCallContext.FEATURE_PENZ_DIGEST`).
@@ -555,6 +670,10 @@ every phone write so a retry returns the stored row.
   is an outbound allow-list entry; it gets its own `rss:<key>` health row automatically.
 - A new outbound provider → through `PenzHttpFetcher` with its own allow-list, health via `PenzProviderHealth` (the
   gauge and the alert follow from the kind).
+- A researched catalog product → a `PenzCatalogSeed.SEEDS` row with a new, never-reused `key`, its fee figures, source
+  and `reviewedAt` (code, reviewed like code); every owner gets it as a suggestion on the next catalog read.
+- A new proposal rule → `ProposalValidator` + a test in `PenzProposalValidatorTest` by taxonomy class, and
+  `PenzProposalFallbackCopyTest` must stay green (the fixed copy passes every rule by construction).
 - A new digest rule → a test in `PenzDigestValidatorTest` named by its taxonomy class first, then the rule; make sure
   `DigestFallbackCopy` still passes it (`PenzDigestFallbackCopyTest`).
 
@@ -581,6 +700,18 @@ Backend only (`-Dmezo.test.use-testcontainers=true`, `ArchitectureTest` in the `
   holdings-only relevance, grouping, injection ignored / obeyed → fallback, quiet day, model failure, GET pending /
   ready, refresh 202 → 429), `PenzNewsProviderAlertIT` (three failed runs → every news streak 3, gauge 3,
   `newsHealthy=false`, the vmalert rule present, the job bean absent with its switch off).
+- L7 pure: `service/practice/{PenzPracticeTagTest,PenzPaperTradeMathTest,PenzPracticeCapTest,PenzWeeklyReviewTest,
+  PenzPracticeCopyTest}` (the copy by case, the boundary words, numbers only from the computed week).
+- L7 IT: `PenzPracticeApiIT` (plan → open → last close → close → overview / week / journal / Pénzem row; every
+  out-of-order step 409; ≥ 1 known tag; the stop side; the cap 422 not borrowing and not raised by gains, the
+  settings' practice amount = the allowance line; `clientRef` replay; owner isolation; `paper` everywhere; EUR twins).
+
+- L7 pure: `service/proposal/{PenzMonthlyInvestableTest (the old suggestInvestment / pullForwardRoomMinor /
+  planning averages vectors),PenzProposalSplitterTest,PenzProductOptionsTest,PenzProposalValidatorTest (by
+  taxonomy),PenzProposalFallbackCopyTest,PenzProposalPromptTest}`.
+- L7 IT: `PenzProposalApiIT` (companion-fake: only approved products offered / accepted, every rule-breaking narration →
+  fallback with figures unchanged, split rules, accept with his numbers + re-check, steps, supersede, dismiss, the
+  monthly figure, seed once per owner, owner isolation, no money row written).
 
 ### 8.1 Oracle — the old app's 603 vitest cases
 
@@ -670,7 +801,11 @@ the old vectors. `matchInvestTxnForSms` (3) and the `runConvertSms` invest-buy a
 
 ## 10. Key files
 
-- Contract: `api/feature/penz/penz.yml`, `api/feature/penz/penz-sms.yml`, `api/feature/penz/penz-portfolio.yml` (L6)
+- Contract: `api/feature/penz/penz.yml`, `api/feature/penz/penz-sms.yml`, `api/feature/penz/penz-portfolio.yml` (L6),
+  `api/feature/penz/penz-practice.yml` (L7)
+- L7 practice: `…/penz/service/practice/` (pure), `…/penz/service/PenzPracticeService.java`,
+  `…/penz/controller/PenzPracticeController.java`, `…/penz/mapper/PenzPracticeMapper.java`,
+  `…/202611202000_mezo-r36n9.105_penz_practice.sql`
 - Schema: `backend/src/main/resources/db/changelog/1.1.0/script/202611191400_mezo-r36n9.102_penz.sql`, L6:
   `…/202611201600_mezo-r36n9.104_penz_portfolio.sql`
 - L6 portfolio: `…/penz/service/portfolio/`, `…/penz/service/{PenzHoldingService,PenzInvestTxnService,PenzHoldingEventService,PenzPortfolioService,PenzQuoteService,QuoteClient,PenzProviderHealth}.java`,
@@ -679,6 +814,10 @@ the old vectors. `matchInvestTxnForSms` (3) and the `runConvertSms` invest-buy a
   `…/penz/config/{PenzNewsProperties,PenzNewsAsyncConfig}.java`, `…/penz/controller/PenzNewsController.java`,
   `…/penz/mapper/PenzDigestMapper.java`, `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/PenzDigestLlmAdapter.java`
 - Alert: `k8s/monitoring/vmrule-mezo.yaml` (`PenzNewsProviderDown`, `PenzQuotesProviderDown`)
+- L7 catalog + proposals: `…/penz/service/proposal/` (pure), `…/penz/service/{PenzCatalogService,PenzCatalogSeed,PenzProposalService,PenzProposalStore,PenzStrategyService,PenzProposalLlm}.java`,
+  `…/penz/controller/PenzProposalController.java`, `…/penz/mapper/PenzProposalMapper.java`,
+  `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/PenzProposalLlmAdapter.java`, contract
+  `api/feature/penz/penz-proposals.yml`, schema `…/202611202010_mezo-r36n9.105_penz_proposals.sql`
 - Builder calls: [`2026-11-20-boop-penz-l6-build.md`](../superpowers/plans/2026-11-20-boop-penz-l6-build.md)
 - Controllers / config: `backend/src/main/java/io/mrkuhne/mezo/feature/penz/controller/`,
   `…/penz/config/{PenzProperties,PenzSmsSecurityConfig,PenzSmsApiKeyFilter}.java`

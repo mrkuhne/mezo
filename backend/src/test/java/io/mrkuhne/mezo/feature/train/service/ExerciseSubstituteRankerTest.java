@@ -438,4 +438,77 @@ class ExerciseSubstituteRankerTest {
         assertThat(ranked(r, "Only Mine").signals()).containsExactly(Signal.SAME_ROLE, Signal.CUSTOM);
         assertThat(r.labels()).isEmpty();
     }
+
+    // ── the block day editor's under-band signal (mezo-r36n9.116, spec 2026-11-20 §6.3) ──
+
+    static Context underBand(String... groups) {
+        return new Context(null, false, Set.of(), Set.of(), Set.of(groups));
+    }
+
+    @Test
+    void rank_shouldExplainUnderBand_whenGroupIsUnderBandAndNoDiscomfort() {
+        var r = ExerciseSubstituteRanker.rank(BENCH, pool(DB_BENCH, MACHINE_PRESS), underBand("chest"));
+        assertThat(ranked(r, "Dumbbell Bench Press").signals()).containsExactly(Signal.SAME_ROLE, Signal.UNDER_BAND);
+        assertThat(ranked(r, "Machine Chest Press").signals()).containsExactly(Signal.SAME_ROLE, Signal.UNDER_BAND);
+    }
+
+    @Test
+    void rank_shouldNotExplainUnderBand_whenTheGroupIsNotUnderBand() {
+        var r = ExerciseSubstituteRanker.rank(BENCH, pool(MACHINE_PRESS), underBand("back"));
+        assertThat(ranked(r, "Machine Chest Press").signals())
+            .containsExactly(Signal.SAME_ROLE, Signal.GOAL_HYPERTROPHY);
+    }
+
+    @Test
+    void rank_shouldKeepTheDiscomfortSignal_overUnderBand() {
+        // a fresh fixture: the shared X constants are mutable builders
+        var r = ExerciseSubstituteRanker.rank(BENCH, pool(x("Sore Press").pain(PainLevel.MILD)), underBand("chest"));
+        assertThat(ranked(r, "Sore Press").signals()).containsExactly(Signal.SAME_ROLE, Signal.MILD_BEFORE);
+    }
+
+    @Test
+    void rank_shouldNeverLetUnderBandMoveAPlace() {
+        X[] xs = {x("Cable Fly").type("isolation").pattern("fly").equipment("cable").demand("low"),
+            x("Push-Up").equipment("bodyweight"), x("Pull-Over").muscle("back-lats").pattern("horizontal-push"),
+            MACHINE_PRESS, x("Floor Press").done()};
+        var plain = ExerciseSubstituteRanker.rank(BENCH, pool(xs), ctx());
+        var under = ExerciseSubstituteRanker.rank(BENCH, pool(xs), underBand("chest", "back"));
+        assertThat(names(under)).containsExactlyElementsOf(names(plain));
+    }
+
+    // ── the block day editor's add: the whole coarse group (mezo-r36n9.116, ruling R3) ──
+
+    @Test
+    void rankForGroup_shouldRankEveryTokenOfTheGroup_byType() {
+        var r = ExerciseSubstituteRanker.rankForGroup("back", "compound", pool(
+            x("Back Extension").muscle("back-lower").type("isolation").pattern("hinge").equipment("bench"),
+            x("Pulldown").muscle("back-wide").pattern("vertical-pull").equipment("cable"),
+            x("Seated Row").muscle("back-mid").pattern("horizontal-pull").equipment("cable"),
+            x("Cable Fly").type("isolation").pattern("fly").equipment("cable")), ctx());
+        assertThat(names(r)).containsExactly("Pulldown", "Seated Row", "Back Extension");
+        assertThat(ranked(r, "Seated Row").signals().get(0)).isEqualTo(Signal.SAME_ROLE);
+        assertThat(ranked(r, "Back Extension").signals().get(0)).isEqualTo(Signal.OTHER_TYPE);
+    }
+
+    @Test
+    void rankForGroup_shouldPutIsolationFirst_whenThatIsThePreferredType() {
+        var r = ExerciseSubstituteRanker.rankForGroup("back", "isolation", pool(
+            x("Seated Row").muscle("back-mid").pattern("horizontal-pull").equipment("cable"),
+            x("Back Extension").muscle("back-lower").type("isolation").pattern("hinge").equipment("bench")), ctx());
+        assertThat(names(r)).containsExactly("Back Extension", "Seated Row");
+    }
+
+    @Test
+    void rankForGroup_shouldLabelAndSkipLikeRank_andExplainUnderBand() {
+        Candidate inDay = x("Seated Row").muscle("back-mid").pattern("horizontal-pull").c();
+        var r = ExerciseSubstituteRanker.rankForGroup("back", "compound", List.of(inDay,
+                x("Machine Row").muscle("back-mid").equipment("machine").unavailable().c(),
+                x("Rack Pull").muscle("back-lower").pain(PainLevel.STRONG).c(),
+                x("Pull-Up").muscle("back-wide").pattern("vertical-pull").equipment("pullup-bar").demand("high").c(),
+                x("Jump Row").muscle("back-mid").type("plyo").c()),
+            new Context(null, false, Set.of(), Set.of(inDay.id()), Set.of("back")));
+        assertThat(names(r)).containsExactly("Pull-Up");
+        assertThat(ranked(r, "Pull-Up").signals()).containsExactly(Signal.SAME_ROLE, Signal.UNDER_BAND);
+        assertThat(r.labels()).hasSize(2).containsValues(Label.NO_EQUIPMENT, Label.HURT_BEFORE);
+    }
 }

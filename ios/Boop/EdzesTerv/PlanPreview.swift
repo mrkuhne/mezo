@@ -13,6 +13,9 @@ import BoopDesign
 //   -previewBlokkOpen epito|het            straight into the builder / the review deck
 //   -previewBlokkTab napok|blokk           the builder's tab
 //   -previewBlokkState empty|loading|error|offline|applied
+//   -previewBlokkSuggest fail              the add/swap suggestions read answers 503
+//   -previewBlokkEdit default|menu|settings|add|swap|undo|empty|locked|confirm   the Napok day editor's states
+//   -previewBlokkDay N                     the Napok tab's day page (0 = the first day)
 //
 // The evaluator below is a FIXTURE: it imitates the server's answer so the steppers move the numbers on screen. The
 // app itself never computes a band — it asks `POST /api/train/meso-plans/evaluate`.
@@ -76,6 +79,9 @@ final class PlanPreviewTransport: ClientTransport, @unchecked Sendable {
         try await Task.sleep(for: .milliseconds(state == "loading" ? 600_000 : 350))
         if state == "offline" { throw URLError(.notConnectedToInternet) }
         if state == "error" { return (HTTPResponse(status: .internalServerError), nil) }
+        if operationID == "getBlockExerciseSuggestions", UserDefaults.standard.string(forKey: "previewBlokkSuggest") == "fail" {
+            return (HTTPResponse(status: .serviceUnavailable), nil)
+        }
         var sent: [String: Any]? = nil
         var sentArray: [[String: Any]]? = nil
         if let body {
@@ -89,6 +95,7 @@ final class PlanPreviewTransport: ClientTransport, @unchecked Sendable {
             case "listMesocycles": return state == "empty" ? [] : [block]
             case "getExerciseCatalog": return Self.catalog
             case "evaluateMesoPlan": return sent.map(Self.evaluate)
+            case "getBlockExerciseSuggestions": return Self.suggestions(sent ?? [:])
             case "listWeekProposals": return state == "empty" ? [] : [proposal()]
             case "decideWeekProposal":
                 if let s = sent {
@@ -150,7 +157,8 @@ final class PlanPreviewTransport: ClientTransport, @unchecked Sendable {
          "sportGroups": [], "techniquesEnabled": true, "weeklyReviewMode": "manual",
          "days": [
             ["id": "d-h", "day": "Hét", "type": "Hát és bicepsz", "muscle": "back", "exercises": [
-                ex("h1", "Chest Supported Row", "back", 4, cat: "c-stable"),
+                ex("h1", "Chest Supported Row", "back", 4, cat: "c-stable").merging(
+                    ["repMin": 6, "repMax": 8, "overrides": ["repRange"], "anchorWeightKg": 62.5]) { $1 },
                 ex("h2", "Lat Pulldown · Neutral", "back-wide", 2, cat: "c-long", technique: "rest_drop", source: "planner"),
                 ex("h3", "Preacher Curl", "biceps", 3, type: "isolation", cat: "c-long"),
                 ex("h4", "Hammer Curl", "biceps", 3, type: "isolation"),
@@ -171,12 +179,72 @@ final class PlanPreviewTransport: ClientTransport, @unchecked Sendable {
                 ex("c4", "Machine Chest Press", "chest", 2, cat: "c-stable")]],
             ["id": "d-p", "day": "Pén", "type": "Könnyű kar", "muscle": "triceps", "exercises": [
                 ex("p1", "Cable Overhead Extension", "triceps", 2, type: "isolation", cat: "c-long"),
-                ex("p2", "Bird Dog", "core", 2, type: "isolation")]]]]
+                ex("p2", "Bird Dog", "core", 2, type: "isolation")]],
+            // Rest days: the editor can put exercises on them.
+            ["id": "d-sz", "day": "Szo", "type": "Pihenőnap", "muscle": "core", "exercises": []],
+            ["id": "d-v", "day": "Vas", "type": "Pihenőnap", "muscle": "core", "exercises": []]]]
     }
 
-    static var catalog: [[String: Any]] { [
-        ["id": "c-stable", "name": "stable", "stability": "stable", "lengthenedFriendly": false],
-        ["id": "c-long", "name": "lengthened", "stability": "stable", "lengthenedFriendly": true]] }
+    static var catalog: [[String: Any]] {
+        [["id": "c-stable", "name": "stable", "stability": "stable", "lengthenedFriendly": false],
+         ["id": "c-long", "name": "lengthened", "stability": "stable", "lengthenedFriendly": true]]
+        + listed.enumerated().map { n, e in
+            ["id": String(format: "c0000000-0000-4000-8000-%012d", 100 + n), "name": e.0, "muscle": e.1, "type": e.2,
+             "stability": e.3 ? "stable" : "free", "lengthenedFriendly": false]
+        }
+    }
+
+    /// The day editor's full list (FIXTURE: real catalogue names).
+    private static let listed: [(String, String, String, Bool)] = [
+        ("Seated Cable Row · Neutral", "back-mid", "compound", true), ("Machine High Row", "back-mid", "compound", true),
+        ("Chest-Supported T-Bar Row", "back-mid", "compound", true), ("Single-Arm DB Row", "back-mid", "compound", false),
+        ("T-Bar Row", "back-mid", "compound", false), ("Barbell Row", "back-mid", "compound", false),
+        ("Lat Pulldown · Pronated", "back-wide", "compound", true), ("Single-Arm Lat Pulldown", "back-wide", "compound", true),
+        ("Straight-Arm Pulldown", "back-wide", "isolation", true), ("Pull-Up", "back-wide", "compound", false),
+        ("Pec Deck", "chest-mid", "isolation", true), ("Incline Machine Press", "chest-upper", "compound", true),
+        ("Cable Fly", "chest-mid", "isolation", true), ("DB Bench Press", "chest-mid", "compound", false),
+        ("Machine Lateral Raise", "shoulder-side", "isolation", true), ("Reverse Pec Deck", "shoulder-rear", "isolation", true),
+        ("Cable Curl", "biceps-long", "isolation", true), ("Spider Curl", "biceps-short", "isolation", false),
+        ("Single-Arm Pushdown", "triceps-medial", "isolation", true), ("Hack Squat", "quad", "compound", true),
+        ("Leg Extension", "quad", "isolation", true), ("Leg Curl", "ham", "isolation", true),
+        ("Machine Hip Abduction", "glute", "isolation", true), ("Cable Kickback", "glute", "isolation", true),
+        ("Seated Calf Raise", "calf", "isolation", true), ("Cable Crunch", "core", "isolation", true)]
+
+    /// FIXTURE for the add/swap read: invented picks with real catalogue names, reasons from the server's fixed phrase
+    /// table. Five for the back (the approved spike's picks), else up to three from the full list of that muscle.
+    static func suggestions(_ req: [String: Any]) -> [String: Any] {
+        func pick(_ name: String, _ reason: String, top: [String: Any]? = nil, rx: Bool = true) -> [String: Any]? {
+            guard let item = catalog.first(where: { $0["name"] as? String == name }) else { return nil }
+            let prescription: [String: Any] = ["workingSets": 3, "repMin": 8, "repMax": 12, "targetRIR": 2, "restSec": 90]
+            return ["exercise": item, "reasonText": reason, "signals": ["same-role"],
+                    "lastTopSet": top as Any? ?? NSNull(), "prescription": rx ? prescription : NSNull()]
+        }
+        let adding = req["mode"] as? String == "add"
+        let muscle = adding ? (req["muscle"] as? String ?? "") : coarseMuscle((req["outgoing"] as? [String: Any])?["muscle"] as? String ?? "")
+        let picks: [[String: Any]?]
+        if muscle == "back" {
+            picks = [
+                pick("Seated Cable Row · Neutral", "Ugyanazt a munkát végzi a tervben, ezt már csináltad, így látod, hol tartasz.",
+                     top: ["weightKg": 55, "reps": 10]),
+                adding ? pick("Machine High Row", "Ezen a héten kevés jut erre az izomra, vezetett mozgás, kíméletesebb az ízületnek.")
+                       : pick("Chest-Supported T-Bar Row", "Ugyanúgy meg van támasztva a mellkasod, a hát dolgozik, nem a derék."),
+                adding ? pick("Single-Arm Lat Pulldown", "Egy karral dolgozol, így a gyengébb oldal is utoléri a másikat.",
+                              top: ["weightKg": 32.5, "reps": 12])
+                       : pick("Machine High Row", "Vezetett mozgás, a gép tartja a pályát, kíméletesebb az ízületnek."),
+                adding ? pick("Chest-Supported T-Bar Row", "A mellkasod meg van támasztva, a hát dolgozik, nem a lendület.")
+                       : pick("Single-Arm DB Row", "Egy karral dolgozol, így a gyengébb oldal is utoléri a másikat.", top: ["weightKg": 30, "reps": 10]),
+                pick("Straight-Arm Pulldown", "Izolált mozgás, a széles hátizmot külön is eléri, a kar közben pihen.",
+                     top: ["weightKg": 25, "reps": 15], rx: false)]
+        } else {
+            picks = listed.filter { coarseMuscle($0.1) == muscle }.prefix(3).map {
+                pick($0.0, "Ugyanerre az izomra dolgozik, és nincs még ezen a napon.")
+            }
+        }
+        let noKit = catalog.first { $0["name"] as? String == "T-Bar Row" }?["id"] as? String ?? ""
+        let hurt = catalog.first { $0["name"] as? String == "Barbell Row" }?["id"] as? String ?? ""
+        return ["suggestions": picks.compactMap { $0 },
+                "labels": [["catalogId": noKit, "label": "NO_EQUIPMENT"], ["catalogId": hurt, "label": "HURT_BEFORE"]]]
+    }
 
     private static let landmarks: [String: (Int, Int, Int)] = [
         "back": (10, 16, 22), "biceps": (6, 10, 14), "shoulder": (8, 12, 18), "chest": (8, 14, 20),

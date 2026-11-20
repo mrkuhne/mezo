@@ -310,6 +310,38 @@ tags:
       through verbatim; the model writes only the prose, which is validated
       (amount guard, numbers, entities, direction, boundary words) and replaced
       by fixed copy when it fails. No verdict, no buy/sell. No push.
+  - name: PenzPractice
+    description: >
+      Boop Pénz L7 (mezo-r36n9.105) — Gyakorlás, day trading as learning, on
+      paper (every row paper = true; phase 1 never accepts anything else). A
+      trade starts as a plan (instrument, direction, why, stop, quantity), is
+      opened (entry price + date) and closed with a journal line (exit, ≥ 1 of
+      the eight fixed tags, mistake flag, one line) — no plan, no trade. Prices
+      are owner-typed; there is no market data and nothing watches a stop. R =
+      P/L ÷ initial risk. HUF twins follow the L4 booking policy at the trade's
+      own dates. The monthly cap is the settings' practice amount (the
+      allowance's Gyakorlás line): open costs + the month's net closed loss;
+      opening above what is left is 422 PENZ_PRACTICE_CAP_EXCEEDED. The weekly
+      review is computed figures with fixed Hungarian copy — no model call.
+  - name: PenzCatalog
+    description: >
+      Boop Pénz L7 (mezo-r36n9.105) — the curated product list a proposal may
+      name (spec §10.2.1). Per owner, seeded once from a researched list (every
+      seed row suggested / research, with fee fields, its source and the date
+      the figures were checked); the model never adds a product. The owner
+      approves or declines with one tap, adds one himself (approved at once) or
+      updates fees (reviewedAt = today). Only approved rows ever appear in a
+      proposal.
+  - name: PenzProposal
+    description: >
+      Boop Pénz L7 (mezo-r36n9.105) — the investment proposal flow and the
+      monthly strategy. A proposal splits one amount across the three sleeves by
+      fixed, printed rules (emergency shortfall first, then 40 % mid / 60 %
+      long, 1 000 Ft rounding), offers two or three approved products per sleeve
+      with server-computed costs, and carries a narration the model writes from
+      those figures only (validated; fixed copy when it fails). He adjusts every
+      number and accepts; the accepted plan is a checklist he ticks himself.
+      Nothing here moves money, records a transaction or creates a holding.
   - name: Season
     description: >
       Boop B6 Évad (mezo-r36n9.16) — one N-week season that owns its goal (1:1),
@@ -1054,6 +1086,65 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/mesocycles/{id}/exercise-suggestions':
+    post:
+      tags:
+        - Train
+      operationId: getBlockExerciseSuggestions
+      summary: >-
+        Ranked, reasoned add/swap suggestions for one day of a training block's
+        plan (mezo-r36n9.116)
+      description: >-
+        The block day editor's suggestions — the workout swap's ranker over the
+        block's goal, the gym profile and the discomfort history, with today's
+        check-in pain only when the edited day is today's weekday. Replace ranks
+        alternatives to an outgoing exercise; add ranks the catalogue rows of
+        one coarse muscle group and explains a muscle under its weekly band.
+        Each suggestion carries the block style's prescription. Read-only.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlockExerciseSuggestionsRequest'
+      responses:
+        '200':
+          description: Suggestions and labels
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExerciseSubstitutesResponse'
+        '400':
+          description: 'Validation error (replace without outgoing, add without muscle)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Block not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: The block is archived
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/train/mesocycles/{id}/evaluation':
     get:
       tags:
@@ -1202,6 +1293,14 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: Mesocycle/day not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            A structural change (reorder/add/remove/swap) while that day's
+            workout is running (TRAIN_DAY_WORKOUT_RUNNING)
           content:
             application/json:
               schema:
@@ -15234,6 +15333,871 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/penz/practice:
+    get:
+      tags:
+        - PenzPractice
+      operationId: getPenzPractice
+      summary: >-
+        The Gyakorlás tab — cap, month P/L, averages, the eight tags, the week's
+        review, open and planned trades
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: The practice overview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzPracticeOverview'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/penz/practice/trades:
+    get:
+      tags:
+        - PenzPractice
+      operationId: listPenzPaperTrades
+      summary: >-
+        The full journal, newest first (by exit, else entry, else creation
+        date), optionally within dates
+      parameters:
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Paper trades
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PenzPaperTrade'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - PenzPractice
+      operationId: createPenzPaperTrade
+      summary: >
+        Create a plan — idempotent on clientRef. With entryMinor it is opened in
+        the same call (cap checked). The stop must be on the losing side of the
+        (planned) entry (400 PENZ_PAPER_TRADE_INVALID_STOP).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PenzPaperTradeRequest'
+      responses:
+        '201':
+          description: The stored trade (also the answer to a replayed clientRef)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzPaperTrade'
+        '400':
+          description: Validation failure / PENZ_PAPER_TRADE_INVALID_STOP
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '422':
+          description: PENZ_PRACTICE_CAP_EXCEEDED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '503':
+          description: PENZ_FX_UNAVAILABLE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/penz/practice/trades/{id}':
+    put:
+      tags:
+        - PenzPractice
+      operationId: updatePenzPaperTrade
+      summary: >-
+        Edit a plan (planned only; clientRef ignored). With entryMinor it is
+        opened too (cap checked).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PenzPaperTradeRequest'
+      responses:
+        '200':
+          description: The updated trade
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzPaperTrade'
+        '400':
+          description: Validation failure / PENZ_PAPER_TRADE_INVALID_STOP
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_PAPER_TRADE_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: PENZ_PAPER_TRADE_STATE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '422':
+          description: PENZ_PRACTICE_CAP_EXCEEDED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '503':
+          description: PENZ_FX_UNAVAILABLE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - PenzPractice
+      operationId: deletePenzPaperTrade
+      summary: Soft-delete a trade in any state
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_PAPER_TRADE_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/penz/practice/trades/{id}/open':
+    post:
+      tags:
+        - PenzPractice
+      operationId: openPenzPaperTrade
+      summary: Open a plan at the typed entry (planned only; the cap is checked here)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PenzPaperTradeOpenRequest'
+      responses:
+        '200':
+          description: The opened trade
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzPaperTrade'
+        '400':
+          description: Validation failure / PENZ_PAPER_TRADE_INVALID_STOP
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_PAPER_TRADE_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: PENZ_PAPER_TRADE_STATE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '422':
+          description: PENZ_PRACTICE_CAP_EXCEEDED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '503':
+          description: PENZ_FX_UNAVAILABLE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/penz/practice/trades/{id}/close':
+    post:
+      tags:
+        - PenzPractice
+      operationId: closePenzPaperTrade
+      summary: >-
+        Close an open trade with its journal line (≥ 1 known tag, 400
+        PENZ_PRACTICE_TAG_UNKNOWN otherwise)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PenzPaperTradeCloseRequest'
+      responses:
+        '200':
+          description: The closed trade
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzPaperTrade'
+        '400':
+          description: Validation failure / PENZ_PRACTICE_TAG_UNKNOWN
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_PAPER_TRADE_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: PENZ_PAPER_TRADE_STATE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '503':
+          description: PENZ_FX_UNAVAILABLE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/penz/practice/trades/{id}/last-close':
+    post:
+      tags:
+        - PenzPractice
+      operationId: setPenzPaperTradeLastClose
+      summary: >-
+        Record the last close he typed for an open trade (no market data is
+        fetched)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PenzPaperTradeLastCloseRequest'
+      responses:
+        '200':
+          description: The trade with its unrealized P/L
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzPaperTrade'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_PAPER_TRADE_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: PENZ_PAPER_TRADE_STATE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '503':
+          description: PENZ_FX_UNAVAILABLE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/penz/practice/trades/{id}/cancel':
+    post:
+      tags:
+        - PenzPractice
+      operationId: cancelPenzPaperTrade
+      summary: Cancel a plan that was never opened (planned only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The cancelled trade
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzPaperTrade'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_PAPER_TRADE_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: PENZ_PAPER_TRADE_STATE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/penz/catalog:
+    get:
+      tags:
+        - PenzCatalog
+      operationId: listPenzProducts
+      summary: >-
+        The caller's product list — approved, then suggested, then declined
+        (seeded once on first access)
+      responses:
+        '200':
+          description: Products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PenzProduct'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - PenzCatalog
+      operationId: createPenzProduct
+      summary: >-
+        Add a product himself — stored approved, suggestedBy owner, reviewedAt
+        today
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PenzProductRequest'
+      responses:
+        '201':
+          description: The stored product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzProduct'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/penz/catalog/{id}':
+    put:
+      tags:
+        - PenzCatalog
+      operationId: updatePenzProduct
+      summary: >-
+        Edit a product's text or fees — reviewedAt becomes today; the status
+        does not change
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PenzProductRequest'
+      responses:
+        '200':
+          description: The updated product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzProduct'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_PRODUCT_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/penz/catalog/{id}/approve':
+    post:
+      tags:
+        - PenzCatalog
+      operationId: approvePenzProduct
+      summary: One tap — the product may now be named in a proposal (idempotent)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The approved product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzProduct'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_PRODUCT_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/penz/catalog/{id}/decline':
+    post:
+      tags:
+        - PenzCatalog
+      operationId: declinePenzProduct
+      summary: >-
+        One tap — the product is never offered (idempotent; an approved product
+        may be declined later)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The declined product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzProduct'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_PRODUCT_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/penz/strategy:
+    get:
+      tags:
+        - PenzProposal
+      operationId: getPenzStrategy
+      summary: >
+        The monthly strategy figure (the old app's monthly-investable formula)
+        with its inputs, and the month's current monthly proposal if any.
+        Computed on every read; re-proposed only when he asks.
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: The strategy figure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzStrategy'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/penz/proposals:
+    get:
+      tags:
+        - PenzProposal
+      operationId: listPenzProposals
+      summary: 'The caller''s proposals, newest first, optionally of one status'
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: ^(proposed|accepted|dismissed|superseded)$
+      responses:
+        '200':
+          description: Proposals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PenzProposal'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - PenzProposal
+      operationId: createPenzProposal
+      summary: >
+        Ask for a proposal — lump_sum with his amount, or monthly for the
+        strategy figure. A newer proposal of the same kind supersedes an
+        un-accepted older one. No amount (or a monthly figure of 0) is 400
+        PENZ_PROPOSAL_AMOUNT_INVALID.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PenzProposalRequest'
+      responses:
+        '201':
+          description: The new proposal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzProposal'
+        '400':
+          description: Validation failure / PENZ_PROPOSAL_AMOUNT_INVALID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/penz/proposals/{id}':
+    get:
+      tags:
+        - PenzProposal
+      operationId: getPenzProposal
+      summary: One proposal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The proposal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzProposal'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_PROPOSAL_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/penz/proposals/{id}/accept':
+    post:
+      tags:
+        - PenzProposal
+      operationId: acceptPenzProposal
+      summary: >
+        Accept with his own numbers. Each sleeve at most once; a product must be
+        one of that sleeve's offered options and still approved (409
+        PENZ_PRODUCT_NOT_APPROVED), or null when the amount is 0; the total must
+        be above 0 (400 PENZ_PROPOSAL_AMOUNT_INVALID). Only a proposed proposal
+        can be accepted (409 PENZ_PROPOSAL_STATE).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PenzProposalAcceptRequest'
+      responses:
+        '200':
+          description: The accepted proposal with its plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzProposal'
+        '400':
+          description: Validation failure / PENZ_PROPOSAL_AMOUNT_INVALID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_PROPOSAL_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: PENZ_PROPOSAL_STATE / PENZ_PRODUCT_NOT_APPROVED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/penz/proposals/{id}/dismiss':
+    post:
+      tags:
+        - PenzProposal
+      operationId: dismissPenzProposal
+      summary: Most nem — only a proposed proposal (409 PENZ_PROPOSAL_STATE otherwise)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The dismissed proposal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzProposal'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_PROPOSAL_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: PENZ_PROPOSAL_STATE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/penz/proposals/{id}/steps/{index}':
+    post:
+      tags:
+        - PenzProposal
+      operationId: setPenzProposalStep
+      summary: >
+        Tick or untick one step of an accepted plan. Records nothing in Pénzem —
+        the real buy is recorded with the existing investment sheet. Not
+        accepted → 409 PENZ_PROPOSAL_STATE; no such step → 404
+        PENZ_PROPOSAL_NOT_FOUND.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: index
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 0
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PenzProposalStepRequest'
+      responses:
+        '200':
+          description: The proposal with the step updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzProposal'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_PROPOSAL_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: PENZ_PROPOSAL_STATE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/seasons:
     get:
       tags:
@@ -18153,6 +19117,85 @@ components:
           nullable: true
           allOf:
             - $ref: '#/components/schemas/LastTopSet'
+        prescription:
+          nullable: true
+          description: >-
+            The block style's prescription for this exercise (block day editor
+            only, mezo-r36n9.116); null on an unstyled block, for a row the
+            style never stamps (plyo), and always on the workout swap read
+          allOf:
+            - $ref: '#/components/schemas/SuggestionPrescription'
+    SuggestionPrescription:
+      type: object
+      required:
+        - workingSets
+        - repMin
+        - repMax
+        - targetRIR
+        - restSec
+      properties:
+        workingSets:
+          type: integer
+        repMin:
+          type: integer
+        repMax:
+          type: integer
+        targetRIR:
+          type: integer
+          description: Reps in reserve (tartalék)
+        restSec:
+          type: integer
+    BlockExerciseSuggestionsRequest:
+      type: object
+      required:
+        - mode
+        - dayIndex
+        - dayCatalogIds
+      properties:
+        mode:
+          type: string
+          enum:
+            - replace
+            - add
+        dayIndex:
+          type: integer
+          minimum: 0
+          maximum: 6
+          description: 'Weekday of the edited day, 0 = Monday (Hét) … 6 = Sunday (Vas)'
+        outgoing:
+          nullable: true
+          description: The exercise being replaced; required when mode = replace
+          allOf:
+            - $ref: '#/components/schemas/BlockSuggestionOutgoing'
+        muscle:
+          type: string
+          nullable: true
+          description: >-
+            Coarse muscle group key (back, chest, quad, …); required when mode =
+            add
+        dayCatalogIds:
+          type: array
+          description: Catalogue ids of the draft day's current exercises — never suggested
+          items:
+            type: string
+            format: uuid
+    BlockSuggestionOutgoing:
+      type: object
+      required:
+        - name
+        - muscle
+        - type
+      properties:
+        catalogId:
+          type: string
+          format: uuid
+          nullable: true
+        name:
+          type: string
+        muscle:
+          type: string
+        type:
+          type: string
     LastTopSet:
       type: object
       required:
@@ -35670,7 +36713,7 @@ components:
           type: integer
           format: int64
           nullable: true
-          description: Sum of the month's closed practice trades — null until L7
+          description: 'Sum of the month''s closed paper trades (HUF twins, L7)'
     PenzDigestResponse:
       type: object
       required:
@@ -35805,6 +36848,918 @@ components:
           type: string
           format: date-time
           nullable: true
+    PenzPaperTradeRequest:
+      type: object
+      required:
+        - instrument
+        - direction
+        - why
+        - currency
+        - quantity
+        - stopMinor
+      properties:
+        clientRef:
+          type: string
+          format: uuid
+          nullable: true
+        instrument:
+          type: string
+          minLength: 1
+          maxLength: 60
+        direction:
+          type: string
+          pattern: ^(long|short)$
+        why:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Why this trade — the plan
+        currency:
+          type: string
+          pattern: ^(HUF|EUR|USD|GBP|CHF)$
+        quantity:
+          type: number
+          exclusiveMinimum: true
+          minimum: 0
+          maximum: 1000000000
+        plannedEntryMinor:
+          type: integer
+          format: int64
+          nullable: true
+          minimum: 1
+          maximum: 100000000000
+          description: 'Per unit, own currency minor units'
+        stopMinor:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100000000000
+          description: The exit level (per unit) where the plan says it was wrong
+        targetMinor:
+          type: integer
+          format: int64
+          nullable: true
+          minimum: 1
+          maximum: 100000000000
+        entryMinor:
+          type: integer
+          format: int64
+          nullable: true
+          minimum: 1
+          maximum: 100000000000
+          description: Present = open it in the same call
+        entryDate:
+          type: string
+          format: date
+          nullable: true
+          description: With entryMinor; default his today
+    PenzPaperTradeOpenRequest:
+      type: object
+      required:
+        - entryMinor
+        - entryDate
+      properties:
+        entryMinor:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100000000000
+        entryDate:
+          type: string
+          format: date
+    PenzPaperTradeCloseRequest:
+      type: object
+      required:
+        - exitMinor
+        - exitDate
+        - tags
+      properties:
+        exitMinor:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100000000000
+        exitDate:
+          type: string
+          format: date
+        tags:
+          type: array
+          minItems: 1
+          maxItems: 8
+          items:
+            type: string
+            pattern: '^[a-z_]{1,30}$'
+        mistake:
+          type: boolean
+          nullable: true
+        line:
+          type: string
+          nullable: true
+          maxLength: 140
+          description: The one journal line
+    PenzPaperTradeLastCloseRequest:
+      type: object
+      required:
+        - closeMinor
+        - date
+      properties:
+        closeMinor:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100000000000
+        date:
+          type: string
+          format: date
+    PenzPaperTrade:
+      type: object
+      required:
+        - id
+        - paper
+        - status
+        - instrument
+        - direction
+        - why
+        - currency
+        - quantity
+        - stop
+        - tags
+        - mistake
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        paper:
+          type: boolean
+          description: Always true in phase 1
+        status:
+          type: string
+          enum:
+            - planned
+            - open
+            - closed
+            - cancelled
+        instrument:
+          type: string
+        direction:
+          type: string
+          enum:
+            - long
+            - short
+        why:
+          type: string
+        currency:
+          type: string
+        quantity:
+          type: number
+        plannedEntry:
+          allOf:
+            - $ref: '#/components/schemas/PenzMoney'
+          nullable: true
+        stop:
+          $ref: '#/components/schemas/PenzMoney'
+        target:
+          allOf:
+            - $ref: '#/components/schemas/PenzMoney'
+          nullable: true
+        entry:
+          allOf:
+            - $ref: '#/components/schemas/PenzMoney'
+          nullable: true
+        entryDate:
+          type: string
+          format: date
+          nullable: true
+        exit:
+          allOf:
+            - $ref: '#/components/schemas/PenzMoney'
+          nullable: true
+        exitDate:
+          type: string
+          format: date
+          nullable: true
+        lastClose:
+          allOf:
+            - $ref: '#/components/schemas/PenzMoney'
+          nullable: true
+        lastCloseDate:
+          type: string
+          format: date
+          nullable: true
+        riskMinor:
+          type: integer
+          format: int64
+          nullable: true
+          description: >-
+            |entry − stop| × quantity, own currency (planned entry while
+            planned)
+        riskHufMinor:
+          type: integer
+          format: int64
+          nullable: true
+        costHufMinor:
+          type: integer
+          format: int64
+          nullable: true
+          description: >-
+            entry × quantity at the entry date's rate — what counts against the
+            cap
+        pnl:
+          allOf:
+            - $ref: '#/components/schemas/PenzMoney'
+          nullable: true
+        rMultiple:
+          type: number
+          nullable: true
+          description: 'P/L ÷ initial risk, 2 decimals'
+        unrealizedHufMinor:
+          type: integer
+          format: int64
+          nullable: true
+          description: >-
+            Open only: (last close − entry) × qty by direction at the last
+            close's rate; 0 without a typed close
+        tags:
+          type: array
+          items:
+            type: string
+        mistake:
+          type: boolean
+        line:
+          type: string
+          nullable: true
+        stopRespected:
+          type: boolean
+          nullable: true
+          description: 'Closed only: false when the exit went beyond the stop'
+        createdAt:
+          type: string
+          format: date-time
+        clientRef:
+          type: string
+          format: uuid
+          nullable: true
+    PenzPracticeOverview:
+      type: object
+      required:
+        - paper
+        - month
+        - cap
+        - monthPnlHufMinor
+        - closedCount
+        - taggedCount
+        - tags
+        - week
+        - open
+        - planned
+      properties:
+        paper:
+          type: boolean
+        month:
+          type: string
+          description: YYYY-MM of the asked date
+        cap:
+          $ref: '#/components/schemas/PenzPracticeCap'
+        monthPnlHufMinor:
+          type: integer
+          format: int64
+          description: Σ P/L (HUF) of the paper trades closed this month
+        avgR:
+          type: number
+          nullable: true
+          description: All-time closed paper trades
+        closedCount:
+          type: integer
+        taggedCount:
+          type: integer
+          description: All-time closed paper trades with ≥ 1 tag
+        noiseLine:
+          type: string
+          nullable: true
+          description: 'Under 50 tagged trades: the sample-size line'
+        tags:
+          type: array
+          description: 'The fixed eight, in order'
+          items:
+            $ref: '#/components/schemas/PenzPracticeTag'
+        week:
+          $ref: '#/components/schemas/PenzPracticeWeek'
+        open:
+          type: array
+          items:
+            $ref: '#/components/schemas/PenzPaperTrade'
+        planned:
+          type: array
+          items:
+            $ref: '#/components/schemas/PenzPaperTrade'
+    PenzPracticeCap:
+      type: object
+      required:
+        - capHufMinor
+        - usedHufMinor
+        - leftHufMinor
+      properties:
+        capHufMinor:
+          type: integer
+          format: int64
+        usedHufMinor:
+          type: integer
+          format: int64
+        leftHufMinor:
+          type: integer
+          format: int64
+    PenzPracticeTag:
+      type: object
+      required:
+        - key
+        - label
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+    PenzPracticeWeek:
+      type: object
+      required:
+        - weekStart
+        - weekEnd
+        - closedCount
+        - bySetup
+        - distribution
+        - observations
+        - curve
+        - trades
+      properties:
+        weekStart:
+          type: string
+          format: date
+        weekEnd:
+          type: string
+          format: date
+        headline:
+          type: string
+          nullable: true
+          description: The highlight; null without a closed trade this week
+        sub:
+          type: string
+          nullable: true
+        closedCount:
+          type: integer
+        winRatePct:
+          type: integer
+          nullable: true
+        avgR:
+          type: number
+          nullable: true
+        bySetup:
+          type: array
+          items:
+            $ref: '#/components/schemas/PenzPracticeSetup'
+        distribution:
+          $ref: '#/components/schemas/PenzPracticeDistribution'
+        commonMistake:
+          allOf:
+            - $ref: '#/components/schemas/PenzPracticeMistake'
+          nullable: true
+        observations:
+          type: array
+          items:
+            $ref: '#/components/schemas/PenzPracticeObservation'
+        curve:
+          type: array
+          items:
+            $ref: '#/components/schemas/PenzPracticeCurvePoint'
+        trades:
+          type: array
+          description: 'Closed this week, newest first'
+          items:
+            $ref: '#/components/schemas/PenzPaperTrade'
+    PenzPracticeSetup:
+      type: object
+      required:
+        - tag
+        - label
+        - count
+        - wins
+      properties:
+        tag:
+          type: string
+        label:
+          type: string
+        count:
+          type: integer
+        wins:
+          type: integer
+        avgR:
+          type: number
+          nullable: true
+    PenzPracticeDistribution:
+      type: object
+      required:
+        - bigWins
+        - smallLosses
+        - worseThanLimit
+        - healthy
+      properties:
+        bigWins:
+          type: integer
+          description: R ≥ +2
+        smallLosses:
+          type: integer
+          description: '−1,2R ≤ R < 0'
+        worseThanLimit:
+          type: integer
+          description: 'R < −1,5'
+        healthy:
+          type: boolean
+          description: 'No trade below −1,5R'
+    PenzPracticeMistake:
+      type: object
+      required:
+        - tag
+        - label
+        - count
+        - costHufMinor
+      properties:
+        tag:
+          type: string
+        label:
+          type: string
+        count:
+          type: integer
+        costHufMinor:
+          type: integer
+          format: int64
+    PenzPracticeObservation:
+      type: object
+      required:
+        - title
+        - body
+      properties:
+        title:
+          type: string
+        body:
+          type: string
+    PenzPracticeCurvePoint:
+      type: object
+      required:
+        - date
+        - cumulativeHufMinor
+      properties:
+        date:
+          type: string
+          format: date
+        cumulativeHufMinor:
+          type: integer
+          format: int64
+    PenzProductRequest:
+      type: object
+      required:
+        - name
+        - kind
+        - currency
+        - sleeves
+        - whatItIs
+        - distribution
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        kind:
+          type: string
+          pattern: ^(state_bond|money_market|bond_etf|equity_etf|mixed_fund|deposit)$
+        currency:
+          type: string
+          pattern: ^(HUF|EUR|USD|GBP|CHF)$
+        sleeves:
+          type: array
+          minItems: 1
+          maxItems: 3
+          items:
+            type: string
+            pattern: ^(short|mid|long)$
+        whatItIs:
+          type: string
+          minLength: 1
+          maxLength: 600
+        terPct:
+          type: number
+          nullable: true
+          minimum: 0
+          maximum: 10
+          description: 'Yearly running cost (TER), percent'
+        entryFeePct:
+          type: number
+          nullable: true
+          minimum: 0
+          maximum: 10
+          description: 'One-off entry fee, percent'
+        distribution:
+          type: string
+          pattern: ^(accumulating|distributing|interest)$
+        isin:
+          type: string
+          nullable: true
+          pattern: '^[A-Z]{2}[A-Z0-9]{9}[0-9]$'
+        symbol:
+          type: string
+          nullable: true
+          pattern: '^[A-Za-z0-9.\-=^]{1,20}$'
+        sourceName:
+          type: string
+          nullable: true
+          maxLength: 120
+        sourceUrl:
+          type: string
+          nullable: true
+          maxLength: 500
+          pattern: '^https://\S+$'
+    PenzProduct:
+      type: object
+      required:
+        - id
+        - name
+        - kind
+        - currency
+        - sleeves
+        - whatItIs
+        - distribution
+        - reviewedAt
+        - status
+        - suggestedBy
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        kind:
+          type: string
+          enum:
+            - state_bond
+            - money_market
+            - bond_etf
+            - equity_etf
+            - mixed_fund
+            - deposit
+        currency:
+          type: string
+        sleeves:
+          type: array
+          items:
+            type: string
+            enum:
+              - short
+              - mid
+              - long
+        whatItIs:
+          type: string
+        terPct:
+          type: number
+          nullable: true
+        entryFeePct:
+          type: number
+          nullable: true
+        feeNote:
+          type: string
+          nullable: true
+        distribution:
+          type: string
+          enum:
+            - accumulating
+            - distributing
+            - interest
+        isin:
+          type: string
+          nullable: true
+        symbol:
+          type: string
+          nullable: true
+        sourceName:
+          type: string
+          nullable: true
+        sourceUrl:
+          type: string
+          nullable: true
+        reviewedAt:
+          type: string
+          format: date
+          description: The date the fee figures were checked against the source
+        status:
+          type: string
+          enum:
+            - suggested
+            - approved
+            - declined
+        suggestedBy:
+          type: string
+          enum:
+            - research
+            - owner
+        approvedAt:
+          type: string
+          format: date-time
+          nullable: true
+    PenzStrategy:
+      type: object
+      required:
+        - availableHufMinor
+        - inputs
+        - note
+      properties:
+        availableHufMinor:
+          type: integer
+          format: int64
+          description: >-
+            The monthly figure a monthly proposal splits; 0 when nothing is
+            spare or there is no data
+        inputs:
+          type: array
+          items:
+            $ref: '#/components/schemas/PenzStrategyInput'
+        note:
+          type: string
+          description: 'How the figure came about, final Hungarian copy'
+        current:
+          allOf:
+            - $ref: '#/components/schemas/PenzProposal'
+          nullable: true
+    PenzStrategyInput:
+      type: object
+      required:
+        - key
+        - label
+        - hufMinor
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        hufMinor:
+          type: integer
+          format: int64
+    PenzProposalRequest:
+      type: object
+      required:
+        - kind
+      properties:
+        kind:
+          type: string
+          pattern: ^(lump_sum|monthly)$
+        amountHufMinor:
+          type: integer
+          format: int64
+          nullable: true
+          minimum: 1
+          maximum: 100000000000
+          description: >-
+            lump_sum only: the amount to split, HUF minor units (at least 1 000
+            Ft)
+    PenzProposal:
+      type: object
+      required:
+        - id
+        - kind
+        - status
+        - amountHufMinor
+        - createdAt
+        - title
+        - sub
+        - summary
+        - uncertainty
+        - narratedBy
+        - facts
+        - rules
+        - sleeves
+        - plan
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum:
+            - lump_sum
+            - monthly
+        status:
+          type: string
+          enum:
+            - proposed
+            - accepted
+            - dismissed
+            - superseded
+        amountHufMinor:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        acceptedAt:
+          type: string
+          format: date-time
+          nullable: true
+        title:
+          type: string
+        sub:
+          type: string
+        summary:
+          type: string
+        uncertainty:
+          type: string
+        narratedBy:
+          type: string
+          enum:
+            - model
+            - fallback
+        facts:
+          type: array
+          items:
+            $ref: '#/components/schemas/PenzProposalFact'
+        rules:
+          type: array
+          items:
+            type: string
+        sleeves:
+          type: array
+          items:
+            $ref: '#/components/schemas/PenzProposalSleeve'
+        plan:
+          type: array
+          items:
+            $ref: '#/components/schemas/PenzProposalStep'
+    PenzProposalFact:
+      type: object
+      required:
+        - value
+        - unit
+        - label
+      properties:
+        value:
+          type: string
+        unit:
+          type: string
+        label:
+          type: string
+    PenzProposalSleeve:
+      type: object
+      required:
+        - sleeve
+        - label
+        - amountHufMinor
+        - sharePct
+        - why
+        - options
+      properties:
+        sleeve:
+          type: string
+          enum:
+            - short
+            - mid
+            - long
+        label:
+          type: string
+        amountHufMinor:
+          type: integer
+          format: int64
+        sharePct:
+          type: number
+          description: 'Share of the proposal amount, percent, 1 decimal'
+        why:
+          type: string
+        optionsNote:
+          type: string
+          nullable: true
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/PenzProposalOption'
+    PenzProposalOption:
+      type: object
+      required:
+        - productId
+        - name
+        - whatItIs
+        - kind
+        - currency
+        - distribution
+        - reviewedAt
+        - differs
+      properties:
+        productId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        whatItIs:
+          type: string
+        kind:
+          type: string
+          enum:
+            - state_bond
+            - money_market
+            - bond_etf
+            - equity_etf
+            - mixed_fund
+            - deposit
+        currency:
+          type: string
+        distribution:
+          type: string
+          enum:
+            - accumulating
+            - distributing
+            - interest
+        terPct:
+          type: number
+          nullable: true
+        entryFeePct:
+          type: number
+          nullable: true
+        feeNote:
+          type: string
+          nullable: true
+        yearlyCostHufMinor:
+          type: integer
+          format: int64
+          nullable: true
+          description: 'The sleeve amount × TER, rounded to 10 Ft; null without a TER'
+        reviewedAt:
+          type: string
+          format: date
+        differs:
+          type: array
+          items:
+            type: string
+    PenzProposalStep:
+      type: object
+      required:
+        - index
+        - sleeve
+        - amountHufMinor
+        - done
+      properties:
+        index:
+          type: integer
+        sleeve:
+          type: string
+          enum:
+            - short
+            - mid
+            - long
+        productId:
+          type: string
+          format: uuid
+          nullable: true
+        productName:
+          type: string
+          nullable: true
+        amountHufMinor:
+          type: integer
+          format: int64
+        done:
+          type: boolean
+        doneAt:
+          type: string
+          format: date-time
+          nullable: true
+    PenzProposalAcceptRequest:
+      type: object
+      required:
+        - sleeves
+      properties:
+        sleeves:
+          type: array
+          minItems: 1
+          maxItems: 3
+          items:
+            $ref: '#/components/schemas/PenzProposalAcceptSleeve'
+    PenzProposalAcceptSleeve:
+      type: object
+      required:
+        - sleeve
+        - amountHufMinor
+      properties:
+        sleeve:
+          type: string
+          pattern: ^(short|mid|long)$
+        amountHufMinor:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100000000000
+        productId:
+          type: string
+          format: uuid
+          nullable: true
+    PenzProposalStepRequest:
+      type: object
+      required:
+        - done
+      properties:
+        done:
+          type: boolean
     SeasonSportSlot:
       type: object
       required:

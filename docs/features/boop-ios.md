@@ -314,7 +314,7 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     number "ennyit tudsz befektetni" is not computed by the server yet, so it is the engine's `perDay`, never an invented
     figure. `NKInfoRow` "Honnan tudom, van-e dolgod?" spells the rule out; menu *A PÉNZ TERÜLET* (Kiadás live; Nagyobb
     összeg · Havi stratégia · Kimutatás open "later" sheets); ask row. Since L6 the news digest sits between the info
-    row and the menu (below). **Gyakorlás** is `NKNotLiveYet` (L7) with what will be there and what must happen first.
+    row and the menu (below). **Gyakorlás** was `NKNotLiveYet` until L7 (below).
   - **The kit, additive only:** `NKBare(_:hue:glyph:…)` carries the section glyph (spike `sectionGlyph`; no caller
     changed); `NKGlyph` draws Pénz's coin `e-penz` (the spike's), now the area's eyebrow glyph and the bar's Pénzem
     icon; `NKAreaPage` honours `-previewScroll` like the tab pages. The two-button row (`PenzActionRow`, equal widths,
@@ -398,6 +398,49 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   - **Review (DEBUG)**: `-penzPortfolio full|empty|stale|unpriced|error`, `-penzDigest ready|pending|quiet|unhealthy|failed|limited|error`,
     `-penzPage news1|news2|news3|sleeve|sleeve-short|sleeve-mid`, `-penzSheet record|event|allocation`; the preview
     refuses the symbol `NOPE`, a sell above the value, and a non-forint buy dated on a Sunday (no FX rate).
+- **Pénz L7 — Gyakorlás, Termékjegyzék, javaslatok, Havi stratégia (`mezo-r36n9.105`, built 2026-11-20, not yet
+  deployed; contracts `api/feature/penz/penz-practice.yml` + `penz-proposals.yml`, build notes
+  `docs/superpowers/plans/2026-11-20-boop-penz-l7-build.md`; look = the approved spike's Pénz → Gyakorlás tab and Ma
+  menu).** The Gyakorlás tab is no longer `NKNotLiveYet`; screens in `Penz/PenzGyakorlas.swift` (tab + journal page),
+  `PenzPracticeSheets.swift` (sheets), `PenzProposalViews.swift` (proposal, strategy, catalog); logic and wire in
+  `BoopCore/Penz/Penz{Practice,Proposal}{Wire,Client,Logic}.swift` + `PenzStore+Practice.swift`. All figures and copy
+  are the server's (the weekly review is deterministic, no model); the phone only lays them out and sends what he typed.
+  - **Gyakorlás** (paper trading, never real money): highlight = the week's headline/sub (or "még nincs lezárt
+    kereskedés a héten") → *Új kereskedés* · *A teljes napló* → stats (month P/L "papíron" · average R · cap used /
+    cap) → the week's cumulative curve → *A HÉT KERESKEDÉSEI* (closed, open and planned) → *AMIT A HÉTEN LÁTOK* (the
+    commonest mistake tag and its cost in Ft, setup table, ≤ 3 observations) → the noise line under 50 tagged closes
+    → `NKInfoRow` "Mit jelent az R, és miért papíron megy?". Menu: Új terv · Címkék · A keret · Élesre fordítás (an
+    honest "not built, your switch later" sheet).
+  - **Plan before, one line after:** the plan sheet (`PenzTradePlanSheet`: instrument, long/short, why, stop —
+    required —, quantity, optional entry/target) creates a *plan*; the trade sheet (`PenzTradeSheet`) opens it (typed
+    entry price + date; the cap is checked here), records a last typed close, closes it (typed exit, ≥ 1 of the eight
+    tag chips, a mistake toggle, one line ≤ 140), or cancels a plan. A closed trade cannot be deleted (409 — its result
+    stays in the cap and the review); an entry date before the current month is refused. No market data: every price is typed. The journal
+    page lists all trades.
+  - **The cap** is `penz_settings.practice_monthly_minor` — the same figure as Költés's *Gyakorlás* line; the *A keret*
+    sheet shows used/left and links to the Költés lines editor.
+  - **Proposals:** *Befektetnék* (Ma), *Felosztást kérek* (Pénzem) and the menu's *Nagyobb összeg* open `PenzAmountSheet`
+    → `POST /api/penz/proposals {lump_sum}` → the proposal sub-page (`NKAreaSubPage`, crumb "Pénz · Javaslat"): the
+    split per horizon with its rules, two–three approved options per sleeve with the server's yearly cost (always
+    labelled with the sleeve's proposed amount), ±10 000 Ft steppers / typed amounts, *Elfogadom* (sends his per-sleeve
+    amounts and product choices) → the accepted plan is a checklist he ticks himself (`steps/{i}`); ticking records
+    nothing in Pénzem — the real buy goes through *Befektetést rögzítek*. Open proposals sit on Pénz Ma as the **shared**
+    `NKProposalCard` (Elfogadom opens the page, Most nem = dismiss) with `NKWhyBody` behind *miért?* — no second card
+    component, no wall source, no push.
+  - **Havi stratégia** (menu): `GET /api/penz/strategy` → the investable figure with its inputs → *Kérek javaslatot*
+    (`POST /api/penz/proposals {monthly}`); asked only on demand. **Termékjegyzék** (`PenzCatalogPage`, from the proposal
+    page's "Honnan vannak a termékek?" and the menu): Boop's researched suggestions grouped by horizon with one-tap
+    *Jóváhagyom* / *Nem kell*, then the approved list; every fee line carries "ellenőrizve: <date>" and its source. The
+    model never adds a product; only approved rows appear in a proposal.
+  - **Data / cache:** new `ServerCache` keys `penz/practice`, `penz/proposals`, `penz/catalog`. All L7 writes are online
+    (never the outbox). Coded rejections: `PlanTransport` now maps a **422 that names its rule** to
+    `.rejected(code)` (`PENZ_PRACTICE_CAP_EXCEEDED`, `PENZ_PAPER_TRADE_INVALID_STOP`, …), a **409** to `.conflict(code)`
+    (`PENZ_PAPER_TRADE_STATE`, `PENZ_PROPOSAL_STATE`, …), beside the existing 400/503/429 mappings; `penzErrorText` /
+    `penzCapExceededText` / `penzProposalCreateErrorText` say them in Hungarian and what he typed is kept.
+  - **Review (DEBUG)**, invented figures from `Penz/PenzPreviewL7.swift` (writes kept for the run; an entry above the cap
+    answers 422): `-penzPractice full|quiet|empty|error`, `-penzProposals open|accepted|none`;
+    `-penzSheet newTrade|tags|cap|live|trade|trade-plan|trade-closed|why`; `-penzPage journal|strategy|catalog|proposal|proposal-accepted`
+    (with `-previewHome penz -penzTab Gyakorlás|Ma`).
 - **Évad — the season (B6 S1, `mezo-r36n9.16`, 2026-11-20; spec
   [`2026-11-20-boop-evad-design.md`](../superpowers/specs/2026-11-20-boop-evad-design.md) §5.1, backend
   [`season.md`](season.md)).** **Terv → Évad:** the spine's second place renders `EvadPage` (`ShellView.page(.terv)`;
@@ -664,6 +707,36 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     motion (no deck/ring animation), VoiceOver labels on steppers, dial, tiles. DEBUG review without sign-in:
     `-previewBlokk YES` (+ `-previewBlokkOpen epito|het`, `-previewBlokkTab napok|blokk`, `-previewBlokkCard N`,
     `-previewBlokkState empty|loading|error|offline|applied`) over `PlanPreviewTransport` — whose evaluator is a fixture.
+  - **The Napok day editor (`mezo-r36n9.116`, spec
+    [`2026-11-20-boop-blokk-szerkeszto-design.md`](../superpowers/specs/2026-11-20-boop-blokk-szerkeszto-design.md) §6,
+    look: the spike on `spike/boop-blokk-szerkeszto`)** — `BuilderDayCard` rows are ≡ handle (drag reorders through
+    `BlockDraft.move`, no lift scale under reduced motion; VoiceOver *Feljebb/Lejjebb* actions), name, subtitle from the
+    row's own `repMin/repMax/targetRIR`, set stepper (wraps under the name when the card's inner width is under 364 pt),
+    ⋯ menu (*Csere · Beállítások · Törlés*); delete leaves an undo line; tap → `DayEditSettingsSheet` (rep range,
+    reserve, starting weight, warm-ups, *TE ÁLLÍTOTTAD*, *Visszaállítom az edzésmódra*); ＋ → `DayEditAddSheet` (muscle
+    chips *kevés* first, then the day's, then *Más izom*; ≤5 suggestions from `BlockBuilderModel.suggest`, then the
+    full list); ⋯ *Csere* → `DayEditSwapSheet`. Empty day line; the day of today's open workout
+    (`BlockBuilderModel.lockedDay`, passed by `EdzesRoom`) is read-only; *Mentés* on a structurally changed day that a
+    waiting weekly proposal touches (`pendingReviewDays`, from the proposals the load already read) asks *Függő heti
+    javaslat* first. Indices of the evaluation (recommendations, cap warnings, proposals) are hidden while the line-up
+    differs from the evaluated one (`indicesFresh`); a swapped/new row drops the weekly AI note (`aiNote(_:)`). The main
+    button falls back to *Nincs változás* where *Nincs mit menteni* does not fit (`mezo-r36n9.118`). DEBUG (with
+    `-previewBlokk YES -previewBlokkOpen epito -previewBlokkTab napok`): `-previewBlokkEdit
+    default|menu|settings|add|swap|undo|empty|locked|confirm`, `-previewBlokkDay N` (day page),
+    `-previewBlokkSuggest fail` (suggestions 503 → the full list with its one-line note).
+  - **The identity-aware draft (`BlockDraft`, `BlockBuilderModel`; no wire ids in the editor).** A `DraftExercise.id` is a
+    **local key** — the server's row id for a loaded row, `new-<uuid>` for one added in the draft; a swap keeps the row's key,
+    technique (when the new exercise may carry it) and his picks; the ids are re-minted by every structural save, so the model
+    re-reads the block after a save (`withKey`). `changes(since:)` compares the line-up **by key** (order, add, remove, swap
+    and every field edit mark the day) and `carryEdits(onto:original:)` carries only his deltas onto a fresh read — a set-count
+    delta is added to the server's value if the server moved too; a day whose line-up he changed keeps his line-up unless the
+    fresh read already shows it (its save reached the server) — such a day is taken as the server has it; a matching line-up that only a removed-then-re-added (new) row mimics counts as taken only when every row holds his values, else his other edits on the day carry on.
+    **The save-time `workingSets` rule:** on a styled block a loaded row sends `workingSets` in `overrides` only when its set
+    count differs from the server's (the style stamps the rest); on an unstyled one a count he did not touch drops the key; a
+    swapped or new row sends no wire id and its drafted values (`overrides`) as his; unstyled steps send no overrides.
+    `BlockBuilderModel.suggest(...)` calls `getBlockExerciseSuggestions` (the model decides *add* vs *replace*, sends
+    `dayCatalogIds` and the day index); a server-side 409 `TRAIN_DAY_WORKOUT_RUNNING` on a day save shows a running-day error
+    and keeps the unsaved edits.
 - **The technique and the challenge in the player (`mezo-r36n9.84`, 2026-11-19; spec
   [`2026-11-17-train-style-and-techniques-design.md`](../superpowers/specs/2026-11-17-train-style-and-techniques-design.md)
   §6.4/§6.6/§6.10, look: the round-7 spike on `spike/boop-blokk-epito`, owner OK 2026-11-19)** — the player reads
@@ -938,7 +1011,7 @@ Added to the `filter.operations` list in B3: `listCheckInsForDay`, `saveCheckIn`
 
 ### B5 API operations (added to the same generator filter) — Edzés, stage 1
 
-34 train operations (29 + the five of `mezo-r36n9.66`, listed last): `getTodayWorkout`, `startWorkout`, `logWorkoutSet`, `updateWorkoutSet`, `deleteWorkoutSet`, `saveWorkoutFeedback`, `skipWorkoutExercise`, `changeWorkoutExercise`, `addPlanWorkingSets`, `saveExerciseNote`, `saveWorkoutNote`, `finishWorkout`, `listWorkouts`, `getWorkoutDetail`, `getExerciseCatalog`, `getExerciseRecords`, `listMesocycles`, `getMesocycleReport`, `getMesocycleVolumeArc`, `generateMesoPlan`, `createMesoTemplate`, `startMesoTemplate`, `listMesoTemplates`, `getGymSchedule`, `getTodayReadiness`, `chooseTodayReadiness`, `listSportSessions`, `logSportSession`, `getSportSchedule`, `getGymProfile`, `putGymProfile`, `markExerciseDiscomfort`, `clearExerciseDiscomfort`, `getExerciseSubstitutes`. **No contract change and no Liquibase** — the training API already existed for the web app.
+34 train operations (29 + the five of `mezo-r36n9.66`, listed last; the block builder's own `getBlockExerciseSuggestions` is hand-decoded — see below, not in the generator filter): `getTodayWorkout`, `startWorkout`, `logWorkoutSet`, `updateWorkoutSet`, `deleteWorkoutSet`, `saveWorkoutFeedback`, `skipWorkoutExercise`, `changeWorkoutExercise`, `addPlanWorkingSets`, `saveExerciseNote`, `saveWorkoutNote`, `finishWorkout`, `listWorkouts`, `getWorkoutDetail`, `getExerciseCatalog`, `getExerciseRecords`, `listMesocycles`, `getMesocycleReport`, `getMesocycleVolumeArc`, `generateMesoPlan`, `createMesoTemplate`, `startMesoTemplate`, `listMesoTemplates`, `getGymSchedule`, `getTodayReadiness`, `chooseTodayReadiness`, `listSportSessions`, `logSportSession`, `getSportSchedule`, `getGymProfile`, `putGymProfile`, `markExerciseDiscomfort`, `clearExerciseDiscomfort`, `getExerciseSubstitutes`. **No contract change and no Liquibase** — the training API already existed for the web app.
 
 `TrainClient` (`BoopCore/Train/`) wraps them behind plain value types (`TrainModels.swift`), with two rules the room's honesty rests on: **an absent server value stays `nil`, never `0`** (with the hypertrophy engine off the server sends only warmup/working *counts*, so the set rows carry no weight rather than printing the plan's anchor weight as a per-set target), and **wire enums read leniently**, so a value the server adds later degrades instead of emptying the room. `blockPlan()` returns an optional — no running block is a state the Blokk tab shows, not an error — and merges two reads (the block's MEV/MAV/MRV landmarks and days, plus the volume arc's per-week planned/actual sets).
 
@@ -953,9 +1026,11 @@ The builder and the review **do not use the generated client**. The generated co
 technique planner (T3) adds proposal line kinds (`technique`, `rep_range`), reason codes and evaluation fields while these
 screens are live — one unknown value would fail the whole response. So `RawJSONClient` (`BoopCore/Train/PlanTransport.swift`)
 sends JSON over the **same** `ClientTransport`, base URL and bearer token as the generated client (`Session.raw`), and
-`PlanWire.swift` declares hand-written `Decodable` shapes whose enums are plain `String`s. `PlanClient` wraps 8 operations:
+`PlanWire.swift` declares hand-written `Decodable` shapes whose enums are plain `String`s. `PlanClient` wraps 9 operations:
 `listMesocycles`, `getExerciseCatalog`, `evaluateMesoPlan`, `listWeekProposals`, `decideWeekProposal`, `replaceDayExercises`,
-`updateMesocycleMusclePriorities`, and the new **`updateMesocycleSettings`** (`PUT /api/train/mesocycles/{id}/settings`
+`updateMesocycleMusclePriorities`, **`blockSuggestions`** (`mezo-r36n9.116`: `POST /api/train/mesocycles/{id}/exercise-suggestions`
+→ `PlanWire.BlockSuggestions*`, each suggestion with an optional style `prescription`; `scripts/check-ios-contract.mjs` now also
+covers these raw-client operations), and **`updateMesocycleSettings`** (`PUT /api/train/mesocycles/{id}/settings`
 `{trainingStyle?, techniquesEnabled?, weeklyReviewMode?}`, absent = keep; the run's own review mode overrides
 `mezo.volume.weekly-review.mode`; `MesocycleResponse.weeklyReviewMode` is the effective mode — `docs/features/train.md` §4).
 **The BoopAPI generator filter is untouched.** Typed failures: `PlanFetchError` (`offline`, `unauthorized`, `notFound`,
@@ -1168,7 +1243,7 @@ B2: `ios/Boop/Shell/{ShellView,PlacePage,AccountSheet}.swift` · `ios/Boop/Captu
 `ios/BoopKit/Sources/BoopDesign/Napkelte/{SpineBar,Proposal,Drill}.swift` ·
 B1: `ios/BoopKit/Sources/BoopCore/Health/{HealthKitReader,HealthReader,HealthSync,HealthBackground,SleepNightBuilder,WorkoutMapper}.swift` · `…/Push/PushRegistrar.swift` · `ios/Boop/App/{BoopAppDelegate,BackgroundSyncHost}.swift` · `ios/Boop.entitlements` · `ios/Boop-Paid.entitlements` · `backend/…/feature/wearable/service/{HealthSampleService,WearableDeletionService,WorkoutReconciler}.java` · `backend/…/feature/biometrics/sleep/service/SleepNightMerge.java` · `api/feature/device/device.yml` · `scripts/ops/boop-b1-merge-accounts*.sql`
 
-Blokképítő + heti átnézés: `ios/Boop/EdzesTerv/{BlockBuilderPage,WeekReviewDeck,PlanKit,PlanEnvironment,PlanPreview}.swift` · `ios/BoopKit/Sources/BoopCore/Train/{PlanTransport,PlanWire,PlanClient,BlockDraft,WeekReview,BlockBuilderModel}.swift` · `backend/…/feature/train/service/{TrainService#updateSettings,ExerciseStyler#restampRows}`
+Blokképítő + heti átnézés: `ios/Boop/EdzesTerv/{BlockBuilderPage,DayEditSheets,WeekReviewDeck,PlanKit,PlanEnvironment,PlanPreview}.swift` · `ios/BoopKit/Sources/BoopCore/Train/{PlanTransport,PlanWire,PlanClient,BlockDraft,WeekReview,BlockBuilderModel}.swift` · `backend/…/feature/train/service/{TrainService#updateSettings,ExerciseStyler#restampRows}`
 
 L0/b (az élő fal): `ios/BoopKit/Sources/BoopCore/Morning/{Wall,WallSources}.swift` · `ios/BoopKit/Sources/BoopDesign/Napkelte/Wall.swift` · `ios/Boop/Nap/{MaWall,MaPhases,MaiView}.swift`
 

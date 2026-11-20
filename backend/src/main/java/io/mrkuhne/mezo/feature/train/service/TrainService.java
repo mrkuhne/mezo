@@ -69,6 +69,9 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class TrainService {
 
+    /** 409 on a structural day save while that day's workout runs (mezo-r36n9.116). */
+    public static final String TRAIN_DAY_WORKOUT_RUNNING = "TRAIN_DAY_WORKOUT_RUNNING";
+
     private final MesocycleRepository mesocycleRepository;
     private final MuscleGroupVolumeLogRepository volumeLogRepository;
     private final WorkoutSessionRepository workoutSessionRepository;
@@ -473,7 +476,9 @@ public class TrainService {
      * at every index, the same identity (catalog id, else exact name; {@link #sameIdentity}) — the stored
      * rows are updated IN PLACE (id, created_at, order kept), so a pending week proposal's lines and an
      * open workout's logged sets keep pointing at them. Any other list (reorder, add, remove, swap) keeps
-     * the soft-delete + re-insert path with new ids.
+     * the soft-delete + re-insert path with new ids — and, while a workout of that day is running
+     * (an {@code active} instance), such a structural save is refused with 409 {@code TRAIN_DAY_WORKOUT_RUNNING}
+     * before any write; the in-place path stays allowed.
      */
     @Transactional
     public MesoDay replaceDayExercises(UUID createdBy, UUID mesoId, UUID dayId, List<GymExerciseInput> inputs) {
@@ -494,8 +499,15 @@ public class TrainService {
         }
         CatalogAttributes.Lookup stability = styler.styleRows(fresh, old, block, inputs);
         techniqueGuard.validateRows(fresh); // before any write: a 400 leaves the day untouched
+        boolean aligned = alignedByIdentity(old, fresh);
+        // A running workout's logged sets point at these rows: only the in-place path keeps them valid.
+        if (!aligned && workoutSessionRepository
+                .existsByCreatedByAndTemplateSessionIdAndStatus(createdBy, dayId, "active")) {
+            throw new SystemRuntimeErrorException(
+                SystemMessage.error(TRAIN_DAY_WORKOUT_RUNNING).build(), HttpStatus.CONFLICT);
+        }
         List<ExerciseEntity> saved;
-        if (alignedByIdentity(old, fresh)) {
+        if (aligned) {
             for (int i = 0; i < old.size(); i++) {
                 copyEditable(fresh.get(i), old.get(i));
             }

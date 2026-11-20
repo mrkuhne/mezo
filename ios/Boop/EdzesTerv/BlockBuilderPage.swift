@@ -5,6 +5,7 @@ import BoopDesign
 // The block builder (mezo-r36n9.83) — the approved spike's full screen with its own three-way bar, Izmok · Napok ·
 // Blokk, on his real running block. Every number comes from the server's evaluator (`BlockBuilderModel`); the draft
 // only holds his edits. One primary button: „Igazítsd a sávba" while a muscle is outside its band, else „Mentés".
+// The Napok tab is the day editor (mezo-r36n9.116): reorder, add, swap, delete with undo, per-row settings.
 
 struct BlockBuilderPage: View {
     enum Mode: String, CaseIterable { case izmok = "Izmok", napok = "Napok", blokk = "Blokk" }
@@ -17,11 +18,20 @@ struct BlockBuilderPage: View {
     @State private var confirmLeave = false
     /// The technique picker, presented at page level (boop-ios.md §9).
     @State private var picking: TechniquePick?
+    /// The day editor's menu, sheets, undo line and drag.
+    @State private var edit = DayEditUI()
+    /// Today's open workout's day, from the caller: that day's card is read-only.
+    let lockedDay: BlockBuilderModel.LockedDay?
+    #if DEBUG
+    @State private var previewApplied = false
+    #endif
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    init(model: BlockBuilderModel, initialMode: Mode = .izmok, onClose: @escaping () -> Void) {
+    init(model: BlockBuilderModel, initialMode: Mode = .izmok, lockedDay: BlockBuilderModel.LockedDay? = nil,
+         onClose: @escaping () -> Void) {
         _model = State(initialValue: model)
         _mode = State(initialValue: initialMode)
+        self.lockedDay = lockedDay
         self.onClose = onClose
         #if DEBUG
         // Simulator review: `-previewBlokkPicker YES` opens the picker on the first day's second exercise.
@@ -48,6 +58,7 @@ struct BlockBuilderPage: View {
             }
         }
         .task { if model.phase == .loading, model.draft == nil { await model.load() } }
+        .onChange(of: lockedDay, initial: true) { model.lockedDay = lockedDay }
         .preferredColorScheme(.dark)
     }
 
@@ -62,13 +73,34 @@ struct BlockBuilderPage: View {
                     Group {
                         switch mode {
                         case .izmok: BuilderMusclesView(model: model, selected: $muscle)
-                        case .napok: BuilderDaysView(model: model, day: $day) { picking = $0 }
+                        case .napok: BuilderDaysView(model: model, ui: edit, day: $day) { picking = $0 }
                         case .blokk: BuilderBlockView(model: model)
                         }
                     }
                     // Edits made while a save is on its way would be overwritten by the re-read after it.
                     .disabled(model.saveState == .saving)
                 }
+            }
+            .sheet(item: $edit.sheet) { sheet in
+                Group {
+                    switch sheet {
+                    case .settings(let id): DayEditSettingsSheet(model: model, rowId: id)
+                    case .add(let d, let muscle):
+                        DayEditAddSheet(model: model, day: d, muscle: muscle) { item, rx in
+                            guard let c = item.asCatalog else { return }
+                            withAnimation(reduceMotion ? nil : .snappy) { model.draft?.add(day: d, catalog: c, prescription: rx) }
+                            edit.structuralEdit(day: d)
+                        }
+                    case .swap(let id):
+                        DayEditSwapSheet(model: model, rowId: id) { item, rx in
+                            guard let c = item.asCatalog, let at = model.draft?.locate(id) else { return }
+                            withAnimation(reduceMotion ? nil : .snappy) { model.draft?.replace(day: at.day, at: at.index, with: c, prescription: rx) }
+                            edit.structuralEdit(day: at.day)
+                        }
+                    }
+                }
+                .presentationDetents([.large])
+                .presentationBackground(NK.ground)
             }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) { bar }
@@ -81,7 +113,7 @@ struct BlockBuilderPage: View {
                                 choose: { model.draft?.setTechnique(day: pick.day, exercise: pick.exercise, $0) },
                                 challenge: { model.draft?.setChallenge(day: pick.day, exercise: pick.exercise, $0) },
                                 recommendation: model.recommendation(day: pick.day, exercise: pick.exercise),
-                                aiNote: model.aiNotes[ex.id],
+                                aiNote: model.aiNote(ex),
                                 onClose: { picking = nil })
             }
         }
@@ -91,7 +123,62 @@ struct BlockBuilderPage: View {
         } message: {
             Text("Amit itt állítottál, még nincs elmentve.")
         }
+        .alert("Függő heti javaslat", isPresented: $edit.confirm) {
+            Button("Előbb átnézem", role: .cancel) {}
+            Button("Mentem") { save() }
+        } message: {
+            Text("A heti javaslatban ennél a napnál függő döntés van; a módosított gyakorlatoknál a régi szám marad. Mentsem így?")
+        }
+        #if DEBUG
+        .task(id: model.evaluation != nil) { applyPreviewEdit() }
+        #endif
     }
+
+    private func save() {
+        edit.menuRow = nil
+        Task {
+            await model.save()
+            if model.saveState == .saved { edit.deleted = nil }
+        }
+    }
+
+    #if DEBUG
+    /// Simulator review of the day editor (boop-ios.md, preview flags): `-previewBlokkEdit
+    /// default|menu|settings|add|swap|undo|empty|locked|confirm`, `-previewBlokkDay N` for the day page.
+    private func applyPreviewEdit() {
+        guard !previewApplied, model.evaluation != nil, let draft = model.draft,
+              let state = UserDefaults.standard.string(forKey: "previewBlokkEdit") else { return }
+        previewApplied = true
+        let fallback: Int = switch state {
+        case "empty": draft.days.firstIndex { $0.exercises.isEmpty } ?? 0
+        case "locked": draft.days.firstIndex { $0.weekday.hasPrefix("Pén") } ?? 0
+        default: 0
+        }
+        let d = UserDefaults.standard.object(forKey: "previewBlokkDay") != nil
+            ? max(0, min(draft.days.count - 1, UserDefaults.standard.integer(forKey: "previewBlokkDay"))) : fallback
+        day = d
+        let rows = draft.days[safe: d]?.exercises ?? []
+        switch state {
+        case "menu": edit.menuRow = rows[safe: 1]?.id
+        case "undo":
+            if let row = model.draft?.remove(day: d, at: 2) { edit.deleted = (row, d, 2) }
+        case "locked": model.lockedDay = .init(dayId: draft.days[safe: d]?.id, weekday: nil)
+        case "confirm": if rows.count > 1 { model.draft?.move(day: d, from: [0], to: 2) }
+        default: break
+        }
+        Task {
+            // Sheets and the dialog open after the page is on screen.
+            try? await Task.sleep(for: .milliseconds(500))
+            switch state {
+            case "settings": if let id = rows.first?.id { edit.sheet = .settings(id) }
+            case "add": edit.sheet = .add(d, muscle: "back")
+            case "swap": if let id = rows.first?.id { edit.sheet = .swap(id) }
+            case "confirm": edit.confirm = true
+            default: break
+            }
+        }
+    }
+    #endif
 
     private var evaluationMissing: some View {
         VStack(spacing: 14) {
@@ -145,7 +232,7 @@ struct BlockBuilderPage: View {
     private var primary: Primary {
         if model.saveState == .saving { return .saving }
         if model.hasChanges { return .save }
-        if model.outside.contains(where: { !$0.proposal.isEmpty }) { return .align }
+        if model.outside.contains(where: { !model.applicableEdits($0.muscle).isEmpty }) { return .align }
         return .done
     }
 
@@ -173,13 +260,20 @@ struct BlockBuilderPage: View {
             Button {
                 switch p {
                 case .align: withAnimation(reduceMotion ? nil : .snappy) { model.applyAllProposals() }
-                case .save: Task { await model.save() }
+                case .save: if model.needsReviewConfirm { edit.confirm = true } else { save() }
                 case .saving, .done: break
                 }
             } label: {
                 Group {
                     if p == .saving { ProgressView().tint(NK.ground) }
-                    else { Text(label(p)).nkFont(15, .semibold).lineLimit(1).minimumScaleFactor(0.8) }
+                    else {
+                        // The label must fit the smallest iPhone (mezo-r36n9.118): a shorter wording, then shrink.
+                        ViewThatFits(in: .horizontal) {
+                            Text(label(p)).nkFont(15, .semibold).lineLimit(1).fixedSize()
+                            Text(shortLabel(p)).nkFont(15, .semibold).lineLimit(1).minimumScaleFactor(0.75)
+                        }
+                        .padding(.horizontal, 12)
+                    }
                 }
                 .foregroundStyle(p == .align ? .white : NK.ground)
                 .frame(maxWidth: .infinity, minHeight: 56)
@@ -199,6 +293,13 @@ struct BlockBuilderPage: View {
         case .save: "Mentés"
         case .saving: ""
         case .done: model.saveState == .saved ? "Elmentve" : "Nincs mit menteni"
+        }
+    }
+
+    private func shortLabel(_ p: Primary) -> String {
+        switch p {
+        case .done where model.saveState != .saved: "Nincs változás"
+        default: label(p)
         }
     }
 
@@ -323,16 +424,17 @@ private struct BuilderMuscleCard: View {
                         }
                     bandPills(m, tier: tier)
 
-                    if !inside {
+                    // The proposal addresses exercises by index: hidden until the evaluation matches the line-up again.
+                    if !inside, model.indicesFresh {
                         VStack(alignment: .leading, spacing: 10) {
                             HStack(alignment: .top, spacing: 10) {
                                 PlanMark(why ? .target : .spark, color: planWarn, size: 18).padding(.top, 1)
-                                Text(why ? proposalRule : proposalText(m, draft))
+                                Text(why ? proposalRule : (model.proposalOnlyOnLockedDay(muscle) ? lockedProposalText : proposalText(m, draft)))
                                     .nkFont(13).foregroundStyle(.white.opacity(0.85))
                                     .fixedSize(horizontal: false, vertical: true)
                             }
                             HStack(spacing: 16) {
-                                if !m.proposal.isEmpty {
+                                if !model.applicableEdits(muscle).isEmpty {
                                     Button { withAnimation(.snappy) { model.applyProposal(muscle) } } label: {
                                         Text("Elfogadom").nkFont(14, .semibold).foregroundStyle(NK.ground)
                                             .padding(.horizontal, 18).padding(.vertical, 9).background(Capsule().fill(.white))
@@ -420,8 +522,13 @@ private struct BuilderMuscleCard: View {
         "A javaslat a legkevesebb sorozatú gyakorlatot tölti fel először, és sosem tesz egy gyakorlatra ötnél, egy edzésen egy izomra nyolcnál több sorozatot."
     }
 
+    /// Every edit of the proposal falls on the day of today's open workout (ruling R11).
+    private var lockedProposalText: String {
+        "Ma ennél többet nem igazíthatok: a javaslat a most futó edzésed napját érintené. Utána újra megnézem."
+    }
+
     private func proposalText(_ m: WireMuscleEvaluation, _ draft: BlockDraft) -> String {
-        let parts = m.proposal.compactMap { e -> String? in
+        let parts = model.applicableEdits(m.muscle).compactMap { e -> String? in
             guard draft.days.indices.contains(e.dayIndex), draft.days[e.dayIndex].exercises.indices.contains(e.exerciseIndex) else { return nil }
             let ex = draft.days[e.dayIndex].exercises[e.exerciseIndex]
             return "\(e.delta > 0 ? "+" : "−")\(abs(e.delta)) \(ex.name) (\(draft.days[e.dayIndex].name.lowercased()))"
@@ -461,140 +568,400 @@ private struct BuilderTierSwitch: View {
 
 private struct BuilderDaysView: View {
     let model: BlockBuilderModel
+    let ui: DayEditUI
     @Binding var day: Int
     let pick: (TechniquePick) -> Void
+    /// The screen's width, measured outside the paging view (a wide row must not stretch a page).
+    @State private var pageWidth: CGFloat = 0
+
+    /// 0 = Monday, from the device's calendar: the strip marks today.
+    private var todayIndex: Int { (Calendar.current.component(.weekday, from: .now) + 5) % 7 }
 
     var body: some View {
         let days = model.draft?.days ?? []
+        let wide = days.count > 5
         VStack(spacing: 10) {
-            HStack(spacing: 8) {
+            HStack(spacing: wide ? 6 : 8) {
                 ForEach(Array(days.enumerated()), id: \.element.id) { index, item in
                     let on = index == day
-                    let minutes = model.day(index)?.minutesEstimate ?? 0
-                    Button { withAnimation(.snappy) { day = index } } label: {
+                    let minutes = item.exercises.isEmpty ? 0 : (model.day(index)?.minutesEstimate ?? 0)
+                    Button { withAnimation(.snappy) { day = index; ui.menuRow = nil } } label: {
                         VStack(spacing: 5) {
                             Text(String(item.weekday.prefix(3)).uppercased())
                                 .nkFont(11, .semibold, design: .monospaced).foregroundStyle(on ? NK.ground : .white.opacity(0.75))
-                            Text("\(minutes)'").nkFont(15, .medium).foregroundStyle(on ? NK.ground : .white)
+                                .lineLimit(1).minimumScaleFactor(0.7)
+                            Text(minutes == 0 ? "–" : "\(minutes)'").nkFont(15, .medium)
+                                .foregroundStyle(on ? NK.ground : .white.opacity(minutes == 0 ? 0.45 : 1))
+                                .lineLimit(1).minimumScaleFactor(0.7)
                                 .contentTransition(.numericText())
-                            Capsule().fill(on ? NK.ground.opacity(0.5) : planHue.glow.opacity(0.8))
-                                .frame(width: CGFloat(min(40, 8 + minutes / 2)), height: 3)
+                            Capsule().fill(on ? NK.ground.opacity(0.5) : planHue.glow.opacity(minutes == 0 ? 0 : 0.8))
+                                .frame(width: CGFloat(min(wide ? 34 : 40, 8 + minutes / 2)), height: 3)
                         }
                         .frame(maxWidth: .infinity, minHeight: 62)
-                        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(on ? Color.white : .white.opacity(0.1)))
+                        .background(RoundedRectangle(cornerRadius: wide ? 16 : 18, style: .continuous).fill(on ? Color.white : .white.opacity(0.1)))
+                        .overlay(alignment: .top) {
+                            if item.weekdayIndex == todayIndex {
+                                Circle().fill(on ? NK.ground : planHue.glow).frame(width: 4, height: 4).padding(.top, 4)
+                            }
+                        }
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("\(item.name), kb. \(minutes) perc")
+                    .accessibilityLabel(minutes == 0 ? "\(item.name), pihenőnap" : "\(item.name), kb. \(minutes) perc")
                 }
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, wide ? 16 : 20)
 
             TabView(selection: $day) {
                 ForEach(Array(days.enumerated()), id: \.element.id) { index, _ in
-                    BuilderDayCard(model: model, index: index, pick: pick).tag(index)
+                    BuilderDayCard(model: model, ui: ui, index: index, pageWidth: pageWidth, pick: pick).tag(index)
+                        .frame(width: pageWidth > 0 ? pageWidth : nil)
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
             .sensoryFeedback(.selection, trigger: day)
         }
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { pageWidth = $0 }
+        .onChange(of: day) { ui.menuRow = nil }
     }
 }
 
+/// One day of the block as an editor (mezo-r36n9.116, spec §6.1): ≡ handle, name and subtitle, set stepper, ⋯ menu;
+/// tap a row for its settings; delete with an undo line; the add row; the empty day; today's running day read-only.
 private struct BuilderDayCard: View {
     let model: BlockBuilderModel
+    let ui: DayEditUI
     let index: Int
+    let pageWidth: CGFloat
     let pick: (TechniquePick) -> Void
+    @State private var heights: [String: CGFloat] = [:]
+    @State private var dragBase: CGFloat = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// The card's side margins and inner padding: the editor row (handle, name, stepper, ⋯) needs the width.
+    private static let margin: CGFloat = 14, inset: CGFloat = 18
+    /// Below this the stepper goes under the name (spec §6.5: the row's fields wrap on the smaller iPhones) — the
+    /// name column keeps ~170 pt next to the 194 pt of handle, stepper and ⋯.
+    private var narrow: Bool { pageWidth > 0 && pageWidth - 2 * (Self.margin + Self.inset) < 364 }
 
     var body: some View {
         if let draft = model.draft, draft.days.indices.contains(index) {
             let day = draft.days[index]
             let evaluation = model.day(index)
             let techniques = draft.techniqueCount(index)
+            let locked = model.lockedDayIndex == index
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
+                  VStack(alignment: .leading, spacing: 14) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(day.name.uppercased()).nkFont(11, .semibold, design: .monospaced).tracking(1.4).foregroundStyle(planHue.glow)
-                        Text(day.title).nkFont(28, design: .serif).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
-                        NKFlowRow(spacing: 6, rowSpacing: 6) {
-                            PlanPill("kb. \(evaluation?.minutesEstimate ?? 0) perc", mark: .timer)
-                            if evaluation?.sportSameDay == true { PlanPill("aznap sport is", mark: .spark) }
-                            if techniques > 0 { PlanPill("\(techniques) technika", color: planHue.glow, mark: .drop) }
-                        }
-                        .padding(.top, 2)
-                    }
-                    NKFlowRow(spacing: 8, rowSpacing: 8) {
-                        ForEach(model.bandedMuscles.filter { model.sets($0.muscle, day: index) > 0 }, id: \.muscle) { m in
-                            let sets = model.sets(m.muscle, day: index)
-                            let over = evaluation?.sessionCapWarnings.contains { $0.muscle == m.muscle } == true
-                            HStack(spacing: 6) {
-                                Text(planMuscleName(m.muscle)).nkFont(12, .medium).foregroundStyle(.white.opacity(0.85))
-                                Text("\(sets)").nkFont(13, .semibold).foregroundStyle(over ? planWarn : planHue.glow)
-                                    .contentTransition(.numericText())
+                        Text(day.exercises.isEmpty ? "Pihenőnap" : day.title).nkFont(28, design: .serif).foregroundStyle(.white)
+                            .fixedSize(horizontal: false, vertical: true)
+                        if !day.exercises.isEmpty {
+                            NKFlowRow(spacing: 6, rowSpacing: 6) {
+                                PlanPill("kb. \(evaluation?.minutesEstimate ?? 0) perc", mark: .timer)
+                                if evaluation?.sportSameDay == true { PlanPill("aznap sport is", mark: .spark) }
+                                if techniques > 0 && !locked { PlanPill("\(techniques) technika", color: planHue.glow, mark: .drop) }
                             }
-                            .padding(.horizontal, 11).padding(.vertical, 6)
-                            .background(Capsule().fill(over ? planWarn.opacity(0.16) : .white.opacity(0.08)))
+                            .padding(.top, 2)
                         }
                     }
+                    if locked { lockLine }
+                    if !day.exercises.isEmpty { muscleChips(evaluation) }
                     ForEach(Array((evaluation?.sessionCapWarnings ?? []).enumerated()), id: \.offset) { _, w in
                         Text("\(planMuscleName(w.muscle ?? "")): \(w.sets) sorozat egy edzésen. \(w.cap) fölött már nem ad többet, oszd el két napra.")
                             .nkFont(13).foregroundStyle(planWarn).fixedSize(horizontal: false, vertical: true)
                     }
-                    if !draft.techniquesEnabled, day.exercises.contains(where: { $0.stable && $0.judged }) {
+                    if !draft.techniquesEnabled, !locked, day.exercises.contains(where: { $0.stable && $0.judged }) {
                         Text("A technikák ki vannak kapcsolva ebben a blokkban. A Blokk fülön bekapcsolhatod.")
                             .nkFont(12).foregroundStyle(.white.opacity(0.5)).fixedSize(horizontal: false, vertical: true)
                     }
-                    VStack(spacing: 0) {
-                        ForEach(Array(day.exercises.enumerated()), id: \.element.id) { e, exercise in
-                            if e > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
-                            row(draft, exercise, e, capped: evaluation?.exerciseCapWarnings?.contains { $0.exerciseIndex == e } == true)
-                        }
+                    if day.exercises.isEmpty {
+                        Text("Pihenőnap — ha gyakorlatot teszel rá, edzésnap lesz.")
+                            .nkFont(15).foregroundStyle(.white.opacity(0.72)).fixedSize(horizontal: false, vertical: true)
                     }
+                  }
+                  .frame(maxWidth: .infinity, alignment: .leading)
+                  .modifier(DayEditMenuBackdrop(ui: ui))
+                    rows(draft, day, evaluation, locked: locked)
                 }
-                .padding(22)
+                .padding(.horizontal, Self.inset).padding(.vertical, 22)
                 .background(RoundedRectangle(cornerRadius: 30, style: .continuous).fill(NK.ground.opacity(0.62)))
                 .nkGlass(30)
-                .padding(.horizontal, 20).padding(.bottom, 24)
+                .padding(.horizontal, Self.margin).padding(.bottom, 24)
             }
             .scrollIndicators(.hidden)
+            .scrollDisabled(ui.dragging != nil)
+            // A tap beside the card, too, closes an open ⋯ menu.
+            .background { if ui.menuRow != nil { Color.clear.contentShape(Rectangle()).onTapGesture { ui.menuRow = nil } } }
         }
     }
 
-    private func row(_ draft: BlockDraft, _ exercise: DraftExercise, _ e: Int, capped: Bool) -> some View {
-        HStack(spacing: 10) {
-            Group {
-                if exercise.counts, NKBodyMark.canDraw(exercise.muscle) {
-                    NKBodyMark(muscle: exercise.muscle, hue: planHue, height: 38)
-                } else {
-                    PlanMark(exercise.counts ? .target : .spark, color: .white.opacity(0.45), size: 20)
+    private var separator: some View { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
+
+    private func rows(_ draft: BlockDraft, _ day: DraftDay, _ evaluation: WireDayEvaluation?, locked: Bool) -> some View {
+        let deleted = ui.deleted.flatMap { $0.day == index ? $0 : nil }
+        // Cap warnings address the evaluated line-up: hidden until the fresh evaluation after a move lands.
+        let capped = model.indicesFresh ? Set((evaluation?.exerciseCapWarnings ?? []).map(\.exerciseIndex)) : []
+        return VStack(spacing: 0) {
+            ForEach(Array(day.exercises.enumerated()), id: \.element.id) { e, exercise in
+                VStack(spacing: 0) {
+                    if let deleted, deleted.index == e { undoLine(deleted.row.name); separator }
+                    if e > 0 { separator }
+                    row(draft, exercise, e, capped: capped.contains(e), locked: locked)
+                }
+                .modifier(DayEditMenuBackdrop(ui: ui, active: ui.menuRow != exercise.id))
+                .zIndex(ui.dragging == exercise.id || ui.menuRow == exercise.id ? 2 : 0)
+            }
+            if let deleted, deleted.index >= day.exercises.count {
+                if !day.exercises.isEmpty { separator }
+                undoLine(deleted.row.name)
+            }
+            if !locked {
+                if !day.exercises.isEmpty || deleted != nil { separator }
+                addRow.modifier(DayEditMenuBackdrop(ui: ui))
+            }
+        }
+    }
+
+    private var lockLine: some View {
+        HStack(alignment: .top, spacing: 10) {
+            PlanMark(.timer, color: planHue.glow, size: 18).padding(.top, 1)
+            Text("Ezen a napon most fut az edzésed — utána szerkesztheted.")
+                .nkFont(14).foregroundStyle(.white.opacity(0.9)).fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(.white.opacity(0.08)))
+    }
+
+    private func muscleChips(_ evaluation: WireDayEvaluation?) -> some View {
+        NKFlowRow(spacing: 8, rowSpacing: 8) {
+            ForEach(model.bandedMuscles.filter { model.sets($0.muscle, day: index) > 0 }, id: \.muscle) { m in
+                let sets = model.sets(m.muscle, day: index)
+                let over = evaluation?.sessionCapWarnings.contains { $0.muscle == m.muscle } == true
+                HStack(spacing: 6) {
+                    Text(planMuscleName(m.muscle)).nkFont(12, .medium).foregroundStyle(.white.opacity(0.85))
+                    Text("\(sets)").nkFont(13, .semibold).foregroundStyle(over ? planWarn : planHue.glow)
+                        .contentTransition(.numericText())
+                }
+                .padding(.horizontal, 11).padding(.vertical, 6)
+                .background(Capsule().fill(over ? planWarn.opacity(0.16) : .white.opacity(0.08)))
+            }
+        }
+    }
+
+    // MARK: one row
+
+    @ViewBuilder private func row(_ draft: BlockDraft, _ exercise: DraftExercise, _ e: Int, capped: Bool, locked: Bool) -> some View {
+        let lifted = ui.dragging == exercise.id
+        let menuOpen = ui.menuRow == exercise.id
+        Group {
+            if narrow {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(alignment: .top, spacing: 8) {
+                        if !locked { handle(exercise) }
+                        texts(draft, exercise, e, capped: capped, locked: locked)
+                        if !locked { dots(exercise) }
+                    }
+                    stepper(exercise, e, locked: locked).padding(.leading, locked ? 0 : 28)
+                }
+            } else {
+                HStack(spacing: 8) {
+                    if !locked { handle(exercise) }
+                    texts(draft, exercise, e, capped: capped, locked: locked)
+                    stepper(exercise, e, locked: locked)
+                    if !locked { dots(exercise) }
                 }
             }
-            .frame(width: 28, height: 40)
-            .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(exercise.name).nkFont(16, .medium).foregroundStyle(.white.opacity(0.95))
-                    .lineLimit(2).minimumScaleFactor(0.85).fixedSize(horizontal: false, vertical: true)
-                Text(subtitle(draft, exercise)).nkFont(12).foregroundStyle(capped ? planWarn : .white.opacity(0.5))
-                if exercise.judged, draft.techniquesEnabled {
-                    // One pill, whatever is chosen: the row keeps its height when he picks (owner, 2026-11-19).
-                    BuilderTechniqueChip(exercise: exercise) { pick(TechniquePick(day: index, exercise: e)) }
-                        .padding(.top, 2)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .layoutPriority(1)
-            PlanSetStepper(value: exercise.sets, name: exercise.name,
-                           down: { model.draft?.step(day: index, exercise: e, by: -1) },
-                           up: { model.draft?.step(day: index, exercise: e, by: 1) })
         }
         .padding(.vertical, 12)
+        .padding(.horizontal, lifted ? 10 : 0)
+        .background {
+            if lifted {
+                RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color(white: 0.19))
+                    .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(.white.opacity(0.18), lineWidth: 0.5))
+                    .shadow(color: .black.opacity(0.5), radius: 18, y: 10)
+            }
+        }
+        .padding(.horizontal, lifted ? -10 : 0)
+        .scaleEffect(lifted && !reduceMotion ? 1.03 : 1)
+        .offset(y: lifted ? ui.dragOffset : 0)
+        .zIndex(lifted || menuOpen ? 2 : 0)
+        .transaction { if lifted { $0.animation = nil } }
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { heights[exercise.id] = $0 }
+        .overlay(alignment: .topTrailing) {
+            if menuOpen { menu(exercise).offset(y: 52).transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .topTrailing))) }
+        }
     }
 
-    private func subtitle(_ draft: BlockDraft, _ exercise: DraftExercise) -> String {
-        guard exercise.counts, exercise.wire.type != "plyo" else { return "ugrás · nem számít a sorozatokba" }
-        guard exercise.judged else { return planMuscleName(exercise.muscle) }
-        let range = (exercise.ownStyle ?? draft.style)?.range(isolation: exercise.isolation)
-            ?? "\(exercise.wire.repMin ?? 8)–\(exercise.wire.repMax ?? 12)"
-        return "\(planMuscleName(exercise.muscle)) · \(range) ism."
+    private func texts(_ draft: BlockDraft, _ exercise: DraftExercise, _ e: Int, capped: Bool, locked: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(exercise.name).nkFont(16, .medium).foregroundStyle(.white.opacity(locked ? 0.7 : 0.95))
+                .lineLimit(2).minimumScaleFactor(0.85).fixedSize(horizontal: false, vertical: true)
+            Text(subtitle(exercise)).nkFont(12).foregroundStyle(capped ? planWarn : .white.opacity(0.5))
+                .fixedSize(horizontal: false, vertical: true)
+            if exercise.judged, draft.techniquesEnabled, !locked {
+                // One pill, whatever is chosen: the row keeps its height when he picks (owner, 2026-11-19).
+                BuilderTechniqueChip(exercise: exercise) { ui.menuRow = nil; pick(TechniquePick(day: index, exercise: e)) }
+                    .padding(.top, 2)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .layoutPriority(1)
+        .contentShape(Rectangle())
+        .onTapGesture { if !locked { ui.menuRow = nil; ui.sheet = .settings(exercise.id) } }
+        .accessibilityAddTraits(locked ? [] : .isButton)
+        .accessibilityHint(locked ? "" : "Beállítások")
+    }
+
+    /// `<izom> · <min>–<max> ism. · <r> tartalék`, from the row's own numbers (his edits show at once).
+    private func subtitle(_ exercise: DraftExercise) -> String {
+        guard exercise.counts, exercise.type != "plyo" else { return "ugrás · nem számít a sorozatokba" }
+        let reserve = exercise.targetRIR == 0 ? "bukásig" : "\(exercise.targetRIR) tartalék"
+        return "\(planMuscleName(exercise.muscle)) · \(exercise.repMin)–\(exercise.repMax) ism. · \(reserve)"
+    }
+
+    private func stepper(_ exercise: DraftExercise, _ e: Int, locked: Bool) -> some View {
+        PlanSetStepper(value: exercise.sets, name: exercise.name,
+                       down: { ui.menuRow = nil; model.draft?.step(day: index, exercise: e, by: -1) },
+                       up: { ui.menuRow = nil; model.draft?.step(day: index, exercise: e, by: 1) })
+            .disabled(locked)
+            .opacity(locked ? 0.4 : 1)
+    }
+
+    // MARK: ≡ handle — three drawn bars, no symbol
+
+    private func handle(_ exercise: DraftExercise) -> some View {
+        VStack(spacing: 4) {
+            ForEach(0..<3, id: \.self) { _ in Capsule().fill(.white.opacity(0.45)).frame(width: 16, height: 2) }
+        }
+        .frame(width: 20, height: 44)
+        .contentShape(Rectangle())
+        .highPriorityGesture(drag(exercise))
+        .accessibilityLabel("Áthelyezés")
+        .accessibilityHint("Húzd fel vagy le a sorrendhez")
+        .accessibilityActions {
+            Button("Feljebb") { moveBy(exercise, -1) }
+            Button("Lejjebb") { moveBy(exercise, 1) }
+        }
+    }
+
+    /// One place up or down (VoiceOver), with `onMove` meaning.
+    private func moveBy(_ exercise: DraftExercise, _ delta: Int) {
+        guard let rows = model.draft?.days[safe: index]?.exercises, let i = rows.firstIndex(where: { $0.id == exercise.id }) else { return }
+        if delta < 0, i > 0 { model.draft?.move(day: index, from: [i], to: i - 1); ui.structuralEdit(day: index) }
+        if delta > 0, i + 1 < rows.count { model.draft?.move(day: index, from: [i], to: i + 2); ui.structuralEdit(day: index) }
+    }
+
+    private func drag(_ exercise: DraftExercise) -> some Gesture {
+        DragGesture(minimumDistance: 0, coordinateSpace: .global)
+            .onChanged { g in
+                if ui.dragging != exercise.id { ui.dragging = exercise.id; dragBase = 0; ui.menuRow = nil }
+                var offset = g.translation.height - dragBase
+                guard let rows = model.draft?.days[safe: index]?.exercises,
+                      let i = rows.firstIndex(where: { $0.id == exercise.id }) else { return }
+                let animation: Animation? = reduceMotion ? nil : .snappy(duration: 0.22)
+                if offset > 0, i + 1 < rows.count, let h = heights[rows[i + 1].id], offset > h / 2 {
+                    dragBase += h; offset -= h
+                    withAnimation(animation) { model.draft?.move(day: index, from: [i], to: i + 2) }
+                    ui.structuralEdit(day: index)
+                } else if offset < 0, i > 0, let h = heights[rows[i - 1].id], -offset > h / 2 {
+                    dragBase -= h; offset += h
+                    withAnimation(animation) { model.draft?.move(day: index, from: [i], to: i - 1) }
+                    ui.structuralEdit(day: index)
+                }
+                ui.dragOffset = offset
+            }
+            .onEnded { _ in
+                withAnimation(reduceMotion ? nil : .snappy(duration: 0.25)) { ui.dragging = nil; ui.dragOffset = 0 }
+                dragBase = 0
+            }
+    }
+
+    // MARK: ⋯ menu — three drawn dots, no symbol
+
+    private func dots(_ exercise: DraftExercise) -> some View {
+        Button {
+            withAnimation(reduceMotion ? nil : .snappy(duration: 0.2)) { ui.menuRow = ui.menuRow == exercise.id ? nil : exercise.id }
+        } label: {
+            HStack(spacing: 3) {
+                ForEach(0..<3, id: \.self) { _ in Circle().fill(.white.opacity(0.75)).frame(width: 4, height: 4) }
+            }
+            .frame(width: 30, height: 44)
+            .background { if ui.menuRow == exercise.id { Circle().fill(.white.opacity(0.14)).frame(width: 32, height: 32) } }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("További lehetőségek")
+    }
+
+    private func menu(_ exercise: DraftExercise) -> some View {
+        VStack(spacing: 0) {
+            menuItem("Csere") { ui.menuRow = nil; ui.sheet = .swap(exercise.id) }
+            Rectangle().fill(.white.opacity(0.08)).frame(height: 0.5)
+            menuItem("Beállítások") { ui.menuRow = nil; ui.sheet = .settings(exercise.id) }
+            Rectangle().fill(.white.opacity(0.08)).frame(height: 0.5)
+            menuItem("Törlés", color: Color(hex: 0xF2A08A)) {
+                withAnimation(reduceMotion ? nil : .snappy) { delete(exercise) }
+            }
+        }
+        .frame(width: 200)
+        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color(white: 0.16).opacity(0.97)))
+        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(.white.opacity(0.14), lineWidth: 0.5))
+        .shadow(color: .black.opacity(0.45), radius: 20, y: 10)
+    }
+
+    private func delete(_ exercise: DraftExercise) {
+        ui.menuRow = nil
+        guard let at = model.draft?.locate(exercise.id), let row = model.draft?.remove(day: at.day, at: at.index) else { return }
+        ui.deleted = (row, at.day, at.index)
+    }
+
+    private func menuItem(_ title: String, color: Color = .white, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack {
+                Text(title).nkFont(16, .medium).foregroundStyle(color)
+                Spacer()
+            }
+            .padding(.horizontal, 16).frame(minHeight: 48)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: undo + add
+
+    private func undoLine(_ name: String) -> some View {
+        HStack(spacing: 6) {
+            Text("\(name) törölve").nkFont(14).foregroundStyle(.white.opacity(0.6)).lineLimit(1).truncationMode(.middle)
+            Text("·").nkFont(14).foregroundStyle(.white.opacity(0.4))
+            Button("visszavonom") {
+                withAnimation(reduceMotion ? nil : .snappy) {
+                    if let d = ui.deleted { model.draft?.insert(day: d.day, d.row, at: d.index) }
+                    ui.deleted = nil
+                }
+            }
+            .buttonStyle(.plain).font(.system(size: 14, weight: .semibold))
+            .foregroundStyle(.white).underline()
+            Spacer(minLength: 0)
+        }
+        .frame(minHeight: 48)
+        .transition(.opacity)
+    }
+
+    private var addRow: some View {
+        Button { ui.menuRow = nil; ui.sheet = .add(index, muscle: nil) } label: {
+            HStack(spacing: 12) {
+                Text("+").nkFont(19, .medium).foregroundStyle(planHue.glow)
+                    .frame(width: 34, height: 34)
+                    .background(Circle().strokeBorder(planHue.glow.opacity(0.6), lineWidth: 1))
+                Text("Gyakorlat hozzáadása").nkFont(16, .medium).foregroundStyle(.white.opacity(0.9))
+                Spacer()
+            }
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -606,7 +973,14 @@ private struct BuilderTechniqueChip: View {
 
     var body: some View {
         if !exercise.stable {
-            PlanPill("szabadsúly · nincs technika", color: .white.opacity(0.4), mark: .shield)
+            // Not `PlanPill`: its fixed width would push the editor row (handle, stepper, ⋯) past the card.
+            HStack(spacing: 5) {
+                PlanMark(.shield, color: .white.opacity(0.4), size: 13)
+                Text("szabadsúly · nincs technika").nkFont(12, .medium).foregroundStyle(.white.opacity(0.4))
+                    .lineLimit(1).minimumScaleFactor(0.8)
+            }
+            .padding(.horizontal, 10).padding(.vertical, 5)
+            .background(Capsule().fill(.white.opacity(0.09)))
         } else {
             Button(action: open) {
                 HStack(spacing: 5) {
@@ -835,6 +1209,3 @@ private struct BuilderBlockView: View {
     }
 }
 
-fileprivate extension Array {
-    subscript(safe index: Int) -> Element? { indices.contains(index) ? self[index] : nil }
-}

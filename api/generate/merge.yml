@@ -55,5 +55,7 @@ inputs:
   - inputFile: ../feature/penz/penz.yml
   - inputFile: ../feature/penz/penz-sms.yml
   - inputFile: ../feature/penz/penz-portfolio.yml
+  - inputFile: ../feature/penz/penz-practice.yml
+  - inputFile: ../feature/penz/penz-proposals.yml
   - inputFile: ../feature/season/season.yml
 output: ../openapi.yml

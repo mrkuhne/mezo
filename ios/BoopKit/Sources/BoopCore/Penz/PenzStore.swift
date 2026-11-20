@@ -53,16 +53,40 @@ public final class PenzStore {
     public private(set) var digestProblem: PlanFetchError?
     public private(set) var digestOffline = false
 
+    // L7 (`mezo-r36n9.105`): Gyakorlás, the proposals, the catalog and the strategy — each read on its own, when its
+    // screen asks (`PenzStore+Practice.swift`), so a practice or proposal fault never takes the week with it.
+    /// The Gyakorlás overview (fresh or cached).
+    public internal(set) var practice: Cached<PenzPracticeOverview>?
+    public internal(set) var practiceProblem: PlanFetchError?
+    public internal(set) var practiceOffline = false
+    /// The full journal (read when its page opens).
+    public internal(set) var journal: [PenzPaperTrade]?
+    public internal(set) var journalProblem: PlanFetchError?
+    /// Every proposal, newest first (fresh or cached).
+    public internal(set) var proposals: Cached<[PenzProposal]>?
+    public internal(set) var proposalsProblem: PlanFetchError?
+    public internal(set) var proposalsOffline = false
+    /// His curated product list (fresh or cached).
+    public internal(set) var catalog: Cached<[PenzProduct]>?
+    public internal(set) var catalogProblem: PlanFetchError?
+    public internal(set) var catalogOffline = false
+    /// The monthly strategy figure (online only: it is asked for while he looks).
+    public internal(set) var strategy: PenzStrategy?
+    public internal(set) var strategyProblem: PlanFetchError?
+
     /// A cached answer older than this is not shown at all — a month-old remainder is not this week's.
     public static let maxAge: TimeInterval = 14 * 86_400
     static let endpoint = "penz/snapshot"
     static let key = "current"
     static let portfolioEndpoint = "penz/portfolio"
     static let digestEndpoint = "penz/digest"
+    static let practiceEndpoint = "penz/practice"
+    static let proposalsEndpoint = "penz/proposals"
+    static let catalogEndpoint = "penz/catalog"
 
     @ObservationIgnored public let client: PenzClient?
-    @ObservationIgnored private let cache: ServerCache?
-    @ObservationIgnored private let clock: @MainActor () -> Date
+    @ObservationIgnored let cache: ServerCache?
+    @ObservationIgnored let clock: @MainActor () -> Date
 
     @ObservationIgnored private let sleep: @Sendable (Duration) async throws -> Void
 
@@ -154,7 +178,7 @@ public final class PenzStore {
 
     /// What one independent read leaves on screen: the fresh answer (cached), or — with no net — the cache with its
     /// age, or the problem. A server fault keeps what was already on screen and says so.
-    private func settle<T: Codable & Sendable>(_ result: Result<T, PlanFetchError>, current: Cached<T>?, endpoint: String,
+    func settle<T: Codable & Sendable>(_ result: Result<T, PlanFetchError>, current: Cached<T>?, endpoint: String,
                                                key: String) async -> (Cached<T>?, PlanFetchError?, Bool) {
         switch result {
         case .success(let value):

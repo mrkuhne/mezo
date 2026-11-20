@@ -189,6 +189,8 @@ struct PenzPenzem: View {
     let open: (PenzSheet) -> Void
     let openSleeve: (String) -> Void
     let openPractice: () -> Void
+    /// L7: the Termékjegyzék.
+    let openCatalog: () -> Void
     let ask: () -> Void
     private let hue = penzHue
 
@@ -201,6 +203,7 @@ struct PenzPenzem: View {
                 NKInfoRow("Miért évek a hosszú rekesz mérőszáma?", hue: hue) {
                     open(.info(title: "Miért évek a hosszú rekesz mérőszáma?", body: penzCoverageInfoText(nil)))
                 }
+                catalogRow
             } else {
                 filled(store, p)
             }
@@ -223,7 +226,7 @@ struct PenzPenzem: View {
     private var actions: some View {
         PenzActionRow(actions: [
             PenzAction(glyph: "plus-ink", title: "Befektetést rögzítek", primary: true) { open(.record) },
-            PenzAction(glyph: "star-sun", title: "Felosztást kérek") { open(penzAllocationLater) },
+            PenzAction(glyph: "star-sun", title: "Felosztást kérek") { open(.amount("Felosztást kérek")) },
         ])
     }
 
@@ -286,6 +289,7 @@ struct PenzPenzem: View {
                 PenzMoreLink(title: "Esemény hozzáadása") { open(.addEvent) }
             }
         }
+        catalogRow
         PenzL6Section(label: "GYAKORLÁS") {
             VStack(alignment: .leading, spacing: 0) {
                 let line = penzPracticeLine(p.practice)
@@ -299,12 +303,22 @@ struct PenzPenzem: View {
     }
 }
 
+extension PenzPenzem {
+    /// L7: the door to the Termékjegyzék — what a proposal may name, every fee with its checked date and source.
+    var catalogRow: some View {
+        PenzL7Section(label: "TERMÉKJEGYZÉK") {
+            NKRowList([NKAreaRow(id: "catalog", glyph: "book-sage", title: "Amiből javasolhatok",
+                                 sub: "A jóváhagyott termékeid, díjjal és forrással · Boop nem vesz helyetted") { openCatalog() }],
+                      hue: penzHue)
+        }
+    }
+}
+
 /// The sleeve the "Egy rekesz megnyitása" link opens: the largest one.
 func penzLargestSleeve(_ p: PenzPortfolio) -> String {
     penzSleeves(p).max { $0.valueHufMinor < $1.valueHufMinor }?.sleeve ?? "long"
 }
 
-let penzAllocationLater = PenzSheet.later(title: "Felosztást kérek", line: "Itt fogok felosztást javasolni: mennyi menjen a biztonsági, a közép- és a hosszú távú rekeszbe, két-három konkrét lehetőséggel és azzal, hogy miért. Ez egy későbbi lépésben érkezik — addig semmit nem javaslok, amit nem tudok alátámasztani.")
 
 // MARK: - One sleeve
 

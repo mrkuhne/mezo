@@ -63,6 +63,16 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-11-20 — Boop block day editor (`mezo-r36n9.116`, small-phone button fix `mezo-r36n9.118`).**
+  On Edzés → Blokk → Napok the owner now edits each day's exercises on the phone: ≡ drag reorder, ⋯ *Csere · Beállítások ·
+  Törlés* (delete with undo), ＋ *Gyakorlat hozzáadása* (muscle chips, *kevés* first, ≤5 reasoned suggestions, full list with
+  search), a settings sheet (rep range, reserve, starting weight, warm-ups, *TE ÁLLÍTOTTAD*, reset to the style), one *Mentés*,
+  the day of a running workout locked (phone and server 409 `TRAIN_DAY_WORKOUT_RUNNING`), and a confirm when a pending weekly
+  proposal touches a changed day. Server: `POST /api/train/mesocycles/{id}/exercise-suggestions` (ranker `rankForGroup`,
+  `UNDER_BAND`, the style's prescription read-only). iOS: identity-aware `BlockDraft` (local keys, `changes`/`carryEdits`).
+  Not yet: adding/renaming/moving days (needs a server addition); coverage hints are `mezo-r36n9.114`. Plan
+  [2026-11-20-boop-blokk-szerkeszto](../superpowers/plans/2026-11-20-boop-blokk-szerkeszto.md); docs
+  [`boop-ios.md`](../features/boop-ios.md), [`train.md`](../features/train.md).
 - **2026-11-20 — Boop B6 Évad S1: the season replaces Terv (`mezo-r36n9.16`).**
   New backend feature `season` (contract `api/feature/season/season.yml`, tag `Season`; tables `season`,
   `season_allowed_recipe`, `season_revision`): one N-week season that owns its goal (1:1), writes the weekly gym + sport
@@ -100,6 +110,19 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
   link). Fix `mezo-r36n9.67`: the after-exercise three answers reach the server exactly as tapped (were one level low).
   Spec [2026-11-17-boop-gyakorlatvalasztas-design](../superpowers/specs/2026-11-17-boop-gyakorlatvalasztas-design.md);
   [`train.md`](../features/train.md) §4, [`boop-ios.md`](../features/boop-ios.md).
+
+- **2026-11-20 — Boop Pénz L7: practice, catalog, proposals, monthly strategy (`mezo-r36n9.105`) — built, not yet deployed.**
+  Gyakorlás is real: paper-trading with a plan before entry (what · why · where I exit), one line after with eight
+  fixed tags and a mistake mark, R, a deterministic weekly look-back naming the week's commonest mistake and its cost,
+  a noise line under 50 tagged trades, and the 20 000 Ft monthly cap (the same figure as Költés's *Gyakorlás* line)
+  that never takes from other money; every price is typed, nothing is real. A researched per-owner product catalog
+  (*Termékjegyzék*: suggested → one-tap approve, each fee with its check date and source), investment proposals
+  (*Befektetnék* / *Felosztást kérek* / *Nagyobb összeg*) split per horizon by fixed rules (reserve first, then 40 %
+  mid / 60 % long) with two–three approved options per horizon and validated AI wording (fallback copy), accepted as
+  a self-ticked checklist, and *Havi stratégia* from the old investable-amount formula. Server `feature/penz`
+  (`service/practice`, `service/proposal`, `PenzCatalogSeed`); phone `Penz/` + `BoopCore/Penz/`. Build notes
+  [2026-11-20-boop-penz-l7-build](../superpowers/plans/2026-11-20-boop-penz-l7-build.md);
+  [`boop-ios.md`](../features/boop-ios.md), [`penz.md`](../features/penz.md).
 
 - **2026-11-20 — Boop Pénz L5: the area on the phone (`mezo-r36n9.103`).**
   The Pénz area is live in Boop: `NKAreaPage(hue: .penz, display: nil)` with the bar *Ma · Pénzem · Költés ·

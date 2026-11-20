@@ -292,3 +292,62 @@ public struct WireSettingsRequest: Encodable, Equatable, Sendable {
     public var techniquesEnabled: Bool?
     public var weeklyReviewMode: String?
 }
+
+// MARK: - The block day editor's add/swap read (POST /api/train/mesocycles/{id}/exercise-suggestions)
+
+/// The exercise being replaced (swap mode); the server needs only its identity and shape.
+public struct WireSuggestionOutgoing: Encodable, Equatable, Sendable {
+    public var catalogId: String?
+    public var name: String
+    public var muscle: String
+    public var type: String
+    public init(catalogId: String?, name: String, muscle: String, type: String) {
+        self.catalogId = catalogId; self.name = name; self.muscle = muscle; self.type = type
+    }
+}
+
+/// `mode` is `replace` (needs `outgoing`) or `add` (needs the coarse `muscle` key); `dayIndex` 0 = Monday.
+/// Absent optionals are omitted from the JSON.
+public struct WireSuggestionsRequest: Encodable, Equatable, Sendable {
+    public var mode: String
+    public var dayIndex: Int
+    public var outgoing: WireSuggestionOutgoing?
+    public var muscle: String?
+    public var dayCatalogIds: [String]
+    public init(mode: String, dayIndex: Int, outgoing: WireSuggestionOutgoing?, muscle: String?, dayCatalogIds: [String]) {
+        self.mode = mode; self.dayIndex = dayIndex; self.outgoing = outgoing; self.muscle = muscle
+        self.dayCatalogIds = dayCatalogIds
+    }
+}
+
+public struct WireTopSet: Decodable, Equatable, Sendable {
+    public let weightKg: Double?
+    public let reps: Int
+    public init(weightKg: Double?, reps: Int) { self.weightKg = weightKg; self.reps = reps }
+}
+
+/// One suggested exercise. `signals` stay plain strings (the server adds new ones); `prescription` is nil on an
+/// unstyled block or a row the style never stamps — the phone then falls back to `Prescription.fallback`.
+public struct WireSuggestion: Decodable, Equatable, Sendable {
+    public let exercise: WireCatalogItem
+    public let reasonText: String
+    public let signals: [String]
+    public let lastTopSet: WireTopSet?
+    public let prescription: Prescription?
+}
+
+public struct WireSuggestions: Decodable, Equatable, Sendable {
+    public let suggestions: [WireSuggestion]
+    /// catalogue id → label (`NO_EQUIPMENT`, `HURT_BEFORE`), folded from the wire's `[{catalogId, label}]`.
+    public let labels: [String: String]
+
+    private enum CodingKeys: String, CodingKey { case suggestions, labels }
+    private struct Label: Decodable { let catalogId: String; let label: String }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        suggestions = try c.decode([WireSuggestion].self, forKey: .suggestions)
+        let list = try c.decodeIfPresent([Label].self, forKey: .labels) ?? []
+        labels = Dictionary(list.map { ($0.catalogId, $0.label) }, uniquingKeysWith: { _, last in last })
+    }
+}

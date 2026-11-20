@@ -589,5 +589,21 @@
       "mezo-r36n9.104"
     ],
     "mi_valtozott": "Ha a napi összefoglaló még nem készült el, vagy épp most rögzítetted az első befektetésedet, a Ma oldal magától kéri az újat, és pár percen belül megjelenik — nem kell a következő reggelig várni."
+  },
+  "d39b823de": {
+    "cim": "Napi gyakorlatszerkesztő a blokképítőben",
+    "datum": "2026-11-20",
+    "verzio": "v3.21.0",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app",
+      "Háttérrendszer"
+    ],
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.116",
+      "mezo-r36n9.118"
+    ],
+    "mi_valtozott": "A blokképítő Napok lapján a futó blokkod napjait a saját képedre szabhatod: gyakorlatot adhatsz hozzá (Boop az adott napra, a termedhez és ahhoz illőt ajánl, ami fájt — elöl azok az izmok, amelyekre a héten kevés jut), törölhetsz visszavonással, a blokk végéig cserélhetsz, húzással átrendezhetsz, és beállíthatod az ismétléstartományt, a tartalékot, a kezdősúlyt és a bemelegítést. Amit te állítottál, azt az edzésmód nem írja felül. Egy üres napból edzésnap lehet. Azt a napot, amelyiken épp fut az edzésed, sem a telefon, sem a szerver nem engedi átrendezni; ha jóváhagyásra vár egy heti javaslat, mentés előtt rákérdez. Kis telefonon a fő gomb felirata is kifér. A változás a következő edzéstől él."
   }
 }

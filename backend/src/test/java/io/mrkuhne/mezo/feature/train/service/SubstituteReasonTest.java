@@ -47,6 +47,12 @@ class SubstituteReasonTest {
     }
 
     @Test
+    void sentence_shouldSayTheMuscleGetsLittle_forUnderBand() {
+        assertThat(SubstituteReason.sentence(List.of(Signal.SAME_ROLE, Signal.UNDER_BAND), null))
+            .isEqualTo("Ugyanazt a munkát végzi a tervben, ezen a héten kevés jut erre az izomra.");
+    }
+
+    @Test
     void sentence_shouldBeTheFixedLine_forCustom() {
         assertThat(SubstituteReason.sentence(List.of(Signal.SAME_ROLE, Signal.CUSTOM), null))
             .isEqualTo("Saját gyakorlat — erről még keveset tudok.");

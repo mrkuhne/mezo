@@ -9,6 +9,8 @@ struct PenzMa: View {
     let open: (PenzSheet) -> Void
     let openNews: (PenzNewsCardModel) -> Void
     let openPenzem: () -> Void
+    /// L7: a proposal page, the monthly strategy.
+    let openPage: (PenzPage) -> Void
     let ask: () -> Void
     private let hue = penzHue
 
@@ -16,6 +18,7 @@ struct PenzMa: View {
         if store?.isEmpty == true {
             PenzEmptyCard()
             actions
+            proposals
             digest
         } else if let store, let a = store.allowance {
             let v = store.verdict
@@ -23,6 +26,7 @@ struct PenzMa: View {
             NKHighlight(hue: hue, label: "Ami ma számít", text: copy.text, sub: copy.sub, actions: verdictActions(v))
                 .nkStale(store.ageText.map { NKStale(age: $0, loud: store.offline) })
             actions
+            proposals
             NKStatRow(penzMaStats(a), hue: hue)
             NKInfoRow("Honnan tudom, van-e dolgod?", hue: hue) {
                 open(.info(title: "Honnan tudom, van-e dolgod?", body: penzVerdictRuleText))
@@ -50,12 +54,35 @@ struct PenzMa: View {
         }
     }
 
+    /// L7: Boop's open proposals as the shared card (Elfogadom opens the page to set the numbers; Most nem puts it
+    /// aside; miért? opens its page), and the plans he is still ticking.
+    @ViewBuilder private var proposals: some View {
+        if let store {
+            ForEach(store.openProposals) { p in
+                NKProposalCard(text: p.title, sub: p.sub, state: .pending,
+                               onAccept: { openPage(.proposal(p.id)) },
+                               onDismiss: { Task { _ = await store.dismissProposal(id: p.id) } },
+                               onWhy: { open(.proposalWhy(p.id)) })
+                    .nkStale(store.proposalsOffline ? store.proposalsAgeText.map { NKStale(age: $0) } : nil)
+            }
+            let plans = store.activePlans
+            if !plans.isEmpty {
+                PenzL7Section(label: plans.count == 1 ? "A TERVED" : "A TERVEID") {
+                    NKRowList(plans.map { p in
+                        NKAreaRow(id: p.id, glyph: "check-ink", title: p.title, sub: penzPlanProgressText(p) + " · te pipálod ki",
+                                  value: penzOutfit(penzFt(p.plan.reduce(0) { $0 + $1.amountHufMinor })), valueSub: "Ft") {
+                            openPage(.proposal(p.id))
+                        }
+                    }, hue: hue)
+                }
+            }
+        }
+    }
+
     private var actions: some View {
         PenzActionRow(actions: [
             PenzAction(glyph: "plus-ink", title: "Kiadás", primary: true) { open(.capture) },
-            PenzAction(glyph: "star-sun", title: "Befektetnék") {
-                open(.later(title: "Befektetnék", line: "Itt fogok felosztást javasolni: mennyi menjen a biztonsági, a közép- és a hosszú távú rekeszbe, két-három konkrét lehetőséggel és azzal, hogy miért. Ez egy későbbi lépésben érkezik — addig semmit nem javaslok, amit nem tudok alátámasztani."))
-            },
+            PenzAction(glyph: "star-sun", title: "Befektetnék") { open(.amount("Befektetnék")) },
         ])
     }
 
@@ -64,10 +91,10 @@ struct PenzMa: View {
             NKMenuGrid([
                 NKMenuItem(glyph: "plus-ink", name: "Kiadás", sub: "Készpénz, pár másodperc") { open(.capture) },
                 NKMenuItem(glyph: "star-sun", name: "Nagyobb összeg", sub: "Boop kutat és javasol felosztást") {
-                    open(.later(title: "Nagyobb összeg", line: "Ha egy nagyobb összeget szeretnél elhelyezni, itt fogok utánanézni és felosztást javasolni, a miértekkel együtt. Ez egy későbbi lépésben érkezik."))
+                    open(.amount("Nagyobb összeg"))
                 },
                 NKMenuItem(glyph: "repeat-deep", name: "Havi stratégia", sub: "A fizetésedből és a költésedből") {
-                    open(.later(title: "Havi stratégia", line: "Egy havi rend a fizetésedből és a költésedből: mennyi menjen félre, mennyi befektetésbe, és mi marad. Ez egy későbbi lépésben érkezik."))
+                    openPage(.strategy)
                 },
                 NKMenuItem(glyph: "book-sage", name: "Kimutatás", sub: "Hónapok, évek, letöltés") {
                     open(.later(title: "Kimutatás", line: "A hónapjaid és éveid áttekintése, letölthető formában. Ez egy későbbi lépésben érkezik."))
@@ -88,6 +115,8 @@ func penzMaStats(_ a: PenzAllowance) -> [NKStat] {
         NKStat(value: penzOutfit(penzFt(w.perDay)), unit: "Ft", label: "ennyi jut ma egy napra"),
     ]
 }
+
+let penzDismissedToast = "Félretettem — bármikor kérhetsz újat"
 
 let penzVerdictRuleText = """
 Minden reggel ugyanazt a szabályt nézem, ebben a sorrendben, és csak *egy* dolgot írok ki:
