@@ -1434,6 +1434,26 @@
     "kezikonyv:11-penz/03-portfolio-hirek": {
       "page_id": "41e8968e-752b-81ee-819e-d92332c66ce5",
       "hash": "3dc952d42297"
+    },
+    "jegyek:mezo-r36n9.116": {
+      "page_id": "41e8968e-752b-816c-b2f4-ebb286228601",
+      "hash": "1b1fa9cf9992"
+    },
+    "jegyek:mezo-r36n9.114": {
+      "page_id": "41e8968e-752b-8120-9f47-ff64d36d5325",
+      "hash": "1fe29f06bc78"
+    },
+    "jegyek:mezo-r36n9.118": {
+      "page_id": "41e8968e-752b-8158-8e7e-f33c9c9c7c21",
+      "hash": "798423219b78"
+    },
+    "dontesek:d-2026-11-20-hianyjelzes-hozzaadassal": {
+      "page_id": "41e8968e-752b-8144-8199-e9fcf69500b0",
+      "hash": "68a288ac1455"
+    },
+    "dontesek:d-2026-11-20-teljes-blokkepito": {
+      "page_id": "41e8968e-752b-81c8-8640-f02c92b71447",
+      "hash": "8b795b75c435"
     }
   }
 }
