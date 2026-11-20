@@ -56,6 +56,18 @@ public final class TechniquePrescriber {
                 }
                 out.setLegs(legs);
             }
+            case REST_PAUSE -> {
+                // fixed: no minReps, so a short mini-set never ends it (mezo-r36n9.125)
+                var c = cfg.restPause();
+                out.setTargetReps(c.mainReps());
+                out.setTargetRIR(c.mainReserve());
+                List<PrescribedLeg> legs = new ArrayList<>();
+                for (int i = 0; i < c.minis(); i++) {
+                    legs.add(new PrescribedLeg().kind(SetLegKind.MINI).weightKg(main.getTargetWeightKg())
+                        .reps(c.miniReps()).toFailure(false).restBeforeSec(c.miniRestSec()));
+                }
+                out.setLegs(legs);
+            }
             case PARTIALS -> {
                 out.setTargetRIR(cfg.partials().mainReserve());
                 out.setLegs(List.of(partialsLeg(challenge)));

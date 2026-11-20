@@ -73,6 +73,24 @@ class ExerciseTechniqueApiIT extends ApiIntegrationTest {
     }
 
     @Test
+    void restPausePinsTheWholeExerciseToTwentyReps() {
+        // mezo-r36n9.125: owner 2026-11-20 — every set of the exercise becomes 20, and the range is his
+        Run r = run(owner(), true);
+        GymExercise out = putForBody(url(r, r.fly()), body(Technique.REST_PAUSE, false), ownerAuthHeaders(),
+            HttpStatus.OK, GymExercise.class);
+
+        assertThat(out.getTechnique()).isEqualTo(Technique.REST_PAUSE);
+        assertThat(out.getRepMin()).isEqualTo(20);
+        assertThat(out.getRepMax()).isEqualTo(20);
+        assertThat(jdbcTemplate.queryForObject("select technique from exercise where id = ?", String.class,
+            r.fly().getId())).isEqualTo("rest_pause");
+        assertThat(jdbcTemplate.queryForObject("select rep_min from exercise where id = ?", Integer.class,
+            r.fly().getId())).isEqualTo(20);
+        assertThat(jdbcTemplate.queryForObject("select rep_max from exercise where id = ?", Integer.class,
+            r.fly().getId())).isEqualTo(20);
+    }
+
+    @Test
     void rejectsFreeExercise() {
         Run r = run(owner(), true);
         String res = putForBody(url(r, r.bench()), body(Technique.DROP, false), ownerAuthHeaders(),

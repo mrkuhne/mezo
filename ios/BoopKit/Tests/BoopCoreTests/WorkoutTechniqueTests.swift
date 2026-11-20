@@ -120,6 +120,38 @@ struct WorkoutTechniqueTests {
         #expect(s.exercises[curl]?.logged.last?.legs?.map(\.reps) == [4, 2])
     }
 
+    // MARK: - Rest pause, the owner's fixed variant (mezo-r36n9.125)
+
+    var restPause: PrescribedSet {
+        let mini = PrescribedLeg(kind: .mini, weightKg: 30, reps: 5, toFailure: false, restBeforeSec: 10)
+        return PrescribedSet(kind: .working, targetKg: 30, targetReps: 20, targetRIR: 0, technique: .restPause,
+                             legs: [mini, mini, mini, mini])
+    }
+
+    @Test func restPauseDoesNotStopOnAShortMiniSet() {
+        var s = session([exercise(curl, "Leg Extension", last: restPause, technique: .restPause)])
+        _ = s.log(kg: 30, reps: 20, rir: 2)
+        s.skipRest()
+        let afterMain = s.log(kg: 30, reps: 20, rir: 0)
+        guard case .techniqueRest(let seconds) = afterMain else { Issue.record("expected the 10 s rest, got \(afterMain)"); return }
+        #expect(seconds == 10)
+        s.skipTechniqueRest()
+        _ = s.logLeg(kg: 30, reps: 5)
+        s.skipTechniqueRest()
+        let short = s.logLeg(kg: 30, reps: 3)          // short, but fixed: the run goes on
+        #expect(short != .debrief(exercise: curl))
+        s.skipTechniqueRest()
+        #expect(s.step == .leg(.mini))
+        _ = s.logLeg(kg: 30, reps: 5)
+        s.skipTechniqueRest()
+        let last = s.logLeg(kg: 30, reps: 4)
+
+        #expect(last == .debrief(exercise: curl))
+        let set = s.exercises[curl]?.logged.last
+        #expect(set?.technique == .restPause)
+        #expect(set?.legs?.map(\.reps) == [5, 3, 5, 4])
+    }
+
     // MARK: - The challenge
 
     @Test func theChallengeIsAHalfRepCountWithNoWeight() {

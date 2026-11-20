@@ -14,7 +14,8 @@ import org.junit.jupiter.api.Test;
 class TechniquePrescriberTest {
     private static final TrainTechniqueProperties CFG = new TrainTechniqueProperties(
         new TrainTechniqueProperties.Drop(0, 30, 30), new TrainTechniqueProperties.Drop(0, 20, 0),
-        new TrainTechniqueProperties.Myo(1, 5, 3, 20, 4), new TrainTechniqueProperties.Partials(0), 2,
+        new TrainTechniqueProperties.Myo(1, 5, 3, 20, 4),
+        new TrainTechniqueProperties.RestPause(20, 0, 5, 10, 4), new TrainTechniqueProperties.Partials(0), 2,
         new TrainTechniqueProperties.Planner(3, 2, 1, 2, 15));
     private static final Set<BigDecimal> REAL = Set.of(bd("20"), bd("25"), bd("27.5"), bd("30"), bd("32"), bd("40"));
 
@@ -110,6 +111,29 @@ class TechniquePrescriberTest {
             assertThat(l.getMinReps()).isEqualTo(3);
             assertThat(l.getRestBeforeSec()).isEqualTo(20);
         });
+    }
+
+    @Test
+    void testRestPause_isTwentyThenFourFixedMinis() {
+        // mezo-r36n9.125: the owner's fixed scheme — no minReps, so a short mini-set never ends it
+        PrescribedSet s = TechniquePrescriber.apply(rx(working("40", 12)), Technique.REST_PAUSE, false, false, REAL,
+            CFG).sets().get(0);
+        assertThat(s.getTechnique().getValue()).isEqualTo("rest_pause");
+        assertThat(s.getTargetReps()).isEqualTo(20);
+        assertThat(s.getTargetRIR()).isZero();
+        assertThat(s.getLegs()).hasSize(4).allSatisfy(l -> {
+            assertThat(l.getKind()).isEqualTo(SetLegKind.MINI);
+            assertThat(l.getWeightKg()).isEqualByComparingTo("40");
+            assertThat(l.getReps()).isEqualTo(5);
+            assertThat(l.getMinReps()).isNull();
+            assertThat(l.getToFailure()).isFalse();
+            assertThat(l.getRestBeforeSec()).isEqualTo(10);
+        });
+
+        PrescribedSet withChallenge = TechniquePrescriber.apply(rx(working("40", 12)), Technique.REST_PAUSE, true,
+            false, REAL, CFG).sets().get(0);
+        assertThat(withChallenge.getLegs()).extracting(PrescribedLeg::getKind).containsExactly(
+            SetLegKind.MINI, SetLegKind.MINI, SetLegKind.MINI, SetLegKind.MINI, SetLegKind.PARTIALS);
     }
 
     @Test

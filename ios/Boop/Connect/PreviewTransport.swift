@@ -847,6 +847,9 @@ struct PreviewTransport: ClientTransport {
         case "myo":
             let mini = #"{"kind":"mini","weightKg":\#(nkRound(target)),"reps":5,"minReps":3,"toFailure":false,"restBeforeSec":20}"#
             legs = "[" + Array(repeating: mini, count: 4).joined(separator: ",") + "]"
+        case "rest_pause":
+            let mini = #"{"kind":"mini","weightKg":\#(nkRound(target)),"reps":5,"toFailure":false,"restBeforeSec":10}"#
+            legs = "[" + Array(repeating: mini, count: 4).joined(separator: ",") + "]"
         default:
             legs = #"[{"kind":"partials","toFailure":true,"restBeforeSec":0}]"#
         }

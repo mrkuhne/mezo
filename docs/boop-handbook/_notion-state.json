@@ -221,7 +221,7 @@
     },
     "jegyek:mezo-r36n9.17": {
       "page_id": "4168968e-752b-81d9-9448-c7846b8b3377",
-      "hash": "797c3dd62534"
+      "hash": "49765778d6ef"
     },
     "jegyek:mezo-r36n9.18": {
       "page_id": "4168968e-752b-81a2-adff-e71b81a0e3d3",
@@ -1205,7 +1205,7 @@
     },
     "kezikonyv:07-edzes/15-technikak": {
       "page_id": "41c8968e-752b-8133-8f30-e3411e37f22a",
-      "hash": "9d217d0505db"
+      "hash": "4cf6715f01b7"
     },
     "jegyek:mezo-r36n9.92": {
       "page_id": "41d8968e-752b-819d-bed4-c90e4df96a79",
@@ -1365,7 +1365,7 @@
     },
     "jegyek:mezo-r36n9.108": {
       "page_id": "41d8968e-752b-8176-b39c-e1f34feee7f7",
-      "hash": "a22a174731a6"
+      "hash": "946fda63c3aa"
     },
     "kezikonyv:11-penz/00-attekintes": {
       "page_id": "41d8968e-752b-812e-a57d-dd4e8e2bb3c6",
@@ -1465,11 +1465,11 @@
     },
     "jegyek:mezo-r36n9.120": {
       "page_id": "41e8968e-752b-818a-8ada-e41e733091df",
-      "hash": "26e153214441"
+      "hash": "3eea24ae04bf"
     },
     "jegyek:mezo-r36n9.119": {
       "page_id": "41e8968e-752b-8161-b685-e07597b183df",
-      "hash": "9108c2f96f72"
+      "hash": "88a48204b523"
     },
     "dontesek:d-2026-11-20-evad-a-kozeppont": {
       "page_id": "41e8968e-752b-813f-a156-c94a0ae8c731",
@@ -1489,7 +1489,7 @@
     },
     "jegyek:mezo-r36n9.121": {
       "page_id": "41e8968e-752b-810b-8cb5-d693907f9414",
-      "hash": "c0d79e65cb13"
+      "hash": "5eec50006cde"
     },
     "kiadasok:d39b823de": {
       "page_id": "41e8968e-752b-8199-a03e-eaa51cd6526a",
@@ -1522,6 +1522,14 @@
     "dontesek:d-2026-11-20-penz-nincs-atkoltoztetes": {
       "page_id": "41e8968e-752b-819a-9a2e-e2e672448739",
       "hash": "b84db45cb9d8"
+    },
+    "jegyek:mezo-r36n9.125": {
+      "page_id": "41e8968e-752b-8117-85d7-daddc4b2002d",
+      "hash": "941b5b350421"
+    },
+    "kiadasok:43de99df5": {
+      "page_id": "41e8968e-752b-8164-91f7-c1733ea6cf20",
+      "hash": "ba396022219a"
     }
   }
 }
