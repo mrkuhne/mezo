@@ -32,6 +32,12 @@ extension PenzClient {
 
     // MARK: - Writes (online)
 
+    /// Asks the server to rebuild today's digest in the background (202). At most every 15 minutes: a 429
+    /// `PENZ_DIGEST_REFRESH_LIMITED` arrives as `.conflict("PENZ_DIGEST_REFRESH_LIMITED")`.
+    public func refreshDigest() async throws(PlanFetchError) {
+        _ = try await raw.sendRaw(.post, "/api/penz/digest/refresh", operationID: "refreshPenzDigest")
+    }
+
     public func createHolding(_ request: PenzHoldingRequest) async throws(PlanFetchError) -> PenzHolding {
         try await raw.send(.post, "/api/penz/holdings", operationID: "createPenzHolding", body: request)
     }

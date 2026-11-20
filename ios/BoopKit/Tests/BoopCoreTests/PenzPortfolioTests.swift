@@ -237,6 +237,99 @@ struct PenzPortfolioClientTests {
     }
 }
 
+/// Records the waits instead of sleeping.
+final class PenzSleepLog: @unchecked Sendable {
+    private let lock = NSLock()
+    private var log: [Duration] = []
+    var waits: [Duration] { lock.withLock { log } }
+    func add(_ d: Duration) { lock.withLock { log.append(d) } }
+}
+
+@Suite("Pénz L6 — asking for a fresh digest")
+@MainActor
+struct PenzDigestRefreshTests {
+    static func raw(_ stub: StubTransport) -> RawJSONClient {
+        RawJSONClient(transport: stub, baseURL: URL(string: "https://example.test")!, token: { "tok" })
+    }
+    static let pendingJSON = #"{"date":"2026-11-20","status":"pending","newsHealthy":true,"items":[]}"#
+    static let quietJSON = #"{"date":"2026-11-20","status":"quiet","newsHealthy":true,"items":[]}"#
+
+    @Test func refreshPostsAndA429ReadsAsLimited() async throws {
+        let stub = StubTransport()
+        stub.on("refreshPenzDigest", .status(202))
+        stub.on("refreshPenzDigest", .json(429, #"{"messages":[{"code":"PENZ_DIGEST_REFRESH_LIMITED"}]}"#))
+        let c = PenzClient(raw: Self.raw(stub))
+        try await c.refreshDigest()
+        #expect(stub.sent[0].path == "/api/penz/digest/refresh" && stub.sent[0].auth == "Bearer tok")
+        do { try await c.refreshDigest(); Issue.record("expected 429") } catch {
+            #expect(error == .conflict("PENZ_DIGEST_REFRESH_LIMITED"))
+        }
+    }
+
+    private func store(_ stub: StubTransport, _ sleeps: PenzSleepLog, digest: String) async -> PenzStore {
+        stub.on("getPenzPortfolio", .json(200, PenzL6Fixtures.portfolioJSON))
+        stub.on("getPenzDigest", .json(200, digest))
+        let clock = Date(timeIntervalSince1970: 1_795_168_800)   // 2026-11-20
+        let s = PenzStore(client: PenzClient(raw: Self.raw(stub)), cache: nil, clock: { clock }, sleep: { sleeps.add($0) })
+        await s.reloadPortfolio()
+        await s.reloadDigest()
+        return s
+    }
+
+    @Test func aPendingDigestAsksOnceAndReReadsTwiceThenStops() async {
+        let stub = StubTransport(), sleeps = PenzSleepLog()
+        let s = await store(stub, sleeps, digest: Self.pendingJSON)
+        #expect(s.shouldRefreshDigest)
+        stub.on("refreshPenzDigest", .status(202))
+        stub.on("getPenzDigest", .json(200, Self.pendingJSON))
+        stub.on("getPenzDigest", .json(200, PenzL6Fixtures.digestJSON))
+        await s.refreshDigestRound()
+        #expect(stub.ops == ["getPenzPortfolio", "getPenzDigest", "refreshPenzDigest", "getPenzDigest", "getPenzDigest"])
+        #expect(sleeps.waits == [.seconds(45), .seconds(75)])
+        #expect(s.digest?.value.status == "ready" && s.digestRefresh == .idle)
+        #expect(!s.shouldRefreshDigest, "one round a day — never a loop")
+        await s.refreshDigestRound()
+        #expect(stub.ops.count == 5)
+    }
+
+    @Test func a429KeepsTheStateAndSaysSoWithoutReReading() async {
+        let stub = StubTransport(), sleeps = PenzSleepLog()
+        let s = await store(stub, sleeps, digest: Self.quietJSON)
+        stub.on("refreshPenzDigest", .json(429, #"{"messages":[{"code":"PENZ_DIGEST_REFRESH_LIMITED"}]}"#))
+        await s.refreshDigestRound()
+        #expect(s.digestRefresh == .limited && s.digest?.value.status == "quiet")
+        #expect(sleeps.waits.isEmpty && stub.ops.last == "refreshPenzDigest")
+    }
+
+    @Test func aReadyDigestOrNoHoldingsAsksNothing() async {
+        let stub = StubTransport(), sleeps = PenzSleepLog()
+        let s = await store(stub, sleeps, digest: PenzL6Fixtures.digestJSON)
+        #expect(!s.shouldRefreshDigest)
+        await s.refreshDigestRound()
+        #expect(!stub.ops.contains("refreshPenzDigest"))
+    }
+
+    @Test func theFirstHoldingOwesARoundEvenAfterTodaysRan() async {
+        let stub = StubTransport(), sleeps = PenzSleepLog()
+        stub.on("getPenzPortfolio", .json(200, #"{"date":"2026-11-20","totalHufMinor":0,"sleeves":[],"events":[],"practice":{"monthlyHufMinor":0}}"#))
+        stub.on("getPenzDigest", .json(200, Self.quietJSON))
+        let clock = Date(timeIntervalSince1970: 1_795_168_800)
+        let s = PenzStore(client: PenzClient(raw: Self.raw(stub)), cache: nil, clock: { clock }, sleep: { sleeps.add($0) })
+        await s.reloadPortfolio(); await s.reloadDigest()
+        #expect(!s.shouldRefreshDigest, "no holdings: nothing to look for")
+        stub.on("createPenzInvestTransaction", .json(201, #"{"id":"t1","holdingId":"h1","side":"buy","amount":{"minor":100,"currency":"HUF","hufMinor":100},"date":"2026-11-20"}"#))
+        stub.on("getPenzPortfolio", .json(200, PenzL6Fixtures.portfolioJSON))
+        _ = await s.recordInvestment(newHolding: nil, holdingId: "h1",
+                                     transaction: PenzInvestTxnRequest(holdingId: "", side: "buy", amountMinor: 100, date: "2026-11-20"))
+        #expect(s.digestRefreshWanted && s.shouldRefreshDigest)
+        stub.on("refreshPenzDigest", .status(202))
+        stub.on("getPenzDigest", .json(200, Self.quietJSON))
+        stub.on("getPenzDigest", .json(200, Self.quietJSON))
+        await s.refreshDigestRound()
+        #expect(!s.digestRefreshWanted && !s.shouldRefreshDigest && sleeps.waits.count == 2)
+    }
+}
+
 @Suite("Pénz L6 — the pure builders")
 struct PenzPortfolioLogicTests {
     typealias F = PenzL6Fixtures

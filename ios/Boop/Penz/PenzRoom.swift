@@ -59,6 +59,8 @@ struct PenzRoom: View {
     @SceneStorage("penz.tab") private var selected: String = PenzTab.ma.rawValue
     @State private var sheet: PenzSheet?
     @State private var page: PenzPage?
+    /// The running "fresh digest" round (one ask + two re-reads), cancelled when he leaves the room.
+    @State private var digestRound: Task<Void, Never>?
     @State private var toast: String?
     /// A refused cash row he tapped: *Újra* or *Törlöm*.
     @State private var refusedCash: UUID?
@@ -107,6 +109,10 @@ struct PenzRoom: View {
         .background(RoomSwipeBack().frame(width: 0, height: 0).accessibilityHidden(true))
         .nkToast($toast)
         .task { await store?.load(); await syncPending() }
+        // L6: ask for a fresh digest once when it is pending or quiet (or right after his first holding) and re-read it
+        // twice; leaving the room cancels the round.
+        .onChange(of: store?.shouldRefreshDigest ?? false, initial: true) { _, go in if go { startDigestRound() } }
+        .onDisappear { digestRound?.cancel(); digestRound = nil }
         // Deliveries, captures and refusals are followed app-wide by `PenzTriggers` (RootView), page open or not.
         .confirmationDialog("Ezt a tételt a szerver nem fogadta el", isPresented: Binding(get: { refusedCash != nil },
                                                                                        set: { if !$0 { refusedCash = nil } }),
@@ -159,6 +165,16 @@ struct PenzRoom: View {
             }
         }
         #endif
+    }
+
+    private func startDigestRound() {
+        guard digestRound == nil, let store else { return }
+        digestRound = Task { @MainActor in
+            await store.refreshDigestRound()
+            digestRound = nil
+            // his first holding landed mid-round: one more round is owed
+            if !Task.isCancelled, store.shouldRefreshDigest { startDigestRound() }
+        }
     }
 
     private func reload() async {
