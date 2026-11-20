@@ -491,7 +491,11 @@ accepts anything else). Builder calls: [`2026-11-20-boop-penz-l7-build.md`](../s
   only right after an allowed digit figure; a sleeve's "why" names only that sleeve's options, summary / uncertainty
   only offered options, no other catalog product ever — by full name, ticker root, ISIN or a distinctive short form
   such as "MSCI World", "S&P 500", "LifeStrategy", "All-World" (a short form that also occurs in a name allowed there
-  is left alone); boundary stems HU + EN for buy-imperative, sell, urge, countdown, return promise and forecast —
+  is left alone) — **and nothing outside his catalog** (`mezo-r36n9.121`): a capitalised word in mid-sentence, a word
+  with two or more capitals anywhere (*OTP*, *BUX*) or a well-known asset name at a sentence start (*Bitcoin*,
+  *Tesla*; `KNOWN_OUTSIDE_NAMES`) must be a word of a catalog product's name or description (inflected allowed:
+  *Vanguardnál*, *ETF-ben*) or one of a few generic words (*Boop, ETF, UCITS, TER, ISIN, EU, Magyar*) — else the
+  narration falls back; boundary stems HU + EN for buy-imperative, sell, urge, countdown, return promise and forecast —
   `hozam` only inside the server's own option wording ("újrabefekteti / kifizeti a hozamot") and the fallback's
   no-claim sentence; no URL, no markup but `*emphasis*`, no prompt-leak marker).
   Any failure anywhere → the whole narration is `ProposalFallbackCopy` (`narratedBy: fallback`), built from the same
