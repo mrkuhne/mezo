@@ -17,7 +17,8 @@ A Terv az alsó sáv második helye (Ma · **Terv** · Napló · Boop). Az aktí
   visz, ahol a tervek beállíthatók.
 - **Hamarosan (Testösszetétel szakasz):** egy „Test” kártya a Feelfit mérleg adataival az Apple Health-ből — súlytrend a cél
   vízvonalával, testzsír-százalék, sovány testtömeg.
-- **B6-ban (A Terv):** a Terv szerkesztővé válik: több hetes terv súlycéllal, engedélyezett receptekkel és alapanyagokkal,
+- **B6-ban — a neve Évad lesz (döntés, 2026-11-20):** egy néhány hetes terv céllal, amely magában foglalja az edzésblokkot és a heti edzés- és sportnapokat, és ebből számolja az étkezést, az alvásigényt és a súly menetét; minden módosításnál élőben mutatja, mire hat; heti menü, bevásárlólista és kísérletek. Edzésblokk csak évaddal indulhat. Részletek: a „Terv-csomag” oldal.
+- **Az eredeti B6-terv (A Terv):** a Terv szerkesztővé válik: több hetes terv súlycéllal, engedélyezett receptekkel és alapanyagokkal,
   csatolt edzésblokkal, szabályokkal; több terv, egy aktív; tervhűség; bevásárlólista; hatáskövetés.
 
 ## Hogyan működik
