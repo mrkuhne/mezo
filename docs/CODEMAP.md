@@ -36,7 +36,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 | [notification](#notification) | ✓ | 1 | [_platform-notifications](features/_platform-notifications.md) |
 | [nutrition](#nutrition) | ✓ | 2 | [fuel](features/fuel.md) |
 | [pantry](#pantry) | ✓ | 1 | [pantry](features/pantry.md) |
-| [penz](#penz) | ✓ | 2 | [penz](features/penz.md) |
+| [penz](#penz) | ✓ | 3 | [penz](features/penz.md) |
 | [people](#people) | ✓ | 1 | [me](features/me.md) |
 | [proactive](#proactive) | ✓ | 2 | [contextual-feed-evaluation](features/contextual-feed-evaluation.md), [proactive](features/proactive.md) |
 | [recipe](#recipe) | ✓ | 4 | [recipe](features/recipe.md) |
@@ -928,27 +928,40 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/penz`
   - **entities→tables:** `PenzAccountEntity`→`penz_account`, `PenzApiKeyEntity`→`penz_api_key`,
-    `PenzCategoryEntity`→`penz_category`, `PenzFxRateEntity`→`penz_fx_rate`, `PenzMonthCloseEntity`→`penz_month_close`,
-    `PenzRecurringRuleEntity`→`penz_recurring_rule`, `PenzSavingsGoalEntity`→`penz_savings_goal`,
-    `PenzSettingsEntity`→`penz_settings`, `PenzSmsMessageEntity`→`penz_sms_message`,
-    `PenzTransactionEntity`→`penz_transaction`
+    `PenzCategoryEntity`→`penz_category`, `PenzFxRateEntity`→`penz_fx_rate`, `PenzHoldingEntity`→`penz_holding`,
+    `PenzHoldingEventEntity`→`penz_holding_event`, `PenzInvestTxnEntity`→`penz_invest_txn`,
+    `PenzMonthCloseEntity`→`penz_month_close`, `PenzProviderStatusEntity`→`penz_provider_status`,
+    `PenzQuoteEntity`→`penz_quote`, `PenzRecurringRuleEntity`→`penz_recurring_rule`,
+    `PenzSavingsGoalEntity`→`penz_savings_goal`, `PenzSettingsEntity`→`penz_settings`,
+    `PenzSmsMessageEntity`→`penz_sms_message`, `PenzTransactionEntity`→`penz_transaction`
   - **repositories:** `PenzAccountRepository`, `PenzApiKeyRepository`, `PenzCategoryRepository`,
-    `PenzFxRateRepository`, `PenzMonthCloseRepository`, `PenzRecurringRuleRepository`, `PenzSavingsGoalRepository`,
-    `PenzSettingsRepository`, `PenzSmsMessageRepository`, `PenzTransactionRepository`
+    `PenzFxRateRepository`, `PenzHoldingEventRepository`, `PenzHoldingRepository`, `PenzInvestTxnRepository`,
+    `PenzMonthCloseRepository`, `PenzProviderStatusRepository`, `PenzQuoteRepository`, `PenzRecurringRuleRepository`,
+    `PenzSavingsGoalRepository`, `PenzSettingsRepository`, `PenzSmsMessageRepository`, `PenzTransactionRepository`
   - **services:** `FrankfurterClient`, `PenzAccountService`, `PenzAllowanceService`, `PenzCategoryService`,
-    `PenzEngineInputs`, `PenzErrors`, `PenzFxService`, `PenzMonthCloseService`, `PenzMonths`,
-    `PenzRecurringMaterializer`, `PenzRecurringRuleService`, `PenzSavingsGoalService`, `PenzSettingsService`,
-    `PenzSmsIngestService`, `PenzSmsKeyService`, `PenzSmsLlm`, `PenzSmsRateLimiter`, `PenzSmsStore`,
-    `PenzTransactionService`
-  - **controllers→contract:** `PenzController`→`PenzApi`, `PenzSmsController`→`PenzSmsApi`
-  - **mappers:** `PenzMapper`
+    `PenzEngineInputs`, `PenzErrors`, `PenzFxService`, `PenzHoldingEventService`, `PenzHoldingService`,
+    `PenzInvestTxnService`, `PenzMonthCloseService`, `PenzMonths`, `PenzPortfolioService`, `PenzProviderHealth`,
+    `PenzQuoteService`, `PenzRecurringMaterializer`, `PenzRecurringRuleService`, `PenzSavingsGoalService`,
+    `PenzSettingsService`, `PenzSmsIngestService`, `PenzSmsKeyService`, `PenzSmsLlm`, `PenzSmsRateLimiter`,
+    `PenzSmsStore`, `PenzTransactionService`, `QuoteClient`
+  - **controllers→contract:** `PenzController`→`PenzApi`, `PenzPortfolioController`→`PenzPortfolioApi`,
+    `PenzSmsController`→`PenzSmsApi`
+  - **mappers:** `PenzMapper`, `PenzPortfolioMapper`
   - **config:** `PenzProperties`, `PenzSmsApiKeyFilter`, `PenzSmsSecurityConfig`
   - **other:** `AccountBalance`, `AccountInput`, `AccountRules`, `AllowanceEngine`, `AllowanceLine`,
     `AllowanceLineKey`, `AllowanceSettings`, `Balances`, `BookedAmount`, `CategoryBudgets`, `CloseOutcome`,
-    `EmergencyFund`, `Frequency`, `FxConversion`, `GuardVerdict`, `HufAmountGuard`, `Money`, `MonthCloseInput`,
-    `MonthCloseRules`, `MonthlyAllowance`, `PenzDates`, `PenzSmsKeys`, `Recurrence`, `RecurringRuleInput`, `RuleKind`,
-    `SmsAmountCheck`, `SmsConversion`, `SmsIngestLogic`, `SmsPrompt`, `TxnInput`, `TxnKind`, `WeekPortion`,
-    `WeeklyAllowance`
+    `EmergencyFund`, `Frequency`, `FxConversion`, `GuardVerdict`, `HoldingSpec`, `HoldingValue`, `HufAmountGuard`,
+    `LotBook`, `LotTxn`, `Lots`, `Money`, `MonthCloseInput`, `MonthCloseRules`, `MonthlyAllowance`, `OpenLot`,
+    `PenzDates`, `PenzHttpFetcher`, `PenzSmsKeys`, `PortfolioEngine`, `PortfolioResult`, `PositionInput`,
+    `PositionResult`, `QuotePoint`, `Recurrence`, `RecurringRuleInput`, `RuleKind`, `Side`, `Sleeve`, `SleeveResult`,
+    `SmsAmountCheck`, `SmsConversion`, `SmsIngestLogic`, `SmsPrompt`, `TxnInput`, `TxnKind`, `Valuation`,
+    `ValuationKind`, `WeekPortion`, `WeeklyAllowance`
+- **Contract** `api/feature/penz/penz-portfolio.yml` — 13 operations
+  - **endpoints:** GET /api/penz/holdings · POST /api/penz/holdings · PUT /api/penz/holdings/{id} ·
+    DELETE /api/penz/holdings/{id} · GET /api/penz/holdings/{id}/transactions · POST /api/penz/invest-transactions ·
+    DELETE /api/penz/invest-transactions/{id} · GET /api/penz/holding-events · POST /api/penz/holding-events ·
+    DELETE /api/penz/holding-events/{id} · GET /api/penz/portfolio · GET /api/penz/digest ·
+    POST /api/penz/digest/refresh
 - **Contract** `api/feature/penz/penz-sms.yml` — 4 operations
   - **endpoints:** POST /api/penz/sms/ingest · GET /api/penz/sms/keys · POST /api/penz/sms/keys ·
     DELETE /api/penz/sms/keys/{id}
@@ -962,9 +975,9 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     GET /api/penz/allowance · GET /api/penz/month-closes · GET /api/penz/month-closes/open ·
     POST /api/penz/month-closes/{month} · GET /api/penz/savings-goals · POST /api/penz/savings-goals ·
     PUT /api/penz/savings-goals/{id} · DELETE /api/penz/savings-goals/{id}
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/penz` — 5 IT + 19 unit
-  - **ITs:** `PenzAllowanceApiIT`, `PenzApiIT`, `PenzMonthCloseServiceIT`, `PenzSavingsGoalApiIT`,
-    `PenzSmsIngestApiIT`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/penz` — 7 IT + 24 unit
+  - **ITs:** `PenzAllowanceApiIT`, `PenzApiIT`, `PenzMonthCloseServiceIT`, `PenzPortfolioApiIT`, `PenzQuoteServiceIT`,
+    `PenzSavingsGoalApiIT`, `PenzSmsIngestApiIT`
   - **populators:** `DatabasePopulator`, `PenzPopulator`
 
 ### people

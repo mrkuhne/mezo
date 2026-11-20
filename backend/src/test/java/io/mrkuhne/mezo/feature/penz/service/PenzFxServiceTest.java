@@ -42,7 +42,8 @@ class PenzFxServiceTest {
         rates = mock(PenzFxRateRepository.class);
         client = mock(FrankfurterClient.class);
         fx = new PenzFxService(rates, client,
-            new PenzProperties("http://fx.invalid", 1000, 1000, "test", 7, 2_000_000L, 20, 500));
+            new PenzProperties("http://fx.invalid", 1000, 1000, "test", 7, 2_000_000L, 20, 500,
+                "http://quotes.invalid", "quotes.invalid", 60, 1000, "test", false));
     }
 
     private static PenzFxRateEntity cached(String rate) {

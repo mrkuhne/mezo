@@ -52,6 +52,16 @@ spec:
           for: 0m
           labels: { severity: critical }
           annotations: { summary: "postgres-backup has not succeeded in 26 hours" }
+        - alert: PenzQuotesProviderDown
+          expr: max(mezo_penz_provider_fail_streak{kind="quotes"}) >= 3
+          for: 0m
+          labels: { severity: warning }
+          annotations: { summary: "Boop Pénz quote source (Yahoo chart) failed 3+ fetches in a row; portfolio prices are going stale" }
+        - alert: PenzNewsProviderDown
+          expr: min(mezo_penz_provider_fail_streak{kind="news"}) >= 3
+          for: 0m
+          labels: { severity: warning }
+          annotations: { summary: "every Boop Pénz news feed failed 3+ fetches in a row; the daily digest has no news" }
     - name: mezo.traffic
       interval: 60s
       rules:

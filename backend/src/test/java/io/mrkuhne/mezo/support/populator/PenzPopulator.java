@@ -3,7 +3,11 @@ package io.mrkuhne.mezo.support.populator;
 import io.mrkuhne.mezo.feature.penz.entity.PenzAccountEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzCategoryEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzFxRateEntity;
+import io.mrkuhne.mezo.feature.penz.entity.PenzHoldingEntity;
+import io.mrkuhne.mezo.feature.penz.entity.PenzHoldingEventEntity;
+import io.mrkuhne.mezo.feature.penz.entity.PenzInvestTxnEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzMonthCloseEntity;
+import io.mrkuhne.mezo.feature.penz.entity.PenzQuoteEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzRecurringRuleEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzSavingsGoalEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzSettingsEntity;
@@ -11,7 +15,11 @@ import io.mrkuhne.mezo.feature.penz.entity.PenzTransactionEntity;
 import io.mrkuhne.mezo.feature.penz.repository.PenzAccountRepository;
 import io.mrkuhne.mezo.feature.penz.repository.PenzCategoryRepository;
 import io.mrkuhne.mezo.feature.penz.repository.PenzFxRateRepository;
+import io.mrkuhne.mezo.feature.penz.repository.PenzHoldingEventRepository;
+import io.mrkuhne.mezo.feature.penz.repository.PenzHoldingRepository;
+import io.mrkuhne.mezo.feature.penz.repository.PenzInvestTxnRepository;
 import io.mrkuhne.mezo.feature.penz.repository.PenzMonthCloseRepository;
+import io.mrkuhne.mezo.feature.penz.repository.PenzQuoteRepository;
 import io.mrkuhne.mezo.feature.penz.repository.PenzRecurringRuleRepository;
 import io.mrkuhne.mezo.feature.penz.repository.PenzSavingsGoalRepository;
 import io.mrkuhne.mezo.feature.penz.repository.PenzSettingsRepository;
@@ -19,6 +27,8 @@ import io.mrkuhne.mezo.feature.penz.repository.PenzTransactionRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.test.context.TestComponent;
@@ -39,6 +49,10 @@ public class PenzPopulator {
     private final PenzRecurringRuleRepository recurringRuleRepository;
     private final PenzFxRateRepository fxRateRepository;
     private final PenzSavingsGoalRepository savingsGoalRepository;
+    private final PenzHoldingRepository holdingRepository;
+    private final PenzInvestTxnRepository investTxnRepository;
+    private final PenzHoldingEventRepository holdingEventRepository;
+    private final PenzQuoteRepository quoteRepository;
 
     public PenzSettingsEntity settings(UUID owner, long savingsTargetMinor) {
         PenzSettingsEntity e = new PenzSettingsEntity();
@@ -160,5 +174,74 @@ public class PenzPopulator {
         e.setSavedMinor(savedMinor);
         e.setPosition(position);
         return savingsGoalRepository.saveAndFlush(e);
+    }
+
+    /** A holding (L6, mezo-r36n9.104) on platform {@code other}, position 0, no news terms. */
+    public PenzHoldingEntity holding(UUID owner, String name, String assetType, String symbol, String sleeve,
+                                     String currency, BigDecimal bondRatePct) {
+        PenzHoldingEntity e = new PenzHoldingEntity();
+        e.setCreatedBy(owner);
+        e.setName(name);
+        e.setAssetType(assetType);
+        e.setSymbol(symbol);
+        e.setPlatform("other");
+        e.setSleeve(sleeve);
+        e.setCurrency(currency);
+        e.setBondRatePct(bondRatePct);
+        e.setNewsTerms(new ArrayList<>());
+        return holdingRepository.saveAndFlush(e);
+    }
+
+    /**
+     * A buy or sell with its HUF twin given (no FX lookup). A non-HUF row gets the twin's implied rate and the
+     * transaction date as its rate date (the check constraint wants both).
+     */
+    public PenzInvestTxnEntity investTxn(UUID owner, UUID holdingId, String side, BigDecimal quantity,
+                                         long amountMinor, String currency, long amountHufMinor, LocalDate date) {
+        PenzInvestTxnEntity e = new PenzInvestTxnEntity();
+        e.setCreatedBy(owner);
+        e.setHoldingId(holdingId);
+        e.setSide(side);
+        e.setQuantity(quantity);
+        e.setAmountMinor(amountMinor);
+        e.setCurrency(currency);
+        e.setAmountHufMinor(amountHufMinor);
+        if (!"HUF".equals(currency)) {
+            e.setFxRate(BigDecimal.valueOf(amountHufMinor).divide(BigDecimal.valueOf(amountMinor), 8,
+                java.math.RoundingMode.HALF_UP));
+            e.setFxRateDate(date);
+        }
+        e.setDate(date);
+        return investTxnRepository.saveAndFlush(e);
+    }
+
+    /** A portfolio event; {@code amountMinor} null = no expected amount. */
+    public PenzHoldingEventEntity holdingEvent(UUID owner, UUID holdingId, String kind, LocalDate date,
+                                               Long amountMinor, String currency) {
+        PenzHoldingEventEntity e = new PenzHoldingEventEntity();
+        e.setCreatedBy(owner);
+        e.setHoldingId(holdingId);
+        e.setKind(kind);
+        e.setDate(date);
+        e.setAmountMinor(amountMinor);
+        e.setCurrency(amountMinor == null ? null : currency);
+        return holdingEventRepository.saveAndFlush(e);
+    }
+
+    /**
+     * A cached global quote (a security or an FX pair like {@code EURHUF=X}) dated {@code asOf}, fetched just now
+     * (so a read does not refetch it within the throttle window). Prices are invented.
+     */
+    public PenzQuoteEntity quote(String symbol, String currency, String price, String previousClose,
+                                 LocalDate asOf) {
+        PenzQuoteEntity e = new PenzQuoteEntity();
+        e.setSymbol(symbol);
+        e.setCurrency(currency);
+        e.setPrice(new BigDecimal(price));
+        e.setPreviousClose(previousClose == null ? null : new BigDecimal(previousClose));
+        e.setMarketTime(asOf.atTime(16, 0).atZone(ZoneId.of("Europe/Budapest")).toInstant());
+        e.setAsOf(asOf);
+        e.setFetchedAt(Instant.now());
+        return quoteRepository.saveAndFlush(e);
     }
 }
