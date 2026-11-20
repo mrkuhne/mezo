@@ -220,7 +220,7 @@ struct PenzClientTests {
     @Test func storeLaysPendingCashOverTheWeek() async {
         let stub = StubTransport()
         scriptAll(stub)
-        let store = PenzStore(client: PenzClient(raw: Self.raw(stub)), cache: nil)
+        let store = PenzStore(client: PenzClient(raw: Self.raw(stub)), cache: nil, clock: { Date(timeIntervalSince1970: 1_795_089_600) })
         await store.load()
         let id = UUID()
         let p = PenzExpensePayload(accountId: "a1", amountMinor: 189_000, date: "2026-11-19", note: "Kávézó")
@@ -231,5 +231,86 @@ struct PenzClientTests {
         let remaining: Int64 = store.allowance?.week.remaining.hufMinor ?? 0
         #expect(remaining == 3_261_000)
         #expect(store.todayItems.first?.title == "Kávézó" && store.todayItems.first?.pending == true)
+    }
+
+    // MARK: review round (2026-11-20)
+
+    @Test func aFirstLoadThatFoundNoNetIsRetriedWithoutForce() async {
+        let off = StubTransport()
+        scriptAll(off, allowance: .fail(URLError(.notConnectedToInternet)))
+        scriptAll(off)   // the second round answers
+        let store = PenzStore(client: PenzClient(raw: Self.raw(off)), cache: nil)
+        await store.load()
+        #expect(store.problem == .offline)
+        await store.load()
+        #expect(store.problem == nil && store.value != nil, "an offline first read must not stick for ever")
+    }
+
+    @Test func aForcedReloadDuringALoadRunsAfterIt() async {
+        let stub = StubTransport()
+        stub.on("getPenzAllowance", .slowJson(200, Self.allowanceJSON, ms: 300))
+        for op in ["listPenzTransactions", "listPenzCategories", "listPenzAccounts", "listOpenPenzMonths", "listPenzSavingsGoals", "getPenzSettings"] {
+            stub.on(op, .json(200, op == "getPenzSettings" ? #"{"savingsTargetHufMinor":1,"practiceMonthlyHufMinor":1}"# : "[]"))
+        }
+        scriptAll(stub)
+        let store = PenzStore(client: PenzClient(raw: Self.raw(stub)), cache: nil)
+        async let first: Void = store.load()
+        try? await Task.sleep(for: .milliseconds(60))
+        await store.load(force: true)   // arrives while the first is in flight
+        await first
+        #expect(stub.ops.filter { $0 == "getPenzAllowance" }.count == 2, "the forced reload is not dropped")
+        #expect(store.transactions.count == 2, "the second read's rows are on screen")
+    }
+
+    @Test func aFailedTransactionsReadNeverCarriesAnotherMonthsRows() async {
+        let clock = TestClock(Date(timeIntervalSince1970: 1_798_804_800))   // 2027-01-01 noon UTC
+        let failing = StubTransport()
+        for op in ["getPenzAllowance", "listPenzCategories", "listPenzAccounts", "listOpenPenzMonths", "listPenzSavingsGoals", "getPenzSettings"] {
+            failing.on(op, op == "getPenzAllowance" ? .json(200, Self.allowanceJSON)
+                                                    : .json(200, op == "getPenzSettings" ? #"{"savingsTargetHufMinor":1,"practiceMonthlyHufMinor":1}"# : "[]"))
+        }
+        failing.on("listPenzTransactions", .status(500))
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("penz-month-\(UUID().uuidString)")
+        let cache = ServerCache(directory: dir, clock: { clock.now })
+        let old = PenzSnapshot(allowance: PenzFixtures.allowance(), transactions: [PenzFixtures.tx("old", 1, nil, date: "2026-11-19")])
+        try? await cache.put(old, endpoint: "penz/snapshot", date: "current")
+        let next = PenzStore(client: PenzClient(raw: Self.raw(failing)), cache: cache, clock: { clock.now })
+        await next.load()
+        #expect(next.transactionsFailed)
+        #expect(next.transactions.isEmpty, "November's rows are not January's")
+        #expect(next.today == "2027-01-01", "today is the device's, not a stale allowance date")
+    }
+
+    @Test func settingsSaveReadsFreshSettingsAndNeverWritesTheCachedTimezone() async throws {
+        let stub = StubTransport()
+        scriptAll(stub)
+        let store = PenzStore(client: PenzClient(raw: Self.raw(stub)), cache: nil)
+        await store.load()
+        stub.on("getPenzSettings", .json(200, #"{"savingsTargetHufMinor":1,"practiceMonthlyHufMinor":1,"timezone":"Europe/Vienna"}"#))
+        stub.on("putPenzSettings", .json(200, #"{"savingsTargetHufMinor":5,"practiceMonthlyHufMinor":0}"#))
+        scriptAll(stub)   // the re-read after the save
+        #expect(await store.saveSettings(savingsTargetHufMinor: 500, practiceMonthlyHufMinor: 0) == nil)
+        let put = stub.sent.first { $0.op == "putPenzSettings" }?.body ?? ""
+        #expect(put.contains("Europe\\/Vienna"), "the fresh GET's timezone, not the snapshot's")
+
+        let lost = StubTransport()
+        scriptAll(lost)
+        let s2 = PenzStore(client: PenzClient(raw: Self.raw(lost)), cache: nil)
+        await s2.load()
+        lost.on("getPenzSettings", .fail(URLError(.timedOut)))
+        lost.on("putPenzSettings", .json(200, #"{"savingsTargetHufMinor":5,"practiceMonthlyHufMinor":0}"#))
+        scriptAll(lost)
+        _ = await s2.saveSettings(savingsTargetHufMinor: 500, practiceMonthlyHufMinor: 0)
+        let put2 = lost.sent.first { $0.op == "putPenzSettings" }?.body ?? ""
+        #expect(put2 == #"{"practiceMonthlyHufMinor":0,"savingsTargetHufMinor":500}"#, "without a fresh read only the edited lines go")
+    }
+
+    @Test func todaysItemsLeaveReviewRowsToTheAggregateRow() async {
+        let stub = StubTransport()
+        scriptAll(stub)
+        let store = PenzStore(client: PenzClient(raw: Self.raw(stub)), cache: nil, clock: { Date(timeIntervalSince1970: 1_795_089_600) })   // 2026-11-19 noon UTC
+        await store.load()
+        #expect(store.reviewRows.count == 1)
+        #expect(!store.todayItems.contains { $0.needsReview }, "a review row is shown once, inside the aggregate")
     }
 }

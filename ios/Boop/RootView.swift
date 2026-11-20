@@ -59,6 +59,7 @@ struct RootView: View {
         .onChange(of: session.state, initial: true) { _, state in updateLink(state) }
         .background { if let link, case .ready = session.state { SyncTriggers(link: link) } }
         .background { if let ritmus, case .ready = session.state { RitmusTriggers(env: ritmus, morning: morning) } }
+        .background { if let ritmus, let penz, case .ready = session.state { PenzTriggers(env: ritmus, store: penz) } }
     }
 
     /// One Health link and one morning brief store per signed-in user; refreshed on open once the shell shows.
@@ -165,6 +166,26 @@ private struct RitmusTriggers: View {
             .task(id: p) {
                 await env.reminders.refresh(ledger: env.ledger, bedtimeTarget: p.target, askPermission: p.saved)
             }
+    }
+}
+
+/// Pénz's upkeep, app-wide (L5 review): a cash expense queued, delivered or refused re-reads the outbox into the store,
+/// and a delivery or a capture re-reads the server — whether or not the Pénz page is open. Without it an expense the
+/// outbox delivered before the page was opened was neither pending nor among the transactions the store held, and the
+/// Terv card never counted unsent cash.
+private struct PenzTriggers: View {
+    let env: RitmusEnvironment
+    let store: PenzStore
+    var body: some View {
+        Color.clear
+            .task { store.setPending(await env.outbox.queue) }
+            .onChange(of: env.penzTick) {
+                Task {
+                    store.setPending(await env.outbox.queue)
+                    await store.load(force: true)
+                }
+            }
+            .onChange(of: env.refused.count) { Task { store.setPending(await env.outbox.queue) } }
     }
 }
 

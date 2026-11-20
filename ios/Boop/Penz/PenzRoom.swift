@@ -44,6 +44,8 @@ struct PenzRoom: View {
     @State private var sheet: PenzSheet?
     @State private var monthList = false
     @State private var toast: String?
+    /// A refused cash row he tapped: *Újra* or *Törlöm*.
+    @State private var refusedCash: UUID?
 
     init(tab: PenzTab = .ma) {
         #if DEBUG
@@ -89,10 +91,16 @@ struct PenzRoom: View {
         .background(RoomSwipeBack().frame(width: 0, height: 0).accessibilityHidden(true))
         .nkToast($toast)
         .task { await store?.load(); await syncPending() }
-        // A cash expense queued or delivered, or a refusal: the outbox is read again, and a delivery re-reads the
-        // server (its row stops waiting and the figures are the server's own).
-        .onChange(of: ritmus?.penzTick) { Task { await syncPending(); await store?.load(force: true) } }
-        .onChange(of: ritmus?.refused.count) { Task { await syncPending() } }
+        // Deliveries, captures and refusals are followed app-wide by `PenzTriggers` (RootView), page open or not.
+        .confirmationDialog("Ezt a tételt a szerver nem fogadta el", isPresented: Binding(get: { refusedCash != nil },
+                                                                                       set: { if !$0 { refusedCash = nil } }),
+                            titleVisibility: .visible, presenting: refusedCash) { id in
+            Button("Újra küldöm") { Task { await ritmus?.retryPenz(id) } }
+            Button("Törlöm a telefonról", role: .destructive) { Task { await ritmus?.removePenz(id) } }
+            Button("Mégse", role: .cancel) {}
+        } message: { _ in
+            Text("Még nem került fel a szerverre. Küldd újra, vagy töröld, ha rosszul írtad be.")
+        }
         .sheet(item: $sheet) { s in sheetView(s) }
         .fullScreenCover(isPresented: $monthList) {
             if let store { PenzMonthPage(store: store) { monthList = false } }
@@ -136,7 +144,8 @@ struct PenzRoom: View {
     @ViewBuilder private var content: some View {
         switch tab {
         case .ma: PenzMa(store: store, open: { sheet = $0 }, ask: { openPlace(.boop) })
-        case .koltes: PenzKoltes(store: store, open: { sheet = $0 }, openMonth: { monthList = true }, ask: { openPlace(.boop) })
+        case .koltes: PenzKoltes(store: store, open: { sheet = $0 }, openMonth: { monthList = true },
+                                 onRefused: { refusedCash = $0 }, ask: { openPlace(.boop) })
         case .penzem:
             NKNotLiveYet(hue: hue, title: "Ami a pénzedből van",
                          line: "Itt lesz a három rekesz — a biztonsági tartalék (1–3 év), a középtáv (5–10 év) és a hosszú táv (10+ év) —, hogy melyik mennyit ér, és mire elég. Előbb a befektetéseidet kell rögzíteni; az a következő lépésben érkezik.")

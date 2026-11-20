@@ -330,7 +330,13 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     account's); never loaded → the sheet says it needs the net once. The capture sheet (amount on the number pad,
     expense chips, note, one button riding above the keyboard) is on Ma, Költés, the menu and the global "+" (*Kiadás*
     tile). The row shows at once and the week's remaining drops by unsent cash (`penzPendingAdjusted`; a delivered
-    `clientRef` never counts twice); `RitmusEnvironment.penzTick` re-reads on delivery.
+    `clientRef` never counts twice). `PenzTriggers` (`RootView`, app-wide, page open or not) re-reads the outbox into
+    the store on every capture, delivery or refusal and re-reads the server on capture and delivery, so the Terv card
+    counts unsent cash too; a refused cash row opens *Újra küldöm* / *Törlöm a telefonról*. The store re-runs a forced
+    reload that arrived mid-read, retries a first read that found no net, keeps a failed transactions read's old rows
+    only when they are this month's, takes "today" from the device clock, and builds a settings save from a fresh GET
+    (or sends only the two edited lines). Today's rows leave review rows to the aggregate row; the month list counts
+    what it shows (no transfer legs, no empty days).
   - **Terv** carries a read-only glass card "PÉNZ · EZEN A HÉTEN · 34 500 Ft maradt · napi X Ft" (no way to open an
     area from Terv yet), hidden without Pénz data.
   - **Review (DEBUG):** `-preview shell -previewHome penz -penzTab Ma|Pénzem|Költés|Gyakorlás`,

@@ -179,6 +179,20 @@ final class RitmusEnvironment {
 
     /// Queues a cash expense typed on the phone (`OutboxKind.penzExpense`) and sends it at once if the net allows.
     /// Throws when the phone could not keep it — the capture then says so instead of pretending.
+    /// *Újra* on a refused cash row: a fresh start, sent at once.
+    func retryPenz(_ id: UUID) async {
+        await retry([id])
+        penzTick += 1
+        sendSoon()
+    }
+
+    /// *Törlöm* on a refused cash row: it leaves the phone (nothing reached the server).
+    func removePenz(_ id: UUID) async {
+        await outbox.remove(id)
+        useRefused(await outbox.failed)
+        penzTick += 1
+    }
+
     func capturePenzExpense(_ payload: PenzExpensePayload, id: UUID = UUID()) async throws {
         try await outbox.enqueue(OutboxItem(id: id, kind: .penzExpense, date: payload.date, capturedAt: clock(),
                                             payload: RitmusPayload.encode(payload)), rollbackOnFailure: true)

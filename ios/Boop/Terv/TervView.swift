@@ -28,7 +28,7 @@ struct TervView: View {
                      penzOutfit(w.remaining >= 0 ? "\(penzFtUnit(w.remaining)) maradt" : "\(penzFtUnit(-w.remaining))-tal a keret fölött"),
                      penzOutfit("napi \(penzFtUnit(w.perDay))"))
             }
-            if day?.weight == nil && day?.session == nil && penz?.allowance == nil {
+            if day?.weight == nil && day?.session == nil && (penz?.allowance == nil || penz?.isEmpty == true) {
                 NKNotLiveYet(hue: .fuel, title: "A terveid ide költöznek",
                              line: "Az edzés- és étrendterved beállítása hamarosan itt lesz. Addig, ha módosítani szeretnél, szólj, és megcsináljuk.")
             }

@@ -396,14 +396,15 @@ struct PenzMonthPage: View {
     let onBack: @MainActor @Sendable () -> Void
 
     var body: some View {
-        let days = penzByDay(store.transactions)
+        let shown = penzShown(store.transactions)
+        let days = penzByDay(shown)
         NKAreaSubPage(hue: penzHue, crumb: "Pénz", eyebrow: "Költés · \(penzMonthWord(store.today))",
                       title: "A hónap tételei",
-                      sentence: store.transactions.isEmpty ? "Ebben a hónapban még nincs tétel." : "\(store.transactions.count) tétel, napok szerint.",
+                      sentence: shown.isEmpty ? "Ebben a hónapban még nincs tétel." : "\(shown.count) tétel, napok szerint.",
                       onBack: onBack) {
             ForEach(days, id: \.day) { d in
                 NKBare(penzDayTitle(d.day), hue: penzHue) {
-                    NKRowList(penzItems(d.rows, pending: [], categories: store.categories, accounts: store.accounts).map(penzRow),
+                    NKRowList(penzItems(d.rows, pending: [], categories: store.categories, accounts: store.accounts).map { penzRow($0) },
                               hue: penzHue)
                 }
             }

@@ -441,7 +441,7 @@ public func penzItems(_ transactions: [PenzTransaction], pending: [PenzPendingEx
                             .compactMap { $0 }.joined(separator: " · "),
                         value: penzFt(p.payload.amountMinor), glyph: penzCategoryGlyph(c?.name), pending: true, needsReview: false)
     }
-    let rows = transactions.filter { ["expense", "income", "invest_buy", "invest_sell"].contains($0.kind) }.map { t -> PenzItem in
+    let rows = penzShown(transactions).map { t -> PenzItem in
         let c = t.categoryId.flatMap { cat[$0] }
         let income = t.kind == "income" || t.kind == "invest_sell"
         return PenzItem(id: t.id, title: penzTitle(note: t.note, category: c?.name, kind: t.kind),
@@ -461,6 +461,12 @@ private func penzTitle(note: String?, category: String?, kind: String) -> String
     case "invest_sell": return "Befektetés eladása"
     default: return "Kiadás"
     }
+}
+
+/// The transactions a list shows: the day-to-day kinds (a transfer leg is money moving between his own accounts,
+/// not spending). Counts and day groups are taken from this, so they always match what is drawn.
+public func penzShown(_ transactions: [PenzTransaction]) -> [PenzTransaction] {
+    transactions.filter { ["expense", "income", "invest_buy", "invest_sell"].contains($0.kind) }
 }
 
 /// The rows that wait for him to look at them.

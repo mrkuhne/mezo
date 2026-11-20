@@ -292,7 +292,12 @@ public struct PenzSettingsRequest: Encodable, Equatable, Sendable {
     public var timezone: String?
     public var monthOverrides: [String: PenzMonthOverride]?
 
-    /// The two lines he edits, everything else carried over from what the server last said (so a save never
+    /// Only the two lines he edits; the server keeps every field left out.
+    public init(savingsTargetHufMinor: Int64, practiceMonthlyHufMinor: Int64) {
+        self.savingsTargetHufMinor = savingsTargetHufMinor; self.practiceMonthlyHufMinor = practiceMonthlyHufMinor
+    }
+
+    /// The two lines he edits, everything else carried over from a **fresh** read of the settings (so a save never
     /// resets the timezone or a month's own override).
     public init(from settings: PenzSettings, savingsTargetHufMinor: Int64, practiceMonthlyHufMinor: Int64) {
         self.savingsTargetHufMinor = savingsTargetHufMinor; self.practiceMonthlyHufMinor = practiceMonthlyHufMinor

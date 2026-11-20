@@ -271,4 +271,11 @@ struct PenzLogicTests {
         #expect(penzAgeText(3 * 3600) == "3 órás adat")
         #expect(penzAgeText(50 * 3600) == "2 napos adat")
     }
+
+    @Test func theMonthListCountsWhatItShows() {
+        let txs = [F.tx("a", 1, nil, date: "2026-11-19"), F.tx("t", 5, nil, date: "2026-11-18", kind: "transfer_out"),
+                   F.tx("u", 5, nil, date: "2026-11-18", kind: "transfer_in")]
+        #expect(penzShown(txs).map(\.id) == ["a"])
+        #expect(penzByDay(penzShown(txs)).map(\.day) == ["2026-11-19"], "no empty day group for transfer legs")
+    }
 }

@@ -96,6 +96,8 @@ struct PenzKoltes: View {
     let store: PenzStore?
     let open: (PenzSheet) -> Void
     let openMonth: () -> Void
+    /// A refused cash row was tapped (its outbox id).
+    let onRefused: @MainActor @Sendable (UUID) -> Void
     let ask: () -> Void
     private let hue = penzHue
 
@@ -183,21 +185,34 @@ struct PenzKoltes: View {
                     NKHueText("Ma még nincs tétel. Ami a bankból jön, magától megjelenik; a készpénzt a *Kiadás* gombbal írod be.",
                               hue: hue, size: 13.5, opacity: 0.6)
                 }
-                NKRowList(items.map { penzRow($0) } + (review.isEmpty ? [] : [
+                NKRowList(cashRows(items, store) + (review.isEmpty ? [] : [
                     NKAreaRow(id: "review", glyph: "search-ink",
                               title: review.count == 1 ? "Egy üzenet ellenőrzésre vár" : "\(review.count) üzenet ellenőrzésre vár",
                               sub: "Nem tudtam biztosan, melyik kategória", value: penzOutfit(penzFt(reviewSum)), valueSub: "Ft",
                               badge: review.count, hot: true, action: { open(.review) }),
                 ]), hue: hue)
-                PenzMoreLink(title: "A hónap összes tétele · \(store.transactions.count) db") { openMonth() }
+                PenzMoreLink(title: "A hónap összes tétele · \(penzShown(store.transactions).count) db") { openMonth() }
             }
+        }
+    }
+
+    /// Today's rows; a refused cash row opens Újra / Törlöm, nothing else on them is tappable.
+    private func cashRows(_ items: [PenzItem], _ store: PenzStore) -> [NKAreaRow] {
+        let refused = Set(store.pending.filter(\.refused).map(\.id.uuidString))
+        let tap = onRefused
+        return items.map { item in
+            guard refused.contains(item.id), let id = UUID(uuidString: item.id) else { return penzRow(item) }
+            return penzRow(item, action: { tap(id) })
         }
     }
 
     @ViewBuilder private func goals(_ store: PenzStore) -> some View {
         let goals = store.value?.goals
-        PenzSection(label: "MIRE GYŰJTÖK", state: goals == nil && !store.offline
-                    ? .failed("A céljaidat most nem érem el.") { Task { await store.load(force: true) } } : .ready) {
+        // nil = not readable now (offline with an old cache, or the server did not answer): said as such, never as
+        // "no goals yet".
+        PenzSection(label: "MIRE GYŰJTÖK", state: goals == nil
+                    ? .failed(store.offline ? "A céljaidat most nem érem el — ha lesz net, itt lesznek." : "A céljaidat most nem érem el.") {
+                        Task { await store.load(force: true) } } : .ready) {
             VStack(alignment: .leading, spacing: 0) {
                 if let goals, !goals.isEmpty {
                     NKRowList(goals.sorted { $0.position < $1.position }.map { g in
@@ -221,9 +236,9 @@ let penzSliceColors: [Color] = [Color(hex: 0x2E8B57), Color(hex: 0xF2994A), Colo
                                 Color(hex: 0xC9EFD9)]
 
 /// One item as a row (a pending cash row is drawn "still to come": outlined, dimmed, and its sub says it waits).
-func penzRow(_ i: PenzItem) -> NKAreaRow {
+func penzRow(_ i: PenzItem, action: (@MainActor @Sendable () -> Void)? = nil) -> NKAreaRow {
     NKAreaRow(id: i.id, glyph: i.glyph, title: i.title, sub: i.sub, value: penzOutfit(i.value), valueSub: "Ft",
-              dot: i.needsReview, state: i.pending ? .future : .normal)
+              dot: i.needsReview, state: i.pending ? .future : .normal, action: action)
 }
 
 let penzMonthEndText = """

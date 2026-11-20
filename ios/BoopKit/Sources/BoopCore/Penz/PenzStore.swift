@@ -61,16 +61,33 @@ public final class PenzStore {
         do { return .success(try await op()) } catch { return .failure((error as? PlanFetchError) ?? .server) }
     }
 
-    /// Reads everything (in parallel). Without `force` it reads only once.
+    /// A forced reload asked for while a read was in flight: it runs right after, so a capture, a review or a
+    /// close racing a reload is never lost.
+    @ObservationIgnored private var reloadAgain = false
+
+    /// Reads everything (in parallel). Without `force` it reads once — and again while the last attempt found no
+    /// net or a server fault (a first read on a plane must not stick for ever).
     public func load(force: Bool = false) async {
         guard let client else {
             if snapshot == nil { problem = .unauthorized }
             return
         }
-        guard force || (snapshot == nil && problem == nil) else { return }
-        guard !loading else { return }
+        let retryable = problem == nil || problem == .offline || problem == .server
+        guard force || (snapshot == nil && retryable) else { return }
+        if loading {
+            if force { reloadAgain = true }
+            return
+        }
         loading = true
-        defer { loading = false }
+        await read(client)
+        loading = false
+        if reloadAgain {
+            reloadAgain = false
+            await load(force: true)
+        }
+    }
+
+    private func read(_ client: PenzClient) async {
         let month = penzMonth(clock())
         async let a = Self.attempt { try await client.allowance() }
         async let t = Self.attempt { try await client.transactions(month: month) }
@@ -97,7 +114,9 @@ public final class PenzStore {
         case .success(let allowance):
             let fresh = PenzSnapshot(
                 allowance: allowance,
-                transactions: (try? rt.get()) ?? previous?.transactions ?? [],
+                // A failed read keeps the last rows only when they are this month's: November's rows are not
+                // January's.
+                transactions: (try? rt.get()) ?? (previous?.allowance.month.month == month ? previous?.transactions : nil) ?? [],
                 categories: (try? rc.get()) ?? previous?.categories ?? [],
                 accounts: (try? racc.get()) ?? previous?.accounts ?? [],
                 openMonths: (try? ro.get()) ?? previous?.openMonths ?? [],
@@ -131,13 +150,16 @@ public final class PenzStore {
     public var allowance: PenzAllowance? { value.map { penzPendingAdjusted($0.allowance, unsent: unsent) } }
     /// "3 órás adat" when what is shown is older than a fresh read.
     public var ageText: String? { penzAgeText(snapshot.map { clock().timeIntervalSince($0.fetchedAt) }) }
-    public var today: String { value?.allowance.date.isEmpty == false ? value!.allowance.date : penzDay(clock()) }
+    /// Today on the device's clock (the money timezone is the phone's for one owner) — never a cached allowance's
+    /// date, which may be days old.
+    public var today: String { penzDay(clock()) }
     public var reviewRows: [PenzTransaction] { penzNeedsReview(transactions) }
     public var verdict: PenzVerdict { penzVerdict(reviewCount: reviewRows.count, openMonths: openMonths) }
-    /// Today's rows: the unsent cash dated today first, then the server's.
+    /// Today's rows: the unsent cash dated today first, then the server's. A row waiting for review is left to the
+    /// aggregate "N üzenet ellenőrzésre vár" row, so it is never shown twice.
     public var todayItems: [PenzItem] {
         let day = today
-        return penzItems(transactions.filter { $0.date == day },
+        return penzItems(transactions.filter { $0.date == day && !$0.needsReview },
                          pending: pending.filter { $0.payload.date == day && (unsent.contains($0) || $0.refused) },
                          categories: categories, accounts: accounts)
     }
@@ -157,11 +179,16 @@ public final class PenzStore {
 
     public func saveSettings(savingsTargetHufMinor: Int64, practiceMonthlyHufMinor: Int64) async -> String? {
         guard let client else { return penzErrorText(.unauthorized) }
-        let base = value?.settings ?? PenzSettings(savingsTargetHufMinor: 0, practiceMonthlyHufMinor: 0)
-        do {
-            _ = try await client.saveSettings(PenzSettingsRequest(from: base, savingsTargetHufMinor: savingsTargetHufMinor,
-                                                                  practiceMonthlyHufMinor: practiceMonthlyHufMinor))
-        } catch { return penzErrorText(error) }
+        // The other fields come from a fresh read, never from a cached snapshot (a stale timezone or month override
+        // would be written back over the server's); without one, only the two edited lines go.
+        let request: PenzSettingsRequest
+        if let fresh = try? await client.settings() {
+            request = PenzSettingsRequest(from: fresh, savingsTargetHufMinor: savingsTargetHufMinor,
+                                          practiceMonthlyHufMinor: practiceMonthlyHufMinor)
+        } else {
+            request = PenzSettingsRequest(savingsTargetHufMinor: savingsTargetHufMinor, practiceMonthlyHufMinor: practiceMonthlyHufMinor)
+        }
+        do { _ = try await client.saveSettings(request) } catch { return penzErrorText(error) }
         await load(force: true)
         return nil
     }
