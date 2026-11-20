@@ -770,8 +770,10 @@ the old vectors. `matchInvestTxnForSms` (3) and the `runConvertSms` invest-buy a
 - **perDay floors** to a whole minor unit (old app kept the fraction).
 - **Rate limiter is in memory** — single replica; a second replica or a restart-sensitive limit needs a shared store.
 - **`CategoryBudgets` is pure and tested but not on the wire** — the allowance contract has no room; L5's Terv screen.
-- **Out of L4:** the one-shot **importer** from the old app (its data is in Base44's cloud; L5 cut-over, bd
-  `mezo-r36n9.107`); holdings, quotes, news (shipped in L6);
+- **No importer from the old app — not needed** (`mezo-r36n9.107`, closed 2026-11-20): the owner never used the
+  Base44 app, so there is nothing to bring over; Boop Pénz started empty and the old app can be switched off
+  (decision #65 in `14-decisions.md`).
+- **Out of L4:** holdings, quotes, news (shipped in L6);
   **invest-buy adoption on SMS** (old `linkSmsToInvestBuy` / `matchInvestTxnForSms` — still a follow-up after L6);
   every iOS screen (L5).
 - **L6 — valuation ≠ booking** (§4.1, §3.6): a holding's value is recomputed from the latest quote on every read;

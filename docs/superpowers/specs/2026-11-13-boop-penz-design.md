@@ -494,6 +494,9 @@ my calls, not the owner's, and a builder may raise any of them again with a reas
    off when **L5** ships (the moment Költés is live). This is only safe *because* the old app is near-empty
    (§4) — re-verify that before L4, and if it has filled up by then, the importer needs real merge semantics and
    a stable external-id mapping.
+   **Resolved 2026-11-20 (`mezo-r36n9.107`): no importer.** The owner confirmed he never used the old app
+   ("nincs mit exportálni, mert nem használtam"); production Pénz held only his own L5 live-check rows. Boop Pénz
+   starts empty and the old app can be switched off (owner decision #65).
 7. **The SMS ingest gets the proper auth mechanism**, not a 30-day JWT in the Shortcut. The cheap option stops
    capturing silently when the token expires, which lands straight on the anti-goal "the weekly number lies".
    Cost: a filter, a matcher, secret handling, rate limiting and owner resolution for `created_by` in L4.
