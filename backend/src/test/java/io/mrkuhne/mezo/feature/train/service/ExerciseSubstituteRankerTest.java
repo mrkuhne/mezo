@@ -360,6 +360,16 @@ class ExerciseSubstituteRankerTest {
         assertThat(names(r)).containsExactly("Other Press", "Twin Press");
     }
 
+    /** Pain today that no joint in play loads must not reorder by gentleness over the same movement. */
+    @Test
+    void rank_shouldNotLetUnrelatedPainTodayOutrankPattern() {
+        List<Candidate> pool = pool(
+            x("Gentle Other").pattern("vertical-push").equipment("machine").demand("low").joints("elbow"),
+            x("Floor Press").demand("high").joints("elbow"));
+        var r = ExerciseSubstituteRanker.rank(BENCH, pool, new Context("strength", false, Set.of("knee"), Set.of()));
+        assertThat(names(r)).containsExactly("Floor Press", "Gentle Other");
+    }
+
     @Test
     void rank_shouldKeepTypeAboveDiscomfort_whenSoreNow() {
         var r = ExerciseSubstituteRanker.rank(BENCH, pool(
