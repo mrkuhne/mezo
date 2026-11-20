@@ -18,6 +18,25 @@ final class DayEditUI {
     var confirm = false
     var dragging: String?
     var dragOffset: CGFloat = 0
+
+    /// An add, swap or move on `day`: the undo line's index would point at another place there, so it goes. An edit on
+    /// another day keeps it.
+    func structuralEdit(day: Int) { if deleted?.day == day { deleted = nil } }
+}
+
+/// While a ⋯ menu is open, a tap here closes it instead of acting.
+struct DayEditMenuBackdrop: ViewModifier {
+    let ui: DayEditUI
+    var active = true
+    func body(content: Content) -> some View {
+        content.overlay {
+            if active, ui.menuRow != nil {
+                Color.clear.contentShape(Rectangle())
+                    .onTapGesture { withAnimation(.snappy(duration: 0.2)) { ui.menuRow = nil } }
+                    .accessibilityHidden(true)
+            }
+        }
+    }
 }
 
 enum DayEditSheet: Identifiable, Equatable {
@@ -449,7 +468,11 @@ struct DayEditAddSheet: View {
         .task(id: muscle) {
             guard let muscle else { load = .idle; return }
             load = .loading
-            do { load = .ready(try await model.suggest(mode: "add", day: day, muscle: muscle)) } catch { load = .failed }
+            do { load = .ready(try await model.suggest(mode: "add", day: day, muscle: muscle)) } catch {
+                // A chip switch cancels this read: the next one is already loading, not failed.
+                if Task.isCancelled { return }
+                load = .failed
+            }
         }
     }
 
@@ -512,7 +535,10 @@ struct DayEditSwapSheet: View {
             }
             .task(id: rowId) {
                 load = .loading
-                do { load = .ready(try await model.suggest(mode: "replace", day: at.day, outgoing: row)) } catch { load = .failed }
+                do { load = .ready(try await model.suggest(mode: "replace", day: at.day, outgoing: row)) } catch {
+                    if Task.isCancelled { return }
+                    load = .failed
+                }
             }
         }
     }

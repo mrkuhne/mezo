@@ -234,8 +234,21 @@ public final class BlockBuilderModel {
     /// old proposal would be added a second time.
     public var canApplyProposals: Bool { !evaluationStale && indicesFresh && saveState != .saving }
 
+    /// A muscle's proposal edits that may be applied now: none on the day of today's open workout (its card is
+    /// read-only, ruling R11).
+    public func applicableEdits(_ muscle: String) -> [WireEdit] {
+        let locked = lockedDayIndex
+        return (self.muscle(muscle)?.proposal ?? []).filter { $0.dayIndex != locked }
+    }
+
+    /// The muscle has a proposal, but every edit of it falls on the locked day: nothing new is possible today.
+    public func proposalOnlyOnLockedDay(_ muscle: String) -> Bool {
+        !(self.muscle(muscle)?.proposal ?? []).isEmpty && applicableEdits(muscle).isEmpty
+    }
+
     public func applyProposal(_ muscle: String) {
-        guard canApplyProposals, let edits = self.muscle(muscle)?.proposal, !edits.isEmpty else { return }
+        let edits = applicableEdits(muscle)
+        guard canApplyProposals, !edits.isEmpty else { return }
         draft?.apply(edits)
     }
 
@@ -243,7 +256,7 @@ public final class BlockBuilderModel {
     /// proposal touches only its own exercises).
     public func applyAllProposals() {
         guard canApplyProposals else { return }
-        let edits = outside.flatMap(\.proposal)
+        let edits = outside.flatMap { applicableEdits($0.muscle) }
         guard !edits.isEmpty else { return }
         draft?.apply(edits)
     }

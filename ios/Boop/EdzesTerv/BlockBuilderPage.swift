@@ -89,13 +89,13 @@ struct BlockBuilderPage: View {
                         DayEditAddSheet(model: model, day: d, muscle: muscle) { item, rx in
                             guard let c = item.asCatalog else { return }
                             withAnimation(reduceMotion ? nil : .snappy) { model.draft?.add(day: d, catalog: c, prescription: rx) }
-                            edit.deleted = nil
+                            edit.structuralEdit(day: d)
                         }
                     case .swap(let id):
                         DayEditSwapSheet(model: model, rowId: id) { item, rx in
                             guard let c = item.asCatalog, let at = model.draft?.locate(id) else { return }
                             withAnimation(reduceMotion ? nil : .snappy) { model.draft?.replace(day: at.day, at: at.index, with: c, prescription: rx) }
-                            edit.deleted = nil
+                            edit.structuralEdit(day: at.day)
                         }
                     }
                 }
@@ -232,7 +232,7 @@ struct BlockBuilderPage: View {
     private var primary: Primary {
         if model.saveState == .saving { return .saving }
         if model.hasChanges { return .save }
-        if model.outside.contains(where: { !$0.proposal.isEmpty }) { return .align }
+        if model.outside.contains(where: { !model.applicableEdits($0.muscle).isEmpty }) { return .align }
         return .done
     }
 
@@ -429,12 +429,12 @@ private struct BuilderMuscleCard: View {
                         VStack(alignment: .leading, spacing: 10) {
                             HStack(alignment: .top, spacing: 10) {
                                 PlanMark(why ? .target : .spark, color: planWarn, size: 18).padding(.top, 1)
-                                Text(why ? proposalRule : proposalText(m, draft))
+                                Text(why ? proposalRule : (model.proposalOnlyOnLockedDay(muscle) ? lockedProposalText : proposalText(m, draft)))
                                     .nkFont(13).foregroundStyle(.white.opacity(0.85))
                                     .fixedSize(horizontal: false, vertical: true)
                             }
                             HStack(spacing: 16) {
-                                if !m.proposal.isEmpty {
+                                if !model.applicableEdits(muscle).isEmpty {
                                     Button { withAnimation(.snappy) { model.applyProposal(muscle) } } label: {
                                         Text("Elfogadom").nkFont(14, .semibold).foregroundStyle(NK.ground)
                                             .padding(.horizontal, 18).padding(.vertical, 9).background(Capsule().fill(.white))
@@ -522,8 +522,13 @@ private struct BuilderMuscleCard: View {
         "A javaslat a legkevesebb sorozatú gyakorlatot tölti fel először, és sosem tesz egy gyakorlatra ötnél, egy edzésen egy izomra nyolcnál több sorozatot."
     }
 
+    /// Every edit of the proposal falls on the day of today's open workout (ruling R11).
+    private var lockedProposalText: String {
+        "Ma ennél többet nem igazíthatok: a javaslat a most futó edzésed napját érintené. Utána újra megnézem."
+    }
+
     private func proposalText(_ m: WireMuscleEvaluation, _ draft: BlockDraft) -> String {
-        let parts = m.proposal.compactMap { e -> String? in
+        let parts = model.applicableEdits(m.muscle).compactMap { e -> String? in
             guard draft.days.indices.contains(e.dayIndex), draft.days[e.dayIndex].exercises.indices.contains(e.exerciseIndex) else { return nil }
             let ex = draft.days[e.dayIndex].exercises[e.exerciseIndex]
             return "\(e.delta > 0 ? "+" : "−")\(abs(e.delta)) \(ex.name) (\(draft.days[e.dayIndex].name.lowercased()))"
@@ -646,6 +651,7 @@ private struct BuilderDayCard: View {
             let locked = model.lockedDayIndex == index
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
+                  VStack(alignment: .leading, spacing: 14) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(day.name.uppercased()).nkFont(11, .semibold, design: .monospaced).tracking(1.4).foregroundStyle(planHue.glow)
                         Text(day.exercises.isEmpty ? "Pihenőnap" : day.title).nkFont(28, design: .serif).foregroundStyle(.white)
@@ -673,6 +679,9 @@ private struct BuilderDayCard: View {
                         Text("Pihenőnap — ha gyakorlatot teszel rá, edzésnap lesz.")
                             .nkFont(15).foregroundStyle(.white.opacity(0.72)).fixedSize(horizontal: false, vertical: true)
                     }
+                  }
+                  .frame(maxWidth: .infinity, alignment: .leading)
+                  .modifier(DayEditMenuBackdrop(ui: ui))
                     rows(draft, day, evaluation, locked: locked)
                 }
                 .padding(.horizontal, Self.inset).padding(.vertical, 22)
@@ -682,6 +691,8 @@ private struct BuilderDayCard: View {
             }
             .scrollIndicators(.hidden)
             .scrollDisabled(ui.dragging != nil)
+            // A tap beside the card, too, closes an open ⋯ menu.
+            .background { if ui.menuRow != nil { Color.clear.contentShape(Rectangle()).onTapGesture { ui.menuRow = nil } } }
         }
     }
 
@@ -698,6 +709,7 @@ private struct BuilderDayCard: View {
                     if e > 0 { separator }
                     row(draft, exercise, e, capped: capped.contains(e), locked: locked)
                 }
+                .modifier(DayEditMenuBackdrop(ui: ui, active: ui.menuRow != exercise.id))
                 .zIndex(ui.dragging == exercise.id || ui.menuRow == exercise.id ? 2 : 0)
             }
             if let deleted, deleted.index >= day.exercises.count {
@@ -706,7 +718,7 @@ private struct BuilderDayCard: View {
             }
             if !locked {
                 if !day.exercises.isEmpty || deleted != nil { separator }
-                addRow
+                addRow.modifier(DayEditMenuBackdrop(ui: ui))
             }
         }
     }
@@ -837,8 +849,8 @@ private struct BuilderDayCard: View {
     /// One place up or down (VoiceOver), with `onMove` meaning.
     private func moveBy(_ exercise: DraftExercise, _ delta: Int) {
         guard let rows = model.draft?.days[safe: index]?.exercises, let i = rows.firstIndex(where: { $0.id == exercise.id }) else { return }
-        if delta < 0, i > 0 { model.draft?.move(day: index, from: [i], to: i - 1) }
-        if delta > 0, i + 1 < rows.count { model.draft?.move(day: index, from: [i], to: i + 2) }
+        if delta < 0, i > 0 { model.draft?.move(day: index, from: [i], to: i - 1); ui.structuralEdit(day: index) }
+        if delta > 0, i + 1 < rows.count { model.draft?.move(day: index, from: [i], to: i + 2); ui.structuralEdit(day: index) }
     }
 
     private func drag(_ exercise: DraftExercise) -> some Gesture {
@@ -852,9 +864,11 @@ private struct BuilderDayCard: View {
                 if offset > 0, i + 1 < rows.count, let h = heights[rows[i + 1].id], offset > h / 2 {
                     dragBase += h; offset -= h
                     withAnimation(animation) { model.draft?.move(day: index, from: [i], to: i + 2) }
+                    ui.structuralEdit(day: index)
                 } else if offset < 0, i > 0, let h = heights[rows[i - 1].id], -offset > h / 2 {
                     dragBase -= h; offset += h
                     withAnimation(animation) { model.draft?.move(day: index, from: [i], to: i - 1) }
+                    ui.structuralEdit(day: index)
                 }
                 ui.dragOffset = offset
             }

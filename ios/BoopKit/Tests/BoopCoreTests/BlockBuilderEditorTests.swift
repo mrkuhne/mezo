@@ -87,4 +87,19 @@ struct BlockBuilderEditorTests {
         m.draft?.replace(day: 0, at: 1, with: Self.catalogNew, prescription: nil)
         #expect(m.aiNote(try #require(m.draft?.days[0].exercises[1])) == nil)
     }
+
+    @Test(.timeLimit(.minutes(1))) func proposalsNeverTouchTheLockedDay() async throws {
+        let m = await loaded(StubTransport(), lockedDay: .init(dayId: PlanFixtures.dayMon, weekday: nil))
+        let before = try #require(m.draft)
+        // back: Monday row 0 (+1) and Thursday row 1 (+2); biceps: only Monday row 1 (+3).
+        #expect(m.applicableEdits("back").map(\.dayIndex) == [1])
+        #expect(m.applicableEdits("biceps").isEmpty && m.proposalOnlyOnLockedDay("biceps"))
+        #expect(!m.proposalOnlyOnLockedDay("back"))
+        m.applyProposal("biceps")
+        #expect(m.draft == before, "a proposal only on the locked day is a no-op")
+        m.applyAllProposals()
+        let after = try #require(m.draft)
+        #expect(after.days[0].exercises.map(\.sets) == before.days[0].exercises.map(\.sets), "Monday untouched")
+        #expect(after.days[1].exercises[1].sets == before.days[1].exercises[1].sets + 2, "Thursday took its edit")
+    }
 }
