@@ -603,7 +603,11 @@ public struct BlockDraft: Equatable, Sendable {
             let server = out.days[d]
             if let myDay = Self.day(matching: server, in: days), let origDay = Self.day(matching: server, in: original.days),
                Self.lineUpChanged(myDay.exercises, from: origDay.exercises) {
-                guard myDay.exercises.map(\.identity) != server.exercises.map(\.identity) else { continue }
+                // The same line-up as the server's means it took the day — unless a removed-then-re-added row (`isNew`)
+                // only mimics it: then the day is taken from the server only if its rows hold his very values.
+                let sameLineUp = myDay.exercises.map(\.identity) == server.exercises.map(\.identity)
+                if sameLineUp, !myDay.exercises.contains(where: \.isNew)
+                    || zip(myDay.exercises, server.exercises).allSatisfy({ Self.sameValues($0, $1) }) { continue }
                 let onServer = Dictionary(server.exercises.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
                 out.days[d].exercises = myDay.exercises.map { row in
                     guard !row.identityChanged, let s = onServer[row.id], let o = before[row.id], s.identity == row.identity
@@ -631,6 +635,12 @@ public struct BlockDraft: Equatable, Sendable {
     /// The same template day in another read: by id, else by weekday.
     private static func day(matching day: DraftDay, in list: [DraftDay]) -> DraftDay? {
         list.first { $0.id == day.id } ?? list.first { $0.weekday == day.weekday }
+    }
+
+    private static func sameValues(_ a: DraftExercise, _ b: DraftExercise) -> Bool {
+        a.sets == b.sets && a.repMin == b.repMin && a.repMax == b.repMax && a.targetRIR == b.targetRIR
+            && a.warmups == b.warmups && a.anchorWeightKg == b.anchorWeightKg && a.technique == b.technique
+            && a.challenge == b.challenge && a.overrides == b.overrides
     }
 
     private static func lineUpChanged(_ rows: [DraftExercise], from before: [DraftExercise]) -> Bool {

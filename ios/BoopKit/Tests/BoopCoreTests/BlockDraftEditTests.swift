@@ -227,6 +227,21 @@ struct BlockDraftEditTests {
         #expect(carried.changes(since: fresh).days == [0, 1])
     }
 
+    @Test(.timeLimit(.minutes(1))) func aReAddedRowKeepsHisOtherEditsOnTheDay() {
+        let original = PlanFixtures.draft
+        var d = original
+        _ = d.remove(day: 0, at: 1)
+        d.add(day: 0, catalog: Self.curl, prescription: nil)
+        d.move(day: 0, from: IndexSet(integer: 2), to: 1)       // the same line-up as the server's, the curl now a new row
+        d.days[0].exercises[0].repMin = 7
+        d.days[0].exercises[0].repMax = 9
+        let fresh = PlanFixtures.draft
+        #expect(d.days[0].exercises.map(\.identity) == fresh.days[0].exercises.map(\.identity))
+        let carried = d.carryEdits(onto: fresh, original: original)
+        #expect(carried.days[0].exercises[0].repMin == 7 && carried.days[0].exercises[0].repMax == 9)
+        #expect(carried.changes(since: fresh).days == [0])
+    }
+
     @Test(.timeLimit(.minutes(1))) func aDayTheServerTookIsNotReapplied() {
         let original = PlanFixtures.draft
         var d = original
