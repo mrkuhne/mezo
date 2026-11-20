@@ -636,5 +636,21 @@
       "mezo-r36n9.105"
     ],
     "mi_valtozott": "A Pénz területen elkészült a Gyakorlás fül: papíron (valódi pénz nélkül) tervezel egy ügyletet — belépő, stop, cél, miért —, utána lezárod, megjelölöd nyolc címke közül és hogy hibáztál-e; Boop kiszámolja, hányszorosát nyerted vagy vesztetted a vállalt kockázatnak, és hetente összefoglalja, mi ment jól és mi nem. A havi gyakorló keret kemény plafon (például 20 000 Ft), a felhasznált részt mindig látod. Új a termékjegyzék: tíz kikutatott, ellenőrzési dátummal ellátott termék (állampapírok és ETF-ek, költséggel), amit egy koppintással jóváhagysz vagy kihagysz. A havi javaslat a rendszer által számolt összeget osztja szét a tartalék, a közép- és a hosszútáv között, és csak jóváhagyott, legolcsóbb termékeket ajánl; Boop csak a kiszámolt számokat mondja el. A havi stratégia oldal mutatja, mennyi fektethető be ebben a hónapban és miért. Vásárlás, utalás, bróker-kapcsolat nincs."
+  },
+  "43de99df5": {
+    "cim": "Edzés: új technika, Rest pause",
+    "datum": "2026-11-21",
+    "verzio": "v3.23.0",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app",
+      "Háttérrendszer",
+      "Telefonra telepítve"
+    ],
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.125"
+    ],
+    "mi_valtozott": "A technikaválasztóban a myo set után megjelent a Rest pause: 20 ismétlés, aztán négyszer 10 másodperc pihenő és 5 ismétlés. Fix menet: ha egy kör rövidebb, nem áll le magától, csak az „Elég volt” gombra. Ha ezt választod, az egész gyakorlat (minden sorozata) 20 ismétlésre áll. Csak te teheted be, a rendszer és Boop magától nem javasolja."
   }
 }
