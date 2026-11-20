@@ -356,6 +356,12 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     "még nem készült el"), quiet (no story touched his holdings — said calmly), `newsHealthy=false` (`NKNoFreshData`),
     build failed, no holdings (one line pointing to Pénzem, tappable), read failed (`NKBare` *Újra*), cached offline
     (`NKStale`, loud). No push. Ma's third stat stays the per-day figure (build notes call 8).
+  - **Asking for a fresh digest** (`PenzStore.refreshDigestRound`, started by `PenzRoom` and cancelled when he leaves
+    the room): once a day, when today's digest is `pending` or `quiet` and he has holdings — and once more right after
+    his first holding lands (`digestRefreshWanted`) — `POST /api/penz/digest/refresh` (202), the block says „Utánanézek a
+    híreknek — pár perc.", and the digest is re-read after ~45 s and ~120 s, then the round stops (never a loop). A 429
+    `PENZ_DIGEST_REFRESH_LIMITED` (mapped to `.conflict(code)` by `RawJSONClient`) keeps the current state with
+    „Nemrég frissült — pár perc múlva újra."
   - **The analysis page** (`PenzNewsPage`, `NKAreaSubPage`, crumb "Pénz · Ma", title = the item's): the spike's five
     parts, none dropped — MIT JELENT NEKED (the backend's `effectHufMinor` in Outfit, warm when negative, with "Ezt a
     számot a rendszer számolta ki…"), AMIT BOOP GONDOL RÓLA (`NKHueText` for `*emphasis*`), MENNYIRE BIZTOS (dots + level
@@ -384,7 +390,7 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     keyed by today — never yesterday's). Pure builders in `PenzPortfolioLogic.swift`, tests `PenzPortfolioTests.swift`.
   - **Kit (additive)**: `Napkelte/News.swift` — `NKNewsCard`, `NKConfidenceDots`, `NKNewsEffect`, `NKNewsSection`,
     `NKNothingToDo` (also in the `-previewKit YES` gallery).
-  - **Review (DEBUG)**: `-penzPortfolio full|empty|stale|unpriced|error`, `-penzDigest ready|pending|quiet|unhealthy|failed|error`,
+  - **Review (DEBUG)**: `-penzPortfolio full|empty|stale|unpriced|error`, `-penzDigest ready|pending|quiet|unhealthy|failed|limited|error`,
     `-penzPage news1|news2|news3|sleeve|sleeve-short|sleeve-mid`, `-penzSheet record|event|allocation`; the preview
     refuses the symbol `NOPE`, a sell above the value, and a non-forint buy dated on a Sunday (no FX rate).
 - **The Edzés room (B5 phase 1, `mezo-r36n9.15`)** — the same page, with its own data. Edzés left `AreaRoom`

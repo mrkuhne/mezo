@@ -63,8 +63,8 @@ struct PenzDigestBlock: View {
                             openNews(c)
                         }
                     }
-                case .pending: quiet(penzDigestPendingText)
-                case .quiet: quiet(penzDigestQuietText)
+                case .pending: quiet(store?.digestRefresh == .working ? penzDigestRefreshingText : penzDigestPendingText)
+                case .quiet: quiet(store?.digestRefresh == .working ? penzDigestRefreshingText : penzDigestQuietText)
                 case .unhealthy: NKNoFreshData(penzDigestUnhealthyText)
                 case .buildFailed: quiet(penzDigestBuildFailedText)
                 case .noHoldings:
@@ -78,6 +78,10 @@ struct PenzDigestBlock: View {
                     }
                     .buttonStyle(.plain)
                 case .loading, .failed: EmptyView()
+                }
+                if store?.digestRefresh == .limited {
+                    Text(penzDigestLimitedText).nkFont(12.5).foregroundStyle(.white.opacity(0.5))
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
         }

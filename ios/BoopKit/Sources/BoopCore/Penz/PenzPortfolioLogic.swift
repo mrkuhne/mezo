@@ -493,6 +493,8 @@ public func penzDigestView(digest: PenzDigest?, problem: PlanFetchError?, portfo
     }
 }
 
+public let penzDigestRefreshingText = "Utánanézek a híreknek — pár perc."
+public let penzDigestLimitedText = "Nemrég frissült — pár perc múlva újra."
 public let penzDigestPendingText = "A mai összefoglaló még nem készült el — reggel állítom össze, a tőzsdék nyitása előtt. Ha később visszanézel, itt lesz."
 public let penzDigestQuietText = "Ma egyetlen hír sem érintette a *te befektetéseidet*. Ez is válasz: nincs mit nézned."
 public let penzDigestUnhealthyText = "A hírforrásokat most nem érem el, ezért ma nincs friss összefoglaló"

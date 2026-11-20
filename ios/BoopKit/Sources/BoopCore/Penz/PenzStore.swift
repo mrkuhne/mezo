@@ -64,8 +64,11 @@ public final class PenzStore {
     @ObservationIgnored private let cache: ServerCache?
     @ObservationIgnored private let clock: @MainActor () -> Date
 
-    public init(client: PenzClient?, cache: ServerCache?, clock: @escaping @MainActor () -> Date = { Date() }) {
-        self.client = client; self.cache = cache; self.clock = clock
+    @ObservationIgnored private let sleep: @Sendable (Duration) async throws -> Void
+
+    public init(client: PenzClient?, cache: ServerCache?, clock: @escaping @MainActor () -> Date = { Date() },
+                sleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) }) {
+        self.client = client; self.cache = cache; self.clock = clock; self.sleep = sleep
     }
 
     // MARK: - Reading
@@ -176,6 +179,56 @@ public final class PenzStore {
         (digest, digestProblem, digestOffline) = await settle(r, current: current, endpoint: Self.digestEndpoint, key: today)
     }
 
+    // MARK: - Asking for a fresh digest
+
+    /// Where an asked-for rebuild stands (the digest block says it in one calm line).
+    public enum DigestRefresh: Equatable, Sendable {
+        case idle
+        /// Asked; the server is reading the news — re-read after ~45 s and ~120 s.
+        case working
+        /// The server refused: it was rebuilt a few minutes ago.
+        case limited
+    }
+    public private(set) var digestRefresh: DigestRefresh = .idle
+    /// His first holding just landed: one rebuild round is owed even if one already ran today.
+    public private(set) var digestRefreshWanted = false
+    /// The day a round already ran this session — so it never loops.
+    @ObservationIgnored private var refreshedFor: String?
+    @ObservationIgnored private var round = 0
+    /// The two re-reads after the ask: ~45 s, then ~120 s after it.
+    public static let digestRefreshWaits: [Duration] = [.seconds(45), .seconds(75)]
+
+    /// Should a round run now: the first holding just landed, or — once a day — today's digest is pending or quiet
+    /// while he has holdings.
+    public var shouldRefreshDigest: Bool {
+        guard client != nil else { return false }
+        if digestRefreshWanted { return true }
+        guard refreshedFor != today, let d = digest?.value, portfolio?.value.isEmpty == false else { return false }
+        return d.status == "pending" || d.status == "quiet"
+    }
+
+    /// One round: ask for a rebuild, then re-read the digest twice and stop. A 429 keeps what is on screen and says
+    /// so; any other failure stays quiet (the digest block already shows its own state). Cancelling the task (he left
+    /// the page) ends the round.
+    public func refreshDigestRound() async {
+        guard let client, shouldRefreshDigest else { return }
+        refreshedFor = today
+        digestRefreshWanted = false
+        round += 1
+        let mine = round
+        defer { if round == mine, digestRefresh == .working { digestRefresh = .idle } }
+        do { try await client.refreshDigest() } catch {
+            if error == .conflict("PENZ_DIGEST_REFRESH_LIMITED") { digestRefresh = .limited }
+            return
+        }
+        digestRefresh = .working
+        for wait in Self.digestRefreshWaits {
+            do { try await sleep(wait) } catch { return }
+            guard !Task.isCancelled, round == mine else { return }
+            await reloadDigest()
+        }
+    }
+
     /// Re-reads Pénzem alone (after a buy, a sell or an event).
     public func reloadPortfolio() async {
         guard let client else { return }
@@ -201,11 +254,14 @@ public final class PenzStore {
         guard let id else { return "Válaszd ki, melyik befektetésről van szó." }
         var request = transaction
         request.holdingId = id
+        let hadNone = portfolio?.value.isEmpty ?? true
         do { _ = try await client.createInvestTransaction(request) } catch {
             if newHolding != nil { await reloadPortfolio() }
             return penzErrorText(error)
         }
         await reloadPortfolio()
+        // his first holding: the digest has something to look for now
+        if hadNone, portfolio?.value.isEmpty == false { digestRefreshWanted = true }
         return nil
     }
 

@@ -14,7 +14,7 @@ import BoopCore
 ///
 /// L6 (`mezo-r36n9.104`): `-penzPortfolio full|empty|stale|unpriced|error` (default `full`: holdings in all three sleeves,
 /// one ETF in two sleeves, an accruing bond, a euro cash line) and `-penzDigest ready|pending|quiet|unhealthy|failed|error`
-/// (default `ready`: three items like the spike — a holding falling, a rates decision at 0 Ft, a forint move). Writes
+/// (`limited`: quiet, and a refresh answers 429) (default `ready`: three items like the spike — a holding falling, a rates decision at 0 Ft, a forint move). Writes
 /// are kept for the run; the symbol `NOPE` is refused as unknown, a sell above the value is refused, and a non-forint
 /// buy dated on a Sunday answers „no FX rate", so every server refusal can be seen.
 enum PenzPreview {
@@ -258,15 +258,18 @@ final class PenzPreviewModel: @unchecked Sendable {
             practice: PenzPracticeRow(monthlyHufMinor: settings.practiceMonthlyHufMinor))
     }
 
+    /// The digest was asked to rebuild (`refreshPenzDigest`): a pending one comes back built on the next read.
+    var refreshed = false
+
     func digest() -> PenzDigest {
-        let state = PenzPreview.digestState
+        let state = refreshed && PenzPreview.digestState == "pending" ? "ready" : PenzPreview.digestState
         func at(_ hour: Int, _ minute: Int) -> String {
             let d = penzCalendar.date(bySettingHour: hour, minute: minute, second: 0, of: Date()) ?? Date()
             return ISO8601DateFormatter().string(from: d)
         }
         switch state {
         case "pending": return PenzDigest(date: today, status: "pending")
-        case "quiet": return PenzDigest(date: today, status: "quiet", generatedAt: at(6, 40))
+        case "quiet", "limited": return PenzDigest(date: today, status: "quiet", generatedAt: at(6, 40))
         case "unhealthy": return PenzDigest(date: today, status: "quiet", generatedAt: at(6, 40), newsHealthy: false)
         case "failed": return PenzDigest(date: today, status: "failed", generatedAt: at(6, 40))
         default: break
@@ -413,6 +416,10 @@ struct PenzPreviewTransport: ClientTransport {
             case "getPenzDigest":
                 if PenzPreview.digestState == "error" { return (HTTPResponse(status: .internalServerError), nil) }
                 return try json(m.digest())
+            case "refreshPenzDigest":
+                if PenzPreview.digestState == "limited" { return refuse(429, "PENZ_DIGEST_REFRESH_LIMITED") }
+                m.refreshed = true
+                return (HTTPResponse(status: .accepted), nil)
             case "listPenzHoldings":
                 return try json(m.lines.map(\.holding))
             case "listPenzHoldingEvents":
