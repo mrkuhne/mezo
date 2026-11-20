@@ -475,6 +475,12 @@ mezo:
       enabled: true
       cron: "0 30 6,13 * * *"
       zone: Europe/Budapest
+  # Boop B6 Évad (mezo-r36n9.16): no new training block outside a season (SeasonProperties). The test profile
+  # turns the gate off (src/test/resources/application.properties); MesocycleGateIT turns it back on.
+  season:
+    mesocycle-gate:
+      enabled: true
+      planned-lead-days: 7
   techcore:
     # Master switch for Spring's scheduling INFRASTRUCTURE (@EnableScheduling) — one level above
     # the per-job mezo.techcore.cron.* switches below. Those decide whether a job BEAN exists;

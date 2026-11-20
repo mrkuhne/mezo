@@ -86,6 +86,15 @@ public class SeasonPreviewService {
 
     /** The numbers of {@code draft} for {@code season} (null = no season yet). Read-only. */
     public Computed compute(UUID owner, SeasonEntity season, SeasonDraftJson draft) {
+        return computeFields(owner, season == null ? null : season.getGoalId(), goalFields(owner, season, draft), draft,
+            sleepBase(owner));
+    }
+
+    /**
+     * The goal a draft would write: the season goal's start weight (else his latest weigh-in, else the live goal's
+     * start), the live goal's guards (else strength + muscle), the window per {@link SeasonDraftMath}.
+     */
+    public GoalFields goalFields(UUID owner, SeasonEntity season, SeasonDraftJson draft) {
         UUID goalId = season == null ? null : season.getGoalId();
         Optional<SeasonGoalPort.GoalView> seasonGoal = goalId == null ? Optional.empty() : goalPort.goal(owner, goalId);
         Optional<SeasonGoalPort.GoalView> live = seasonGoal.isPresent() ? seasonGoal : goalPort.liveActive(owner);
@@ -94,8 +103,7 @@ public class SeasonPreviewService {
             .or(() -> live.map(g -> g.fields().startWeightKg()))
             .orElseThrow(SeasonPreviewService::profileRequired);
         List<String> guards = live.map(g -> g.fields().guards()).filter(g -> !g.isEmpty()).orElse(DEFAULT_GUARDS);
-        GoalFields fields = SeasonDraftMath.goalFields(draft, startWeight, guards);
-        return computeFields(owner, goalId, fields, draft, sleepBase(owner));
+        return SeasonDraftMath.goalFields(draft, startWeight, guards);
     }
 
     /** The season as it stands, as a draft: the accepted draft, with the live slots and sleep anchor once active. */

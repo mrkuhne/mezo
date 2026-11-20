@@ -17,6 +17,7 @@ import io.mrkuhne.mezo.feature.train.MesocycleActivated;
 import io.mrkuhne.mezo.feature.train.MesocycleClosed;
 import io.mrkuhne.mezo.feature.train.service.CatalogMediaResolver.CatalogMedia;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
+import io.mrkuhne.mezo.feature.train.port.SeasonGatePort;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleReportEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
@@ -90,6 +91,8 @@ public class TrainService {
     // mezo-meyc.3: fires only on a REAL close (never the idempotent re-close or fill-if-null
     // branches) — the companion AI-review generator's AFTER_COMMIT trigger (S3 task 15).
     private final ApplicationEventPublisher eventPublisher;
+    // Boop B6 Évad (mezo-r36n9.16): no new block outside a season — the stamp + real-activation paths ask the gate.
+    private final SeasonGatePort seasonGate;
 
     public List<MesocycleResponse> listMesocycles(UUID createdBy) {
         List<MesocycleEntity> mesos = mesocycleRepository.findByCreatedByAndDeletedFalseOrderByStartDateAsc(createdBy);
@@ -222,6 +225,7 @@ public class TrainService {
      */
     @Transactional
     MesocycleResponse stampRun(UUID createdBy, StampSource src) {
+        requireSeason(createdBy, src.startDate());
         boolean active = "active".equals(src.status());
         MesocycleEntity m = new MesocycleEntity();
         m.setCreatedBy(createdBy); // server-side ownership — never from the client
@@ -303,6 +307,8 @@ public class TrainService {
     public MesocycleResponse activateMesocycle(UUID createdBy, UUID id) {
         MesocycleEntity target = ownedMesoOrThrow(createdBy, id);
         if (!"active".equals(target.getStatus())) {
+            // A block already running is untouched (idempotent re-activate above); a real activation needs a season.
+            requireSeason(createdBy, target.getStartDate());
             // Single-active invariant (spec rule): activating archives every other active meso.
             archiveActiveMesos(createdBy);
             target.setStatus("active");
@@ -324,6 +330,13 @@ public class TrainService {
         // backfills the volume log of a run that never had rows.
         volumeLedger.sync(createdBy, id);
         return assembleResponse(createdBy, target);
+    }
+
+    /** 409 {@code SEASON_REQUIRED} unless a season is active, or a planned one starts within 7 days of {@code start}. */
+    private void requireSeason(UUID createdBy, LocalDate start) {
+        if (!seasonGate.allowsMesocycleStart(createdBy, start != null ? start : LocalDate.now())) {
+            throw new SystemRuntimeErrorException(SystemMessage.error("SEASON_REQUIRED").build(), HttpStatus.CONFLICT);
+        }
     }
 
     /**
