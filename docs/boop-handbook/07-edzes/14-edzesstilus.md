@@ -15,13 +15,17 @@ mennyi tartalék, mennyi pihenő. Négy stílus van:
 
 | Stílus | Összetett gyakorlat | Izolációs gyakorlat | Tartalék | Pihenő (összetett / izolációs) |
 |---|---|---|---|---|
-| **Kiegyensúlyozott** | 6–10 ismétlés | 10–15 ismétlés | 2 (lábgyakorlatoknál 3) | 2,5 perc / 1,5 perc |
+| **Kiegyensúlyozott** | 6–10 ismétlés | 10–15 ismétlés | szabad súlyos összetett 2 (lábgyakorlatoknál 3), gépes összetett 1, izolációs 1 | 2,5 perc / 1,5 perc |
 | **Sok ismétlés** | 10–15 | 15–25 | 2 | 2 perc / 1 perc 15 mp |
-| **Nagyobb súly** | 5–8 | 8–12 | 2 | 3 perc / 2 perc |
+| **Nagyobb súly** | 5–8 | 8–12 | összetett 2, izolációs 1 | 3 perc / 2 perc |
 | **Két sorozat bukásig** | 6–10 | 8–12 | 0 — mindent kiadsz | 3 perc / 2 perc |
 
 A **Két sorozat bukásig** stílus gyakorlatonként csak két sorozatot ír elő; a többi stílus megtartja a tervben szereplő sorozatszámot.
 A „tartalék” azt jelenti, hány ismétlést tudtál volna még csinálni a sorozat végén.
+
+**A nehéz alapgyakorlat messzebb marad a bukástól, mint az izoláció.** A szabad súlyos összetett gyakorlatok (például guggolás, fekvenyomás) jobban fárasztanak és technikásabbak, ezért több tartalékot kapnak; a gépes összetett és az izolációs gyakorlatok közelebb mehetnek a határhoz, mert ott kicsi a kockázat és a fáradtság (Jeff Nippard, *The Muscle Ladder* tanácsa alapján). A lábgyakorlatok a gépen is 3-at kapnak.
+
+**Új blokk alapból Kiegyensúlyozott.** Ha a rendszer tervez neked blokkot, az már ebben a stílusban indul, így a hétről hétre fokozódó erőfeszítés és a könnyebb lazító hét magától működik. A már futó blokkok gyakorlatai megtartják az induláskor kapott tartalékot.
 
 **Hétről hétre fokozódik.** A blokk elején a stílus tartaléka az irányadó, a közepén eggyel kevesebb (nehezebb), az utolsó terhelő héten
 kettővel kevesebb, a terhelés-csökkentő héten kettővel több. Például egy hat hetes blokkban (az utolsó hét lazító) 2-es
@@ -54,7 +58,8 @@ blokkban számít, aminek van stílusa.
 ## Beállítások
 | Beállítás | Mit állít | Alapérték |
 |---|---|---|
-| `mezo.train.style.styles` | A négy stílus ismétlés-tartománya, tartaléka, pihenője, túlcsordulása | a fenti táblázat |
+| `mezo.train.style.styles` | A négy stílus ismétlés-tartománya, tartaléka (gyakorlattípusonként is), pihenője, túlcsordulása | a fenti táblázat |
+| `mezo.meso-plan.default-training-style` | Milyen stílusban indul a rendszer által tervezett új blokk | Kiegyensúlyozott |
 | `mezo.train.style.allout-free-reserve` | Szabad gyakorlatnál a „bukásig” helyett használt tartalék | 1 |
 | `mezo.train.style.ramp` | Az erőfeszítés-fokozás lépései | közép −1, utolsó hét −2, lazító hét +2, szabad alsó határ 1 |
 | `mezo.train.style.stall-weeks` | Hány hét javulás nélkül számít elakadásnak | 2 |
