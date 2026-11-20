@@ -2,7 +2,7 @@
 title: Platform · API Contract & Backend Architecture
 type: feature-platform
 status: done
-updated: 2026-11-19
+updated: 2026-11-20
 tags: [platform, backend, data-layer, frontend, boop, b4-etel, idempotency]
 key_files:
   - api/openapi.yml
@@ -14,6 +14,8 @@ related: [_platform-data-layer, _platform-auth-security, _platform-notifications
 ---
 
 # Platform · API Contract & Backend Architecture — Feature Documentation
+
+> **2026-11-20 — Boop Pénz L5 savings goals (`mezo-r36n9.103`).** `penz.yml` gains `/api/penz/savings-goals` (+ `/{id}`) and the `PenzSavingsGoal{Request,Response}` schemas; one new code `PENZ_SAVINGS_GOAL_NOT_FOUND` in both bundles; `api/openapi.yml` regenerated (the iOS copy is synced by the iOS slice). See [`penz.md`](penz.md) §4.2.
 
 > **2026-11-19 — Boop Pénz L4 (`mezo-r36n9.102`): two new fragments and a second security chain.** `api/feature/penz/penz.yml` (tag `Penz`, JWT) and `api/feature/penz/penz-sms.yml` (tag `PenzSms`) are appended to `api/generate/merge.yml`; `api/openapi.yml` and the iOS copy `ios/BoopKit/Sources/BoopAPI/openapi.yaml` are regenerated (the iOS generator filter is untouched — L5 adds Pénz). Money on the wire is `PenzMoney {minor, currency, hufMinor}`; phone writes keep the `clientRef` idempotency convention. Seventeen `PENZ_*` error codes in both bundles; the review round capped every Pénz amount at `maximum: 100000000000` minor units. `techcore.security.SecurityConfig`'s main JWT chain now leaves `/api/penz/sms/ingest` to the feature's own API-key chain (ordered first). See [`penz.md`](penz.md) §3.4, §4.2.
 
