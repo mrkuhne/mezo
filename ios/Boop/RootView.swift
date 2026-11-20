@@ -24,6 +24,7 @@ struct RootView: View {
             // Simulator review of the shared area-page kit: every block on one page, no sign-in needed.
             if UserDefaults.standard.bool(forKey: "previewKit") {
                 KitGallery()
+            } else if UserDefaults.standard.bool(forKey: "previewSzerkeszto") { SzerkesztoDemoRoot() // THROWAWAY spike mezo-r36n9.116
             } else if UserDefaults.standard.bool(forKey: "previewBlokk") {
                 // The block builder and the weekly review on fixtures (mezo-r36n9.83).
                 PlanPreviewRoot()
