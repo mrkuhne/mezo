@@ -650,6 +650,17 @@ public class FakeCompanionLlm implements CompanionLlm {
     private final java.util.concurrent.atomic.AtomicInteger penzSmsCalls = new java.util.concurrent.atomic.AtomicInteger();
     public int penzSmsCallCount() { return penzSmsCalls.get(); }
 
+    /** Mirror of penz DigestPrompt.MARKER (Boop Pénz L6, mezo-r36n9.104) — LITERAL, like the SMS mirror. */
+    public static final String PENZ_DIGEST_MARKER_MIRROR = "BOOP_PENZ_DIGEST_V1";
+    /** Scripts the digest answer: {@code [fake-penz-digest:<base64 of the JSON answer>]} anywhere in the user message. */
+    private static final Pattern PENZ_DIGEST_SCRIPT = Pattern.compile("\\[fake-penz-digest:([A-Za-z0-9+/=]+)]");
+    /** Mirrors DigestPrompt.STORY_PREFIX + the kind; a story header is always a line of its own. */
+    private static final Pattern PENZ_DIGEST_STORY = Pattern.compile("(?m)^STORY id=(\\S+) kind=(holding|fx|rates)$");
+    /** The first FIGURES line of a story: {@code - Hatás: −18 400 Ft (a te részeden)}. */
+    private static final Pattern PENZ_DIGEST_EFFECT = Pattern.compile("(?m)^- Hatás: (.+?) \\(");
+    private final java.util.concurrent.atomic.AtomicInteger penzDigestCalls = new java.util.concurrent.atomic.AtomicInteger();
+    public int penzDigestCallCount() { return penzDigestCalls.get(); }
+
     /** Default Boop brief answer — valid, complete, Hungarian, Boop voice. */
     public static final String BOOP_CANNED_ANSWER = """
             {"forma":{"headline":"Jó formában vagy","sentence":"Kipihented magad, ma bírni fogod a terhelést."},
@@ -884,6 +895,53 @@ public class FakeCompanionLlm implements CompanionLlm {
                 + PENZ_SMS_CATEGORY + "\"}";
     }
 
+    /**
+     * The digest narration (mezo-r36n9.104): scripted, or one valid, validator-clean entry per story header in the
+     * prompt — keep:true, the story's effect figure copied verbatim from its FIGURES block, no other number, no
+     * direction word — so an IT can run the whole pipeline and get model-narrated items.
+     */
+    private static String penzDigestAnswer(String userMessage) {
+        Matcher scripted = PENZ_DIGEST_SCRIPT.matcher(userMessage);
+        if (scripted.find()) {
+            return new String(Base64.getDecoder().decode(scripted.group(1)), StandardCharsets.UTF_8);
+        }
+        StringBuilder items = new StringBuilder();
+        Matcher story = PENZ_DIGEST_STORY.matcher(userMessage);
+        List<int[]> spans = new ArrayList<>();
+        List<String[]> heads = new ArrayList<>();
+        while (story.find()) {
+            spans.add(new int[] {story.end()});
+            heads.add(new String[] {story.group(1), story.group(2)});
+        }
+        for (int i = 0; i < heads.size(); i++) {
+            int from = spans.get(i)[0];
+            int to = i + 1 < spans.size() ? userMessage.lastIndexOf("STORY id=", spans.get(i + 1)[0]) : userMessage.length();
+            Matcher effect = PENZ_DIGEST_EFFECT.matcher(userMessage.substring(from, Math.max(from, to)));
+            String effectText = effect.find() ? effect.group(1) : "0 Ft";
+            String kind = heads.get(i)[1];
+            String title = switch (kind) {
+                case "fx" -> "Friss hír a forint árfolyamáról";
+                case "rates" -> "Friss hír a kamatokról";
+                default -> "Friss hír a tételedről";
+            };
+            String noAction = switch (kind) {
+                case "fx" -> "Árfolyammozgás, nem befektetési esemény.";
+                case "rates" -> "A kamatozó papírjaid a saját feltételeik szerint futnak tovább.";
+                default -> "Egy hír önmagában nem ok a lépésre.";
+            };
+            if (i > 0) {
+                items.append(',');
+            }
+            items.append("{\"story\":\"").append(jsonEscape(heads.get(i)[0])).append("\",\"keep\":true,\"title\":\"")
+                .append(title).append("\",\"verdict\":\"A hatás a te tételeidből számolva ")
+                .append(jsonEscape(effectText)).append(", nincs vele teendőd.\",\"body\":\"")
+                .append("Ez a teszt-modell összefoglalója.\\n\\nA forrásokat a rendszer csoportosította.\",")
+                .append("\"confidence\":1,\"uncertainty\":\"Ez a teszt-modell válasza, a cikkeket valójában nem olvasta.\",")
+                .append("\"noAction\":\"").append(noAction).append("\"}");
+        }
+        return "{\"items\":[" + items + "]}";
+    }
+
     @Override
     public String complete(String systemPrompt, List<Turn> history, String userMessage,
                            List<ToolCallback> tools, Map<String, Object> toolContext) {
@@ -919,6 +977,10 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (systemPrompt.startsWith(PENZ_SMS_MARKER_MIRROR)) {
             penzSmsCalls.incrementAndGet();
             return penzSmsAnswer(userMessage);
+        }
+        if (systemPrompt.startsWith(PENZ_DIGEST_MARKER_MIRROR)) {
+            penzDigestCalls.incrementAndGet();
+            return penzDigestAnswer(userMessage);
         }
         if (systemPrompt.startsWith(CHECKIN_LINE_MARKER_MIRROR)) {
             return CHECKIN_LINE_CANNED_ANSWER;
