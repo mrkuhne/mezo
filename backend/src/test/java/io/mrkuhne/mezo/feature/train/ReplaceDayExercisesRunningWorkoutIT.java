@@ -65,7 +65,7 @@ class ReplaceDayExercisesRunningWorkoutIT extends AbstractIntegrationTest {
             user, meso.getId(), day.getId(), List.of(row("Lehúzás", 8), row("Evezés", 8))))
             .isInstanceOfSatisfying(SystemRuntimeErrorException.class, e -> {
                 assertThat(e.getStatus()).isEqualTo(HttpStatus.CONFLICT);
-                assertThat(e.getMessages().get(0).getCode()).isEqualTo("DAY_WORKOUT_RUNNING");
+                assertThat(e.getMessages().get(0).getCode()).isEqualTo("TRAIN_DAY_WORKOUT_RUNNING");
             });
         assertThat(ids()).isEqualTo(before);
 

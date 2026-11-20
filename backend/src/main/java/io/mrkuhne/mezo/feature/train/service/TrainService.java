@@ -69,7 +69,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class TrainService {
 
     /** 409 on a structural day save while that day's workout runs (mezo-r36n9.116). */
-    public static final String DAY_WORKOUT_RUNNING = "DAY_WORKOUT_RUNNING";
+    public static final String TRAIN_DAY_WORKOUT_RUNNING = "TRAIN_DAY_WORKOUT_RUNNING";
 
     private final MesocycleRepository mesocycleRepository;
     private final MuscleGroupVolumeLogRepository volumeLogRepository;
@@ -463,7 +463,9 @@ public class TrainService {
      * at every index, the same identity (catalog id, else exact name; {@link #sameIdentity}) — the stored
      * rows are updated IN PLACE (id, created_at, order kept), so a pending week proposal's lines and an
      * open workout's logged sets keep pointing at them. Any other list (reorder, add, remove, swap) keeps
-     * the soft-delete + re-insert path with new ids.
+     * the soft-delete + re-insert path with new ids — and, while a workout of that day is running
+     * (an {@code active} instance), such a structural save is refused with 409 {@code TRAIN_DAY_WORKOUT_RUNNING}
+     * before any write; the in-place path stays allowed.
      */
     @Transactional
     public MesoDay replaceDayExercises(UUID createdBy, UUID mesoId, UUID dayId, List<GymExerciseInput> inputs) {
@@ -489,7 +491,7 @@ public class TrainService {
         if (!aligned && workoutSessionRepository
                 .existsByCreatedByAndTemplateSessionIdAndStatus(createdBy, dayId, "active")) {
             throw new SystemRuntimeErrorException(
-                SystemMessage.error(DAY_WORKOUT_RUNNING).build(), HttpStatus.CONFLICT);
+                SystemMessage.error(TRAIN_DAY_WORKOUT_RUNNING).build(), HttpStatus.CONFLICT);
         }
         List<ExerciseEntity> saved;
         if (aligned) {

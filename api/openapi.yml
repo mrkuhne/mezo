@@ -1292,7 +1292,7 @@ paths:
         '409':
           description: >-
             A structural change (reorder/add/remove/swap) while that day's
-            workout is running (DAY_WORKOUT_RUNNING)
+            workout is running (TRAIN_DAY_WORKOUT_RUNNING)
           content:
             application/json:
               schema:
