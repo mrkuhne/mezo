@@ -37,7 +37,9 @@ osszefoglalo: Néhány kérdés után Boop összerak egy több hetes edzésblokk
 
 - **Tervgenerátor (varázsló):** kiválasztod a napokat, a hetek számát és a kiemelt izomcsoportokat (legfeljebb kettő
   „kiemelt”), Boop összerak egy mezociklust.
-- **Szerkesztés:** napok, gyakorlatok, sorozatok, ismétlés-tartomány, cél-tartalék (RIR), kezdősúly.
+- **Szerkesztés:** napok, gyakorlatok, sorozatok, ismétlés-tartomány, cél-tartalék (RIR), kezdősúly. *A sorozatok szerkesztése
+  és a napi gyakorlatszerkesztő (hozzáadás, csere, törlés, sorrend, ismétlés-tartomány, tartalék, kezdősúly) már él a
+  [blokképítőben](16-blokk-epito.md); napot hozzáadni vagy átnevezni még nem lehet.*
 - **Sablonok és futamok:** a terv sablonként mentődik; egy sablont többször is elindíthatsz („futam”), egy régit újrafuttathatsz.
 - **Saját edzés:** mezociklus nélküli, bármikor ismételhető edzés.
 - **Heti beosztás:** hétköznaponként egy edzésidő.

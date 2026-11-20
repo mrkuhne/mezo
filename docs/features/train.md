@@ -2,7 +2,7 @@
 title: Train
 type: feature-domain
 status: done
-updated: 2026-11-19
+updated: 2026-11-20
 tags: [train, running, sport, frontend, backend, data-layer, progression, hypertrophy]
 key_files:
   - api/feature/train/train.yml
@@ -1031,6 +1031,15 @@ A custom (meso-less) workout template is an ordinary `workout_session` TEMPLATE 
 - **Tests:** `ExerciseSubstituteRankerTest`, `SubstituteReasonTest`, `GymAvailabilityTest`, `DiscomfortHistoryTest`, `PainJointMapTest`, `ExerciseCatalogAttributesTest`, ITs `GymProfileIT`, `ExerciseDiscomfortIT`, `ExerciseSubstitutesIT`, `ExerciseCatalogContractIT`, `ExerciseCatalogLoaderIT`.
 - **Client:** the iPhone app's swap sheet and *Mi van a termemben* ([`boop-ios.md`](boop-ios.md) §2). The swap itself (`changeWorkoutExercise`) is unchanged.
 
+#### Block day editor — add/swap suggestions + the running-day guard (`mezo-r36n9.116`, spec `2026-11-20-boop-blokk-szerkeszto-design.md` §6.3, 2026-11-20)
+- **`POST /api/train/mesocycles/{id}/exercise-suggestions`** (`getBlockExerciseSuggestions`, `TrainController` → `BlockSuggestionService`): a pure read returning the same `ExerciseSubstitutesResponse` as the workout swap, fed from a block's draft day instead of a running workout. Body `BlockExerciseSuggestionsRequest {mode: add|replace, dayIndex?, muscle? (add: the coarse group), outgoing? {catalogId?, name, muscle, type} (replace), dayCatalogIds[]}`. **`replace`** ranks alternatives to the outgoing row (a custom/unknown row falls back to a catalogue-less candidate); **`add`** ranks every catalogue row of the chosen coarse group through the new `ExerciseSubstituteRanker.rankForGroup` (a synthetic outgoing: the group's commonest token, `compound` unless the day already has a compound of the group).
+- **Context.** Goal = the block's `goalPreset`; the gym profile and the discomfort history always apply; nobody is "sore now" while planning; **today's check-in pain joints only when `dayIndex` is today's weekday** (a Thursday edit never reads a Monday shoulder note). `dayCatalogIds` rows are excluded.
+- **`Signal.UNDER_BAND`** (ranker): the second signal for a candidate whose coarse group sits below its weekly band low in the stored block (one `MesoPlanEvaluateService.evaluateRun` call), checked after the discomfort signals and before the goal ones; the sentence „ezen a héten kevés jut erre az izomra” (`SubstituteReason`). It **explains, never reorders** (scoring untouched).
+- **`prescription`** per suggestion (`SuggestionPrescription {workingSets, repMin, repMax, targetRIR, restSec}`) = `StyleStamper.stamp` called **read-only** on a 3 × 8–12 · 2 RIR base with the catalogue's stability, so the phone's weekly numbers are right before the save; `null` on an unstyled block and on rows the stamper never styles (plyo, not counting toward volume). Pool/candidate/top-set/response helpers moved out of `ExerciseSubstituteService` into the shared package-private `SubstituteReads` (the workout swap passes no prescription).
+- **Errors:** 400 `TRAIN_SUGGESTIONS_REQUEST_INVALID` (replace without `outgoing`, add without `muscle`), 404 foreign/unknown block, 409 `TRAIN_RUN_NOT_EDITABLE` (archived block).
+- **`replaceDayExercises` guard (`TrainService`).** A **structural** save (reorder, add, remove, swap — not the in-place path, which keeps exercise ids) while an **`active`** workout instance points at that day (`WorkoutSessionRepository.existsByCreatedByAndTemplateSessionIdAndStatus`) is refused with **409 `TRAIN_DAY_WORKOUT_RUNNING`** before any write — the running workout's logged sets point at the old rows. Both bundles carry the key; the phone locks the day for the same reason.
+- **Tests:** `BlockExerciseSuggestionsIT` (12), `ReplaceDayExercisesRunningWorkoutIT` (2), `BlockSuggestionServiceTest`, `ExerciseSubstituteRankerTest` (under-band cases), `SubstituteReasonTest`, `MessageBundleParityTest`, `ArchitectureTest`.
+
 ### Sport / volleyball · cross · TRX
 - **Tables:** `sport_session` — a **3-kind modality** since `mezo-lmox` (`202606271000_mezo-lmox_generalize_sport_session.sql`): the existing `sport` column is the typed discriminator (`ck_sport_session_sport` CHECK `volleyball|cross|trx`) and a `rounds` INT effort column was added for cross/TRX; the original table (`202606111400_mezo-n5q_create_train.sql`) carries intensity/shoulder_strain CHECK 1-10 + `jump_count`. `sport_schedule_slot` (added in `202606121000_mezo-0ae_t3_sport_schedule.sql`; `day_of_week` SMALLINT 0=Hét..6=Vas CHECK, `kind` training|match CHECK) **gains the same discriminator as `sport_session`** (`mezo-05v6`, `202607141200_mezo-05v6_sport_schedule_slot_sport.sql`): `sport TEXT NOT NULL DEFAULT 'volleyball'` + `ck_sport_schedule_slot_sport` CHECK `volleyball|cross|trx` — the migration back-fills every existing row to `volleyball` via the column default, so no data migration script was needed.
 - **Endpoints:** `GET/POST /api/train/sport-sessions`, `GET/PUT /api/train/sport-schedule` (`replaceSchedule` = full soft-delete + re-insert).
@@ -1314,6 +1323,8 @@ Both modes and both layers must stay green.
 - **Range conversion on a hold day (T1, `mezo-r36n9.79`):** a readiness/comeback hold (`capAtHold`) caps only *upward* moves, so a downward range conversion stands, while an upward conversion on a hold day is held at the old-range reference weight — which can sit off the new range for that one day; accepted.
 
 ## 10. Key files
+
+**Block day editor (`mezo-r36n9.116`)** — `backend/.../feature/train/service/{BlockSuggestionService,SubstituteReads}.java`, `TrainService#replaceDayExercises`.
 
 **Reasoned swap (`mezo-r36n9.66`)** — `backend/.../feature/train/service/{ExerciseSubstituteRanker,ExerciseSubstituteService,SubstituteReason,GymProfileService,GymAvailability,ExerciseDiscomfortService,DiscomfortHistory,PainJointMap,PainLevel}.java`, `entity/{GymProfileEntity,ExerciseDiscomfortEntity}.java`, `config/TrainSubstituteProperties.java`, the three `…_mezo-r36n9.66_*.sql` changesets.
 

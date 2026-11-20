@@ -63,6 +63,17 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-11-20 — Boop block day editor (`mezo-r36n9.116`, small-phone button fix `mezo-r36n9.118`).**
+  On Edzés → Blokk → Napok the owner now edits each day's exercises on the phone: ≡ drag reorder, ⋯ *Csere · Beállítások ·
+  Törlés* (delete with undo), ＋ *Gyakorlat hozzáadása* (muscle chips, *kevés* first, ≤5 reasoned suggestions, full list with
+  search), a settings sheet (rep range, reserve, starting weight, warm-ups, *TE ÁLLÍTOTTAD*, reset to the style), one *Mentés*,
+  the day of a running workout locked (phone and server 409 `TRAIN_DAY_WORKOUT_RUNNING`), and a confirm when a pending weekly
+  proposal touches a changed day. Server: `POST /api/train/mesocycles/{id}/exercise-suggestions` (ranker `rankForGroup`,
+  `UNDER_BAND`, the style's prescription read-only). iOS: identity-aware `BlockDraft` (local keys, `changes`/`carryEdits`).
+  Not yet: adding/renaming/moving days (needs a server addition); coverage hints are `mezo-r36n9.114`. Plan
+  [2026-11-20-boop-blokk-szerkeszto](../superpowers/plans/2026-11-20-boop-blokk-szerkeszto.md); docs
+  [`boop-ios.md`](../features/boop-ios.md), [`train.md`](../features/train.md).
+
 - **2026-11-20 — Train: per-class reserve, reachable weekly grind, generated blocks default to balanced (`mezo-r36n9.115`, closes `mezo-s5sd4`).**
   From the Muscle Ladder re-check (owner choice „Alapstílus + tartalék”): style rows gain optional
   `stable-compound-reserve` / `isolation-reserve` — balanced = free compound 2 (legs 3), stable compound 1, isolation 1;
