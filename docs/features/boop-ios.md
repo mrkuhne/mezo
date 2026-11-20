@@ -409,7 +409,8 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   - **Plan before, one line after:** the plan sheet (`PenzTradePlanSheet`: instrument, long/short, why, stop —
     required —, quantity, optional entry/target) creates a *plan*; the trade sheet (`PenzTradeSheet`) opens it (typed
     entry price + date; the cap is checked here), records a last typed close, closes it (typed exit, ≥ 1 of the eight
-    tag chips, a mistake toggle, one line ≤ 140), or cancels a plan. No market data: every price is typed. The journal
+    tag chips, a mistake toggle, one line ≤ 140), or cancels a plan. A closed trade cannot be deleted (409 — its result
+    stays in the cap and the review); an entry date before the current month is refused. No market data: every price is typed. The journal
     page lists all trades.
   - **The cap** is `penz_settings.practice_monthly_minor` — the same figure as Költés's *Gyakorlás* line; the *A keret*
     sheet shows used/left and links to the Költés lines editor.
