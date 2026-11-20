@@ -384,12 +384,12 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `MomentumAtRiskRule`, `MotivationSlumpRule`, `NarrativeNoteSource`, `NoteEmbeddingCatchUp`, `NoteMentionCatchUp`,
     `OpenAiCompanionLlm`, `OpenAiEmbeddingAdapter`, `OpenAiUsageExtractor`, `OutputLanguageDirective`,
     `PantryEstimateLlmAdapter`, `PantryPhotoLlmAdapter`, `PantryScrapeLlmAdapter`, `PatternCritiqueEnvelope`,
-    `PatternEventPayloadEnvelope`, `PatternEvidenceEnvelope`, `PenzSmsLlmAdapter`, `PersistentPainRule`,
-    `PersonalRecordTools`, `PoorRestednessRule`, `PracticeTools`, `PreparedMemoryQuery`, `ProfileMetaEnvelope`,
-    `ProtocolLapseRule`, `QueryMode`, `RapidWeightLossRule`, `RecalledMemoriesEnvelope`, `RecipeBreakdownLlmAdapter`,
-    `RecipeCookedLlmAdapter`, `RecipeImportLlmAdapter`, `RecipeWorkshopLlmAdapter`, `RecordingToolCallback`,
-    `RecoveryNeededRule`, `RefsEnvelope`, `RetrievalInput`, `RetrievalServingMode`, `ScoreBreakdown`,
-    `ScoreBreakdownEnvelope`, `SessionTimeOverrideSource`, `SleepDebtRule`, `SleepDeficitCalculator`,
+    `PatternEventPayloadEnvelope`, `PatternEvidenceEnvelope`, `PenzDigestLlmAdapter`, `PenzSmsLlmAdapter`,
+    `PersistentPainRule`, `PersonalRecordTools`, `PoorRestednessRule`, `PracticeTools`, `PreparedMemoryQuery`,
+    `ProfileMetaEnvelope`, `ProtocolLapseRule`, `QueryMode`, `RapidWeightLossRule`, `RecalledMemoriesEnvelope`,
+    `RecipeBreakdownLlmAdapter`, `RecipeCookedLlmAdapter`, `RecipeImportLlmAdapter`, `RecipeWorkshopLlmAdapter`,
+    `RecordingToolCallback`, `RecoveryNeededRule`, `RefsEnvelope`, `RetrievalInput`, `RetrievalServingMode`,
+    `ScoreBreakdown`, `ScoreBreakdownEnvelope`, `SessionTimeOverrideSource`, `SleepDebtRule`, `SleepDeficitCalculator`,
     `SleepShotLlmAdapter`, `SlotPlanLlmAdapter`, `SpringAiCompanionLlm`, `StackPlacementLlmAdapter`,
     `SustainedStressRule`, `TechniqueLlmAdapter`, `TestPlanEnvelope`, `TextSignalProvenanceEnvelope`, `ToolCallAudit`,
     `ToolCallsEnvelope`, `ToolContexts`, `ToolOutcomesEnvelope`, `ToolText`, `TrainTools`, `TrainingNoteMentionSweep`,
@@ -430,7 +430,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 - **Contract** `api/feature/memory-retrieval/memory-retrieval.yml` — 2 operations
   - **endpoints:** GET /api/companion/memory/retrieval-feedback ·
     PUT /api/companion/memory/retrieval/{runId}/result/{resultId}/feedback
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 315 IT + 108 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 315 IT + 109 unit
   - **ITs:** `AboutMeServiceIT`, `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`,
     `AnchoredConversationIT`, `BoopChannelChatIT`, `BoopDayContextIT`, `ChatExtractionFlowIT`,
     `ChatExtractionSwitchOffIT`, `ChatForgetRecallIT`, `ChatForgetServiceIT`, `ChatForgetTurnIT`,
@@ -928,34 +928,41 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/penz`
   - **entities→tables:** `PenzAccountEntity`→`penz_account`, `PenzApiKeyEntity`→`penz_api_key`,
-    `PenzCategoryEntity`→`penz_category`, `PenzFxRateEntity`→`penz_fx_rate`, `PenzHoldingEntity`→`penz_holding`,
-    `PenzHoldingEventEntity`→`penz_holding_event`, `PenzInvestTxnEntity`→`penz_invest_txn`,
-    `PenzMonthCloseEntity`→`penz_month_close`, `PenzProviderStatusEntity`→`penz_provider_status`,
+    `PenzCategoryEntity`→`penz_category`, `PenzDigestEntity`→`penz_digest`, `PenzFxRateEntity`→`penz_fx_rate`,
+    `PenzHoldingEntity`→`penz_holding`, `PenzHoldingEventEntity`→`penz_holding_event`,
+    `PenzInvestTxnEntity`→`penz_invest_txn`, `PenzMonthCloseEntity`→`penz_month_close`,
+    `PenzNewsArticleEntity`→`penz_news_article`, `PenzProviderStatusEntity`→`penz_provider_status`,
     `PenzQuoteEntity`→`penz_quote`, `PenzRecurringRuleEntity`→`penz_recurring_rule`,
     `PenzSavingsGoalEntity`→`penz_savings_goal`, `PenzSettingsEntity`→`penz_settings`,
     `PenzSmsMessageEntity`→`penz_sms_message`, `PenzTransactionEntity`→`penz_transaction`
   - **repositories:** `PenzAccountRepository`, `PenzApiKeyRepository`, `PenzCategoryRepository`,
-    `PenzFxRateRepository`, `PenzHoldingEventRepository`, `PenzHoldingRepository`, `PenzInvestTxnRepository`,
-    `PenzMonthCloseRepository`, `PenzProviderStatusRepository`, `PenzQuoteRepository`, `PenzRecurringRuleRepository`,
-    `PenzSavingsGoalRepository`, `PenzSettingsRepository`, `PenzSmsMessageRepository`, `PenzTransactionRepository`
+    `PenzDigestRepository`, `PenzFxRateRepository`, `PenzHoldingEventRepository`, `PenzHoldingRepository`,
+    `PenzInvestTxnRepository`, `PenzMonthCloseRepository`, `PenzNewsArticleRepository`, `PenzProviderStatusRepository`,
+    `PenzQuoteRepository`, `PenzRecurringRuleRepository`, `PenzSavingsGoalRepository`, `PenzSettingsRepository`,
+    `PenzSmsMessageRepository`, `PenzTransactionRepository`
   - **services:** `FrankfurterClient`, `PenzAccountService`, `PenzAllowanceService`, `PenzCategoryService`,
-    `PenzEngineInputs`, `PenzErrors`, `PenzFxService`, `PenzHoldingEventService`, `PenzHoldingService`,
-    `PenzInvestTxnService`, `PenzMonthCloseService`, `PenzMonths`, `PenzPortfolioService`, `PenzProviderHealth`,
+    `PenzDigestLlm`, `PenzDigestService`, `PenzDigestStore`, `PenzEngineInputs`, `PenzErrors`, `PenzFxService`,
+    `PenzHoldingEventService`, `PenzHoldingService`, `PenzInvestTxnService`, `PenzMonthCloseService`, `PenzMonths`,
+    `PenzNewsClient`, `PenzNewsJob`, `PenzNewsRunner`, `PenzPortfolioService`, `PenzProviderHealth`,
     `PenzQuoteService`, `PenzRecurringMaterializer`, `PenzRecurringRuleService`, `PenzSavingsGoalService`,
     `PenzSettingsService`, `PenzSmsIngestService`, `PenzSmsKeyService`, `PenzSmsLlm`, `PenzSmsRateLimiter`,
     `PenzSmsStore`, `PenzTransactionService`, `QuoteClient`
-  - **controllers→contract:** `PenzController`→`PenzApi`, `PenzPortfolioController`→`PenzPortfolioApi`,
-    `PenzSmsController`→`PenzSmsApi`
-  - **mappers:** `PenzMapper`, `PenzPortfolioMapper`
-  - **config:** `PenzProperties`, `PenzSmsApiKeyFilter`, `PenzSmsSecurityConfig`
+  - **controllers→contract:** `PenzController`→`PenzApi`, `PenzNewsController`→`PenzNewsApi`,
+    `PenzPortfolioController`→`PenzPortfolioApi`, `PenzSmsController`→`PenzSmsApi`
+  - **mappers:** `PenzDigestMapper`, `PenzMapper`, `PenzPortfolioMapper`
+  - **config:** `PenzNewsAsyncConfig`, `PenzNewsProperties`, `PenzProperties`, `PenzSmsApiKeyFilter`,
+    `PenzSmsSecurityConfig`
   - **other:** `AccountBalance`, `AccountInput`, `AccountRules`, `AllowanceEngine`, `AllowanceLine`,
-    `AllowanceLineKey`, `AllowanceSettings`, `Balances`, `BookedAmount`, `CategoryBudgets`, `CloseOutcome`,
-    `EmergencyFund`, `Frequency`, `FxConversion`, `GuardVerdict`, `HoldingSpec`, `HoldingValue`, `HufAmountGuard`,
-    `LotBook`, `LotTxn`, `Lots`, `Money`, `MonthCloseInput`, `MonthCloseRules`, `MonthlyAllowance`, `OpenLot`,
-    `PenzDates`, `PenzHttpFetcher`, `PenzSmsKeys`, `PortfolioEngine`, `PortfolioResult`, `PositionInput`,
-    `PositionResult`, `QuotePoint`, `Recurrence`, `RecurringRuleInput`, `RuleKind`, `Side`, `Sleeve`, `SleeveResult`,
-    `SmsAmountCheck`, `SmsConversion`, `SmsIngestLogic`, `SmsPrompt`, `TxnInput`, `TxnKind`, `Valuation`,
-    `ValuationKind`, `WeekPortion`, `WeeklyAllowance`
+    `AllowanceLineKey`, `AllowanceSettings`, `ArticleText`, `Balances`, `BookedAmount`, `CategoryBudgets`,
+    `CloseOutcome`, `DigestAssembler`, `DigestFallbackCopy`, `DigestFigures`, `DigestKind`, `DigestModelItem`,
+    `DigestPrompt`, `DigestStory`, `DigestValidator`, `DigestViolation`, `EmergencyFund`, `Frequency`, `FxConversion`,
+    `GuardVerdict`, `HoldingSpec`, `HoldingValue`, `HufAmountGuard`, `LotBook`, `LotTxn`, `Lots`, `Money`,
+    `MonthCloseInput`, `MonthCloseRules`, `MonthlyAllowance`, `NewsArticle`, `NewsHolding`, `NewsMatcher`,
+    `NewsSource`, `NewsSources`, `NewsText`, `OpenLot`, `PenzDates`, `PenzDigestItemJson`, `PenzHttpFetcher`,
+    `PenzSmsKeys`, `PortfolioEngine`, `PortfolioResult`, `PositionInput`, `PositionResult`, `QuotePoint`, `Recurrence`,
+    `RecurringRuleInput`, `RssItem`, `RssParser`, `RuleKind`, `Side`, `Sleeve`, `SleeveResult`, `SmsAmountCheck`,
+    `SmsConversion`, `SmsIngestLogic`, `SmsPrompt`, `Story`, `StoryClusterer`, `StoryKey`, `TxnInput`, `TxnKind`,
+    `Valuation`, `ValuationKind`, `WeekPortion`, `WeeklyAllowance`
 - **Contract** `api/feature/penz/penz-portfolio.yml` — 13 operations
   - **endpoints:** GET /api/penz/holdings · POST /api/penz/holdings · PUT /api/penz/holdings/{id} ·
     DELETE /api/penz/holdings/{id} · GET /api/penz/holdings/{id}/transactions · POST /api/penz/invest-transactions ·
@@ -975,8 +982,9 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     GET /api/penz/allowance · GET /api/penz/month-closes · GET /api/penz/month-closes/open ·
     POST /api/penz/month-closes/{month} · GET /api/penz/savings-goals · POST /api/penz/savings-goals ·
     PUT /api/penz/savings-goals/{id} · DELETE /api/penz/savings-goals/{id}
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/penz` — 7 IT + 24 unit
-  - **ITs:** `PenzAllowanceApiIT`, `PenzApiIT`, `PenzMonthCloseServiceIT`, `PenzPortfolioApiIT`, `PenzQuoteServiceIT`,
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/penz` — 10 IT + 36 unit
+  - **ITs:** `PenzAllowanceApiIT`, `PenzApiIT`, `PenzDigestPipelineIT`, `PenzMonthCloseServiceIT`,
+    `PenzNewsDigestStoreIT`, `PenzNewsProviderAlertIT`, `PenzPortfolioApiIT`, `PenzQuoteServiceIT`,
     `PenzSavingsGoalApiIT`, `PenzSmsIngestApiIT`
   - **populators:** `DatabasePopulator`, `PenzPopulator`
 

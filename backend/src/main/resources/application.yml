@@ -469,6 +469,12 @@ mezo:
     # AI pillar proposal (propose-only): off ⇒ POST /api/life-goals/propose answers from the rule template.
     lifegoal-ai-propose:
       enabled: true
+  # Boop Pénz L6 news digest (mezo-r36n9.104): the twice-daily quotes + feeds + digest poll (PenzNewsProperties)
+  penz:
+    news:
+      enabled: true
+      cron: "0 30 6,13 * * *"
+      zone: Europe/Budapest
   techcore:
     # Master switch for Spring's scheduling INFRASTRUCTURE (@EnableScheduling) — one level above
     # the per-job mezo.techcore.cron.* switches below. Those decide whether a job BEAN exists;
@@ -495,6 +501,10 @@ mezo:
       # Karakter weekly konzílium pass (mezo-1gim.5, schedule: mezo.character.conference.cron);
       # off = the CharacterConferenceJob bean does not exist
       character-council-job:
+        enabled: true
+      # Boop Pénz L6 news poll (mezo-r36n9.104, schedule: mezo.penz.news.cron); off = the PenzNewsJob bean
+      # does not exist (it also needs mezo.penz.news.enabled)
+      penz-news-job:
         enabled: true
       character-conference-job:
         enabled: true

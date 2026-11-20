@@ -26,6 +26,10 @@ public interface PenzHoldingRepository extends JpaRepository<PenzHoldingEntity, 
         """, nativeQuery = true)
     int nextPosition(@Param("createdBy") UUID createdBy);
 
+    /** Every live, non-archived holding of anyone — the news poll's search terms (no owner data leaves the run). */
+    @Query(value = "select * from penz_holding where is_deleted = false and archived = false", nativeQuery = true)
+    List<PenzHoldingEntity> findAllLive();
+
     /** Every quote symbol held (live, not archived) by anyone — what the daily refresh fetches. */
     @Query(value = """
         select distinct symbol from penz_holding

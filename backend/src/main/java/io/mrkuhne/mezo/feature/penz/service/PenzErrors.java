@@ -22,6 +22,10 @@ public final class PenzErrors {
         return new SystemRuntimeErrorException(SystemMessage.error(code).build(), HttpStatus.BAD_REQUEST);
     }
 
+    public static SystemRuntimeErrorException tooManyRequests(String code) {
+        return new SystemRuntimeErrorException(SystemMessage.error(code).build(), HttpStatus.TOO_MANY_REQUESTS);
+    }
+
     public static SystemRuntimeErrorException field(String field) {
         return new SystemRuntimeErrorException(SystemMessage.field("VALIDATION_INVALID_VALUE", field).build(),
             HttpStatus.BAD_REQUEST);
