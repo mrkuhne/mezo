@@ -21,7 +21,11 @@ osszefoglalo: A Pénzem oldalon látod a befektetéseidet három időtáv szerin
 - **Befektetés rögzítése** (*Befektetést rögzítek*): amit a saját platformodon már megvettél vagy eladtál, azt
   itt felírod — melyik befektetés (vagy egy új: név, fajta, tőzsdei jel ha van, platform, rekesz, pénznem),
   vétel vagy eladás, darabszám ha van, mennyi volt összesen, mikor. Ugyanaz a termék lehet két rekeszben is,
-  külön darabszámmal. Eseményt (lejáratot, kamatfordulót) is itt adsz hozzá.
+  külön darabszámmal. Eseményt (lejáratot, kamatfordulót) is itt adsz hozzá. Ha akarod, azt is megadod, **melyik
+  számládról ment** (eladásnál: melyikre jött) — ilyenkor a vásárlás a havi keretben is megjelenik a „befektetve”
+  sorban. Ha a bank SMS-e már beérkezett erről a terhelésről, Boop felajánlja: *Ez volt a banki terhelés?* — ha
+  kiválasztod, a banki tétel lesz a vásárlás, nem kerül be kétszer. Ha nem adsz meg számlát, minden úgy marad, mint
+  eddig.
 - **A napi hírösszefoglaló a Ma oldal alján.** Csak az a hír kerül ide, ami a **te meglévő befektetéseidet**
   érinti, és csak akkor, ha tartósan számít (szabályozás, technológia, iparági szerkezet, hosszú távú számok) — a
   napon belüli hullámzás kimarad. Az ugyanarról szóló cikkek egy hírbe kerülnek, odaírva, hány forrásból.
@@ -75,18 +79,23 @@ a te részeden” áll — ezt a rendszer számolta, nem az AI.
 | Tábla | Mit tárol |
 |---|---|
 | `penz_holding` | a befektetéseid: név, fajta, tőzsdei jel, platform, rekesz, pénznem, kamat |
-| `penz_invest_txn` | a vételek és eladások: mennyi, hány darab, mikor, forintban is |
+| `penz_invest_txn` | a vételek és eladások: mennyi, hány darab, mikor, forintban is — és melyik számlatételhez tartoznak |
 | `penz_holding_event` | a jövőbeli események: lejárat, kamatforduló, osztalék |
 | `penz_quote` | a legutóbbi záróárak és árfolyamok (közös, nem személyes) |
 | `penz_news_article` | a begyűjtött hírek címe és rövid kivonata, 30 napig |
 | `penz_digest` | a napi összefoglalód: a hírek, a kiszámolt összegek és Boop szövege |
+| `penz_weekly_review` | a heti áttekintés: hetente egy, rekeszenként Boop szövegével és a hét híreivel |
 | `penz_provider_status` | melyik hírforrás és árforrás működik, és mióta nem |
 
 ## Mi jön még
 - A Gyakorlás oldal és Boop javaslatai (*Felosztást kérek*, *Befektetnék*, *Nagyobb összeg*, *Havi stratégia*) — 4.
   lépés. Akkor kerül a Ma oldalra az „ennyit tudsz befektetni” szám is.
-- A heti áttekintés: mi az, ami hosszú távon tényleg számít.
-- Egy vásárlást összekötni a bankszámlád tételével, hogy a havi keretben is látsszon.
+- **A heti áttekintés: mi az, ami hosszú távon tényleg számít.** A szerver már hétfőnként elkészíti: a múlt hét
+  hírei közül rekeszenként (1–3 év · 5–10 év · 10+ év) megmondja, volt-e olyan, ami a hosszú távú képet tényleg
+  érinti — szabályozás, technológia, iparági szerkezet, hosszú távú számok —, miért, és hol tévedhet. Új
+  forintösszeget nem ír, nem sürget, nem mond eladást; ha a szövege nem megy át az ellenőrzésen, egy őszinte,
+  rögzített mondat áll helyette. Értesítés és teendő-gomb nincs. **Hogy a telefonon hol jelenik meg, arról te
+  döntesz** — addig a telefon még nem mutatja.
 
 ## Mi marad ki
 - Napon belüli árfolyam — szándékosan: a te időtávjaidon nem mond semmit, csak nézegetésre csábít.
