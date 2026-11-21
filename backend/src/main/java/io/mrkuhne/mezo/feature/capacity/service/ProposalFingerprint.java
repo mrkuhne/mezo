@@ -18,7 +18,7 @@ import java.util.Objects;
  * device id and times, not the row id, which a sync may renew), whether the day started, the raw-plan facts the accept
  * rules read (planned, skipped, target or origin of a live move) and that night's bedtime. The verdict and ratio are
  * left out on purpose: they follow his body signals through the day and would make every proposal stale by noon.
- * Pure; SHA-256 hex.
+ * Every line group is sorted, so the order a source lists them in can never change the hash. Pure; SHA-256 hex.
  */
 public final class ProposalFingerprint {
 
@@ -33,10 +33,7 @@ public final class ProposalFingerprint {
 
     private static void day(StringBuilder sb, WeekPicture w, LocalDate d) {
         sb.append("day ").append(d).append('\n');
-        for (PlannedSession s : w.sessionsOn(d)) {
-            sb.append("gym ").append(s.templateId()).append('|').append(s.start()).append('|').append(s.minutes())
-                .append('|').append(s.done()).append('|').append(s.running()).append('\n');
-        }
+        w.sessionsOn(d).stream().map(ProposalFingerprint::gym).sorted().forEach(l -> sb.append(l).append('\n'));
         w.sport().stream().filter(s -> s.date().equals(d)).map(ProposalFingerprint::sport).sorted()
             .forEach(l -> sb.append(l).append('\n'));
         List<String> events = w.events().stream().filter(e -> d.equals(e.date())).map(ProposalFingerprint::event)
@@ -48,6 +45,10 @@ public final class ProposalFingerprint {
             .append(" claimed ").append(w.plan().claimedTargets().contains(d))
             .append(" movedFrom ").append(w.plan().movedFrom().contains(d))
             .append(" bed ").append(w.sleep().bedtimes().get(d)).append('\n');
+    }
+
+    private static String gym(PlannedSession s) {
+        return "gym " + s.templateId() + "|" + s.start() + "|" + s.minutes() + "|" + s.done() + "|" + s.running();
     }
 
     private static String sport(SportSlot s) {

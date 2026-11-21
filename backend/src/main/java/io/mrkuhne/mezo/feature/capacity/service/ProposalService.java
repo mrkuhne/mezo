@@ -85,7 +85,8 @@ public class ProposalService {
     private record Generated(WeekPicture picture, List<Built> built) {
     }
 
-    private record Stored(UUID id, Built built) {
+    /** A stored row with what it was built from (the rephrase's input). */
+    record Stored(UUID id, Built built) {
     }
 
     private final CapacityProposalRepository proposals;
@@ -134,8 +135,15 @@ public class ProposalService {
         LocalDate today = today();
         ledger.expireStale(owner, today);
         List<CapacityDay> dayList = null;
-        if (generatable(monday, today) && proposals.findByCreatedByAndWeekStartAndDeletedFalse(owner, monday)
-            .isEmpty()) {
+        List<CapacityProposalEntity> existing = generatable(monday, today)
+            ? proposals.findByCreatedByAndWeekStartAndDeletedFalse(owner, monday) : List.of();
+        if (existing.stream().anyMatch(p -> ProposalStatus.OPEN.wire().equals(p.getStatus())
+            && p.getFingerprint() != null)) {
+            WeekPicture now = pictures.picture(owner, monday);
+            dayList = now.days();
+            expireChanged(owner, existing, now);
+        }
+        if (generatable(monday, today) && existing.isEmpty()) {
             Generated g = generate(owner, monday, Set.of());
             dayList = g.picture().days();
             List<Stored> stored = tx.execute(s -> {
@@ -148,6 +156,36 @@ public class ProposalService {
             rephraseLater(owner, stored);
         }
         return view(owner, monday, dayList != null ? dayList : days.week(owner, monday));
+    }
+
+    /**
+     * An open proposal whose week changed since it was built (its {@link ProposalFingerprint}) → {@code expired}, so a
+     * stale card never sits on the page answering 409; "Kérek más javaslatot" (regenerate) fills the week again. Under
+     * the owner's lock, re-reading each row: only one still open with the same stored fingerprint is touched.
+     */
+    private void expireChanged(UUID owner, List<CapacityProposalEntity> existing, WeekPicture now) {
+        Map<UUID, String> changed = new LinkedHashMap<>();
+        for (CapacityProposalEntity p : existing) {
+            if (ProposalStatus.OPEN.wire().equals(p.getStatus()) && p.getFingerprint() != null
+                && !p.getFingerprint().equals(ProposalFingerprint.of(now, touchedDays(p)))) {
+                changed.put(p.getId(), p.getFingerprint());
+            }
+        }
+        if (changed.isEmpty()) {
+            return;
+        }
+        tx.executeWithoutResult(t -> {
+            lock.lock(owner);
+            Instant at = clock().instant();
+            changed.forEach((id, fingerprint) -> proposals.findWithLockByIdAndCreatedByAndDeletedFalse(id, owner)
+                .filter(p -> ProposalStatus.OPEN.wire().equals(p.getStatus()))
+                .filter(p -> fingerprint.equals(p.getFingerprint()))
+                .ifPresent(p -> {
+                    p.setStatus(ProposalStatus.EXPIRED.wire());
+                    p.setUpdatedAt(at);
+                    proposals.save(p);
+                }));
+        });
     }
 
     /**
@@ -295,12 +333,17 @@ public class ProposalService {
 
     /** Runs on a background thread, no transaction around the model; each changed row is saved in its own one. */
     void rephrase(UUID owner, List<Stored> stored) {
+        rephrase(owner, stored, words);
+    }
+
+    /** {@link #rephrase(UUID, List)} with the writer given (tests plant a model answer through it). */
+    void rephrase(UUID owner, List<Stored> stored, ProposalWordingWriter writer) {
         LlmActorContext.runAs(owner, () -> {
             for (Stored s : stored) {
                 try {
-                    Wording w = words.word(s.built().draft(), s.built().effects());
+                    Wording w = writer.word(s.built().draft(), s.built().effects());
                     if (!w.equals(s.built().wording())) {
-                        tx.executeWithoutResult(t -> reword(owner, s, w));
+                        reword(owner, s, w);
                     }
                 } catch (RuntimeException e) {
                     log.warn("Capacity proposal rephrase failed, the template words stay: {}", e.getMessage());
@@ -309,13 +352,25 @@ public class ProposalService {
         });
     }
 
-    /** Only a still-open row that still carries the template's words takes the rephrase. */
-    private void reword(UUID owner, Stored s, Wording w) {
-        proposals.findById(s.id())
-            .filter(p -> owner.equals(p.getCreatedBy()) && !p.isDeleted())
+    /**
+     * Only a still-open row that still carries the template's words takes the rephrase. Its own short transaction,
+     * under the owner's {@link CapacityLock} and the row lock, re-reading the row AFTER both: the whole entity is saved,
+     * so a read before an accept / decline / undo committed would write {@code open} back over it.
+     *
+     * @return whether the row took the new words
+     */
+    boolean reword(UUID owner, Stored s, Wording w) {
+        return Boolean.TRUE.equals(tx.execute(t -> {
+            lock.lock(owner);
+            return reword0(owner, s, w);
+        }));
+    }
+
+    private boolean reword0(UUID owner, Stored s, Wording w) {
+        return proposals.findWithLockByIdAndCreatedByAndDeletedFalse(s.id(), owner)
             .filter(p -> ProposalStatus.OPEN.wire().equals(p.getStatus()))
             .filter(p -> Objects.equals(p.getTitle(), s.built().wording().title()))
-            .ifPresent(p -> {
+            .map(p -> {
                 Map<String, Object> effects = new LinkedHashMap<>(p.getEffects() == null ? Map.of() : p.getEffects());
                 effects.put("lines", w.effectLines());
                 p.setEffects(effects);
@@ -323,7 +378,9 @@ public class ProposalService {
                 p.setWhy(w.why());
                 p.setUpdatedAt(clock().instant());
                 proposals.save(p);
-            });
+                return true;
+            })
+            .orElse(false);
     }
 
     // ── reads ─────────────────────────────────────────────────────────────────

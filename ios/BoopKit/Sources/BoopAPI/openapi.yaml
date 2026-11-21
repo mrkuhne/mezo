@@ -3890,14 +3890,22 @@ paths:
         '400':
           description: >-
             Missing field, bad target (TRAIN_SKIP_TARGET_INVALID), reason not
-            allowed for the kind (TRAIN_SKIP_REASON_INVALID) or date outside the
-            window (TRAIN_SKIP_DATE_OUT_OF_WINDOW)
+            allowed for the kind or KAPACITAS (TRAIN_SKIP_REASON_INVALID) or
+            date outside the window (TRAIN_SKIP_DATE_OUT_OF_WINDOW)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
         '401':
           description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            The target's skip belongs to an accepted capacity rearrangement
+            (TRAIN_SKIP_CAPACITY_OWNED)
           content:
             application/json:
               schema:

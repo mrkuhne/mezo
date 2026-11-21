@@ -75,22 +75,27 @@ public class PlannedSkipService {
         if (req.getReasonCategory() != null && Reason.valueOf(req.getReasonCategory().getValue()) == Reason.KAPACITAS) {
             throw bad("TRAIN_SKIP_REASON_INVALID");
         }
-        return write(user, req);
+        return write(user, req, false);
     }
 
     /**
      * The trusted entry point of the capacity ledger (Boop B7 K3, mezo-r36n9.17): a GYM skip with reason
-     * {@code KAPACITAS}, written inside the ledger's transaction. Any other kind or reason is refused.
+     * {@code KAPACITAS}, written inside the ledger's transaction; it may re-reason a matching row.
      */
     @Transactional
     public PlannedSkipResponse upsertForCapacity(UUID user, LocalDate date) {
         return write(user, new PlannedSkipRequest()
             .date(date)
             .kind(PlannedSkipKind.GYM)
-            .reasonCategory(PlannedSkipReason.KAPACITAS));
+            .reasonCategory(PlannedSkipReason.KAPACITAS), true);
     }
 
-    private PlannedSkipResponse write(UUID user, PlannedSkipRequest req) {
+    /**
+     * {@code trusted} = the capacity ledger's entry point. The public path never re-reasons a {@code KAPACITAS} row
+     * (the match ignores the reason): 409 {@code TRAIN_SKIP_CAPACITY_OWNED} — he takes it back from the Átrendezés
+     * page, which also undoes the rest of the accepted change.
+     */
+    private PlannedSkipResponse write(UUID user, PlannedSkipRequest req, boolean trusted) {
         LocalDate today = LocalDate.now(TZ);
         LocalDate date = req.getDate();
         LocalDate sunday = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
@@ -120,6 +125,10 @@ public class PlannedSkipService {
                 e.setSessionKey(req.getSessionKey());
                 return e;
             });
+        if (!trusted && row.getReasonCategory() == Reason.KAPACITAS) {
+            throw new SystemRuntimeErrorException(SystemMessage.error("TRAIN_SKIP_CAPACITY_OWNED").build(),
+                HttpStatus.CONFLICT);
+        }
         row.setReasonCategory(reason);
         // A reason-only re-upsert (no plannedKcal) keeps the stored snapshot; only MEAL carries one.
         if (kind == Kind.MEAL && req.getPlannedKcal() != null) {

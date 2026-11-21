@@ -19,8 +19,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.task.AsyncTaskExecutor;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -62,9 +63,30 @@ public class ProposalWordingWriter {
     private final ObjectMapper objectMapper;
     private final AsyncTaskExecutor executor;
 
+    /** Small concurrency cap on the model calls of this writer. */
+    static final int MAX_CONCURRENT_CALLS = 2;
+
+    /**
+     * The model call runs on the writer's OWN small executor (virtual threads, at most {@value #MAX_CONCURRENT_CALLS}
+     * at once) — never on the shared {@code applicationTaskExecutor}: the proposal rephrase already runs there, and a
+     * nested blocking task on the same pool could starve it. The executor exists only to keep the
+     * {@value #LLM_TIMEOUT_SECONDS} s timeout.
+     */
+    @Autowired
     public ProposalWordingWriter(ObjectProvider<CompanionLlm> companionLlm, LlmCallContextHolder llmCallContextHolder,
-                                 ObjectMapper objectMapper,
-                                 @Qualifier("applicationTaskExecutor") AsyncTaskExecutor executor) {
+                                 ObjectMapper objectMapper) {
+        this(companionLlm, llmCallContextHolder, objectMapper, ownExecutor());
+    }
+
+    private static AsyncTaskExecutor ownExecutor() {
+        SimpleAsyncTaskExecutor e = new SimpleAsyncTaskExecutor("capacity-words-");
+        e.setVirtualThreads(true);
+        e.setConcurrencyLimit(MAX_CONCURRENT_CALLS);
+        return e;
+    }
+
+    ProposalWordingWriter(ObjectProvider<CompanionLlm> companionLlm, LlmCallContextHolder llmCallContextHolder,
+                          ObjectMapper objectMapper, AsyncTaskExecutor executor) {
         this.companionLlm = companionLlm;
         this.llmCallContextHolder = llmCallContextHolder;
         this.objectMapper = objectMapper;

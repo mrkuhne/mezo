@@ -18,7 +18,10 @@ import io.mrkuhne.mezo.feature.capacity.repository.DayAdjustmentRepository;
 import io.mrkuhne.mezo.feature.capacity.service.AdjustmentDraft;
 import io.mrkuhne.mezo.feature.capacity.service.AdjustmentPayload;
 import io.mrkuhne.mezo.feature.capacity.service.ProposalService;
+import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
+import io.mrkuhne.mezo.feature.train.repository.PlannedSkipRepository;
+import io.mrkuhne.mezo.feature.train.service.PlannedSkipService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.feature.wearable.entity.CalendarEventEntity;
 import io.mrkuhne.mezo.feature.wearable.repository.CalendarEventRepository;
@@ -61,6 +64,8 @@ class CapacityApiIT extends ApiIntegrationTest {
     @Autowired private CapacityProposalRepository proposals;
     @Autowired private DayAdjustmentRepository adjustments;
     @Autowired private ProposalService service;
+    @Autowired private PlannedSkipService plannedSkips;
+    @Autowired private PlannedSkipRepository skipRows;
 
     private final LocalDate monday = LocalDate.now(BUD).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         .plusWeeks(1);
@@ -170,9 +175,12 @@ class CapacityApiIT extends ApiIntegrationTest {
         });
         assertThat(p.getEffects()).extracting(c -> c.getLabel()).contains("Heti edzés", "Heti kalória", "Súlycél");
 
-        // stored, not regenerated on the next read
-        assertThat(week(user).getProposals()).extracting(CapacityProposal::getId)
+        // stored, not regenerated on the next read — and an unchanged week keeps them open
+        CapacityWeek again = week(user);
+        assertThat(again.getProposals()).extracting(CapacityProposal::getId)
             .containsExactlyElementsOf(w.getProposals().stream().map(CapacityProposal::getId).toList());
+        assertThat(again.getProposals()).allSatisfy(x ->
+            assertThat(x.getStatus()).isEqualTo(CapacityProposal.StatusEnum.OPEN));
         // a past week is read-only: no proposals are generated for it
         assertThat(getForBody("/api/capacity/week?monday=" + monday.minusWeeks(3), user.headers(), HttpStatus.OK,
             CapacityWeek.class).getProposals()).isEmpty();
@@ -219,6 +227,25 @@ class CapacityApiIT extends ApiIntegrationTest {
         assertHasRequestError(body, "CAPACITY_PROPOSAL_STALE");
         assertThat(adjustments.findAll()).noneMatch(r -> user.id().equals(r.getCreatedBy()));
         assertThat(proposals.findById(p.getId()).orElseThrow().getStatus()).isEqualTo("open");
+    }
+
+    @Test
+    void weekExpiresAProposalWhoseWeekChanged() {
+        RegisteredUser user = packedThursday("cap-expire");
+        CapacityProposal p = week(user).getProposals().get(0);
+        withPeople(user.id(), thursday, "Új egyeztetés", "15:00", "15:30");
+
+        CapacityWeek after = week(user);
+
+        // the stale card is settled on the read, never left open to answer 409
+        assertThat(after.getProposals()).filteredOn(x -> x.getId().equals(p.getId())).singleElement()
+            .satisfies(x -> assertThat(x.getStatus()).isEqualTo(CapacityProposal.StatusEnum.EXPIRED));
+        assertThat(open(after)).noneMatch(x -> x.getTouchedDays().contains(thursday));
+        // "Kérek más javaslatot" fills the week again from the week as it is now
+        CapacityWeek refilled = regenerate(user);
+        assertThat(open(refilled)).anySatisfy(x -> assertThat(x.getDay()).isEqualTo(thursday));
+        assertThat(refilled.getProposals()).filteredOn(x -> x.getId().equals(p.getId())).singleElement()
+            .satisfies(x -> assertThat(x.getStatus()).isEqualTo(CapacityProposal.StatusEnum.EXPIRED));
     }
 
     @Test
@@ -331,5 +358,20 @@ class CapacityApiIT extends ApiIntegrationTest {
             user.headers(), HttpStatus.BAD_REQUEST, String.class);
 
         assertHasRequestError(body, "TRAIN_SKIP_REASON_INVALID");
+    }
+
+    @Test
+    void publicSkipPathCannotReReasonACapacitySkip() {
+        RegisteredUser user = registerUser("cap-skip-owned");
+        LocalDate today = LocalDate.now(BUD);
+        UUID id = plannedSkips.upsertForCapacity(user.id(), today).getId();
+
+        String body = putForBody("/api/train/skips", new PlannedSkipRequest()
+                .date(today).kind(PlannedSkipKind.GYM).reasonCategory(PlannedSkipReason.TIRED),
+            user.headers(), HttpStatus.CONFLICT, String.class);
+
+        assertHasRequestError(body, "TRAIN_SKIP_CAPACITY_OWNED");
+        assertThat(skipRows.findByIdAndCreatedByAndDeletedFalse(id, user.id()).orElseThrow().getReasonCategory())
+            .isEqualTo(PlannedSkipEntity.Reason.KAPACITAS);
     }
 }
