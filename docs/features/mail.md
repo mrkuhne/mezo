@@ -56,7 +56,8 @@ All on the iPhone (§6); the server has no UI.
 - **The wall.** Levél is the first life area on the Ma wall (`.expires`: a due-today/tomorrow deadline or a deal ≥ 8
   expiring within ~36 h; `.happened`: *Megjött a reggeli posta · N érdekes*).
 - **When mail is not read:** a run with no model (cost cap hit or model down) falls back to rules-only grouping and the
-  digest says so (`rulesOnly` + `rulesOnlyReason` `cap|failure`); two runs in a row with zero new mail turn the mailbox
+  digest says so (`rulesOnly` + `rulesOnlyReason` `cap|failure`, taken from the **latest run of the day that did
+model-relevant work** — classified mail or was rules-only — so an empty or failed 15:00 run never hides a morning cap); two runs in a row with zero new mail turn the mailbox
   state `silent` ("lehet, hogy a továbbítás leállt").
 
 ## 3. Architecture & data flow
@@ -120,8 +121,12 @@ text (tracking numbers and login codes are masked in the redacted body but must 
 1. **Sensitive** (`SensitiveSeed` seeded domains — Hungarian banks, insurers, `gov.hu`/ügyfélkapu, health providers —
    plus explicit login-code wording, plus owner `sensitive` rules). A match is classified by rule, **subject and body
    are not stored** (only sender, date, the matching rule), and the mail is **never sent to a model**.
-2. Owner `always` rule → *Person*; bulk detection (`BulkDetector`: List-Unsubscribe / Precedence / known bulk domains)
-   vs a real person; owner `silent` rule → *A többi* (`csendben`).
+2. Owner `always` rule → *Person* (the only rule that says person); owner `silent` rule → *A többi* (`csendben`);
+   bulk detection (`BulkDetector`: List-Unsubscribe / Precedence / known bulk domains) only marks the mail bulk —
+   **every non-bulk mail without another verdict goes to the model as `NeedsModel(false)`** (final review, so a bill
+   from `szamla@…` or `info@…` is classified, not filed as a person). Mail fetched from **`[Gmail]/Spam` is never a
+   person by rule**: it reaches the people block only if the screen answers CLEAN, otherwise (model down, cap hit, or
+   flagged) it is filed under *A többi* as **„Gyanús”**.
 3. **JSON-LD** (`JsonLdReader`): `ParcelDelivery`, `Invoice`, `EventReservation`, deal annotations fill the fields.
 4. **Carrier rules** (`CarrierRules`: GLS, Foxpost, Packeta, MPL, DPD → tracking pattern → status words): parcel
    mail never reaches a model. **The carrier patterns and status words are `// provisional`** (§9).
@@ -185,10 +190,17 @@ freshness (half-life 90 days), clamped to **−2..+2** and applied to the model 
 1..10 follows. `proposals()` returns senders with ≥ 3 consecutive *nem érdekel* (`silentAfterNopes`); nothing changes
 without his tap. `examples()` feeds the last 8 tapped deals (redacted one-liner + verdict) into the score prompt.
 
+**Subjects are masked too** (`MailRedactor.mask`, final review): the classify, score and screen prompts and the
+JSON-LD title fallback carry the masked subject, and the validator checks model dates/amounts against
+masked subject + redacted body. Bare `www.host/path?query` links (no scheme) are cut to the bare host like `https://`.
+
 ### 3.8 Credential
 
 `MailCredentialCipher.java:21` — **AES-256-GCM**, 12-byte nonce, 128-bit tag, key from `mezo.mail.secret-key` validated
-in the constructor (`MAIL_SECRET_UNREADABLE` if a stored secret can no longer be opened). `MailMailboxService.java:30`:
+in the constructor (`MAIL_SECRET_UNREADABLE` if a stored secret can no longer be opened). **No default key ships in
+`application.yml`** (`${MEZO_MAIL_SECRET_KEY:}`): with mail enabled the cipher refuses a blank key, and refuses the
+test dummy whenever `mezo.auth.strict=true` (prod, `MEZO_AUTH_STRICT`), so a forgotten secret fails startup instead of
+sealing his password with a public key. The dummy lives only in the test `application.properties`. `MailMailboxService.java:30`:
 connect = verify IMAP login **first** (422 `MAIL_AUTH_FAILED`, 503 `MAIL_UNREACHABLE`), strip whitespace, seal, store;
 the password is never logged, never echoed, never returned; disconnect nulls both secret columns (the address stays).
 Changing the address drops the old folder cursors.
@@ -215,7 +227,7 @@ is kept for learning and history; sensitive mail has no body to purge.
 |---|---|---|
 | `enabled` | false | all mail beans |
 | `techcore.cron.mail-job.enabled` | false | the scheduled `MailJob` |
-| `secret-key` (env `MEZO_MAIL_SECRET_KEY`) | dev dummy | base64 AES key for the app password |
+| `secret-key` (env `MEZO_MAIL_SECRET_KEY`) | none (test dummy only in test properties) | base64 AES key for the app password |
 | `cron` / `zone` | `0 0 8,15 * * *` / Europe/Budapest | schedule and the "day" of the cap |
 | `daily-usd-cap` | 0.15 | per Budapest day, the three mail slugs |
 | `deal-worth-threshold` / `notify-threshold` / `notify-window-hours` | 7 / 8 / 36 | worth-a-minute, ring score, ring window |
@@ -324,7 +336,7 @@ Focused gate: `./mvnw clean test -Dmezo.test.use-testcontainers=true -Dtest='Mai
   6. `MailRunner.run()` fan-out over several users has no direct test; a full executor answers 429
      `MAIL_RUN_COOLDOWN`; two manual requests in the first seconds of a long run both pass (the single-flight lock makes
      the second a no-op); a newsletter orphan picked up by the crash-window path is classified *Person* (no stored
-     headers); a bare `www.x.com/?tok` URL and bare 4–5 digit login codes slip past redaction/rules (parked minors).
+     headers); bare 4–5 digit login codes slip past the rules without explicit login wording (parked minor).
   7. Gmail's `X-GM-MSGID` live path is covered by a parse unit test only (GreenMail has no such extension).
 - **Rejected:** Gmail API OAuth / Pub/Sub (restricted scope: 7-day tokens in Testing, CASA in Production), an own inbound
   domain (approach B), the phone reading mail (approach C), IMAP IDLE, a "processed" label in the mailbox.

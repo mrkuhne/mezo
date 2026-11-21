@@ -18,6 +18,8 @@ related: [season, penz, mail, fuel, pantry, recipe, dayclose, intention, journal
 
 # Boop — native iOS app — Feature Documentation
 
+> **2026-11-21 — Levél final review.** Signing out (or switching account) cancels every pending `wall.*` notification and clears the notifier's stored state (`WallNotifier.signedOut`, called from `RootView`).
+
 > **2026-11-21 — Boop Levél L1 + L2 (`mezo-r36n9.38` + `.39`), built on `feat/level-posta`.** The Levél area is real: the
 > morning post (four groups, scored deals, a learned taste, the mirror-Gmail setup in Fiókok) and the **first wall source
 > from a life area** — and the wall's ring (`WallNotifier`) is built for the first time, for every `.expires` source. See

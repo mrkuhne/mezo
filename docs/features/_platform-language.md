@@ -12,6 +12,8 @@ key_files:
 related: [_platform-auth-security, _platform-design-system, companion, settings, _platform-api-backend]
 ---
 
+> **2026-11-21 — reviewed after the Levél final review (`mezo-r36n9.39`, no language-layer change).** The dummy mail key moved from `application.yml` to the test properties; no message keys changed.
+
 > **2026-11-21 — reviewed after Boop Levél L1+L2 (`mezo-r36n9.38/.39`, no language-layer change).** Mail error keys (`MAIL_AUTH_FAILED`, `MAIL_UNREACHABLE`, `MAIL_RUN_COOLDOWN`, `MAIL_NOT_CONNECTED`, `MAIL_ITEM_NOT_FOUND`, `MAIL_INTAKE_ERROR`, `MAIL_SECRET_UNREADABLE`) added to both bundles; the phone's Levél copy is Hungarian-only like the rest of Boop.
 
 > **2026-11-21 — reviewed after Boop B6 Évad S4 (`mezo-r36n9.16`).** Five `EXPERIMENT_*` keys added to both `messages_hu` and `messages_en` (parity kept); the experiment copy on the phone is Hungarian-only like the rest of Boop. No language mechanism changed. See [`season.md`](season.md) §3.14.
