@@ -19,6 +19,7 @@ import org.springframework.validation.annotation.Validated;
  * @param live             live recompute throttle
  * @param sunday           the Sunday week-proposal job
  * @param notesMaxChars    calendar notes characters sent to the scoring model
+ * @param defaultBaseUnits the day-unit base while he has no history of his own (the "tanuló" start)
  */
 @Validated
 @ConfigurationProperties(prefix = "mezo.capacity")
@@ -33,7 +34,8 @@ public record CapacityProperties(
         @DefaultValue Proposals proposals,
         @DefaultValue Live live,
         @DefaultValue Sunday sunday,
-        @DefaultValue("2000") int notesMaxChars) {
+        @DefaultValue("2000") int notesMaxChars,
+        @DefaultValue("6.0") double defaultBaseUnits) {
 
     public record Verdict(@DefaultValue("0.6") double laza,
                           @DefaultValue("0.9") double rendben,

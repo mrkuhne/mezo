@@ -164,6 +164,30 @@ public class EventScoringService {
         return out;
     }
 
+    /**
+     * Stored scores for every event of {@code from..to}, a rule score for the rest — never a model call and never a
+     * write. For baseline history, where an unscored old event must not cost a call.
+     */
+    public Map<UUID, EventScore> storedOrRule(UUID owner, LocalDate from, LocalDate to) {
+        List<CalendarEventView> events = calendar.events(owner, from, to);
+        if (events.isEmpty()) {
+            return Map.of();
+        }
+        Map<UUID, Map<String, CalendarEventScoreEntity>> byEvent = new LinkedHashMap<>();
+        for (CalendarEventScoreEntity row : scores.findByCreatedByAndEventIdIn(owner,
+                events.stream().map(CalendarEventView::id).toList())) {
+            byEvent.computeIfAbsent(row.getEventId(), k -> new LinkedHashMap<>()).put(row.getInputHash(), row);
+        }
+        Map<String, FeedbackEffect> labels = labels(owner);
+        Map<UUID, EventScore> out = new LinkedHashMap<>();
+        for (CalendarEventView e : events) {
+            CalendarEventScoreEntity row = byEvent.getOrDefault(e.id(), Map.of()).get(inputHash(e));
+            EventScore base = row != null ? fromRow(row) : RuleEventScore.score(e);
+            out.put(e.id(), applyFeedback(base, labels.get(eventKey(e.externalId()))));
+        }
+        return out;
+    }
+
     /** SHA-256 over what the score depends on: title, start, end, attendee names, location, notes. */
     public static String inputHash(CalendarEventView e) {
         String joined = String.join("\u001f", nz(e.title()), String.valueOf(e.start()), String.valueOf(e.end()),

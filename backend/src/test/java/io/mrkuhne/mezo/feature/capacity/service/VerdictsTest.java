@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 class VerdictsTest {
 
     private static final CapacityProperties P = new CapacityProperties(true, new CapacityProperties.Verdict(0.6, 0.9, 1.0),
-            1.25, 1.3, 90, 15, new CapacityProperties.Learning(14, 5), null, null, null, 2000);
+            1.25, 1.3, 90, 15, new CapacityProperties.Learning(14, 5), null, null, null, 2000, 6.0);
 
     @Test
     void thresholdsMapToWords() {

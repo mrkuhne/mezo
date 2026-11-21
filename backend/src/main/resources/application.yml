@@ -506,6 +506,7 @@ mezo:
     sunday:
       cron: "0 0 18 * * SUN"
     notes-max-chars: 2000
+    default-base-units: 6.0
   techcore:
     # Master switch for Spring's scheduling INFRASTRUCTURE (@EnableScheduling) — one level above
     # the per-job mezo.techcore.cron.* switches below. Those decide whether a job BEAN exists;
