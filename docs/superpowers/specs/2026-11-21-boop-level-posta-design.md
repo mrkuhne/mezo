@@ -1,6 +1,6 @@
 # Boop Levél · a reggeli posta — L1 + L2 in one release (design)
 
-- **Status:** draft for owner approval · **Date:** 2026-11-21 · **Issues:** `mezo-r36n9.38` (L1) +
+- **Status:** **approved by the owner 2026-11-21** · **Date:** 2026-11-21 · **Issues:** `mezo-r36n9.38` (L1) +
   `mezo-r36n9.39` (L2), shipped together · **Epic:** `mezo-r36n9` · **Session:** `level-area-development-afe3fa`
 - **Extends:** `2026-11-13-boop-life-dashboard-design.md` §3.5, §4.1–§4.3, §5 (L1, L2), §8. Where this
   document and that one disagree, this one is newer and wins.
