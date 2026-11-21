@@ -224,9 +224,7 @@ public class ProposalWordingWriter {
         reasonLine(from, f.get("reason")).ifPresent(why::add);
         why.add(targetLine(to, empty, Boolean.TRUE.equals(f.get("toPrevLate")), e));
         patternLines(f, why);
-        String what = HuDays.accusative(s(f, "sessionLabel"))
-            .orElse(HuDays.adj(from) + " edzést");
-        return new Wording(HuDays.the(what, true) + " tedd át " + HuDays.onto(to),
+        return new Wording(moveTitle(s(f, "sessionLabel"), from, to),
             HuDays.name(from) + " " + time + "  →  " + HuDays.name(to) + " " + time + (empty ? " (üres nap)" : ""),
             List.copyOf(lines), List.copyOf(why));
     }
@@ -355,6 +353,21 @@ public class ProposalWordingWriter {
             return HuDays.name(day) + " " + a + " marad";
         }
         return HuDays.name(day) + " " + b + " helyett " + a + (first ? " lesz" : "");
+    }
+
+    /**
+     * The move's title. A vetted label takes its table form („A lábnapot tedd át szombatra”); any other label is never
+     * suffixed and goes after a colon („Tedd át szombatra ezt az edzést: Pull 1”); no label → the day's adjective.
+     */
+    static String moveTitle(String label, LocalDate from, LocalDate to) {
+        Optional<String> acc = HuDays.accusative(label);
+        if (acc.isPresent()) {
+            return HuDays.the(acc.get(), true) + " tedd át " + HuDays.onto(to);
+        }
+        if (label != null && !label.isBlank()) {
+            return "Tedd át " + HuDays.onto(to) + " ezt az edzést: " + label.strip();
+        }
+        return "A " + HuDays.adj(from) + " edzést tedd át " + HuDays.onto(to);
     }
 
     /** Why the target day is good for the session — not its load drivers. */

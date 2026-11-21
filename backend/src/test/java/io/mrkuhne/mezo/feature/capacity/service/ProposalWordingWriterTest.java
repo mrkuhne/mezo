@@ -137,9 +137,24 @@ class ProposalWordingWriterTest {
         assertThat(HuDays.the("150 kcal", false)).isEqualTo("a 150 kcal");
         assertThat(HuDays.the("7 óra alvás", false)).isEqualTo("a 7 óra alvás");
         assertThat(HuDays.the("alsótestet", true)).isEqualTo("Az alsótestet");
-        assertThat(HuDays.accusative("Lábnap")).contains("lábnapot");
-        assertThat(HuDays.accusative("Felsőtest")).contains("felsőtestet");
-        assertThat(HuDays.accusative("Pull 1")).isEmpty();
+    }
+
+    @Test
+    void moveTitleSuffixesOnlyVettedLabels() {
+        assertThat(ProposalWordingWriter.moveTitle("Lábnap", THU, SAT)).isEqualTo("A lábnapot tedd át szombatra");
+        assertThat(ProposalWordingWriter.moveTitle("Láb", THU, SAT)).isEqualTo("A lábedzést tedd át szombatra");
+        assertThat(ProposalWordingWriter.moveTitle("Hát", THU, SAT)).isEqualTo("A hátedzést tedd át szombatra");
+        assertThat(ProposalWordingWriter.moveTitle("kar", THU, SAT)).isEqualTo("A karedzést tedd át szombatra");
+        assertThat(ProposalWordingWriter.moveTitle("Váll", THU, SAT)).isEqualTo("A válledzést tedd át szombatra");
+        assertThat(ProposalWordingWriter.moveTitle("Mell", THU, SAT)).isEqualTo("A melledzést tedd át szombatra");
+        assertThat(ProposalWordingWriter.moveTitle("Has", THU, SAT)).isEqualTo("A hasedzést tedd át szombatra");
+        // anything not in the table is never suffixed
+        assertThat(ProposalWordingWriter.moveTitle("Felsőtest", THU, SAT))
+            .isEqualTo("Tedd át szombatra ezt az edzést: Felsőtest");
+        assertThat(ProposalWordingWriter.moveTitle("Pull 1", THU, SAT))
+            .isEqualTo("Tedd át szombatra ezt az edzést: Pull 1");
+        assertThat(ProposalWordingWriter.moveTitle(null, THU, SAT)).isEqualTo("A csütörtöki edzést tedd át szombatra");
+        assertThat(HuDays.accusative("Hátedzés B")).isEmpty();
     }
 
     @Test

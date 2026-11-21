@@ -86,45 +86,26 @@ final class HuDays {
     }
 
     /**
-     * The accusative of a session label („Lábnap” → „lábnapot”, „Felsőtest” → „felsőtestet”) for a title; empty when
-     * the label is not plain words (digits, symbols), where the caller says „edzést” instead.
+     * The vetted accusative forms of common session labels (lower-cased label → the title's object). A label is never
+     * suffixed by rule — Hungarian stems are too irregular („hát” → „hátat”, not „hátot”) — so anything missing here
+     * takes the caller's always-grammatical fallback.
      */
+    private static final java.util.Map<String, String> SESSION_ACCUSATIVE = java.util.Map.of(
+        "lábnap", "lábnapot",
+        "láb", "lábedzést",
+        "hát", "hátedzést",
+        "kar", "karedzést",
+        "váll", "válledzést",
+        "mell", "melledzést",
+        "has", "hasedzést");
+
+    /** The vetted accusative of a session label („Lábnap” → „lábnapot”, „Hát” → „hátedzést”); empty otherwise. */
     static java.util.Optional<String> accusative(String label) {
-        if (label == null || label.isBlank() || !label.strip().matches("[\\p{L} ]+")) {
+        if (label == null) {
             return java.util.Optional.empty();
         }
-        String l = label.strip();
-        String w = Character.toLowerCase(l.charAt(0)) + l.substring(1);
-        char last = Character.toLowerCase(w.charAt(w.length() - 1));
-        if (last == 'a') {
-            return java.util.Optional.of(w.substring(0, w.length() - 1) + "át");
-        }
-        if (last == 'e') {
-            return java.util.Optional.of(w.substring(0, w.length() - 1) + "ét");
-        }
-        if (VOWELS.indexOf(last) >= 0) {
-            return java.util.Optional.of(w + "t");
-        }
-        if ("lnrsjzy".indexOf(last) >= 0) {
-            return java.util.Optional.of(w + "t");
-        }
-        char harmony = 'e';
-        for (int k = w.length() - 1; k >= 0; k--) {
-            char v = Character.toLowerCase(w.charAt(k));
-            if ("aáoóuú".indexOf(v) >= 0) {
-                harmony = 'o';
-                break;
-            }
-            if ("öőüű".indexOf(v) >= 0) {
-                harmony = 'ö';
-                break;
-            }
-            if ("eéií".indexOf(v) >= 0) {
-                harmony = 'e';
-                break;
-            }
-        }
-        return java.util.Optional.of(w + harmony + "t");
+        return java.util.Optional.ofNullable(
+            SESSION_ACCUSATIVE.get(label.strip().toLowerCase(java.util.Locale.ROOT)));
     }
 
     private static int i(LocalDate d) {
