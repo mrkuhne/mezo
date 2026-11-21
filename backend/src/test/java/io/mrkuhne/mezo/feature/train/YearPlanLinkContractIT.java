@@ -316,6 +316,20 @@ class YearPlanLinkContractIT extends ApiIntegrationTest {
     }
 
     @Test
+    void nextWhenNoBlockAndTheBlockIsLateStartsOnItsRedatedDay() {
+        owner();
+        HttpHeaders auth = ownerAuthHeaders();
+        // Due Monday 2026-11-16, more than 3 days late: the layout re-dates it to the Monday on/after today.
+        YearPlan created = plan(PLAN_START, auth);
+        jdbc.update("update training_year_plan set start_date = ? where id = ?", LocalDate.of(2026, 11, 16), created.getId());
+
+        YearPlan after = active(auth);
+
+        assertThat(at(after, 1).getPlannedStart()).isEqualTo(PLAN_START);
+        assertThat(after.getNext().getStartsOn()).isEqualTo(PLAN_START);
+    }
+
+    @Test
     void noNextWhenNextAlreadyLinked() {
         UUID owner = owner();
         HttpHeaders auth = ownerAuthHeaders();

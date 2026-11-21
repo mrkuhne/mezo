@@ -28,7 +28,7 @@ struct UjBlokkAlapok: View {
                         if model.tiersLocked {
                             // The consolidation's length is the year plan's: no stepper.
                             UjBlokkLabel("Hány hét")
-                            Text("\(model.weeks) hét lezárás").nkFont(20, .medium).foregroundStyle(.white)
+                            Text("\(model.weeks) hetes lezárás").nkFont(20, .medium).foregroundStyle(.white)
                         } else {
                             UjBlokkLabel("Hány hét", trailing: "az utolsó könnyítő")
                             HStack(spacing: 6) {

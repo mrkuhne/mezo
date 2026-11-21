@@ -26,7 +26,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -260,8 +259,8 @@ public class YearPlanService {
     /**
      * (a) the active mesocycle is in its last week ({@code today ≥ endDate − 7 days}) and the block after it is
      * planned and unlinked → {@code last_week}, starting on its layout start; (b) no active or planned mesocycle and a
-     * planned block exists → {@code no_block}, starting on its layout start or the Monday on/after today, whichever
-     * is later. Otherwise null.
+     * planned block exists → {@code no_block}, starting on its layout start or today, whichever is later (a due
+     * block starts today). Otherwise null.
      */
     private YearNext next(UUID owner, List<TrainingYearBlockEntity> all, Layout layout, LocalDate today) {
         Map<UUID, LocalDate> starts = starts(layout);
@@ -284,11 +283,12 @@ public class YearPlanService {
                 .orElse(null);
         }
         if (!mesocycles.findByCreatedByAndStatusAndDeletedFalse(owner, "planned").isEmpty()) return null;
-        LocalDate monday = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY));
+        // A due block (its day has come, within the tolerance the layout keeps it on) starts today: the phone's intake
+        // offers „Ma" for it. A later one keeps its own (layout) day.
         return ordered.stream().filter(b -> b.is(YearGenerator.PLANNED)).findFirst()
             .map(b -> {
                 LocalDate start = starts.get(b.getId());
-                return next(b, start.isBefore(monday) ? monday : start, YearNext.ReasonEnum.NO_BLOCK);
+                return next(b, start.isBefore(today) ? today : start, YearNext.ReasonEnum.NO_BLOCK);
             })
             .orElse(null);
     }

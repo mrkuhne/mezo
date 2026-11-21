@@ -33,7 +33,8 @@ struct KovetkezikContent: Equatable {
         self.block = block
         consolidation = block.isConsolidation
         let focus = evesGroupOrder.filter(block.focus.contains) + block.focus.filter { !evesGroupOrder.contains($0) }
-        let from = evesFrom(next.startsOn)
+        // A due block starts today (the server's no_block start): „mától".
+        let from = next.startsOn == today ? "mától" : evesFrom(next.startsOn)
         if consolidation {
             title = "Év végi lezárás"
             meta = "\(block.weeks) hét · \(from) · lezárás"

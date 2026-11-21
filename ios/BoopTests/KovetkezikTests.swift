@@ -57,6 +57,16 @@ struct KovetkezikTests {
         #expect(c.sentence == "Most nincs futó blokkod. A terv szerint a comb és a far jön, minden más Tartáson marad.")
     }
 
+    @Test func aBlockStartingTodayReadsMatol() throws {
+        // The server's no_block start for a due block is today.
+        let c = try #require(KovetkezikContent(plan: plan(next: #"{"blockId":"b2","startsOn":"2026-11-25","reason":"no_block"}"#, b1: "done"),
+                                               today: "2026-11-25"))
+        #expect(c.meta == "6 hét · mától · 2. blokk a 8-ból")
+        let closing = try #require(KovetkezikContent(plan: plan(next: #"{"blockId":"c","startsOn":"2027-09-29","reason":"no_block"}"#),
+                                                     today: "2027-09-29"))
+        #expect(closing.meta == "2 hét · mától · lezárás")
+    }
+
     @Test func consolidationCard() throws {
         let c = try #require(KovetkezikContent(plan: plan(next: #"{"blockId":"c","startsOn":"2027-09-27","reason":"no_block"}"#),
                                                today: "2027-09-25"))

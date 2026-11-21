@@ -15,7 +15,8 @@ import BoopDesign
 //        csuszas     a late year: buffer eaten, consolidation 1 week, the year 1 week over 52, rule-break cards
 //        kotetlen    the plan starts next week while an unlinked block runs: the banner
 //   -previewKovetkezik YES|nincs|lezaras             the Következik card's year (Task 10; with `-preview shell
-//        -previewHome edzes`): YES the running block's last week, nincs no block runs and the next is due, lezaras the
+//        -previewHome edzes`): YES the running block's last week, nincs no block runs and the next is due (Mon–Thu:
+//        offered from today; later in the week re-dated to next Monday), lezaras the
 //        consolidation is next. Dates follow today, so the next block starts next Monday.
 //   -previewBlokkState loading|error|offline        the shared preview states (offline: the last plan, 3 hours old)
 //   -previewEvesTervScroll Y                         the page opens scrolled down by Y points
@@ -128,13 +129,18 @@ final class EvesTervFixture {
             f.nextReason = "no_block"
             return f
         case "kovetkezik-nincs":
-            // Block 2 ended last Sunday; block 3 was due this Monday and is not started: due, offered from next Monday.
+            // Block 2 ended last Sunday; block 3 was due this Monday and is not started. Like the server: within 3 days
+            // of its Monday it keeps that day and is offered from today („mától"); later than that the layout re-dates
+            // it to next Monday and it is offered from there.
             let thisMonday = evesAdding(days: -7, to: nextMonday) ?? nextMonday
+            let today = kovetkezikToday()
+            let late = (evesDays(from: thisMonday, to: today) ?? 0) > 3
             let f = EvesTervFixture(start: evesAdding(days: -12 * 7, to: thisMonday) ?? thisMonday, blockWeeks: 6,
                                     emphasis: ["shoulder", "calf"], focus: spikeFocus, currentWeek: 13)
             f.blocks[2].forced = "planned"
+            if late { f.blocks[2].delay = 1 }
             f.nextReason = "no_block"
-            f.nextStartsOn = nextMonday
+            f.nextStartsOn = late ? nextMonday : today
             return f
         case "kovetkezik-YES", "kovetkezik-yes":
             // Week 12: block 2 is in its last week, block 3 (chest + shoulder) starts next Monday.
