@@ -211,7 +211,11 @@ public func evadLinkText(_ link: EvadMapLink, trajectory: String) -> String? {
         if let v = link.value, (abs(v) * 10).rounded() > 0 { "\(evadSignedKg(v)) kg/hét" }
         else if trajectory == "maintain" { "így tartod a súlyod" }
         else { "ettől függ a súlyod" }
-    case "sleep_food": "rossz alvás után többet eszel"
+    // the server's mean next-day difference after a short night (S2 insight gate); no computed effect, no line
+    case "sleep_food": link.value.map { v -> String in
+        let kcal = Int((v / 10).rounded()) * 10
+        return "rövid éjszaka után \(kcal < 0 ? "\u{2212}" : "+")\(evadKcal(abs(kcal))) kcal"
+    }
     case "food_train": "szénhidrát az erőhöz"
     case "sleep_train": "kipihenten jobban edzel"
     default: nil
@@ -270,6 +274,41 @@ public func evadPillarDetail(_ o: EvadOverview, lit: String?) -> String {
     default:
         return "Ha az egyik változik, változik a többi is. Koppints valamelyikre, és megmutatom, mi függ tőle."
     }
+}
+
+// MARK: - Hogy megy
+
+/// One fact of „Hogy megy": „5 / 6 napon belefértél a keretbe".
+public struct EvadFact: Equatable, Hashable, Sendable {
+    public let value: String
+    public let target: String
+    public let label: String
+    public init(value: String, target: String, label: String) { self.value = value; self.target = target; self.label = label }
+}
+
+/// The last seven days as plain counts, from the server's adherence (never a score). A fact with nothing to count
+/// (nothing judged, nothing planned) is left out — never a „0 / 0". The night fact says „eleget", no hours: the
+/// server counts a night at its need minus 15 minutes, so any hour figure would overclaim.
+public func evadAdherenceFacts(_ a: EvadAdherence) -> [EvadFact] {
+    var out: [EvadFact] = []
+    if a.foodJudged > 0 {
+        out.append(EvadFact(value: "\(a.foodInBand)", target: "\(a.foodJudged)", label: "napon belefértél a keretbe"))
+    }
+    if a.sessionsPlanned > 0 {
+        out.append(EvadFact(value: "\(a.sessionsDone)", target: "\(a.sessionsPlanned)", label: "edzés megvolt"))
+    }
+    if a.nightsJudged > 0 {
+        out.append(EvadFact(value: "\(a.nightsOk)", target: "\(a.nightsJudged)", label: "éjjel aludtál eleget"))
+    }
+    return out
+}
+
+/// The line under the facts: how many kímélő days were left out, only when some were (a reasoned skip excuses only
+/// its session, so it is not a day left out).
+public func evadExcusedLine(_ excusedDays: Int) -> String {
+    let rest = "Ez nem pontszám, csak összesítés."
+    guard excusedDays > 0 else { return rest }
+    return "\(excusedDays) kímélő nap nem számít bele. \(rest)"
 }
 
 // MARK: - Az évad terve

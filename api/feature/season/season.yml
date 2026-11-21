@@ -49,6 +49,21 @@ paths:
         '200': { description: Preview, content: { application/json: { schema: { $ref: '#/components/schemas/SeasonPreview' } } } }
         '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/seasons/adherence:
+    get:
+      tags: [Season]
+      operationId: getAdherence
+      summary: >
+        The single source of day judgement (food inside the day's band, the planned session done, the night long enough),
+        served for every day whether or not a season exists (without one the food budget is the goal's served target).
+        Today, kímélő days (any fuel recovery mode — the same rule as the Étel Hét tab) and unlogged days are not judged; reasoned skips excuse a session.
+      parameters:
+        - { name: from, in: query, required: true, schema: { type: string, format: date } }
+        - { name: to, in: query, required: true, schema: { type: string, format: date } }
+      responses:
+        '200': { description: Days, content: { application/json: { schema: { $ref: '#/components/schemas/SeasonAdherenceResponse' } } } }
+        '400': { description: 'Validation error (to before from, or more than 62 days)', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/seasons/active/overview:
     get:
       tags: [Season]
@@ -345,6 +360,30 @@ components:
         food: { $ref: '#/components/schemas/SeasonFoodPillar' }
         sleep: { $ref: '#/components/schemas/SeasonSleepPillar' }
         weight: { $ref: '#/components/schemas/SeasonWeightPillar' }
+    SeasonAdherenceDay:
+      type: object
+      required: [date, judged, excused, sessionPlanned]
+      properties:
+        date: { type: string, format: date }
+        judged: { type: boolean, description: 'The food side counts: not today, not a kímélő day, something logged' }
+        excused: { type: boolean, description: 'A kímélő day — left out of every count. A reasoned skip only excuses the session (sessionDone null), the food and the night still count' }
+        excuse: { type: string, nullable: true, description: 'kimelo (the whole day is excused) or skip (only the session is)' }
+        kcal: { type: integer, nullable: true }
+        targetKcal: { type: integer, nullable: true, description: "The day's served target (DayTargetProjector); null when it cannot be computed" }
+        proteinG: { type: integer, nullable: true }
+        targetProteinG: { type: integer, nullable: true }
+        foodInBand: { type: boolean, nullable: true, description: 'judged and |kcal − target| ≤ 10 % of target; null when not judged' }
+        sessionPlanned: { type: boolean }
+        sessionDone: { type: boolean, nullable: true, description: 'null when no session was planned or it is excused / today' }
+        sleepMin: { type: integer, nullable: true }
+        needMin: { type: integer, nullable: true, description: "The night's need: the active season's, else the sleep goal" }
+        sleepOk: { type: boolean, nullable: true, description: 'sleepMin ≥ needMin − 15; null without a night' }
+    SeasonAdherenceResponse:
+      type: object
+      required: [days, summary]
+      properties:
+        days: { type: array, items: { $ref: '#/components/schemas/SeasonAdherenceDay' } }
+        summary: { $ref: '#/components/schemas/SeasonAdherence' }
     SeasonAdherence:
       type: object
       required: [foodInBand, foodJudged, sessionsDone, sessionsPlanned, nightsOk, nightsJudged, excusedDays]

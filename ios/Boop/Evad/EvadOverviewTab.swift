@@ -22,12 +22,13 @@ struct EvadOverviewTab: View {
         NKBare("Az évad terve", hue: evadHue, glyph: "star-ink") {
             NKRowList(planRows, hue: evadHue)
         }
-        if let a = o.adherence {
+        if let a = o.adherence, !evadAdherenceFacts(a).isEmpty || a.excusedDays > 0 {
             NKBare("Hogy megy", hue: evadHue, glyph: "check-ink", trailing: "az elmúlt héten") {
-                NKStatRow([NKStat(value: "\(a.foodInBand)", target: "\(a.foodJudged)", label: "napon belefértél a keretbe"),
-                           NKStat(value: "\(a.sessionsDone)", target: "\(a.sessionsPlanned)", label: "edzés megvolt"),
-                           NKStat(value: "\(a.nightsOk)", target: "\(a.nightsJudged)", label: "éjjel aludtál eleget")], hue: evadHue)
-                Text("A betegség miatti és az indokkal kihagyott napok nem számítanak. Ez nem pontszám, csak összesítés.")
+                let facts = evadAdherenceFacts(a)
+                if !facts.isEmpty {
+                    NKStatRow(facts.map { NKStat(value: $0.value, target: $0.target, label: $0.label) }, hue: evadHue)
+                }
+                Text(evadExcusedLine(a.excusedDays))
                     .nkFont(13).foregroundStyle(.white.opacity(0.55)).fixedSize(horizontal: false, vertical: true)
             }
         }

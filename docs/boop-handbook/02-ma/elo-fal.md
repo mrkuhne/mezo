@@ -5,7 +5,7 @@ terulet: Ma
 allapot: Élesben
 hol: [iPhone app]
 szulo: 00-attekintes
-szakasz: [Kezdőlap]
+szakasz: [Kezdőlap, B6]
 osszefoglalo: A Ma oldal nem a nap menetrendje többé, hanem legfeljebb három dolog, amit Boop épp mondani akar — és ha nincs semmi, azt is kimondja.
 ---
 
@@ -34,7 +34,13 @@ nyitva), a **napi energiagörbe**, és este a **nap lezárása**.
 ## Hogyan működik
 1. Minden terület **bejelentkezik** a falra azzal, amije van — az Étel a záruló étkezési ablakkal, a kiegészítő
    csoporttal, a napi tippel és a legutóbb rögzített étkezéssel; a napi összefoglaló a mai edzéssel és a
-   legerősebb megfigyeléssel.
+   legerősebb megfigyeléssel; az **Évad** (2026-11-21 óta) két dologgal:
+   - ha Boop rájött, hogy a valóságban kevesebbet vagy többet égetsz, mint a terv számolt, egy javaslattal a második
+     helyre („Kevesebbet égetsz, mint gondoltuk”, például) — az **„Átnézem”** gomb az Évad Módosítás oldalát nyitja,
+     ahol előbb megmutatja, mi változna; hetente legfeljebb egyszer jön, és a napi ételtippet megelőzi, de egy két órán
+     belüli edzést nem;
+   - ha az évad egy héten belül véget ér, a harmadik helyre („3 nap múlva véget ér az évad”, például).
+   Évad nélkül nincs Évad-kártya. Egyik sem csörget.
 2. A három helyre **helyenként egy** kártya kerül: a lejárók közül a leghamarabb lejáró, a javítók közül a
    legtöbbet mozdító, a történtek közül a legfrissebb.
 3. Ha két dolog egyformán fontos, **mindig ugyanaz** kerül előre — a fal nem rendeződik át alattad két ránézés
@@ -55,4 +61,5 @@ nélküli szabály ugyanaz, mintha Boopra bíznánk.
 
 ## Mi jön még
 - Az Edzés, később a Pénz és a Levél egyetlen sorral bejelentkezik a falra.
+- Az Évad harmadik szakaszában a heti menü is kártyát kap.
 - Az ételkártya a saját fotóját is megkapja, amint az kéznél van a kezdőlapon.

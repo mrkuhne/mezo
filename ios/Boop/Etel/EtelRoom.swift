@@ -46,6 +46,11 @@ final class EtelStore {
     private(set) var weekScores: [String: Int] = [:]
     /// Days whose meals could not be read for a score (the tab says so instead of showing a quietly wrong average).
     private(set) var weekScoreFailures: Set<String> = []
+    /// The server's judgement of the week's days (B6 S2 — the single source); empty when it could not be read, and the
+    /// tab then keeps its own rule (`hetWeek`).
+    private(set) var weekAdherence: [EvadAdherenceDay] = []
+    /// The judgement's read in flight (kept so a reload cancels the older one, and tests can await it).
+    @ObservationIgnored private(set) var weekAdherenceTask: Task<Void, Never>?
     private(set) var groups: [SupplementGroup] = []
     /// The protocol's rows by name, for the list editor (B4 Task 14).
     private(set) var protocolRows: [SupplementRow] = []
@@ -180,10 +185,25 @@ final class EtelStore {
 
     // MARK: - Hét (B4 Task 13)
 
-    /// The last seven days ending today: one rollup read, then each logged day's meals for its own mean score.
-    func loadWeek(food: FoodClient, now: Date) async {
+    /// The last seven days ending today: one rollup read (and, beside it, the server's judgement of the same days),
+    /// then each logged day's meals for its own mean score.
+    func loadWeek(food: FoodClient, evad: EvadClient?, now: Date) async {
         self.food = food
         let start = Calendar.current.date(byAdding: .day, value: -6, to: now) ?? now
+        // The server's judgement runs on its own: the week is on screen the moment it is read (the local rule
+        // meanwhile), and a slow or hung judgement never holds the tab, its scores or the opened day.
+        weekAdherenceTask?.cancel()
+        weekAdherenceTask = evad.map { evad in
+            let (from, to) = (food.ymd(start), food.ymd(now))
+            return Task { [weak self] in
+                let days: [EvadAdherenceDay]
+                do throws(PlanFetchError) { days = try await evad.adherence(from: from, to: to).days }
+                catch { days = [] }   // offline or refused: the tab keeps its own rule rather than going blank
+                guard !Task.isCancelled else { return }
+                self?.weekAdherence = days
+            }
+        }
+        if evad == nil { weekAdherence = [] }
         switch await Self.attempt({ try await food.week(from: start) }) {
         case .success(let w): week = w; weekProblem = nil
         case .failure(let e): weekProblem = e
@@ -560,6 +580,8 @@ struct EtelRoom: View {
     @Environment(\.closeRoom) private var closeRoom
     @Environment(\.foodClient) private var food
     @Environment(\.openPlace) private var openPlace
+    /// The season store's client: the Hét tab reads the server's day judgement through it (B6 S2).
+    @Environment(EvadStore.self) private var evad: EvadStore?
     @SceneStorage("etel.tab") private var selected: String = EtelTab.ma.rawValue
     @State private var store = EtelStore()
     @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
@@ -590,7 +612,8 @@ struct EtelRoom: View {
     var body: some View {
         let today = etelVerdict(day: store.day, plan: store.plan, problem: store.day == nil ? (store.dayProblem ?? (food == nil ? .unauthorized : nil)) : nil)
         let v = etelTabVerdict(tab, today: today, recipes: store.recipesLoaded ? store.recipes : nil, shelf: store.shelfLoaded ? store.shelf : nil,
-                                week: store.week.map { hetWeek($0, scores: store.weekScores, today: store.ymd, scoreFailures: store.weekScoreFailures) })
+                                week: store.week.map { hetWeek($0, scores: store.weekScores, today: store.ymd, scoreFailures: store.weekScoreFailures,
+                                                             adherence: store.weekAdherence) })
         NKAreaPage(hue: .fuel, name: "Étel", eyebrow: "Étel · \(tab.rawValue.lowercased())", level: store.day == nil ? nil : v.level,
                    display: etelDayPoints(store.day).map { "\($0)" },
                    headline: v.headline, sentence: v.sentence, glyph: "bowl-cream",
@@ -739,8 +762,8 @@ struct EtelRoom: View {
             case "kimelo": etelSheet = .kimelo
             case "supplements": etelSheet = .supplements
             case "skip": if let food, let plan = try? await food.plan(BoopClock.now()), let w = plan.windows.first(where: { $0.state == .now || $0.state == .pending }) { await store.load(food: food, now: BoopClock.now()); etelSheet = .skip(w) }
-            case "het-day": if let food { await store.loadWeek(food: food, now: BoopClock.now()); if let w = store.week {
-                hetDay = hetWeek(w, scores: store.weekScores, today: store.ymd).days.dropLast().last } }
+            case "het-day": if let food { await store.loadWeek(food: food, evad: evad?.client, now: BoopClock.now()); if let w = store.week {
+                hetDay = hetWeek(w, scores: store.weekScores, today: store.ymd, adherence: store.weekAdherence).days.dropLast().last } }
             default: break
             }
         }
@@ -750,7 +773,7 @@ struct EtelRoom: View {
             switch tab {
             case .receptek: if !store.recipesLoaded { await store.loadRecipes(food: food) }
             case .kamra: if !store.shelfLoaded { await store.loadShelf(food: food) }
-            case .het: if !store.weekLoaded { await store.loadWeek(food: food, now: BoopClock.now()) }
+            case .het: if !store.weekLoaded { await store.loadWeek(food: food, evad: evad?.client, now: BoopClock.now()) }
             case .ma: break
             }
         }
@@ -766,7 +789,7 @@ struct EtelRoom: View {
         await store.load(food: food, now: BoopClock.now())
         if store.recipesLoaded || tab == .receptek { await store.loadRecipes(food: food) }
         if store.shelfLoaded || tab == .kamra { await store.loadShelf(food: food) }
-        if store.weekLoaded || tab == .het { await store.loadWeek(food: food, now: BoopClock.now()) }
+        if store.weekLoaded || tab == .het { await store.loadWeek(food: food, evad: evad?.client, now: BoopClock.now()) }
     }
 
     /// "Megeszem belőle" from a food's page: the sheet closes, then the serving confirmation opens (two sheets never

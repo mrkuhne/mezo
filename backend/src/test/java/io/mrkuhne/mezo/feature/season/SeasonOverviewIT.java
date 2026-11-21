@@ -69,7 +69,10 @@ class SeasonOverviewIT extends AbstractIntegrationTest {
         assertThat(pillar(o, SeasonMapPillar.KeyEnum.ALVAS)).isEqualTo("8 ó 6 p");
         assertThat(pillar(o, SeasonMapPillar.KeyEnum.SULY)).isEqualTo("84,0 kg");
         assertThat(pillar(o, SeasonMapPillar.KeyEnum.ETEL)).matches("\\d \\d{3} kcal");
-        assertThat(o.getAdherence()).isNull();
+        assertThat(o.getAdherence()).isNotNull();
+        assertThat(o.getAdherence().getSessionsPlanned()).isEqualTo(4);
+        assertThat(o.getAdherence().getSessionsDone()).isZero();
+        assertThat(o.getAdherence().getFoodJudged()).isZero();
         assertThat(o.getInsights()).isEmpty();
         assertThat(o.getSeason().getStatus().getValue()).isEqualTo("active");
         assertThat(o.getSeason().getDraft().getGymDays()).containsExactly(0, 1, 3, 4);

@@ -52,4 +52,18 @@ class BoopPromptsTest {
 
         assertThat(prompt).contains("[Mai fókusz] Séta ebéd után; Víz");
     }
+
+    /** Boop B6 Évad S2 (mezo-r36n9.16): the season's rules ride along as an [Évad] block, absent without a season. */
+    @Test
+    void seasonRulesReachTheBriefOnlyWithASeason() {
+        BoopDay base = BoopBriefFixtures.day(BoopBriefFixtures.night("23:00", "06:30"), 4000, List.of());
+        BoopDay d = base.withSeasonRules("[Évad] Őszi évad · 3. hét / 12\n[Évad] Étel-szabály: csak kevéssé feldolgozott"
+            + " ételek (NOVA ≤ 2)");
+
+        String prompt = prompts.context(d, SCORES, LocalTime.of(8, 0), null);
+
+        assertThat(prompt).contains("[Évad] Őszi évad · 3. hét / 12\n[Évad] Étel-szabály: csak kevéssé feldolgozott"
+            + " ételek (NOVA ≤ 2)\n");
+        assertThat(prompts.context(base, SCORES, LocalTime.of(8, 0), null)).doesNotContain("[Évad]");
+    }
 }

@@ -54,7 +54,30 @@ public record BoopDay(
         List<Observation> observations,
         Calendar calendar,
         Weight weight,
-        Recovery recovery) {
+        Recovery recovery,
+        /** Boop B6 Évad: the active season's rules as {@code "[Évad] "} lines; "" without a season. */
+        String seasonRules) {
+
+    /** The pre-season shape — no season rules. */
+    public BoopDay(LocalDate date, Sleep sleep, int sleepTargetMin, LocalTime bedtimeTarget, int nightsKnown,
+                   List<Integer> deepSleepWeek, List<Integer> restingHrWeek, Double baselineRestingHr,
+                   Double baselineDeepMin, Integer restingHr, HrToday hrToday, Integer steps, Integer activeKcal,
+                   Session session, WorkoutLoad yesterdayLoad, List<Meal> meals, int kcalSoFar, int kcalTarget,
+                   int proteinG, int proteinTarget, int carbsG, int fatG, List<Checkin> checkins, Intention intention,
+                   List<Observation> observations, Calendar calendar, Weight weight, Recovery recovery) {
+        this(date, sleep, sleepTargetMin, bedtimeTarget, nightsKnown, deepSleepWeek, restingHrWeek, baselineRestingHr,
+            baselineDeepMin, restingHr, hrToday, steps, activeKcal, session, yesterdayLoad, meals, kcalSoFar,
+            kcalTarget, proteinG, proteinTarget, carbsG, fatG, checkins, intention, observations, calendar, weight,
+            recovery, "");
+    }
+
+    /** The same day carrying the season's rules. */
+    public BoopDay withSeasonRules(String rules) {
+        return new BoopDay(date, sleep, sleepTargetMin, bedtimeTarget, nightsKnown, deepSleepWeek, restingHrWeek,
+            baselineRestingHr, baselineDeepMin, restingHr, hrToday, steps, activeKcal, session, yesterdayLoad, meals,
+            kcalSoFar, kcalTarget, proteinG, proteinTarget, carbsG, fatG, checkins, intention, observations, calendar,
+            weight, recovery, rules == null ? "" : rules);
+    }
 
     /** Number of quarter-hour busy slots covering 06:00–24:00. */
     public static final int BUSY_SLOTS = 72;

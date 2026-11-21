@@ -9,7 +9,13 @@ import io.mrkuhne.mezo.feature.train.entity.GymScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.repository.GymScheduleSlotRepository;
+import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
+import io.mrkuhne.mezo.feature.train.repository.RunSessionLogRepository;
+import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
+import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
+import io.mrkuhne.mezo.feature.train.service.PlannedSkipService;
+import io.mrkuhne.mezo.feature.train.service.WorkoutWindowQueryService;
 import io.mrkuhne.mezo.feature.train.repository.SportScheduleSlotRepository;
 import io.mrkuhne.mezo.feature.train.service.GymScheduleService;
 import io.mrkuhne.mezo.feature.train.service.MesoTemplateService;
@@ -21,7 +27,9 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +54,11 @@ public class SeasonTrainAdapter implements SeasonTrainPort {
     private final WeeklyScheduledActivityService weeklyActivity;
     private final MesocycleRepository mesocycleRepository;
     private final MesoTemplateService mesoTemplateService;
+    private final WorkoutWindowQueryService workoutWindows;
+    private final WorkoutSessionRepository workoutSessionRepository;
+    private final SportSessionRepository sportSessionRepository;
+    private final RunSessionLogRepository runSessionLogRepository;
+    private final PlannedSkipService plannedSkipService;
 
     @Override
     public Schedule currentSchedule(UUID owner) {
@@ -133,6 +146,45 @@ public class SeasonTrainAdapter implements SeasonTrainPort {
     @Override
     public UUID templateOf(UUID owner, UUID mesocycleId) {
         return mesoTemplateService.rerun(owner, mesocycleId).getTemplateId();
+    }
+
+    @Override
+    public Set<LocalDate> plannedSessionDays(UUID owner, LocalDate from, LocalDate to) {
+        Set<Integer> weekdays = new HashSet<>();
+        gymRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(owner).forEach(g -> weekdays.add(g.getDayOfWeek()));
+        sportRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(owner).forEach(x -> weekdays.add(x.getDayOfWeek()));
+        Set<LocalDate> days = new HashSet<>();
+        for (LocalDate d = from; !d.isAfter(to); d = d.plusDays(1)) {
+            if (weekdays.contains(d.getDayOfWeek().getValue() - 1)) {
+                days.add(d);
+            }
+        }
+        workoutWindows.windowsFor(owner, from, to).forEach((day, windows) -> {
+            if (windows.stream().anyMatch(w -> "run".equals(w.kind()))) {
+                days.add(day);
+            }
+        });
+        return days;
+    }
+
+    @Override
+    public Set<LocalDate> doneSessionDays(UUID owner, LocalDate from, LocalDate to) {
+        Set<LocalDate> days = new HashSet<>(workoutSessionRepository.findDoneInstanceDates(owner, from, to));
+        sportSessionRepository.findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(owner, from, to)
+            .forEach(x -> days.add(x.getDate()));
+        runSessionLogRepository.findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(owner, from, to)
+            .forEach(x -> days.add(x.getDate()));
+        return days;
+    }
+
+    @Override
+    public Set<LocalDate> excusedSessionDays(UUID owner, LocalDate from, LocalDate to) {
+        Set<LocalDate> days = new HashSet<>();
+        for (PlannedSkipEntity.Kind kind : List.of(PlannedSkipEntity.Kind.GYM, PlannedSkipEntity.Kind.SPORT,
+            PlannedSkipEntity.Kind.RUN)) {
+            days.addAll(plannedSkipService.excusedDates(owner, kind, from, to));
+        }
+        return days;
     }
 
     /** The one time every gym slot shares, or null when there is none or they differ. */

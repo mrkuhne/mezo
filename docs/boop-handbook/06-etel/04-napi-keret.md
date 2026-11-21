@@ -5,7 +5,7 @@ terulet: Étel
 allapot: Élesben
 hol: [iPhone app, Háttérrendszer]
 szulo: 00-attekintes
-szakasz: [B4]
+szakasz: [B4, B6]
 osszefoglalo: A Ma fül megmutatja, mennyi fér még bele a napba és mit egyél legközelebb; a Hét fül a hét napjait a célokhoz méri.
 ---
 
@@ -35,6 +35,9 @@ osszefoglalo: A Ma fül megmutatja, mennyi fér még bele a napba és mit egyél
    háttérrendszerben él, és onnan jön a „következő étkezés” tipp is.
 6. **A heti megfigyelés** szabályból jön, nem az AI-tól: csak a lezárt, nem kímélő napokat nézi (a mai nap és a kímélő
    napok az átlagokba sem számítanak), és két értékelt nap alatt nem mond semmit.
+   **Az évad második szakasza óta (2026-11-21)** azt, hogy egy nap számít-e, a háttérrendszer dönti el — ugyanaz az ítélet
+   jelenik meg az Évad oldal „Hogy megy” blokkjában és Boop válaszaiban is, így sehol nem mondanak mást. Internet nélkül
+   a telefon ugyanazzal a szabállyal maga dönt, így a fül akkor sem üres.
 7. Az étrendi beállítások mentése újraszámolja az aktív célt; mentés előtt élő előnézet mutatja az új számokat.
 
 ## Miért így

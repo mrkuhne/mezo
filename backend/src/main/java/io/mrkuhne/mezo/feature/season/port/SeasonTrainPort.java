@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /** What the season needs from training (consumer-owned port): the weekly slots, their energy, the block. */
@@ -39,4 +40,16 @@ public interface SeasonTrainPort {
 
     /** The template a mesocycle can be re-run from (materialised for a legacy run). */
     UUID templateOf(UUID owner, UUID mesocycleId);
+
+    /**
+     * Days of {@code from..to} with a planned session: the weekday carries a weekly gym or sport slot (the schedule
+     * as it stands), or the running block plans a run that day.
+     */
+    Set<LocalDate> plannedSessionDays(UUID owner, LocalDate from, LocalDate to);
+
+    /** Days with a completed gym workout, a logged sport session or a logged run. */
+    Set<LocalDate> doneSessionDays(UUID owner, LocalDate from, LocalDate to);
+
+    /** Days whose planned gym / sport / run session was skipped with an excusing reason. */
+    Set<LocalDate> excusedSessionDays(UUID owner, LocalDate from, LocalDate to);
 }

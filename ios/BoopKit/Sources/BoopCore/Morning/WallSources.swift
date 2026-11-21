@@ -11,6 +11,8 @@ import Foundation
 
 public enum WallSources {
     public static let etel = "etel", edzes = "edzes", alvas = "alvas", energia = "energia", forma = "forma"
+    /// The season (B6 Évad, `mezo-r36n9.16`): its candidates are `evadCandidates` in `BoopCore/Evad/EvadWall.swift`.
+    public static let evad = "evad"
 }
 
 // MARK: - Étel

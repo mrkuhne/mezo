@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.season.service;
 
+import io.mrkuhne.mezo.api.dto.SeasonAdherenceResponse;
 import io.mrkuhne.mezo.api.dto.SeasonApply;
 import io.mrkuhne.mezo.api.dto.SeasonDraft;
 import io.mrkuhne.mezo.api.dto.SeasonOverview;
@@ -10,6 +11,7 @@ import io.mrkuhne.mezo.feature.season.entity.SeasonEntity;
 import io.mrkuhne.mezo.feature.season.mapper.SeasonMapper;
 import io.mrkuhne.mezo.feature.season.port.SeasonGoalPort;
 import io.mrkuhne.mezo.feature.season.port.SeasonTrainPort;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,7 @@ public class SeasonApiService {
     private final SeasonGoalPort goalPort;
     private final SeasonTrainPort trainPort;
     private final SeasonMapper mapper;
+    private final AdherenceService adherenceService;
 
     @Transactional(readOnly = true)
     public List<SeasonResponse> list(UUID owner) {
@@ -71,6 +74,10 @@ public class SeasonApiService {
     public SeasonResponse putRules(UUID owner, UUID id, SeasonRules r) {
         return response(owner, seasonService.putRules(owner, id, r.getProcessedFoodMaxNova(), r.getDeloadMaintain(),
             r.getUseLearnedExpenditure(), r.getProposeExperiments(), r.getMenuDay(), r.getMenuTime()));
+    }
+
+    public SeasonAdherenceResponse adherence(UUID owner, LocalDate from, LocalDate to) {
+        return mapper.toDto(adherenceService.range(owner, from, to));
     }
 
     public SeasonOverview overview(UUID owner) {

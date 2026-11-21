@@ -50,6 +50,9 @@ struct EvadPage: View {
             }
             .environment(store)
         }
+        // the Ma wall's „Átnézem" asks for Módosítás: taken once the season is on screen
+        .onChange(of: store?.pendingSub, initial: true) { takePendingSub() }
+        .onChange(of: store?.overview == nil) { takePendingSub() }
         .onAppear {
             #if DEBUG
             // Simulator review: `-evadOpen modositas|szabalyok|uj`, `-evadTab Évad|Menü|Lista|Hatás`.
@@ -59,6 +62,12 @@ struct EvadPage: View {
             }
             #endif
         }
+    }
+
+    private func takePendingSub() {
+        guard let store, let raw = store.pendingSub, store.overview != nil else { return }
+        store.pendingSub = nil
+        open = EvadSub(rawValue: raw)
     }
 
     private func season(_ o: EvadOverview, store: EvadStore) -> some View {
