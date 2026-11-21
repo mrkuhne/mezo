@@ -1450,5 +1450,15 @@
     "mit_kapsz": "A kísérlet eredménye a naplóba írt egyéb változásokat is megemlíti átfedésként, és egy ritka hiba sem akaszthatja meg Boop válaszát.",
     "munkamenet": "boop-penz-l7-d2ae5b",
     "szulo": "mezo-r36n9.16"
+  },
+  "mezo-r36n9.137": {
+    "cim": "Boop éjfél körül a jó napról beszéljen",
+    "tipus": "Apróságok",
+    "szakasz": "B7 Napi kapacitás",
+    "terulet": [
+      "AI és memória"
+    ],
+    "mit_kapsz": "Ha éjfél körül kérdezed Boopot az alvásodról, edzésedről vagy az évadról, a te napodról válaszol, nem a szomszédosról.",
+    "munkamenet": "b6-b7-epites-5d50e3"
   }
 }
