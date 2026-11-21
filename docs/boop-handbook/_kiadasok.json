@@ -686,5 +686,20 @@
       "mezo-r36n9.108"
     ],
     "mi_valtozott": "A Befektetést rögzítek lapon megadhatod, melyik számládról ment a vásárlás (nem kötelező) — így a havi keret „befektetve” sorában is látszik. Ha a bank SMS-e már beérkezett róla, Boop felajánlja, hogy az legyen a vásárlás; ha később jön, magától a rögzített vásárláshoz kapcsolódik, nem kerül be kétszer. A Pénzem oldalon a három rekesz alatt megjelent „A hét, hosszú távon”: hétfőnként rekeszenként egy mondat arról, számított-e valami a múlt hét híreiből hosszú távon, koppintásra a teljes magyarázattal — értesítés és teendő-gomb nélkül. Boop javaslataiban nem jelenhet meg olyan termék, cég vagy bank, ami nincs a jegyzékedben, és egy már használt számla pénzneme nem állítható át."
+  },
+  "5b6a77e59": {
+    "cim": "Izomrész-szűrő, képek, jobb indoklás és kihívás szinte mindenhol",
+    "datum": "2026-11-21",
+    "verzio": "v3.25.0",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app",
+      "Háttérrendszer"
+    ],
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.127"
+    ],
+    "mi_valtozott": "Gyakorlat hozzáadásánál egy kis legördülő listában több izomrészt is kipipálhatsz (például hát középső, mell felső); ha semmit nem választasz, a héten kevés izmokra ajánl. Az izomrész mindenhol látszik, ahol gyakorlat van — a nap soraiban, a hozzáadásnál, a cserénél, edzés közben, az Izmok lapon és a heti átnézésben. Az ajánlott gyakorlatok mellett kis kép van, a hozzáadásnál az indoklás azt mondja meg, miért jó oda a gyakorlat. A nap kihívását mostantól szinte minden gyakorlaton választhatod (95 gyakorlat a korábbi 22 helyett), csak a szabadsúlyos alapgyakorlatokon nem — a kézisúlyzós izoláló gyakorlatokon is."
   }
 }

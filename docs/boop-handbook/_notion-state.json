@@ -224,7 +224,7 @@
     },
     "jegyek:mezo-r36n9.17": {
       "page_id": "4168968e-752b-81d9-9448-c7846b8b3377",
-      "hash": "7edde5178f2a"
+      "hash": "d4afd2fd7e84"
     },
     "jegyek:mezo-r36n9.18": {
       "page_id": "4168968e-752b-81a2-adff-e71b81a0e3d3",
@@ -1208,7 +1208,7 @@
     },
     "kezikonyv:07-edzes/15-technikak": {
       "page_id": "41c8968e-752b-8133-8f30-e3411e37f22a",
-      "hash": "4cf6715f01b7"
+      "hash": "a8af27b61b50"
     },
     "jegyek:mezo-r36n9.92": {
       "page_id": "41d8968e-752b-819d-bed4-c90e4df96a79",
@@ -1228,7 +1228,7 @@
     },
     "kezikonyv:07-edzes/16-blokk-epito": {
       "page_id": "41d8968e-752b-81cc-818e-dc11d0726e8f",
-      "hash": "f6a275d9a04f"
+      "hash": "b045bce4acee"
     },
     "kiadasok:78e52679e": {
       "page_id": "41d8968e-752b-8127-9b15-d0288d125bd0",
@@ -1368,7 +1368,7 @@
     },
     "jegyek:mezo-r36n9.108": {
       "page_id": "41d8968e-752b-8176-b39c-e1f34feee7f7",
-      "hash": "946fda63c3aa"
+      "hash": "21a03d758488"
     },
     "kezikonyv:11-penz/00-attekintes": {
       "page_id": "41d8968e-752b-812e-a57d-dd4e8e2bb3c6",
@@ -1468,11 +1468,11 @@
     },
     "jegyek:mezo-r36n9.120": {
       "page_id": "41e8968e-752b-818a-8ada-e41e733091df",
-      "hash": "3eea24ae04bf"
+      "hash": "859aa2d26a77"
     },
     "jegyek:mezo-r36n9.119": {
       "page_id": "41e8968e-752b-8161-b685-e07597b183df",
-      "hash": "88a48204b523"
+      "hash": "1f833fe1656c"
     },
     "dontesek:d-2026-11-20-evad-a-kozeppont": {
       "page_id": "41e8968e-752b-813f-a156-c94a0ae8c731",
@@ -1492,7 +1492,7 @@
     },
     "jegyek:mezo-r36n9.121": {
       "page_id": "41e8968e-752b-810b-8cb5-d693907f9414",
-      "hash": "5eec50006cde"
+      "hash": "8812ed764ad6"
     },
     "kiadasok:d39b823de": {
       "page_id": "41e8968e-752b-8199-a03e-eaa51cd6526a",
@@ -2705,6 +2705,22 @@
     "dontesek:d-2026-11-21-penz-heti-attekintes-helye": {
       "page_id": "41f8968e-752b-819e-aec9-f9c3ea4e3324",
       "hash": "ea84fe77c4c3"
+    },
+    "jegyek:mezo-r36n9.127": {
+      "page_id": "41f8968e-752b-813f-9735-f384d7bb7d57",
+      "hash": "3a02b9e8d6f0"
+    },
+    "jegyek:mezo-r36n9.130": {
+      "page_id": "41f8968e-752b-8134-9d46-f783ff1726f3",
+      "hash": "e7b21627e1ae"
+    },
+    "dontesek:d-2026-11-21-kihivas-szabaly": {
+      "page_id": "41f8968e-752b-814f-88d4-debc94210954",
+      "hash": "ea83b078be15"
+    },
+    "kiadasok:5b6a77e59": {
+      "page_id": "41f8968e-752b-81d9-8bc7-ef2de92349c7",
+      "hash": "e7eece160634"
     }
   }
 }
