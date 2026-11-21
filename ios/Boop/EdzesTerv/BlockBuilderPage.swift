@@ -102,6 +102,8 @@ struct BlockBuilderPage: View {
                 Group {
                     switch sheet {
                     case .settings(let id): DayEditSettingsSheet(model: model, rowId: id)
+                    case .reps(let id): DayEditValueSheet(model: model, rowId: id, field: .reps)
+                    case .reserve(let id): DayEditValueSheet(model: model, rowId: id, field: .reserve)
                     case .add(let d, let muscles, let open):
                         DayEditAddSheet(model: model, day: d, muscles: muscles, open: open) { item, rx in
                             guard let c = item.asCatalog else { return }
@@ -116,8 +118,11 @@ struct BlockBuilderPage: View {
                         }
                     }
                 }
-                .presentationDetents([.large])
-                .presentationBackground(NK.ground)
+                // The fixed height, and .large too, so large Dynamic Type never clips the small editors.
+                .presentationDetents(sheet.compactHeight.map { [.height($0), .large] } ?? [.large])
+                .presentationBackground(sheet.compactHeight == nil ? NK.ground : Color(hex: 0x161B22).opacity(0.96))
+                .presentationCornerRadius(sheet.compactHeight == nil ? nil : 30)
+                .presentationDragIndicator(sheet.compactHeight == nil ? .automatic : .visible)
             }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) { bar }
@@ -211,7 +216,8 @@ struct BlockBuilderPage: View {
 
     #if DEBUG
     /// Simulator review of the day editor (boop-ios.md, preview flags): `-previewBlokkEdit
-    /// default|menu|settings|add|addOpen|addEmpty|swap|undo|empty|locked|confirm`, `-previewBlokkDay N` for the day page.
+    /// default|menu|settings|reps|reserve|add|addOpen|addEmpty|swap|undo|empty|locked|confirm`, `-previewBlokkDay N` for the
+    /// day page (`reps` / `reserve`: the first row's small ismétlés / tartalék editor).
     private func applyPreviewEdit() {
         guard !previewApplied, model.evaluation != nil, let draft = model.draft,
               let state = UserDefaults.standard.string(forKey: "previewBlokkEdit") else { return }
@@ -238,6 +244,8 @@ struct BlockBuilderPage: View {
             try? await Task.sleep(for: .milliseconds(500))
             switch state {
             case "settings": if let id = rows.first?.id { edit.sheet = .settings(id) }
+            case "reps": if let id = rows.first?.id { edit.sheet = .reps(id) }
+            case "reserve": if let id = rows.first?.id { edit.sheet = .reserve(id) }
             case "add": edit.sheet = .add(d, muscles: ["back-mid", "chest-upper"])
             case "addOpen": edit.sheet = .add(d, muscles: ["back-wide", "back-mid", "chest-upper", "chest-mid", "chest-lower"], open: true)
             case "addEmpty": edit.sheet = .add(d)
@@ -700,8 +708,9 @@ private struct BuilderDaysView: View {
     }
 }
 
-/// One day of the block as an editor (mezo-r36n9.116, spec §6.1): ≡ handle, name and subtitle, set stepper, ⋯ menu;
-/// tap a row for its settings; delete with an undo line; the add row; the empty day; today's running day read-only.
+/// One day of the block as an editor (mezo-r36n9.116, spec §6.1; rows mezo-r36n9.138): ≡ handle, name, ⋯ menu, then
+/// three cells (the sorozat stepper, ismétlés and tartalék opening their small editors) and the sub-muscle + technique
+/// pills; tap a row for its settings; delete with an undo line; the add row; the empty day; today's running day read-only.
 private struct BuilderDayCard: View {
     let model: BlockBuilderModel
     let ui: DayEditUI
@@ -712,10 +721,9 @@ private struct BuilderDayCard: View {
     @State private var dragBase: CGFloat = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    /// The card's side margins and inner padding: the editor row (handle, name, stepper, ⋯) needs the width.
+    /// The card's side margins and inner padding.
     private static let margin: CGFloat = 14, inset: CGFloat = 18
-    /// Below this the stepper goes under the name (spec §6.5: the row's fields wrap on the smaller iPhones) — the
-    /// name column keeps ~170 pt next to the 194 pt of handle, stepper and ⋯.
+    /// The smaller iPhones (375 pt): the cells' numerals and words a size smaller, the gaps tighter.
     private var narrow: Bool { pageWidth > 0 && pageWidth - 2 * (Self.margin + Self.inset) < 364 }
 
     var body: some View {
@@ -825,31 +833,31 @@ private struct BuilderDayCard: View {
         }
     }
 
-    // MARK: one row
+    // MARK: one row — ≡ name ⋯ · sorozat · ismétlés · tartalék · the pills (mezo-r36n9.138, spike D of `spike/boop-nap-sorok`)
 
     @ViewBuilder private func row(_ draft: BlockDraft, _ exercise: DraftExercise, _ e: Int, capped: Bool, locked: Bool) -> some View {
         let lifted = ui.dragging == exercise.id
         let menuOpen = ui.menuRow == exercise.id
-        Group {
-            if narrow {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(alignment: .top, spacing: 8) {
-                        if !locked { handle(exercise) }
-                        texts(draft, exercise, e, capped: capped, locked: locked)
-                        if !locked { dots(exercise) }
-                    }
-                    stepper(exercise, e, locked: locked).padding(.leading, locked ? 0 : 28)
-                }
-            } else {
-                HStack(spacing: 8) {
-                    if !locked { handle(exercise) }
-                    texts(draft, exercise, e, capped: capped, locked: locked)
-                    stepper(exercise, e, locked: locked)
-                    if !locked { dots(exercise) }
-                }
+        let lead: CGFloat = locked ? 0 : 28
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .center, spacing: 8) {
+                if !locked { handle(exercise) }
+                Text(exercise.name).nkFont(16, .medium).foregroundStyle(.white.opacity(locked ? 0.7 : 0.95))
+                    .lineLimit(2).minimumScaleFactor(0.85).fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, minHeight: locked ? 30 : 44, alignment: .leading)
+                    .accessibilityAddTraits(locked ? [] : .isButton)
+                    .accessibilityHint(locked ? "" : "Beállítások")
+                    .accessibilityAction { if !locked { ui.menuRow = nil; ui.sheet = .settings(exercise.id) } }
+                    .accessibilityAction(named: "Beállítások") { if !locked { ui.menuRow = nil; ui.sheet = .settings(exercise.id) } }
+                if !locked { dots(exercise) }
             }
+            cells(exercise, e, capped: capped, locked: locked).padding(.leading, lead)
+            pills(draft, exercise, e, locked: locked).padding(.leading, lead).padding(.top, 1)
         }
         .padding(.vertical, 12)
+        .contentShape(Rectangle())
+        // The row's empty places open its settings; the cells, the chip, ≡ and ⋯ keep their own taps.
+        .onTapGesture { if !locked { ui.menuRow = nil; ui.sheet = .settings(exercise.id) } }
         .padding(.horizontal, lifted ? 10 : 0)
         .background {
             if lifted {
@@ -869,50 +877,41 @@ private struct BuilderDayCard: View {
         }
     }
 
-    private func texts(_ draft: BlockDraft, _ exercise: DraftExercise, _ e: Int, capped: Bool, locked: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(exercise.name).nkFont(16, .medium).foregroundStyle(.white.opacity(locked ? 0.7 : 0.95))
-                .lineLimit(2).minimumScaleFactor(0.85).fixedSize(horizontal: false, vertical: true)
-            subtitle(exercise).nkFont(12).foregroundStyle(capped ? planWarn : .white.opacity(0.5))
+    /// Three equal cells: the sorozat cell is itself the stepper; ismétlés and tartalék open their small editors. A hue
+    /// dot in the corner marks a value he set himself (the row's overrides); 0 tartalék and a capped set count are amber.
+    private func cells(_ exercise: DraftExercise, _ e: Int, capped: Bool, locked: Bool) -> some View {
+        HStack(spacing: narrow ? 6 : 8) {
+            BuilderSetCell(value: exercise.sets, name: exercise.name, own: exercise.overrides.contains("workingSets"),
+                           warn: capped, narrow: narrow, locked: locked,
+                           down: { ui.menuRow = nil; model.draft?.step(day: index, exercise: e, by: -1) },
+                           up: { ui.menuRow = nil; model.draft?.step(day: index, exercise: e, by: 1) })
+            BuilderValueCell(value: "\(exercise.repMin)–\(exercise.repMax)", word: "ismétlés",
+                             own: exercise.overrides.contains("repRange"), narrow: narrow,
+                             edit: locked ? nil : { ui.menuRow = nil; ui.sheet = .reps(exercise.id) })
+            BuilderValueCell(value: "\(exercise.targetRIR)", word: "tartalék",
+                             own: exercise.overrides.contains("targetRir"), warn: exercise.targetRIR == 0, narrow: narrow,
+                             edit: locked ? nil : { ui.menuRow = nil; ui.sheet = .reserve(exercise.id) })
+        }
+    }
+
+    /// The sub-muscle pill (or the jump's quiet note) and the one technique/challenge chip; wraps on the small iPhones.
+    private func pills(_ draft: BlockDraft, _ exercise: DraftExercise, _ e: Int, locked: Bool) -> some View {
+        NKFlowRow(spacing: 6, rowSpacing: 6) {
+            if exercise.counts, exercise.type != "plyo" {
+                Text(SubMuscles.name(exercise.muscleKey)).nkFont(12, .medium).foregroundStyle(.white.opacity(locked ? 0.6 : 0.8))
+                    .lineLimit(1).fixedSize()
+                    .padding(.horizontal, 9).padding(.vertical, 4)
+                    .overlay(Capsule().strokeBorder(planHue.glow.opacity(0.35), lineWidth: 1))
+            } else {
+                Text("ugrás · nem számít a sorozatokba").nkFont(12).foregroundStyle(.white.opacity(0.5))
+                    .lineLimit(1).fixedSize()
+                    .padding(.vertical, 4)
+            }
             if exercise.judged, draft.techniquesEnabled, !locked {
                 // One pill, whatever is chosen: the row keeps its height when he picks (owner, 2026-11-19).
                 BuilderTechniqueChip(exercise: exercise) { ui.menuRow = nil; pick(TechniquePick(day: index, exercise: e)) }
-                    .padding(.top, 2)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .layoutPriority(1)
-        .contentShape(Rectangle())
-        .onTapGesture { if !locked { ui.menuRow = nil; ui.sheet = .settings(exercise.id) } }
-        .accessibilityAddTraits(locked ? [] : .isButton)
-        .accessibilityHint(locked ? "" : "Beállítások")
-    }
-
-    /// `<izomrész> · <min>–<max> ism. · <r> tartalék` from the row's own numbers (his edits show at once) — one line
-    /// when it fits, else the sub-muscle above the numbers, never a break inside „10–12 ism." (mezo-r36n9.127).
-    @ViewBuilder private func subtitle(_ exercise: DraftExercise) -> some View {
-        if exercise.counts, exercise.type != "plyo" {
-            let reserve = exercise.targetRIR == 0 ? "bukásig" : "\(exercise.targetRIR) tartalék"
-            let muscle = SubMuscles.name(exercise.muscleKey)
-            let numbers = "\(exercise.repMin)–\(exercise.repMax) ism. · \(reserve)"
-            ViewThatFits(in: .horizontal) {
-                Text("\(muscle) · \(numbers)").lineLimit(1).fixedSize()
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(muscle).fixedSize(horizontal: false, vertical: true)
-                    Text(numbers).fixedSize(horizontal: false, vertical: true)
-                }
-            }
-        } else {
-            Text("ugrás · nem számít a sorozatokba").fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    private func stepper(_ exercise: DraftExercise, _ e: Int, locked: Bool) -> some View {
-        PlanSetStepper(value: exercise.sets, name: exercise.name,
-                       down: { ui.menuRow = nil; model.draft?.step(day: index, exercise: e, by: -1) },
-                       up: { ui.menuRow = nil; model.draft?.step(day: index, exercise: e, by: 1) })
-            .disabled(locked)
-            .opacity(locked ? 0.4 : 1)
     }
 
     // MARK: ≡ handle — three drawn bars, no symbol
@@ -1111,6 +1110,132 @@ private struct BuilderTechniqueChip: View {
         case .myo, .restPause: .myo
         case .partials: .partials
         }
+    }
+}
+
+/// The cells' shared face: a soft glass tile, the hue dot in the corner for a value he set himself.
+private struct BuilderCellFace: ViewModifier {
+    var own = false
+    func body(content: Content) -> some View {
+        content
+            .frame(maxWidth: .infinity, minHeight: 58)
+            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(.white.opacity(0.07)))
+            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(.white.opacity(0.09), lineWidth: 0.5))
+            .overlay(alignment: .topTrailing) {
+                if own { Circle().fill(planHue.glow).frame(width: 6, height: 6).padding(7).accessibilityHidden(true) }
+            }
+    }
+}
+
+/// The sorozat cell is itself the stepper (1–8): its left half is −, its right half is + (each ≥ 44 pt even at
+/// 375 pt), the marks on the edges, the numeral and the word in the middle. Read-only on a locked day.
+private struct BuilderSetCell: View {
+    let value: Int
+    let name: String
+    var own = false
+    var warn = false
+    let narrow: Bool
+    let locked: Bool
+    let down: () -> Void
+    let up: () -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        ZStack {
+            if !locked {
+                HStack(spacing: 0) {
+                    half("−", .leading, "Kevesebb sorozat", down)
+                    half("+", .trailing, "Több sorozat", up)
+                }
+            }
+            VStack(spacing: 1) {
+                Text("\(value)").nkFont(narrow ? 20 : 22, .medium).foregroundStyle(warn ? planWarn : .white)
+                    .contentTransition(.numericText())
+                Text("sorozat").nkFont(narrow ? 10 : 11).foregroundStyle(.white.opacity(0.55))
+            }
+            .allowsHitTesting(false)
+        }
+        .modifier(BuilderCellFace(own: own))
+        .opacity(locked ? 0.7 : 1)
+        .sensoryFeedback(.impact(weight: .light), trigger: value)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("\(name), \(value) sorozat\(own ? ", te állítottad" : "")")
+        .modifier(BuilderAdjustable(enabled: !locked, down: down, up: up))
+    }
+
+    private func half(_ mark: String, _ edge: Alignment, _ label: String, _ action: @escaping () -> Void) -> some View {
+        Button { withAnimation(reduceMotion ? nil : .snappy) { action() } } label: {
+            Text(mark).nkFont(narrow ? 15 : 17, .medium).foregroundStyle(.white.opacity(0.85))
+                .frame(width: narrow ? 20 : 24, height: narrow ? 20 : 24)
+                .background(Circle().fill(.white.opacity(0.10)))
+                .padding(.horizontal, narrow ? 5 : 7)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: edge)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
+        .accessibilityValue("\(value)")
+    }
+}
+
+/// VoiceOver's swipe up / down on the sorozat cell — only where it can be edited.
+private struct BuilderAdjustable: ViewModifier {
+    let enabled: Bool
+    let down: () -> Void
+    let up: () -> Void
+    func body(content: Content) -> some View {
+        if enabled {
+            content.accessibilityAdjustableAction { direction in
+                switch direction {
+                case .increment: up()
+                case .decrement: down()
+                @unknown default: break
+                }
+            }
+        } else {
+            content
+        }
+    }
+}
+
+/// The ismétlés or tartalék cell: big numeral, the word written out under it, a tiny chevron when a tap opens its
+/// editor (none on a locked day).
+private struct BuilderValueCell: View {
+    let value: String
+    let word: String
+    var own = false
+    var warn = false
+    let narrow: Bool
+    let edit: (() -> Void)?
+
+    var body: some View {
+        if let edit {
+            Button(action: edit) { face }
+                .buttonStyle(.plain)
+                .accessibilityHint("Koppints az átállításhoz")
+        } else {
+            face
+        }
+    }
+
+    private var face: some View {
+        VStack(spacing: 1) {
+            Text(value).nkFont(narrow ? 20 : 22, .medium).foregroundStyle(warn ? planWarn : .white)
+                .lineLimit(1).minimumScaleFactor(0.7)
+            HStack(spacing: 3) {
+                Text(word).nkFont(narrow ? 10 : 11).foregroundStyle(.white.opacity(0.55)).lineLimit(1).minimumScaleFactor(0.8)
+                if edit != nil {
+                    Image(systemName: "chevron.down").font(.system(size: narrow ? 7 : 8, weight: .bold))
+                        .foregroundStyle(.white.opacity(0.45))
+                }
+            }
+        }
+        .padding(.horizontal, 6).padding(.vertical, 8)
+        .modifier(BuilderCellFace(own: own))
+        .opacity(edit == nil ? 0.7 : 1)
+        .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(value) \(word)\(own ? ", te állítottad" : "")")
     }
 }
 

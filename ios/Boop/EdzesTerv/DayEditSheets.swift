@@ -42,6 +42,9 @@ struct DayEditMenuBackdrop: ViewModifier {
 
 enum DayEditSheet: Identifiable, Equatable {
     case settings(String)
+    /// The small editors a row's ismétlés / tartalék cell opens (mezo-r36n9.138).
+    case reps(String)
+    case reserve(String)
     /// The day, the sub-muscles picked up front and the dropdown open (both simulator review only).
     case add(Int, muscles: Set<String> = [], open: Bool = false)
     case swap(String)
@@ -49,8 +52,19 @@ enum DayEditSheet: Identifiable, Equatable {
     var id: String {
         switch self {
         case .settings(let id): "s\(id)"
+        case .reps(let id): "r\(id)"
+        case .reserve(let id): "v\(id)"
         case .add(let d, _, _): "a\(d)"
         case .swap(let id): "w\(id)"
+        }
+    }
+
+    /// The small editors' fixed height; nil = a full-height sheet.
+    var compactHeight: CGFloat? {
+        switch self {
+        case .reps: 470
+        case .reserve: 400
+        default: nil
         }
     }
 }
@@ -189,6 +203,103 @@ struct DayEditSettingsSheet: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.white.opacity(mine ? 0.1 : 0.06)))
         .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(planHue.glow.opacity(mine ? 0.45 : 0), lineWidth: 1))
+    }
+}
+
+// MARK: - The small editor of one value (mezo-r36n9.138)
+
+/// What a row's ismétlés or tartalék cell opens: the value big, its steppers (ismétlés 1–30 as min–max, min ≤ max;
+/// tartalék 0–4, 0 = bukásig), the own-value line with „Visszaállítom az edzésmódra" (only this field's key; the
+/// settings sheet keeps its reset-all) and „Kész". Every tap goes through the draft's edit API.
+struct DayEditValueSheet: View {
+    enum Field { case reps, reserve }
+
+    let model: BlockBuilderModel
+    let rowId: String
+    let field: Field
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        if let draft = model.draft, let at = draft.locate(rowId) {
+            let row = draft.days[at.day].exercises[at.index]
+            let reps = field == .reps
+            let key = reps ? "repRange" : "targetRir"
+            let own = row.overrides.contains(key)
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(reps ? "ISMÉTLÉS" : "TARTALÉK").nkFont(11, .semibold, design: .monospaced).tracking(1.4)
+                        .foregroundStyle(planHue.glow)
+                    Text(row.name).nkFont(24, design: .serif).foregroundStyle(.white)
+                        .lineLimit(2).minimumScaleFactor(0.8)
+                }
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(reps ? "\(row.repMin)–\(row.repMax)" : "\(row.targetRIR)")
+                        .nkFont(48, .medium).foregroundStyle(!reps && row.targetRIR == 0 ? planWarn : .white)
+                        .contentTransition(.numericText())
+                    Text(reps ? "ismétlés" : (row.targetRIR == 0 ? "bukásig" : "tartalék"))
+                        .nkFont(15).foregroundStyle(.white.opacity(0.6))
+                }
+                .frame(maxWidth: .infinity)
+                .accessibilityElement(children: .combine)
+                VStack(spacing: 0) {
+                    if reps {
+                        line("Legalább", "\(row.repMin)", label: "Legkevesebb ismétlés",
+                             down: { if row.repMin > 1 { edit { $0.setRepRange(day: at.day, at: at.index, min: row.repMin - 1, max: row.repMax) } } },
+                             up: { if row.repMin < 30 { edit { $0.setRepRange(day: at.day, at: at.index, min: row.repMin + 1, max: max(row.repMax, row.repMin + 1)) } } })
+                        Rectangle().fill(.white.opacity(0.08)).frame(height: 0.5)
+                        line("Legfeljebb", "\(row.repMax)", label: "Legtöbb ismétlés",
+                             down: { if row.repMax > 1 { edit { $0.setRepRange(day: at.day, at: at.index, min: min(row.repMin, row.repMax - 1), max: row.repMax - 1) } } },
+                             up: { if row.repMax < 30 { edit { $0.setRepRange(day: at.day, at: at.index, min: row.repMin, max: row.repMax + 1) } } })
+                    } else {
+                        line("Tartalék ismétlés", "\(row.targetRIR)", label: "Tartalék",
+                             down: { if row.targetRIR > 0 { edit { $0.setReserve(day: at.day, at: at.index, row.targetRIR - 1) } } },
+                             up: { if row.targetRIR < 4 { edit { $0.setReserve(day: at.day, at: at.index, row.targetRIR + 1) } } })
+                        Text("0 = bukásig").nkFont(12).foregroundStyle(.white.opacity(0.45))
+                            .frame(maxWidth: .infinity, alignment: .leading).padding(.bottom, 8)
+                    }
+                }
+                .padding(.horizontal, 14)
+                .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.white.opacity(0.06)))
+                if own {
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(alignment: .top, spacing: 6) {
+                            Circle().fill(planHue.glow).frame(width: 6, height: 6).padding(.top, 6)
+                            Text("Ezt te állítottad; az edzésmód nem írja felül.").nkFont(13).foregroundStyle(.white.opacity(0.7))
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        Button { edit { $0.resetToStyle(day: at.day, at: at.index, key: key) } } label: {
+                            Text("Visszaállítom az edzésmódra").nkFont(14, .semibold).foregroundStyle(.white).underline()
+                                .frame(minHeight: 44).contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                Spacer(minLength: 0)
+                Button { dismiss() } label: {
+                    Text("Kész").nkFont(16, .semibold).foregroundStyle(NK.ground)
+                        .frame(maxWidth: .infinity, minHeight: 52).background(Capsule().fill(.white))
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 24).padding(.top, 26).padding(.bottom, 12)
+            .preferredColorScheme(.dark)
+        }
+    }
+
+    private func edit(_ change: (inout BlockDraft) -> Void) {
+        guard var d = model.draft else { return }
+        change(&d)
+        withAnimation(reduceMotion ? nil : .snappy) { model.draft = d }
+    }
+
+    private func line(_ title: String, _ text: String, label: String, down: @escaping () -> Void, up: @escaping () -> Void) -> some View {
+        HStack {
+            Text(title).nkFont(15, .medium).foregroundStyle(.white.opacity(0.9))
+            Spacer()
+            DayEditStepper(text: text, label: label, down: down, up: up)
+        }
+        .frame(minHeight: 60)
     }
 }
 
