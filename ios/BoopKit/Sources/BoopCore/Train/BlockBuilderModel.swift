@@ -252,6 +252,19 @@ public final class BlockBuilderModel {
                                 budget: evaluation?.budget, minutes: minutesTarget ?? 0, days: draft.days.count)
     }
 
+    /// The tier switch: lowering jumps straight to the target, a raise moves one tier toward it and only when
+    /// `canRaise` allows (the same one-tier-per-tap rule as the new-block intake). Returns the check that decided.
+    @discardableResult
+    public func setTier(_ muscle: String, _ target: MuscleTier) -> RaiseCheck {
+        guard let current = draft?.tier(muscle) else { return .ok }
+        let from = RaiseCheck.rank(current.rawValue), wanted = RaiseCheck.rank(target.rawValue)
+        guard wanted != from else { return .ok }
+        if wanted < from { draft?.setTier(muscle, target); return .ok }
+        let result = canRaise(muscle)
+        if result == .ok { draft?.setTier(muscle, MuscleTier(wire: RaiseCheck.tierNames[from + 1])) }
+        return result
+    }
+
     /// „Mégsem, eldobom": closes the block the intake just created and leaves the builder empty. A failure keeps the
     /// block on screen with `discardError` set. Returns true when the block is gone.
     @discardableResult

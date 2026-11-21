@@ -16,20 +16,27 @@ public enum RaiseCheck: Equatable, Sendable {
     /// training-day count for the copy.
     case noRoom(minutes: Int, days: Int)
 
-    /// Tier order: maintain < grow < emphasize. Lowering (or staying) is always allowed. `emphasizeCount` is counted
+    /// Tier order: maintain < grow < emphasize. Lowering (or staying) is always allowed; a raise is checked one tier
+    /// at a time. `emphasizeCount` is counted
     /// from the tiers on screen (the budget may lag an edit); the cap and the costs come from the server's budget.
     static func check(muscle: String, from current: String, to target: String, emphasizeCount: Int, budget: WireBudget?,
                       minutes: Int, days: Int) -> RaiseCheck {
-        let rank = ["maintain": 0, "grow": 1, "emphasize": 2]
-        let from = rank[current] ?? 1, to = rank[target] ?? 1
-        guard to > from else { return .ok }
-        if target == "emphasize", emphasizeCount >= (budget?.emphasizeMax ?? 2) { return .emphasizeFull }
+        let from = rank(current), wanted = rank(target)
+        guard wanted > from else { return .ok }
+        // The screens raise one tier per tap: a two-tier jump (Tartás → Hangsúly) is checked — and taken, by
+        // `NewBlockModel.setTier` — as its first step only. `raiseCost` prices exactly one tier, so a jump is never
+        // compared against a cost the server did not send.
+        let to = from + 1
+        if to == 2, emphasizeCount >= (budget?.emphasizeMax ?? 2) { return .emphasizeFull }
         if let budget, let capacity = budget.capacitySets, let cost = budget.raiseCost[muscle],
            cost > capacity - budget.usedSets {
             return .noRoom(minutes: minutes, days: days)
         }
         return .ok
     }
+
+    static func rank(_ tier: String) -> Int { ["maintain": 0, "grow": 1, "emphasize": 2][tier] ?? 1 }
+    static let tierNames = ["maintain", "grow", "emphasize"]
 
     /// One tier up from `current`; Hangsúly has nothing above it.
     static func raise(muscle: String, from current: String, emphasizeCount: Int, budget: WireBudget?, minutes: Int, days: Int) -> RaiseCheck {
@@ -61,13 +68,19 @@ public final class NewBlockModel {
     /// Season weekday (0 = Monday) → the server's day token.
     public static let dayTokens = [0: "Hét", 1: "Kedd", 2: "Sze", 3: "Csü", 4: "Pén", 5: "Szo", 6: "Vas"]
 
-    public var weeks = 6 {
-        didSet {
-            let clamped = min(max(weeks, Self.weekRange.lowerBound), Self.weekRange.upperBound)
-            if clamped != weeks { weeks = clamped; return }
-            if weeks != oldValue { scheduleRefresh() }
+    /// The block length, clamped to `weekRange`; a change of the final (clamped) value asks again. A computed
+    /// property over its storage: under `@Observable` an assignment inside `didSet` re-enters the observer, so the
+    /// clamp is done before anything is stored.
+    public var weeks: Int {
+        get { weeksValue }
+        set {
+            let clamped = min(max(newValue, Self.weekRange.lowerBound), Self.weekRange.upperBound)
+            guard clamped != weeksValue else { return }
+            weeksValue = clamped
+            scheduleRefresh()
         }
     }
+    private var weeksValue = 6
     public var minutes = 60 { didSet { if minutes != oldValue { scheduleRefresh() } } }
     /// Coarse muscle → `emphasize` / `grow` / `maintain`; a missing key is Építés (grow).
     public var tiers: [String: String] = [:] { didSet { if tiers != oldValue { scheduleRefresh() } } }
@@ -86,7 +99,14 @@ public final class NewBlockModel {
     /// The debounced refresh on its way (tests await it).
     private(set) var pendingRefresh: Task<Void, Never>?
     /// A template already saved for a choice, so a retry after a failed start does not save a second one.
-    private var savedTemplate: (key: String, id: String)?
+    private var savedTemplate: (key: SavedKey, id: String)?
+
+    /// Everything a saved template was made for: the generate request (split, days, weeks, tiers) plus the session
+    /// minutes. Compared with `==`, so a dictionary's order never matters.
+    private struct SavedKey: Equatable {
+        let request: WireGenerateRequest
+        let minutes: Int
+    }
 
     public init(client: PlanClient, seasonGymDays: [Int]?, debounce: Duration = .milliseconds(300),
                 now: @escaping () -> Date = Date.init, calendar: Calendar = .current) {
@@ -163,6 +183,57 @@ public final class NewBlockModel {
 
     private var emphasizeCount: Int { tiers.values.filter { $0 == "emphasize" }.count }
 
+    /// Sets a muscle's tier from the switch. Lowering jumps straight to the target; a raise moves one tier toward it
+    /// (Tartás → Hangsúly lands on Építés first) and only when the budget allows. Returns the check that decided.
+    @discardableResult
+    public func setTier(_ muscle: String, _ target: String) -> RaiseCheck {
+        let from = RaiseCheck.rank(tier(muscle)), wanted = RaiseCheck.rank(target)
+        guard wanted != from else { return .ok }
+        if wanted < from { tiers[muscle] = target; return .ok }
+        let result = check(muscle, to: target)
+        if result == .ok { tiers[muscle] = RaiseCheck.tierNames[from + 1] }
+        return result
+    }
+
+    // MARK: what would make it fit
+
+    public enum FixOutcome: Equatable, Sendable {
+        case applied
+        /// More training days: the season decides them — the screen sends him to the Évad tab.
+        case needsSeasonDays
+        /// A fix this build does not know: no line is shown for it.
+        case unknown
+    }
+
+    /// The emphasized muscle with the most weekly sets in the lead (closest) candidate — the one „Egy izom Hangsúly
+    /// helyett Építés" lowers. Muscles the evaluation does not list count as 0.
+    public var heaviestEmphasized: String? {
+        let sets = Dictionary((budgetSource?.muscles ?? []).map { ($0.muscle, $0.weeklySets) }, uniquingKeysWith: { a, _ in a })
+        return tiers.filter { $0.value == "emphasize" }.keys.sorted().max { (sets[$0] ?? 0) < (sets[$1] ?? 0) }
+    }
+
+    private var budgetSource: WireEvaluation? {
+        if case .candidates(let c) = phase { return c.lead?.evaluation }
+        return nil
+    }
+
+    /// Applies one of the server's fixes: `more_minutes` sets its minutes, `fewer_emphasis` lowers the heaviest
+    /// Hangsúly muscle to Építés, `more_days` is the season's (`needsSeasonDays`).
+    public func applyFix(_ fix: WireFix) -> FixOutcome {
+        switch fix.code {
+        case "more_minutes":
+            guard let v = fix.value, v > 0 else { return .unknown }
+            minutes = v
+            return .applied
+        case "fewer_emphasis":
+            guard let m = heaviestEmphasized else { return .unknown }
+            tiers[m] = "grow"
+            return .applied
+        case "more_days": return .needsSeasonDays
+        default: return .unknown
+        }
+    }
+
     // MARK: „Ezzel kezdem"
 
     /// Generate the chosen split's full plan → save it as a template → start it. A failed generate falls back to the
@@ -171,7 +242,8 @@ public final class NewBlockModel {
         guard !busy else { return }
         pendingRefresh?.cancel()
         phase = .creating
-        let key = "\(candidate.splitKey)|\(weeks)|\(prioritiesWire ?? [:])|\(days)"
+        let request = WireGenerateRequest(daysOfWeek: days, weeks: weeks, priorities: prioritiesWire, split: candidate.splitKey)
+        let key = SavedKey(request: request, minutes: minutes)
         do {
             let templateId: String
             if let saved = savedTemplate, saved.key == key {
@@ -179,8 +251,7 @@ public final class NewBlockModel {
             } else {
                 let template: WireTemplate
                 do {
-                    template = try await client.generate(WireGenerateRequest(daysOfWeek: days, weeks: weeks,
-                                                                             priorities: prioritiesWire, split: candidate.splitKey)).template
+                    template = try await client.generate(request).template
                 } catch {
                     template = candidate.template
                 }

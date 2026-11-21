@@ -50,6 +50,18 @@ struct BlockBuilderBudgetTests {
         #expect(noCapacity.canRaise("biceps") == .ok, "without a target there is no room to run out of")
     }
 
+    @Test(.timeLimit(.minutes(1))) func tierSwitchStepsAndBlocks() async throws {
+        let stub = StubTransport()
+        let m = await loaded(stub, evaluation: PlanFixtures.evaluationJSON(budget: PlanFixtures.budgetJSON()), minutes: 60)
+        stub.on("evaluateMesoPlan", .json(200, PlanFixtures.evaluationJSON(budget: PlanFixtures.budgetJSON())))
+        // chest is Tartás: a tap on Hangsúly takes one step (Építés, cost 4 fits in the room of 8).
+        #expect(m.setTier("chest", .emphasize) == .ok)
+        #expect(m.draft?.tier("chest") == .grow)
+        #expect(m.setTier("biceps", .emphasize) == .noRoom(minutes: 60, days: 2))
+        #expect(m.draft?.tier("biceps") == .grow, "a blocked raise changes nothing")
+        #expect(m.setTier("back", .maintain) == .ok && m.draft?.tier("back") == .maintain, "lowering jumps straight")
+    }
+
     @Test(.timeLimit(.minutes(1))) func discardClosesJustCreatedBlock() async throws {
         let stub = StubTransport()
         let m = await loaded(stub, status: "planned")

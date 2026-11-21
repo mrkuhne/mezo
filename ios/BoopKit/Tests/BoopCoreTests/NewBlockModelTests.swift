@@ -187,6 +187,74 @@ struct NewBlockModelTests {
         #expect(stub.ops.filter { $0 == "createMesoTemplate" }.count == 1, "no second template for the same choice")
     }
 
+    // MARK: Task 6 review fixes (mezo-r36n9.113)
+
+    @Test(.timeLimit(.minutes(1))) func clampedWeeksStillRefresh() async throws {
+        let stub = StubTransport()
+        let m = await withCandidates(stub)
+        stub.on("getMesoPlanCandidates", .json(200, PlanFixtures.candidatesJSON()))
+        m.weeks = 12
+        #expect(m.weeks == 8)
+        await m.pendingRefresh?.value
+        #expect(stub.ops.filter { $0 == "getMesoPlanCandidates" }.count == 2, "a clamped change is still a change")
+        #expect(try body(stub, "getMesoPlanCandidates")["weeks"] as? Int == 8)
+        m.weeks = 9
+        #expect(m.weeks == 8)
+        try? await Task.sleep(for: .milliseconds(80))
+        #expect(stub.ops.filter { $0 == "getMesoPlanCandidates" }.count == 2,
+                "clamped back to the same value: nothing to ask (\(stub.ops))")
+    }
+
+    @Test(.timeLimit(.minutes(1))) func savedTemplateIsKeyedOnMinutesToo() async throws {
+        let stub = StubTransport()
+        let m = await withCandidates(stub)
+        guard case .candidates(let c) = m.phase else { Issue.record("no candidates"); return }
+        stub.on("generateMesoPlan", .json(200, PlanFixtures.generateJSON))
+        stub.on("createMesoTemplate", .json(200, #"{"id":"\#(PlanFixtures.templateId)"}"#))
+        stub.on("startMesoTemplate", .fail(URLError(.notConnectedToInternet)))
+        await m.choose(c.candidates[0])
+        #expect(m.phase == .failed(.offline))
+        stub.on("getMesoPlanCandidates", .json(200, PlanFixtures.candidatesJSON()))
+        m.minutes = 75
+        await m.pendingRefresh?.value
+        stub.on("generateMesoPlan", .json(200, PlanFixtures.generateJSON))
+        stub.on("createMesoTemplate", .json(200, #"{"id":"\#(PlanFixtures.templateId)"}"#))
+        stub.on("startMesoTemplate", .json(200, PlanFixtures.startedBlockJSON()))
+        await m.choose(c.candidates[0])
+        #expect(m.phase == .created(blockId: PlanFixtures.newBlockId))
+        #expect(stub.ops.filter { $0 == "createMesoTemplate" }.count == 2, "another session length is another choice")
+    }
+
+    @Test(.timeLimit(.minutes(1))) func raisesStepOneTierAtATime() async {
+        let m = await withCandidates(StubTransport())
+        m.tiers = ["back": "emphasize", "quad": "emphasize", "chest": "maintain"]
+        // Tartás → Hangsúly is two tiers: only the adjacent step (Építés) is checked and taken.
+        #expect(m.check("chest", to: "emphasize") == .ok, "the step to Építés fits (cost 4, room 8)")
+        #expect(m.setTier("chest", "emphasize") == .ok)
+        #expect(m.tier("chest") == "grow", "one tier per tap")
+        #expect(m.setTier("chest", "emphasize") == .emphasizeFull, "the next step meets the Hangsúly cap")
+        #expect(m.tier("chest") == "grow")
+        #expect(m.setTier("back", "maintain") == .ok && m.tier("back") == "maintain", "lowering jumps straight")
+    }
+
+    @Test(.timeLimit(.minutes(1))) func blockedRaiseLeavesTheTier() async {
+        let m = await withCandidates(StubTransport())
+        #expect(m.setTier("biceps", "emphasize") == .noRoom(minutes: 60, days: 2))
+        #expect(m.tier("biceps") == "grow")
+    }
+
+    @Test(.timeLimit(.minutes(1))) func fixesApply() async {
+        let m = await withCandidates(StubTransport(), json: PlanFixtures.candidatesJSON(nothingFits: true))
+        m.tiers = ["back": "emphasize", "biceps": "emphasize"]
+        #expect(m.applyFix(WireFix(code: "more_minutes", value: 75)) == .applied)
+        #expect(m.minutes == 75)
+        // back has 7 weekly sets in the closest candidate, biceps 3: the bigger one comes down to Építés.
+        #expect(m.applyFix(WireFix(code: "fewer_emphasis", value: nil)) == .applied)
+        #expect(m.tier("back") == "grow" && m.tier("biceps") == "emphasize")
+        #expect(m.applyFix(WireFix(code: "more_days", value: nil)) == .needsSeasonDays)
+        #expect(m.applyFix(WireFix(code: "future_fix", value: nil)) == .unknown)
+    }
+
     @Test(.timeLimit(.minutes(1))) func candidatesFailureIsShown() async {
         let stub = StubTransport()
         stub.on("getMesoPlanCandidates", .json(400, #"{"messages":[{"code":"TRAIN_MESO_EMPHASIZE_CAP"}]}"#))
