@@ -34,6 +34,12 @@ public final class YearGenerator {
     public static final String LOWER = "lower";
     public static final String CONSOLIDATION = "consolidation";
 
+    /** Year-block statuses (training_year_block.status). */
+    public static final String PLANNED = "planned";
+    public static final String RUNNING = "running";
+    public static final String DONE = "done";
+    public static final String SKIPPED = "skipped";
+
     public static final String EMPHASIS_ONCE = "emphasis_once";
     public static final String NO_FOCUS = "no_focus";
     public static final String PAIR_RELAXED = "pair_relaxed";

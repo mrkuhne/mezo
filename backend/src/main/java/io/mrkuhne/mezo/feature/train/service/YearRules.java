@@ -25,9 +25,6 @@ public final class YearRules {
     public static final String PAIR_UNUSUAL = "pair_unusual";
     public static final String MIXED_FOCUS = "mixed_focus";
 
-    static final String PLANNED = "planned";
-    static final String SKIPPED = "skipped";
-
     private YearRules() {}
 
     public record View(UUID id, int ordinal, String kind, List<String> focus, String status, LocalDate start) {}
@@ -90,7 +87,7 @@ public final class YearRules {
         Map<String, Integer> counts = new HashMap<>();
         for (View b : live(blocks)) for (String g : b.focus()) counts.merge(g, 1, Integer::sum);
         List<View> candidates = blocks.stream()
-            .filter(b -> PLANNED.equals(b.status()) && kind.equals(b.kind()))
+            .filter(b -> YearGenerator.PLANNED.equals(b.status()) && kind.equals(b.kind()))
             .filter(b -> b.start() != null && b.start().isAfter(today))
             .filter(b -> !b.focus().contains(group))
             .sorted(Comparator.comparingInt(View::ordinal).reversed())
@@ -109,7 +106,7 @@ public final class YearRules {
 
     private static List<View> live(List<View> blocks) {
         return blocks.stream()
-            .filter(b -> !SKIPPED.equals(b.status()) && !YearGenerator.CONSOLIDATION.equals(b.kind()))
+            .filter(b -> !YearGenerator.SKIPPED.equals(b.status()) && !YearGenerator.CONSOLIDATION.equals(b.kind()))
             .sorted(Comparator.comparingInt(View::ordinal))
             .toList();
     }

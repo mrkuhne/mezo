@@ -70,6 +70,15 @@ class YearRulesTest {
         assertThat(warn(f)).contains(new Note("no_focus_this_year", "calf", null));
     }
 
+    @Test void skippingTheOnlyFocusBlock_warnsNoFocusThisYear() {
+        List<View> v = views(cleanFocus());
+        View b1 = v.get(0); // the only block focusing biceps
+        v.set(0, new View(b1.id(), 1, "upper", b1.focus(), "skipped", b1.start()));
+        assertThat(YearRules.warnings(v, GROUPS, YearGeneratorTest.P))
+            .contains(new Note("no_focus_this_year", "biceps", null))
+            .doesNotContain(new Note("no_focus_this_year", "back", null));
+    }
+
     @Test void skipConsequence_listsOnlyFocusGroups() {
         List<List<String>> f = cleanFocus();
         f.set(3, List.of("ham", "glute"));
@@ -88,7 +97,7 @@ class YearRulesTest {
         assertThat(s).isPresent();
         assertThat(s.get().ordinal()).isEqualTo(8);
         assertThat(s.get().blockId()).isEqualTo(v.get(7).id());
-        assertThat(s.get().replaces()).isIn("quad", "glute");
+        assertThat(s.get().replaces()).isEqualTo("glute"); // glute ×4 beats quad ×3
     }
 
     @Test void placeFor_addsToSingleFocusBlock() {
@@ -97,7 +106,7 @@ class YearRulesTest {
             List.of("chest", "triceps"), List.of("ham", "glute"),
             List.of("chest", "shoulder"), List.of("calf"),
             List.of("back", "shoulder"), List.of("glute")));
-        // No lower group appears twice except glute — make glute appear once.
+        // Lower blocks are all single-focus and no group repeats, so nothing can be replaced.
         f.set(3, List.of("ham"));
         List<View> v = views(f);
         Optional<Suggestion> s = YearRules.placeFor("ham", v, START.plusWeeks(1), YearGeneratorTest.P);

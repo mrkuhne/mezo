@@ -17,7 +17,9 @@ import java.util.UUID;
  * <p>A block is late when its mesocycle started more than {@code lateToleranceDays} after it was due; then everything
  * after it moves. A delay first eats the buffer (leftover weeks before the consolidation — the generator places
  * none, so a year whose blocks do not fill {@code yearWeeks − consolidation} always gets one here), then shortens
- * the consolidation to 1 week, and only then pushes the end past {@code yearWeeks}. The consolidation is always last.
+ * the consolidation to 1 week, and only then pushes the end past {@code yearWeeks}. The consolidation is always last;
+ * like any planned block it re-dates from today when it has not started more than the tolerance after it was due.
+ * A block followed by a mesocycle reports the weeks it actually took.
  */
 public final class YearSchedule {
 
@@ -44,17 +46,17 @@ public final class YearSchedule {
         List<Slot> ordered = loading.stream().sorted(Comparator.comparingInt(Slot::ordinal)).toList();
         for (Slot s : ordered) {
             LocalDate due = cursor.plusWeeks(Math.max(0, s.gapWeeks()));
-            if (YearRules.SKIPPED.equals(s.status())) {
+            if (YearGenerator.SKIPPED.equals(s.status())) {
                 placed.add(new Placed(s.id(), due, s.weeks(), false));
                 continue;
             }
             if (s.meso() != null) {
                 Span span = follow(s.meso(), due, tol);
-                placed.add(new Placed(s.id(), span.start(), s.weeks(), true));
+                placed.add(new Placed(s.id(), span.start(), span.weeks(), true));
                 cursor = mondayOnOrAfter(span.end());
             } else {
                 LocalDate start = due;
-                if (YearRules.PLANNED.equals(s.status()) && today.isAfter(due.plusDays(tol))) {
+                if (YearGenerator.PLANNED.equals(s.status()) && today.isAfter(due.plusDays(tol))) {
                     start = mondayOnOrAfter(today);
                 }
                 placed.add(new Placed(s.id(), start, s.weeks(), true));
@@ -83,7 +85,10 @@ public final class YearSchedule {
             Span span = follow(consolidation.meso(), consStart, tol);
             consStart = span.start();
             consEnd = span.end();
-            consWeeks = (int) Math.max(1, Math.ceilDiv(ChronoUnit.DAYS.between(consStart, consEnd), 7));
+            consWeeks = span.weeks();
+        } else if (YearGenerator.PLANNED.equals(consolidation.status()) && today.isAfter(consStart.plusDays(tol))) {
+            consStart = mondayOnOrAfter(today);
+            consEnd = consStart.plusWeeks(consWeeks);
         }
         int buffer = (int) Math.max(0, weeksBetween(cursor, consStart));
         int overrun = (int) Math.max(0, Math.ceilDiv(ChronoUnit.DAYS.between(yearEnd, consEnd), 7));
@@ -91,7 +96,12 @@ public final class YearSchedule {
         return new Layout(List.copyOf(placed), cons, consWeeks, buffer, buffer > 0 ? cursor : null, overrun, consEnd);
     }
 
-    private record Span(LocalDate start, LocalDate end) {}
+    private record Span(LocalDate start, LocalDate end) {
+        /** The weeks the block actually took (an early close or a different-length meso changes it). */
+        int weeks() {
+            return (int) Math.max(1, Math.ceilDiv(ChronoUnit.DAYS.between(start, end), 7));
+        }
+    }
 
     /** On time (within tolerance) keeps the due date; late uses the meso's own; an early close ends it there. */
     private static Span follow(MesoFacts m, LocalDate due, int tol) {

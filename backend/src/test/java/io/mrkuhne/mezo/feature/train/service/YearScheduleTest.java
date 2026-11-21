@@ -139,6 +139,7 @@ class YearScheduleTest {
         List<Slot> s = eightBlocks();
         s.set(0, withMeso(s.get(0), "done", START, LocalDate.of(2027, 2, 1)));
         Layout l = layout(s, LocalDate.of(2027, 2, 1));
+        assertThat(l.blocks().get(0).weeks()).isEqualTo(4);
         assertThat(start(l, 2)).isEqualTo(LocalDate.of(2027, 2, 1));
         assertThat(l.bufferWeeks()).isEqualTo(4);
         assertThat(l.consolidation().start()).isEqualTo(LocalDate.of(2027, 12, 20));
@@ -156,6 +157,31 @@ class YearScheduleTest {
         s.set(0, withMeso(s.get(0), "done", START, LocalDate.of(2027, 2, 13)));
         Layout l = layout(s, LocalDate.of(2027, 2, 13));
         assertThat(start(l, 2)).isEqualTo(LocalDate.of(2027, 2, 15));
+    }
+
+    @Test void mesoOfDifferentLength_reportsItsWeeks() {
+        List<Slot> s = eightBlocks();
+        Slot b1 = s.get(0);
+        s.set(0, new Slot(b1.id(), 1, 6, 0, "running", new MesoFacts(START, 5, null)));
+        Layout l = layout(s, LocalDate.of(2027, 1, 5));
+        assertThat(l.blocks().get(0).weeks()).isEqualTo(5);
+        assertThat(start(l, 2)).isEqualTo(LocalDate.of(2027, 2, 8));
+        assertThat(l.bufferWeeks()).isEqualTo(3);
+    }
+
+    @Test void consolidationNotStartedPastDue_redatesFromToday() {
+        List<Slot> s = eightBlocks();
+        for (int i = 0; i < 8; i++) {
+            LocalDate due = START.plusWeeks(6L * i);
+            s.set(i, withMeso(s.get(i), "done", due, due.plusWeeks(6).minusDays(1)));
+        }
+        // Consolidation due 2027-12-20; today is 4 days later and it has not started.
+        Layout l = layout(s, LocalDate.of(2027, 12, 24));
+        assertThat(l.consolidation().start()).isEqualTo(LocalDate.of(2027, 12, 27));
+        assertThat(l.consolidationWeeks()).isEqualTo(2);
+        assertThat(l.bufferWeeks()).isEqualTo(3);
+        assertThat(l.overrunWeeks()).isEqualTo(1);
+        assertThat(l.end()).isEqualTo(LocalDate.of(2028, 1, 10));
     }
 
     @Test void gapWeek_shiftsFollowing() {
