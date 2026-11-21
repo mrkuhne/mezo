@@ -34,6 +34,13 @@ public final class BlockBuilderModel {
     /// The day of today's open workout (started, not finished), as the caller knows it; its card is read-only
     /// (mezo-r36n9.116, spec §6.4). nil when nothing is running.
     public var lockedDay: LockedDay?
+    /// The session-minutes target sent with every evaluation (mezo-r36n9.113); nil = not sent (no capacity, the
+    /// budget bar hidden). A new target re-evaluates.
+    public var minutesTarget: Int? { didSet { if minutesTarget != oldValue, phase == .ready { scheduleEvaluation() } } }
+    /// Set by the caller that opens the builder on a block the new-block intake created a moment ago: the builder
+    /// then offers to throw it away („Mégsem, eldobom").
+    public var justCreated = false
+    public private(set) var discardError: PlanFetchError?
     /// The rows of a weekly proposal still waiting for his approval (from the proposals the load already read — the
     /// check never asks for a proposal to be generated): exercise ids and the weekday labels of their lines.
     private var pendingExerciseIds: Set<String> = []
@@ -209,23 +216,64 @@ public final class BlockBuilderModel {
         }
     }
 
+    /// What the evaluator is asked for the draft on screen: the draft plus the session-minutes target.
+    private func evaluateRequest() -> WireEvaluateRequest? {
+        guard var request = draft?.evaluateRequest() else { return nil }
+        request.sessionMinutesTarget = minutesTarget
+        return request
+    }
+
     public func evaluateNow() async {
-        guard let draft else { return }
-        let request = draft.evaluateRequest()
+        guard let draft, let request = evaluateRequest() else { return }
         do {
             let result = try await client.evaluate(request)
             // A newer edit already asked again; this answer belongs to an older draft.
-            guard self.draft?.evaluateRequest() == request else { return }
+            guard evaluateRequest() == request else { return }
             evaluation = result
             evaluatedLineup = Self.lineup(draft)
             evaluationStale = false
             evaluationError = nil
         } catch {
             // A late failure of an older draft must not mark a newer, good answer as stale.
-            guard self.draft?.evaluateRequest() == request else { return }
+            guard evaluateRequest() == request else { return }
             evaluationError = error
             evaluationStale = evaluation != nil
         }
+    }
+
+    // MARK: the tier budget (mezo-r36n9.113)
+
+    /// May the muscle go one tier up now? Compared against the latest evaluation's budget; without a minutes target
+    /// there is no capacity, so only the Hangsúly cap can block.
+    public func canRaise(_ muscle: String) -> RaiseCheck {
+        guard let draft else { return .ok }
+        return RaiseCheck.raise(muscle: muscle, from: draft.tier(muscle).rawValue,
+                                emphasizeCount: draft.tiers.values.filter { $0 == .emphasize }.count,
+                                budget: evaluation?.budget, minutes: minutesTarget ?? 0, days: draft.days.count)
+    }
+
+    /// „Mégsem, eldobom": closes the block the intake just created and leaves the builder empty. A failure keeps the
+    /// block on screen with `discardError` set. Returns true when the block is gone.
+    @discardableResult
+    public func discard() async -> Bool {
+        guard let blockId = draft?.blockId ?? original?.blockId else { return false }
+        do {
+            try await client.closeBlock(id: blockId)
+        } catch {
+            discardError = error
+            return false
+        }
+        evaluationTask?.cancel()
+        phase = .noBlock
+        replacing = true
+        draft = nil
+        replacing = false
+        original = nil
+        evaluation = nil
+        evaluationStale = false
+        justCreated = false
+        discardError = nil
+        return true
     }
 
     // MARK: edits the screens call

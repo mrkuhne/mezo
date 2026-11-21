@@ -109,6 +109,8 @@ public struct WireEvaluateRequest: Encodable, Equatable, Sendable {
     public var sportGroups: [String]?
     public var trainingStyle: String?
     public var techniquesEnabled: Bool?
+    /// The session-minutes target (mezo-r36n9.113); absent = no capacity, no per-day over-target.
+    public var sessionMinutesTarget: Int? = nil
 }
 
 public struct WireBand: Decodable, Equatable, Sendable {
@@ -139,6 +141,50 @@ public struct WireMuscleEvaluation: Decodable, Equatable, Sendable {
     public let spread: [WireSpread]
     public let proposal: [WireEdit]
     public let proposalBlocked: Bool
+    /// Why the band is what it is (`landmarks_rp`, `maintain_third`, `sport_adjusted` — read leniently). Absent on older servers.
+    public let basis: WireBasis?
+    /// Consecutive calendar days on which this muscle is trained heavy both days.
+    public let consecutiveHeavy: [WireConsecutive]?
+}
+
+public struct WireBasis: Decodable, Equatable, Sendable {
+    public let source: String
+}
+
+public struct WireConsecutive: Decodable, Equatable, Sendable {
+    public let dayIndex: Int
+    public let nextDayIndex: Int
+    public let sets: Int
+    public let nextSets: Int
+}
+
+/// The weekly set budget the tiers spend (mezo-r36n9.113). Every number is the server's.
+public struct WireBudget: Decodable, Equatable, Sendable {
+    /// Working sets the training days fit in the session-minutes target; nil without a target (raises then never run
+    /// out of room).
+    public let capacitySets: Int?
+    /// Peak weekly total over the non-deload weeks.
+    public let usedSets: Int
+    public let emphasizeCount: Int
+    public let emphasizeMax: Int
+    /// Muscle → extra peak weekly sets if raised one tier; emphasized muscles are absent.
+    public let raiseCost: [String: Int]
+
+    enum CodingKeys: String, CodingKey { case capacitySets, usedSets, emphasizeCount, emphasizeMax, raiseCost }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        capacitySets = try c.decodeIfPresent(Int.self, forKey: .capacitySets)
+        usedSets = try c.decode(Int.self, forKey: .usedSets)
+        emphasizeCount = try c.decodeIfPresent(Int.self, forKey: .emphasizeCount) ?? 0
+        emphasizeMax = try c.decodeIfPresent(Int.self, forKey: .emphasizeMax) ?? 2
+        raiseCost = try c.decodeIfPresent([String: Int].self, forKey: .raiseCost) ?? [:]
+    }
+
+    public init(capacitySets: Int?, usedSets: Int, emphasizeCount: Int, emphasizeMax: Int, raiseCost: [String: Int]) {
+        self.capacitySets = capacitySets; self.usedSets = usedSets; self.emphasizeCount = emphasizeCount
+        self.emphasizeMax = emphasizeMax; self.raiseCost = raiseCost
+    }
 }
 
 public struct WireCapWarning: Decodable, Equatable, Sendable {
@@ -211,6 +257,8 @@ public struct WireEvaluation: Decodable, Equatable, Sendable {
     public let path: [WirePathWeek]
     /// Absent until the server sends it; never fails a response.
     public let recommendations: [WireRecommendation]?
+    /// The tier budget (mezo-r36n9.113); nil when the plan has no counting exercises or the server predates it.
+    public let budget: WireBudget?
 }
 
 // MARK: - The weekly proposal
@@ -350,4 +398,139 @@ public struct WireSuggestions: Decodable, Equatable, Sendable {
         let list = try c.decodeIfPresent([Label].self, forKey: .labels) ?? []
         labels = Dictionary(list.map { ($0.catalogId, $0.label) }, uniquingKeysWith: { _, last in last })
     }
+}
+
+// MARK: - The new-block intake (mezo-r36n9.113)
+
+/// Any JSON value, kept as it came. The generated template is relayed, not interpreted: the phone decodes it into this
+/// and posts it back to POST /meso-templates unchanged, so a field the server adds later is never lost on the way.
+public enum WireJSON: Codable, Equatable, Sendable {
+    case null
+    case bool(Bool)
+    case int(Int)
+    case double(Double)
+    case string(String)
+    case array([WireJSON])
+    case object([String: WireJSON])
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.singleValueContainer()
+        if c.decodeNil() { self = .null }
+        else if let b = try? c.decode(Bool.self) { self = .bool(b) }
+        else if let i = try? c.decode(Int.self) { self = .int(i) }
+        else if let d = try? c.decode(Double.self) { self = .double(d) }
+        else if let s = try? c.decode(String.self) { self = .string(s) }
+        else if let a = try? c.decode([WireJSON].self) { self = .array(a) }
+        else { self = .object(try c.decode([String: WireJSON].self)) }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        switch self {
+        case .null: try c.encodeNil()
+        case .bool(let b): try c.encode(b)
+        case .int(let i): try c.encode(i)
+        case .double(let d): try c.encode(d)
+        case .string(let s): try c.encode(s)
+        case .array(let a): try c.encode(a)
+        case .object(let o): try c.encode(o)
+        }
+    }
+
+    public subscript(key: String) -> WireJSON? { if case .object(let o) = self { o[key] } else { nil } }
+    public var string: String? { if case .string(let s) = self { s } else { nil } }
+    public var array: [WireJSON]? { if case .array(let a) = self { a } else { nil } }
+}
+
+/// A `MesoTemplateUpsertRequest` as the server generated it — opaque on the phone, a few read-only peeks for display.
+public struct WireTemplate: Codable, Equatable, Sendable {
+    public let json: WireJSON
+
+    public init(json: WireJSON) { self.json = json }
+    public init(from decoder: Decoder) throws { json = try WireJSON(from: decoder) }
+    public func encode(to encoder: Encoder) throws { try json.encode(to: encoder) }
+
+    public var title: String? { json["title"]?.string }
+    public var trainingStyle: String? { json["trainingStyle"]?.string }
+    public var dayCount: Int { json["days"]?.array?.count ?? 0 }
+    public var exerciseCount: Int { (json["days"]?.array ?? []).reduce(0) { $0 + ($1["exercises"]?.array?.count ?? 0) } }
+}
+
+/// POST /api/train/meso-plans/candidates. Absent optionals are omitted.
+public struct WireCandidatesRequest: Encodable, Equatable, Sendable {
+    public var daysOfWeek: [String]
+    public var weeks: Int
+    public var priorities: [String: String]?
+    public var sessionMinutesTarget: Int?
+    public var sportGroups: [String]?
+    public init(daysOfWeek: [String], weeks: Int, priorities: [String: String]?, sessionMinutesTarget: Int?, sportGroups: [String]? = nil) {
+        self.daysOfWeek = daysOfWeek; self.weeks = weeks; self.priorities = priorities
+        self.sessionMinutesTarget = sessionMinutesTarget; self.sportGroups = sportGroups
+    }
+}
+
+/// A neutral or positive fact about a candidate (`fits_time`, `freq_2x`, `freq_high`, `more_warmups`, … read leniently).
+public struct WireReason: Decodable, Equatable, Sendable {
+    public let code: String
+    public let value: Int?
+}
+
+/// What would make a candidate pass when nothing fits (`more_minutes`, `fewer_emphasis`, `more_days`, … read leniently).
+public struct WireFix: Decodable, Equatable, Sendable {
+    public let code: String
+    public let value: Int?
+}
+
+public struct WireCandidate: Decodable, Equatable, Sendable {
+    public let splitKey: String
+    public let splitLabel: String
+    public let template: WireTemplate
+    public let evaluation: WireEvaluation
+    public let recommended: Bool
+    public let reasons: [WireReason]
+}
+
+public struct WireCandidates: Decodable, Equatable, Sendable {
+    /// Best first (max 3); when `nothingFits`, exactly the closest one.
+    public let candidates: [WireCandidate]
+    public let nothingFits: Bool
+    public let fixes: [WireFix]
+
+    enum CodingKeys: String, CodingKey { case candidates, nothingFits, fixes }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        candidates = try c.decode([WireCandidate].self, forKey: .candidates)
+        nothingFits = try c.decodeIfPresent(Bool.self, forKey: .nothingFits) ?? false
+        fixes = try c.decodeIfPresent([WireFix].self, forKey: .fixes) ?? []
+    }
+
+    /// The candidate whose evaluation speaks for the intake: the recommended one, else the closest.
+    public var lead: WireCandidate? { candidates.first { $0.recommended } ?? candidates.first }
+}
+
+/// POST /api/train/meso-plans/generate with the chosen candidate's `split`.
+public struct WireGenerateRequest: Encodable, Equatable, Sendable {
+    public var daysOfWeek: [String]
+    public var weeks: Int
+    public var priorities: [String: String]?
+    public var goalText: String?
+    public var split: String?
+    public init(daysOfWeek: [String], weeks: Int, priorities: [String: String]?, goalText: String? = nil, split: String?) {
+        self.daysOfWeek = daysOfWeek; self.weeks = weeks; self.priorities = priorities; self.goalText = goalText; self.split = split
+    }
+}
+
+public struct WireGenerateResponse: Decodable, Equatable, Sendable {
+    public let draftId: String?
+    public let template: WireTemplate
+    public let rationale: String?
+    public let llmUsed: Bool?
+}
+
+/// POST /api/train/meso-templates/{id}/start. `status` is `active` (today) or `planned` (a later date).
+public struct WireTemplateStart: Encodable, Equatable, Sendable {
+    public var startDate: String
+    public var status: String
+    public init(startDate: String, status: String) { self.startDate = startDate; self.status = status }
 }
