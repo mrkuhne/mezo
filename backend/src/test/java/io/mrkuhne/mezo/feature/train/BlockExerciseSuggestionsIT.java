@@ -185,6 +185,24 @@ class BlockExerciseSuggestionsIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testSuggestions_shouldLabelTheWholeCatalogue_whenNothingIsPicked() {
+        // only back is under its band, yet the full list shows every muscle: its quiet labels must cover them all
+        trainPopulator.createExercise(user, day.getId(), "Seated Row", 1, "back-mid", "compound", null);
+        putForBody("/api/train/gym-profile", new GymProfile().offKinds(List.of("machine")).missingExerciseIds(List.of()),
+            auth, HttpStatus.OK, GymProfile.class);
+
+        ExerciseSubstitutesResponse res = read(addTokens(List.of(), benchCatalog.getId()));
+
+        assertThat(res.getSuggestions()).isNotEmpty()
+            .allSatisfy(s -> assertThat(s.getExercise().getGear()).doesNotContain("machine"));
+        UUID legPress = catalog("Leg Press").getId();
+        assertThat(res.getLabels()).anySatisfy(l -> {
+            assertThat(l.getCatalogId()).isEqualTo(legPress);
+            assertThat(l.getLabel()).isEqualTo(ExerciseSubstituteLabel.LabelEnum.NO_EQUIPMENT);
+        });
+    }
+
+    @Test
     void testSuggestions_shouldReturn400_whenAMuscleTokenIsUnknown() {
         postForBody(uri(block), addTokens(List.of("back-mid", "lats-ish")), auth, HttpStatus.BAD_REQUEST,
             String.class);

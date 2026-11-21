@@ -742,7 +742,7 @@ private struct BuilderDayCard: View {
                 let sets = model.sets(m.muscle, day: index)
                 let over = evaluation?.sessionCapWarnings.contains { $0.muscle == m.muscle } == true
                 HStack(spacing: 6) {
-                    Text(planMuscleName(m.muscle)).nkFont(12, .medium).foregroundStyle(.white.opacity(0.85))
+                    Text(SubMuscles.groupName(m.muscle)).nkFont(12, .medium).foregroundStyle(.white.opacity(0.85))
                     Text("\(sets)").nkFont(13, .semibold).foregroundStyle(over ? planWarn : planHue.glow)
                         .contentTransition(.numericText())
                 }
@@ -985,11 +985,13 @@ private struct BuilderTechniqueChip: View {
     let open: () -> Void
 
     var body: some View {
-        if !exercise.stable {
+        // A free-weight row takes no technique, but since decision #61 a free-weight isolation may still take the day's
+        // challenge: the chip then opens the picker (techniques dimmed with their reason, the challenge selectable).
+        if let quiet = exercise.techniqueLockLabel {
             // Not `PlanPill`: its fixed width would push the editor row (handle, stepper, ⋯) past the card.
             HStack(spacing: 5) {
                 PlanMark(.shield, color: .white.opacity(0.4), size: 13)
-                Text("szabadsúly · nincs technika").nkFont(12, .medium).foregroundStyle(.white.opacity(0.4))
+                Text(quiet).nkFont(12, .medium).foregroundStyle(.white.opacity(0.4))
                     .lineLimit(1).minimumScaleFactor(0.8)
             }
             .padding(.horizontal, 10).padding(.vertical, 5)

@@ -246,6 +246,23 @@ struct BlockDraftTests {
         }
     }
 
+    @Test(.timeLimit(.minutes(1))) func aFreeWeightIsolationOpensThePickerForTheChallenge() throws {
+        // free stability everywhere: no technique on any row, the challenge decides whether the chip opens the picker
+        let json = """
+        [{"id":"\(PlanFixtures.catRow)","name":"Chest Supported Row","muscle":"back","type":"compound","stability":"free","gear":["barbell"],"challengeAllowed":false},
+         {"id":"\(PlanFixtures.catCurl)","name":"Preacher Curl","muscle":"biceps","type":"isolation","stability":"free","gear":["dumbbell"],"challengeAllowed":true},
+         {"id":"\(PlanFixtures.catPress)","name":"Barbell Bench Press","muscle":"chest","type":"compound","stability":"stable","gear":["machine"],"challengeAllowed":true}]
+        """
+        let d = BlockDraft(block: PlanFixtures.block, catalog: try JSONDecoder().decode([WireCatalogItem].self, from: Data(json.utf8)))
+        let compound = d.days[0].exercises[0], curl = d.days[0].exercises[1], stable = d.days[1].exercises[0]
+        #expect(curl.allowedTechniques == [.none] && curl.canTakeChallenge)
+        #expect(curl.techniqueLockLabel == nil, "free-weight isolation: the picker opens, the challenge is selectable")
+        #expect(curl.challengeUnavailableReason == nil)
+        #expect(curl.unavailableReason(.drop) == "Szabadsúlyos gyakorlaton nincs technika.", "techniques dimmed with the reason")
+        #expect(compound.techniqueLockLabel == "szabadsúlyos alapgyakorlat")
+        #expect(stable.techniqueLockLabel == nil)
+    }
+
     @Test func addedAndSwappedRowsReadTheServerFlag() throws {
         var d = try draft(row: #","challengeAllowed":true"#, curl: #","challengeAllowed":true"#,
                           press: #","challengeAllowed":false"#)

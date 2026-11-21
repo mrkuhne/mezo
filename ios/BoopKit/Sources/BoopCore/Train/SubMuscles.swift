@@ -65,6 +65,10 @@ public enum SubMuscles {
         return "Egyéb"
     }
 
+    /// A coarse volume group the way the sub-muscle names spell it (the day card's chips): `back` → „Hát", `chest` →
+    /// „Mell", `quad` → „Comb", `ham` → „Combhajlító", `glute` → „Far", `calf` → „Vádli", `core` → „Törzs".
+    public static func groupName(_ coarse: String) -> String { name(coarseMuscle(coarse)) }
+
     /// The closed dropdown's words, in body order: a whole group by its name, part of one as „Hát · felső, középső";
     /// in a stand-alone group each picked part by its own name.
     public static func summary(_ picked: Set<String>) -> [String] {

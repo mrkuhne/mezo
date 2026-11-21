@@ -48,4 +48,10 @@ struct SubMusclesTests {
         #expect(SubMuscles.partLow(legs, legs.parts[0], under: ["quad"]))
         #expect(!SubMuscles.partLow(back, back.parts[0], under: ["back"]), "never on a back part")
     }
+
+    @Test(.timeLimit(.minutes(1))) func groupNamesSpellTheCoarseGroupsLikeTheSubMuscles() {
+        let names = ["back", "chest", "shoulder", "biceps", "triceps", "quad", "ham", "glute", "calf", "core"]
+            .map(SubMuscles.groupName)
+        #expect(names == ["Hát", "Mell", "Váll", "Bicepsz", "Tricepsz", "Comb", "Combhajlító", "Far", "Vádli", "Törzs"])
+    }
 }

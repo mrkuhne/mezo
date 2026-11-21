@@ -32,7 +32,9 @@ Ha a hét már életbe lépett, a kártya azt mutatja: „Indulhat, a hét szám
 - **Napok** — naponként egy lap: becsült edzéshossz, aznap van-e sport, izomcsoportonkénti sorozatszám (a felső címkék
   továbbra is egész izomcsoportok), gyakorlatonként az **izomrész** a név alatt (például „Hát · középső”, „Bicepsz ·
   brachialis”, „Comb”) az ismétléssel és a tartalékkal — egy sorban, ha elfér, különben az izomrész felül, a számok alatta —,
-  egy léptető (1–8 sorozat) és egyetlen címke a technikáról vagy a kihívásról. A címkére koppintva felugrik a **választó**: az öt
+  egy léptető (1–8 sorozat) és egyetlen címke a technikáról vagy a kihívásról (szabadsúlyos gyakorlaton nincs technika, de a szabadsúlyos izolált
+  gyakorlat — például kalapács bicepsz — megkaphatja a nap kihívását, így a címkéje is megnyitja a választót; csak a
+  szabadsúlyos alapgyakorlaton szürke: „szabadsúlyos alapgyakorlat”). A címkére koppintva felugrik a **választó**: az öt
   technika (ami annál a gyakorlatnál nem választható, az halványan, az okával), alatta **a nap kihívása** (naponta egy
   gyakorlaton), és egy **„i” gomb**, ami mindegyik alá kiír egy rövid leírást. Amit Boop tett oda a heti javaslatban, azon
   **„Boop”** jelzés van, amíg át nem állítod. A lista tetején **Boop ajánlása** áll: a gyakorlat tulajdonságai
@@ -56,7 +58,7 @@ Ha a hét már életbe lépett, a kártya azt mutatja: „Indulhat, a hét szám
     mozgás fajtája (például „hát · középső · összetett”), egy mondat arról, miért ez (a szerver rögzített mondatai közül, például
     „Ezen a héten kevés jut erre az izomra.”) és a legutóbbi legjobb sorozat. Ha **semmit nem választasz**, a hét **„kevés”**
     izmaira kapsz javaslatot („Válassz izmot, és ajánlok hozzá. Addig a hét kevés izmaira ajánlok.”). Alatta a **teljes lista
-    kereséssel**, szintén képpel és izomrésszel. Ha a javaslatok nem érkeznek meg, a teljes lista egy rövid megjegyzéssel is
+    kereséssel**, szintén képpel és izomrésszel; a „nincs hozzá eszközöd” és „legutóbb fájt” jelzés az egész listán ott van. Ha a javaslatok nem érkeznek meg, a teljes lista egy rövid megjegyzéssel is
     használható.
   - **Csere:** ugyanilyen javaslatokat kapsz a kicserélendő helyett (képpel és izomrésszel). A csere **a blokk hátralévő részére** szól, és **megtartja
     azt, amit te állítottál** (sorozatszám, tartomány, kezdősúly).

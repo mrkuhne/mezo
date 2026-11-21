@@ -242,6 +242,14 @@ public struct DraftExercise: Identifiable, Equatable, Sendable {
         return "Szabadsúlyos alapgyakorlaton nincs kihívás."
     }
 
+    /// The builder chip's grey, untappable label when the row can carry neither a technique nor the day's challenge;
+    /// nil = the chip opens the picker. A free-weight isolation (no technique, but the challenge, decision #61) gets the
+    /// picker. A free-weight compound says so; any other locked row keeps the old wording.
+    public var techniqueLockLabel: String? {
+        guard allowedTechniques == [.none], !canTakeChallenge else { return nil }
+        return type == "compound" ? "szabadsúlyos alapgyakorlat" : "szabadsúly · nincs technika"
+    }
+
     /// Why a technique is not offered on this exercise, in his words; nil when it is.
     public func unavailableReason(_ technique: SetTechnique) -> String? {
         if allowedTechniques.contains(technique) { return nil }

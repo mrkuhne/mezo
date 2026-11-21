@@ -103,9 +103,12 @@ public class BlockSuggestionService {
             .filter(c -> Objects.equals(region, ExerciseSubstituteRanker.region(c.getMuscle())))
             .toList();
         GymAvailability gym = gymProfileService.availability(userId);
-        Map<UUID, PainLevel> pain = discomfortHistory.levels(userId, pool, today);
+        // The ranker sees the whole catalogue and filters to the group / tokens itself, so its quiet labels
+        // (NO_EQUIPMENT / HURT_BEFORE) cover every row the full list can show — not only the suggested muscles
+        // (mezo-r36n9.127). Pool is a subsequence of all in the same order: the tie-break by position is unchanged.
+        Map<UUID, PainLevel> pain = discomfortHistory.levels(userId, all, today);
         Map<UUID, ExerciseSetEntity> topSets = reads.topSets(userId, relevant);
-        List<Candidate> candidates = SubstituteReads.candidates(pool, gym, pain, topSets);
+        List<Candidate> candidates = SubstituteReads.candidates(all, gym, pain, topSets);
 
         boolean editsToday = req.getDayIndex() != null && req.getDayIndex() == weekdayIndex(today);
         Set<String> painJoints = editsToday ? reads.painJointsToday(userId, today) : Set.of();
@@ -117,7 +120,7 @@ public class BlockSuggestionService {
         TrainingStyle style = TrainingStyle.fromWire(block.getTrainingStyle());
         CatalogAttributes.Lookup stability = style == null ? CatalogAttributes.Lookup.EMPTY
             : catalogAttributes.load(result.suggestions().stream().map(Ranked::id).toList());
-        return reads.response(viewer, pool, result, SubstituteReads.painJointHu(painJoints, out == null ? null : out.joints()), topSets,
+        return reads.response(viewer, all, result, SubstituteReads.painJointHu(painJoints, out == null ? null : out.joints()), topSets,
             c -> prescription(c, style, stability.stable(c.getId()), styleProps), !replace);
     }
 

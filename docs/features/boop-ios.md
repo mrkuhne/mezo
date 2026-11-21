@@ -721,7 +721,10 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     keeps a `BlockDraft` and re-POSTs it to `evaluateMesoPlan` 300 ms after the last edit; an answer for an older draft is
     dropped, a failed one keeps the last numbers on screen ("frissül…"). Izmok: body map, a card per banded muscle (tier
     switch, half dial, spread, proposal + *Elfogadom* / *miért?*). Napok: day pills with minutes, steppers 1–8, technique pill
-    cycling the exercise's allowed list (free weights: "szabadsúly · nincs technika"; half reps only when lengthened-friendly),
+    cycling the exercise's allowed list (free weights carry no technique; half reps only when lengthened-friendly; since decision #61 the chip is grey and
+    untappable only when the row can take neither a technique nor the challenge — `DraftExercise.techniqueLockLabel`:
+    *szabadsúlyos alapgyakorlat* for a free-weight compound, else *szabadsúly · nincs technika* — so a free-weight
+    isolation opens the picker with the techniques dimmed and the challenge selectable, `mezo-r36n9.127`),
     one challenge flag a day (it clears the exercise's technique), session-cap warnings with the server's cap. Blokk: style
     four-way choice, the *Technikák* and *A heti javaslatot én hagyom jóvá* switches, week totals + per-muscle path, technique
     weeks (the planner's count when sent, else every loading week while on). **Save** writes only what changed, in order
@@ -755,7 +758,9 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     list filtered to the picked tokens; ⋯ *Csere* → `DayEditSwapSheet`. Every card and list row in these sheets and the
     player's `SwapSheet` is the shared `ExercisePickCard` / `ExercisePickRow` (`Edzes/SwapSheet.swift`): the catalogue
     start still (`imageStartUrl` → `BoopConfig.mediaURL`, 44 pt `NKRemoteThumb`, the glyph tile without one), the
-    catalogue name, *hát · középső · összetett* (`exerciseRoleLine`), the server's reason only. Empty day line; the day of today's open workout
+    catalogue name, *hát · középső · összetett* (`exerciseRoleLine`), the server's reason only. The day card's top chips
+    stay coarse groups with counts but are spelled by `SubMuscles.groupName` (*Mell*, *Comb*, *Combhajlító*, *Far* …);
+    the quiet full-list labels cover the whole catalogue (the server labels every row in add mode). Empty day line; the day of today's open workout
     (`BlockBuilderModel.lockedDay`, passed by `EdzesRoom`) is read-only; *Mentés* on a structurally changed day that a
     waiting weekly proposal touches (`pendingReviewDays`, from the proposals the load already read) asks *Függő heti
     javaslat* first. Indices of the evaluation (recommendations, cap warnings, proposals) are hidden while the line-up

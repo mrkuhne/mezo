@@ -162,13 +162,13 @@ final class PlanPreviewTransport: ClientTransport, @unchecked Sendable {
                     ["repMin": 6, "repMax": 8, "overrides": ["repRange"], "anchorWeightKg": 62.5]) { $1 },
                 ex("h2", "Lat Pulldown · Neutral", "back-wide", 2, cat: "c-long", technique: "rest_drop", source: "planner"),
                 ex("h3", "Preacher Curl", "biceps-short", 3, type: "isolation", cat: "c-long"),
-                ex("h4", "Hammer Curl", "biceps-brachialis", 3, type: "isolation"),
+                ex("h4", "Hammer Curl", "biceps-brachialis", 3, type: "isolation", cat: "c-free-iso"),
                 ex("h5", "Cable Lateral Raise", "shoulder-side", 2, type: "isolation", cat: "c-stable"),
                 ex("h6", "Pallof Press", "core", 2, type: "isolation")]],
             ["id": "d-k", "day": "Ked", "type": "Láb és kar", "muscle": "quad", "exercises": [
                 ex("k1", "Leg Press", "quad", 3, cat: "c-stable"),
                 ex("k2", "Seated Leg Curl", "ham", 2, type: "isolation", cat: "c-long"),
-                ex("k3", "Hip Thrust", "glute", 2),
+                ex("k3", "Hip Thrust", "glute", 2, cat: "c-free-compound"),
                 ex("k4", "Tricep Pushdown", "triceps-lateral", 2, type: "isolation", cat: "c-stable")]],
             ["id": "d-s", "day": "Sze", "type": "Ugrás és stabilitás", "muscle": "core", "exercises": [
                 ex("s1", "Side Plank", "core", 2, type: "isolation"),
@@ -187,11 +187,19 @@ final class PlanPreviewTransport: ClientTransport, @unchecked Sendable {
     }
 
     static var catalog: [[String: Any]] {
-        [["id": "c-stable", "name": "stable", "stability": "stable", "lengthenedFriendly": false],
-         ["id": "c-long", "name": "lengthened", "stability": "stable", "lengthenedFriendly": true]]
+        // `gear` + `challengeAllowed` follow the server's rule (decision #61): every non-plyo exercise but a free-weight
+        // compound may take the day's challenge.
+        [["id": "c-stable", "name": "stable", "stability": "stable", "lengthenedFriendly": false, "gear": ["machine"], "challengeAllowed": true],
+         ["id": "c-long", "name": "lengthened", "stability": "stable", "lengthenedFriendly": true, "gear": ["cable"], "challengeAllowed": true],
+         ["id": "c-free-iso", "name": "free isolation", "type": "isolation", "stability": "free", "lengthenedFriendly": false,
+          "gear": ["dumbbell"], "challengeAllowed": true],
+         ["id": "c-free-compound", "name": "free compound", "type": "compound", "stability": "free", "lengthenedFriendly": false,
+          "gear": ["barbell"], "challengeAllowed": false]]
         + listed.enumerated().map { n, e in
             ["id": String(format: "c0000000-0000-4000-8000-%012d", 100 + n), "name": e.0, "muscle": e.1, "type": e.2,
              "stability": e.3 ? "stable" : "free", "lengthenedFriendly": false,
+             "gear": e.3 ? ["machine"] : [e.2 == "compound" ? "barbell" : "dumbbell"],
+             "challengeAllowed": e.2 != "plyo" && !(e.2 == "compound" && !e.3),
              "imageStartUrl": pictures[e.0].map { "/exercises/\($0)-a.jpg" } as Any? ?? NSNull()]
         }
     }
@@ -345,7 +353,9 @@ final class PlanPreviewTransport: ClientTransport, @unchecked Sendable {
             return ["week": w + 1, "phase": phase, "total": ms.values.reduce(0, +), "muscles": ms]
         }
         // FIXTURE recommendations: stable + lengthened → half reps, stable → rest-drop.
-        let catalog = Dictionary(uniqueKeysWithValues: Self.catalog.map { ($0["id"] as! String, $0["lengthenedFriendly"] as? Bool ?? false) })
+        // Like the server's TechniqueRules: a technique only on a stable (machine / cable) row.
+        let catalog = Dictionary(uniqueKeysWithValues: Self.catalog.filter { $0["stability"] as? String == "stable" }
+            .map { ($0["id"] as! String, $0["lengthenedFriendly"] as? Bool ?? false) })
         var recs: [[String: Any]] = []
         for (d, day) in days.enumerated() {
             for (e, ex) in ((day["exercises"] as? [[String: Any]]) ?? []).enumerated() {
