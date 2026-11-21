@@ -12,10 +12,12 @@ import org.springframework.validation.annotation.Validated;
  *
  * @param mesocycleGate the "no training block without a season" gate (spec §5.12-5)
  * @param menuJob       the scheduled weekly-menu generation (Évad S3)
+ * @param experimentJob the daily experiment finish + proposal pass (Évad S4)
  */
 @Validated
 @ConfigurationProperties(prefix = "mezo.season")
-public record SeasonProperties(@DefaultValue @Valid MesocycleGate mesocycleGate, @DefaultValue MenuJob menuJob) {
+public record SeasonProperties(@DefaultValue @Valid MesocycleGate mesocycleGate, @DefaultValue MenuJob menuJob,
+                               @DefaultValue ExperimentJob experimentJob) {
 
     /**
      * @param enabled          production true; the test profile turns it off so the many block-starting ITs need
@@ -28,5 +30,9 @@ public record SeasonProperties(@DefaultValue @Valid MesocycleGate mesocycleGate,
 
     /** @param enabled the per-minute check that generates next week's menu on the season's menu day and time */
     public record MenuJob(@DefaultValue("true") boolean enabled) {
+    }
+
+    /** @param enabled the daily pass that finishes due experiments and lets Boop propose one (04:40, Boop zone) */
+    public record ExperimentJob(@DefaultValue("true") boolean enabled) {
     }
 }

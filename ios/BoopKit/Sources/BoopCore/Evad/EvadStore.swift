@@ -34,10 +34,13 @@ public final class EvadStore {
 
     /// The Menü and Lista tabs' data (S3), on the same client and cache.
     @ObservationIgnored public let menu: EvadMenuStore
+    /// The Hatás tab's experiments (S4), on the same client and cache; the Ma wall reads its proposal and results.
+    @ObservationIgnored public let experiments: EvadExperimentStore
 
     public init(client: EvadClient?, cache: ServerCache?) {
         self.client = client; self.cache = cache
         self.menu = EvadMenuStore(client: client, cache: cache)
+        self.experiments = EvadExperimentStore(client: client, cache: cache)
         self.menu.onMenuChanged = { [weak self] in await self?.load(force: true) }
     }
 

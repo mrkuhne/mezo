@@ -11,7 +11,8 @@ import BoopCore
 ///
 /// `-evadState full|maintain|empty|offline|error` (default `full`): a cut season in week 7 · his real shape, a maintain
 /// season inside its band · no season yet (screen 13 → Új évad) · no net (the cache is primed five hours old) · the
-/// server failing. `-previewOffline YES` is the same as `offline`. `-evadOpen modositas|szabalyok|uj` opens a sub-page,
+/// server failing. `-previewOffline YES` is the same as `offline`. `-evadOpen modositas|szabalyok|uj|kiserlet|ujkiserlet`
+/// opens a sub-page (`kiserlet` = the newest finished experiment; S4's experiments: `EvadExperimentPreview.swift`),
 /// `-evadLit 0…3` lights a pillar, `-evadSessions 5` / `-evadPace 0.6` pre-set Módosítás, `-evadStale YES` answers the
 /// first accept with 409 SEASON_PREVIEW_STALE. The block runs by default (the gym days are locked in Módosítás);
 /// `-evadNoBlock YES` frees them. S2: the overview carries „Hogy megy" (adherence) and three insights; `-evadQuiet YES`
@@ -34,6 +35,10 @@ enum EvadPreviewFixtures {
         guard let data = try? JSONSerialization.data(withJSONObject: model.overview()),
               let o = try? JSONDecoder().decode(EvadOverview.self, from: data) else { return }
         try? await cache.put(o, endpoint: "evad/overview", date: "-")
+        if let data = try? JSONSerialization.data(withJSONObject: EvadExperimentPreviewModel.shared.list()),
+           let x = try? JSONDecoder().decode(EvadExperiments.self, from: data) {
+            try? await cache.put(x, endpoint: "evad/experiments", date: "-")
+        }
     }
 }
 
@@ -294,6 +299,9 @@ struct EvadPreviewTransport: ClientTransport {
         }
         return m.lock.withLock {
             if let (status, object) = EvadMenuPreviewModel.shared.answer(operationID, path: request.path ?? "", sent: sent) {
+                return json(object, status)
+            }
+            if let (status, object) = EvadExperimentPreviewModel.shared.answer(operationID, path: request.path ?? "", sent: sent) {
                 return json(object, status)
             }
             switch operationID {

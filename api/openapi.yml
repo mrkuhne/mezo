@@ -17281,6 +17281,247 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/seasons/experiments:
+    get:
+      tags:
+        - Season
+      operationId: listExperiments
+      summary: >-
+        S4 — the Hatás tab: the open proposal (at most one), the running
+        experiment (at most one) and the finished ones, newest first. Finishes a
+        running experiment whose window is over and runs the proposal detector
+        first
+      responses:
+        '200':
+          description: Experiments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeasonExperiments'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No active season
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - Season
+      operationId: createExperiment
+      summary: >-
+        Start an experiment he names himself („Új kísérlet”, „Újra kipróbálom”)
+        — it runs from today
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SeasonExperimentCreate'
+      responses:
+        '200':
+          description: Experiment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeasonExperiment'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No active season
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: EXPERIMENT_ALREADY_RUNNING — one runs at a time
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/seasons/experiments/{id}/start':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags:
+        - Season
+      operationId: startExperiment
+      summary: Start a proposed experiment („Indulhat”) — it runs from today
+      responses:
+        '200':
+          description: Experiment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeasonExperiment'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            EXPERIMENT_ALREADY_RUNNING — one runs at a time;
+            EXPERIMENT_NOT_PROPOSED — not a proposal any more
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/seasons/experiments/{id}/days':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      tags:
+        - Season
+      operationId: markExperimentDay
+      summary: >-
+        Mark (or unmark) one day of a running experiment as done. Only days
+        inside the window, never in the future
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SeasonExperimentMark'
+      responses:
+        '200':
+          description: Experiment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeasonExperiment'
+        '400':
+          description: >-
+            EXPERIMENT_DAY_OUTSIDE — the day is outside the window or in the
+            future
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: EXPERIMENT_NOT_RUNNING
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/seasons/experiments/{id}/dismiss':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags:
+        - Season
+      operationId: dismissExperiment
+      summary: >-
+        Dismiss a proposal („Most nem”) or stop a running experiment
+        („Leállítom”) — status dismissed. Idempotent
+      responses:
+        '200':
+          description: Experiment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeasonExperiment'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/seasons/experiments/{id}/keep':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags:
+        - Season
+      operationId: keepExperiment
+      summary: >-
+        „Megtartom szokásnak” — a finished experiment becomes a season rule line
+        every AI context reads. Idempotent
+      responses:
+        '200':
+          description: Experiment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeasonExperiment'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: EXPERIMENT_NOT_DONE — only a finished experiment can be kept
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
 components:
   securitySchemes:
     bearerAuth:
@@ -40304,3 +40545,255 @@ components:
         defaults:
           type: boolean
           description: True while he has not set his own (the six defaults)
+    SeasonExperiments:
+      type: object
+      required:
+        - past
+        - proposeOn
+      properties:
+        proposal:
+          allOf:
+            - $ref: '#/components/schemas/SeasonExperiment'
+          nullable: true
+          description: The one open proposal (Boop ötlete)
+        running:
+          allOf:
+            - $ref: '#/components/schemas/SeasonExperiment'
+          nullable: true
+        past:
+          type: array
+          items:
+            $ref: '#/components/schemas/SeasonExperiment'
+          description: 'done experiments, newest first (dismissed ones are left out)'
+        proposeOn:
+          type: boolean
+          description: The season's „Boop is javasol kísérletet” setting
+    SeasonExperiment:
+      type: object
+      required:
+        - id
+        - subjectKind
+        - title
+        - lengthDays
+        - status
+        - markedDays
+        - needDays
+        - watched
+        - overlaps
+        - kept
+      properties:
+        id:
+          type: string
+          format: uuid
+        subjectKind:
+          type: string
+          enum:
+            - supplement
+            - recipe
+            - food
+            - habit
+            - text
+        subjectRef:
+          type: string
+          format: uuid
+          nullable: true
+        title:
+          type: string
+        reason:
+          type: string
+          nullable: true
+          description: >-
+            Why Boop proposed it, one Hungarian sentence („Hétfő óta szedsz esti
+            magnéziumot.”); null for his own
+        startDate:
+          type: string
+          format: date
+          nullable: true
+          description: null while proposed
+        endDate:
+          type: string
+          format: date
+          nullable: true
+          description: startDate + lengthDays - 1
+        lengthDays:
+          type: integer
+          minimum: 7
+          maximum: 28
+        status:
+          type: string
+          enum:
+            - proposed
+            - running
+            - done
+            - dismissed
+        dayIndex:
+          type: integer
+          nullable: true
+          description: >-
+            Running: which day of the window today is (1-based, capped at
+            lengthDays)
+        markedDays:
+          type: array
+          items:
+            type: string
+            format: date
+        needDays:
+          type: integer
+          description: ceil(0.7 × lengthDays) — the marked days the result needs
+        watched:
+          type: array
+          items:
+            $ref: '#/components/schemas/SeasonExperimentSignalKey'
+          description: The signals compared
+        overlaps:
+          type: array
+          items:
+            $ref: '#/components/schemas/SeasonExperimentOverlap'
+          description: Other changes inside the window so far (running) or in total (done)
+        result:
+          allOf:
+            - $ref: '#/components/schemas/SeasonExperimentResult'
+          nullable: true
+          description: Set when done
+        finishedOn:
+          type: string
+          format: date
+          nullable: true
+        kept:
+          type: boolean
+          description: „Megtartom szokásnak” — a season rule line
+    SeasonExperimentSignalKey:
+      type: string
+      enum:
+        - sleep_min
+        - deep_min
+        - hrv_ms
+        - resting_hr
+        - energy
+        - mood
+        - morning_feel
+    SeasonExperimentResult:
+      type: object
+      required:
+        - verdict
+        - signals
+        - baselineFrom
+        - baselineTo
+        - markedCount
+      properties:
+        verdict:
+          type: string
+          enum:
+            - clear
+            - none
+            - insufficient
+          description: >-
+            insufficient = fewer than needDays marked; clear = at least one
+            clear signal; none = nothing beyond his day-to-day variation
+        signals:
+          type: array
+          items:
+            $ref: '#/components/schemas/SeasonExperimentSignal'
+        baselineFrom:
+          type: string
+          format: date
+        baselineTo:
+          type: string
+          format: date
+        markedCount:
+          type: integer
+    SeasonExperimentSignal:
+      type: object
+      required:
+        - key
+        - nBefore
+        - nAfter
+        - clear
+      properties:
+        key:
+          $ref: '#/components/schemas/SeasonExperimentSignalKey'
+        before:
+          type: number
+          format: double
+          nullable: true
+          description: Mean over the baseline days with data; null without any
+        after:
+          type: number
+          format: double
+          nullable: true
+        nBefore:
+          type: integer
+        nAfter:
+          type: integer
+        cliffsDelta:
+          type: number
+          format: double
+          nullable: true
+          description: Null below 5 days on either side
+        clear:
+          type: boolean
+          description: '|Cliff''s delta| ≥ 0.33 with ≥ 5 days on each side'
+        better:
+          type: boolean
+          nullable: true
+          description: >-
+            Only when clear: the change is in the good direction (resting HR
+            down, the rest up)
+    SeasonExperimentOverlap:
+      type: object
+      required:
+        - kind
+        - date
+        - text
+      properties:
+        kind:
+          type: string
+          enum:
+            - mesocycle
+            - deload
+            - kimelo
+            - season
+        date:
+          type: string
+          format: date
+        text:
+          type: string
+          description: One Hungarian line („Közben új edzésblokk indult”)
+    SeasonExperimentCreate:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 80
+        subjectKind:
+          type: string
+          enum:
+            - supplement
+            - recipe
+            - food
+            - habit
+            - text
+          default: habit
+        subjectRef:
+          type: string
+          format: uuid
+          nullable: true
+        lengthDays:
+          type: integer
+          minimum: 7
+          maximum: 28
+          default: 14
+    SeasonExperimentMark:
+      type: object
+      required:
+        - date
+        - done
+      properties:
+        date:
+          type: string
+          format: date
+        done:
+          type: boolean

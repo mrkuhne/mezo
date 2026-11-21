@@ -16,6 +16,8 @@ related: [boop-ios, companion, _platform-language, train]
 
 # Capacity — how much the day demands vs. how much he can carry
 
+> **2026-11-21 — reviewed after Boop B6 Évad S4 (`mezo-r36n9.16`).** The shared changelog folder gained `season_experiment` (the season's experiments); nothing in capacity changed.
+
 > Boop B7 (epic `mezo-r36n9`, issue `mezo-r36n9.17`). **K1 "Alap" shipped on the server + phone sync: ✅ backend, 🔶 phone shows nothing yet (the verdict is drawn from K2).** K2 (morning sentence, day page, Évad chart), K3 (Átrendezés, `day_adjustment` readers) and K4 (outcomes, patterns, Sunday job) are not built.
 
 ## 1. Summary

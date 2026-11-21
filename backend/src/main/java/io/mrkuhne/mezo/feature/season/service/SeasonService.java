@@ -3,12 +3,14 @@ package io.mrkuhne.mezo.feature.season.service;
 import io.mrkuhne.mezo.feature.season.entity.SeasonAllowedRecipeEntity;
 import io.mrkuhne.mezo.feature.season.entity.SeasonDraftJson;
 import io.mrkuhne.mezo.feature.season.entity.SeasonEntity;
+import io.mrkuhne.mezo.feature.season.entity.SeasonExperimentEntity;
 import io.mrkuhne.mezo.feature.season.entity.SeasonNumbersJson;
 import io.mrkuhne.mezo.feature.season.entity.SeasonRevisionEntity;
 import io.mrkuhne.mezo.feature.season.port.SeasonGoalPort;
 import io.mrkuhne.mezo.feature.season.port.SeasonSleepPort;
 import io.mrkuhne.mezo.feature.season.port.SeasonTrainPort;
 import io.mrkuhne.mezo.feature.season.repository.SeasonAllowedRecipeRepository;
+import io.mrkuhne.mezo.feature.season.repository.SeasonExperimentRepository;
 import io.mrkuhne.mezo.feature.season.repository.SeasonRepository;
 import io.mrkuhne.mezo.feature.season.repository.SeasonRevisionRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
@@ -47,6 +49,7 @@ public class SeasonService {
     private final SeasonTrainPort trainPort;
     private final SeasonSleepPort sleepPort;
     private final MenuService menuService;
+    private final SeasonExperimentRepository experimentRepository;
 
     public List<SeasonEntity> list(UUID owner) {
         return seasonRepository.findByCreatedByAndDeletedFalseOrderByStartDateDesc(owner);
@@ -87,6 +90,7 @@ public class SeasonService {
             prev.setClosedSummary(summary(prev));
             prev.setUpdatedAt(Instant.now());
             seasonRepository.saveAndFlush(prev); // the one-active index must see it closed first
+            releaseExperiments(prev);
         });
         s.setStatus(SeasonEntity.STATUS_ACTIVE);
         s.setSleepBaseMin(sleepBase);
@@ -202,8 +206,25 @@ public class SeasonService {
             s.setStatus(SeasonEntity.STATUS_CLOSED);
             s.setClosedSummary(summary(s));
             s.setUpdatedAt(Instant.now());
+            releaseExperiments(s);
         }
         return s;
+    }
+
+    /**
+     * Évad S4: a season that ends takes its open experiment proposal and its running experiment with it (both
+     * dismissed — a half-run window is not evaluated). The Hatás tab reads per active season, but the one-running /
+     * one-proposed unique indexes are per owner, so leaving them open would block the next season's proposal and
+     * start. Done / kept rows stay with the old season.
+     */
+    private void releaseExperiments(SeasonEntity season) {
+        for (String status : List.of(SeasonExperimentEntity.STATUS_PROPOSED, SeasonExperimentEntity.STATUS_RUNNING)) {
+            for (SeasonExperimentEntity e : experimentRepository.findBySeasonIdAndStatus(season.getId(), status)) {
+                e.setStatus(SeasonExperimentEntity.STATUS_DISMISSED);
+                e.setUpdatedAt(Instant.now());
+                experimentRepository.saveAndFlush(e);
+            }
+        }
     }
 
     /** The season's switches — no kcal effect, so no preview. */

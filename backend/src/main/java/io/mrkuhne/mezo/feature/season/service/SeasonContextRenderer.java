@@ -7,7 +7,9 @@ import io.mrkuhne.mezo.feature.season.entity.SeasonDraftJson;
 import io.mrkuhne.mezo.feature.season.entity.SeasonEntity;
 import io.mrkuhne.mezo.feature.season.entity.SeasonNumbersJson;
 import io.mrkuhne.mezo.feature.season.port.SeasonGoalPort;
+import io.mrkuhne.mezo.feature.season.entity.SeasonExperimentEntity;
 import io.mrkuhne.mezo.feature.season.repository.SeasonAllowedRecipeRepository;
+import io.mrkuhne.mezo.feature.season.repository.SeasonExperimentRepository;
 import io.mrkuhne.mezo.feature.season.repository.SeasonRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -49,6 +51,7 @@ public class SeasonContextRenderer {
     private final SeasonAllowedRecipeRepository allowedRepository;
     private final SeasonPreviewService previewService;
     private final SeasonOverviewService overviewService;
+    private final SeasonExperimentRepository experimentRepository;
 
     /** The season's rules; {@code ""} without an active season. */
     public String render(UUID owner, LocalDate today) {
@@ -97,7 +100,28 @@ public class SeasonContextRenderer {
             lines.add("Étel-szabály: csak kevéssé feldolgozott ételek (NOVA ≤ %d)".formatted(nova));
         }
         sleep(s, computed).ifPresent(lines::add);
+        lines.addAll(experiments(owner, s, today));
         return lines.stream().map(l -> PREFIX + l).collect(Collectors.joining("\n"));
+    }
+
+    /** Évad S4: each kept experiment as a habit rule, and the running one with its day (never throws: a failure
+     *  leaves the lines out). */
+    private List<String> experiments(UUID owner, SeasonEntity s, LocalDate today) {
+        try {
+            List<String> out = new ArrayList<>();
+            for (SeasonExperimentEntity e : experimentRepository.findBySeasonIdAndKeptTrueOrderByCreatedAtAsc(s.getId())) {
+                out.add("Szokás (kísérletből megtartva): " + title(e.getTitle()));
+            }
+            experimentRepository.findBySeasonIdAndStatus(s.getId(), SeasonExperimentEntity.STATUS_RUNNING).stream()
+                .filter(e -> e.getStartDate() != null)
+                .findFirst()
+                .ifPresent(e -> out.add("Kísérlet fut: " + title(e.getTitle()) + " (" + ExperimentService.dayIndex(e, today)
+                    + ". nap / " + e.getLengthDays() + ")"));
+            return out;
+        } catch (RuntimeException e) {
+            log.warn("Season context: experiments unavailable for {}", owner, e);
+            return List.of();
+        }
     }
 
     private Optional<SeasonPreviewService.Computed> compute(UUID owner, SeasonEntity s, SeasonDraftJson draft) {

@@ -166,7 +166,7 @@
       "Terv"
     ],
     "mit_kapsz": "Egy néhány hetes évad céllal, amelyből az edzés, az étkezés, az alvás és a súly is következik; minden módosításnál élőben látod, mire hat. Heti menü, bevásárlólista és kísérletek arról, mi hat rád.",
-    "munkamenet": "practical-lalande-806551"
+    "munkamenet": "boop-penz-l7-d2ae5b"
   },
   "mezo-r36n9.17": {
     "cim": "B7 Napi kapacitás — mennyit bír ma a napod",
@@ -1439,5 +1439,16 @@
     "mit_kapsz": "Étkezés rögzítésekor a recept- és a kamraválasztóban keresőmező és szűrő van (ékezet nélkül is talál; receptek étkezés szerint, kamra kategória szerint). Az Étel Ma oldaláról lekerült a vonalkód gomb, és eltűnt a „Következik: …” kártya az Étel Ma oldalról és a Ma falról is.",
     "szulo": "mezo-r36n9.14",
     "munkamenet": "etel-kereses"
+  },
+  "mezo-r36n9.136": {
+    "cim": "Évad kísérletek — apró javítások",
+    "tipus": "Feladat",
+    "szakasz": "B6 A Terv",
+    "terulet": [
+      "Terv"
+    ],
+    "mit_kapsz": "A kísérlet eredménye a naplóba írt egyéb változásokat is megemlíti átfedésként, és egy ritka hiba sem akaszthatja meg Boop válaszát.",
+    "munkamenet": "boop-penz-l7-d2ae5b",
+    "szulo": "mezo-r36n9.16"
   }
 }
