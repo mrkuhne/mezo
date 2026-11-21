@@ -761,5 +761,19 @@
       "mezo-r36n9.17"
     ],
     "mi_valtozott": "A telefon mostantól a naptárad minden adatát elküldi (cím, időpont, résztvevők, helyszín, jegyzet), 8 nappal előre, és egyszer újraküldi az elmúlt 60 napot is. A háttérben az MI minden programot felcímkéz: mennyire fáraszt szellemileg, emberek közt vagy fizikailag, vagy éppen feltölt; ha nem elérhető, egy egyszerű szabály becsli meg. Ebből és az alvásodból, pulzusodból, edzésedből, evésedből és a bejelentkezéseidből a Boop kiszámolja, mennyit bírsz egy nap, és a reggeli összefoglaló már tartalmazza ezt (például: „szoros, de belefér”). A telefonon ezt a következő lépés mutatja meg; most még nem látsz újat, csak a háttér készült el. A reggeli összefoglaló betöltése ettől nem lett lassabb."
+  },
+  "07f10a201": {
+    "cim": "Étel: keresés a recept- és kamraválasztóban, tisztább Ma oldal",
+    "datum": "2026-11-21",
+    "verzio": "iPhone app",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app"
+    ],
+    "szakasz": "B4 Étel",
+    "jegyek": [
+      "mezo-r36n9.135"
+    ],
+    "mi_valtozott": "Étkezés rögzítésekor a „Melyik receptet?” és a „Mit a kamrából?” listában keresőmező és szűrő van: beírhatod a nevét (ékezet nélkül is megtalálja), a recepteket reggeli / ebéd / vacsora / nassolás szerint, a kamrát kategória szerint szűrheted. Az Étel Ma oldaláról lekerült a vonalkód gomb (vonalkódot a rögzítő lapon és a Kamrában továbbra is olvashatsz), és eltűnt a „Következik: …” kártya az Étel Ma oldalról és a Ma falról is."
   }
 }

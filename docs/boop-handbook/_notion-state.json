@@ -516,7 +516,7 @@
     },
     "kezikonyv:02-ma/elo-fal": {
       "page_id": "41a8968e-752b-8171-9ec2-f9a141185bf9",
-      "hash": "ef9db0468868"
+      "hash": "1f79d5f915fb"
     },
     "kezikonyv:02-ma/este-keret": {
       "page_id": "4168968e-752b-812a-b752-e42df8ffcbfd",
@@ -668,15 +668,15 @@
     },
     "kezikonyv:06-etel/00-attekintes": {
       "page_id": "4168968e-752b-81b5-8ed3-eb04ae60d411",
-      "hash": "6171342790c2"
+      "hash": "7623e5e71010"
     },
     "kezikonyv:06-etel/01-etel-szoba-ma": {
       "page_id": "4168968e-752b-8195-9564-d1ced1b8d194",
-      "hash": "d087739b7a69"
+      "hash": "dea1f300548b"
     },
     "kezikonyv:06-etel/02-etkezes-rogzitese": {
       "page_id": "4168968e-752b-8164-b1d7-d8aa78d82e63",
-      "hash": "91fd9fcba703"
+      "hash": "9406d0c42c6b"
     },
     "kezikonyv:06-etel/03-etkezes-ertekelese": {
       "page_id": "4168968e-752b-81ee-b603-ce33a392a527",
@@ -2813,6 +2813,14 @@
     "kiadasok:260a76cb6": {
       "page_id": "41f8968e-752b-813c-a679-dbf83444aa20",
       "hash": "59d7bd5d1a9a"
+    },
+    "jegyek:mezo-r36n9.135": {
+      "page_id": "41f8968e-752b-815a-b609-df6dd7fbb44b",
+      "hash": "75501a821fee"
+    },
+    "kiadasok:07f10a201": {
+      "page_id": "41f8968e-752b-8189-9fbb-e51996cb583c",
+      "hash": "19289198a90b"
     }
   }
 }
