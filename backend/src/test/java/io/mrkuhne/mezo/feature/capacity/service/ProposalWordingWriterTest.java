@@ -44,7 +44,7 @@ class ProposalWordingWriterTest {
         f.put("heavy", true);
         f.put("toDate", SAT.toString());
         f.put("toEmptyCalendar", true);
-        f.put("toReason", "");
+        f.put("toPrevLate", false);
         return new ProposalDraft("MOVE_SESSION_DAY",
             List.of(AdjustmentDraft.of(new MoveSessionDay(UUID.randomUUID(), THU, SAT))), f, 0.6);
     }
@@ -69,7 +69,7 @@ class ProposalWordingWriterTest {
     void templateFollowsTheSpikeAndSaysTheExtraComesWithTheSession() {
         Wording w = writer(null).template(move(), effects());
 
-        assertThat(w.title()).isEqualTo("A csütörtöki edzést tedd át szombatra");
+        assertThat(w.title()).isEqualTo("A lábnapot tedd át szombatra");
         assertThat(w.move()).isEqualTo("csütörtök 18:00  →  szombat 18:00 (üres nap)");
         assertThat(w.effectLines()).containsExactly(
             "A csütörtök túl sok helyett szoros lesz, a szombat laza helyett rendben",
@@ -77,7 +77,7 @@ class ProposalWordingWriterTest {
             "A vasárnapi röplabda előtt nem marad pihenőnap",
             "A heti 4 edzés megmarad, az Évad terve nem változik");
         assertThat(w.why()).containsExactly("Amit csütörtökön látok: 6 óra megbeszélés",
-            "Amit szombaton látok: üres a naptárad");
+            "Szombaton üres a naptárad, és előtte nincs késői program");
     }
 
     @Test
@@ -118,6 +118,43 @@ class ProposalWordingWriterTest {
     }
 
     @Test
+    void aNumberOnlyTheRawFactsCarryIsStillRefused() {
+        // fromDate 2026-11-26 is in the facts, but no "26" is on the card: "26 perc" would be an invented number
+        CompanionLlm dateDigits = mock(CompanionLlm.class);
+        when(dateDigits.complete(anyString(), anyString())).thenReturn("""
+            {"title":"Szombatra vele","effectLines":["Csütörtök könnyebb lesz","26 perc pihenőt nyersz",
+            "A 290 kcal szombaton jár","A heti 4 edzés marad"],"why":["Sok a megbeszélés","Szombat üres"]}""");
+
+        assertThat(writer(dateDigits).word(move(), effects())).isEqualTo(writer(null).template(move(), effects()));
+    }
+
+    @Test
+    void articlesFollowHowTheNumberIsRead() {
+        assertThat(HuDays.the("500 kcal", true)).isEqualTo("Az 500 kcal");
+        assertThat(HuDays.the("1:15-ig", true)).isEqualTo("Az 1:15-ig");
+        assertThat(HuDays.the("21:30-ig", true)).isEqualTo("A 21:30-ig");
+        assertThat(HuDays.the("1000 kcal", false)).isEqualTo("az 1000 kcal");
+        assertThat(HuDays.the("150 kcal", false)).isEqualTo("a 150 kcal");
+        assertThat(HuDays.the("7 óra alvás", false)).isEqualTo("a 7 óra alvás");
+        assertThat(HuDays.the("alsótestet", true)).isEqualTo("Az alsótestet");
+        assertThat(HuDays.accusative("Lábnap")).contains("lábnapot");
+        assertThat(HuDays.accusative("Felsőtest")).contains("felsőtestet");
+        assertThat(HuDays.accusative("Pull 1")).isEmpty();
+    }
+
+    @Test
+    void skipLineTakesTheArticleOfItsNumber() {
+        Map<String, Object> f = new LinkedHashMap<>();
+        f.put("fromDate", THU.toString());
+        f.put("sessionTime", "18:00");
+        Effects e = new Effects(List.of(new DayEffect(THU, "túl sok", "szoros", 1.6, 0.95, 500, 0)), List.of(), null,
+            new WeekTotals(4, 17920, 52.5), new WeekTotals(3, 17420, 52.5), null, 500);
+        Wording w = writer(null).template(new ProposalDraft("SKIP_SESSION", List.of(), f, 0.3), e);
+
+        assertThat(w.effectLines()).contains("Az 500 kcal edzésnapi többlet csütörtökön nem jár, a napi keret nem változik");
+    }
+
+    @Test
     void templateOnlyNeverCallsTheModel() {
         CompanionLlm llm = mock(CompanionLlm.class);
         Wording w = writer(llm).word(move(), effects(), true);
@@ -132,12 +169,12 @@ class ProposalWordingWriterTest {
         bed.put("night", "2026-11-25");
         bed.put("nextDate", THU.toString());
         bed.put("eventTitle", "Hívás");
-        bed.put("eventEnd", "21:30");
         bed.put("bedtimeBefore", "22:30");
         bed.put("bedtimeAfter", "23:00");
         bed.put("sessionBefore", "6:45");
         bed.put("sessionAfter", "7:15");
         bed.put("firstEventNext", "8:30");
+        bed.put("eventEnd", "1:15");
         Effects sleep = new Effects(List.of(), List.of(),
             new Effects.SleepEffect(LocalDate.parse("2026-11-25"), java.time.LocalTime.of(22, 30),
                 java.time.LocalTime.of(23, 0), 450),
@@ -146,7 +183,8 @@ class ProposalWordingWriterTest {
         assertThat(b.title()).isEqualTo("Szerdán feküdj később, a csütörtöki edzés kezdődjön később");
         assertThat(b.move()).isEqualTo("lefekvés 22:30 → 23:00  ·  csütörtök edzés 6:45 → 7:15");
         assertThat(b.effectLines()).hasSizeBetween(3, 4)
-            .contains("A 21:30-ig tartó esemény után is meglesz a 7 óra 30 perc alvás");
+            .contains("Az 1:15-ig tartó esemény után is meglesz a 7 óra 30 perc alvás");
+        assertThat(b.why()).contains("Szerdán 1:15-ig tart a „Hívás”");
 
         Map<String, Object> todo = new LinkedHashMap<>();
         todo.put("date", "2026-11-27");

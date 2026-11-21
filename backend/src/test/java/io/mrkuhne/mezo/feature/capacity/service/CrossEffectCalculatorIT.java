@@ -41,16 +41,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import io.mrkuhne.mezo.feature.wearable.config.WearableProperties;
+import java.time.ZoneId;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.annotation.Import;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Boop B7 K3 (mezo-r36n9.17, Task 16): every cross-effect of a proposal comes from the real engines. The strongest
  * check: the calculator's "after" for a move equals what the fuel day service and the load model actually show once
- * the move is in the ledger. Real clock (the fuel day's pending preview keys on it). Numbers are invented.
+ * the move is in the ledger. The capacity clock is pinned to a Wednesday 08:00 in his zone, the week after next, so
+ * the fuel day's pending preview (which keys on the real date) exists for both days and every assertion always runs.
+ * Numbers are invented.
  */
 @Transactional
+@Import(DayAdjustmentServiceIT.ClockConfig.class)
 class CrossEffectCalculatorIT extends AbstractIntegrationTest {
 
     @Autowired private CrossEffectCalculator calculator;
@@ -69,18 +77,31 @@ class CrossEffectCalculatorIT extends AbstractIntegrationTest {
     @Autowired private GoalRepository goalRepository;
     @Autowired private TdeeBootstrapService tdeeBootstrap;
     @Autowired private SleepGoalPopulator sleepGoals;
+    @Autowired private WearableProperties wearable;
+    @Autowired private DayAdjustmentServiceIT.MutableClock clock;
 
-    private final LocalDate today = LocalDate.now();
-    private final LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-    /** Another day of the same week: tomorrow, or Saturday when today is Sunday. */
-    private final LocalDate other = today.getDayOfWeek() == DayOfWeek.SUNDAY ? today.minusDays(1) : today.plusDays(1);
+    /** Monday of the week after next (always ahead of the real date the fuel preview uses). */
+    private final LocalDate monday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        .plusWeeks(2);
+    private final LocalDate today = monday.plusDays(2);  // Wednesday: his pinned "today"
+    private final LocalDate other = monday.plusDays(3);  // Thursday, the same week
     private UUID owner;
     private GoalEntity goal;
+
+    @BeforeEach
+    void pinClock() {
+        clock.set(today.atTime(8, 0).atZone(ZoneId.of(wearable.zone())).toInstant());
+    }
+
+    @AfterEach
+    void resetClock() {
+        clock.reset();
+    }
 
     private void fixture() {
         owner = databasePopulator.populateUser("cross-effects-" + UUID.randomUUID() + "@test.local");
         BiometricProfileEntity profile = profiles.create(owner);
-        weights.createWeightLog(owner, today.minusDays(3), new BigDecimal("80.00"));
+        weights.createWeightLog(owner, LocalDate.now().minusDays(3), new BigDecimal("80.00"));
         tdeeBootstrap.bmr(profile, new BigDecimal("80.00"));
         LocalDate start = monday.minusWeeks(1);
         GoalPrescriptionJson prescription = new GoalPrescriptionJson(null, "formula",
@@ -177,11 +198,9 @@ class CrossEffectCalculatorIT extends AbstractIntegrationTest {
         adjustments.saveAndFlush(row);
 
         assertThat(pending(fuelDays.getDay(owner, today))).isZero();
-        if (!other.isBefore(today)) { // the pending preview only exists for today or later
-            assertThat(pending(fuelDays.getDay(owner, other))).isEqualTo(otherAfter);
-            assertThat(otherAfter).isEqualTo(pending(otherBefore) + x);
-            assertThat(capacityDays.day(owner, other).ratio()).isCloseTo(otherRatioAfter, within(1e-6));
-        }
+        assertThat(pending(fuelDays.getDay(owner, other))).isEqualTo(otherAfter);
+        assertThat(otherAfter).isEqualTo(pending(otherBefore) + x);
+        assertThat(capacityDays.day(owner, other).ratio()).isCloseTo(otherRatioAfter, within(1e-6));
     }
 
     @Test

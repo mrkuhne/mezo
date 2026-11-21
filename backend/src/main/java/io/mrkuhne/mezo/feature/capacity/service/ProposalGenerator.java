@@ -67,6 +67,7 @@ public final class ProposalGenerator {
     static final LocalTime TODO_EARLIEST = LocalTime.of(8, 0);
     static final double SHORTEN_SHARE = 2.0 / 3.0;
     static final int MIN_SESSION_MIN = 10;
+    static final int MAX_SESSION_MIN = 240;
 
     private ProposalGenerator() {
     }
@@ -106,10 +107,33 @@ public final class ProposalGenerator {
             }
             valid.add(withPatterns(d, patterns));
         }
-        return valid.stream()
-            .sorted(Comparator.comparingDouble(ProposalDraft::relief).reversed())
-            .limit(p.proposals().maxPerWeek())
-            .toList();
+        // Drafts that would cancel each other out (a move of Thursday's session and a later start of it, or a
+        // to-do before it) never stand side by side: one per session, one per set of touched days, the higher relief.
+        List<ProposalDraft> kept = new ArrayList<>();
+        Set<LocalDate> sessionDays = new HashSet<>();
+        Set<List<LocalDate>> touched = new HashSet<>();
+        for (ProposalDraft d : valid.stream()
+                .sorted(Comparator.comparingDouble(ProposalDraft::relief).reversed()).toList()) {
+            Optional<LocalDate> session = sessionDay(d);
+            if (session.isPresent() && sessionDays.contains(session.get()) || touched.contains(d.touchedDays())) {
+                continue;
+            }
+            session.ifPresent(sessionDays::add);
+            touched.add(d.touchedDays());
+            kept.add(d);
+        }
+        return kept.stream().limit(p.proposals().maxPerWeek()).toList();
+    }
+
+    /** The day of the gym session a draft is about (empty for a meal move, which concerns no session). */
+    static Optional<LocalDate> sessionDay(ProposalDraft d) {
+        Object day = switch (d.kind()) {
+            case "MOVE_SESSION_DAY", "SHORTEN_SESSION", "SKIP_SESSION" -> d.facts().get("fromDate");
+            case "SHIFT_BEDTIME" -> d.facts().get("nextDate");
+            case "CALENDAR_TODO" -> d.facts().get("date");
+            default -> null;
+        };
+        return day == null ? Optional.empty() : Optional.of(LocalDate.parse(day.toString()));
     }
 
     // ── sessions: move, else shorten, else skip ──────────────────────────────
@@ -123,7 +147,8 @@ public final class ProposalGenerator {
                 return Optional.of(move.get().draft());
             }
         }
-        int shorter = Math.round((float) (s.minutes() * SHORTEN_SHARE / 5)) * 5;
+        // clamped to the payload's 10–240 bound, so a very long session can never make the week read fail
+        int shorter = Math.min(MAX_SESSION_MIN, Math.round((float) (s.minutes() * SHORTEN_SHARE / 5)) * 5);
         if (shorter >= MIN_SESSION_MIN && shorter < s.minutes()) {
             List<AdjustmentDraft> shorten = List.of(AdjustmentDraft.of(new ShortenSession(day.date(), shorter)));
             DraftWeek.Result r = DraftWeek.apply(w, shorten, p);
@@ -155,6 +180,9 @@ public final class ProposalGenerator {
             if (s.heavy() && heavyNeighbour(w, to, s)) {
                 continue;
             }
+            if (collides(w, to, s)) {
+                continue; // the session keeps its clock time: that hour (± getting ready) must be free there
+            }
             List<AdjustmentDraft> bundle =
                 List.of(AdjustmentDraft.of(new MoveSessionDay(s.templateId(), day.date(), to)));
             if (!passesRules(w, bundle)) {
@@ -169,7 +197,7 @@ public final class ProposalGenerator {
             Map<String, Object> extra = new LinkedHashMap<>();
             extra.put("toDate", to.toString());
             extra.put("toEmptyCalendar", w.events().stream().noneMatch(e -> e.date().equals(to) && !e.allDay()));
-            extra.put("toReason", t.reasonFacts());
+            extra.put("toPrevLate", w.monday().isBefore(to) && lateEvent(w, to.minusDays(1)).isPresent());
             targets.add(new Target(to, new ProposalDraft(AdjustmentKind.MOVE_SESSION_DAY.name(), bundle,
                 sessionFacts(s, day, extra), relief(r, p)), keepsRest, t.ratio()));
         }
@@ -178,6 +206,27 @@ public final class ProposalGenerator {
                 .thenComparingDouble(Target::ratioBefore)
                 .thenComparing(Target::date))
             .findFirst();
+    }
+
+    /**
+     * On {@code to}, a timed calendar event or a sport slot overlaps the session's window widened by the
+     * {@value #READY_MIN} minutes of getting ready on both sides.
+     */
+    private static boolean collides(WeekPicture w, LocalDate to, PlannedSession s) {
+        LocalDateTime from = to.atTime(s.start()).minusMinutes(READY_MIN);
+        LocalDateTime until = to.atTime(s.start()).plusMinutes(s.minutes() + READY_MIN);
+        Instant a = from.atZone(w.zone()).toInstant();
+        Instant b = until.atZone(w.zone()).toInstant();
+        boolean event = w.events().stream()
+            .filter(e -> !e.allDay() && e.start() != null && e.end() != null)
+            .anyMatch(e -> e.start().isBefore(b) && e.end().isAfter(a));
+        boolean sport = w.sport().stream()
+            .filter(x -> x.date().equals(to))
+            .anyMatch(x -> {
+                LocalDateTime xs = to.atTime(x.start());
+                return xs.isBefore(until) && xs.plusMinutes(x.minutes()).isAfter(from);
+            });
+        return event || sport;
     }
 
     /** A heavy session of the same region (the load model knows one: heavy lower body) the day before or after. */

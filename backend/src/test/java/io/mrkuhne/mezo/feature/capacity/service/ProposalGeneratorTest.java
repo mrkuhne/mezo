@@ -67,8 +67,12 @@ class ProposalGeneratorTest {
         }
 
         Week gym(int offset, String time, String label, boolean heavy) {
-            sessions.add(new PlannedSession(UUID.randomUUID(), MON.plusDays(offset), LocalTime.parse(time), 60, label,
-                false, false, heavy));
+            return gym(offset, time, label, heavy, 60);
+        }
+
+        Week gym(int offset, String time, String label, boolean heavy, int minutes) {
+            sessions.add(new PlannedSession(UUID.randomUUID(), MON.plusDays(offset), LocalTime.parse(time), minutes,
+                label, false, false, heavy));
             return this;
         }
 
@@ -315,5 +319,65 @@ class ProposalGeneratorTest {
 
         assertThat(lifted.relief()).isGreaterThan(plain.relief());
         assertThat(lifted.facts().get("patternLines")).asList().hasSize(1);
+    }
+
+    // ── fix round 1 ──────────────────────────────────────────────────────────
+
+    @Test
+    void aMoveNeedsTheSessionHourFreeOnTheTargetDay() {
+        // Saturday has a timed event across the 18:00 session (± 30 min getting ready): not a target
+        WeekPicture blocked = spikeWeek().event(5, "Szülinap", "17:45", "19:00").build();
+        assertThat(ProposalGenerator.forWeek(blocked, List.of(), P))
+            .noneMatch(d -> d.kind().equals("MOVE_SESSION_DAY") && d.touchedDays().contains(MON.plusDays(5)));
+
+        // an event that ends 20 minutes before the session is still inside the getting-ready margin
+        WeekPicture tight = spikeWeek().event(5, "Ebéd", "16:30", "17:40").build();
+        assertThat(ProposalGenerator.forWeek(tight, List.of(), P))
+            .noneMatch(d -> d.kind().equals("MOVE_SESSION_DAY") && d.touchedDays().contains(MON.plusDays(5)));
+
+        // a morning event far from it leaves Saturday a fine target
+        WeekPicture free = spikeWeek().event(5, "Piac", "09:00", "10:00").build();
+        assertThat(ProposalGenerator.forWeek(free, List.of(), P))
+            .anyMatch(d -> d.kind().equals("MOVE_SESSION_DAY") && d.touchedDays().contains(MON.plusDays(5)));
+    }
+
+    @Test
+    void aMoveNeverLandsOnASportSlotHour() {
+        Week week = spikeWeek().sport(5, "18:30", "röplabda");
+        assertThat(ProposalGenerator.forWeek(week.build(), List.of(), P))
+            .noneMatch(d -> d.kind().equals("MOVE_SESSION_DAY") && d.touchedDays().contains(MON.plusDays(5)));
+    }
+
+    @Test
+    void draftsOnTheSameSessionNeverStandSideBySide() {
+        // Thursday's early session could be moved to Saturday, started later after Wednesday's late call, or have
+        // the meeting before it moved — all three would undo each other; only the strongest stays.
+        Week week = new Week()
+            .day(2, 0.80, 0.80).day(3, 1.12, 0.70)
+            .event(2, "Hívás", "19:00", "21:30")
+            .gym(3, "06:45", "Lábnap", true)
+            .event(3, "Első megbeszélés", "08:30", "09:00");
+        List<ProposalDraft> drafts = ProposalGenerator.forWeek(week.build(), List.of(), P);
+
+        List<LocalDate> sessionDays = drafts.stream().map(ProposalGenerator::sessionDay)
+            .flatMap(java.util.Optional::stream).toList();
+        assertThat(sessionDays).doesNotHaveDuplicates().contains(MON.plusDays(3));
+        assertThat(drafts.stream().map(ProposalDraft::touchedDays).toList()).doesNotHaveDuplicates();
+        assertThat(drafts.get(0).kind()).isEqualTo("MOVE_SESSION_DAY"); // the higher relief wins
+    }
+
+    @Test
+    void aVeryLongSessionShortensWithinThePayloadBound() {
+        Week week = new Week();
+        for (int i = 0; i < 7; i++) {
+            week.day(i, 1.0, 0.9);
+        }
+        week.recovery = true; // no move: the shorten path
+        week.gym(3, "08:00", "Túra", false, 400);
+
+        List<ProposalDraft> drafts = ProposalGenerator.forWeek(week.build(), List.of(), P);
+
+        ProposalDraft d = drafts.stream().filter(x -> x.kind().equals("SHORTEN_SESSION")).findFirst().orElseThrow();
+        assertThat(((Number) d.bundle().get(0).payload().get("minutes")).intValue()).isEqualTo(240);
     }
 }

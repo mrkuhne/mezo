@@ -90,7 +90,7 @@ public class ProposalWordingWriter {
             call = CompletableFuture.supplyAsync(() -> LlmActorContext.runAsCaptured(actor,
                 () -> llmCallContextHolder.runWith(new LlmCallContext(LLM_FEATURE, "words", null, null),
                     () -> llm.complete(SYSTEM_PROMPT, userMessage))), executor);
-            return accept(call.get(LLM_TIMEOUT_SECONDS, TimeUnit.SECONDS), template, facts(d, template));
+            return accept(call.get(LLM_TIMEOUT_SECONDS, TimeUnit.SECONDS), template, facts(template));
         } catch (TimeoutException ex) {
             call.cancel(true);
             log.info("Proposal wording took longer than {} s, using the template", LLM_TIMEOUT_SECONDS);
@@ -115,12 +115,14 @@ public class ProposalWordingWriter {
         return sb.toString();
     }
 
-    /** Everything the model may draw numbers from: the template's own words and the generator's facts. */
-    static String facts(ProposalDraft d, Wording t) {
+    /**
+     * Everything the model may draw numbers from: the template's own words ONLY — never the raw facts, whose ISO
+     * dates and unshown values would let a "26 perc" through.
+     */
+    static String facts(Wording t) {
         StringBuilder sb = new StringBuilder(t.title()).append('\n').append(t.move());
         t.effectLines().forEach(l -> sb.append('\n').append(l));
         t.why().forEach(l -> sb.append('\n').append(l));
-        d.facts().values().forEach(v -> sb.append('\n').append(v));
         return sb.toString();
     }
 
@@ -220,10 +222,11 @@ public class ProposalWordingWriter {
         lines.add("A heti " + e.after().sessions() + " edzés megmarad, " + evadLower());
         List<String> why = new ArrayList<>();
         reasonLine(from, f.get("reason")).ifPresent(why::add);
-        why.add("Amit " + HuDays.on(to) + " látok: " + (empty ? "üres a naptárad"
-            : Optional.ofNullable(s(f, "toReason")).filter(r -> !r.isBlank()).orElse("kevesebb a teendőd")));
+        why.add(targetLine(to, empty, Boolean.TRUE.equals(f.get("toPrevLate")), e));
         patternLines(f, why);
-        return new Wording("A " + HuDays.adj(from) + " edzést tedd át " + HuDays.onto(to),
+        String what = HuDays.accusative(s(f, "sessionLabel"))
+            .orElse(HuDays.adj(from) + " edzést");
+        return new Wording(HuDays.the(what, true) + " tedd át " + HuDays.onto(to),
             HuDays.name(from) + " " + time + "  →  " + HuDays.name(to) + " " + time + (empty ? " (üres nap)" : ""),
             List.copyOf(lines), List.copyOf(why));
     }
@@ -255,7 +258,8 @@ public class ProposalWordingWriter {
         lines.add(load(e, day, null));
         Integer x = e.sessionKcal();
         lines.add(x != null && x > 0
-            ? "A " + x + " kcal edzésnapi többlet " + HuDays.on(day) + " nem jár, a napi keret nem változik"
+            ? HuDays.the(x + " kcal edzésnapi többlet", true) + " " + HuDays.on(day)
+                + " nem jár, a napi keret nem változik"
             : "Az edzésnapi többlet " + HuDays.on(day) + " nem jár, a napi keret nem változik");
         lines.add("A heti edzés " + e.before().sessions() + " helyett " + e.after().sessions() + ", "
             + evadLower());
@@ -271,8 +275,8 @@ public class ProposalWordingWriter {
         LocalDate next = date(f, "nextDate");
         int need = e.sleep() != null ? e.sleep().needMin() : 0;
         List<String> lines = new ArrayList<>();
-        lines.add("A " + s(f, "eventEnd") + "-ig tartó esemény után is meglesz a " + HuDays.duration(need)
-            + " alvás");
+        lines.add(HuDays.the(s(f, "eventEnd") + "-ig tartó esemény", true) + " után is meglesz "
+            + HuDays.the(HuDays.duration(need) + " alvás", false));
         String first = s(f, "firstEventNext");
         lines.add(first != null
             ? HuDays.cap(HuDays.on(next)) + " " + first + "-kor kezdődik az első eseményed, így még belefér"
@@ -283,9 +287,10 @@ public class ProposalWordingWriter {
         lines.add(evad());
         List<String> why = new ArrayList<>();
         String title = s(f, "eventTitle");
-        why.add("Amit " + HuDays.on(night) + " látok: " + (title == null || title.isBlank() ? "egy esemény"
-            : "a(z) „" + title + "”") + " " + s(f, "eventEnd") + "-ig tart");
-        why.add("Amit " + HuDays.on(next) + " látok: " + s(f, "sessionBefore") + "-kor kezdődne az edzés");
+        why.add(HuDays.cap(HuDays.on(night)) + " " + s(f, "eventEnd") + "-ig tart "
+            + (title == null || title.isBlank() ? "egy eseményed" : HuDays.article(title) + " „" + title + "”"));
+        why.add(HuDays.cap(HuDays.on(next)) + " " + s(f, "sessionBefore") + "-kor kezdődne az edzés, így rövid"
+            + " lenne az éjszaka");
         patternLines(f, why);
         return new Wording(HuDays.cap(HuDays.on(night)) + " feküdj később, a " + HuDays.adj(next)
                 + " edzés kezdődjön később",
@@ -297,7 +302,8 @@ public class ProposalWordingWriter {
     private static Wording meal(Map<String, Object> f, Effects e) {
         LocalDate day = date(f, "date");
         List<String> lines = List.of(
-            "A " + s(f, "blockStart") + " és " + s(f, "blockEnd") + " közötti megbeszélések előtt több energiád lesz",
+            HuDays.the(s(f, "blockStart") + " és " + s(f, "blockEnd") + " közötti megbeszélések", true)
+                + " előtt több energiád lesz",
             "A könnyebb vacsora után könnyebben pihensz",
             "A napi keret ugyanannyi marad");
         List<String> why = new ArrayList<>();
@@ -349,6 +355,17 @@ public class ProposalWordingWriter {
             return HuDays.name(day) + " " + a + " marad";
         }
         return HuDays.name(day) + " " + b + " helyett " + a + (first ? " lesz" : "");
+    }
+
+    /** Why the target day is good for the session — not its load drivers. */
+    private static String targetLine(LocalDate to, boolean empty, boolean prevLate, Effects e) {
+        String on = HuDays.cap(HuDays.on(to));
+        if (empty) {
+            return on + " üres a naptárad" + (prevLate ? "" : ", és előtte nincs késői program");
+        }
+        String after = e.day(to).map(DayEffect::verdictAfter).orElse(null);
+        return after == null ? on + " kevesebb a dolgod"
+            : on + " kevesebb a dolgod: az edzéssel együtt is " + after + " lesz a nap";
     }
 
     private static Optional<String> rest(Effects e) {
