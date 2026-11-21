@@ -28,6 +28,7 @@ struct RootView: View {
         Group {
             #if DEBUG
             // Simulator review of the shared area-page kit: every block on one page, no sign-in needed.
+            if UserDefaults.standard.bool(forKey: "previewNapSor") { NapSorDemoRoot() } else
             if UserDefaults.standard.bool(forKey: "previewKit") {
                 KitGallery()
             } else if UserDefaults.standard.bool(forKey: "previewBlokk") || UserDefaults.standard.bool(forKey: "previewUjBlokk") {
