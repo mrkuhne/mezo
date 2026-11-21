@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.feature.mail.config.MailProperties;
 import io.mrkuhne.mezo.feature.mail.entity.MailItemEntity;
 import io.mrkuhne.mezo.feature.mail.entity.MailMailboxEntity;
 import io.mrkuhne.mezo.feature.mail.entity.MailMessageEntity;
+import io.mrkuhne.mezo.feature.mail.entity.MailRunEntity;
 import io.mrkuhne.mezo.feature.mail.repository.MailItemRepository;
 import io.mrkuhne.mezo.feature.mail.repository.MailMailboxRepository;
 import io.mrkuhne.mezo.feature.mail.repository.MailMessageRepository;
@@ -53,8 +54,7 @@ public class MailDigestQuery {
         Instant anchor = now.isBefore(dayEnd) && !now.isBefore(dayStart) ? now : dayEnd;
 
         List<MailMessageEntity> arrivals = messages
-            .findByCreatedByAndReceivedAtGreaterThanEqualAndReceivedAtLessThanOrderByReceivedAtAsc(user, dayStart,
-                dayEnd);
+            .findByCreatedByAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByReceivedAtAsc(user, dayStart, dayEnd);
         int[] heat = new int[SLOTS];
         for (MailMessageEntity m : arrivals) {
             int hour = m.getReceivedAt().atZone(zone).getHour();
@@ -100,10 +100,14 @@ public class MailDigestQuery {
                 case "deal" -> {
                     deals.add(view);
                     boolean worthIt = i.getScore() != null && i.getScore() >= properties.dealWorthThreshold()
-                        && !i.isFlagged();
+                        && !"flagged".equals(i.getScreen());
                     worth += today && worthIt ? 1 : 0;
                 }
-                default -> rest.merge(i.getCategory(), 1, Integer::sum);
+                default -> {
+                    if (!m.getCreatedAt().isBefore(dayStart) && m.getCreatedAt().isBefore(dayEnd)) {
+                        rest.merge(i.getCategory(), 1, Integer::sum); // "A többi" follows the fetch, like arrived
+                    }
+                }
             }
         }
         people.sort(Comparator.comparing(ItemView::receivedAt).reversed());
@@ -116,11 +120,13 @@ public class MailDigestQuery {
             .sorted(Comparator.comparingInt(RestGroup::count).reversed()).toList();
 
         MailMailboxEntity mailbox = mailboxes.findByCreatedBy(user).orElse(null);
-        boolean rulesOnly = runs.existsByCreatedByAndRulesOnlyTrueAndStartedAtGreaterThanEqualAndStartedAtLessThan(
-            user, dayStart, dayEnd);
+        MailRunEntity limited = runs
+            .findFirstByCreatedByAndRulesOnlyTrueAndStartedAtGreaterThanEqualAndStartedAtLessThanOrderByStartedAtDesc(
+                user, dayStart, dayEnd).orElse(null);
         int arrived = arrivals.size();
         return new MailDigest(mailbox == null ? null : mailbox.getLastRunAt(),
-            mailbox == null ? MailIntakeStore.STATE_DISCONNECTED : mailbox.getState(), rulesOnly, arrived, worth,
+            mailbox == null ? MailIntakeStore.STATE_DISCONNECTED : mailbox.getState(), limited != null,
+            limited == null ? null : limited.getRulesOnlyReason(), arrived, worth,
             Math.max(0, arrived - worth), heat, people, sensitive, deadlines, parcels, deals, restGroups);
     }
 
@@ -131,29 +137,27 @@ public class MailDigestQuery {
             sensitive ? "" : i.getSummary(), sensitive ? "" : i.getWhy(),
             i.getScore() == null ? null : i.getScore().intValue(), i.getDueAt(), i.getValidUntil(),
             i.getAmountMinor(), i.getCurrency(), i.getCarrier(), i.getParcelState(), i.getStateChangedAt(),
-            i.isFlagged(), notifiable(i, now, zone), m.getFromName(), m.getFromAddr(), m.getVia(), m.getReceivedAt(),
+            i.getScreen(), "flagged".equals(i.getScreen()), notifiable(i, now, zone), m.getFromName(), m.getFromAddr(), m.getVia(), m.getReceivedAt(),
             m.getGmMsgid());
     }
 
     /**
-     * A deal scoring at least the notify threshold, cleared by the screen (not flagged — UNKNOWN counts as flagged),
-     * whose valid-until is ahead and within the notify window; or a deadline due today or tomorrow (Budapest),
-     * likewise not flagged (a rule- or JSON-LD deadline is never flagged, a model one only after a clean screen).
-     * Never a flagged item.
+     * A deal scoring at least the notify threshold, cleared by the screen ({@code clean}; none / unknown / flagged
+     * never notify), whose valid-until is ahead and within the notify window; or a deadline still ahead and due
+     * today or tomorrow (Budapest) — a rule-sourced one needs no screen, any other (model, JSON-LD: sender-controlled)
+     * only once {@code clean}.
      */
     private boolean notifiable(MailItemEntity i, Instant now, ZoneId zone) {
-        if (i.isFlagged()) {
-            return false;
-        }
+        boolean clean = "clean".equals(i.getScreen());
         switch (i.getGrp()) {
             case "deal" -> {
                 Instant until = i.getValidUntil();
-                return i.getScore() != null && i.getScore() >= properties.notifyThreshold() && until != null
+                return clean && i.getScore() != null && i.getScore() >= properties.notifyThreshold() && until != null
                     && until.isAfter(now) && !until.isAfter(now.plus(Duration.ofHours(properties.notifyWindowHours())));
             }
             case "deadline" -> {
-                if (i.getDueAt() == null) {
-                    return false;
+                if (i.getDueAt() == null || !i.getDueAt().isAfter(now) || !(clean || "rule".equals(i.getSource()))) {
+                    return false; // a due time that has passed no longer rings
                 }
                 LocalDate due = i.getDueAt().atZone(zone).toLocalDate();
                 LocalDate today = now.atZone(zone).toLocalDate();

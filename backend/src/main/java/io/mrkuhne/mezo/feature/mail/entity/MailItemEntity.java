@@ -75,8 +75,9 @@ public class MailItemEntity extends OwnedEntity {
     @Column(name = "open_until", nullable = false)
     private Instant openUntil;
 
-    @Column(name = "flagged", nullable = false)
-    private boolean flagged;
+    /** none (not screened yet) | clean | flagged | unknown (could not be checked). Only clean may notify. */
+    @Column(name = "screen", nullable = false, length = 8)
+    private String screen = "none";
 
     @Column(name = "source", nullable = false, length = 8)
     private String source;

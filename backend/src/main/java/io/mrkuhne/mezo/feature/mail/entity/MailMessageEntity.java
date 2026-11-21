@@ -74,4 +74,8 @@ public class MailMessageEntity extends OwnedEntity {
 
     @Column(name = "sensitive", nullable = false)
     private boolean sensitive;
+
+    /** Set once the digest pipeline has handled the message (item created, merged into a parcel, or skipped). */
+    @Column(name = "processed_at")
+    private Instant processedAt;
 }

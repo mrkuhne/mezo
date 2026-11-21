@@ -48,6 +48,9 @@ public class MailRunEntity extends OwnedEntity {
     @Column(name = "rules_only", nullable = false)
     private boolean rulesOnly;
 
+    @Column(name = "rules_only_reason", length = 8)
+    private String rulesOnlyReason;
+
     @Column(name = "outcome", nullable = false, length = 16)
     private String outcome;
 

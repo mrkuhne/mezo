@@ -48,12 +48,14 @@ create table mail_run (
     fetched      integer      not null default 0,
     classified   integer      not null default 0,
     rules_only   boolean      not null default false,
+    rules_only_reason varchar(8),
     outcome      varchar(16)  not null,
     error_code   varchar(64),
     constraint pk_mail_run_id primary key (id),
     constraint fk_mail_run_created_by_app_user_id foreign key (created_by) references app_user (id) on delete cascade,
     constraint fk_mail_run_mailbox_id_mail_mailbox_id foreign key (mailbox_id) references mail_mailbox (id) on delete cascade,
-    constraint ck_mail_run_trigger check (trigger in ('cron', 'manual'))
+    constraint ck_mail_run_trigger check (trigger in ('cron', 'manual')),
+    constraint ck_mail_run_rules_only_reason check (rules_only_reason is null or rules_only_reason in ('cap', 'failure'))
 );
 create index idx_mail_run_mailbox_id_started_at on mail_run (mailbox_id, started_at);
 
@@ -77,6 +79,7 @@ create table mail_message (
     body_redacted  text,
     body_purged    boolean       not null default false,
     sensitive      boolean       not null default false,
+    processed_at   timestamptz,
     constraint pk_mail_message_id primary key (id),
     constraint fk_mail_message_created_by_app_user_id foreign key (created_by) references app_user (id) on delete cascade,
     constraint fk_mail_message_mailbox_id_mail_mailbox_id foreign key (mailbox_id) references mail_mailbox (id) on delete cascade,
@@ -107,7 +110,7 @@ create table mail_item (
     parcel_state      varchar(12),
     state_changed_at  timestamptz   not null default now(),
     open_until        timestamptz   not null,
-    flagged           boolean       not null default false,
+    screen            varchar(8)    not null default 'none',
     source            varchar(8)    not null,
     first_seen_run    uuid,
     constraint pk_mail_item_id primary key (id),
@@ -116,6 +119,7 @@ create table mail_item (
     constraint ck_mail_item_grp check (grp in ('deadline', 'parcel', 'deal', 'rest', 'person', 'sensitive')),
     constraint ck_mail_item_score check (score is null or score between 1 and 10),
     constraint ck_mail_item_parcel_state check (parcel_state is null or parcel_state in ('in_transit', 'today', 'pickup', 'delivered')),
+    constraint ck_mail_item_screen check (screen in ('none', 'clean', 'flagged', 'unknown')),
     constraint ck_mail_item_source check (source in ('rule', 'jsonld', 'model'))
 );
 create index idx_mail_item_created_by_open_until on mail_item (created_by, open_until) where is_deleted = false;
@@ -132,6 +136,7 @@ create table mail_feedback (
     verdict     varchar(8)    not null,
     from_addr   varchar(254)  not null,
     summary     varchar(200)  not null,
+    updated_at  timestamptz   not null default now(),
     constraint pk_mail_feedback_id primary key (id),
     constraint fk_mail_feedback_created_by_app_user_id foreign key (created_by) references app_user (id) on delete cascade,
     constraint fk_mail_feedback_item_id_mail_item_id foreign key (item_id) references mail_item (id) on delete cascade,

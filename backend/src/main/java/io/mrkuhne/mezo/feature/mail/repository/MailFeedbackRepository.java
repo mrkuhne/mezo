@@ -14,9 +14,9 @@ public interface MailFeedbackRepository extends JpaRepository<MailFeedbackEntity
 
     Optional<MailFeedbackEntity> findByCreatedByAndItemId(UUID createdBy, UUID itemId);
 
-    List<MailFeedbackEntity> findByCreatedByOrderByCreatedAtDescIdDesc(UUID createdBy);
+    List<MailFeedbackEntity> findByCreatedByOrderByUpdatedAtDescIdDesc(UUID createdBy);
 
     @Query("select f from MailFeedbackEntity f where f.createdBy = :owner and f.itemId in "
-        + "(select i.id from MailItemEntity i where i.grp = 'deal') order by f.createdAt desc, f.id desc")
+        + "(select i.id from MailItemEntity i where i.grp = 'deal') order by f.updatedAt desc, f.id desc")
     List<MailFeedbackEntity> recentDealFeedback(@Param("owner") UUID owner, Pageable page);
 }

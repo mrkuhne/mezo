@@ -15,13 +15,17 @@ public interface MailMessageRepository extends JpaRepository<MailMessageEntity, 
 
     Optional<MailMessageEntity> findByMailboxIdAndContentHash(UUID mailboxId, String contentHash);
 
-    /** The owner's messages received in {@code [from, to)}, oldest first — the digest's arrivals and heat strip. */
-    List<MailMessageEntity> findByCreatedByAndReceivedAtGreaterThanEqualAndReceivedAtLessThanOrderByReceivedAtAsc(
+    /** The owner's messages INGESTED in {@code [from, to)} (spec §10.1: counts follow the fetch, not the Date header). */
+    List<MailMessageEntity> findByCreatedByAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByReceivedAtAsc(
         UUID createdBy, Instant from, Instant to);
 
-    /** Messages received since {@code since} that have no item yet (a crash between intake and processing). */
+    /**
+     * Messages received since {@code since} the pipeline never handled (a crash between intake and processing):
+     * {@code processed_at} is null and no item points at them. A parcel update merged into an existing row is
+     * processed too, so it never comes back here.
+     */
     @Query("select m from MailMessageEntity m where m.createdBy = :owner and m.receivedAt >= :since "
-        + "and not exists (select 1 from MailItemEntity i where i.messageId = m.id) order by m.receivedAt asc")
+        + "and m.processedAt is null and not exists (select 1 from MailItemEntity i where i.messageId = m.id) order by m.receivedAt asc")
     List<MailMessageEntity> withoutItem(@Param("owner") UUID owner, @Param("since") Instant since);
 
     /**

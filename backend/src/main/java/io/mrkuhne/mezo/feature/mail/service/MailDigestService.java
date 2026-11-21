@@ -104,7 +104,7 @@ public class MailDigestService {
         final ZoneId zone;
         final MailClassifierLlm model;
         boolean modelDown;
-        boolean rulesOnly;
+        String limitedBy; // cap | failure | null
         int classified;
 
         Pass(UUID owner, UUID runId, Instant now, ZoneId zone, MailClassifierLlm model) {
@@ -115,10 +115,16 @@ public class MailDigestService {
             this.model = model;
         }
 
-        /** May the next model call go out? A refusal marks the run rules-only (a model step was wanted). */
+        /**
+         * May the next model call go out? No model bean is not a limit (mails simply fall to rest / person); a cap
+         * hit or an earlier model failure is, and marks the run rules-only.
+         */
         boolean canCall() {
-            if (model == null || modelDown || !cap.allows(owner, ZonedDateTime.ofInstant(now, zone))) {
-                rulesOnly = true;
+            if (model == null || modelDown) {
+                return false;
+            }
+            if (!cap.allows(owner, ZonedDateTime.ofInstant(now, zone))) {
+                limit("cap");
                 return false;
             }
             return true;
@@ -126,7 +132,13 @@ public class MailDigestService {
 
         void failed() {
             modelDown = true;
-            rulesOnly = true;
+            limit("failure");
+        }
+
+        void limit(String reason) {
+            if (limitedBy == null) {
+                limitedBy = reason;
+            }
         }
     }
 
@@ -151,18 +163,19 @@ public class MailDigestService {
                     if (!store.hasItem(w.messageId())) {
                         handle(pass, c, w, pending);
                     }
+                    store.markProcessed(w.messageId(), now); // an item, a merged parcel or a skip: never an orphan
                 } catch (RuntimeException e) {
                     LOG.warn("mail item skipped: {}", e.getClass().getSimpleName());
                 }
             }
             scoreAndScreen(pass, pending);
         } catch (RuntimeException e) {
-            pass.rulesOnly = true;
+            pass.limit("failure");
             LOG.warn("mail digest step failed: {}", e.getClass().getSimpleName());
         } finally {
             if (result.runId() != null) {
                 try {
-                    store.finishRun(result.runId(), pass.classified, pass.rulesOnly);
+                    store.finishRun(result.runId(), pass.classified, pass.limitedBy);
                 } catch (RuntimeException e) {
                     LOG.warn("mail run not closed: {}", e.getClass().getSimpleName());
                 }
@@ -184,7 +197,7 @@ public class MailDigestService {
             seen.add(m.messageId());
         }
         try {
-            Instant dayStart = LocalDate.ofInstant(now, zone).atStartOfDay(zone).toInstant();
+            Instant dayStart = LocalDate.ofInstant(now, zone).minusDays(2).atStartOfDay(zone).toInstant(); // last 3 Budapest days
             List<SenderRule> rules = intakeStore.ownerRules(owner);
             for (MailMessageEntity e : store.withoutItem(owner, dayStart)) {
                 if (!seen.contains(e.getId())) {
@@ -232,13 +245,13 @@ public class MailDigestService {
     private NewItem sensitive(Pass pass, Work w) {
         String sender = w.headers().fromName().isBlank() ? w.headers().from() : w.headers().fromName();
         return new NewItem(pass.owner, w.messageId(), pass.runId, SENSITIVE, SENSITIVE, clip(sender, 200), "", null,
-            null, null, null, null, null, null, "rule", false, pass.now);
+            null, null, null, null, null, null, "rule", pass.now);
     }
 
     private NewItem parcel(Pass pass, Work w, String carrier, String key, ParcelState state, String source) {
         String name = clip(carrier, 16);
         return new NewItem(pass.owner, w.messageId(), pass.runId, "parcel", CAT_PARCEL, clip(name + " csomag", 200),
-            parcelWords(state), null, null, null, null, name, clip(key, 64), state, source, false, pass.now);
+            parcelWords(state), null, null, null, null, name, clip(key, 64), state, source, pass.now);
     }
 
     private static String parcelWords(ParcelState state) {
@@ -253,8 +266,7 @@ public class MailDigestService {
     private NewItem rest(Pass pass, Work w, String grp, String category, String title, String summary) {
         String subject = w.headers().subject().isBlank() ? "(nincs tárgy)" : w.headers().subject();
         return new NewItem(pass.owner, w.messageId(), pass.runId, grp, category, clip(title == null ? subject : title, 200),
-            clip(summary, 400), null, null, null, null, null, null, null, title == null ? "rule" : "model", false,
-            pass.now);
+            clip(summary, 400), null, null, null, null, null, null, null, title == null ? "rule" : "model", pass.now);
     }
 
     private NewItem person(Pass pass, Work w, ClassifiedMail model) {
@@ -285,22 +297,36 @@ public class MailDigestService {
                 }
                 Amount amount = amount(f.get("totalPaymentDue"), null);
                 String category = f.containsKey("paymentDueDate") ? "számla" : CAT_DEADLINE;
-                save(new NewItem(pass.owner, w.messageId(), pass.runId, "deadline", category,
-                    clip(firstOr(f, subject, "name", "provider", "reservationFor"), 200), clip(subject, 400), due,
+                // JSON-LD is sender-controlled: cleaned like a model string, and screened like a model item
+                String title = jsonText(firstOr(f, subject, "name", "provider", "reservationFor"), subject, 200);
+                String summary = MailOutputValidator.cleanText(subject, 400);
+                Saved saved = save(new NewItem(pass.owner, w.messageId(), pass.runId, "deadline", category,
+                    title, summary, due,
                     null, amount == null ? null : amount.minor(), amount == null ? null : amount.currency(), null,
-                    null, null, "jsonld", false, pass.now));
+                    null, null, "jsonld", pass.now));
+                pending.add(pending(saved, w, "deadline", title, summary));
             }
             case DEAL -> {
                 Amount amount = amount(f.get("price"), f.get("priceCurrency"));
-                String title = clip(firstOr(f, subject, "name", "itemOffered"), 200);
+                String title = jsonText(firstOr(f, subject, "name", "itemOffered"), subject, 200);
+                String summary = MailOutputValidator.cleanText(subject, 400);
                 Saved saved = save(new NewItem(pass.owner, w.messageId(), pass.runId, "deal", CAT_DEAL, title,
-                    clip(subject, 400), null, instant(f.get("validThrough"), pass.zone),
+                    summary, null, instant(f.get("validThrough"), pass.zone),
                     amount == null ? null : amount.minor(), amount == null ? null : amount.currency(), null, null,
-                    null, "jsonld", false, pass.now));
-                pending.add(pending(saved, w, "deal", title, clip(subject, 400)));
+                    null, "jsonld", pass.now));
+                pending.add(pending(saved, w, "deal", title, summary));
             }
             default -> save(rest(pass, w, "rest", FALLBACK_REST, null, null));
         }
+    }
+
+    /** A JSON-LD string cleaned like a model string; when nothing is left, the (cleaned) subject, then a placeholder. */
+    private static String jsonText(String value, String subject, int max) {
+        String t = MailOutputValidator.cleanText(value, max);
+        if (t.isBlank()) {
+            t = MailOutputValidator.cleanText(subject, max);
+        }
+        return t.isBlank() ? "(nincs tárgy)" : t;
     }
 
     private static String first(Map<String, String> f, String... keys) {
@@ -389,7 +415,7 @@ public class MailDigestService {
             case DEAL -> {
                 Saved saved = save(new NewItem(pass.owner, w.messageId(), pass.runId, "deal", category,
                     clip(title == null ? w.headers().subject() : title, 200), clip(summary, 400), null, m.validUntil(),
-                    m.amountMinor(), m.currency(), null, null, null, "model", false, pass.now));
+                    m.amountMinor(), m.currency(), null, null, null, "model", pass.now));
                 pending.add(pending(saved, w, "deal", title == null ? w.headers().subject() : title, summary));
             }
             case DEADLINE -> {
@@ -399,7 +425,7 @@ public class MailDigestService {
                 }
                 Saved saved = save(new NewItem(pass.owner, w.messageId(), pass.runId, "deadline", category,
                     clip(title == null ? w.headers().subject() : title, 200), clip(summary, 400), m.dueAt(), null,
-                    m.amountMinor(), m.currency(), null, null, null, "model", true, pass.now));
+                    m.amountMinor(), m.currency(), null, null, null, "model", pass.now));
                 pending.add(pending(saved, w, "deadline", title, summary));
             }
             case PARCEL -> {
@@ -488,7 +514,7 @@ public class MailDigestService {
                 double shift = shifts.getOrDefault(p.fromAddr().toLowerCase(Locale.ROOT), 0.0);
                 int score = (int) Math.max(1, Math.min(10, Math.round(s.score() + shift)));
                 boolean needsScreen = score >= properties.dealWorthThreshold();
-                store.applyScore(p.itemId(), score, clip(s.why(), 300), needsScreen);
+                store.applyScore(p.itemId(), score, clip(s.why(), 300));
                 if (needsScreen) {
                     worth.add(p);
                 }

@@ -6,6 +6,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.Instant;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
@@ -37,4 +38,8 @@ public class MailFeedbackEntity extends OwnedEntity {
 
     @Column(name = "summary", nullable = false, length = 200)
     private String summary;
+
+    /** The latest tap on the item; ordering and the half-life decay read this, not created_at. */
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt = Instant.now();
 }

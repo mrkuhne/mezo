@@ -53,7 +53,7 @@ public class MailLearning {
     private final MailProperties properties;
 
     /**
-     * Stores the owner's tap on one of his items. A second tap on the same item replaces the first. A sensitive item
+     * Stores the owner's tap on one of his items. A second tap on the same item replaces the first and becomes the latest. A sensitive item
      * keeps only its sender as the summary.
      */
     @Transactional
@@ -68,6 +68,7 @@ public class MailLearning {
             return f;
         });
         row.setVerdict(verdict.column());
+        row.setUpdatedAt(Instant.now()); // a re-tap is the latest tap: ordering and decay read this
         row.setFromAddr(message.getFromAddr());
         row.setSummary("sensitive".equals(item.getGrp()) ? clip(item.getTitle(), SUMMARY_MAX)
             : clip(item.getTitle() + " — " + item.getSummary(), SUMMARY_MAX));
@@ -79,7 +80,7 @@ public class MailLearning {
     public List<SilentProposal> proposals(UUID user) {
         Map<String, Integer> streak = new LinkedHashMap<>();
         Map<String, Boolean> broken = new HashMap<>();
-        for (MailFeedbackEntity f : feedback.findByCreatedByOrderByCreatedAtDescIdDesc(user)) {
+        for (MailFeedbackEntity f : feedback.findByCreatedByOrderByUpdatedAtDescIdDesc(user)) {
             String sender = f.getFromAddr().toLowerCase(Locale.ROOT);
             if (Boolean.TRUE.equals(broken.get(sender))) {
                 continue;
@@ -120,11 +121,11 @@ public class MailLearning {
         record Tally(int[] counts, double[] weight) {
         }
         Map<String, Tally> tallies = new HashMap<>();
-        for (MailFeedbackEntity f : feedback.findByCreatedByOrderByCreatedAtDescIdDesc(user)) {
+        for (MailFeedbackEntity f : feedback.findByCreatedByOrderByUpdatedAtDescIdDesc(user)) {
             Tally t = tallies.computeIfAbsent(f.getFromAddr().toLowerCase(Locale.ROOT),
                 k -> new Tally(new int[2], new double[1]));
             t.counts()[Verdict.INTEREST.column().equals(f.getVerdict()) ? 0 : 1]++;
-            double ageDays = Duration.between(f.getCreatedAt(), now).toSeconds() / 86_400.0;
+            double ageDays = Duration.between(f.getUpdatedAt(), now).toSeconds() / 86_400.0;
             t.weight()[0] += SenderPrior.weight(ageDays, properties.feedbackHalfLifeDays());
         }
         Map<String, Double> out = new HashMap<>();

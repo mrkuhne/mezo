@@ -372,6 +372,15 @@ public final class MailOutputValidator {
                 .replaceAll("");
     }
 
+    /**
+     * Untrusted-string hygiene for text that did not come from a model but is still sender-controlled (JSON-LD):
+     * invisible characters stripped, clamped, blank when it carries a link or a phone number; never null.
+     */
+    public static String cleanText(String s, int max) {
+        String c = clean(s);
+        return c == null || hasLink(c) ? "" : clamp(c, max);
+    }
+
     private static boolean hasLink(String s) {
         return URL.matcher(s).find() || PHONE.matcher(s).find();
     }

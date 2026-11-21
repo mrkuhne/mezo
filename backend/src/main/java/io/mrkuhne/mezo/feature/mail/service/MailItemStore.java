@@ -26,7 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * The writes of the digest pipeline (mezo-r36n9.39), each one short transaction — every model call happens BEFORE or
  * AFTER, never inside. A model-sourced deal or deadline is stored {@code flagged} until its screen answers CLEAN
- * (fail-closed: a crash between two steps can never leave an unscreened item notifiable).
+ * (fail-closed: the {@code screen} column starts at {@code none}; only {@code clean} may ever notify).
  */
 @Service
 @RequiredArgsConstructor
@@ -43,12 +43,12 @@ public class MailItemStore {
 
     /**
      * One item to store. {@code parcelState} and {@code carrier}/{@code parcelKey} are set together for a parcel
-     * (the unique index ignores a null carrier). {@code pendingScreen} stores it flagged until the screen clears it.
+     * (the unique index ignores a null carrier).
      */
     public record NewItem(UUID owner, UUID messageId, UUID runId, String grp, String category, String title,
                           String summary, Instant dueAt, Instant validUntil, Long amountMinor, String currency,
                           String carrier, String parcelKey, ParcelState parcelState, String source,
-                          boolean pendingScreen, Instant now) {
+                          Instant now) {
     }
 
     /** The stored item's id, and whether this call created a row (false = an existing parcel row was reused). */
@@ -131,38 +131,48 @@ public class MailItemStore {
         e.setParcelState(column(n.parcelState()));
         e.setStateChangedAt(n.now());
         e.setOpenUntil(openUntil(n.grp(), n.dueAt(), n.validUntil(), n.parcelState(), n.now(), n.now()));
-        e.setFlagged(n.pendingScreen());
         e.setSource(n.source());
         e.setFirstSeenRun(n.runId());
         return new Saved(items.saveAndFlush(e).getId(), true);
     }
 
-    /** The relevance score and its one line; an item worth a minute stays flagged until its screen clears it. */
+    /** The relevance score and its one line. */
     @Transactional
-    public void applyScore(UUID itemId, int score, String why, boolean pendingScreen) {
+    public void applyScore(UUID itemId, int score, String why) {
         items.findById(itemId).ifPresent(e -> {
             e.setScore((short) score);
             e.setWhy(why == null ? "" : why);
-            e.setFlagged(pendingScreen);
             items.saveAndFlush(e);
         });
     }
 
-    /** Stores the screen's verdict: only CLEAN lifts the flag (FLAGGED and UNKNOWN both keep it). */
+    /** Stores the screen's verdict. Only {@code clean} may notify; {@code unknown} shows no warning, {@code flagged} does. */
     @Transactional
     public void applyScreen(UUID itemId, ScreenVerdict verdict) {
         items.findById(itemId).ifPresent(e -> {
-            e.setFlagged(verdict != ScreenVerdict.CLEAN);
+            e.setScreen(verdict.name().toLowerCase(Locale.ROOT));
             items.saveAndFlush(e);
         });
     }
 
-    /** Records how the run's processing went. */
+    /** Marks messages the pipeline handled, whatever came of them (item, merged parcel, deliberate skip). */
     @Transactional
-    public void finishRun(UUID runId, int classified, boolean rulesOnly) {
+    public void markProcessed(UUID messageId, Instant at) {
+        messages.findById(messageId).ifPresent(m -> {
+            if (m.getProcessedAt() == null) {
+                m.setProcessedAt(at);
+                messages.saveAndFlush(m);
+            }
+        });
+    }
+
+    /** Records how the run's processing went; {@code rulesOnlyReason} is {@code cap|failure} or null. */
+    @Transactional
+    public void finishRun(UUID runId, int classified, String rulesOnlyReason) {
         runs.findById(runId).ifPresent(r -> {
             r.setClassified(classified);
-            r.setRulesOnly(rulesOnly);
+            r.setRulesOnly(rulesOnlyReason != null);
+            r.setRulesOnlyReason(rulesOnlyReason);
             runs.saveAndFlush(r);
         });
     }

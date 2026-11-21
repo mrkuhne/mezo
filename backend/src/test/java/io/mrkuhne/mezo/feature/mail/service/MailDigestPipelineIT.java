@@ -157,6 +157,10 @@ class MailDigestPipelineIT extends AbstractIntegrationTest {
     @Autowired private FakeCompanionLlm fake;
     @Autowired private MutableClock clock;
     @Autowired private ScriptedLlm llm;
+    @Autowired private MailItemStore itemStore;
+    @Autowired private MailIntakeStore intakeStore;
+    @Autowired private MailCostCap costCap;
+    @Autowired private io.mrkuhne.mezo.feature.mail.config.MailProperties mailProps;
 
     private UUID owner;
     private MailMailboxEntity mailbox;
@@ -190,7 +194,14 @@ class MailDigestPipelineIT extends AbstractIntegrationTest {
         e.setSubject(sensitive ? null : subject);
         e.setBodyRedacted(sensitive ? null : body);
         e.setSensitive(sensitive);
-        return messages.saveAndFlush(e);
+        MailMessageEntity saved = messages.saveAndFlush(e);
+        ingestedAt(saved, receivedAt);
+        return saved;
+    }
+
+    /** The fetch time (mail_message.created_at) — what the counts follow; by default the received time. */
+    private void ingestedAt(MailMessageEntity m, Instant at) {
+        jdbc.update("update mail_message set created_at = ? where id = ?", java.sql.Timestamp.from(at), m.getId());
     }
 
     private MailMessageEntity message(String from, String subject, String body) {
@@ -380,6 +391,7 @@ class MailDigestPipelineIT extends AbstractIntegrationTest {
         assertThat(count("select count(*) from mail_run where created_by = ? and rules_only", owner)).isEqualTo(1);
         MailDigest digest = digest();
         assertThat(digest.rulesOnly()).isTrue();
+        assertThat(digest.rulesOnlyReason()).isEqualTo("cap");
         assertThat(digest.people()).hasSize(1);
         assertThat(digest.rest()).extracting(MailDigest.RestGroup::count).containsExactlyInAnyOrder(1, 1);
 
@@ -407,6 +419,7 @@ class MailDigestPipelineIT extends AbstractIntegrationTest {
         assertThat(dbItem(a.getId()).getGrp()).isEqualTo("rest");
         assertThat(dbItem(b.getId()).getGrp()).isEqualTo("rest");
         assertThat(digest().rulesOnly()).isTrue();
+        assertThat(digest().rulesOnlyReason()).isEqualTo("failure");
     }
 
     // ---- deadlines ------------------------------------------------------------------------------------------
@@ -427,7 +440,7 @@ class MailDigestPipelineIT extends AbstractIntegrationTest {
         assertThat(item.getDueAt()).isEqualTo(due);
         assertThat(item.getAmountMinor()).isEqualTo(1_299_000L);
         assertThat(item.getOpenUntil()).isEqualTo(due.plus(Duration.ofDays(1)));
-        assertThat(item.isFlagged()).isFalse(); // the screen (canned fake: clean) ran
+        assertThat(item.getScreen()).isEqualTo("clean"); // the screen (canned fake: clean) ran
 
         clock.set("2026-11-26T12:00:00Z"); // the day after: still listed, one more day
         assertThat(digest().deadlines()).hasSize(1);
@@ -452,9 +465,9 @@ class MailDigestPipelineIT extends AbstractIntegrationTest {
         MailItemEntity good = dbItem(alfa.getId());
         MailItemEntity bad = dbItem(beta.getId());
         assertThat(good.getScore()).isEqualTo((short) 9);
-        assertThat(good.isFlagged()).isFalse();
+        assertThat(good.getScreen()).isEqualTo("clean");
         assertThat(bad.getScore()).isEqualTo((short) 9);
-        assertThat(bad.isFlagged()).isTrue();
+        assertThat(bad.getScreen()).isEqualTo("flagged");
         Map<String, ItemView> byTitle = new java.util.HashMap<>();
         digest().deals().forEach(v -> byTitle.put(v.title(), v));
         assertThat(byTitle.get("Alfa cipő").notifiable()).isTrue(); // control: clean, 9, expires within 36 h
@@ -478,7 +491,7 @@ class MailDigestPipelineIT extends AbstractIntegrationTest {
         MailItemEntity item = dbItem(m.getId());
         assertThat(item.getValidUntil()).isNull();
         assertThat(item.getDueAt()).isNull();
-        assertThat(item.isFlagged()).isTrue(); // an unreadable screen answer is UNKNOWN, treated like flagged
+        assertThat(item.getScreen()).isEqualTo("unknown"); // an unreadable screen answer is UNKNOWN: never notifies
         ItemView view = digest().deals().get(0);
         assertThat(view.notifiable()).isFalse();
         assertThat(view.validUntil()).isNull();
@@ -566,7 +579,7 @@ class MailDigestPipelineIT extends AbstractIntegrationTest {
         items.save(l);
         MailItemEntity f = row(dealFlagged, "deal", "Gyanús akció", today, until);
         f.setScore((short) 9);
-        f.setFlagged(true);
+        f.setScreen("flagged");
         items.save(f);
         items.save(row(rest1, "rest", "Hírlevél 1", today, until));
         items.save(row(rest2, "rest", "Hírlevél 2", today, until));
@@ -575,7 +588,7 @@ class MailDigestPipelineIT extends AbstractIntegrationTest {
 
         assertThat(digest.arrived()).isEqualTo(9); // the two "yesterday" mails are not today's arrivals
         assertThat(digest.worthAMinute()).isEqualTo(5); // person, sensitive, new deadline, parcel changed, deal 8
-        assertThat(digest.handled()).isEqualTo(digest.arrived() - digest.worthAMinute()).isEqualTo(4);
+        assertThat(digest.handled()).isEqualTo(digest.arrived() - digest.worthAMinute()).isEqualTo(4).isNotNegative();
         assertThat(digest.heatSlots()).hasSize(12);
         assertThat(digest.heatSlots()[3]).isEqualTo(2);
         assertThat(digest.heatSlots()[2]).isEqualTo(7);
@@ -608,8 +621,11 @@ class MailDigestPipelineIT extends AbstractIntegrationTest {
             clock.instant().minusSeconds(600), false);
         MailMessageEntity sens = message("ugyfel@bank.example.test", "Példa Bank", null, null,
             clock.instant().minusSeconds(500), true);
-        Instant yesterday = Instant.parse("2026-11-20T08:00:00Z");
-        MailMessageEntity old = message("regi@example.test", "Régi", "Régi levél", "Kitalált régi szöveg.", yesterday, false);
+        Instant tooOld = Instant.parse("2026-11-17T08:00:00Z"); // beyond the last 3 Budapest days
+        MailMessageEntity old = message("regi@example.test", "Régi", "Régi levél", "Kitalált régi szöveg.", tooOld, false);
+        Instant twoDaysAgo = Instant.parse("2026-11-19T08:00:00Z"); // still inside the window
+        MailMessageEntity recent = message("kozel@example.test", "Közel", "Közeli levél", "Kitalált közeli szöveg.",
+            twoDaysAgo, false);
         int c = classifyCalls();
 
         digestService.process(owner, new IntakeResult(null, List.of(), false)); // nothing new, a crash left two behind
@@ -618,10 +634,11 @@ class MailDigestPipelineIT extends AbstractIntegrationTest {
         assertThat(dbItem(sens.getId()).getGrp()).isEqualTo("sensitive");
         assertThat(dbItem(sens.getId()).getTitle()).isEqualTo("Példa Bank");
         assertThat(count("select count(*) from mail_item where message_id = ?", old.getId())).isZero();
+        assertThat(dbItem(recent.getId()).getGrp()).isEqualTo("person");
         assertThat(classifyCalls()).isEqualTo(c);
         // a second pass adds nothing
         digestService.process(owner, new IntakeResult(null, List.of(), false));
-        assertThat(count("select count(*) from mail_item where created_by = ?", owner)).isEqualTo(2);
+        assertThat(count("select count(*) from mail_item where created_by = ?", owner)).isEqualTo(3);
     }
 
     // ---- learning -------------------------------------------------------------------------------------------
@@ -691,5 +708,129 @@ class MailDigestPipelineIT extends AbstractIntegrationTest {
         assertThat(examples.get(0).verdict()).isEqualTo("nem érdekel");
         assertThat(examples.get(1).verdict()).isEqualTo("érdekel");
         assertThat(learning.examples(owner, 1)).hasSize(1);
+    }
+
+    @Test
+    void aReTapBecomesTheLatestTap() {
+        UUID a = dealItem("a@example.test", "Cipő akció");
+        UUID b = dealItem("b@example.test", "Kupon akció");
+        learning.feedback(owner, a, Verdict.NOPE);
+        learning.feedback(owner, b, Verdict.NOPE);
+
+        learning.feedback(owner, a, Verdict.INTEREST); // the first item is tapped again: it is now the newest
+
+        var examples = learning.examples(owner, 8);
+        assertThat(examples.get(0).summary()).contains("Cipő akció");
+        assertThat(examples.get(0).verdict()).isEqualTo("érdekel");
+    }
+
+    // ---- review round 1 ---------------------------------------------------------------------------------------
+
+    private IntakedMail redactedIntaked(String from, String subject, String plain, Instant receivedAt) {
+        RedactedMail red = io.mrkuhne.mezo.feature.mail.service.redact.MailRedactor.redact(plain, null, 6000);
+        MailMessageEntity m = message(from, "GLS", subject, red.text(), receivedAt, false);
+        MailHeaders h = new MailHeaders(from, "GLS", subject, Map.of());
+        String raw = io.mrkuhne.mezo.feature.mail.service.redact.MailRedactor.plainText(plain, null);
+        return new IntakedMail(m.getId(), h, raw, red, MailRules.decide(h, raw, red, List.of()));
+    }
+
+    @Test
+    void maskedParcelUpdatesStayOneParcelAndNeverBecomeOrphans() {
+        IntakedMail first = redactedIntaked("noreply@gls-group.eu", "Csomagod úton van",
+            "Kedves Vevő! A 123456789012 számú GLS csomagod úton van.", clock.instant().minusSeconds(60));
+        assertThat(first.redacted().text()).doesNotContain("123456789012"); // the stored copy is masked
+        process(first);
+
+        clock.set("2026-11-21T12:00:00Z");
+        IntakedMail second = redactedIntaked("noreply@gls-group.eu", "Csomagod megérkezett",
+            "Kedves Vevő! A 123456789012 számú GLS csomagot kézbesítettük.", clock.instant().minusSeconds(60));
+        process(second);
+        // a later run with nothing new: the merged update must not come back as an orphan
+        digestService.process(owner, new IntakeResult(null, List.of(), false));
+
+        assertThat(count("select count(*) from mail_item where created_by = ? and grp = 'parcel'", owner)).isEqualTo(1);
+        assertThat(count("select count(*) from mail_item where created_by = ?", owner)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select parcel_state from mail_item where created_by = ?", String.class, owner))
+            .isEqualTo("delivered");
+        assertThat(count("select count(*) from mail_message where created_by = ? and processed_at is null", owner))
+            .isZero();
+    }
+
+    @Test
+    void countsFollowTheFetchNotTheDateHeader() {
+        clock.set("2026-11-21T09:00:00Z");
+        Instant received = Instant.parse("2026-11-20T21:00:00Z"); // 22:00 Budapest yesterday
+        MailMessageEntity m = message("ismeros@example.test", "Barát", "Szia", "Szia!", received, false);
+        ingestedAt(m, Instant.parse("2026-11-21T07:00:00Z")); // fetched 08:00 Budapest today
+        items.save(row(m, "person", "Barát levele", Instant.parse("2026-11-21T07:00:00Z"),
+            clock.instant().plus(Duration.ofDays(1))));
+
+        MailDigest digest = digest();
+
+        assertThat(digest.arrived()).isEqualTo(1);
+        assertThat(digest.worthAMinute()).isEqualTo(1);
+        assertThat(digest.handled()).isZero().isNotNegative();
+        assertThat(digest.heatSlots()[11]).isEqualTo(1); // the slot is the received hour (22:00)
+        // and the same mail is not part of yesterday's arrivals
+        assertThat(query.digest(owner, LocalDate.of(2026, 11, 20), clock.instant()).arrived()).isZero();
+    }
+
+    @Test
+    void noModelConfiguredIsNotRulesOnly() {
+        var bf = new org.springframework.beans.factory.support.DefaultListableBeanFactory();
+        bf.registerSingleton("clock", clock);
+        MailDigestService noModel = new MailDigestService(itemStore, intakeStore, learning, costCap, mailProps,
+            bf.getBeanProvider(MailClassifierLlm.class), bf.getBeanProvider(java.time.Clock.class));
+        MailMessageEntity a = message("hir@lapok.example.test", "Hírlevél", "Kitalált hírek.");
+        MailMessageEntity b = message("kolléga@example.test", "Levél", "Kitalált szöveg.");
+
+        noModel.process(owner, new IntakeResult(run(), List.of(needsModel(a, true), needsModel(b, false)), false));
+
+        assertThat(dbItem(a.getId()).getGrp()).isEqualTo("rest");
+        assertThat(dbItem(b.getId()).getGrp()).isEqualTo("person");
+        assertThat(count("select count(*) from mail_run where created_by = ? and rules_only", owner)).isZero();
+        MailDigest digest = digest();
+        assertThat(digest.rulesOnly()).isFalse();
+        assertThat(digest.rulesOnlyReason()).isNull();
+    }
+
+    @Test
+    void jsonLdDeadlineIsCleanedAndNeedsACleanScreenToNotify() {
+        llm.screen = user -> Optional.of(user.contains("EVIL") ? "Nem tudom megítélni." : "{\"flagged\":false,\"reason\":\"\"}");
+        Map<String, String> evil = Map.of("paymentDueDate", "2026-11-22", "name", "Fizess itt: https://evil.example/pay");
+        Map<String, String> fine = Map.of("paymentDueDate", "2026-11-22", "name", "Víz számla");
+        MailMessageEntity a = message("szamla@evil.example.test", "Számla EVIL", "x");
+        MailMessageEntity b = message("szamla@viz.example.test", "Számla B", "x");
+        MailHeaders ha = new MailHeaders(a.getFromAddr(), "", "Számla EVIL", Map.of());
+        MailHeaders hb = new MailHeaders(b.getFromAddr(), "", "Számla B", Map.of());
+        RedactedMail empty = new RedactedMail("x", List.of(), List.of());
+
+        process(new IntakedMail(a.getId(), ha, "x", empty, new RuleVerdict.Structured(
+                io.mrkuhne.mezo.feature.mail.service.rules.Group.DEADLINE, evil)),
+            new IntakedMail(b.getId(), hb, "x", empty, new RuleVerdict.Structured(
+                io.mrkuhne.mezo.feature.mail.service.rules.Group.DEADLINE, fine)));
+
+        MailItemEntity bad = dbItem(a.getId());
+        assertThat(bad.getTitle()).doesNotContain("https").doesNotContain("evil.example");
+        assertThat(bad.getScreen()).isEqualTo("unknown");
+        assertThat(dbItem(b.getId()).getScreen()).isEqualTo("clean");
+        Map<String, ItemView> byTitle = new java.util.HashMap<>();
+        digest().deadlines().forEach(v -> byTitle.put(v.title(), v));
+        assertThat(byTitle.get(bad.getTitle()).notifiable()).isFalse();
+        assertThat(byTitle.get(bad.getTitle()).flagged()).isFalse(); // not checked: no warning, never notifies
+        assertThat(byTitle.get("Víz számla").notifiable()).isTrue(); // due tomorrow, cleared
+    }
+
+    @Test
+    void aDeadlineWhoseTimeHasPassedIsNotNotifiable() {
+        clock.set("2026-11-21T09:00:00Z");
+        MailMessageEntity m = message("szamla@example.test", "Számla", "x");
+        MailItemEntity e = row(m, "deadline", "Lejárt számla", Instant.parse("2026-11-20T07:00:00Z"),
+            clock.instant().plus(Duration.ofDays(1)));
+        e.setDueAt(clock.instant().minusSeconds(3600)); // due today 09:00 Budapest-ish: already behind us
+        items.save(e);
+
+        assertThat(digest().deadlines()).hasSize(1);
+        assertThat(digest().deadlines().get(0).notifiable()).isFalse();
     }
 }
