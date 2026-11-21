@@ -15,6 +15,7 @@ import io.mrkuhne.mezo.feature.train.config.VolumeProperties;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.MesocycleActivated;
 import io.mrkuhne.mezo.feature.train.MesocycleClosed;
+import io.mrkuhne.mezo.feature.train.MesocycleStarted;
 import io.mrkuhne.mezo.feature.train.service.CatalogMediaResolver.CatalogMedia;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.port.SeasonGatePort;
@@ -301,6 +302,8 @@ public class TrainService {
             volumeLedger.sync(createdBy, saved.getId());
         }
         yearPlanLinker.linkStarted(createdBy, saved, src.yearBlockId());
+        // Every stamp (mezo-r36n9.113): the season follows the new block AFTER_COMMIT (SeasonBlockLinkListener).
+        eventPublisher.publishEvent(new MesocycleStarted(createdBy, saved.getId(), saved.getStartDate()));
         return assembleResponse(createdBy, saved);
     }
 
@@ -332,6 +335,9 @@ public class TrainService {
             // Real activation only — AFTER_COMMIT consumers (Diet Plan slice 4) see it once this
             // transaction lands.
             eventPublisher.publishEvent(new MesocycleActivated(createdBy, id));
+            // A planned block reaching its day (PlannedBlockStarter) is a start too: the season follows it
+            // (a no-op when its stamp already linked it, mezo-r36n9.113).
+            eventPublisher.publishEvent(new MesocycleStarted(createdBy, id, target.getStartDate()));
         }
         // Unconditional (even when already active): the ledger is idempotent, so activate also
         // backfills the volume log of a run that never had rows.

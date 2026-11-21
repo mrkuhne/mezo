@@ -27,6 +27,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -247,6 +248,34 @@ public class SeasonService {
         return seasonRepository.findByIdAndCreatedBy(id, owner)
             .orElseThrow(() -> new SystemRuntimeErrorException(
                 SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
+    }
+
+    /**
+     * Éves terv (mezo-r36n9.113): a block that just started becomes the season's block — the active season, else the
+     * planned season whose window contains {@code start}, else nothing. The goal gets the block as its newest
+     * {@code goal_plan_link} (the earlier links stay as history) and the draft's block becomes {@code adopt <id>}, so a
+     * later accept never re-starts the old one. A block already linked to that goal (the season's own start) is a
+     * no-op. Goal fields, slots and sleep are untouched. Its own transaction: it runs after the start committed.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void adoptStartedBlock(UUID owner, UUID mesocycleId, LocalDate start) {
+        SeasonEntity s = seasonRepository.findActive(owner)
+            .or(() -> seasonRepository.findByCreatedByAndStatus(owner, SeasonEntity.STATUS_PLANNED).stream()
+                .filter(p -> !p.getStartDate().isAfter(start) && !p.endDate().isBefore(start))
+                .min(java.util.Comparator.comparing(SeasonEntity::getStartDate)))
+            .orElse(null);
+        if (s == null || goalPort.linkedMesocycles(owner, s.getGoalId()).contains(mesocycleId)) {
+            return;
+        }
+        goalPort.link(owner, s.getGoalId(), mesocycleId, start);
+        SeasonDraftJson d = s.getDraft();
+        if (d != null) {
+            s.setDraft(new SeasonDraftJson(d.title(), d.trajectory(), d.targetWeightKg(), d.ratePctPerWeek(),
+                d.kgPerWeek(), d.startDate(), d.weeks(), d.gymDays(), d.gymTime(), d.sport(), d.sleepAnchor(),
+                d.allowedRecipeIds(), new SeasonDraftJson.Block("adopt", mesocycleId, null)));
+            s.setUpdatedAt(Instant.now());
+            seasonRepository.save(s);
+        }
     }
 
     /** The block the draft names: adopt a running one, re-run one, or start one from a template — then link it. */

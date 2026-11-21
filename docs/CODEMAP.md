@@ -1243,11 +1243,12 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `ShoppingItemRepository`, `ShoppingListRepository`
   - **services:** `AdherenceService`, `ExperimentEvaluator`, `ExperimentProposalDetector`, `ExperimentService`,
     `FirstSeasonAssembler`, `MenuContextRenderer`, `MenuJob`, `MenuPlanner`, `MenuService`, `SeasonApiService`,
-    `SeasonContextAdapter`, `SeasonContextRenderer`, `SeasonDayKind`, `SeasonDraftMath`, `SeasonExperimentJob`,
-    `SeasonExperimentSourceAdapter`, `SeasonFingerprint`, `SeasonFormat`, `SeasonGateAdapter`, `SeasonGoalAdapter`,
-    `SeasonInsights`, `SeasonMealAdapter`, `SeasonMenuAdapter`, `SeasonMenuSourceAdapter`, `SeasonMetricsAdapter`,
-    `SeasonOverviewService`, `SeasonPreviewService`, `SeasonRecipeService`, `SeasonService`, `SeasonSleepAdapter`,
-    `SeasonTodoRules`, `SeasonTrainAdapter`, `ShoppingListBuilder`, `ShoppingListService`, `SleepNeedRule`
+    `SeasonBlockLinkListener`, `SeasonContextAdapter`, `SeasonContextRenderer`, `SeasonDayKind`, `SeasonDraftMath`,
+    `SeasonExperimentJob`, `SeasonExperimentSourceAdapter`, `SeasonFingerprint`, `SeasonFormat`, `SeasonGateAdapter`,
+    `SeasonGoalAdapter`, `SeasonInsights`, `SeasonMealAdapter`, `SeasonMenuAdapter`, `SeasonMenuSourceAdapter`,
+    `SeasonMetricsAdapter`, `SeasonOverviewService`, `SeasonPreviewService`, `SeasonRecipeService`, `SeasonService`,
+    `SeasonSleepAdapter`, `SeasonTodoRules`, `SeasonTrainAdapter`, `ShoppingListBuilder`, `ShoppingListService`,
+    `SleepNeedRule`
   - **controllers→contract:** `SeasonController`→`SeasonApi`
   - **mappers:** `SeasonMapper`
   - **config:** `SeasonProperties`
@@ -1266,10 +1267,10 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     GET /api/seasons/experiments · POST /api/seasons/experiments · POST /api/seasons/experiments/{id}/start ·
     PUT /api/seasons/experiments/{id}/days · POST /api/seasons/experiments/{id}/dismiss ·
     POST /api/seasons/experiments/{id}/keep
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/season` — 13 IT + 9 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/season` — 14 IT + 9 unit
   - **ITs:** `AdherenceServiceIT`, `ExperimentApiIT`, `ExperimentServiceIT`, `MenuServiceIT`, `MesocycleGateIT`,
-    `SeasonApiIT`, `SeasonInsightsIT`, `SeasonMenuApiIT`, `SeasonOverviewIT`, `SeasonPortsIT`, `SeasonPreviewIT`,
-    `SeasonRepositoryIT`, `SeasonServiceIT`
+    `SeasonApiIT`, `SeasonBlockRelinkIT`, `SeasonInsightsIT`, `SeasonMenuApiIT`, `SeasonOverviewIT`, `SeasonPortsIT`,
+    `SeasonPreviewIT`, `SeasonRepositoryIT`, `SeasonServiceIT`
   - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPopulator`, `JournalPopulator`,
     `MealPopulator`, `MesoTemplatePopulator`, `PantryItemPopulator`, `PlannedSkipPopulator`, `ProtocolPopulator`,
     `RecipePopulator`, `RecoveryPeriodPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`, `TrainPopulator`,
@@ -1342,10 +1343,10 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `TrainTechniqueProperties`, `VolumeProperties`, `YearPlanProperties`
   - **events/listeners:** `MesocycleClosed`
   - **other:** `ClosingBlockGate`, `ExerciseCatalogLoader`, `GymExerciseJson`, `HypertrophyDriveGate`,
-    `MesoContextJson`, `MesoDayJson`, `MesoReportJson`, `MesoReviewGate`, `MesocycleActivated`, `ProvenanceEnvelope`,
-    `RestoreEntryJson`, `RunningBlockStructure`, `RunningSeedData`, `SeasonGatePort`, `TrainSeedData`,
-    `VolumeAmountMigrationRunner`, `VolumeBaselineJson`, `VolumeProgressionGate`, `VolumeRecomputeJson`,
-    `WeekProposalGroupJson`, `WeekProposalLineJson`
+    `MesoContextJson`, `MesoDayJson`, `MesoReportJson`, `MesoReviewGate`, `MesocycleActivated`, `MesocycleStarted`,
+    `ProvenanceEnvelope`, `RestoreEntryJson`, `RunningBlockStructure`, `RunningSeedData`, `SeasonGatePort`,
+    `TrainSeedData`, `VolumeAmountMigrationRunner`, `VolumeBaselineJson`, `VolumeProgressionGate`,
+    `VolumeRecomputeJson`, `WeekProposalGroupJson`, `WeekProposalLineJson`
 - **Contract** `api/feature/train/train-readiness.yml` — 3 operations
   - **endpoints:** GET /api/train/readiness/today · POST /api/train/readiness/today ·
     DELETE /api/train/readiness/today
