@@ -1406,5 +1406,15 @@
     ],
     "mit_kapsz": "Ha a vasárnapi menü valamiért nem készül el, a szerver nem ismétli percenként ugyanazt a hibaüzenetet.",
     "szulo": "mezo-r36n9.16"
+  },
+  "mezo-r36n9.134": {
+    "cim": "Tervajánló apró pótlások",
+    "tipus": "Apróságok",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Kisebb csiszolások a tervajánló után: az eldobott új blokk minden nyoma eltűnik, a jelöltek gyorsabban számolódnak, és a heti keret jelzése frissítés közben sem téved.",
+    "munkamenet": "Muscle Ladder implementation"
   }
 }

@@ -720,7 +720,7 @@
     },
     "kezikonyv:07-edzes/02-mezociklus-terv": {
       "page_id": "4168968e-752b-81c0-9ca3-e89afff341e8",
-      "hash": "8a51e9486ab6"
+      "hash": "900b4a042d32"
     },
     "kezikonyv:07-edzes/03-edzeslejatszo": {
       "page_id": "4168968e-752b-8153-a900-cd5b2e535717",
@@ -1176,7 +1176,7 @@
     },
     "kezikonyv:07-edzes/14-edzesstilus": {
       "page_id": "41c8968e-752b-81c4-a675-e42be7ead430",
-      "hash": "a4642a7ab4a8"
+      "hash": "5e40cf8e7b11"
     },
     "jegyek:mezo-r36n9.90": {
       "page_id": "41c8968e-752b-8184-90df-f39bbc3d1d5c",
@@ -1228,7 +1228,7 @@
     },
     "kezikonyv:07-edzes/16-blokk-epito": {
       "page_id": "41d8968e-752b-81cc-818e-dc11d0726e8f",
-      "hash": "b045bce4acee"
+      "hash": "1de65296ab9b"
     },
     "kiadasok:78e52679e": {
       "page_id": "41d8968e-752b-8127-9b15-d0288d125bd0",
@@ -1412,7 +1412,7 @@
     },
     "jegyek:mezo-r36n9.113": {
       "page_id": "41e8968e-752b-8145-b144-e62b83f8070b",
-      "hash": "53e086e4568f"
+      "hash": "e47b214060a8"
     },
     "dontesek:d-2026-11-20-csere-kimeles": {
       "page_id": "41e8968e-752b-8121-9368-ccaea7c1e215",
@@ -2731,7 +2731,7 @@
       "hash": "9987cf826899"
     },
     "jegyek:mezo-r36n9.132": {
-      "page_id": "41f8968e-752b-8131-8e69-d1d0a74de5eb",
+      "page_id": "41f8968e-752b-814b-a0bd-fa62a2ee50f4",
       "hash": "45e99f7b7ea5"
     },
     "kiadasok:c0f3ad0ba": {
@@ -2739,7 +2739,7 @@
       "hash": "7e16c11853e0"
     },
     "kezikonyv:04-terv/09-heti-menu": {
-      "page_id": "41f8968e-752b-8199-baa1-c42c889faf23",
+      "page_id": "41f8968e-752b-81ab-9fad-e4404d499e3a",
       "hash": "893974ee6ad1"
     },
     "funkciok:season-heti-menu": {
@@ -2749,6 +2749,62 @@
     "funkciok:season-bevasarlolista": {
       "page_id": "41f8968e-752b-81b1-ac90-c676bf1fb4bf",
       "hash": "2f2a436fad87"
+    },
+    "jegyek:mezo-r36n9.134": {
+      "page_id": "41f8968e-752b-8130-b1ec-ed2cf338cde5",
+      "hash": "ca7f440ad189"
+    },
+    "dontesek:d-2026-11-20-boop-javasol-tervet": {
+      "page_id": "41f8968e-752b-8144-be2b-cf5bb7b39d08",
+      "hash": "b3e204602e95"
+    },
+    "dontesek:d-2026-11-20-boop-eves-tervet-keszit": {
+      "page_id": "41f8968e-752b-8105-9c84-c24c227089f5",
+      "hash": "747b45e11374"
+    },
+    "dontesek:d-2026-11-20-eves-terkep-elore": {
+      "page_id": "41f8968e-752b-811e-9ad9-df7926814a0a",
+      "hash": "f6da65e5e895"
+    },
+    "dontesek:d-2026-11-20-sajat-eves-terkep": {
+      "page_id": "41f8968e-752b-81f9-b6e4-fc883824191e",
+      "hash": "5112683345c9"
+    },
+    "dontesek:d-2026-11-20-negy-resz-sorrend": {
+      "page_id": "41f8968e-752b-813c-b356-cde936db7fba",
+      "hash": "b3b0fc21d1c7"
+    },
+    "dontesek:d-2026-11-20-uj-blokk-az-evadhoz": {
+      "page_id": "41f8968e-752b-8163-8103-d3c1cb88e115",
+      "hash": "b13af210d515"
+    },
+    "dontesek:d-2026-11-20-ev-vegen-konnyu-tartas": {
+      "page_id": "41f8968e-752b-81d0-bea2-e35a8308598b",
+      "hash": "2a865809f3bb"
+    },
+    "dontesek:d-2026-11-20-heti-keret-max-ket-hangsuly": {
+      "page_id": "41f8968e-752b-81a6-b144-f14a8b1d6676",
+      "hash": "13e952c6800e"
+    },
+    "dontesek:d-2026-11-20-csak-hibatlan-jelolt": {
+      "page_id": "41f8968e-752b-8182-83fd-c5adf898f702",
+      "hash": "9d2b22e045e9"
+    },
+    "dontesek:d-2026-11-21-realisabb-bemelegites": {
+      "page_id": "41f8968e-752b-8130-83c7-f506d6db9ca1",
+      "hash": "8790471ea9e7"
+    },
+    "dontesek:d-2026-11-21-tartas-a-sav-aljarol": {
+      "page_id": "41f8968e-752b-816a-97f7-f28bdde9ffb1",
+      "hash": "ff407e5b9499"
+    },
+    "kiadasok:08d505bf4": {
+      "page_id": "41f8968e-752b-8178-94f5-c80b9edf3eec",
+      "hash": "e8b192c86017"
+    },
+    "kezikonyv:07-edzes/18-uj-blokk-tervjeloltek": {
+      "page_id": "41f8968e-752b-81d6-a72c-c6ba650c00ef",
+      "hash": "ea9b67903ad4"
     }
   }
 }

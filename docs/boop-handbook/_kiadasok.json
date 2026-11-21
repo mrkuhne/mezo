@@ -731,5 +731,20 @@
       "mezo-r36n9.16"
     ],
     "mi_valtozott": "Az Évad oldal Menü és Lista füle él. Kiválasztod, melyik receptjeidből álljon a menü, és Boop vasárnap este összeállítja a jövő hetet: edzésnapon többet, pihenőnapon kevesebbet, az adagokat az étkezések keretéhez igazítva, ugyanaz a vacsora három napon belül nem ismétlődik, sportnapon „Röplabda előtt” uzsonnával. Bármelyik ételt lecserélheted, kérhetsz másik menüt, és ha jóváhagyod, ezek az ételek jönnek javaslatként az Étel napi tervében. A jóváhagyott menüből bevásárlólista készül polcok szerint, mennyiségekkel és azzal, melyik ételhez kell (például „Csirkemell · 1,4 kg”); pipálható, a szokásos tételek (például kávé, olívaolaj) csak koppintásra kerülnek fel, megosztható szövegként, és a korábbi listák megmaradnak. Ha hét közben módosítasz az évadon, a hátralévő napok igazodnak, a lista pedig mutatja, mi változott. Vasárnap este a Ma falon kártya jelzi, ha jóváhagyásra vár a menü."
+  },
+  "08d505bf4": {
+    "cim": "Tervajánló: új blokk a telefonon, csak hibátlan tervjelöltekkel",
+    "datum": "2026-11-21",
+    "verzio": "v3.29.0",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app",
+      "Háttérrendszer"
+    ],
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.113"
+    ],
+    "mi_valtozott": "Az Edzés oldalon most már új blokkot is indíthatsz. Megadod a hetek számát, az edzés hosszát és hogy melyik izom kapjon Hangsúlyt, Építést vagy Tartást; Boop két-három felosztást mutat (például Felső / Alsó vagy Teljes test), mindegyiknél a napi becsült perceket és azt, miért jó. Csak olyan tervet ajánl, ami minden szabálynak megfelel: minden izom hetente legalább kétszer kap kemény sorozatot, minden nap belefér az időbe, és egy izom sem kap két egymást követő napon nagy adagot. Ha semmi nem fér bele, megmondja, min múlik (több idő, egy izommal kevesebb Hangsúly, több nap). A heti keret mutatja, mennyi fér az idődbe, egyszerre legfeljebb 2 izom lehet Hangsúlyon, és a Tartás most valóban a megtartó adag (a növelő adag kb. harmada). A becsült idő a sorozatok közti pihenőt is számolja, bemelegítés csak az izom első nehéz gyakorlata elé kerül, és minden izomnál ott a „miért?”. Egy frissen indított blokk egy gombbal eldobható. Például: 4 nap × 60 percbe egy Hangsúlyos izom és a többi Tartáson belefér."
   }
 }
