@@ -133,6 +133,31 @@ struct EvesTervKitTests {
         #expect(evesNextYearStart(plan(), today: late, calendar: cal) == "2027-10-11")
     }
 
+    @Test func unlinkedBannerTakesTheTitlesArticle() {
+        func u(_ title: String) -> WireYearUnlinked {
+            try! JSONDecoder().decode(WireYearUnlinked.self, from: Data(#"{"mesocycleId":"m","title":"\#(title)","startDate":"2026-11-02"}"#.utf8))
+        }
+        #expect(evesUnlinkedText(u("Erő alapozás")) == "Az „Erő alapozás” nov. 2-től fut, de egyik éves blokkhoz sincs kötve.")
+        #expect(evesUnlinkedText(u("Nyári blokk")) == "A „Nyári blokk” nov. 2-től fut, de egyik éves blokkhoz sincs kötve.")
+    }
+
+    /// -tól/-től (and -ból/-ből) for every number 1…99, by how it ends when said aloud.
+    @Test func suffixFollowsTheSpokenEndingForEveryNumber() {
+        let onesTol: Set<Int> = [3, 6, 8]          // három, hat, nyolc
+        let tensTol: Set<Int> = [2, 3, 6, 8]       // húsz, harminc, hatvan, nyolcvan
+        for n in 1...99 {
+            let ones = n % 10, tens = n / 10
+            let back = ones == 0 ? tensTol.contains(tens) : onesTol.contains(ones)
+            #expect(evesTolTol(n) == (back ? "tól" : "től"), "\(n)")
+            #expect(evesBolBol(n) == (back ? "ból" : "ből"), "\(n)")
+        }
+        #expect(evesTolTol(10) == "től")
+        #expect(evesTolTol(40) == "től")
+        #expect(evesTolTol(60) == "tól")
+        #expect(evesBolBol(80) == "ból")
+        #expect(evesBolBol(90) == "ből")
+    }
+
     @Test func yearErrorsSpeakHisLanguage() {
         #expect(evesErrorText(.conflict("TRAIN_YEAR_BLOCK_LOCKED")) == "Ez a blokk már fut vagy lezárult, ezért nem változhat.")
         #expect(evesErrorText(.offline) == planErrorText(.offline))

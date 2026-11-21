@@ -564,7 +564,7 @@ struct EdzesRoom: View {
             NKMenuItem(glyph: "plus-ink", name: "Egyedi edzés", sub: "Saját összeállítás") { toast = soonToast("Egyedi edzés") },
             NKMenuItem(glyph: "dumbbell-ink", name: "Gyakorlatok", sub: "A saját súlyaiddal") { selected = EdzesTab.gyakorlatok.rawValue },
             NKMenuItem(glyph: "book-sage", name: "Előzmények", sub: "Minden eddigi edzés") { selected = EdzesTab.elozmenyek.rawValue },
-        ] + (plan != nil ? [NKMenuItem(glyph: "chart-deep", name: "Éves terv", sub: "Az év blokkjai, előre") { openYearPlan() }] : []),
+        ] + (plan != nil ? [NKMenuItem(glyph: "sun-ink", name: "Éves terv", sub: "Az év blokkjai, előre") { openYearPlan() }] : []),
         hue: hue)
     }
 

@@ -84,6 +84,20 @@ struct EvesTervTerkep: View {
             }
         }
         .task { if model.phase == .loading { await model.load() } }
+        // At page level, not inside the ready branch: a phase change (a reload, a failed edit) never closes them.
+        .sheet(item: Binding(get: { sheetBlock.map(EvesSheetID.init) }, set: { sheetBlock = $0?.id })) { s in
+            EvesTervBlokkSheet(model: model, blockId: s.id)
+                .presentationDetents([.large])
+                .presentationBackground(NK.ground)
+                .presentationCornerRadius(34)
+                .presentationDragIndicator(.visible)
+        }
+        .confirmationDialog("Lezárod az éves tervet?", isPresented: $confirmArchive, titleVisibility: .visible) {
+            Button("Lezárom", role: .destructive) { Task { await model.archive() } }
+            Button("Mégsem", role: .cancel) {}
+        } message: {
+            Text("A blokkjaid és az edzéseid megmaradnak, csak a térkép tűnik el. Később újat készíthetsz.")
+        }
         .preferredColorScheme(.dark)
     }
 
@@ -125,19 +139,6 @@ struct EvesTervTerkep: View {
             .scrollPosition($position)
             .scrollIndicators(.hidden)
             .modifier(EvesInitialScroll(position: $position))
-        }
-        .sheet(item: Binding(get: { sheetBlock.map(EvesSheetID.init) }, set: { sheetBlock = $0?.id })) { s in
-            EvesTervBlokkSheet(model: model, blockId: s.id)
-                .presentationDetents([.large])
-                .presentationBackground(NK.ground)
-                .presentationCornerRadius(34)
-                .presentationDragIndicator(.visible)
-        }
-        .confirmationDialog("Lezárod az éves tervet?", isPresented: $confirmArchive, titleVisibility: .visible) {
-            Button("Lezárom", role: .destructive) { Task { await model.archive() } }
-            Button("Mégsem", role: .cancel) {}
-        } message: {
-            Text("A blokkjaid és az edzéseid megmaradnak, csak a térkép tűnik el. Később újat készíthetsz.")
         }
     }
 
@@ -249,7 +250,7 @@ struct EvesTervTerkep: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("A futó blokkod nincs az éves tervben").nkFont(15, .semibold).foregroundStyle(planWarn)
                         .fixedSize(horizontal: false, vertical: true)
-                    Text("A „\(u.title)” \(evesFrom(u.startDate)) fut, de egyik éves blokkhoz sincs kötve.")
+                    Text(evesUnlinkedText(u))
                         .nkFont(13).foregroundStyle(.white.opacity(0.8)).fixedSize(horizontal: false, vertical: true)
                 }
             }

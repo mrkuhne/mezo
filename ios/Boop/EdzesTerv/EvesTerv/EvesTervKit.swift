@@ -28,6 +28,12 @@ func evesMonth(_ ymd: String) -> String {
     return evesMonths[p.month - 1]
 }
 
+/// The unlinked-block banner's sentence: „Az „Erő alapozás” nov. 2-től fut, de egyik éves blokkhoz sincs kötve.”
+func evesUnlinkedText(_ u: WireYearUnlinked) -> String {
+    let article = evesArticle(u.title).capitalized
+    return "\(article) „\(u.title)” \(evesFrom(u.startDate)) fut, de egyik éves blokkhoz sincs kötve."
+}
+
 /// „dec. 14-től" — the date with the right „-tól / -től" for the day's number.
 func evesFrom(_ ymd: String) -> String {
     guard let p = evesParts(ymd) else { return ymd }
@@ -37,10 +43,11 @@ func evesFrom(_ ymd: String) -> String {
 /// „-tól" or „-től" after a day number, by how the number ends when said aloud (egy-től, három-tól, tíz-től, húsz-tól).
 func evesTolTol(_ n: Int) -> String {
     let ones = n % 10
+    if n > 0 && n % 100 == 0 { return "tól" } // száz
     if ones == 0 {
         switch (n / 10) % 10 {
-        case 2, 3: return "tól" // húsz, harminc
-        default: return "től"   // tíz
+        case 2, 3, 6, 8: return "tól" // húsz, harminc, hatvan, nyolcvan
+        default: return "től"         // tíz, negyven, ötven, hetven, kilencven
         }
     }
     switch ones {

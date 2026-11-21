@@ -137,7 +137,7 @@ struct EvesTervBlokkSheet: View {
             UjBlokkLabel("Kihagyás")
             if status == .skipped {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Ezt a blokkot kihagyod; a többi a helyére jött.").nkFont(13.5).foregroundStyle(.white.opacity(0.8))
+                    Text("Ezt a blokkot kihagytad; a következők előrébb jöttek.").nkFont(13.5).foregroundStyle(.white.opacity(0.8))
                         .fixedSize(horizontal: false, vertical: true)
                     Button { if let id = block.id { Task { await model.skip(id, false) } } } label: {
                         Text("Visszaveszem").nkFont(15, .semibold).foregroundStyle(.white)
@@ -161,8 +161,8 @@ struct EvesTervBlokkSheet: View {
                                 Text(lostTitle(lost)).nkFont(15, .semibold).foregroundStyle(planWarn)
                                     .fixedSize(horizontal: false, vertical: true)
                                 Text(lost.count == 1
-                                     ? "Ha kihagyod ezt a blokkot, idén egyik másik blokk sem teszi fókuszba: egész évben Tartáson marad."
-                                     : "Ha kihagyod ezt a blokkot, idén egyik másik blokk sem teszi fókuszba őket: egész évben Tartáson maradnak.")
+                                     ? "Ha kihagyod ezt a blokkot, idén más blokk nem teszi fókuszba: egész évben Tartáson marad."
+                                     : "Ha kihagyod ezt a blokkot, idén más blokk nem teszi fókuszba őket: egész évben Tartáson maradnak.")
                                     .nkFont(13).foregroundStyle(.white.opacity(0.8)).fixedSize(horizontal: false, vertical: true)
                             }
                         }
@@ -181,10 +181,10 @@ struct EvesTervBlokkSheet: View {
         }
     }
 
-    /// „A vádli idén nem kap fókuszt" / „A vádli és a far idén nem kap fókuszt".
+    /// „A vádli idén nem kapna fókuszt" / „A vádli és a far idén nem kapna fókuszt" (if he skipped it).
     private func lostTitle(_ lost: [String]) -> String {
         let list = evesList(lost)
-        return list.prefix(1).uppercased() + list.dropFirst() + " idén nem kap fókuszt"
+        return list.prefix(1).uppercased() + list.dropFirst() + " idén nem kapna fókuszt"
     }
 
     private func moveButton(left: Bool, _ title: String, enabled: Bool, action: @escaping () -> Void) -> some View {

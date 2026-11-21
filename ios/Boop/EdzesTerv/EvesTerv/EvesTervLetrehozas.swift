@@ -44,7 +44,7 @@ struct EvesTervLetrehozas: View {
                         .padding(.horizontal, 22).padding(.top, 10)
                         .background(NK.ground.opacity(0.95))
                 }
-                UjBlokkBottomBar(title: model.saving ? "Mentem…" : "Elfogadom", enabled: model.preview != nil && !model.saving) {
+                UjBlokkBottomBar(title: model.saving ? "Mentem…" : "Elfogadom", enabled: model.preview != nil && model.previewError == nil && !model.saving) {
                     Task {
                         await model.accept(replaceActive: replaceActive)
                         if model.actionError == nil, case .ready = model.phase { onCreated() }
