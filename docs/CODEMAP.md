@@ -20,7 +20,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 | [auth](#auth) | ✓ | 2 | [_platform-auth-security](features/_platform-auth-security.md), [_platform-language](features/_platform-language.md) |
 | [biometrics](#biometrics) | ✓ | 6 | [me](features/me.md) |
 | [boop](#boop) | ✓ | 1 | [boop-ios](features/boop-ios.md), [capacity](features/capacity.md) |
-| [capacity](#capacity) | ✓ | · | [capacity](features/capacity.md) |
+| [capacity](#capacity) | ✓ | 1 | [capacity](features/capacity.md) |
 | [character](#character) | ✓ | 1 | [character](features/character.md) |
 | [companion](#companion) | ✓ | 5 | [character](features/character.md), [companion](features/companion.md), [dayclose](features/dayclose.md), [journal](features/journal.md), [lifegoal](features/lifegoal.md), [me](features/me.md), [penz](features/penz.md), [today](features/today.md), [_platform-language](features/_platform-language.md) |
 | [dayclose](#dayclose) | ✓ | 1 | [boop-ios](features/boop-ios.md), [dayclose](features/dayclose.md) |
@@ -164,7 +164,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### capacity
 
-*BE* · read next: [docs/features/capacity.md](features/capacity.md) (updated 2026-11-21, in-progress)
+*BE + API* · read next: [docs/features/capacity.md](features/capacity.md) (updated 2026-11-21, in-progress)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/capacity`
   - **sub-features:** `port`
@@ -175,13 +175,20 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `CapacityProposalRepository`, `DayAdjustmentRepository`
   - **services:** `BoopCapacityAdapter`, `CapacityCalculator`, `CapacityCalendarAdapter`, `CapacityCheckinAdapter`,
     `CapacityDay`, `CapacityDayService`, `CapacityMealAdapter`, `CapacityMetricsAdapter`, `CapacityReasonFacts`,
-    `CapacitySleepAdapter`, `CapacityTrainAdapter`, `DemandCalculator`, `EventScore`, `EventScoringRunner`,
-    `EventScoringService`, `LearningState`, `RuleEventScore`, `Verdicts`
+    `CapacitySeasonAdapter`, `CapacitySleepAdapter`, `CapacityTrainAdapter`, `DemandCalculator`,
+    `EventFeedbackService`, `EventScore`, `EventScoringRunner`, `EventScoringService`, `LearningState`,
+    `RuleEventScore`, `SeasonLoadModel`, `SeasonLoadService`, `Verdicts`
+  - **controllers→contract:** `CapacityController`→`CapacityApi`
+  - **mappers:** `CapacitySeasonMapper`
   - **config:** `CapacityProperties`
   - **other:** `AdjustmentKind`, `CapacityCalendarPort`, `CapacityCheckinPort`, `CapacityMealPort`,
-    `CapacityMetricsPort`, `CapacitySleepPort`, `CapacityTrainPort`, `FeedbackEffect`, `ScoreSource`
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/capacity` — 4 IT + 7 unit
-  - **ITs:** `CapacityDayServiceIT`, `CapacityRepositoryIT`, `EventScoringBackgroundIT`, `EventScoringServiceIT`
+    `CapacityMetricsPort`, `CapacitySeasonPort`, `CapacitySleepPort`, `CapacityTrainPort`, `FeedbackEffect`,
+    `ScoreSource`
+- **Contract** `api/feature/capacity/capacity.yml` — 2 operations
+  - **endpoints:** PUT /api/capacity/event-feedback · GET /api/capacity/season
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/capacity` — 6 IT + 8 unit
+  - **ITs:** `CapacityDayServiceIT`, `CapacityFeedbackIT`, `CapacityRepositoryIT`, `CapacitySeasonIT`,
+    `EventScoringBackgroundIT`, `EventScoringServiceIT`
   - **populators:** `CalendarEventPopulator`, `DailyMetricPopulator`, `DatabasePopulator`, `RecoveryPeriodPopulator`,
     `SleepLogPopulator`, `TrainPopulator`
 
@@ -1490,7 +1497,6 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 Sources that could not be bound to a feature block by convention — bind them by adding the missing controller/`key_files` entry, or read them directly.
 
-- **Contract fragment** `api/feature/capacity/capacity.yml` — tags (none); no backend controller implements the matching `<Tag>Api`
 - **Feature doc** [`docs/features/_platform-api-backend.md`](features/_platform-api-backend.md) — its `key_files` point outside any single feature package
 - **Features with no `docs/features/` doc:** `medication`
   There is no HOW doc for these — read the code, and write the doc when you touch them (AGENTS.md §Documentation).
