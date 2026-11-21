@@ -19,7 +19,8 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 | [appnotification](#appnotification) | ✓ | 1 | [_platform-notifications](features/_platform-notifications.md) |
 | [auth](#auth) | ✓ | 2 | [_platform-auth-security](features/_platform-auth-security.md), [_platform-language](features/_platform-language.md) |
 | [biometrics](#biometrics) | ✓ | 6 | [me](features/me.md) |
-| [boop](#boop) | ✓ | 1 | [boop-ios](features/boop-ios.md) |
+| [boop](#boop) | ✓ | 1 | [boop-ios](features/boop-ios.md), [capacity](features/capacity.md) |
+| [capacity](#capacity) | ✓ | · | [capacity](features/capacity.md) |
 | [character](#character) | ✓ | 1 | [character](features/character.md) |
 | [companion](#companion) | ✓ | 5 | [character](features/character.md), [companion](features/companion.md), [dayclose](features/dayclose.md), [journal](features/journal.md), [lifegoal](features/lifegoal.md), [me](features/me.md), [penz](features/penz.md), [today](features/today.md), [_platform-language](features/_platform-language.md) |
 | [dayclose](#dayclose) | ✓ | 1 | [boop-ios](features/boop-ios.md), [dayclose](features/dayclose.md) |
@@ -43,7 +44,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 | [ritual](#ritual) | ✓ | 1 | [ritual](features/ritual.md) |
 | [season](#season) | ✓ | 1 | [season](features/season.md) |
 | [train](#train) | ✓ | 5 | [fuel](features/fuel.md), [goal-engine](features/goal-engine.md), [season](features/season.md), [train](features/train.md) |
-| [wearable](#wearable) | ✓ | 1 | [boop-ios](features/boop-ios.md) |
+| [wearable](#wearable) | ✓ | 1 | [boop-ios](features/boop-ios.md), [capacity](features/capacity.md) |
 
 ## Features
 
@@ -136,7 +137,8 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### boop
 
-*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-21, in-progress)
+*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-21, in-progress) ·
+  [docs/features/capacity.md](features/capacity.md) (updated 2026-11-21, in-progress)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/boop`
   - **sub-features:** `port`
@@ -147,17 +149,41 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   - **controllers→contract:** `BoopController`→`BoopApi`
   - **mappers:** `BoopBriefMapper`
   - **config:** `BoopProperties`
-  - **other:** `SeasonContextPort`
+  - **other:** `BoopCapacityPort`, `SeasonContextPort`
 - **Contract** `api/feature/boop/boop.yml` — 4 operations
   - **endpoints:** GET /api/boop/brief · POST /api/boop/brief/regenerate · PUT /api/boop/session-time ·
     DELETE /api/boop/session-time
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/boop` — 9 IT + 6 unit
-  - **ITs:** `BoopBriefConcurrencyIT`, `BoopBriefLateWordsIT`, `BoopBriefServiceIT`, `BoopContractIT`,
-    `BoopDayAssemblerIT`, `BoopRepositoriesIT`, `BoopSessionDoneIT`, `BoopVerdictWriterIT`, `SessionTimeIT`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/boop` — 11 IT + 8 unit
+  - **ITs:** `BoopBriefCapacityIT`, `BoopBriefCapacityOffIT`, `BoopBriefConcurrencyIT`, `BoopBriefLateWordsIT`,
+    `BoopBriefServiceIT`, `BoopContractIT`, `BoopDayAssemblerIT`, `BoopRepositoriesIT`, `BoopSessionDoneIT`,
+    `BoopVerdictWriterIT`, `SessionTimeIT`
   - **populators:** `BoopBriefPopulator`, `CalendarEventPopulator`, `CheckInPopulator`, `DailyMetricPopulator`,
     `DatabasePopulator`, `IntentionPopulator`, `MealPopulator`, `PatternPopulator`, `RecoveryPeriodPopulator`,
     `SleepGoalPopulator`, `SleepLogPopulator`, `TrainPopulator`, `WearableWorkoutPopulator`, `WeightLogPopulator`,
     `WorkoutTimeOverridePopulator`
+
+### capacity
+
+*BE* · read next: [docs/features/capacity.md](features/capacity.md) (updated 2026-11-21, in-progress)
+
+- **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/capacity`
+  - **sub-features:** `port`
+  - **entities→tables:** `CalendarEventScoreEntity`→`calendar_event_score`,
+    `CapacityEventFeedbackEntity`→`capacity_event_feedback`, `CapacityPatternEntity`→`capacity_pattern`,
+    `CapacityProposalEntity`→`capacity_proposal`, `DayAdjustmentEntity`→`day_adjustment`
+  - **repositories:** `CalendarEventScoreRepository`, `CapacityEventFeedbackRepository`, `CapacityPatternRepository`,
+    `CapacityProposalRepository`, `DayAdjustmentRepository`
+  - **services:** `BoopCapacityAdapter`, `CapacityCalculator`, `CapacityCalendarAdapter`, `CapacityCheckinAdapter`,
+    `CapacityDay`, `CapacityDayService`, `CapacityMealAdapter`, `CapacityMetricsAdapter`, `CapacityReasonFacts`,
+    `CapacitySleepAdapter`, `CapacityTrainAdapter`, `DemandCalculator`, `EventScore`, `EventScoringRunner`,
+    `EventScoringService`, `LearningState`, `RuleEventScore`, `Verdicts`
+  - **config:** `CapacityProperties`
+  - **other:** `AdjustmentKind`, `CapacityCalendarPort`, `CapacityCheckinPort`, `CapacityMealPort`,
+    `CapacityMetricsPort`, `CapacitySleepPort`, `CapacityTrainPort`, `FeedbackEffect`, `ScoreSource`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/capacity` — 4 IT + 7 unit
+  - **ITs:** `CapacityDayServiceIT`, `CapacityRepositoryIT`, `EventScoringBackgroundIT`, `EventScoringServiceIT`
+  - **populators:** `CalendarEventPopulator`, `DailyMetricPopulator`, `DatabasePopulator`, `RecoveryPeriodPopulator`,
+    `SleepLogPopulator`, `TrainPopulator`
 
 ### character
 
@@ -1386,16 +1412,17 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### wearable
 
-*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-21, in-progress)
+*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-21, in-progress) ·
+  [docs/features/capacity.md](features/capacity.md) (updated 2026-11-21, in-progress)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/wearable`
   - **entities→tables:** `CalendarEventEntity`→`calendar_event`, `DailyMetricEntity`→`daily_metric`,
     `HealthSampleEntity`→`health_sample`, `WearableWorkoutEntity`→`wearable_workout`
   - **repositories:** `CalendarEventRepository`, `DailyMetricRepository`, `HealthSampleRepository`,
     `WearableWorkoutRepository`
-  - **services:** `CalendarSnapshotService`, `DailyMetricService`, `HealthSampleService`, `WearableBatches`,
-    `WearableCheckInBiomarkerSource`, `WearableDeletionService`, `WearableSleepService`, `WearableWorkoutService`,
-    `WorkoutReconciler`
+  - **services:** `CalendarDaysReplacedEvent`, `CalendarSnapshotService`, `DailyMetricService`, `HealthSampleService`,
+    `WearableBatches`, `WearableCheckInBiomarkerSource`, `WearableDeletionService`, `WearableSleepService`,
+    `WearableWorkoutService`, `WorkoutReconciler`
   - **controllers→contract:** `WearableController`→`WearableApi`
   - **config:** `WearableProperties`
 - **Contract** `api/feature/wearable/wearable.yml` — 6 operations
@@ -1456,6 +1483,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 Sources that could not be bound to a feature block by convention — bind them by adding the missing controller/`key_files` entry, or read them directly.
 
+- **Contract fragment** `api/feature/capacity/capacity.yml` — tags (none); no backend controller implements the matching `<Tag>Api`
 - **Feature doc** [`docs/features/_platform-api-backend.md`](features/_platform-api-backend.md) — its `key_files` point outside any single feature package
 - **Features with no `docs/features/` doc:** `medication`
   There is no HOW doc for these — read the code, and write the doc when you touch them (AGENTS.md §Documentation).
