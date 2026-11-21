@@ -169,7 +169,9 @@ modify `ResetDatabase.java`, messages. Test `feature/capacity/CapacityRepository
 String kind, double confidence, String source)`; `RuleEventScore.score(CalendarEventView e): EventScore`;
 `EventScoringService.scoresFor(UUID owner, LocalDate from, LocalDate to): Map<UUID, EventScore>` (scores missing/changed
 events in one cheap-tier batch via `ObjectProvider<CompanionLlm>` + `LlmCallContext` feature `capacity_event_score`,
-8 s timeout, rule fallback; feedback rows override the three components: `drains` → max(component,2) on its main
+45 s timeout, background only — final fix: `EventScoringRunner` runs it after a calendar PUT
+(`CalendarDaysReplacedEvent`, AFTER_COMMIT + `@Async`, single-flight per owner) for today..today+8; the day read uses
+`storedOrRule` and never waits; rule fallback, all-day events always rule; feedback rows override the three components: `drains` → max(component,2) on its main
 component, `feeds` → `restores=true`, all components ≤1, `neutral` → all ≤1); `inputHash(e)` = SHA-256 over title, start,
 end, attendeeNames, location, notes.
 
@@ -265,7 +267,8 @@ LLM may rephrase `reason`, falls back to the rule text.
 
 **Kész, ha… (K1)**
 - [ ] `calendar_event` rows in prod for today+8 carry attendee/location/notes fields (SELECT count, no content copied).
-- [ ] `calendar_event_score` has rows for this week's events; `source='llm'` for most; a forced quota error gives `rule`.
+- [ ] `calendar_event_score` has rows for the today..today+8 events (scored in the background after a calendar PUT, never
+  on the brief request); `source='llm'` for most; a forced quota error gives `rule`; all-day events are always `rule`.
 - [ ] `GET /api/boop/brief` in prod returns `capacity` with a verdict and `tanulo=true`.
 - [ ] Curve: peak/dip hours of today's brief equal the template's; values lower in the meeting block.
 - [ ] Gates green; `docs/features/capacity.md` exists; lint-docs 0/0; codemap regenerated.
