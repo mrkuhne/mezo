@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.season.mapper;
 
 import io.mrkuhne.mezo.api.dto.SeasonAdherence;
 import io.mrkuhne.mezo.api.dto.SeasonAdherenceDay;
+import io.mrkuhne.mezo.api.dto.SeasonAdherenceSession;
 import io.mrkuhne.mezo.api.dto.SeasonAdherenceResponse;
 import io.mrkuhne.mezo.api.dto.SeasonBand;
 import io.mrkuhne.mezo.api.dto.SeasonBlockChoice;
@@ -89,6 +90,7 @@ public class SeasonMapper {
             .gymPerWeek(n.gymPerWeek())
             .sportPerWeek(n.sportPerWeek())
             .weekKcal(n.weekKcal())
+            .trainSportDayKcal(n.trainSportDayKcal())
             .build();
     }
 
@@ -141,6 +143,8 @@ public class SeasonMapper {
             .sessionsDone(s.sessionsDone()).sessionsPlanned(s.sessionsPlanned())
             .nightsOk(s.nightsOk()).nightsJudged(s.nightsJudged())
             .excusedDays(s.excusedDays())
+            .trainingDone(s.trainingDone()).trainingPlanned(s.trainingPlanned())
+            .sportDone(s.sportDone()).sportPlanned(s.sportPlanned())
             .build();
     }
 
@@ -150,6 +154,9 @@ public class SeasonMapper {
             .kcal(d.kcal()).targetKcal(d.targetKcal()).proteinG(d.proteinG()).targetProteinG(d.targetProteinG())
             .foodInBand(d.foodInBand()).sessionPlanned(d.sessionPlanned()).sessionDone(d.sessionDone())
             .sleepMin(d.sleepMin()).needMin(d.needMin()).sleepOk(d.sleepOk())
+            .dayKind(d.dayKind())
+            .sessions(new ArrayList<>(d.sessions().stream().map(x -> SeasonAdherenceSession.builder()
+                .kind(x.kind()).excused(x.excused()).done(x.done()).build()).toList()))
             .build();
     }
 

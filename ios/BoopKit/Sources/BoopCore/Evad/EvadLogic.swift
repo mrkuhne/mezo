@@ -242,11 +242,12 @@ public func evadPillarDetail(_ o: EvadOverview, lit: String?) -> String {
         let gym = p.block.gymDays.count
         let sport = p.block.sport.count
         let why = sport > 0 ? "A heti \(gym) edzés és a \(sport) sportnap miatt" : "A heti \(gym) edzés miatt"
+        let both = p.food.trainSportDayKcal.map { ", edzés + sport napon \(evadKcal($0))" } ?? ""
         let eat: String? = p.food.trainDayKcal.map { train in
             if let rest = p.food.restDayKcal {
-                "\(why) edzésnapon \(evadKcal(train)), pihenőnapon \(evadKcal(rest)) kcal-t ehetsz."
+                "\(why) edzésnapon \(evadKcal(train))\(both), pihenőnapon \(evadKcal(rest)) kcal-t ehetsz."
             } else {
-                "\(why) edzésnapon \(evadKcal(train)) kcal-t ehetsz, pihenőnapod nincs."
+                "\(why) edzésnapon \(evadKcal(train))\(both) kcal-t ehetsz, pihenőnapod nincs."
             }
         }
         return [eat, "Minél többet edzel, annál több étel és alvás kell."].compactMap { $0 }.joined(separator: " ")
@@ -276,6 +277,29 @@ public func evadPillarDetail(_ o: EvadOverview, lit: String?) -> String {
     }
 }
 
+// MARK: - Napfajták
+
+/// The server's day kind (`SeasonAdherenceDay.dayKind`, the menu's day kinds) in words; nil for a kind this build does
+/// not know. A gym + sport day is its own kind: two sessions, never one.
+public func evadDayKindLabel(_ key: String) -> String? {
+    switch key {
+    case "edzesnap": "edzésnap"
+    case "sport": "sportnap"
+    case "edzes_sport": "edzés + sport nap"
+    case "pihenonap": "pihenőnap"
+    default: nil
+    }
+}
+
+/// „Edzésnapon 2440, edzés + sport napon 2790, pihenőnapon 2270 kcal, 170 g fehérje." — the new-season summary line.
+public func evadKcalSentence(_ n: EvadNumbers) -> String {
+    let both = n.trainSportDayKcal.map { ", edzés + sport napon \(evadKcal($0))" } ?? ""
+    if let rest = n.restDayKcal {
+        return "Edzésnapon \(evadKcal(n.trainDayKcal))\(both), pihenőnapon \(evadKcal(rest)) kcal, \(n.proteinG) g fehérje."
+    }
+    return "Edzésnapon \(evadKcal(n.trainDayKcal))\(both) kcal, pihenőnap nincs, \(n.proteinG) g fehérje."
+}
+
 // MARK: - Hogy megy
 
 /// One fact of „Hogy megy": „5 / 6 napon belefértél a keretbe".
@@ -287,14 +311,22 @@ public struct EvadFact: Equatable, Hashable, Sendable {
 }
 
 /// The last seven days as plain counts, from the server's adherence (never a score). A fact with nothing to count
-/// (nothing judged, nothing planned) is left out — never a „0 / 0". The night fact says „eleget", no hours: the
-/// server counts a night at its need minus 15 minutes, so any hour figure would overclaim.
+/// (nothing judged, nothing planned) is left out — never a „0 / 0". Training and sport are counted apart, so a
+/// gym + sport day is one of each; an older server sends only the total, shown as „edzés". The night fact says
+/// „eleget", no hours: the server counts a night at its need minus 15 minutes, so any hour figure would overclaim.
 public func evadAdherenceFacts(_ a: EvadAdherence) -> [EvadFact] {
     var out: [EvadFact] = []
     if a.foodJudged > 0 {
         out.append(EvadFact(value: "\(a.foodInBand)", target: "\(a.foodJudged)", label: "napon belefértél a keretbe"))
     }
-    if a.sessionsPlanned > 0 {
+    if let trainingPlanned = a.trainingPlanned, let sportPlanned = a.sportPlanned {
+        if trainingPlanned > 0 {
+            out.append(EvadFact(value: "\(a.trainingDone ?? 0)", target: "\(trainingPlanned)", label: "edzés megvolt"))
+        }
+        if sportPlanned > 0 {
+            out.append(EvadFact(value: "\(a.sportDone ?? 0)", target: "\(sportPlanned)", label: "sport megvolt"))
+        }
+    } else if a.sessionsPlanned > 0 {
         out.append(EvadFact(value: "\(a.sessionsDone)", target: "\(a.sessionsPlanned)", label: "edzés megvolt"))
     }
     if a.nightsJudged > 0 {
@@ -318,11 +350,13 @@ public func evadFoodRow(_ f: EvadFoodPillar) -> (title: String, sub: String)? {
     guard let train = f.trainDayKcal else { return nil }
     let nova = (f.novaMax ?? 4) < 4 ? "kevéssé feldolgozott ételek" : nil
     let protein = f.proteinG.map { "\($0) g fehérje" }
+    let both = f.trainSportDayKcal.map { "edzés + sport napon \(evadKcal($0)) kcal" }
     if let rest = f.restDayKcal {
         return ("Étel · \(evadKcal(train)) / \(evadKcal(rest)) kcal",
-                ["edzés- és pihenőnapon", protein, nova].compactMap { $0 }.joined(separator: " · "))
+                ["edzés- és pihenőnapon", both, protein, nova].compactMap { $0 }.joined(separator: " · "))
     }
-    return ("Étel · \(evadKcal(train)) kcal", ["edzésnapon · nincs pihenőnap", protein, nova].compactMap { $0 }.joined(separator: " · "))
+    return ("Étel · \(evadKcal(train)) kcal",
+            ["edzésnapon · nincs pihenőnap", both, protein, nova].compactMap { $0 }.joined(separator: " · "))
 }
 
 /// "fekvés 22:09 körül, ha 6:30-kor kelsz".
@@ -366,6 +400,10 @@ public func evadCompareRows(_ a: EvadNumbers, _ b: EvadNumbers) -> [EvadCompareR
         EvadCompareRow(label: "Edzésnapon", left: "\(evadKcal(a.trainDayKcal)) kcal", right: "\(evadKcal(b.trainDayKcal)) kcal"),
         EvadCompareRow(label: "Pihenőnapon", left: restDayText(a.restDayKcal), right: restDayText(b.restDayKcal)),
     ]
+    if a.trainSportDayKcal != nil || b.trainSportDayKcal != nil {
+        out.insert(EvadCompareRow(label: "Edzés + sport napon", left: a.trainSportDayKcal.map { "\(evadKcal($0)) kcal" } ?? "–",
+                                  right: b.trainSportDayKcal.map { "\(evadKcal($0)) kcal" } ?? "–"), at: 1)
+    }
     if a.weekKcal != nil || b.weekKcal != nil {
         out.append(EvadCompareRow(label: "Heti összesen", left: a.weekKcal.map { "\(evadKcal($0)) kcal" } ?? "–",
                                   right: b.weekKcal.map { "\(evadKcal($0)) kcal" } ?? "–"))

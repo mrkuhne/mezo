@@ -30,9 +30,10 @@ import org.springframework.transaction.annotation.Transactional;
  * goal engine run on a detached draft goal over the draft schedule ({@link SeasonGoalPort#previewTargets}), the
  * sleep rule ({@link SleepNeedRule}) and the feasibility band; a value the server cannot compute is null.
  *
- * <p>The served-target model (mezo-tb3s2) means a training day's kcal is base + one session's movement + the goal
- * balance: adding a weekly session turns a rest day into a training day and raises the weekly energy, but does not
- * raise the training-day target itself — the preview shows exactly what the day will serve.
+ * <p>The served-target model (mezo-tb3s2) means a day's kcal is base + that day's sessions' movement + the goal
+ * balance: a training day carries one gym session, a gym + sport day both sessions ({@code trainSportDayKcal},
+ * mezo-r36n9.131). Adding a weekly session raises the week ({@code weekKcal} = the seven weekdays' targets, each with
+ * its own sessions) but not the training-day target itself — the preview shows exactly what each day will serve.
  */
 @Service
 @RequiredArgsConstructor
@@ -172,6 +173,16 @@ public class SeasonPreviewService {
             public int trainDayMovementKcal(BigDecimal rest) {
                 return trainPort.trainDayMovementKcal(schedule, rest);
             }
+
+            @Override
+            public List<Integer> weekdayMovementKcal(BigDecimal rest) {
+                return trainPort.weekdayMovementKcal(schedule, rest);
+            }
+
+            @Override
+            public Integer trainSportDayMovementKcal(BigDecimal rest) {
+                return trainPort.trainSportDayMovementKcal(schedule, rest).orElse(null);
+            }
         };
         SeasonGoalPort.DraftTargets t = goalPort.previewTargets(owner, goalId, fields, energy, LocalDate.now())
             .orElseThrow(SeasonPreviewService::profileRequired);
@@ -204,22 +215,9 @@ public class SeasonPreviewService {
         }
         SeasonNumbersJson numbers = new SeasonNumbersJson(t.trainDay().kcal(), restDay, t.trainDay().proteinG(),
             t.trainDay().carbsG(), need, SleepNeedRule.bedtime(anchor, anchorTime, need), targetDate, weeksToTarget,
-            verdict, kgPerWeek, bandLow, bandHigh, gym, sport,
-            weekKcal(t.trainDay().kcal(), restDay, SeasonDraftMath.activeDays(schedule)));
+            verdict, kgPerWeek, bandLow, bandHigh, gym, sport, t.weekKcal(),
+            t.trainSportDay() == null ? null : t.trainSportDay().kcal());
         return new Computed(numbers, warnings(fields, verdict, t.guards()), fields);
-    }
-
-    /**
-     * The week's total planned intake: a training day's target on every day with gym or sport, a rest day's on the
-     * rest; seven training days without a rest day. It moves when a session lands on a former rest day even though
-     * neither day's own target does.
-     */
-    static int weekKcal(int trainDayKcal, Integer restDayKcal, int activeDays) {
-        if (restDayKcal == null) {
-            return trainDayKcal * 7;
-        }
-        int active = Math.min(7, activeDays);
-        return trainDayKcal * active + restDayKcal * (7 - active);
     }
 
     private SeasonDraftJson withLiveSchedule(UUID owner, SeasonDraftJson d) {

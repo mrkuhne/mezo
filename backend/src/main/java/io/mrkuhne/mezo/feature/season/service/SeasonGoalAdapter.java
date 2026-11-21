@@ -118,12 +118,27 @@ public class SeasonGoalAdapter implements SeasonGoalPort {
         }
         EnergyBase base = EnergyBase.of(calc.bootstrap());
         int move = energy.trainDayMovementKcal(rest.get());
-        DailyTargets train = DayTargetProjector.project(seg, base, () -> new DayMovement(true, move, 0, 0), nutritionTargets);
+        DailyTargets train = project(seg, base, move);
         DailyTargets restDay = DayTargetProjector.project(seg, base, () -> DayMovement.NONE, nutritionTargets);
-        return Optional.of(new DraftTargets(
-            new DayTargets(train.kcal(), train.p(), train.c()),
-            new DayTargets(restDay.kcal(), restDay.p(), restDay.c()),
+        // A gym + sport day serves both sessions (the served-target model credits every logged session), so the
+        // preview projects it — and every weekday of the week total — through the same projector with that day's
+        // own movement.
+        Integer bothMove = energy.trainSportDayMovementKcal(rest.get());
+        DayTargets both = bothMove == null ? null : dayTargets(project(seg, base, bothMove));
+        int weekKcal = 0;
+        for (int m : energy.weekdayMovementKcal(rest.get())) {
+            weekKcal += m == 0 ? restDay.kcal() : project(seg, base, m).kcal();
+        }
+        return Optional.of(new DraftTargets(dayTargets(train), dayTargets(restDay), both, weekKcal,
             seg.kcal(), flags(calc.prescription().guardStatus())));
+    }
+
+    private DailyTargets project(GoalPrescriptionJson.Segment seg, EnergyBase base, int movementKcal) {
+        return DayTargetProjector.project(seg, base, () -> new DayMovement(true, movementKcal, 0, 0), nutritionTargets);
+    }
+
+    private static DayTargets dayTargets(DailyTargets t) {
+        return new DayTargets(t.kcal(), t.p(), t.c());
     }
 
     @Override

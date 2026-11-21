@@ -78,6 +78,6 @@ class SeasonTodoRulesTest {
 
     private static SeasonNumbersJson numbers(int trainKcal, int sleep, String bed, int weeks, LocalDate target, int gym) {
         return new SeasonNumbersJson(trainKcal, 2200, 165, 260, sleep, bed, target, weeks, "feasible",
-            new BigDecimal("-0.40"), null, null, gym, 2, null);
+            new BigDecimal("-0.40"), null, null, gym, 2, null, null);
     }
 }

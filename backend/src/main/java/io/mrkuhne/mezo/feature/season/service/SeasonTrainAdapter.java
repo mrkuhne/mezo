@@ -26,6 +26,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 import java.util.HashSet;
 import java.util.Optional;
@@ -94,6 +97,42 @@ public class SeasonTrainAdapter implements SeasonTrainPort {
     }
 
     @Override
+    public List<Integer> weekdayMovementKcal(SeasonDraftJson draft, BigDecimal restKcalPerHour) {
+        // Each slot at whole kcal, the way trainDayMovementKcal prices a gym day, so a gym-only weekday projects to
+        // exactly the training-day target.
+        int gym = weeklyActivity.draftSlotKcal(new DraftSlot(KIND_GYM, 0), restKcalPerHour).intValue();
+        Set<Integer> gymDays = new HashSet<>(draft.gymDaysOrEmpty());
+        List<Integer> out = new ArrayList<>(7);
+        for (int dow = 0; dow < 7; dow++) {
+            int sum = gymDays.contains(dow) ? gym : 0;
+            for (SeasonDraftJson.SportSlot s : draft.sportOrEmpty()) {
+                if (s.dayOfWeek() == dow) {
+                    sum += weeklyActivity.draftSlotKcal(new DraftSlot(s.sport(), s.durationMin()), restKcalPerHour)
+                        .intValue();
+                }
+            }
+            out.add(sum);
+        }
+        return out;
+    }
+
+    @Override
+    public Optional<Integer> trainSportDayMovementKcal(SeasonDraftJson draft, BigDecimal restKcalPerHour) {
+        Set<Integer> gymDays = new HashSet<>(draft.gymDaysOrEmpty());
+        Set<Integer> sportDays = new HashSet<>();
+        draft.sportOrEmpty().forEach(s -> sportDays.add(s.dayOfWeek()));
+        List<Integer> movement = weekdayMovementKcal(draft, restKcalPerHour);
+        Optional<Integer> max = Optional.empty();
+        for (int dow = 0; dow < 7; dow++) {
+            if (gymDays.contains(dow) && sportDays.contains(dow)) {
+                int m = movement.get(dow);
+                max = Optional.of(max.map(x -> Math.max(x, m)).orElse(m));
+            }
+        }
+        return max;
+    }
+
+    @Override
     public void replaceSlots(UUID owner, SeasonDraftJson draft) {
         List<GymScheduleSlotEntity> gymNow = gymRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(owner);
         List<SportScheduleSlotEntity> sportNow = sportRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(owner);
@@ -149,42 +188,52 @@ public class SeasonTrainAdapter implements SeasonTrainPort {
     }
 
     @Override
-    public Set<LocalDate> plannedSessionDays(UUID owner, LocalDate from, LocalDate to) {
-        Set<Integer> weekdays = new HashSet<>();
-        gymRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(owner).forEach(g -> weekdays.add(g.getDayOfWeek()));
-        sportRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(owner).forEach(x -> weekdays.add(x.getDayOfWeek()));
-        Set<LocalDate> days = new HashSet<>();
+    public Map<LocalDate, Set<SessionKind>> plannedSessions(UUID owner, LocalDate from, LocalDate to) {
+        Set<Integer> gymDays = new HashSet<>();
+        Set<Integer> sportDays = new HashSet<>();
+        gymRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(owner).forEach(g -> gymDays.add(g.getDayOfWeek()));
+        sportRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(owner).forEach(x -> sportDays.add(x.getDayOfWeek()));
+        Map<LocalDate, Set<SessionKind>> days = new HashMap<>();
         for (LocalDate d = from; !d.isAfter(to); d = d.plusDays(1)) {
-            if (weekdays.contains(d.getDayOfWeek().getValue() - 1)) {
-                days.add(d);
+            int dow = d.getDayOfWeek().getValue() - 1;
+            if (gymDays.contains(dow)) {
+                add(days, d, SessionKind.GYM);
+            }
+            if (sportDays.contains(dow)) {
+                add(days, d, SessionKind.SPORT);
             }
         }
         workoutWindows.windowsFor(owner, from, to).forEach((day, windows) -> {
             if (windows.stream().anyMatch(w -> "run".equals(w.kind()))) {
-                days.add(day);
+                add(days, day, SessionKind.RUN);
             }
         });
         return days;
     }
 
     @Override
-    public Set<LocalDate> doneSessionDays(UUID owner, LocalDate from, LocalDate to) {
-        Set<LocalDate> days = new HashSet<>(workoutSessionRepository.findDoneInstanceDates(owner, from, to));
+    public Map<LocalDate, Set<SessionKind>> doneSessions(UUID owner, LocalDate from, LocalDate to) {
+        Map<LocalDate, Set<SessionKind>> days = new HashMap<>();
+        workoutSessionRepository.findDoneInstanceDates(owner, from, to).forEach(d -> add(days, d, SessionKind.GYM));
         sportSessionRepository.findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(owner, from, to)
-            .forEach(x -> days.add(x.getDate()));
+            .forEach(x -> add(days, x.getDate(), SessionKind.SPORT));
         runSessionLogRepository.findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(owner, from, to)
-            .forEach(x -> days.add(x.getDate()));
+            .forEach(x -> add(days, x.getDate(), SessionKind.RUN));
         return days;
     }
 
     @Override
-    public Set<LocalDate> excusedSessionDays(UUID owner, LocalDate from, LocalDate to) {
-        Set<LocalDate> days = new HashSet<>();
-        for (PlannedSkipEntity.Kind kind : List.of(PlannedSkipEntity.Kind.GYM, PlannedSkipEntity.Kind.SPORT,
-            PlannedSkipEntity.Kind.RUN)) {
-            days.addAll(plannedSkipService.excusedDates(owner, kind, from, to));
-        }
+    public Map<LocalDate, Set<SessionKind>> excusedSessions(UUID owner, LocalDate from, LocalDate to) {
+        Map<LocalDate, Set<SessionKind>> days = new HashMap<>();
+        Map<PlannedSkipEntity.Kind, SessionKind> kinds = Map.of(PlannedSkipEntity.Kind.GYM, SessionKind.GYM,
+            PlannedSkipEntity.Kind.SPORT, SessionKind.SPORT, PlannedSkipEntity.Kind.RUN, SessionKind.RUN);
+        kinds.forEach((skip, kind) -> plannedSkipService.excusedDates(owner, skip, from, to)
+            .forEach(d -> add(days, d, kind)));
         return days;
+    }
+
+    private static void add(Map<LocalDate, Set<SessionKind>> days, LocalDate day, SessionKind kind) {
+        days.computeIfAbsent(day, k -> EnumSet.noneOf(SessionKind.class)).add(kind);
     }
 
     /** The one time every gym slot shares, or null when there is none or they differ. */

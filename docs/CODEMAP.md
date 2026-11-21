@@ -1204,10 +1204,10 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `SeasonRevisionEntity`→`season_revision`
   - **repositories:** `SeasonAllowedRecipeRepository`, `SeasonRepository`, `SeasonRevisionRepository`
   - **services:** `AdherenceService`, `FirstSeasonAssembler`, `SeasonApiService`, `SeasonContextAdapter`,
-    `SeasonContextRenderer`, `SeasonDraftMath`, `SeasonFingerprint`, `SeasonFormat`, `SeasonGateAdapter`,
-    `SeasonGoalAdapter`, `SeasonInsights`, `SeasonMealAdapter`, `SeasonMetricsAdapter`, `SeasonOverviewService`,
-    `SeasonPreviewService`, `SeasonService`, `SeasonSleepAdapter`, `SeasonTodoRules`, `SeasonTrainAdapter`,
-    `SleepNeedRule`
+    `SeasonContextRenderer`, `SeasonDayKind`, `SeasonDraftMath`, `SeasonFingerprint`, `SeasonFormat`,
+    `SeasonGateAdapter`, `SeasonGoalAdapter`, `SeasonInsights`, `SeasonMealAdapter`, `SeasonMetricsAdapter`,
+    `SeasonOverviewService`, `SeasonPreviewService`, `SeasonService`, `SeasonSleepAdapter`, `SeasonTodoRules`,
+    `SeasonTrainAdapter`, `SleepNeedRule`
   - **controllers→contract:** `SeasonController`→`SeasonApi`
   - **mappers:** `SeasonMapper`
   - **config:** `SeasonProperties`
@@ -1218,7 +1218,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     GET /api/seasons/adherence · GET /api/seasons/active/overview · PUT /api/seasons/{id} ·
     POST /api/seasons/{id}/activate · POST /api/seasons/{id}/close · POST /api/seasons/{id}/preview ·
     PUT /api/seasons/{id}/rules
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/season` — 9 IT + 4 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/season` — 9 IT + 5 unit
   - **ITs:** `AdherenceServiceIT`, `MesocycleGateIT`, `SeasonApiIT`, `SeasonInsightsIT`, `SeasonOverviewIT`,
     `SeasonPortsIT`, `SeasonPreviewIT`, `SeasonRepositoryIT`, `SeasonServiceIT`
   - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPopulator`, `MealPopulator`,

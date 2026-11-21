@@ -18,6 +18,13 @@ related: [season, penz, fuel, pantry, recipe, dayclose, intention, journal, comp
 
 # Boop — native iOS app — Feature Documentation
 
+> **2026-11-21 — Évad: a gym + sport day is two sessions (`mezo-r36n9.131`).** Hogy megy counts training and sport
+> apart („3 / 4 edzés megvolt", „1 / 2 sport megvolt"; an older server's total alone still shows as „edzés"), the food
+> row, the *Mi mire hat* Edzés sentence, the new-season summary (`evadKcalSentence`) and *Ennyi változna* („Edzés +
+> sport napon") show a gym + sport day's own kcal when the season has one, and `EvadAdherenceDay` decodes the server's
+> `dayKind` + `sessions`; `evadDayKindLabel` names the four kinds (edzésnap · sportnap · edzés + sport nap ·
+> pihenőnap). Server side: [`season.md`](season.md) §3.7.
+
 > **2026-11-21 — reviewed after the Évad S2 review round (`mezo-r36n9.16`).** A reasoned skip excuses only the session (food and night still count), today's night is never judged, the season title is made inert before it reaches a prompt, the learned-expenditure wall card is keyed on the ISO week, and the Hét tab no longer waits on the day judgement — all described below.
 
 > **2026-11-21 — Boop B6 Évad S2 (`mezo-r36n9.16`).** The Évad tab's **Hogy megy** and **Amit Boop észrevett** are now
@@ -503,7 +510,8 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     *Módosítás* (offline: „Ehhez internet kell.") · *Új évad*. *Korábbi évadok* is `mezo-r36n9.123`.
   - **Hogy megy (S2, 2026-11-21)** — `evadAdherenceFacts(adherence, needMin:)` turns the overview's last-week
     summary (server `AdherenceService`, [`season.md`](season.md) §3.7) into an `NKStatRow` of plain counts: „4 / 5
-    napon belefértél a keretbe", „3 / 4 edzés megvolt", „4 / 7 éjjel aludtál eleget". A fact with nothing to count is
+    napon belefértél a keretbe", „3 / 4 edzés megvolt", „1 / 2 sport megvolt" (training and sport apart since
+    mezo-r36n9.131), „4 / 7 éjjel aludtál eleget". A fact with nothing to count is
     left out (never „0 / 0"); `evadExcusedLine` adds „N kímélő nap nem számít bele." before „Ez nem pontszám, csak
     összesítés.". A reasoned skip only takes that day's session out of the count (food and night still count). The
     block is absent when `adherence` is null, or when no fact remains and no kímélő day was left out.

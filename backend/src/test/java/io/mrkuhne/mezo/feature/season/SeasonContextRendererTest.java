@@ -67,7 +67,8 @@ class SeasonContextRendererTest extends AbstractIntegrationTest {
             .contains("csak a kiválasztott 2 recept")
             .contains("csak kevéssé feldolgozott ételek (NOVA ≤ 2)")
             .contains("Alvásigény 8 ó 6 p")
-            .containsPattern("Edzésnapon \\d \\d{3} kcal, pihenőnapon \\d \\d{3} kcal, fehérje \\d+ g")
+            .containsPattern("Edzésnapon \\d \\d{3} kcal, edzés \\+ sport napon \\d \\d{3} kcal, pihenőnapon \\d \\d{3} kcal,"
+                + " fehérje \\d+ g")
             .containsPattern("lefekvés \\d{2}:\\d{2}");
     }
 
@@ -94,6 +95,8 @@ class SeasonContextRendererTest extends AbstractIntegrationTest {
 
         assertThat(out.lines().toList()).allSatisfy(l -> assertThat(l).startsWith("[Évad] "));
         assertThat(out).contains("Őszi évad · 1. hét / 12").contains("Az elmúlt 7 nap");
+        // Four gym slots and two volleyball evenings (two of them on gym days) = six sessions, none logged.
+        assertThat(out).contains("edzés 0/4, sport 0/2");
     }
 
     @Test

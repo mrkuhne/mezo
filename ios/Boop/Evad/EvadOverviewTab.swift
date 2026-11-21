@@ -137,7 +137,11 @@ struct EvadOverviewTab: View {
         var rows: [NKAreaRow] = []
         let sport = evadSportSummary(p.block.sport)
         let training = ["heti \(p.block.gymDays.count) edzés", sport.isEmpty ? nil : sport].compactMap { $0 }.joined(separator: " · ")
-        let done = o.adherence.map { "\($0.sessionsDone)/\($0.sessionsPlanned)" } ?? ""
+        // The Edzés row counts the gym (and block-run) sessions; sport has its own fact in Hogy megy. An older server
+        // sends only the total.
+        let done = o.adherence.map { a in
+            a.trainingPlanned.map { "\(a.trainingDone ?? 0)/\($0)" } ?? "\(a.sessionsDone)/\(a.sessionsPlanned)"
+        } ?? ""
         rows.append(NKAreaRow(id: "edzes", glyph: "dumbbell-ink", title: p.block.title.map { "Edzés · \($0)" } ?? "Edzés",
                               sub: training, value: done, valueSub: done.isEmpty ? "" : "az elmúlt héten"))
         if let food = evadFoodRow(p.food) {
