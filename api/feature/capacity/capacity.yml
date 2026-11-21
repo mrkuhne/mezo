@@ -1,0 +1,11 @@
+openapi: 3.0.3
+info: { title: mezo capacity fragment, version: 1.0.0 }
+tags:
+  - name: Capacity
+    description: >
+      Boop B7 K1 day capacity (mezo-r36n9.17) — how much a day asks of the owner against what his body offers, and
+      rearrangement proposals he accepts or declines. Nothing moves without his accept. Operations are added by the
+      following tasks; this fragment starts with the tag only.
+paths: {}
+components:
+  schemas: {}
