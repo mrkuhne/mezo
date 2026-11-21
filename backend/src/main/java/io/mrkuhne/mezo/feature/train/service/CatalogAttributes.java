@@ -27,7 +27,7 @@ public class CatalogAttributes {
      * Attributes of one exercise that gate the set techniques (mezo-r36n9.80) and pick the planner's default
      * technique (mezo-r36n9.81): {@code equipment} is one of
      * {@code machine|cable|dumbbell|barbell|bodyweight|kettlebell|other}; null or unknown reads as {@code other}.
-     * {@code challengeAllowed} is {@link TechniqueRules#challengeAllowed} of the catalogue row (owner decision #61).
+     * {@code challengeAllowed} is {@link TechniqueRules#challengeAllowed} of the catalogue row (owner decision #72).
      */
     public record Attrs(boolean stable, boolean lengthenedFriendly, String equipment, boolean challengeAllowed) {
         private static final Set<String> EQUIPMENT =

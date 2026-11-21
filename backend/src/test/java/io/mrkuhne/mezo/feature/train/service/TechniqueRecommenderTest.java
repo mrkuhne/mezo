@@ -38,7 +38,7 @@ class TechniqueRecommenderTest {
             TrainingStyle.BALANCED));
         assertThat(machine.technique()).isEqualTo(Technique.REST_DROP);
         assertThat(machine.reason()).isEqualTo("stable_machine");
-        // owner decision #61: the challenge follows the challenge rule, not lengthened-friendliness
+        // owner decision #72: the challenge follows the challenge rule, not lengthened-friendliness
         assertThat(machine.challengeFit()).isTrue();
         Recommendation refused = rec(row("compound", 10, new CatalogAttributes.Attrs(true, false, "machine", false),
             TrainingStyle.BALANCED));

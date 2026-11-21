@@ -41,7 +41,7 @@ import tools.jackson.databind.node.ObjectNode;
  * Set techniques on the plan template and the run (mezo-r36n9.80, T2 Task 4): the template save
  * stores and validates the technique / challenge of each exercise (a technique needs a stable exercise, partials
  * also a lengthened-friendly one; the challenge any counting exercise but a free-weight compound, owner decision
- * #61; one challenge a day), a web save carries them over, and the
+ * #72; one challenge a day), a web save carries them over, and the
  * run inherits the block flag and the picks on start, rerun and day edit.
  */
 class MesoTemplateTechniqueIT extends ApiIntegrationTest {
@@ -174,7 +174,7 @@ class MesoTemplateTechniqueIT extends ApiIntegrationTest {
             tech(ex("Machine Chest Press", "chest-mid", catalog("machine-chest-press")), Technique.PARTIALS))), auth,
             HttpStatus.BAD_REQUEST, String.class);
         assertHasRequestError(partials, "TRAIN_TECHNIQUE_NOT_LENGTHENED");
-        // the challenge no longer needs a lengthened-friendly exercise (owner decision #61)
+        // the challenge no longer needs a lengthened-friendly exercise (owner decision #72)
         postForBody(TEMPLATES, request(true, List.of(
             challenge(ex("Machine Chest Press", "chest-mid", catalog("machine-chest-press"))))), auth,
             HttpStatus.OK, MesoTemplateResponse.class);
@@ -209,7 +209,7 @@ class MesoTemplateTechniqueIT extends ApiIntegrationTest {
         assertThat(saved.getTechnique()).isEqualTo(Technique.DROP);
         assertThat(saved.getChallenge()).isTrue();
 
-        // a non-lengthened stable exercise takes both now (owner decision #61)
+        // a non-lengthened stable exercise takes both now (owner decision #72)
         GymExerciseInput press = challenge(ex("Machine Chest Press", "chest-mid", catalog("machine-chest-press")));
         press.setTechnique(Technique.REST_DROP);
         postForBody(TEMPLATES, request(true, List.of(press)), auth, HttpStatus.OK, MesoTemplateResponse.class);
@@ -217,7 +217,7 @@ class MesoTemplateTechniqueIT extends ApiIntegrationTest {
 
     @Test
     void challengeRule_cableCurlSaves_barbellBenchRefused() {
-        // owner decision #61: the challenge sits on any counting exercise but a free-weight compound
+        // owner decision #72: the challenge sits on any counting exercise but a free-weight compound
         ownerId();
         HttpHeaders auth = ownerAuthHeaders();
         MesoTemplateResponse curl = postForBody(TEMPLATES, request(true, List.of(

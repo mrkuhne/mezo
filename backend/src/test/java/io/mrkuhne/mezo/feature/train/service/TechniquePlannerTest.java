@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 
 class TechniquePlannerTest {
     private static final TrainTechniqueProperties.Planner CFG = new TrainTechniqueProperties.Planner(3, 2, 1, 2, 15);
-    // The fourth flag is the challenge rule's answer (owner decision #61): false on MACHINE / CABLE / STABLE_DB stands
+    // The fourth flag is the challenge rule's answer (owner decision #72): false on MACHINE / CABLE / STABLE_DB stands
     // for a row the rule refuses, so LENGTHENED is the fixture that may carry the challenge.
     private static final CatalogAttributes.Attrs MACHINE = new CatalogAttributes.Attrs(true, false, "machine", false);
     private static final CatalogAttributes.Attrs CABLE = new CatalogAttributes.Attrs(true, false, "cable", false);
@@ -385,7 +385,7 @@ class TechniquePlannerTest {
 
     @Test
     void challengeMayFallOnAFreeIsolation_butNotAFreeCompound() {
-        // owner decision #61: a dumbbell curl takes the challenge (not stable, rule allows it); a barbell bench never
+        // owner decision #72: a dumbbell curl takes the challenge (not stable, rule allows it); a barbell bench never
         CatalogAttributes.Attrs dbCurl = new CatalogAttributes.Attrs(false, false, "dumbbell", true);
         CatalogAttributes.Attrs bench = new CatalogAttributes.Attrs(false, false, "barbell", false);
         Week w = TechniquePlanner.plan(input(1, Map.of(),

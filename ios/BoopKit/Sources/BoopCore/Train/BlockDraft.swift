@@ -153,7 +153,7 @@ public struct DraftExercise: Identifiable, Equatable, Sendable {
     /// Catalog attributes the technique rules read; false when the exercise has no catalog row.
     public let stable: Bool
     public let lengthened: Bool
-    /// The challenge rule's answer for the exercise itself (owner decision #61): the server's flag, else computed —
+    /// The challenge rule's answer for the exercise itself (owner decision #72): the server's flag, else computed —
     /// see `DraftExercise.challengeAllowed(item:type:gear:)`. Whether it counts is `judged`'s.
     public let challengeAllowed: Bool
     public var technique: SetTechnique
@@ -207,7 +207,7 @@ public struct DraftExercise: Identifiable, Equatable, Sendable {
     }
 
     /// The day's challenge may sit here: it takes part in the volume and the challenge rule allows the exercise
-    /// (every exercise but a free-weight compound, owner decision #61).
+    /// (every exercise but a free-weight compound, owner decision #72).
     public var canTakeChallenge: Bool { challengeAllowed && judged }
 
     /// The kit that makes a compound a free-weight lift.
@@ -243,7 +243,7 @@ public struct DraftExercise: Identifiable, Equatable, Sendable {
     }
 
     /// The builder chip's grey, untappable label when the row can carry neither a technique nor the day's challenge;
-    /// nil = the chip opens the picker. A free-weight isolation (no technique, but the challenge, decision #61) gets the
+    /// nil = the chip opens the picker. A free-weight isolation (no technique, but the challenge, decision #72) gets the
     /// picker. A free-weight compound says so; any other locked row keeps the old wording.
     public var techniqueLockLabel: String? {
         guard allowedTechniques == [.none], !canTakeChallenge else { return nil }

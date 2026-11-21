@@ -58,7 +58,7 @@ public struct WireExercise: Codable, Equatable, Sendable {
 }
 
 /// The catalog attributes the technique rules need (`stability`, `lengthenedFriendly`) and the challenge rule's
-/// answer (`challengeAllowed`, server-computed, owner decision #61) with the kit it falls back on (`gear`).
+/// answer (`challengeAllowed`, server-computed, owner decision #72) with the kit it falls back on (`gear`).
 public struct WireCatalogItem: Decodable, Equatable, Sendable {
     public let id: String
     public let name: String

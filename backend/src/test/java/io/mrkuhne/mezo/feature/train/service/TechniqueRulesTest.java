@@ -12,7 +12,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 class TechniqueRulesTest {
     private static final CatalogAttributes.Attrs STABLE = new CatalogAttributes.Attrs(true, false, "machine", true);
     private static final CatalogAttributes.Attrs LENGTHENED = new CatalogAttributes.Attrs(true, true, "machine", true);
-    /** A free-weight compound (barbell bench): the challenge rule refuses it (owner decision #61). */
+    /** A free-weight compound (barbell bench): the challenge rule refuses it (owner decision #72). */
     private static final CatalogAttributes.Attrs FREE_COMPOUND = new CatalogAttributes.Attrs(false, false, "barbell", false);
     /** A free-weight isolation (dumbbell curl): not stable, but the challenge is fine on it. */
     private static final CatalogAttributes.Attrs FREE_ISOLATION = new CatalogAttributes.Attrs(false, false, "dumbbell", true);
@@ -29,7 +29,7 @@ class TechniqueRulesTest {
     void testCheck_freeExercise_shouldReject() {
         assertThat(TechniqueRules.check(Technique.DROP, false, CatalogAttributes.Attrs.FREE))
             .contains("TRAIN_TECHNIQUE_NOT_STABLE");
-        // no catalogue link: unknown kit, no challenge either (owner decision #61)
+        // no catalogue link: unknown kit, no challenge either (owner decision #72)
         assertThat(TechniqueRules.check(Technique.NONE, true, CatalogAttributes.Attrs.FREE))
             .contains("TRAIN_CHALLENGE_FREE_WEIGHT_COMPOUND");
     }
@@ -43,7 +43,7 @@ class TechniqueRulesTest {
 
     @Test
     void testCheck_challenge_followsTheChallengeRuleNotLengthenedOrStable() {
-        // owner decision #61: the challenge no longer needs a lengthened-friendly or a stable exercise
+        // owner decision #72: the challenge no longer needs a lengthened-friendly or a stable exercise
         assertThat(TechniqueRules.check(Technique.NONE, true, STABLE)).isEmpty();
         assertThat(TechniqueRules.check(Technique.NONE, true, FREE_ISOLATION)).isEmpty();
         assertThat(TechniqueRules.check(Technique.NONE, true, FREE_COMPOUND))

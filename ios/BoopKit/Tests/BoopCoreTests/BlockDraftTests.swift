@@ -199,7 +199,7 @@ struct BlockDraftTests {
         #expect(!boop.days[1].exercises[1].pickedByBoop, "his change makes it his")
     }
 
-    // MARK: the challenge rule (owner decision #61, mezo-r36n9.127)
+    // MARK: the challenge rule (owner decision #72, mezo-r36n9.127)
 
     /// The fixture block with a catalogue whose rows carry the given extra JSON fields (`challengeAllowed`, `gear`).
     private func draft(row: String, curl: String, press: String) throws -> BlockDraft {

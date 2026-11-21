@@ -187,7 +187,7 @@ final class PlanPreviewTransport: ClientTransport, @unchecked Sendable {
     }
 
     static var catalog: [[String: Any]] {
-        // `gear` + `challengeAllowed` follow the server's rule (decision #61): every non-plyo exercise but a free-weight
+        // `gear` + `challengeAllowed` follow the server's rule (decision #72): every non-plyo exercise but a free-weight
         // compound may take the day's challenge.
         [["id": "c-stable", "name": "stable", "stability": "stable", "lengthenedFriendly": false, "gear": ["machine"], "challengeAllowed": true],
          ["id": "c-long", "name": "lengthened", "stability": "stable", "lengthenedFriendly": true, "gear": ["cable"], "challengeAllowed": true],

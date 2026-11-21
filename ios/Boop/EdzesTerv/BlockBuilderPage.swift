@@ -985,7 +985,7 @@ private struct BuilderTechniqueChip: View {
     let open: () -> Void
 
     var body: some View {
-        // A free-weight row takes no technique, but since decision #61 a free-weight isolation may still take the day's
+        // A free-weight row takes no technique, but since decision #72 a free-weight isolation may still take the day's
         // challenge: the chip then opens the picker (techniques dimmed with their reason, the challenge selectable).
         if let quiet = exercise.techniqueLockLabel {
             // Not `PlanPill`: its fixed width would push the editor row (handle, stepper, ⋯) past the card.

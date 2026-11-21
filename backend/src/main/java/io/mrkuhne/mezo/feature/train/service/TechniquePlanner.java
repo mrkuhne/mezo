@@ -257,7 +257,7 @@ public final class TechniquePlanner {
     }
 
     /**
-     * §6.6 on one row: it counts, the challenge rule allows it ({@link TechniqueRules#check}, owner decision #61 —
+     * §6.6 on one row: it counts, the challenge rule allows it ({@link TechniqueRules#check}, owner decision #72 —
      * no free-weight compound), and it is not a sport-loaded group on a sport day. The AI may move the challenge only onto such a row (T4).
      */
     public static boolean challengeValid(PlanRow r, PlanDay day, Input in) {

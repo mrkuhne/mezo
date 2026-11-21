@@ -18,7 +18,7 @@ public final class TechniqueRules {
     public static final String NOT_LENGTHENED = "TRAIN_TECHNIQUE_NOT_LENGTHENED";
     public static final String CHALLENGE_FREE_WEIGHT_COMPOUND = "TRAIN_CHALLENGE_FREE_WEIGHT_COMPOUND";
 
-    /** The kit that makes a compound a free-weight lift, where the challenge never sits (owner decision #61). */
+    /** The kit that makes a compound a free-weight lift, where the challenge never sits (owner decision #72). */
     private static final Set<String> FREE_WEIGHT_KIT = Set.of("barbell", "dumbbell", "kettlebell");
 
     private TechniqueRules() {}
@@ -27,7 +27,7 @@ public final class TechniqueRules {
      * First violated rule, or empty. A plain row (no technique, no challenge) is always fine. A technique and the
      * challenge together are fine (mezo-r36n9.98). A technique needs a stable exercise, partials also a
      * lengthened-friendly one; the challenge needs {@link CatalogAttributes.Attrs#challengeAllowed()} — the single
-     * challenge rule, {@link #challengeAllowed(String, Collection, String)} (owner decision #61, mezo-r36n9.127).
+     * challenge rule, {@link #challengeAllowed(String, Collection, String)} (owner decision #72, mezo-r36n9.127).
      */
     public static Optional<String> check(Technique t, boolean challenge, CatalogAttributes.Attrs a) {
         if (carries(t) && !a.stable()) return Optional.of(NOT_STABLE);
@@ -37,7 +37,7 @@ public final class TechniqueRules {
     }
 
     /**
-     * THE challenge rule (owner decision #61, mezo-r36n9.127): the day's challenge may sit on every exercise except a
+     * THE challenge rule (owner decision #72, mezo-r36n9.127): the day's challenge may sit on every exercise except a
      * free-weight compound — {@code type == compound} with {@code barbell}, {@code dumbbell} or {@code kettlebell} in
      * its kit — and never on a plyo move. The kit is the catalogue {@code gear}; a user-authored row without gear
      * falls back to its {@code equipment}. No known kit (no gear, equipment null / {@code other}) or no type: false.
