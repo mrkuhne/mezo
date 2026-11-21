@@ -955,7 +955,12 @@ class MailDigestPipelineIT extends AbstractIntegrationTest {
         process(needsModel(a, true));
         assertThat(digest().rulesOnly()).isTrue();
 
-        clock.set("2026-11-21T14:00:00Z"); // the 15:00 run is clean
+        clock.set("2026-11-21T12:00:00Z"); // a run that fetched nothing says nothing: the flag stays
+        process();
+        assertThat(digest().rulesOnly()).isTrue();
+        assertThat(digest().rulesOnlyReason()).isEqualTo("failure");
+
+        clock.set("2026-11-21T14:00:00Z"); // the 15:00 run classifies cleanly
         llm.classify = null;
         MailMessageEntity b = message("hir@masik.example.test", "Másik hírlevél", "Kitalált hírek kettő.");
         process(needsModel(b, true));

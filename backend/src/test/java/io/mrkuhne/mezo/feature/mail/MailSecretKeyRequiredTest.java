@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /** An enabled mail feature without MEZO_MAIL_SECRET_KEY must fail at startup (no baked-in default key). */
-class MailBlankKeyBootTest {
+class MailSecretKeyRequiredTest {
 
     @Configuration
     @EnableConfigurationProperties(MailProperties.class)

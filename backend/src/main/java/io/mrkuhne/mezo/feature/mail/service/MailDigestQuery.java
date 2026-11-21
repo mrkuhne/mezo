@@ -126,8 +126,7 @@ public class MailDigestQuery {
 
         MailMailboxEntity mailbox = mailboxes.findByCreatedBy(user).orElse(null);
         MailRunEntity limited = runs
-            .findFirstByCreatedByAndStartedAtGreaterThanEqualAndStartedAtLessThanOrderByStartedAtDesc(
-                user, dayStart, dayEnd).filter(MailRunEntity::isRulesOnly).orElse(null);
+            .latestModelRelevant(user, dayStart, dayEnd).filter(MailRunEntity::isRulesOnly).orElse(null);
         int arrived = arrivals.size();
         return new MailDigest(mailbox == null ? null : mailbox.getLastRunAt(),
             mailbox == null ? MailIntakeStore.STATE_DISCONNECTED : mailbox.getState(), limited != null,
