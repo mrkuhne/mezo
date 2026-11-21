@@ -923,5 +923,113 @@
     "miert": "Üres adatra átköltöztetőt építeni felesleges munka lenne.",
     "levaltotta": "—",
     "kovetkezmeny": "A régi appot nyugodtan kikapcsolhatod. Ha a banki SMS-ek automatikus rögzítését szeretnéd, a telefonod parancsikonját egyszer be kell állítani a Boopra."
+  },
+  "d-2026-11-21-level-gmail": {
+    "datum": "2026-11-21",
+    "terulet": [
+      "Levél"
+    ],
+    "cim": "Fogyasztói Gmail, nem céges fiók",
+    "suly": "Közepes",
+    "valasztas": "A levelek olvasása hétköznapi Gmail-fiókkal történik, alkalmazásjelszóval — nincs bonyolult jóváhagyási folyamat.",
+    "miert": "Egyszerű, és nem kell hozzá saját tartomány vagy cégfiók.",
+    "levaltotta": "A bonyolultabb Google-engedélyes megoldás (hét napos lejáró belépők, külön biztonsági vizsgálat).",
+    "kovetkezmeny": "A Boop csak egy alkalmazásjelszót tárol, amit te bármikor visszavonhatsz."
+  },
+  "d-2026-11-21-level-tukorfiok": {
+    "datum": "2026-11-21",
+    "terulet": [
+      "Levél"
+    ],
+    "cim": "Egy külön tükörfiók, amibe a Gmailed és az iCloudod is továbbít",
+    "suly": "Nagy",
+    "valasztas": "Egy új Gmail-fiók csak Boopnak; a Gmailed és az iCloudod mindent ide továbbít, Boop csak ezt olvassa, egyetlen alkalmazásjelszóval.",
+    "miert": "Így Boop sosem kapja meg a valódi jelszavadat, és az Apple jelszóváltása sem töri el.",
+    "levaltotta": "A valódi postafiókjaid közvetlen olvasása.",
+    "kovetkezmeny": "Csak a továbbítás beállítása után érkezett levél látszik."
+  },
+  "d-2026-11-21-level-csengetes": {
+    "datum": "2026-11-21",
+    "terulet": [
+      "Levél"
+    ],
+    "cim": "A jó ajánlatért is csörög a telefon — a meglévő napi keretben",
+    "suly": "Közepes",
+    "valasztas": "Egy jó (8-as vagy jobb pontú) ajánlat, amely hamarosan lejár, csörgethet, de csak a Ma fal első helyén, naponta legfeljebb egyszer-kétszer, a többi Boop-értesítéssel közös keretben.",
+    "miert": "Ne maradj le a lejáró dologról, de ne legyen zaj, amit kikapcsolsz.",
+    "levaltotta": "Külön levélcsengetés.",
+    "kovetkezmeny": "Ugyanez a csengetés most Étel- és Edzés-tételeknek is csörög. Amíg nincs fizetős Apple-fiók, az app megnyitásakor ütemez."
+  },
+  "d-2026-11-21-level-aratellenorzes": {
+    "datum": "2026-11-21",
+    "terulet": [
+      "Levél"
+    ],
+    "cim": "Napi 10 árellenőrzés (a 3. lépéshez)",
+    "suly": "Kicsi",
+    "valasztas": "A későbbi árellenőrzés napi 10 ellenőrzést kaphat, ami nagyjából havi 3 euró.",
+    "miert": "Olcsó, és elég a figyelt termékekhez.",
+    "levaltotta": "—",
+    "kovetkezmeny": "Az árellenőrzés (Figyelt fül) építésekor nem kell újra rákérdezni."
+  },
+  "d-2026-11-21-level-egy-kiadas": {
+    "datum": "2026-11-21",
+    "terulet": [
+      "Levél"
+    ],
+    "cim": "A Levél első két lépése egyszerre jön ki",
+    "suly": "Közepes",
+    "valasztas": "Az átvétel és a pontozás egy kiadásban érkezik.",
+    "miert": "Az első, amit a telefonodon látsz, rögtön az értékelt posta legyen, ne csak darabszámok.",
+    "levaltotta": "Először csak a darabszámok.",
+    "kovetkezmeny": "Egy nagyobb kiadás, de egy összefüggő élmény."
+  },
+  "d-2026-11-21-level-negy-csoport": {
+    "datum": "2026-11-21",
+    "terulet": [
+      "Levél"
+    ],
+    "cim": "A reggeli posta négy csoportja",
+    "suly": "Közepes",
+    "valasztas": "Határidős · Csomagok · Akciók és lehetőségek (1–10 pont) · A többi (összehajtva). A valódi embertől jövő és az érzékeny feladótól jövő levél mindig elöl.",
+    "miert": "Ez az, ami megér egy percet: Boop javasolta, és elfogadtad („Igen, így jó”).",
+    "levaltotta": "Egyetlen pontozott lista.",
+    "kovetkezmeny": "A határidős és a csomag nem kap pontszámot — ott a dátum számít."
+  },
+  "d-2026-11-21-level-megoldas": {
+    "datum": "2026-11-21",
+    "terulet": [
+      "Levél"
+    ],
+    "cim": "A szerver naponta kétszer (8:00 és 15:00) olvassa a tükörfiókot",
+    "suly": "Nagy",
+    "valasztas": "A háttérrendszer reggel 8-kor és délután 3-kor átnézi a tükörfiókot (csak olvas), a telefon pedig megjeleníti.",
+    "miert": "Nincs új külön szolgáltatás vagy tartomány, és az összefoglaló természeténél fogva kötegelt.",
+    "levaltotta": "Saját beérkező cím külön szolgáltatóval (nem kérted); a telefon olvassa a levelet (nem működik); valós idejű értesítés.",
+    "kovetkezmeny": "A 15 óra utáni levél másnap reggel kerül sorra."
+  },
+  "d-2026-11-21-level-te-allitod": {
+    "datum": "2026-11-21",
+    "terulet": [
+      "Levél"
+    ],
+    "cim": "A tükörfiókot te állítod be",
+    "suly": "Kicsi",
+    "valasztas": "Te hozod létre az új Gmail-fiókot a Fiókok oldal hatlépéses útmutatója szerint; a jelszót te írod be.",
+    "miert": "A valódi jelszavaidat Boop sosem kéri.",
+    "levaltotta": "Boop állítja be helyetted.",
+    "kovetkezmeny": "A levelek addig gyűlnek, amíg az app elkészül; a szabályok az első valódi levelek alapján pontosodnak."
+  },
+  "d-2026-11-21-level-proba-oke": {
+    "datum": "2026-11-21",
+    "terulet": [
+      "Levél"
+    ],
+    "cim": "A Levél képernyői: „Igen, így jó”",
+    "suly": "Kicsi",
+    "valasztas": "A szimulátoros próba (Ma, Szabályok, Fiókok útmutató és összekötött állapot, a boríték-ikon) jóváhagyva; a kiemelés nem állíthat árösszehasonlítást.",
+    "miert": "Így pontosan azt építjük meg, amit láttál.",
+    "levaltotta": "—",
+    "kovetkezmeny": "Az első kiadásban nincs külön fotó a fejlécen (festett ég), és a Figyelt fül marad „hamarosan”."
   }
 }

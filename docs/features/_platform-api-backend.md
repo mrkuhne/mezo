@@ -2,7 +2,7 @@
 title: Platform · API Contract & Backend Architecture
 type: feature-platform
 status: done
-updated: 2026-11-20
+updated: 2026-11-21
 tags: [platform, backend, data-layer, frontend, boop, b4-etel, idempotency]
 key_files:
   - api/openapi.yml
@@ -16,6 +16,8 @@ related: [_platform-data-layer, _platform-auth-security, _platform-notifications
 > **2026-11-20 — reviewed after the Boop block day editor (`mezo-r36n9.116`, no platform change).** Two new train error keys in both `messages_hu` and `messages_en` (parity kept, bundles now 313 keys each): `TRAIN_SUGGESTIONS_REQUEST_INVALID` (400, the day-suggestions request) and `TRAIN_DAY_WORKOUT_RUNNING` (409, a day with a running workout cannot be edited). Mechanics unchanged. See [`train.md`](train.md).
 
 # Platform · API Contract & Backend Architecture — Feature Documentation
+
+> **2026-11-21 — Boop Levél L1+L2 (`mezo-r36n9.38/.39`, additive contract).** A new fragment `api/feature/mail/mail.yml` (tag **`Mail`**, 8 operations, 401 on each) appended last in `api/generate/merge.yml`; the `mezo.mail.enabled` and `mezo.techcore.cron.mail-job.enabled` switches in `FeaturesConfiguration`; a new `angus-mail` dependency (GreenMail in tests) kept inside `feature/mail` by ArchUnit. See [`mail.md`](mail.md) §4.
 
 > **2026-11-20 — Boop Pénz L7 (`mezo-r36n9.105`, additive contract).** Two more fragments in `api/generate/merge.yml`: `api/feature/penz/penz-practice.yml` (paper trades, `/api/penz/practice/**`) and `penz-proposals.yml` (catalog, proposals, strategy); `api/openapi.yml` regenerated. Ten new `PENZ_*` codes in both bundles (`PENZ_PAPER_TRADE_*`, `PENZ_PRACTICE_*`, `PENZ_PRODUCT_*`, `PENZ_PROPOSAL_*`); the cap and state refusals are 422 / 409 with a message code, which the iOS transport now maps to coded rejections. No techcore mechanism changed. See [`penz.md`](penz.md) §4.2.
 > **2026-11-21 — Boop B6 Évad S2 (`mezo-r36n9.16`, additive contract).** `season.yml` gains **`getAdherence`** (GET `/api/seasons/adherence?from&to`, schemas `SeasonAdherenceDay` + `SeasonAdherenceResponse`, reusing `SeasonAdherence` as the summary); `api/openapi.yml` regenerated. Served with or without a season; the range check (`to < from` or more than 62 days) answers 400 with the existing `VALIDATION_INVALID_VALUE` (field `to`) — no new error code, no table, no migration. The overview's `adherence` / `insights` / `sleep_food` link value are now filled. Three new consumer-owned `SeasonContextPort` interfaces (companion, boop, meal) are implemented season-side (`SeasonContextAdapter`), so no feature cycle is added. No techcore mechanism changed. See [`season.md`](season.md) §3.7–§4.

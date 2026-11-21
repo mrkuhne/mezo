@@ -3,7 +3,7 @@ title: Boop — native iOS app
 type: feature-domain
 status: in-progress
 updated: 2026-11-21
-tags: [ios, evad, b6-evad, season, penz, l5-penz, blokk-epito, heti-atnezes, kezdolap, area-kit, l0, elo-fal, l0b, b4-etel, food, barcode, meal-photos, sensitivities, b3-napi-ritmus, offline-first, outbox, dayclose, b1-adatalap, health-samples, apns, swiftui, boop, napkelte, lagy, auth, onboarding, healthkit, eventkit, wearable, morning-brief, energy-curve, voice]
+tags: [ios, level, l1-l2-level, evad, b6-evad, season, penz, l5-penz, blokk-epito, heti-atnezes, kezdolap, area-kit, l0, elo-fal, l0b, b4-etel, food, barcode, meal-photos, sensitivities, b3-napi-ritmus, offline-first, outbox, dayclose, b1-adatalap, health-samples, apns, swiftui, boop, napkelte, lagy, auth, onboarding, healthkit, eventkit, wearable, morning-brief, energy-curve, voice]
 key_files:
   - ios/Boop
   - ios/BoopKit/Sources
@@ -13,10 +13,15 @@ key_files:
   - api/feature/boop/boop.yml
   - backend/src/main/java/io/mrkuhne/mezo/feature/dayclose
   - api/feature/dayclose/dayclose.yml
-related: [season, penz, fuel, pantry, recipe, dayclose, intention, journal, companion, proactive, _platform-auth-security, _platform-api-backend, me, today]
+related: [season, penz, mail, fuel, pantry, recipe, dayclose, intention, journal, companion, proactive, _platform-auth-security, _platform-api-backend, me, today]
 ---
 
 # Boop — native iOS app — Feature Documentation
+
+> **2026-11-21 — Boop Levél L1 + L2 (`mezo-r36n9.38` + `.39`), built on `feat/level-posta`.** The Levél area is real: the
+> morning post (four groups, scored deals, a learned taste, the mirror-Gmail setup in Fiókok) and the **first wall source
+> from a life area** — and the wall's ring (`WallNotifier`) is built for the first time, for every `.expires` source. See
+> **Levél** in §2 and [`mail.md`](mail.md); deploy and the phone install pending at the time of writing.
 
 > **2026-11-21 — reviewed after the Évad S2 review round (`mezo-r36n9.16`).** A reasoned skip excuses only the session (food and night still count), today's night is never judged, the season title is made inert before it reaches a prompt, the learned-expenditure wall card is keyed on the ISO week, and the Hét tab no longer waits on the day judgement — all described below.
 
@@ -180,8 +185,8 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   circle (Nap · Alvás · Étel · Edzés · Energia · Forma · Pénz · Levél, clockwise from the top), **Boop's own pale orb in
   the middle** with his line for the day under the ring, over a photographed misty ridge (`NKPhoto.hegy`) in the
   cool blue world with three bands of drifting fog (`DriftingFog`). An orb opens its area; the middle opens today's
-  Nap page, which was **not replaced — it moved one level in**. Pénz and Levél are not built (L4–L6): they sit faint
-  and say so on tap. **The day has its own orb at the top** (decision #41, 2026-11-16, `mezo-r36n9.55`): it carries
+  Nap page, which was **not replaced — it moved one level in**. (At the time Pénz and Levél were not built and sat
+  faint; both are live since L5 / 2026-11-21.) **The day has its own orb at the top** (decision #41, 2026-11-16, `mezo-r36n9.55`): it carries
   no score — nothing scores a day — but fills with **how full the day is** (`dayFullness`, from the brief's
   `calendar.busySlots`) and opens **the day's page** (`KezdolapRoute.day`) — the same page the ring's centre opens,
   since the day page itself became the Élet spike's Ma screen (`mezo-r36n9.56`, below). The
@@ -238,11 +243,16 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   kept per day in `@AppStorage`, and never returns that day. Every card has a **"miért?"** that also says which
   slot it is standing in.
   **Only `.expires` may ring the phone, twice a day** (#35, `wallNotifications`) — never for a card already seen,
-  acted on or rung; the cap is in the function, not a setting.
+  acted on or rung; the cap is in the function, not a setting. **The ring is shipped since 2026-11-21**
+  (`mezo-r36n9.39`, `WallNotifier`, see **Levél** below): until then `wallNotifications` existed but nothing called
+  it, so no wall card ever rang. It is **scheduled only when the app is opened** (no background refresh, no server
+  push until the paid team, `mezo-r36n9.19`), and it serves **every** `.expires` source — Étel and Edzés too.
   **The areas join by registering a `WallSource`** (`WallRegistry`): Étel hands in the closing window, the
   supplement group, the server's tip and the last meal; the brief hands in today's session and the strongest
   observation; since B6 Évad S2 (2026-11-21) the season hands in its learned-expenditure proposal and its ending
-  (`WallSources.evad`, see **Évad** below). B5 Edzés, then Pénz and Levél, add themselves with one line and no change to the engine or the
+  (`WallSources.evad`, see **Évad** below); since 2026-11-21 **Levél is the first life area on the wall**
+  (`WallSources.level`: the deadline or deal about to expire, and *Megjött a reggeli posta*). **Pénz never registered
+  a source** — it is not on the wall. Each area adds itself with one line and no change to the engine or the
   view — there is a test that proves exactly that with a fake area.
   **What moved on the page:** the day's timeline folded into one row ("A napod · N megvolt, M hátra", open in the
   morning), the energy curve was hoisted above it so a forward-looking view stays visible, the **0–100 score left
@@ -293,7 +303,66 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   - Blocks are filled from the brief, the day ledger and the food store only. Where the spike shows something the
     app cannot know yet (the mezociklus, exercise records, the six-week sleep curve), the tab says so.
   The gaps that remain, said out loud: three areas have no mood photo (`mezo-r36n9.60`), Levél has no
-  glyph of its own (a book stands in; Pénz got its coin with L5), and Edzés's three deeper tabs wait for B5.
+  glyph of its own (a book stood in; Pénz got its coin with L5, Levél its envelope `e-level` on 2026-11-21), and
+  Edzés's three deeper tabs wait for B5.
+- **The Levél area (L1 + L2, `mezo-r36n9.38` + `.39`, built 2026-11-21 — one release; spec
+  [`2026-11-21-boop-level-posta-design.md`](../superpowers/specs/2026-11-21-boop-level-posta-design.md), plan
+  [`2026-11-21-boop-level-posta.md`](../superpowers/plans/2026-11-21-boop-level-posta.md); backend
+  [`mail.md`](mail.md)); deploy and the phone install were pending at the time of writing.**
+  Levél left `AreaRoom`'s planned tab for its own room `ios/Boop/Level/LevelRoom.swift`, routed from `NapView.swift:69-71`
+  the way `PenzRoom` is (`AreaRoom` lost only its `.level` branches). Tabs **Ma · Figyelt · Szabályok · Fiókok**, warm
+  `NKAreaPage(hue: .level)`; the area has its own envelope glyph `e-level` (a kit addition, also the ring's orb glyph)
+  and the kit's `NKHighlight` gained an additive `badge` (the score chip). Every number is measured by the server.
+  - **Ma** (`LevelMa.swift`): head verdict + sentence from `levelHead` (*"Két dolgot nézz meg"* — digits for arrived /
+    handled, words for worth-a-minute; "ma" when the last run was at/after 15:00 Budapest, else "reggel óta"); the
+    highlight (`levelHighlight`: best deal by score → earliest `validUntil` → id, or the nearest due-today/tomorrow
+    deadline; flagged or unknown-screen items skipped); `NKStatRow` arrived · handled · worth a minute; the
+    `NKHeatStrip` of 12 two-hour slots; people and sensitive rows first (sensitive = sender only); **Határidős** rows
+    sorted by date with *lejárt / ma / holnap / weekday* marks (`levelDeadlineRows`, Budapest calendar); **Csomagok**
+    (one row per parcel, state words); **Akciók és lehetőségek** as `LevelDealCard`s with the score chip, the one-line
+    *miért*, **érdekel / nem érdekel** (optimistic, reverted on failure, one in flight per item) and **Megnyitás a
+    Gmailben**; **A többi** as one row per category that unfolds to up to 20 lines. A rules-only day carries
+    the note `levelRulesOnlyNote` ("ma már nem pontoztam tovább" for the cap); a score already given still shows on such
+    a day. A flagged item shows a warning and never rings. Not connected → a plain note pointing at Fiókok.
+  - **Figyelt** stays `NKNotLiveYet` with its existing line (L3).
+  - **Szabályok** (`LevelSzabalyok.swift`): *Amit gép soha nem olvas* (seed + own senders, add / remove), *Amit mindig
+    megmutatok*, *Amit csendben eltészek*, the proposal row (*Igen, tedd félre*), one sentence on when the phone rings.
+    Edits go through `LevelRules.ownerRequest` → `store.saveRules`; removal matches case-insensitively.
+  - **Fiókok** (`LevelFiokok.swift`): not connected → the six-step guide (`levelGuideSteps`) and the address +
+    app-password fields (a wrong password → 422 inline and the field is cleared; the password is only a parameter,
+    never in state or cache); connected → address, last run, count, state in words; *Frissítés most* (a 429 shows
+    "Most néztem át — pár perc múlva újra próbálhatod."); **Lecsatolás** behind a confirmation dialog presented at
+    page level in `LevelRoom` (§9 rule: no dialog inside scroll content).
+  - **Data layer** (`BoopCore/Level/`): `LevelWire` (lenient — every enum has an `.unknown`, item arrays decode per
+    element, ISO dates with or without fractions), `LevelClient` over `RawJSONClient` (not the generator),
+    `LevelStore` (`@MainActor @Observable`, `ServerCache` `level/digest` per Budapest day read back today / yesterday /
+    day before when offline → stale + age; `level/mailbox`; a server fault is never dressed as old data),
+    `LevelLogic` (head, highlight, deadline rows, error text). The store is created per user in `RootView` with a
+    preview store; preview switches `-preview shell -previewHome level -previewLevel normal|empty|loading|failed|
+    rulesOnly|disconnected|connected|stalled|authFailed|offline|cooldown`, `-levelTab`.
+  - **Wall source** (`levelWallCandidates`, `WallSources.swift:219`, registered in `MaWall.swift:62`): `.expires` for a
+    server-`notifiable` deadline (expiry = its due time) or deal (needs `screen == clean`); `.happened`
+    *Megjött a reggeli posta · N érdekes* only when worth > 0 and a run happened today; no `.improves` candidate. Card
+    ids `level-expires-<itemId>`, `level-post-<yyyy-MM-dd>`; a tap opens the Levél room. A score-7 deal never gets
+    `.expires`.
+  - **The ring — `WallNotifier`** (`ios/Boop/Nap/WallNotifier.swift`, `WallRinger` seam over
+    `UNUserNotificationCenter`, one shared notifier per user via `WallNotifier.shared(for:)`, reconciles serialised
+    through a task chain, state in `UserDefaults` `wall.notifier.<userKey>`): `MaWall` reconciles on appear, on a change
+    of the expiring ids and when the scene turns active. The rules, all in the code and pinned by 20+ tests:
+    - **When:** `WallRingTime.fire` — now if the deadline is within 12 h, else 12 h before it, **clamped into
+      08:00–21:00 local** (before 08:00 waits for 08:00; after 21:00 rings at 21:00 if that is still ahead, else the next
+      08:00; nil — no ring — if it is not before the deadline).
+    - **Cap 2 per fire day** (`wallNotifications`, `cap: 2`); a candidate with no allowed fire time is filtered before the
+      cap so it takes no slot; a slot is freed when a pending request is cancelled.
+    - **`seen` suppresses only same-day fires:** the wall marks the `.expires` cards it shows as seen on appear, so
+      those are not rung for *today*; a card due tomorrow that was seen today is still scheduled for tomorrow.
+    - **No double ring per deadline:** `ringed: [cardId: expiresAt]` is kept until the deadline passes.
+    - Only `wall.*` pending requests are ever cancelled (vanished / acted / seen-today); other notifications are
+      untouched. Denied → silent; undetermined → asked once ever per user. `ReminderPresenter` shows `wall.*` in the
+      foreground. **Limits:** a tap opens the app, not the Levél room (no deep route); rings are scheduled only while the
+      app is opened; the Gmail deep link (`googlegmail:///cv=<hex>`) is untested on a device.
+  - **Accepted spike deviations** (ruling R12): no glyph over the head orb, a painted sky instead of a photo, a plain
+    `NKNote` for the rules-only line, Figyelt's existing copy, a shorter heat-strip note.
 - **The Pénz area (L5, `mezo-r36n9.103`, 2026-11-20; spec
   [`2026-11-13-boop-penz-design.md`](../superpowers/specs/2026-11-13-boop-penz-design.md) §5.1/§5.3/§5.6/§6; look = the
   approved round-11 spike, `BoopSpike/EletContent.swift` `penz` + `EletPenzKit.swift`, `penz-1-ma.png` /
@@ -1128,6 +1197,8 @@ New API call: add the operationId to the generator config, run `sync-openapi.sh`
 
 ## 8. Testing
 
+- **Levél (2026-11-21):** BoopKit `LevelLogicTests`, `LevelClientTests`, `LevelWallTests` (793 BoopKit tests at the last run); app `LevelRoomTests` (23) and `WallNotifierTests` (20+: ring time clamp, cap per fire day, seen-today, per-user isolation, overlapping reconciles, markSeen during a reconcile); the Boop scheme ran 480 tests. Pre-existing flakes, not Levél: `EdzesSwapTests.overlappingSavesLeaveTheStoreAsTheServerHasIt`, `MorningClientTests.movingIsTrueOnlyWhileAMoveIsInFlight`.
+
 - S2.5 kit tests: `NapkelteTokensTests`, `NapkelteRenderTests` (landscape per hue, glass, pills and tabs at
   accessibility sizes, frames, nav labels), `NapkelteOrbTests` (palette padding, rise clamp, learning state,
   reduced motion), `NapkelteChartTests`, `NapkeltePathTests`; core `NapEmptyStateTests`; app `ShellTests`,
@@ -1292,6 +1363,8 @@ Blokképítő + heti átnézés: `ios/Boop/EdzesTerv/{BlockBuilderPage,DayEditSh
 L0/b (az élő fal): `ios/BoopKit/Sources/BoopCore/Morning/{Wall,WallSources}.swift` · `ios/BoopKit/Sources/BoopDesign/Napkelte/Wall.swift` · `ios/Boop/Nap/{MaWall,MaPhases,MaiView}.swift`
 
 B6 Évad S1–S2: `ios/Boop/Evad/{EvadPage,EvadOverviewTab,EvadSystemMap,EvadWhatIf,EvadRules,EvadNewSeason,EvadPreview}.swift` · `ios/BoopKit/Sources/BoopCore/Evad/{EvadClient,EvadStore,EvadWire,EvadLogic,EvadWall}.swift` · S2: `ios/Boop/Etel/{EtelHet,EtelRoom}.swift`, `ios/Boop/Nap/MaWall.swift` · backend [`season.md`](season.md)
+
+L1+L2 Levél: `ios/Boop/Level/{LevelRoom,LevelMa,LevelSzabalyok,LevelFiokok,LevelDealCard,LevelModel,LevelPreview}.swift` · `ios/BoopKit/Sources/BoopCore/Level/{LevelWire,LevelClient,LevelStore,LevelLogic}.swift` · `ios/Boop/Nap/WallNotifier.swift` · backend [`mail.md`](mail.md)
 
 L5 Pénz: `ios/Boop/Penz/{PenzRoom,PenzTabs,PenzSheets,PenzFaces,PenzPreview}.swift` · `ios/BoopKit/Sources/BoopCore/Penz/{PenzWire,PenzClient,PenzStore,PenzLogic,PenzOutbox}.swift` · `OutboxKind.penzExpense` in `Ritmus/{Outbox,RitmusPayloads,RitmusClient}.swift` · tests `BoopCoreTests/{PenzLogicTests,PenzClientTests}.swift`, `BoopTests/PenzRoomTests.swift`
 

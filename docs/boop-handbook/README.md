@@ -23,6 +23,7 @@ Epic: `mezo-r36n9` · tükör jegy: `mezo-r36n9.29`.
 | `09-boop/` | Boop — a beszélgetés |
 | `10-ai/` | AI és memória — emlékezet, éjszakai konzílium, javaslatok „miért?” |
 | `11-penz/` | Pénz — a heti maradék, a költések, a hónapzárás, később befektetések és gyakorlás |
+| `12-level/` | Levél — a reggeli posta: négy csoport, pontozott ajánlatok, csengetés, a tükörfiók és a szabályok |
 
 ## Szerverfunkciók (`_funkciok.json`)
 

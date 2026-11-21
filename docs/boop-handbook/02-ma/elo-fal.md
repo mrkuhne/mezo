@@ -45,8 +45,10 @@ nyitva), a **napi energiagörbe**, és este a **nap lezárása**.
    legtöbbet mozdító, a történtek közül a legfrissebb.
 3. Ha két dolog egyformán fontos, **mindig ugyanaz** kerül előre — a fal nem rendeződik át alattad két ránézés
    között.
-4. A **telefonod csak az első hely miatt csöröghet**, naponta legfeljebb kétszer, és sosem olyasmiért, amit már
-   láttál vagy elintéztél. A többi csendben vár.
+4. A **telefonod csak az első hely miatt csöröghet**, naponta legfeljebb kétszer (08:00 és 21:00 között), és sosem
+   olyasmiért, amit már láttál vagy elintéztél, és ugyanarra a lejáratra sem kétszer. A többi csendben vár. A
+   csengetés **2026-11-21 óta él** (előtte a szabály megvolt, de semmi nem hívta); amíg nincs fizetős Apple-fiók, a
+   telefon az app megnyitásakor ütemezi be — lásd: *Levél / A reggeli posta*.
 5. Amit megcsináltál, a telefon **a napra eltárolja**; másnap magától tiszta lappal indul.
 
 ## Miért így
@@ -60,6 +62,6 @@ Nincs saját beállítása. A csörgés korlátja — naponta legfeljebb kettő 
 nélküli szabály ugyanaz, mintha Boopra bíznánk.
 
 ## Mi jön még
-- Az Edzés, később a Pénz és a Levél egyetlen sorral bejelentkezik a falra.
+- A **Levél már a falon van** (a lejáró határidő vagy ajánlat, és „Megjött a reggeli posta”); az Edzés és a Pénz egyetlen sorral követheti.
 - Az Évad harmadik szakaszában a heti menü is kártyát kap.
 - Az ételkártya a saját fotóját is megkapja, amint az kéznél van a kezdőlapon.

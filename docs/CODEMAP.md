@@ -21,7 +21,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 | [biometrics](#biometrics) | ✓ | 6 | [me](features/me.md) |
 | [boop](#boop) | ✓ | 1 | [boop-ios](features/boop-ios.md) |
 | [character](#character) | ✓ | 1 | [character](features/character.md) |
-| [companion](#companion) | ✓ | 5 | [character](features/character.md), [companion](features/companion.md), [dayclose](features/dayclose.md), [journal](features/journal.md), [lifegoal](features/lifegoal.md), [me](features/me.md), [penz](features/penz.md), [today](features/today.md), [_platform-language](features/_platform-language.md) |
+| [companion](#companion) | ✓ | 5 | [character](features/character.md), [companion](features/companion.md), [dayclose](features/dayclose.md), [journal](features/journal.md), [lifegoal](features/lifegoal.md), [mail](features/mail.md), [me](features/me.md), [penz](features/penz.md), [today](features/today.md), [_platform-language](features/_platform-language.md) |
 | [dayclose](#dayclose) | ✓ | 1 | [boop-ios](features/boop-ios.md), [dayclose](features/dayclose.md) |
 | [fuel](#fuel) | ✓ | 2 | [fuel](features/fuel.md) |
 | [goal](#goal) | ✓ | 1 | [goal-engine](features/goal-engine.md), [me](features/me.md), [season](features/season.md) |
@@ -30,7 +30,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 | [journal](#journal) | ✓ | 1 | [journal](features/journal.md) |
 | [lifegoal](#lifegoal) | ✓ | 1 | [lifegoal](features/lifegoal.md) |
 | [llmlog](#llmlog) | ✓ | 2 | [companion](features/companion.md) |
-| [mail](#mail) | ✓ | 1 | · |
+| [mail](#mail) | ✓ | 1 | [mail](features/mail.md) |
 | [meal](#meal) | ✓ | 3 | [fuel](features/fuel.md) |
 | [medication](#medication) | ✓ | 1 | · |
 | [needs](#needs) | ✓ | 1 | [needs](features/needs.md) |
@@ -275,6 +275,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   [docs/features/dayclose.md](features/dayclose.md) (updated 2026-11-20, done) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-11-19, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-11-19, in-progress) ·
+  [docs/features/mail.md](features/mail.md) (updated 2026-11-21, done) ·
   [docs/features/me.md](features/me.md) (updated 2026-11-20, mixed) ·
   [docs/features/penz.md](features/penz.md) (updated 2026-11-20, done) ·
   [docs/features/today.md](features/today.md) (updated 2026-11-19, mixed) ·
@@ -781,7 +782,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### mail
 
-*BE + API* · read next: **none — no HOW doc exists for this feature yet**
+*BE + API* · read next: [docs/features/mail.md](features/mail.md) (updated 2026-11-21, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/mail`
   - **entities→tables:** `MailFeedbackEntity`→`mail_feedback`, `MailFolderCursorEntity`→`mail_folder_cursor`,
@@ -804,7 +805,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   - **endpoints:** GET /api/mail/mailbox · PUT /api/mail/mailbox · DELETE /api/mail/mailbox ·
     POST /api/mail/mailbox/run · GET /api/mail/digest · POST /api/mail/items/{id}/feedback · GET /api/mail/rules ·
     PUT /api/mail/rules
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/mail` — 8 IT + 9 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/mail` — 8 IT + 10 unit
   - **ITs:** `ImapMailReaderIT`, `MailApiIT`, `MailCostCapIT`, `MailDigestPipelineIT`, `MailIntakeIT`,
     `MailJobEnabledIT`, `MailJobSwitchIT`, `MailSchemaIT`
   - **populators:** `DatabasePopulator`, `LlmLogPopulator`, `MailPopulator`, `UserPopulator`
@@ -1469,5 +1470,5 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 Sources that could not be bound to a feature block by convention — bind them by adding the missing controller/`key_files` entry, or read them directly.
 
 - **Feature doc** [`docs/features/_platform-api-backend.md`](features/_platform-api-backend.md) — its `key_files` point outside any single feature package
-- **Features with no `docs/features/` doc:** `mail`, `medication`
+- **Features with no `docs/features/` doc:** `medication`
   There is no HOW doc for these — read the code, and write the doc when you touch them (AGENTS.md §Documentation).

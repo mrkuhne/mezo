@@ -63,6 +63,20 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-11-21 — Boop Levél L1 + L2: the morning post (`mezo-r36n9.38` + `mezo-r36n9.39`) — built, not yet deployed.**
+  One release. The server reads a read-only **mirror Gmail** (the owner's Gmail and iCloud forward into it; one app
+  password, AES-GCM sealed) at 08:00 and 15:00 Budapest, redacts every mail before any model, sorts it by rules first
+  (sensitive senders — bank, insurer, government, health, login codes — are never read by a model) and the cheap model
+  second, and keeps four groups: Határidős, Csomagok, Akciók és lehetőségek (1–10 score), A többi. *Érdekel / nem érdekel*
+  teaches a per-sender prior; a per-day LLM cap (0.15 USD) falls back to rules-only and says so. Phone: the Levél area
+  (Ma · Figyelt · Szabályok · Fiókok, six-step mirror guide, Lecsatolás), the **first wall source from a life area**, and
+  the wall's ring (`WallNotifier`, cap 2 per fire day, 08:00–21:00) — built for the first time, so Étel and Edzés
+  expiring items ring too; rings are scheduled only when the app is opened until the paid team's server push
+  (`mezo-r36n9.19`). Switches `mezo.mail.enabled` + `mezo.techcore.cron.mail-job.enabled` ship off; deploy needs
+  `MEZO_MAIL_SECRET_KEY` first. Carrier patterns are provisional; Figyelt + price check are L3. Spec
+  [2026-11-21-boop-level-posta-design](../superpowers/specs/2026-11-21-boop-level-posta-design.md);
+  [`mail.md`](../features/mail.md), [`boop-ios.md`](../features/boop-ios.md).
+
 - **2026-11-21 — Boop B6 Évad S2: adherence, insights, the season in every AI context, the wall (`mezo-r36n9.16`).**
   One server source of day judgement: `GET /api/seasons/adherence?from&to` (`AdherenceService`, ≤ 62 days, with or
   without a season) — judged = before today, no fuel recovery mode, something logged (the Étel Hét tab's own rule);

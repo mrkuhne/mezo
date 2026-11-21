@@ -3743,5 +3743,155 @@
       "11-penz/02-terulet"
     ],
     "csomag": "penz"
+  },
+  "level-tukorfiok": {
+    "cim": "A tükörfiók összekötése és lecsatolása",
+    "terulet": "Levél",
+    "mit_tud": "Elmenti a Boop-fiók címét és az alkalmazásjelszót (mentés előtt kipróbálja a belépést, a jelszót titkosítva tárolja és sosem adja vissza), és lecsatolásnál törli a jelszót.",
+    "app": "Kész",
+    "app_megjegyzes": "A Fiókok oldal hatlépéses útmutatója, a két mező, az állapot szavakkal és a Lecsatolás megerősítéssel.",
+    "jegyek": [
+      "mezo-r36n9.38",
+      "mezo-r36n9.39"
+    ],
+    "kezikonyv": [
+      "12-level/02-fiokok-es-szabalyok"
+    ],
+    "csomag": "mail"
+  },
+  "level-atvetel": {
+    "cim": "Levelek átvétele naponta kétszer",
+    "terulet": "Levél",
+    "mit_tud": "Reggel 8-kor és délután 3-kor csak olvasva belép a tükörfiókba, letölti az újakat (Beérkezett és Spam), nem tölt le kétszer semmit, és kézi frissítést is enged néhány percenként.",
+    "app": "Kész",
+    "app_megjegyzes": "A Frissítés most gomb a Fiókok oldalon; az automatikus átnézés a kapcsolók bekapcsolásáig ki van kapcsolva.",
+    "jegyek": [
+      "mezo-r36n9.38",
+      "mezo-r36n9.39"
+    ],
+    "kezikonyv": [
+      "12-level/01-reggeli-posta"
+    ],
+    "csomag": "mail"
+  },
+  "level-vedelem": {
+    "cim": "Tisztítás és érzékeny feladók",
+    "terulet": "Levél",
+    "mit_tud": "Mielőtt bármi gép látná a levelet, kitakarja a személyes adatokat; a bank, biztosító, hivatal és egészségügyi levelét gép soha nem olvassa, csak a feladó látszik.",
+    "app": "Kész",
+    "app_megjegyzes": "Az érzékeny sor csak azt mondja, ki írt; a Szabályok oldalon bővíthető.",
+    "jegyek": [
+      "mezo-r36n9.38",
+      "mezo-r36n9.39"
+    ],
+    "kezikonyv": [
+      "12-level/01-reggeli-posta",
+      "12-level/02-fiokok-es-szabalyok"
+    ],
+    "csomag": "mail"
+  },
+  "level-besorolas": {
+    "cim": "A négy csoport és a csomagkövetés",
+    "terulet": "Levél",
+    "mit_tud": "Szabályokkal és egy olcsó modellel Határidős, Csomagok, Akciók és lehetőségek, A többi csoportba teszi a leveleket; a csomag csomagonként egy sor a legutóbbi állapottal; az ember írta levél mindig elöl.",
+    "app": "Kész",
+    "app_megjegyzes": "A szállítói szabályok ideiglenesek, a valódi levelekhez pontosítjuk.",
+    "jegyek": [
+      "mezo-r36n9.38",
+      "mezo-r36n9.39"
+    ],
+    "kezikonyv": [
+      "12-level/01-reggeli-posta"
+    ],
+    "csomag": "mail"
+  },
+  "level-pontozas-tanulas": {
+    "cim": "Ajánlatok pontozása és tanulás a koppintásokból",
+    "terulet": "Levél",
+    "mit_tud": "Az ajánlatokat 1–10-re pontozza indoklással, a gép által kitalált dátumot, összeget vagy linket eldobja, és az érdekel / nem érdekel koppintásokból feladónként tanul; három nem érdekel után csendes eltételt javasol.",
+    "app": "Kész",
+    "app_megjegyzes": "A kártyákon a pontszám, az indoklás és a két gomb; a javaslat a Szabályok oldalon.",
+    "jegyek": [
+      "mezo-r36n9.38",
+      "mezo-r36n9.39"
+    ],
+    "kezikonyv": [
+      "12-level/01-reggeli-posta"
+    ],
+    "csomag": "mail"
+  },
+  "level-szabalyok": {
+    "cim": "Saját feladó-szabályok",
+    "terulet": "Levél",
+    "mit_tud": "Megőrzi, kit ne olvasson gép, kit mutasson mindig és kit tegyen csendben el; a beépített érzékeny lista nem szűkíthető.",
+    "app": "Kész",
+    "jegyek": [
+      "mezo-r36n9.38",
+      "mezo-r36n9.39"
+    ],
+    "kezikonyv": [
+      "12-level/02-fiokok-es-szabalyok"
+    ],
+    "csomag": "mail"
+  },
+  "level-csengetes": {
+    "cim": "Csengetés a lejáró levélért",
+    "terulet": "Levél",
+    "mit_tud": "A szerver megmondja, melyik tétel csörögjön (lejáró határidő vagy 8-as pont fölötti, 36 órán belül lejáró, átvizsgált ajánlat); a telefon ütemezi, naponta legfeljebb kétszer, 08:00 és 21:00 között, ugyanarra a lejáratra egyszer.",
+    "app": "Részben kész",
+    "app_megjegyzes": "A telefon csak az app megnyitásakor ütemez, szerveroldali értesítés a fizetős Apple-fiók után jön; a csörgésre koppintva az app nyílik meg, nem közvetlenül a Levél.",
+    "jegyek": [
+      "mezo-r36n9.38",
+      "mezo-r36n9.39"
+    ],
+    "kezikonyv": [
+      "12-level/01-reggeli-posta"
+    ],
+    "csomag": "mail"
+  },
+  "level-koltsegkeret": {
+    "cim": "Napi költségkeret a levél feldolgozására",
+    "terulet": "Levél",
+    "mit_tud": "Napi 0,15 dolláros gépi keret a levélre; ha elfogy vagy a modell nem elérhető, a levelek szabályokkal kerülnek csoportba, és a Ma oldal kiírja.",
+    "app": "Kész",
+    "app_megjegyzes": "A „ma már nem pontoztam tovább” sor a Ma oldalon.",
+    "jegyek": [
+      "mezo-r36n9.38",
+      "mezo-r36n9.39"
+    ],
+    "kezikonyv": [
+      "12-level/01-reggeli-posta"
+    ],
+    "csomag": "mail"
+  },
+  "level-megorzes": {
+    "cim": "30 napos megőrzés",
+    "terulet": "Levél",
+    "mit_tud": "A levél szövegét 30 nap után törli, az összefoglaló, a pont és a visszajelzés marad; érzékeny levélből szöveg nem is tárolódik.",
+    "app": "Nem kell",
+    "app_megjegyzes": "Háttérfolyamat, nincs külön képernyő.",
+    "jegyek": [
+      "mezo-r36n9.38",
+      "mezo-r36n9.39"
+    ],
+    "kezikonyv": [
+      "12-level/01-reggeli-posta"
+    ],
+    "csomag": "mail"
+  },
+  "level-egeszseg": {
+    "cim": "Riasztás, ha a posta elnémul",
+    "terulet": "Levél",
+    "mit_tud": "Ha két átnézés egymás után nem hozott új levelet, vagy a jelszót már nem fogadja a fiók, jelzést ad a figyelőrendszerbe, és a Fiókok oldal szavakkal kiírja.",
+    "app": "Kész",
+    "app_megjegyzes": "Az admin képernyő megszűnt; a Fiókok oldal az egyetlen felület.",
+    "jegyek": [
+      "mezo-r36n9.38",
+      "mezo-r36n9.39"
+    ],
+    "kezikonyv": [
+      "12-level/02-fiokok-es-szabalyok"
+    ],
+    "csomag": "mail"
   }
 }
