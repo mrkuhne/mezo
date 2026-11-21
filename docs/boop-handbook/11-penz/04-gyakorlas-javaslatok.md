@@ -90,7 +90,6 @@ hosszú — a kártyán mindkét rekesznél két-három termék áll éves költ
 | `penz_proposal` | a javaslatok: a felosztás, az opciók, a kiszámolt számok, az elfogadott lista és a pipák |
 
 ## Mi jön még
-- A hosszú távú heti hírátnézés — a szerver már elkészíti, a telefonos helye a te döntésedre vár (lásd: *Portfólió és hírek*).
 - Az „élesre fordítás”: valódi pénzzel, a te kapcsolóddal — később, külön döntés.
 - Az „ennyit tudsz befektetni” szám a Ma oldalon, a Havi stratégia számából.
 

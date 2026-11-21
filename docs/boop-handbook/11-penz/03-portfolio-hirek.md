@@ -26,6 +26,13 @@ osszefoglalo: A Pénzem oldalon látod a befektetéseidet három időtáv szerin
   sorban. Ha a bank SMS-e már beérkezett erről a terhelésről, Boop felajánlja: *Ez volt a banki terhelés?* — ha
   kiválasztod, a banki tétel lesz a vásárlás, nem kerül be kétszer. Ha nem adsz meg számlát, minden úgy marad, mint
   eddig.
+- **A hét, hosszú távon** (Pénzem, a három rekesz alatt). Hétfő reggelente Boop a múlt hét hírei közül rekeszenként
+  (1–3 év · 5–10 év · 10+ év) megmondja, volt-e olyan, ami a hosszú távú képet tényleg érinti — szabályozás,
+  technológia, iparági szerkezet, hosszú távú számok. Soronként egy mondat és egy csendes szó: *számít* vagy *nincs
+  teendő*. Koppintásra a teljes magyarázat: *Amit Boop gondol róla* · *Mennyire biztos* · *Honnan van* (a hét
+  hírei, forrásokkal) · *Nincs teendőd*. Új forintösszeget nem ír, nem sürget, nem mond eladást; ha a szövege nem
+  megy át az ellenőrzésen, egy őszinte, rögzített mondat áll helyette. Értesítés és teendő-gomb nincs. Az első
+  áttekintés az első hétfő reggel készül el.
 - **A napi hírösszefoglaló a Ma oldal alján.** Csak az a hír kerül ide, ami a **te meglévő befektetéseidet**
   érinti, és csak akkor, ha tartósan számít (szabályozás, technológia, iparági szerkezet, hosszú távú számok) — a
   napon belüli hullámzás kimarad. Az ugyanarról szóló cikkek egy hírbe kerülnek, odaírva, hány forrásból.
@@ -90,12 +97,6 @@ a te részeden” áll — ezt a rendszer számolta, nem az AI.
 ## Mi jön még
 - A Gyakorlás oldal és Boop javaslatai (*Felosztást kérek*, *Befektetnék*, *Nagyobb összeg*, *Havi stratégia*) — 4.
   lépés. Akkor kerül a Ma oldalra az „ennyit tudsz befektetni” szám is.
-- **A heti áttekintés: mi az, ami hosszú távon tényleg számít.** A szerver már hétfőnként elkészíti: a múlt hét
-  hírei közül rekeszenként (1–3 év · 5–10 év · 10+ év) megmondja, volt-e olyan, ami a hosszú távú képet tényleg
-  érinti — szabályozás, technológia, iparági szerkezet, hosszú távú számok —, miért, és hol tévedhet. Új
-  forintösszeget nem ír, nem sürget, nem mond eladást; ha a szövege nem megy át az ellenőrzésen, egy őszinte,
-  rögzített mondat áll helyette. Értesítés és teendő-gomb nincs. **Hogy a telefonon hol jelenik meg, arról te
-  döntesz** — addig a telefon még nem mutatja.
 
 ## Mi marad ki
 - Napon belüli árfolyam — szándékosan: a te időtávjaidon nem mond semmit, csak nézegetésre csábít.
