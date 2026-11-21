@@ -39,17 +39,20 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 /**
  * Scores how demanding each calendar event is (Boop B7 K1, mezo-r36n9.17): one cheap-tier model call for every
- * event with no score for its exact input yet, {@link RuleEventScore} as the fallback (no model, a failed or
- * slower-than-8-s call, an unusable answer, an event the answer skipped). The model scores and never produces a day
- * number; the owner's own feedback labels override the components when read. Scores are cached by
- * (event, input hash); a rule score is retried by a later call after {@link #RULE_RETRY}.
+ * timed event with no model score for its exact input yet, {@link RuleEventScore} as the fallback (no model, a failed
+ * or slower-than-{@link #LLM_TIMEOUT} call, an unusable answer, an event the answer skipped, every all-day event).
+ * The model scores and never produces a day number; the owner's own feedback labels override the components when
+ * read. Scores are cached by (event, input hash); a stored rule score is upgraded by the next model run.
  *
- * <p>Deliberately not {@code @Transactional}: the model call must not hold a connection.
+ * <p>Two entry points: {@link #scoresFor} may call the model and only ever runs in the background
+ * ({@link EventScoringRunner}); {@link #storedOrRule} is the request path's read and never calls the model.
+ * Deliberately not {@code @Transactional}: the model call must not hold a connection.
  */
 @Slf4j
 @Service
@@ -58,8 +61,8 @@ public class EventScoringService {
     static final String LLM_FEATURE = "capacity_event_score";
     /** First token of the system prompt; FakeCompanionLlm mirrors it literally. */
     static final String MARKER = "CAPACITY_EVENT_SCORE_V1";
-    static final Duration LLM_TIMEOUT = Duration.ofSeconds(8);
-    static final Duration RULE_RETRY = Duration.ofMinutes(30);
+    /** Generous: the call only ever runs in the background (the cheap tier's p50 is ~13 s in production). */
+    static final Duration LLM_TIMEOUT = Duration.ofSeconds(45);
     private static final Set<String> KINDS =
         Set.of("meeting", "focus", "social", "sport", "admin", "personal", "travel", "rest", "free", "other");
 
@@ -95,8 +98,14 @@ public class EventScoringService {
         this.executor = executor;
     }
 
-    /** Every event of {@code from..to} (inclusive) with its score, feedback applied; keyed by event id. */
+    /**
+     * Every event of {@code from..to} (inclusive) with its score, feedback applied; keyed by event id. Asks the model
+     * for every timed event without a model score for its current input — background only, never a request thread.
+     */
     public Map<UUID, EventScore> scoresFor(UUID owner, LocalDate from, LocalDate to) {
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            log.warn("Capacity event scoring called inside a transaction: the model call holds its connection");
+        }
         List<CalendarEventView> events = calendar.events(owner, from, to);
         if (events.isEmpty()) {
             return Map.of();
@@ -107,7 +116,6 @@ public class EventScoringService {
                 events.stream().map(CalendarEventView::id).toList())) {
             byEvent.computeIfAbsent(row.getEventId(), k -> new LinkedHashMap<>()).put(row.getInputHash(), row);
         }
-        Instant retryBefore = Instant.now().minus(RULE_RETRY);
         List<CalendarEventView> toAsk = new ArrayList<>();
         Map<UUID, String> hashes = new LinkedHashMap<>();
         for (CalendarEventView e : events) {
@@ -117,10 +125,7 @@ public class EventScoringService {
             if (row != null) {
                 stored.put(e.id(), row);
             }
-            boolean trivial = e.allDay() && "free".equals(e.availability());
-            boolean needsModel = row == null
-                || (ScoreSource.RULE.value().equals(row.getSource()) && !trivial && row.getUpdatedAt().isBefore(retryBefore));
-            if (needsModel && !trivial) {
+            if (needsModel(e, row)) {
                 toAsk.add(e);
             }
         }
@@ -131,16 +136,11 @@ public class EventScoringService {
         for (CalendarEventView e : events) {
             EventScore fromModel = asked.get(e.id());
             CalendarEventScoreEntity row = stored.get(e.id());
-            boolean modelAsked = toAsk.stream().anyMatch(a -> a.id().equals(e.id()));
             if (fromModel != null) {
                 base.put(e.id(), fromModel);
                 toSave.add(upsert(owner, row, e.id(), hashes.get(e.id()), fromModel));
-            } else if (row != null) {
+            } else if (row != null) { // stored, or the model failed again: the stored row stands
                 base.put(e.id(), fromRow(row));
-                if (modelAsked) { // model failed again: keep the rule row, push the retry window out
-                    row.setUpdatedAt(Instant.now());
-                    toSave.add(row);
-                }
             } else {
                 EventScore rule = RuleEventScore.score(e);
                 base.put(e.id(), rule);
@@ -186,6 +186,19 @@ public class EventScoringService {
             out.put(e.id(), applyFeedback(base, labels.get(eventKey(e.externalId()))));
         }
         return out;
+    }
+
+    /**
+     * Whether an event still waits for a model score: a timed event with no stored score for its current input, or
+     * only a rule one. An all-day event never goes to the model — it carries no time span, the demand skips it.
+     */
+    static boolean needsModel(CalendarEventView e, CalendarEventScoreEntity row) {
+        return !e.allDay() && (row == null || ScoreSource.RULE.value().equals(row.getSource()));
+    }
+
+    /** {@link #needsModel(CalendarEventView, CalendarEventScoreEntity)} over a read score. */
+    static boolean needsModel(CalendarEventView e, EventScore score) {
+        return !e.allDay() && (score == null || !ScoreSource.LLM.value().equals(score.source()));
     }
 
     /** SHA-256 over what the score depends on: title, start, end, attendee names, location, notes. */

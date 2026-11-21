@@ -7,8 +7,8 @@ import java.util.UUID;
 
 /**
  * The owner's day capacity for the Boop morning brief (Boop B7 K1) — consumer-owned port (ADR 0012); the adapter
- * lives in boop and reads the capacity feature's public service. The call may reach the scoring model, so it must
- * never run inside a transaction.
+ * lives in the capacity feature ({@code BoopCapacityAdapter}), so boop stays a leaf. The read never calls the scoring
+ * model (stored or rule scores only).
  */
 public interface BoopCapacityPort {
 

@@ -165,6 +165,56 @@ class EventScoringServiceIT extends AbstractIntegrationTest {
         assertThat(physical.social()).isZero();
     }
 
+    @Test
+    void allDayBusyEventNeverGoesToTheModel() {
+        UUID owner = databasePopulator.populateUser("cap-score7@test.local");
+        CalendarEventEntity ev = new CalendarEventEntity();
+        ev.setCreatedBy(owner);
+        ev.setExternalId("ek-7|2026-11-23");
+        ev.setDate(DAY);
+        ev.setTitle("Konferencia");
+        ev.setStartAt(Instant.parse("2026-11-22T23:00:00Z"));
+        ev.setEndAt(Instant.parse("2026-11-23T23:00:00Z"));
+        ev.setAllDay(true);
+        ev.setAvailability("busy");
+        ev = events.saveAndFlush(ev);
+        int before = fakeLlm.capacityScoreCallCount();
+
+        EventScore s = service.scoresFor(owner, DAY, DAY).get(ev.getId());
+
+        assertThat(s.source()).isEqualTo("rule");
+        assertThat(fakeLlm.capacityScoreCallCount()).isEqualTo(before);
+    }
+
+    @Test
+    void storedRuleScoreIsUpgradedByTheNextRun() {
+        UUID owner = databasePopulator.populateUser("cap-score8@test.local");
+        CalendarEventEntity ev = event(owner, "ek-8|2026-11-23T09:00:00Z", "Heti sync");
+        service.scoresFor(owner, DAY, DAY);
+        // as if the model had failed when it was first scored
+        jdbc.update("update calendar_event_score set source = 'rule' where event_id = ?", ev.getId());
+        int before = fakeLlm.capacityScoreCallCount();
+
+        EventScore s = service.scoresFor(owner, DAY, DAY).get(ev.getId());
+
+        assertThat(s.source()).isEqualTo("llm");
+        assertThat(fakeLlm.capacityScoreCallCount()).isEqualTo(before + 1);
+        assertThat(jdbc.queryForObject("select count(*) from calendar_event_score where event_id = ?", Integer.class,
+            ev.getId())).isEqualTo(1);
+    }
+
+    @Test
+    void storedOrRuleNeverCallsTheModel() {
+        UUID owner = databasePopulator.populateUser("cap-score9@test.local");
+        CalendarEventEntity ev = event(owner, "ek-9|2026-11-23T09:00:00Z", "Heti sync");
+        int before = fakeLlm.capacityScoreCallCount();
+
+        EventScore s = service.storedOrRule(owner, DAY, DAY).get(ev.getId());
+
+        assertThat(s.source()).isEqualTo("rule");
+        assertThat(fakeLlm.capacityScoreCallCount()).isEqualTo(before);
+    }
+
     private void label(UUID owner, String key, FeedbackEffect effect) {
         CapacityEventFeedbackEntity l = new CapacityEventFeedbackEntity();
         l.setCreatedBy(owner);

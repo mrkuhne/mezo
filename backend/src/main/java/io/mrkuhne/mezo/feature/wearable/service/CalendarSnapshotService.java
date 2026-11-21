@@ -9,13 +9,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 
 /** Device-calendar history (Boop S2 + B1, mezo-r36n9.2 / .11): each sent day is upserted by the
  *  EventKit id; live rows of that day missing from the payload are soft-deleted (cancelled). Days
- *  not sent are never touched. Boop never writes back to the calendar. */
+ *  not sent are never touched. Boop never writes back to the calendar. A {@link CalendarDaysReplacedEvent}
+ *  announces the change (listeners take it after commit). */
 @Service
 @RequiredArgsConstructor
 public class CalendarSnapshotService {
@@ -23,6 +25,7 @@ public class CalendarSnapshotService {
     private final CalendarEventRepository repository;
     private final WearableProperties properties;
     private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher events;
 
     @Transactional
     public void replace(UUID createdBy, List<CalendarDayIn> days) {
@@ -47,6 +50,10 @@ public class CalendarSnapshotService {
             } else {
                 repository.softDeleteMissing(createdBy, day.getDate(), byId.keySet());
             }
+        }
+        if (!days.isEmpty()) {
+            events.publishEvent(new CalendarDaysReplacedEvent(createdBy,
+                days.stream().map(CalendarDayIn::getDate).toList()));
         }
     }
 }

@@ -142,7 +142,7 @@ public class BoopBriefService {
 
     /**
      * The day's capacity, or null when the feature is off or the read failed (a warning, never a failed brief).
-     * Called here, outside any transaction: the capacity read may call the scoring model.
+     * The read uses stored or rule event scores only; it never waits for the scoring model.
      */
     private BoopCapacityPort.View capacity(UUID owner, LocalDate date) {
         try {

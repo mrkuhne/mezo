@@ -10,8 +10,7 @@ import org.springframework.stereotype.Component;
 /**
  * The adapter of boop's {@link BoopCapacityPort} (ADR 0012: the providing feature implements the consumer's port, so
  * boop stays free of a capacity dependency and no slice cycle through season appears): the day read mapped to the
- * brief's words. Deliberately not
- * {@code @Transactional} (the day read may call the scoring model).
+ * brief's words. The day read never calls the scoring model.
  */
 @Slf4j
 @Component

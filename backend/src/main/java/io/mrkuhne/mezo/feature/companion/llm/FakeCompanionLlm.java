@@ -628,6 +628,10 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final String BOOP_BRIEF_MARKER_MIRROR = "BOOP_BRIEF_V1";
     /** Mirror of EventScoringService.MARKER (feature/capacity, B7 K1) — LITERAL, cycle rule. */
     public static final String CAPACITY_SCORE_MARKER_MIRROR = "CAPACITY_EVENT_SCORE_V1";
+    /** Capacity event scoring: planted in an event title → the answer comes after {@link #CAPACITY_SLOW_MS}
+     *  (the background-scoring ITs prove the day read never waits for the model). */
+    public static final String CAPACITY_SLOW = "[fake-slow]";
+    public static final long CAPACITY_SLOW_MS = 3000;
     /** Boop brief: planted in the day's intention creed → a non-JSON answer (rule fallback path). */
     public static final String BOOP_JUNK = "[fake-boop-junk]";
     /** Boop brief: planted in the creed → a JSON object carrying ONLY {@code alvas} (per-field fallback). */
@@ -1041,6 +1045,14 @@ public class FakeCompanionLlm implements CompanionLlm {
         }
         if (systemPrompt.startsWith(CAPACITY_SCORE_MARKER_MIRROR)) {
             capacityScoreCalls.incrementAndGet();
+            if (userMessage.contains(CAPACITY_SLOW)) {
+                try {
+                    Thread.sleep(CAPACITY_SLOW_MS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new IllegalStateException("FAKE-LLM slow capacity call interrupted", e);
+                }
+            }
             StringBuilder events = new StringBuilder();
             Matcher ids = Pattern.compile("id=([0-9a-fA-F-]{36})").matcher(userMessage);
             while (ids.find()) {

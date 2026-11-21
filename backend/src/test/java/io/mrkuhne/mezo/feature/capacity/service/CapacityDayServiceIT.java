@@ -12,6 +12,8 @@ import io.mrkuhne.mezo.support.populator.RecoveryPeriodPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import java.math.BigDecimal;
+import io.mrkuhne.mezo.feature.wearable.entity.CalendarEventEntity;
+import io.mrkuhne.mezo.feature.wearable.repository.CalendarEventRepository;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -22,7 +24,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 /**
  * Boop B7 K1 (mezo-r36n9.17): the capacity day over real data. Fixtures hang off {@link #DAY} (a Monday), never off
- * the clock; the fake model scores every event mental 2 / social 1 (one unit per hour).
+ * the clock. The day read never calls the model: a first read sees rule scores.
  */
 @ActiveProfiles("companion-fake")
 class CapacityDayServiceIT extends AbstractIntegrationTest {
@@ -36,10 +38,19 @@ class CapacityDayServiceIT extends AbstractIntegrationTest {
     @Autowired private DailyMetricPopulator metricPopulator;
     @Autowired private RecoveryPeriodPopulator recoveryPopulator;
     @Autowired private TrainPopulator trainPopulator;
+    @Autowired private CalendarEventRepository calendarEvents;
 
     private void meeting(UUID owner, LocalDate date, String title, String startUtc, String endUtc) {
         calendarPopulator.createEvent(owner, date, title,
             Instant.parse(date + "T" + startUtc + ":00Z"), Instant.parse(date + "T" + endUtc + ":00Z"));
+    }
+
+    /** A meeting with four attendees: the rule scores it a "meeting" (mental by length, social 2). */
+    private void withPeople(UUID owner, LocalDate date, String title, String startUtc, String endUtc) {
+        CalendarEventEntity e = calendarPopulator.createEvent(owner, date, title,
+            Instant.parse(date + "T" + startUtc + ":00Z"), Instant.parse(date + "T" + endUtc + ":00Z"));
+        e.setAttendeeCount(4);
+        calendarEvents.saveAndFlush(e);
     }
 
     @Test
@@ -47,9 +58,9 @@ class CapacityDayServiceIT extends AbstractIntegrationTest {
         UUID owner = databasePopulator.populateUser("cap-day1@test.local");
         trainPopulator.createGymSlot(owner, 0, "17:30"); // Monday
         sleepPopulator.createSleepLog(owner, DAY, new BigDecimal("6.0"), 3);
-        meeting(owner, DAY, "Tervezés", "08:00", "12:00"); // the 4-hour block
-        meeting(owner, DAY, "Egyeztetés", "13:00", "14:00");
-        meeting(owner, DAY, "Átadó", "15:00", "16:00");
+        withPeople(owner, DAY, "Tervezés", "08:00", "12:00"); // the 4-hour block
+        withPeople(owner, DAY, "Egyeztetés", "13:00", "14:00");
+        withPeople(owner, DAY, "Átadó", "15:00", "16:00");
 
         CapacityDay day = service.day(owner, DAY);
 

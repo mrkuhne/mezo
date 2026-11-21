@@ -31,13 +31,13 @@ import org.springframework.stereotype.Service;
 
 /**
  * The capacity of one day or a Monday-Sunday week (Boop B7 K1, mezo-r36n9.17): every signal comes through a
- * consumer-owned port and feeds the pure models. Deliberately not {@code @Transactional}: the event scoring may call
- * the model and must not hold a connection (and swallows unique violations per row, which an outer transaction would
- * poison).
+ * consumer-owned port and feeds the pure models. It never calls the scoring model: every event carries its stored
+ * score or the rule's, and an upcoming event still waiting for a model score only starts the background run
+ * ({@link EventScoringRunner}), which this read never waits for.
  *
  * <p>Base of the day units: the 28-day median over days he rated 4 or better in the day close, else over the full
- * days (a sleep record AND a daily-metric row), else the configured default with {@code tanulo}. Only the requested
- * days are scored by the model; the baseline history is stored-or-rule scored. A calendar with no rows at all in the
+ * days (a sleep record AND a daily-metric row), else the configured default with {@code tanulo}. The requested
+ * days are stored-or-rule scored, like the baseline history. A calendar with no rows at all in the
  * two weeks before the day is "unknown": the verdict then comes from the body and the sessions alone.
  */
 @Service
@@ -54,6 +54,7 @@ public class CapacityDayService {
 
     private final CapacityCalendarPort calendar;
     private final EventScoringService scoring;
+    private final EventScoringRunner scoringRunner;
     private final CapacitySleepPort sleep;
     private final CapacityMetricsPort metrics;
     private final CapacityTrainPort train;
@@ -62,11 +63,13 @@ public class CapacityDayService {
     private final CapacityProperties props;
     private final WearableProperties wearable;
 
-    public CapacityDayService(CapacityCalendarPort calendar, EventScoringService scoring, CapacitySleepPort sleep,
+    public CapacityDayService(CapacityCalendarPort calendar, EventScoringService scoring,
+                              EventScoringRunner scoringRunner, CapacitySleepPort sleep,
                               CapacityMetricsPort metrics, CapacityTrainPort train, CapacityMealPort meal,
                               CapacityCheckinPort checkin, CapacityProperties props, WearableProperties wearable) {
         this.calendar = calendar;
         this.scoring = scoring;
+        this.scoringRunner = scoringRunner;
         this.sleep = sleep;
         this.metrics = metrics;
         this.train = train;
@@ -90,8 +93,8 @@ public class CapacityDayService {
         LocalDate histFrom = first.minusDays(HISTORY_DAYS);
 
         List<CalendarEventView> events = calendar.events(owner, histFrom, last);
-        Map<UUID, EventScore> scores = new HashMap<>(scoring.storedOrRule(owner, histFrom, first.minusDays(1)));
-        scores.putAll(scoring.scoresFor(owner, first, last));
+        Map<UUID, EventScore> scores = scoring.storedOrRule(owner, histFrom, last);
+        scoringRunner.requestIfUnscored(owner, events, scores);
         Map<LocalDate, List<CalendarEventView>> eventsByDate = events.stream()
             .collect(Collectors.groupingBy(CalendarEventView::date));
 
