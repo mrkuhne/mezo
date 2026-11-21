@@ -59,6 +59,14 @@ Ha a hét már életbe lépett, a kártya azt mutatja: „Indulhat, a hét szám
 - **Blokk** — az **edzésmód** négy közül (Kiegyensúlyozott · Sok ismétlés · Nagyobb súly · Két sorozat bukásig), két kapcsoló
   (**Technikák** be/ki, **A heti javaslatot én hagyom jóvá**), a blokk heteinek sorozatszáma és izmonként az út hétről hétre.
 
+**Heti keret, percválasztó, „miért?” (2026-11-21).** A blokképítő fején egy **heti keret** sor mutatja, mennyi heti adag fér az
+edzéseid időkeretébe, és mennyit használ most a terved. Az **edzésidő-választó** (percek) ugyanehhez a kerethez tartozik: amit itt
+átállítasz, az szerint számolja újra, mi fér bele. Minden izomnál ott a **„miért?”** lap: honnan jön a sávja (a szint, a sport, vagy
+a Tartás megtartó adagja). A szint emelése egy lépésenként megy, és ha a következő szint nem fér a keretbe, a sor alatt az ok áll
+(például „Már két Hangsúly-izmod van” vagy „Ennyi időbe nem fér több adag”). Ha egy izom nagy adagot kap két egymást követő napon,
+sárga jelzés szól. Az **edzésidő a pihenőkkel együtt** számolt. Ha az építő egy **most létrehozott új blokkon** nyílt meg, a
+**„Mégsem, eldobom”** gomb lezárja a blokkot — lásd [Új blokk és tervjelöltek](18-uj-blokk-tervjeloltek.md).
+
 Az építő és a pakli abból a gombból, illetve kártyából **nagyul ki**, amire koppintottál, és lefelé húzva oda zsugorodik vissza; az
 építő már a Blokk fül megnyitásakor betölt a háttérben, így várakozás nélkül nyílik.
 
@@ -114,7 +122,7 @@ ha a „Nincs mit menteni” felirat nem fér el a gombon, helyette „Nincs vá
 - A technika és a kihívás edzés közben (lépésenként mit csinálj, a legyőzendő szám) — külön jegy, a technika-tervező után.
 - **Lefedettség-jelzések:** az építő szól, ha a blokkból hiányzik egy kiegészítő mozgás (például hátsó vállat vagy alkart érő
   gyakorlat), és egy **„Hozzáadom”** gombbal ugyanaz a hozzáadó lap nyílik meg — a következő jegy.
-- Új blokk összerakása a semmiből a telefonon (időkeret, tapasztalat, 2–3 felosztás-javaslat — a tulajdonos 49. döntése).
+- Éves térkép és annak követése (a blokkok előre tervezett sora) — a tervajánló következő szeletei.
 
 ## Mi marad ki
 - Napot hozzáadni, átnevezni vagy másik napra áthelyezni még nem lehet (ehhez a szerveren is kell egy kiegészítés).

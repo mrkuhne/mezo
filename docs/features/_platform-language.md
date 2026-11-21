@@ -2,7 +2,7 @@
 title: Language (Hungarian + English)
 type: feature-platform
 status: mixed
-updated: 2026-11-20
+updated: 2026-11-21
 tags: [platform, frontend, backend, auth, ai, boop, b4-etel]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/auth/service/UserLanguage.java
@@ -12,6 +12,7 @@ key_files:
 related: [_platform-auth-security, _platform-design-system, companion, settings, _platform-api-backend]
 ---
 
+> **2026-11-21 — reviewed after the Boop plan recommender (`mezo-r36n9.113`, no language-layer change).** Two new train error keys in both `messages_hu` and `messages_en` (parity kept): `TRAIN_MESO_EMPHASIZE_CAP` (400, more than `mezo.volume.bands.emphasize-max` Hangsúly muscles) and `TRAIN_MESO_SPLIT_UNKNOWN` (400, a `split` key not catalogued for the day count). Mechanics unchanged. See [`train.md`](train.md).
 > **2026-11-20 — reviewed after the Boop block day editor (`mezo-r36n9.116`, no language-layer change).** Two new train error keys in both `messages_hu` and `messages_en` (parity kept): `TRAIN_SUGGESTIONS_REQUEST_INVALID` (400, the day-suggestions request) and `TRAIN_DAY_WORKOUT_RUNNING` (409, a day with a running workout cannot be edited). Mechanics unchanged. See [`train.md`](train.md).
 > **2026-11-20 — reviewed after Boop Pénz L7 (`mezo-r36n9.105`, no language-layer change).** Ten `PENZ_*` keys added to both bundles (practice: `PENZ_PAPER_TRADE_NOT_FOUND`, `PENZ_PRACTICE_CAP_EXCEEDED`, `PENZ_PAPER_TRADE_STATE`, `PENZ_PAPER_TRADE_INVALID_STOP`, `PENZ_PRACTICE_TAG_UNKNOWN`; catalog/proposals: `PENZ_PRODUCT_NOT_FOUND`, `PENZ_PRODUCT_NOT_APPROVED`, `PENZ_PROPOSAL_NOT_FOUND`, `PENZ_PROPOSAL_STATE`, `PENZ_PROPOSAL_AMOUNT_INVALID`); the bundle count is now 321 keys each. **Same known gap as the digest:** the weekly practice review and the proposal fallback copy are Hungarian Java literals, not `UserMessages` keys — acceptable because the sole consumer is the Hungarian-only native app. See [`penz.md`](penz.md).
 > **2026-11-20 — reviewed after Boop B6 Évad S1 (`mezo-r36n9.16`, no language-layer change).** Six `SEASON_*` error keys in both bundles (`SEASON_REQUIRED`, `SEASON_PREVIEW_STALE`, `SEASON_NOT_EDITABLE`, `SEASON_ACTIVE_EXISTS`, `SEASON_PROFILE_REQUIRED`, `SEASON_BLOCK_DAYS_LOCKED`) and the `mezo.season.mesocycle-gate.*` block in `application.yml`; the season's own Hungarian copy (warnings, *Ehhez ezt kell tenned*) is server-built Hungarian like the other Boop surfaces. See [`season.md`](season.md).

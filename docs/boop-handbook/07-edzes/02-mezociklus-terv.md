@@ -46,9 +46,13 @@ osszefoglalo: Néhány kérdés után Boop összerak egy több hetes edzésblokk
 - **Lezárás:** a mezociklus végén zárójelentés (lásd [Gyakorlatok és előzmények](06-gyakorlatok-elozmenyek.md)).
 
 ## Hogyan működik
-1. **Váz:** a hetente vállalt napok számából felosztás, az izomcsoportonkénti sorozatszám egy bevett táblázatból (minimum,
-   optimális és maximális heti sorozat — lásd [Heti volumen](05-heti-volumen.md)). **Minden izomcsoport az első héten a saját sávján
-   belül indul, a sáv szélén** (Építés: a sáv aljáról, Hangsúly: a saját sávja aljáról, Tartás: a sáv tetejéről) — a tulajdonos döntése, 2026-11-18.
+1. **Váz:** a hetente vállalt napok számából felosztás — napszámonként több is van (például négy napra Felső / Alsó vagy teljes test
+   ×4; hatra Toló / Húzó / Láb ×2 vagy Felső / Alsó ×3), a választott felosztás szerint épül a terv —, az izomcsoportonkénti sorozatszám
+   egy bevett táblázatból (minimum, optimális és maximális heti sorozat — lásd [Heti volumen](05-heti-volumen.md)). **Minden izomcsoport az
+   első héten a saját sávján belül indul, a sáv aljáról** (Építés: a sáv aljáról, Hangsúly: a saját sávja aljáról, Tartás: a sáv aljáról,
+   a megtartó adagról) — a tulajdonos döntése, 2026-11-18, a Tartás részét felülírta a 2026-11-21-i „A sáv aljáról”. Egyszerre legfeljebb
+   **két** izom lehet Hangsúly. A **bemelegítő sorozat** csak egy izom első nehéz gyakorlata előtt van. A felosztás-választást és a
+   kész jelölteket lásd [Új blokk és tervjelöltek](18-uj-blokk-tervjeloltek.md).
 2. **Gyakorlatok kitöltése:** szabályok szerint a katalógusból.
 3. **AI-válogatás (opcionális):** egy AI-modell a szabályos keretek között jobb gyakorlatokat választhat; ha ki van kapcsolva,
    a szabályos kitöltés marad.

@@ -1202,13 +1202,14 @@
     "munkamenet": "folyadek-74e4af"
   },
   "mezo-r36n9.113": {
-    "cim": "Tervajánló: időkeret, edzettség és két-három tervjelölt",
+    "cim": "Tervajánló: hibátlan tervjelöltek, heti keret és új blokk a telefonon",
     "tipus": "Funkció",
     "szakasz": "B5 Edzés + Watch",
     "terulet": [
       "Edzés"
     ],
-    "mit_kapsz": "Új blokk tervezésekor Boop megkérdezi, mennyi időd van egy edzésre és mennyire vagy edzett, és ugyanarra a célra két-három tervet mutat becsült idővel. Te választasz, kezdőként kisebb, könnyebben tartható induló adaggal."
+    "mit_kapsz": "Az Edzés → Blokk fülön az Új blokk gombbal megadod, meddig tarthat egy edzés és melyik izom mennyire fontos; Boop legfeljebb három hibátlan, kész tervet mutat becsült idővel (ha semmi nem fér, javításokat ajánl). Kiválasztod, a blokk elindul, és a blokképítő megmutatja a heti keretet és minden izom „miért?”-jét; a „Mégsem, eldobom” visszavonja.",
+    "munkamenet": "Muscle Ladder implementation"
   },
   "mezo-r36n9.115": {
     "cim": "Új blokk alapból Kiegyensúlyozott, és a nehéz alapgyakorlatok több tartalékot kapnak",

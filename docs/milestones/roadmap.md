@@ -63,6 +63,20 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-11-21 — Boop Tervajánló S1 + S2: a new block starts from ranked, flawless plan candidates (`mezo-r36n9.113`).**
+  Server (S1): `POST /api/train/meso-plans/candidates` builds one deterministic plan per catalogued split of the chosen day
+  count (`mezo.meso-plan.splits`), measures each with the evaluator and offers only flawless ones (every group ≥2×/week,
+  every day within the session minutes, no heavy back-to-back days), ranked, max 3; when none fits it returns the closest
+  plus fixes (`more_minutes` / `fewer_emphasis` / `more_days`). `generate` takes a `split`; at most 2 Hangsúly muscles; the
+  evaluator gains rest-aware minutes for styled plans, `basis`, `consecutiveHeavy` and the tier `budget`. Owner calls made
+  during the build: warm-ups only before a muscle's first compound of the day (isolations none), Tartás starts at the
+  band's low edge. 4 days × 60 min fits with one Hangsúly and the rest Tartás (Felső/Alsó recommended); two Hangsúly need
+  about 75 min. Phone (S2): Edzés → Blokk → *Új blokk* (Alapok · Jelöltek · nem fér), *Ezzel kezdem* creates and starts
+  the block on the active season, the builder shows the heti keret and *miért?*, *Mégsem, eldobom* discards it. Not yet: the
+  year map (S3) and following it (S4). Spec
+  [2026-11-20-boop-eves-terv-design](../superpowers/specs/2026-11-20-boop-eves-terv-design.md), plan
+  [2026-11-21-boop-eves-terv-s1-s2](../superpowers/plans/2026-11-21-boop-eves-terv-s1-s2.md); docs
+  [`train.md`](../features/train.md), [`boop-ios.md`](../features/boop-ios.md).
 - **2026-11-20 — Boop block day editor (`mezo-r36n9.116`, small-phone button fix `mezo-r36n9.118`).**
   On Edzés → Blokk → Napok the owner now edits each day's exercises on the phone: ≡ drag reorder, ⋯ *Csere · Beállítások ·
   Törlés* (delete with undo), ＋ *Gyakorlat hozzáadása* (muscle chips, *kevés* first, ≤5 reasoned suggestions, full list with

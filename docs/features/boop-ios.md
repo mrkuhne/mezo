@@ -2,7 +2,7 @@
 title: Boop — native iOS app
 type: feature-domain
 status: in-progress
-updated: 2026-11-20
+updated: 2026-11-21
 tags: [ios, evad, b6-evad, season, penz, l5-penz, blokk-epito, heti-atnezes, kezdolap, area-kit, l0, elo-fal, l0b, b4-etel, food, barcode, meal-photos, sensitivities, b3-napi-ritmus, offline-first, outbox, dayclose, b1-adatalap, health-samples, apns, swiftui, boop, napkelte, lagy, auth, onboarding, healthkit, eventkit, wearable, morning-brief, energy-curve, voice]
 key_files:
   - ios/Boop
@@ -724,6 +724,32 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     `-previewBlokk YES -previewBlokkOpen epito -previewBlokkTab napok`): `-previewBlokkEdit
     default|menu|settings|add|swap|undo|empty|locked|confirm`, `-previewBlokkDay N` (day page),
     `-previewBlokkSuggest fail` (suggestions 503 → the full list with its one-line note).
+  - **Új blokk — the new-block flow and the plan recommender (`mezo-r36n9.113`, S1 + S2, 2026-11-21; spec
+    [`2026-11-20-boop-eves-terv-design.md`](../superpowers/specs/2026-11-20-boop-eves-terv-design.md) §5, plan
+    [`2026-11-21-boop-eves-terv-s1-s2.md`](../superpowers/plans/2026-11-21-boop-eves-terv-s1-s2.md))** — the no-block state of
+    Edzés → Blokk has an *Új blokk* button; the flow (`ios/Boop/EdzesTerv/UjBlokk/`, model `BoopCore/Train/NewBlockModel`)
+    is **Alapok · Jelöltek · nem fér · létrehozva**. *Alapok* (step 1/2): the block length, the session minutes
+    (*Meddig tarthat egy edzés*), the training days read from the season's gym slots (changing them is the Évad page's job;
+    no season → the *Előbb egy évad kell* state with a link, no call made), one tier switch per muscle (Hangsúly · Építés ·
+    Tartás) and the **heti keret** line from the server's `budget`. A raise is checked **one tier per tap** (`RaiseCheck`,
+    pure comparison of the server's numbers — no maths of our own): a third Hangsúly is refused (`emphasizeFull`) and a raise
+    whose `raiseCost` exceeds `capacitySets − usedSets` is refused (`noRoom`), the reason shown under the row. *Jelöltek*
+    (2/2): 1–3 ranked flawless candidates, the first marked *AJÁNLOTT*, each `splitLabel · ~N perc` (longest day) with the
+    server's reasons and a **„miért?"** sheet; *Mikor kezdjük* (*Jövő hétfőn* default, or today). *nem fér*: when
+    `nothingFits`, the closest candidate (*a legközelebbi, ha mégis kéred*) and the server's fixes as buttons (*EZ MEGOLDANÁ*:
+    more minutes applies, fewer Hangsúly lowers the heaviest one to Építés, more days sends him to the Évad tab).
+    *Ezzel kezdem* → `generate` (with the candidate's `splitKey`; a failed generate falls back to the candidate's own
+    template) → `createMesoTemplate` → `startMesoTemplate` (next Monday `planned`, or today `active`; a saved template is
+    reused on retry, keyed by request + minutes) → the ordinary builder opens on the new block with **„Mégsem, eldobom"**
+    (`closeMesocycle`). A start failure keeps the candidates on screen with an inline error; `SEASON_REQUIRED` → the
+    needs-season state. The builder itself gains the **heti keret** line (the server's `budget` for the open draft),
+    the minutes row (pills = the session-minutes target) and a **„miért?"** sheet per muscle (the server's `basis` +
+    band). No wording of a number is the phone's own: minutes, bands, costs and fixes all come from the candidates /
+    evaluate answers. DEBUG: `-previewUjBlokk YES` with `-previewUjBlokkScreen alapok|tele|jeloltek|nemfer|letrehozva`,
+    `-previewUjBlokkSeason none`, `-previewUjBlokkScroll Y`, `-previewUjBlokkStart fail`; the builder's own
+    `-previewBlokkMinutes 60` and `-previewBlokkWhy back` (all in `PlanPreview.swift`; `ios/README.md`'s table lists
+    spine flags only). Not in this slice: the year map and following it (S3/S4), experience level (dropped), an AI pass on the
+    chosen candidate.
   - **The identity-aware draft (`BlockDraft`, `BlockBuilderModel`; no wire ids in the editor).** A `DraftExercise.id` is a
     **local key** — the server's row id for a loaded row, `new-<uuid>` for one added in the draft; a swap keeps the row's key,
     technique (when the new exercise may carry it) and his picks; the ids are re-minted by every structural save, so the model
@@ -1026,14 +1052,14 @@ The builder and the review **do not use the generated client**. The generated co
 technique planner (T3) adds proposal line kinds (`technique`, `rep_range`), reason codes and evaluation fields while these
 screens are live — one unknown value would fail the whole response. So `RawJSONClient` (`BoopCore/Train/PlanTransport.swift`)
 sends JSON over the **same** `ClientTransport`, base URL and bearer token as the generated client (`Session.raw`), and
-`PlanWire.swift` declares hand-written `Decodable` shapes whose enums are plain `String`s. `PlanClient` wraps 9 operations:
+`PlanWire.swift` declares hand-written `Decodable` shapes whose enums are plain `String`s. `PlanClient` wraps 14 operations (the first nine below, then the five of the new-block flow):
 `listMesocycles`, `getExerciseCatalog`, `evaluateMesoPlan`, `listWeekProposals`, `decideWeekProposal`, `replaceDayExercises`,
 `updateMesocycleMusclePriorities`, **`blockSuggestions`** (`mezo-r36n9.116`: `POST /api/train/mesocycles/{id}/exercise-suggestions`
 → `PlanWire.BlockSuggestions*`, each suggestion with an optional style `prescription`; `scripts/check-ios-contract.mjs` now also
 covers these raw-client operations), and **`updateMesocycleSettings`** (`PUT /api/train/mesocycles/{id}/settings`
 `{trainingStyle?, techniquesEnabled?, weeklyReviewMode?}`, absent = keep; the run's own review mode overrides
 `mezo.volume.weekly-review.mode`; `MesocycleResponse.weeklyReviewMode` is the effective mode — `docs/features/train.md` §4).
-**The BoopAPI generator filter is untouched.** Typed failures: `PlanFetchError` (`offline`, `unauthorized`, `notFound`,
+**New-block calls (`mezo-r36n9.113`, same hand-decoded rule — enums are plain strings, so a new fix or reason code never fails the response):** **`candidates`** (`POST /api/train/meso-plans/candidates` → `PlanWire.WireCandidates {candidates[], nothingFits, fixes[]}` with `lead`, each candidate its `splitKey`, `splitLabel`, `template`, `evaluation`, `recommended`, `reasons`), **`generate`** (`POST /api/train/meso-plans/generate` with `split` = the candidate's key → `WireGenerateResponse`), **`createTemplate`** (`createMesoTemplate`, returns the template id), **`startTemplate`** (`startMesoTemplate` `{startDate, status}` → the block) and **`closeBlock`** (`closeMesocycle`, the *Mégsem, eldobom* path). `evaluate` and the builder's `WireEvaluation` carry the new `budget`, `basis` and `consecutiveHeavy` fields. **The BoopAPI generator filter is untouched.** Typed failures: `PlanFetchError` (`offline`, `unauthorized`, `notFound`,
 `rejected(code)` for 400, `conflict(code)` for 409, `server`).
 
 `ServerCache` (`BoopCore/ServerCache.swift`, `mezo-vxjj9`) is the read side's last-known-good cache: one JSON file per endpoint-and-day wrapping the payload and the instant it was fetched, so a screen can say how old what it shows is. It is read-only toward the server — no sender, no retry, no link to the outbox — and past `maxAge` a hit is not a hit (`get` returns nil and the caller says „nincs friss adat"). A corrupt entry is removed and reads as absent, unlike the outbox, which sets bad elements *aside* because those are the owner's unsent words. Its folder is `cache`, a third per-user folder beside `ledger` and `outbox`.

@@ -69,7 +69,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 ### auth
 
 *BE + API* · read next: [docs/features/_platform-auth-security.md](features/_platform-auth-security.md) (updated 2026-11-19, done) ·
-  [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-11-20, mixed)
+  [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-11-21, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/auth`
   - **entities→tables:** `AppUserEntity`→`app_user`, `InviteEntity`→`invite`
@@ -136,7 +136,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### boop
 
-*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-20, in-progress)
+*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-21, in-progress)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/boop`
   - **entities→tables:** `BoopBriefEntity`→`boop_brief`, `WorkoutTimeOverrideEntity`→`workout_time_override`
@@ -275,7 +275,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   [docs/features/me.md](features/me.md) (updated 2026-11-20, mixed) ·
   [docs/features/penz.md](features/penz.md) (updated 2026-11-20, done) ·
   [docs/features/today.md](features/today.md) (updated 2026-11-19, mixed) ·
-  [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-11-20, mixed)
+  [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-11-21, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/companion`
   - **sub-features:** `advisor`, `embedding`, `feedback`, `flags`, `graph`, `llm`, `memory`, `profile`, `quarterly`,
@@ -534,7 +534,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### dayclose
 
-*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-20, in-progress) ·
+*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-21, in-progress) ·
   [docs/features/dayclose.md](features/dayclose.md) (updated 2026-11-20, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/dayclose`
@@ -585,7 +585,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 *BE + API* · read next: [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-11-20, done) ·
   [docs/features/me.md](features/me.md) (updated 2026-11-20, mixed) ·
-  [docs/features/season.md](features/season.md) (updated 2026-11-20, in-progress)
+  [docs/features/season.md](features/season.md) (updated 2026-11-21, in-progress)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/goal`
   - **sub-features:** `engine`
@@ -1183,7 +1183,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### season
 
-*BE + API* · read next: [docs/features/season.md](features/season.md) (updated 2026-11-20, in-progress)
+*BE + API* · read next: [docs/features/season.md](features/season.md) (updated 2026-11-21, in-progress)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/season`
   - **sub-features:** `port`
@@ -1212,8 +1212,8 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 *BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-19, done) ·
   [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-11-20, done) ·
-  [docs/features/season.md](features/season.md) (updated 2026-11-20, in-progress) ·
-  [docs/features/train.md](features/train.md) (updated 2026-11-20, done)
+  [docs/features/season.md](features/season.md) (updated 2026-11-21, in-progress) ·
+  [docs/features/train.md](features/train.md) (updated 2026-11-21, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/train`
   - **sub-features:** `port`
@@ -1360,7 +1360,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### wearable
 
-*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-20, in-progress)
+*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-21, in-progress)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/wearable`
   - **entities→tables:** `CalendarEventEntity`→`calendar_event`, `DailyMetricEntity`→`daily_metric`,

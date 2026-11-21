@@ -2,7 +2,7 @@
 title: Évad — the season (Boop B6)
 type: feature-domain
 status: in-progress
-updated: 2026-11-20
+updated: 2026-11-21
 tags: [backend, boop, season, goal, train, sleep, b6-evad]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/season
