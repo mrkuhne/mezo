@@ -35,6 +35,7 @@ related: [season, penz, mail, fuel, pantry, recipe, dayclose, intention, journal
 > from a life area** — and the wall's ring (`WallNotifier`) is built for the first time, for every `.expires` source. See
 > **Levél** in §2 and [`mail.md`](mail.md); deploy and the phone install pending at the time of writing.
 > **2026-11-21 — Boop B7 K3 Task 17 (`mezo-r36n9.17`, server only).** The synced `BoopAPI/openapi.yaml` gained the Átrendezés operations (`getCapacityWeek`, accept / decline / regenerate); the phone does not call them yet (the Kapacitás client is hand-written; Task 19 builds the page). See [`capacity.md`](capacity.md) §4.
+> **2026-11-21 — Boop B7 K3 Task 17 (`mezo-r36n9.17`, server only).** The synced `BoopAPI/openapi.yaml` gained the Átrendezés operations (`getCapacityWeek`, accept / decline / regenerate); the phone does not call them yet (the Kapacitás client is hand-written; Task 19 builds the page). Fix round 1: `upsertPlannedSkip` documents a 409 `TRAIN_SKIP_CAPACITY_OWNED` (a capacity skip cannot be re-reasoned from the skip sheet); the stale-card rule means a week read may return a proposal as `expired`. See [`capacity.md`](capacity.md) §4.
 
 > **2026-11-21 — Boop B6 Évad S4 (`mezo-r36n9.16`).** The Évad page's **Hatás** tab is live: Boop's one open
 > experiment proposal (*Indulhat* / *Most nem*), the running experiment (day X / L, *Ma megvolt*, overlaps, *Leállítom*),
