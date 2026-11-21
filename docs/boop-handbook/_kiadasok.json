@@ -716,5 +716,20 @@
       "mezo-r36n9.131"
     ],
     "mi_valtozott": "Ha egy napon edzőterem és sport (például röplabda) is van, az Évad mostantól két alkalomnak veszi. A „Hogy megy” külön mutatja, hány edzés és hány sportalkalom volt meg (például „3 / 4 edzés megvolt”, „1 / 2 sport megvolt”), egy indokolt kihagyás csak azt az egy alkalmat menti fel, és Boop is így látja az elmúlt hetet. Az évad terve megmutatja az edzés + sport nap nagyobb keretét (például „edzés + sport napon 2790 kcal”), és a heti étel-összeg minden napot a saját keretével ad össze. Az étkezési napi cél eddig is mindkét rögzített alkalmat beszámolta — az nem változott."
+  },
+  "c0f3ad0ba": {
+    "cim": "Heti menü és bevásárlólista az Évadban",
+    "datum": "2026-11-21",
+    "verzio": "v3.28.0",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app",
+      "Háttérrendszer"
+    ],
+    "szakasz": "B6 A Terv",
+    "jegyek": [
+      "mezo-r36n9.16"
+    ],
+    "mi_valtozott": "Az Évad oldal Menü és Lista füle él. Kiválasztod, melyik receptjeidből álljon a menü, és Boop vasárnap este összeállítja a jövő hetet: edzésnapon többet, pihenőnapon kevesebbet, az adagokat az étkezések keretéhez igazítva, ugyanaz a vacsora három napon belül nem ismétlődik, sportnapon „Röplabda előtt” uzsonnával. Bármelyik ételt lecserélheted, kérhetsz másik menüt, és ha jóváhagyod, ezek az ételek jönnek javaslatként az Étel napi tervében. A jóváhagyott menüből bevásárlólista készül polcok szerint, mennyiségekkel és azzal, melyik ételhez kell (például „Csirkemell · 1,4 kg”); pipálható, a szokásos tételek (például kávé, olívaolaj) csak koppintásra kerülnek fel, megosztható szövegként, és a korábbi listák megmaradnak. Ha hét közben módosítasz az évadon, a hátralévő napok igazodnak, a lista pedig mutatja, mi változott. Vasárnap este a Ma falon kártya jelzi, ha jóváhagyásra vár a menü."
   }
 }
