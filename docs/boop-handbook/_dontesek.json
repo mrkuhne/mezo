@@ -1004,5 +1004,17 @@
     "miert": "Így gyorsabban elkészül és kevésbé kockázatos; a javaslatok nagy része úgyis ilyen.",
     "levaltotta": "Nincs előzménye.",
     "kovetkezmeny": "A cserét és a hétvégén átnyúló áttételt később hozzá lehet tenni, ha hiányzik."
+  },
+  "d-2026-11-21-penz-heti-attekintes-helye": {
+    "datum": "2026-11-21",
+    "terulet": [
+      "Pénz"
+    ],
+    "cim": "A heti hosszú távú áttekintés a Pénzem oldalon jelenik meg",
+    "suly": "Kicsi",
+    "valasztas": "A heti áttekintés (rekeszenként: mi számított a múlt héten hosszú távon) a Pénzem oldalon, a három rekesz alatt kap helyet, a meglévő hírkártyák mintájára — koppintásra a teljes magyarázat.",
+    "miert": "Ott vannak a rekeszek, és ez a hosszú távú nézet helye; a Ma oldal maradjon a „mi a dolgom ma?” kérdésé.",
+    "levaltotta": "—",
+    "kovetkezmeny": "Értesítés és teendő-gomb nincs; hétfőnként frissül. A Ma oldal nem változik."
   }
 }
