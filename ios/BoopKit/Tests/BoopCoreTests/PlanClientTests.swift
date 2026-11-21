@@ -317,6 +317,14 @@ struct PlanClientTests {
         _ = try await c.startTemplate(id: "t", startDate: "2026-11-30", status: "planned", yearBlockId: PlanFixtures.yearBlock2)
         #expect(stub.sent.last?.body?.contains(#""yearBlockId":"\#(PlanFixtures.yearBlock2)""#) == true)
 
+        // A required number missing is the error state, not an invented value; an unknown enum value is fine.
+        for broken in [PlanFixtures.yearPlanJSON().replacingOccurrences(of: #""loadingBlocks":2,"#, with: ""),
+                       PlanFixtures.yearPlanJSON().replacingOccurrences(of: #""kind":"lower","#, with: "")] {
+            #expect(throws: (any Error).self) { try JSONDecoder().decode(WireYearPlan.self, from: Data(broken.utf8)) }
+        }
+        let odd = PlanFixtures.yearPlanJSON().replacingOccurrences(of: #""kind":"lower""#, with: #""kind":"full_body""#)
+        #expect(try JSONDecoder().decode(WireYearPlan.self, from: Data(odd.utf8)).blocks[1].kind == "full_body")
+
         // A plan round-trips through the cache's encoder.
         let again = try JSONDecoder().decode(WireYearPlan.self, from: JSONEncoder().encode(plan))
         #expect(again == plan)

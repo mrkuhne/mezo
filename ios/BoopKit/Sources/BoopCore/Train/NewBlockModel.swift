@@ -155,7 +155,8 @@ public final class NewBlockModel {
             tiers = prefill.tiers
             let range = prefill.consolidation ? Self.consolidationWeekRange : Self.weekRange
             weeksValue = min(max(prefill.weeks, range.lowerBound), range.upperBound)
-            if let date = prefill.startDate { startChoice = .planned(date) }
+            // A block still ahead starts on its own day; a due or overdue one today (a week late would re-date the year).
+            startChoice = prefill.startDate.map { .planned($0) } ?? .today
         }
     }
 
@@ -326,7 +327,7 @@ public final class NewBlockModel {
             let status = startChoice == .today ? "active" : "planned"
             let block = try await client.startTemplate(id: templateId,
                                                        startDate: Self.startDate(startChoice, now: now(), calendar: calendar),
-                                                       status: status, yearBlockId: prefill.flatMap { $0.yearBlockId.isEmpty ? nil : $0.yearBlockId })
+                                                       status: status, yearBlockId: prefill?.yearBlockId)
             phase = .created(blockId: block.id)
         } catch {
             if Self.isSeasonRequired(error) {

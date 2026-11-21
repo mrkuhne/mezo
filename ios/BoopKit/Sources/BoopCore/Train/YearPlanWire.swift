@@ -3,7 +3,8 @@ import Foundation
 // The Éves terv wire shapes (mezo-r36n9.113; contract: api/feature/train/train.yml, YearPlan / YearBlock / YearNote /
 // YearNext / YearUnlinkedRunning / YearReview / YearPlanRequest / YearBlockPatch). Hand-written like PlanWire.swift:
 // every enum is a plain String (`status`, `kind`, `code`, `reason`), so a value the server adds later never fails the
-// plan — an unknown note code simply shows no line. Every number and date the phone shows is the server's.
+// plan — an unknown note code simply shows no line. The required numbers and `status` / `kind` decode strictly: a
+// malformed answer is the error state, never invented numbers. Every number and date the phone shows is the server's.
 // Codable both ways: the last good plan is kept in the `ServerCache`.
 
 public struct WireYearPlan: Codable, Equatable, Sendable {
@@ -41,16 +42,15 @@ public struct WireYearPlan: Codable, Equatable, Sendable {
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decodeIfPresent(String.self, forKey: .id)
-        status = try c.decodeIfPresent(String.self, forKey: .status) ?? "active"
+        status = try c.decode(String.self, forKey: .status)
         startDate = try c.decode(String.self, forKey: .startDate)
         endDate = try c.decode(String.self, forKey: .endDate)
-        blockWeeks = try c.decodeIfPresent(Int.self, forKey: .blockWeeks) ?? 6
-        consolidationWeeks = try c.decodeIfPresent(Int.self, forKey: .consolidationWeeks) ?? 2
+        blockWeeks = try c.decode(Int.self, forKey: .blockWeeks)
+        consolidationWeeks = try c.decode(Int.self, forKey: .consolidationWeeks)
         emphasis = try c.decodeIfPresent([String].self, forKey: .emphasis) ?? []
         currentWeek = try c.decodeIfPresent(Int.self, forKey: .currentWeek)
         blocks = try c.decodeIfPresent([WireYearBlock].self, forKey: .blocks) ?? []
-        loadingBlocks = try c.decodeIfPresent(Int.self, forKey: .loadingBlocks)
-            ?? blocks.filter { $0.kind != "consolidation" }.count
+        loadingBlocks = try c.decode(Int.self, forKey: .loadingBlocks)
         bufferWeeks = try c.decodeIfPresent(Int.self, forKey: .bufferWeeks) ?? 0
         bufferStart = try c.decodeIfPresent(String.self, forKey: .bufferStart)
         overrunWeeks = try c.decodeIfPresent(Int.self, forKey: .overrunWeeks) ?? 0
@@ -99,7 +99,7 @@ public struct WireYearBlock: Codable, Equatable, Sendable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decodeIfPresent(String.self, forKey: .id)
         ordinal = try c.decode(Int.self, forKey: .ordinal)
-        kind = try c.decodeIfPresent(String.self, forKey: .kind) ?? "upper"
+        kind = try c.decode(String.self, forKey: .kind)
         focus = try c.decodeIfPresent([String].self, forKey: .focus) ?? []
         weeks = try c.decode(Int.self, forKey: .weeks)
         plannedStart = try c.decode(String.self, forKey: .plannedStart)

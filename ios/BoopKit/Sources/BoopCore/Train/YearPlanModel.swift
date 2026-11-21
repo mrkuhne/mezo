@@ -8,15 +8,17 @@ import Observation
 
 /// What the new-block intake starts from when it opens from a year block (the Következik card's „Indítás").
 public struct YearBlockPrefill: Equatable, Sendable {
-    public let yearBlockId: String
+    /// nil for a preview block (it has no id yet).
+    public let yearBlockId: String?
     /// Every landmark group: the block's focus `emphasize`, the rest `maintain`; a consolidation is all `maintain`.
     public let tiers: [String: String]
     public let weeks: Int
     public let consolidation: Bool
-    /// The block's planned start when it is still ahead (`yyyy-MM-dd`); nil once its day has come.
+    /// The block's planned start when it is still ahead (`yyyy-MM-dd`); nil once its day has come (the intake then
+    /// defaults to today: a week late would re-date the whole year).
     public let startDate: String?
 
-    public init(yearBlockId: String, tiers: [String: String], weeks: Int, consolidation: Bool, startDate: String?) {
+    public init(yearBlockId: String?, tiers: [String: String], weeks: Int, consolidation: Bool, startDate: String?) {
         self.yearBlockId = yearBlockId; self.tiers = tiers; self.weeks = weeks; self.consolidation = consolidation
         self.startDate = startDate
     }
@@ -114,6 +116,8 @@ public final class YearPlanModel {
             } else if let hit = await cache?.get(Snapshot.self, endpoint: Self.cacheEndpoint, date: Self.cacheKey,
                                                  maxAge: Self.cacheMaxAge), let cached = hit.value.plan {
                 phase = .ready(cached, age: Self.ageText(hit.age))
+                // The copy keeps its true age through the next failed load.
+                loadedAt = now().addingTimeInterval(-hit.age)
             } else {
                 phase = .failed(error)
             }
@@ -182,10 +186,11 @@ public final class YearPlanModel {
         await run { [client] () async throws(PlanFetchError) -> WireYearPlan in try await client.createYearPlan(request) }
     }
 
-    /// 1–2 distinct focus groups; anything else is not sent.
+    /// 1–2 distinct landmark groups; anything else is not sent.
     public func setFocus(_ blockId: String, _ focus: [String]) async {
         var seen = Set<String>()
         let distinct = focus.filter { seen.insert($0).inserted }
+        guard distinct.allSatisfy(Self.landmarkGroups.contains) else { return }
         guard (1...Self.focusMax).contains(distinct.count) else { return }
         await patch(blockId, WireYearBlockPatch(focus: distinct))
     }
@@ -250,7 +255,7 @@ public final class YearPlanModel {
         let todayString = day(today, calendar: calendar)
         // yyyy-MM-dd compares in date order.
         let start = block.plannedStart > todayString ? block.plannedStart : nil
-        return YearBlockPrefill(yearBlockId: block.id ?? "", tiers: tiers, weeks: block.weeks,
+        return YearBlockPrefill(yearBlockId: block.id, tiers: tiers, weeks: block.weeks,
                                 consolidation: block.isConsolidation, startDate: start)
     }
 

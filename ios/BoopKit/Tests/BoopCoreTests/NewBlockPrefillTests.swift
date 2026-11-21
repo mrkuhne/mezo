@@ -95,16 +95,22 @@ struct NewBlockPrefillTests {
         #expect(sent["startDate"] as? String == "2027-01-11" && sent["status"] as? String == "planned")
     }
 
-    @Test(.timeLimit(.minutes(1))) func pastStartFallsBackToNextMonday() async throws {
+    @Test(.timeLimit(.minutes(1))) func dueOrOverdueBlockStartsToday() async throws {
         var c = DateComponents(); c.year = 2027; c.month = 1; c.day = 13; c.hour = 12  // a Wednesday, block 2 is due
         let wednesday = Self.budapest.date(from: c)!
         let p = prefill(1, today: wednesday)
         #expect(p.startDate == nil)
         let stub = StubTransport()
         let m = model(stub, p, now: wednesday)
-        #expect(m.startChoice == .nextMonday)
+        #expect(m.startChoice == .today)
         await start(stub, m)
         let sent = try body(stub, "startMesoTemplate")
-        #expect(sent["startDate"] as? String == "2027-01-18" && sent["yearBlockId"] as? String == PlanFixtures.yearBlock2)
+        #expect(sent["startDate"] as? String == "2027-01-13" && sent["status"] as? String == "active")
+        #expect(sent["yearBlockId"] as? String == PlanFixtures.yearBlock2)
+
+        // On the block's own day too.
+        var d = DateComponents(); d.year = 2027; d.month = 1; d.day = 11; d.hour = 8
+        let monday = Self.budapest.date(from: d)!
+        #expect(model(StubTransport(), prefill(1, today: monday), now: monday).startChoice == .today)
     }
 }

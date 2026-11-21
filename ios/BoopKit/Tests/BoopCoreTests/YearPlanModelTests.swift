@@ -105,7 +105,8 @@ struct YearPlanModelTests {
         let m = await ready(stub)
         await m.setFocus(PlanFixtures.yearBlock2, ["quad", "ham", "glute"])
         await m.setFocus(PlanFixtures.yearBlock2, [])
-        #expect(!stub.ops.contains("patchYearBlock"), "more than two (or none) is never sent")
+        await m.setFocus(PlanFixtures.yearBlock2, ["quad", "neck"])
+        #expect(!stub.ops.contains("patchYearBlock"), "more than two, none or an unknown group is never sent")
 
         stub.on("patchYearBlock", .json(200, PlanFixtures.yearPlanJSON()))
         await m.setFocus(PlanFixtures.yearBlock2, ["quad", "ham"])
@@ -185,6 +186,16 @@ struct YearPlanModelTests {
             #expect(later.freshPlan == nil, "the Következik card never shows a stale plan")
         }
 
+        // Two failed loads in a row keep the true age (not "1 perces").
+        let twice = StubTransport()
+        twice.on("getActiveYearPlan", .fail(URLError(.notConnectedToInternet)))
+        twice.on("getActiveYearPlan", .status(500))
+        let repeated = model(twice, cache: cache)
+        await repeated.load()
+        await repeated.load()
+        guard case .ready(_, let twiceAge) = repeated.phase else { Issue.record("no cached plan: \(repeated.phase)"); return }
+        #expect(twiceAge == "3 órás adat")
+
         // A fresh cache entry still says it is not fresh.
         clock.now = clock.now.addingTimeInterval(-3 * 3600 + 120)
         let offline = StubTransport()
@@ -224,6 +235,8 @@ struct YearPlanModelTests {
 
         var c2 = DateComponents(); c2.year = 2026; c2.month = 11; c2.day = 30; c2.hour = 9
         let onTheDay = Self.budapest.date(from: c2)!
+        #expect(m.prefill(for: try! JSONDecoder().decode(WireYearPlan.self, from: Data(PlanFixtures.yearPlanJSON(id: false).utf8)).blocks[1],
+                          today: Self.saturday).yearBlockId == nil, "a preview block has no id")
         let past = m.prefill(for: plan.blocks[0], today: onTheDay)
         #expect(past.startDate == nil, "a block whose day has come starts on the intake's own choice")
         #expect(m.prefill(for: plan.blocks[0], today: Self.saturday).startDate == "2026-11-30")
