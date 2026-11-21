@@ -35,6 +35,8 @@ import tools.jackson.databind.json.JsonMapper;
  *       ignored.</li>
  *   <li><b>Amounts</b>: kept only when the same value stands next to {@code Ft|HUF|€|EUR} in the text, in the model's
  *       currency; stored as value x 100 minor units.</li>
+ *   <li><b>No links</b>: model-written strings (title, summary, category, carrier, why) lose invisible characters, and
+ *       one carrying a URL or a phone number is blanked; a title with one rejects the item.</li>
  *   <li><b>Shape</b>: an unknown group (and {@code sensitive}, which never reaches a model) rejects the whole answer;
  *       a deal without a title is rejected; strings are clamped to their column sizes.</li>
  * </ul>
@@ -59,8 +61,11 @@ public final class MailOutputValidator {
     private static final Pattern MONTH_DAY_DOT = Pattern.compile("(?<![\\d.])(?<!\\d\\.\\s)(\\d{1,2})\\.\\s?(\\d{1,2})\\.(?!\\d)");
     private static final Pattern DAY_MONTH_NAME = Pattern.compile(
         "(?<!\\d)(\\d{1,2})\\.?\\s?(" + MONTH_ALT + ")(?![\\p{L}])", Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+    private static final Pattern FULL_MONTH_NAME = Pattern.compile(
+        "(?<!\\d)(\\d{4})\\.?\\s?(" + MONTH_ALT + ")\\s(\\d{1,2})(?!\\d)",
+        Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
     private static final Pattern MONTH_NAME_DAY = Pattern.compile(
-        "(?<![\\p{L}])(" + MONTH_ALT + ")\\s(\\d{1,2})(?!\\d)", Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+        "(?<!\\d{4}\\.?\\s?)(?<![\\p{L}])(" + MONTH_ALT + ")\\s(\\d{1,2})(?!\\d)", Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
 
     private static final String NUMBER = "\\d[\\d\\s\\u00a0.,]*\\d|\\d";
     private static final Pattern AMOUNT_AFTER = Pattern.compile(
@@ -69,11 +74,6 @@ public final class MailOutputValidator {
         "(?<![\\p{L}\\p{N}])(€|EUR|HUF|Ft)\\s?(" + NUMBER + ")", Pattern.CASE_INSENSITIVE);
 
     private MailOutputValidator() {}
-
-    /** {@link #classified(String, RedactedMail, ZoneId, Clock)} with the system clock in {@code zone}. */
-    public static Optional<ClassifiedMail> classified(String json, RedactedMail source, ZoneId zone) {
-        return classified(json, source, zone, Clock.system(zone));
-    }
 
     /** The validated classification, or empty when the answer is unreadable, has an unknown group or is a title-less deal. */
     public static Optional<ClassifiedMail> classified(String json, RedactedMail source, ZoneId zone, Clock clock) {
@@ -85,7 +85,10 @@ public final class MailOutputValidator {
         if (group == null) {
             return Optional.empty();
         }
-        String title = clamp(str(root.get("title")), TITLE_MAX);
+        String title = text(root.get("title"), TITLE_MAX);
+        if (title != null && title.isEmpty() && str(root.get("title")) != null && hasLink(clean(str(root.get("title"))))) {
+            return Optional.empty(); // a title carrying a link is not a title
+        }
         if (group == Group.DEAL && (title == null || title.isBlank())) {
             return Optional.empty();
         }
@@ -110,11 +113,11 @@ public final class MailOutputValidator {
             }
         }
         return Optional.of(new ClassifiedMail(group,
-            nz(clamp(str(root.get("category")), CATEGORY_MAX)),
+            nz(text(root.get("category"), CATEGORY_MAX)),
             nz(title),
-            nz(clamp(str(root.get("summary")), SUMMARY_MAX)),
+            nz(text(root.get("summary"), SUMMARY_MAX)),
             dueAt, validUntil, amountMinor, currency,
-            clamp(str(root.get("carrier")), CARRIER_MAX),
+            emptyToNull(text(root.get("carrier"), CARRIER_MAX)),
             parcelState(str(root.get("parcelState")))));
     }
 
@@ -145,16 +148,22 @@ public final class MailOutputValidator {
                 continue;
             }
             seen.add(id);
-            out.add(new ScoredDeal(id, score, nz(clamp(str(e.get("why")), WHY_MAX))));
+            out.add(new ScoredDeal(id, score, nz(text(e.get("why"), WHY_MAX))));
         }
         return List.copyOf(out);
     }
 
-    /** True when the screen says the mail looks like phishing or an injection; unreadable = not flagged. */
-    public static boolean flagged(String json) {
+    /**
+     * The screen's verdict. Fail-closed: a missing, unreadable or non-boolean {@code flagged} is {@link
+     * ScreenVerdict#UNKNOWN}; only {@link ScreenVerdict#CLEAN} may notify.
+     */
+    public static ScreenVerdict screen(String json) {
         JsonNode root = parse(json, '{', '}');
         JsonNode f = root == null ? null : root.get("flagged");
-        return f != null && f.isBoolean() && f.booleanValue();
+        if (f == null || !f.isBoolean()) {
+            return ScreenVerdict.UNKNOWN;
+        }
+        return f.booleanValue() ? ScreenVerdict.FLAGGED : ScreenVerdict.CLEAN;
     }
 
     // ---------------------------------------------------------------- dates
@@ -183,6 +192,10 @@ public final class MailOutputValidator {
         m = ISO.matcher(text);
         while (m.find()) {
             add(out, Integer.parseInt(m.group(1)), Integer.parseInt(m.group(2)), Integer.parseInt(m.group(3)));
+        }
+        m = FULL_MONTH_NAME.matcher(text);
+        while (m.find()) {
+            add(out, Integer.parseInt(m.group(1)), month(m.group(2)), Integer.parseInt(m.group(3)));
         }
         m = MONTH_DAY_DOT.matcher(text);
         while (m.find()) {
@@ -344,6 +357,36 @@ public final class MailOutputValidator {
 
     private static String str(JsonNode n) {
         return n != null && n.isString() ? n.asString() : null;
+    }
+
+    private static final Pattern URL = Pattern.compile(
+        "https?:|www\\.|\\b[a-z0-9-]+\\.[a-z]{2,24}/"
+            + "|\\b[a-z0-9-]+\\.(?:com|hu|net|org|io|eu|uk|co|info|biz|ru|ly|de|me|xyz|example)\\b",
+        Pattern.CASE_INSENSITIVE);
+    private static final Pattern PHONE = Pattern.compile(
+        "(?<![\\w+])(?:(?:\\+|00)\\d{1,3}[\\s./-]?\\(?\\d{1,3}\\)?(?:[\\s./-]?\\d{2,4}){2,4}"
+            + "|06[\\s./-]?\\d{1,2}[\\s./-]\\d{3}[\\s./-]\\d{3,4})(?!\\d)");
+
+    private static String clean(String s) {
+        return s == null ? null : MailFence.INVISIBLE.matcher(s).replaceAll("");
+    }
+
+    private static boolean hasLink(String s) {
+        return URL.matcher(s).find() || PHONE.matcher(s).find();
+    }
+
+    /** A model-written string: invisible characters stripped, clamped; blank when it carries a link or a phone number. */
+    private static String text(JsonNode n, int max) {
+        String s = clean(str(n));
+        if (s == null) {
+            return null;
+        }
+        String t = clamp(s, max);
+        return hasLink(s) ? "" : t;
+    }
+
+    private static String emptyToNull(String s) {
+        return s == null || s.isEmpty() ? null : s;
     }
 
     private static String clamp(String s, int max) {

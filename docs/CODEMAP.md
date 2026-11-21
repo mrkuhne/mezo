@@ -795,7 +795,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   - **other:** `BulkDetector`, `CarrierRules`, `ClassifiedMail`, `ClassifyPrompt`, `FetchedMail`, `Group`,
     `ImapMailReader`, `JsonLdReader`, `MailFence`, `MailHeaders`, `MailOutputValidator`, `MailReader`, `MailRedactor`,
     `MailRules`, `ParcelState`, `RedactedMail`, `RuleVerdict`, `ScorePrompt`, `ScoredDeal`, `ScreenPrompt`,
-    `SenderRule`, `SensitiveSeed`
+    `ScreenVerdict`, `SenderRule`, `SensitiveSeed`
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/mail` — 4 IT + 8 unit
   - **ITs:** `ImapMailReaderIT`, `MailCostCapIT`, `MailIntakeIT`, `MailSchemaIT`
   - **populators:** `DatabasePopulator`, `LlmLogPopulator`, `MailPopulator`, `UserPopulator`

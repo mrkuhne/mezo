@@ -180,9 +180,58 @@ class MailOutputValidatorTest {
     }
 
     @Test
-    void testFlagged_shouldReadTheScreenVerdict() {
-        assertThat(MailOutputValidator.flagged("{\"flagged\":true,\"reason\":\"phishing\"}")).isTrue();
-        assertThat(MailOutputValidator.flagged("{\"flagged\":false}")).isFalse();
-        assertThat(MailOutputValidator.flagged("junk")).isFalse();
+    void testScreen_shouldReadTheVerdict_andFailClosedOnUnreadableOutput() {
+        assertThat(MailOutputValidator.screen("{\"flagged\":true,\"reason\":\"phishing\"}"))
+            .isEqualTo(ScreenVerdict.FLAGGED);
+        assertThat(MailOutputValidator.screen("{\"flagged\":false}")).isEqualTo(ScreenVerdict.CLEAN);
+        assertThat(MailOutputValidator.screen("Ez a levél szerintem rendben van.")).isEqualTo(ScreenVerdict.UNKNOWN);
+        assertThat(MailOutputValidator.screen("{\"flagged\": tru")).isEqualTo(ScreenVerdict.UNKNOWN);
+        assertThat(MailOutputValidator.screen("{\"reason\":\"x\"}")).isEqualTo(ScreenVerdict.UNKNOWN);
+        assertThat(MailOutputValidator.screen("{\"flagged\":\"no\"}")).isEqualTo(ScreenVerdict.UNKNOWN);
+        assertThat(MailOutputValidator.screen(null)).isEqualTo(ScreenVerdict.UNKNOWN);
+    }
+
+    @Test
+    void testClassified_shouldBlankALinkOrPhoneInModelWrittenStrings() {
+        String raw = "{\"group\":\"rest\",\"category\":\"hír www.x.hu/pay\",\"title\":\"Cím\","
+            + "\"summary\":\"Nézd meg: https://evil.example\",\"carrier\":\"GLS shop.hu\"}";
+        ClassifiedMail c = classify(raw, "x").orElseThrow();
+        assertThat(c.summary()).isEmpty();
+        assertThat(c.category()).isEmpty();
+        assertThat(c.carrier()).isNull();
+        assertThat(c.title()).isEqualTo("Cím");
+
+        String phone = "{\"group\":\"rest\",\"title\":\"Cím\",\"summary\":\"Hívd a +36 30 123 4567 számot.\"}";
+        assertThat(classify(phone, "x").orElseThrow().summary()).isEmpty();
+    }
+
+    @Test
+    void testClassified_shouldRejectATitleWithALink() {
+        String raw = "{\"group\":\"rest\",\"title\":\"Lásd www.x.hu/pay\",\"summary\":\"ok\"}";
+        assertThat(classify(raw, "x")).isEmpty();
+    }
+
+    @Test
+    void testClassified_shouldStripInvisibleCharactersFromStrings() {
+        String raw = "{\"group\":\"rest\",\"title\":\"Cí\u200bm\",\"summary\":\"ok\"}";
+        assertThat(classify(raw, "x").orElseThrow().title()).isEqualTo("Cím");
+    }
+
+    @Test
+    void testClassified_shouldReadAFullDateWithAMonthName_notYearless() {
+        assertThat(classify(json("deadline", "2026-11-30", null, null, null), "Határidő: 2026. november 30.")
+            .orElseThrow().dueAt()).isEqualTo(endOf(2026, 11, 30));
+        // a past year is a full date, not the next occurrence
+        assertThat(classify(json("deadline", "2027-11-30", null, null, null), "Határidő: 2025. november 30.")
+            .orElseThrow().dueAt()).isNull();
+    }
+
+    @Test
+    void testScores_shouldBlankALinkInWhy() {
+        UUID id = UUID.randomUUID();
+        List<ScoredDeal> out = MailOutputValidator.scores(
+            "[{\"id\":\"" + id + "\",\"score\":8,\"why\":\"Fizess: www.x.hu/pay\"}]", Set.of(id));
+        assertThat(out).hasSize(1);
+        assertThat(out.get(0).why()).isEmpty();
     }
 }

@@ -15,7 +15,7 @@ final class MailFence {
     static final String OPEN = "<<<MAIL";
     static final String CLOSE = "MAIL>>>";
 
-    private static final Pattern INVISIBLE = Pattern.compile("[\\p{Cf}\\p{Cc}\\p{Cs}&&[^\\n\\t]]");
+    static final Pattern INVISIBLE = Pattern.compile("[\\p{Cf}\\p{Cc}\\p{Cs}&&[^\\n\\t]]");
     private static final Pattern OPEN_RUN = Pattern.compile("[<‹＜﹤](?:\\s*[<‹＜﹤])+");
     private static final Pattern CLOSE_RUN = Pattern.compile("[>›＞﹥](?:\\s*[>›＞﹥])+");
 
