@@ -105,6 +105,14 @@ spec:
                 secretKeyRef:
                   name: mezo-app
                   key: OPENAI_API_KEY
+            # mezo-r36n9.38 Boop Levél: AES key that seals the owner's mirror-Gmail app password. No default
+            # exists in application.yml, and the cipher refuses a blank or the test dummy under MEZO_AUTH_STRICT,
+            # so a missing key stops the mail feature loudly. Lands BEFORE the mail switches are turned on.
+            - name: MEZO_MAIL_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: mezo-app
+                  key: MEZO_MAIL_SECRET_KEY
             # mezo-kdhn: PRODUCTION answers chat turns on OpenAI (gpt-5.6-luna). Set HERE, on the
             # Deployment, and deliberately NOT by changing application.yml's `gemini` default —
             # the explicit-env precedent of MEZO_FEATURE_COMPANION_ENABLED below. That keeps local
