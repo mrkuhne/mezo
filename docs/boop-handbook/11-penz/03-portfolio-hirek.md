@@ -30,7 +30,8 @@ osszefoglalo: A Pénzem oldalon látod a befektetéseidet három időtáv szerin
   (1–3 év · 5–10 év · 10+ év) megmondja, volt-e olyan, ami a hosszú távú képet tényleg érinti — szabályozás,
   technológia, iparági szerkezet, hosszú távú számok. Soronként egy mondat és egy csendes szó: *számít* vagy *nincs
   teendő*. Koppintásra a teljes magyarázat: *Amit Boop gondol róla* · *Mennyire biztos* · *Honnan van* (a hét
-  hírei, forrásokkal) · *Nincs teendőd*. Új forintösszeget nem ír, nem sürget, nem mond eladást; ha a szövege nem
+  hírei, forrásokkal) · *Nincs teendőd*. Új forintösszeget nem ír, egy számot (például a hírek darabszámát) csak a saját helyén
+  említhet, nem sürget, nem mond eladást; ha a szövege nem
   megy át az ellenőrzésen, egy őszinte, rögzített mondat áll helyette. Értesítés és teendő-gomb nincs. Az első
   áttekintés az első hétfő reggel készül el.
 - **A napi hírösszefoglaló a Ma oldal alján.** Csak az a hír kerül ide, ami a **te meglévő befektetéseidet**

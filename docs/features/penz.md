@@ -610,7 +610,7 @@ industry structure, regulation, technology, long-run financials; reactionary noi
 
    | Class | Rule |
    |---|---|
-   | **Numerical Error** | every number is one of the section's figures (story count, source count, coverage months); no `%`; no scale word / other currency by a figure; horizon digits only inside the sleeve's own phrase; `HufAmountGuard.verdict` against an **empty** allowed set (the review has no forint figure, so any amount is invented; no derived sums); no spelled-out number beyond *egy..hat*, no bare `Ft`; digits inside the section's ledger names skipped |
+   | **Numerical Error** | every number is one of the section's figures (story count, source count, coverage months); no `%`; no scale word / other currency by a figure; horizon digits only inside the sleeve's own phrase; `HufAmountGuard.verdict` against an **empty** allowed set (the review has no forint figure, so any amount is invented; no derived sums); no spelled-out number beyond *egy..hat*, no bare `Ft`; digits inside the section's ledger names skipped; **each figure only next to its own label** within three words — story count → *hír / cikk*, source count → *forrás*, coverage → *hónap* (`mezo-r36n9.129`), so a story count of 12 cannot pose as "12 hónapnyi fedezet" |
    | **Entity Swap** | only the section's holdings (its sleeve's live holdings + the stories' own) — no other holding's name or match terms |
    | **Negation Flip** | no figure has a direction, so only the sign rule (no signed figure) |
    | **Temporal Confusion** | no year, no weekday |

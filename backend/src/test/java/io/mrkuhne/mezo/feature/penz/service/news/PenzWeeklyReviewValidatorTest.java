@@ -51,6 +51,27 @@ class PenzWeeklyReviewValidatorTest {
         assertThat(rules(with(good("long", "holding-w"), "body", body))).contains(Rule.NUMERICAL_ERROR);
     }
 
+    /** mezo-r36n9.129: a figure only next to its own label. */
+    @Test
+    void testValidate_shouldAcceptEachFigureNextToItsOwnLabel() {
+        int sources = LONG.figures().sourceCount();
+        WeeklyModelSection m = with(good("long", "holding-w"), "body",
+            "A héten 1 hír érintette, " + sources + " különböző forrásból; a részed 27 hónapnyi fix költséget fedez.");
+
+        assertThat(rules(m)).isEmpty();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "A részed 1 hónapnyi fix költséget fedez.",     // the story count posing as coverage
+        "A héten 27 hír érintette.",                    // the coverage posing as a story count
+        "Ez 27 lépés a célig.",                          // a figure with no label at all
+        "Összesen 1."
+    })
+    void testValidate_shouldRejectAFigureAwayFromItsOwnLabel(String body) {
+        assertThat(rules(with(good("long", "holding-w"), "body", body))).contains(Rule.NUMERICAL_ERROR);
+    }
+
     // ---- Entity Swap ----
 
     @Test
