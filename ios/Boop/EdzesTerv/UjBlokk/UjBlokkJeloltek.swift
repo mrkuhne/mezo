@@ -13,6 +13,7 @@ struct UjBlokkJeloltek: View {
     /// The candidates on screen: kept while a refresh or the start is on its way.
     @State private var shown: WireCandidates?
     @State private var chosen = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ZStack {
@@ -29,8 +30,11 @@ struct UjBlokkJeloltek: View {
         .sensoryFeedback(.selection, trigger: chosen)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if let c = shown, !c.nothingFits, c.candidates.indices.contains(chosen) {
-                UjBlokkBottomBar(title: "Ezzel kezdem", enabled: model.phase != .creating) {
-                    Task { await model.choose(c.candidates[chosen]) }
+                VStack(spacing: 0) {
+                    UjBlokkBottomBar(title: "Ezzel kezdem", enabled: model.phase != .creating) {
+                        Task { await model.choose(c.candidates[chosen]) }
+                    }
+                    if let e = model.createError { UjBlokkStartError(error: e).background(NK.ground.opacity(0.95)) }
                 }
             }
         }
@@ -57,7 +61,7 @@ struct UjBlokkJeloltek: View {
                      sentence: "\(model.days.count) nap, legfeljebb \(model.minutes) perc, \(model.weeks) hét. Csak olyat mutatok, ami minden szabálynak megfelel.")
                 ForEach(Array(c.candidates.enumerated()), id: \.element.splitKey) { i, candidate in
                     UjBlokkCandidateCard(candidate: candidate, limit: model.minutes, selected: chosen == i) {
-                        withAnimation(.snappy) { chosen = i }
+                        withAnimation(reduceMotion ? nil : .snappy) { chosen = i }
                     }
                 }
                 startChoice
@@ -99,6 +103,21 @@ struct UjBlokkJeloltek: View {
             }
         }
         .padding(.top, 4)
+    }
+}
+
+/// Why „Ezzel kezdem" did not go through, under the button that tries again.
+struct UjBlokkStartError: View {
+    let error: PlanFetchError
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            PlanMark(.shield, color: planWarn, size: 14).padding(.top, 2)
+            Text("Nem sikerült elindítani. \(planErrorText(error))").nkFont(13).foregroundStyle(planWarn)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 24).padding(.bottom, 6)
+        .accessibilityElement(children: .combine)
     }
 }
 

@@ -10,6 +10,7 @@ struct UjBlokkAlapok: View {
     @Binding var blocked: UjBlokkBlocked?
     let onClose: () -> Void
     let onNext: () -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// The muscles he sets a tier for, in body order.
     static let muscles = ["back", "chest", "shoulder", "biceps", "triceps", "quad", "ham", "glute", "calf", "core"]
@@ -74,7 +75,7 @@ struct UjBlokkAlapok: View {
                                 .padding(.vertical, 10)
                             }
                         }
-                        .animation(.snappy, value: blocked)
+                        .animation(reduceMotion ? nil : .snappy, value: blocked)
                         .padding(.horizontal, 16).padding(.vertical, 6)
                         .nkGlass(22)
                         Text("Hangsúly: itt építünk a legtöbbet. Építés: rendesen nő. Tartás: megtartja, amit eddig felépítettél.")
@@ -147,12 +148,13 @@ struct PlanTierSwitch: View {
     var disabled: (MuscleTier) -> Bool = { _ in false }
     let set: (MuscleTier) -> Void
     private let all: [MuscleTier] = [.maintain, .grow, .emphasize]
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         HStack(spacing: 4) {
             ForEach(all, id: \.self) { item in
                 let off = item != tier && disabled(item)
-                Button { withAnimation(.snappy) { set(item) } } label: {
+                Button { withAnimation(reduceMotion ? nil : .snappy) { set(item) } } label: {
                     Text(item.hungarian).nkFont(compact ? 12.5 : 13, .semibold)
                         .foregroundStyle(item == tier ? NK.ground : .white.opacity(off ? 0.22 : 0.7))
                         .lineLimit(1).minimumScaleFactor(0.8)

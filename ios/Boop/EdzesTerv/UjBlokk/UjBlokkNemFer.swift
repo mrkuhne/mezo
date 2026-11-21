@@ -11,6 +11,7 @@ struct UjBlokkNemFer: View {
     let candidates: WireCandidates
     let onOpenSeason: (_ note: String?) -> Void
     @State private var showClosest = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var closest: WireCandidate? { candidates.candidates.first }
 
@@ -60,7 +61,7 @@ struct UjBlokkNemFer: View {
     }
 
     private func fixButton(_ title: String, _ sub: String, _ action: @escaping () -> Void) -> some View {
-        Button { withAnimation(.snappy) { action() } } label: {
+        Button { withAnimation(reduceMotion ? nil : .snappy) { action() } } label: {
             HStack(spacing: 10) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title).nkFont(15, .semibold).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
@@ -80,7 +81,7 @@ struct UjBlokkNemFer: View {
     private func closestCard(_ c: WireCandidate) -> some View {
         let longer = c.longest - model.minutes
         return VStack(alignment: .leading, spacing: 12) {
-            Button { withAnimation(.snappy) { showClosest.toggle() } } label: {
+            Button { withAnimation(reduceMotion ? nil : .snappy) { showClosest.toggle() } } label: {
                 HStack(spacing: 8) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("a legközelebbi, ha mégis kéred").nkFont(13).foregroundStyle(.white.opacity(0.55))
@@ -103,6 +104,10 @@ struct UjBlokkNemFer: View {
                         .background(Capsule().stroke(.white.opacity(0.25), lineWidth: 1))
                 }
                 .buttonStyle(.plain)
+                if let e = model.createError {
+                    Text("Nem sikerült elindítani. \(planErrorText(e))").nkFont(13).foregroundStyle(planWarn)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
         }
         .padding(16)

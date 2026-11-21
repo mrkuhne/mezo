@@ -41,6 +41,7 @@ struct PlanBudget: Equatable {
 struct PlanBudgetCard: View {
     let data: PlanBudget
     var compact = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(alignment: .leading, spacing: compact ? 7 : 10) {
@@ -80,7 +81,7 @@ struct PlanBudgetCard: View {
         .padding(compact ? 12 : 16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .nkGlass(compact ? 18 : 22)
-        .animation(.snappy, value: data.used)
+        .animation(reduceMotion ? nil : .snappy, value: data.used)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Heti keret: \(data.used) a \(data.capacity) sorozatból, Hangsúly \(data.emphasizeCount) a \(data.budget.emphasizeMax)-ből")
     }

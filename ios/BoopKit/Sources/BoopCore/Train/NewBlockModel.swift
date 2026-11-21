@@ -87,6 +87,8 @@ public final class NewBlockModel {
     public var startChoice: StartChoice = .nextMonday
 
     public private(set) var phase: Phase
+    /// Why the last „Ezzel kezdem" failed (generate / save / start); the candidates stay on screen. nil otherwise.
+    public private(set) var createError: PlanFetchError?
     /// The lead candidate's tier budget (recommended, else the closest); refreshed with the candidates.
     public private(set) var budget: WireBudget?
     /// The training days as the server's tokens, in week order.
@@ -148,6 +150,8 @@ public final class NewBlockModel {
             guard request == candidatesRequest, !busy else { return }
             phase = .candidates(result)
             budget = result.lead?.evaluation.budget
+            // New choices on screen: the old start failure no longer describes them.
+            createError = nil
         } catch {
             guard request == candidatesRequest, !busy else { return }
             phase = Self.isSeasonRequired(error) ? .needsSeason : .failed(error)
@@ -238,9 +242,13 @@ public final class NewBlockModel {
 
     /// Generate the chosen split's full plan → save it as a template → start it. A failed generate falls back to the
     /// candidate's own template (already a complete, sound plan).
+    /// A failure here is the start's, not the candidates': the candidates on screen stay (`createError` says why) and
+    /// choosing again retries the start (reusing a template already saved). `SEASON_REQUIRED` → `needsSeason`.
     public func choose(_ candidate: WireCandidate) async {
         guard !busy else { return }
         pendingRefresh?.cancel()
+        let before = phase
+        createError = nil
         phase = .creating
         let request = WireGenerateRequest(daysOfWeek: days, weeks: weeks, priorities: prioritiesWire, split: candidate.splitKey)
         let key = SavedKey(request: request, minutes: minutes)
@@ -264,7 +272,14 @@ public final class NewBlockModel {
                                                        status: status)
             phase = .created(blockId: block.id)
         } catch {
-            phase = Self.isSeasonRequired(error) ? .needsSeason : .failed(error)
+            if Self.isSeasonRequired(error) {
+                phase = .needsSeason
+            } else if case .candidates = before {
+                phase = before
+                createError = error
+            } else {
+                phase = .failed(error)
+            }
         }
     }
 

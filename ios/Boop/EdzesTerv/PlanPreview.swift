@@ -23,6 +23,7 @@ import BoopDesign
 //                                          block just created, with „Mégsem, eldobom")
 //   -previewUjBlokkSeason none             no season days: the needs-season state
 //   -previewUjBlokkScroll Y                the step opens scrolled down by Y points
+//   -previewUjBlokkStart fail              „Ezzel kezdem" fails at the start (503): the inline error under the button
 //
 // The evaluator below is a FIXTURE: it imitates the server's answer so the steppers move the numbers on screen. The
 // app itself never computes a band — it asks `POST /api/train/meso-plans/evaluate`.
@@ -131,6 +132,9 @@ final class PlanPreviewTransport: ClientTransport, @unchecked Sendable {
         try await Task.sleep(for: .milliseconds(state == "loading" ? 600_000 : 350))
         if state == "offline" { throw URLError(.notConnectedToInternet) }
         if state == "error" { return (HTTPResponse(status: .internalServerError), nil) }
+        if operationID == "startMesoTemplate", UserDefaults.standard.string(forKey: "previewUjBlokkStart") == "fail" {
+            return (HTTPResponse(status: .serviceUnavailable), nil)
+        }
         if operationID == "getBlockExerciseSuggestions", UserDefaults.standard.string(forKey: "previewBlokkSuggest") == "fail" {
             return (HTTPResponse(status: .serviceUnavailable), nil)
         }

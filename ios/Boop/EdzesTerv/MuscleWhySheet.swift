@@ -75,7 +75,9 @@ struct MuscleWhySheet: View {
     /// „A hát két egymást követő napon kap nehéz adagot: hétfőn 7, kedden 4 kemény sorozatot."
     private func hint(_ c: WireConsecutive) -> String? {
         guard let a = weekday(c.dayIndex), let b = weekday(c.nextDayIndex) else { return nil }
-        return "A \(planMuscleName(muscle.muscle).lowercased()) két egymást követő napon kap nehéz adagot: \(planWeekdayOn(a)) \(c.sets), \(planWeekdayOn(b)) \(c.nextSets) kemény sorozatot. Ha az egyik napról egy gyakorlatot máshová teszel, rendben lesz."
+        let name = planMuscleName(muscle.muscle).lowercased()
+        let article = "aáeéiíoóöőuúüű".contains(name.first ?? "x") ? "Az" : "A"
+        return "\(article) \(name) két egymást követő napon kap nehéz adagot: \(planWeekdayOn(a)) \(c.sets), \(planWeekdayOn(b)) \(c.nextSets) kemény sorozatot. Ha az egyik napról egy gyakorlatot máshová teszel, rendben lesz."
     }
 
     private func box(_ title: String, _ text: String) -> some View {

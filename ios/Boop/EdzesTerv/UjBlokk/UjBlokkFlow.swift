@@ -208,7 +208,8 @@ struct UjBlokkDayBars: View {
     /// Minutes per weekday (0 = Monday … 6), nil = rest day.
     let minutes: [Int?]
     let limit: Int
-    private let top: CGFloat = 80
+    /// The scale's top: the limit or the longest day, whichever is higher, plus a tenth — a 90-minute limit still reads.
+    private var top: CGFloat { CGFloat(max(limit, minutes.compactMap { $0 }.max() ?? 0)) * 1.1 }
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 5) {
@@ -223,7 +224,7 @@ struct UjBlokkDayBars: View {
                         if let m {
                             RoundedRectangle(cornerRadius: 4)
                                 .fill(m > limit ? planWarn.opacity(0.85) : .white.opacity(0.32))
-                                .frame(height: min(44, max(6, 44 * CGFloat(m) / top)))
+                                .frame(height: max(6, 44 * CGFloat(m) / top))
                         }
                     }
                     .frame(height: 44)
@@ -240,7 +241,7 @@ struct UjBlokkDayBars: View {
             Rectangle().fill(.white.opacity(0.45))
                 .frame(height: 1)
                 .mask(HStack(spacing: 3) { ForEach(0..<40, id: \.self) { _ in Rectangle().frame(width: 4) } })
-                .padding(.bottom, 17 + min(44, 44 * CGFloat(limit) / top))
+                .padding(.bottom, 17 + 44 * CGFloat(limit) / top)
                 .accessibilityHidden(true)
         }
         .padding(.top, 4)

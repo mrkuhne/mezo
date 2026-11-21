@@ -249,7 +249,9 @@ public final class BlockBuilderModel {
         guard let draft else { return .ok }
         return RaiseCheck.raise(muscle: muscle, from: draft.tier(muscle).rawValue,
                                 emphasizeCount: draft.tiers.values.filter { $0 == .emphasize }.count,
-                                budget: evaluation?.budget, minutes: minutesTarget ?? 0, days: draft.days.count)
+                                budget: evaluation?.budget, minutes: minutesTarget ?? 0,
+                                // The training days — the same count the heti keret line says.
+                                days: draft.days.filter { !$0.exercises.isEmpty }.count)
     }
 
     /// The tier switch: lowering jumps straight to the target, a raise moves one tier toward it and only when

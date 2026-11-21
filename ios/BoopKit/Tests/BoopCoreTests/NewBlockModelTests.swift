@@ -180,10 +180,12 @@ struct NewBlockModelTests {
         stub.on("createMesoTemplate", .json(200, #"{"id":"\#(PlanFixtures.templateId)"}"#))
         stub.on("startMesoTemplate", .fail(URLError(.notConnectedToInternet)))
         await m.choose(c.candidates[0])
-        #expect(m.phase == .failed(.offline))
+        #expect(m.phase == .candidates(c), "a failed start keeps the candidates on screen")
+        #expect(m.createError == .offline, "the start's failure is not a candidates failure")
         stub.on("startMesoTemplate", .json(200, PlanFixtures.startedBlockJSON()))
         await m.choose(c.candidates[0])
         #expect(m.phase == .created(blockId: PlanFixtures.newBlockId))
+        #expect(m.createError == nil)
         #expect(stub.ops.filter { $0 == "createMesoTemplate" }.count == 1, "no second template for the same choice")
     }
 
@@ -213,7 +215,7 @@ struct NewBlockModelTests {
         stub.on("createMesoTemplate", .json(200, #"{"id":"\#(PlanFixtures.templateId)"}"#))
         stub.on("startMesoTemplate", .fail(URLError(.notConnectedToInternet)))
         await m.choose(c.candidates[0])
-        #expect(m.phase == .failed(.offline))
+        #expect(m.createError == .offline)
         stub.on("getMesoPlanCandidates", .json(200, PlanFixtures.candidatesJSON()))
         m.minutes = 75
         await m.pendingRefresh?.value
@@ -253,6 +255,23 @@ struct NewBlockModelTests {
         #expect(m.tier("back") == "grow" && m.tier("biceps") == "emphasize")
         #expect(m.applyFix(WireFix(code: "more_days", value: nil)) == .needsSeasonDays)
         #expect(m.applyFix(WireFix(code: "future_fix", value: nil)) == .unknown)
+    }
+
+    @Test(.timeLimit(.minutes(1))) func startFailureKeepsCandidatesAndRetriesTheStart() async throws {
+        let stub = StubTransport()
+        let m = await withCandidates(stub)
+        guard case .candidates(let c) = m.phase else { Issue.record("no candidates"); return }
+        stub.on("generateMesoPlan", .status(500))
+        stub.on("createMesoTemplate", .status(500))
+        await m.choose(c.candidates[1])
+        #expect(m.phase == .candidates(c) && m.createError == .server, "nothing created: the choices stay, the error is the start's")
+        #expect(!stub.ops.contains("startMesoTemplate"))
+        stub.on("generateMesoPlan", .json(200, PlanFixtures.generateJSON))
+        stub.on("createMesoTemplate", .json(200, #"{"id":"\#(PlanFixtures.templateId)"}"#))
+        stub.on("startMesoTemplate", .json(200, PlanFixtures.startedBlockJSON()))
+        await m.choose(c.candidates[1])
+        #expect(m.phase == .created(blockId: PlanFixtures.newBlockId) && m.createError == nil)
+        #expect(stub.ops.filter { $0 == "getMesoPlanCandidates" }.count == 1, "retrying the start does not ask for candidates again")
     }
 
     @Test(.timeLimit(.minutes(1))) func candidatesFailureIsShown() async {
