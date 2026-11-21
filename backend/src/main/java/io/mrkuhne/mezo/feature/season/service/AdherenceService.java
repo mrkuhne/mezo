@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.season.service;
 
 import io.mrkuhne.mezo.feature.season.entity.SeasonEntity;
+import io.mrkuhne.mezo.feature.season.port.SeasonAdjustmentPort;
 import io.mrkuhne.mezo.feature.season.port.SeasonMealPort;
 import io.mrkuhne.mezo.feature.season.port.SeasonMetricsPort;
 import io.mrkuhne.mezo.feature.season.port.SeasonSleepPort;
@@ -13,6 +14,7 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -58,6 +60,8 @@ public class AdherenceService {
     private final SeasonMetricsPort metricsPort;
     private final SeasonSleepPort sleepPort;
     private final SeasonRepository seasonRepository;
+    /** Boop B7 K3 (mezo-r36n9.17): accepted moves — a moved gym session is judged once, on its new day. */
+    private final SeasonAdjustmentPort adjustmentPort;
 
     public record AdherenceDay(LocalDate date, boolean judged, boolean excused, String excuse, Integer kcal,
                                Integer targetKcal, Integer proteinG, Integer targetProteinG, Boolean foodInBand,
@@ -108,7 +112,8 @@ public class AdherenceService {
     /** The days of {@code from..to} judged as of {@code today}, unvalidated (callers in this package bound it). */
     List<AdherenceDay> days(UUID owner, LocalDate from, LocalDate to, LocalDate today) {
         List<SeasonMealPort.FoodDay> food = mealPort.foodDays(owner, from, to);
-        Map<LocalDate, Set<SessionKind>> planned = trainPort.plannedSessions(owner, from, to);
+        Map<LocalDate, Set<SessionKind>> planned =
+            withMoves(trainPort.plannedSessions(owner, from, to), adjustmentPort.movedSessions(owner, from, to), from, to);
         Map<LocalDate, Set<SessionKind>> done = trainPort.doneSessions(owner, from, to);
         Map<LocalDate, Set<SessionKind>> skipped = trainPort.excusedSessions(owner, from, to);
         Map<LocalDate, Integer> sleep = metricsPort.sleepMinutes(owner, from, to);
@@ -146,6 +151,33 @@ public class AdherenceService {
                 f.targetProteinG(), inBand, !kinds.isEmpty(), sessionDone, sleepMin, need, sleepOk, dayKind,
                 List.copyOf(sessions)));
         }
+        return out;
+    }
+
+    /**
+     * The plan with the ledger's accepted moves applied (Boop B7 K3): the gym session leaves its old day and is planned
+     * on its new one, so it counts once — not missed on the old day, not doubled. A move never targets a gym day
+     * (decision #71), so the new day gains the session rather than merging two. {@code planned} covers
+     * {@code from..to}; a move whose old day lies outside it still brings its session to the new day.
+     */
+    static Map<LocalDate, Set<SessionKind>> withMoves(Map<LocalDate, Set<SessionKind>> planned,
+            List<SeasonAdjustmentPort.Move> moves, LocalDate from, LocalDate to) {
+        if (moves.isEmpty()) {
+            return planned;
+        }
+        Map<LocalDate, Set<SessionKind>> out = new HashMap<>();
+        planned.forEach((d, kinds) -> out.put(d, kinds.isEmpty() ? EnumSet.noneOf(SessionKind.class) : EnumSet.copyOf(kinds)));
+        for (SeasonAdjustmentPort.Move m : moves) {
+            boolean oldInRange = !m.from().isBefore(from) && !m.from().isAfter(to);
+            Set<SessionKind> old = out.get(m.from());
+            if (oldInRange && (old == null || !old.remove(SessionKind.GYM))) {
+                continue; // nothing planned to move (the schedule changed since) — the move judges nothing
+            }
+            if (!m.to().isBefore(from) && !m.to().isAfter(to)) {
+                out.computeIfAbsent(m.to(), d -> EnumSet.noneOf(SessionKind.class)).add(SessionKind.GYM);
+            }
+        }
+        out.values().removeIf(Set::isEmpty);
         return out;
     }
 

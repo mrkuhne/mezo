@@ -20,6 +20,10 @@ public interface DayAdjustmentRepository extends JpaRepository<DayAdjustmentEnti
     /** Rows of the owner in any of these states (the stale sweep, the empty-day check). */
     List<DayAdjustmentEntity> findByCreatedByAndStateInAndDeletedFalse(UUID owner, Collection<String> states);
 
+    /** Rows filed in {@code from..to} in any of these states, oldest first (the readers' ledger read). */
+    List<DayAdjustmentEntity> findByCreatedByAndStateInAndDateBetweenAndDeletedFalseOrderByDateAscCreatedAtAsc(
+        UUID owner, Collection<String> states, LocalDate from, LocalDate to);
+
     /** The first step of an accepted bundle carries the request's clientRef itself (idempotent replay). */
     Optional<DayAdjustmentEntity> findByCreatedByAndClientRefAndDeletedFalse(UUID owner, UUID clientRef);
 

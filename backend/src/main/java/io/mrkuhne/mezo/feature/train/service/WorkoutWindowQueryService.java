@@ -10,6 +10,8 @@ import io.mrkuhne.mezo.feature.train.entity.SportEventEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
+import io.mrkuhne.mezo.feature.train.port.TrainDayAdjustmentPort;
+import io.mrkuhne.mezo.feature.train.port.TrainDayAdjustmentPort.EffectiveSession;
 import io.mrkuhne.mezo.feature.train.repository.GymScheduleSlotRepository;
 import io.mrkuhne.mezo.feature.train.repository.RunSessionLogRepository;
 import io.mrkuhne.mezo.feature.train.repository.RunningBlockRepository;
@@ -60,6 +62,9 @@ public class WorkoutWindowQueryService {
     private final TrainProperties props;
     private final ActivityEnergyModel activityEnergyModel;
     private final AthleteBodyPort athleteBodyPort;
+    // Boop B7 K3 (mezo-r36n9.17): an accepted move / time shift / shorten re-dates and re-times the gym window and
+    // the pending movement. Repository-only adapter behind it — no cycle.
+    private final TrainDayAdjustmentPort dayAdjustmentPort;
 
     /**
      * One workout on a date: schedule start, derived end, kind, whether it was actually done, and
@@ -120,6 +125,7 @@ public class WorkoutWindowQueryService {
             .map(v -> v.row().date())
             .collect(Collectors.toSet());
         PlannedSkipService.RunSkips runSkips = PlannedSkipService.runSkipsOf(skipVerdicts, skips.protectedDates());
+        Map<LocalDate, EffectiveSession> ledger = dayAdjustmentPort.effectiveSessions(userId, from, to);
         // A skipped run that was nonetheless logged that day keeps its window (the gym rule
         // `!skipped || done`) — only fetched when a run skip exists in the range at all.
         Set<LocalDate> runLoggedDates = runSkips.isEmpty() ? Set.of() : runSessionLogRepository
@@ -132,7 +138,7 @@ public class WorkoutWindowQueryService {
             result.put(day, windowsForDay(day, gymSlots, gymDoneCounts, mesoSessions, sportSlots,
                 sportEventsByDate.getOrDefault(day, List.of()),
                 sportSessionsByDate.getOrDefault(day, List.of()), skips, activeBlock,
-                gymSkipDates.contains(day), runSkips, runLoggedDates.contains(day)));
+                gymSkipDates.contains(day), runSkips, runLoggedDates.contains(day), ledger.get(day)));
         }
         return result;
     }
@@ -146,29 +152,26 @@ public class WorkoutWindowQueryService {
             List<SportScheduleSlotEntity> sportSlots, List<SportEventEntity> dayEvents,
             List<SportSessionEntity> daySessions, SportSlotSkipService.SportSkips skips,
             RunningBlockEntity activeBlock, boolean gymSkipped,
-            PlannedSkipService.RunSkips runSkips, boolean runLogged) {
+            PlannedSkipService.RunSkips runSkips, boolean runLogged, EffectiveSession ledger) {
         int dow = date.getDayOfWeek().getValue() - 1;
         List<Window> windows = new ArrayList<>();
 
-        List<GymScheduleSlotEntity> todaysGymSlots =
-            gymSlots.stream().filter(s -> s.getDayOfWeek() == dow).toList();
-        boolean gymDone = !todaysGymSlots.isEmpty()
-            && gymDoneCounts.getOrDefault(date, 0L) >= todaysGymSlots.size();
+        long doneCount = gymDoneCounts.getOrDefault(date, 0L);
+        List<LocalTime> gymStarts = gymStartsOn(date, gymSlots, ledger, doneCount > 0);
+        boolean gymDone = !gymStarts.isEmpty() && doneCount >= gymStarts.size();
         // Kihagyás S1 (mezo-q4xt2.1): a skipped gym day carries no planned label — and, when the
         // gym was not actually done that day either, no gym window AT ALL (spec §8.1.9): a
         // skipped occurrence must disappear from Fuel's pre/post-workout meal scoring exactly
         // like a skipped sport occurrence does, not just lose its label. A gym that WAS done
         // despite the skip (e.g. skip undone after logging, or logged before the skip) still
         // yields its window — never hide a real workout.
-        String gymLabel = gymSkipped ? null : workoutService.findPlannedTemplateForDate(mesoSessions, date)
+        String gymLabel = gymSkipped ? null : WorkoutService.effectiveTemplate(mesoSessions, date, ledger)
             .map(WorkoutSessionEntity::getType)
             .orElse(null);
         if (!gymSkipped || gymDone) {
-            todaysGymSlots.forEach(s -> {
-                LocalTime start = LocalTime.parse(s.getTime());
-                windows.add(new Window(start, start.plusMinutes(props.gymDefaultMinutes()),
-                    "gym", gymDone, gymLabel));
-            });
+            int gymMinutes = gymMinutesOf(ledger);
+            gymStarts.forEach(start -> windows.add(new Window(start, start.plusMinutes(gymMinutes),
+                "gym", gymDone, gymLabel)));
         }
 
         addSportWindowsForDay(date, dow, sportSlots, dayEvents, daySessions, skips, windows);
@@ -341,6 +344,7 @@ public class WorkoutWindowQueryService {
             .map(v -> v.row().date())
             .collect(Collectors.toSet());
         PlannedSkipService.RunSkips runSkips = PlannedSkipService.runSkipsOf(skipVerdicts, skips.protectedDates());
+        Map<LocalDate, EffectiveSession> ledger = dayAdjustmentPort.effectiveSessions(userId, from, to);
 
         // Looked up at most once for the whole range, and only if a done gym instance (planned or
         // extra) or a today-or-later pending preview needs it (mezo-tb3s2).
@@ -366,7 +370,7 @@ public class WorkoutWindowQueryService {
                 sportSlots, eventsByDate.getOrDefault(day, List.of()),
                 sportSessionsByDate.getOrDefault(day, List.of()), skips, activeBlock,
                 runsByDate.getOrDefault(day, List.of()), restKcalPerHour,
-                gymSkipDates.contains(day), runSkips));
+                gymSkipDates.contains(day), runSkips, ledger.get(day)));
         }
         return result;
     }
@@ -378,14 +382,14 @@ public class WorkoutWindowQueryService {
             List<SportEventEntity> dayEvents, List<SportSessionEntity> daySessions,
             SportSlotSkipService.SportSkips skips, RunningBlockEntity activeBlock,
             List<RunSessionLogEntity> dayRuns, Supplier<BigDecimal> restKcalPerHour,
-            boolean gymSkipped, PlannedSkipService.RunSkips runSkips) {
+            boolean gymSkipped, PlannedSkipService.RunSkips runSkips, EffectiveSession ledger) {
         int dow = date.getDayOfWeek().getValue() - 1;
         boolean plannedDone = false;
         int plannedKcal = 0;
         int extraKcal = 0;
 
-        // Gym.
-        long gymSlotCount = gymSlots.stream().filter(s -> s.getDayOfWeek() == dow).count();
+        // Gym — the ledger's moved session counts on its new day only (B7 K3).
+        long gymSlotCount = gymStartsOn(date, gymSlots, ledger, !doneInstances.isEmpty()).size();
         long plannedGymCount = 0;
         for (WorkoutSessionEntity instance : doneInstances) {
             boolean planned = "meso".equals(instance.getOrigin()) && plannedGymCount < gymSlotCount;
@@ -441,7 +445,7 @@ public class WorkoutWindowQueryService {
             long gymLeft = gymSkipped ? 0 : Math.max(0, gymSlotCount - plannedGymCount);
             if (gymLeft > 0) {
                 int gymEach = activityEnergyModel
-                    .netKcal("gym", null, props.gymDefaultMinutes(), restKcalPerHour.get()).orElse(0);
+                    .netKcal("gym", null, gymMinutesOf(ledger), restKcalPerHour.get()).orElse(0);
                 pendingKcal += (int) gymLeft * gymEach;
             }
             for (PlannedSport left : unmatchedSport) {
@@ -461,6 +465,38 @@ public class WorkoutWindowQueryService {
         }
         // A record: value-equal to NONE when nothing moved and nothing is pending.
         return new DayMovement(plannedDone, plannedKcal, extraKcal, pendingKcal);
+    }
+
+    /**
+     * The date's gym start times with the day-adjustment ledger applied (Boop B7 K3, mezo-r36n9.17): a session moved
+     * away leaves the date without a gym slot — unless a workout was logged that day anyway (never hide a real
+     * workout); a session moved onto the date brings its plan day's slot times along; an accepted time shift moves the
+     * earliest start. Without a ledger change: the weekday's slots, exactly as before.
+     */
+    private static List<LocalTime> gymStartsOn(LocalDate date, List<GymScheduleSlotEntity> gymSlots,
+            EffectiveSession ledger, boolean doneThatDay) {
+        LocalDate planDay = date;
+        if (ledger != null && ledger.movedIn()) {
+            planDay = ledger.movedInFrom();
+        } else if (ledger != null && ledger.movedAway() && !doneThatDay) {
+            return List.of();
+        }
+        int dow = planDay.getDayOfWeek().getValue() - 1;
+        List<LocalTime> starts = new ArrayList<>(gymSlots.stream()
+            .filter(s -> s.getDayOfWeek() == dow)
+            .map(s -> LocalTime.parse(s.getTime()))
+            .sorted()
+            .toList());
+        if (ledger != null && ledger.time() != null && !starts.isEmpty()) {
+            starts.set(0, ledger.time());
+            starts.sort(Comparator.naturalOrder());
+        }
+        return starts;
+    }
+
+    /** A planned gym session's length: the ledger's shortened minutes, else the configured default. */
+    private int gymMinutesOf(EffectiveSession ledger) {
+        return ledger != null && ledger.minutes() != null ? ledger.minutes() : props.gymDefaultMinutes();
     }
 
     /** Minutes for an EXTRA gym instance's net-kcal estimate: derived work time when known, else
