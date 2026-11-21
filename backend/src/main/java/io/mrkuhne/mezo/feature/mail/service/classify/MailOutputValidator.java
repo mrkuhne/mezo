@@ -36,7 +36,7 @@ import tools.jackson.databind.json.JsonMapper;
  *   <li><b>Amounts</b>: kept only when the same value stands next to {@code Ft|HUF|€|EUR} in the text, in the model's
  *       currency; stored as value x 100 minor units.</li>
  *   <li><b>No links</b>: model-written strings (title, summary, category, carrier, why) lose invisible characters, and
- *       one carrying a URL or a phone number is blanked; a title with one rejects the item.</li>
+ *       one carrying a URL ({@code https?:}, {@code www.}, a domain followed by a path) or a phone number is blanked (a bare {@code name.tld} stays: the app renders plain text); NFKC-normalised first; a title with one rejects the item.</li>
  *   <li><b>Shape</b>: an unknown group (and {@code sensitive}, which never reaches a model) rejects the whole answer;
  *       a deal without a title is rejected; strings are clamped to their column sizes.</li>
  * </ul>
@@ -360,15 +360,16 @@ public final class MailOutputValidator {
     }
 
     private static final Pattern URL = Pattern.compile(
-        "https?:|www\\.|\\b[a-z0-9-]+\\.[a-z]{2,24}/"
-            + "|\\b[a-z0-9-]+\\.(?:com|hu|net|org|io|eu|uk|co|info|biz|ru|ly|de|me|xyz|example)\\b",
+        "https?:|www\\.|\\b[a-z0-9-]+\\.[a-z]{2,24}/",
         Pattern.CASE_INSENSITIVE);
     private static final Pattern PHONE = Pattern.compile(
         "(?<![\\w+])(?:(?:\\+|00)\\d{1,3}[\\s./-]?\\(?\\d{1,3}\\)?(?:[\\s./-]?\\d{2,4}){2,4}"
             + "|06[\\s./-]?\\d{1,2}[\\s./-]\\d{3}[\\s./-]\\d{3,4})(?!\\d)");
 
     private static String clean(String s) {
-        return s == null ? null : MailFence.INVISIBLE.matcher(s).replaceAll("");
+        return s == null ? null
+            : MailFence.INVISIBLE.matcher(java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFKC))
+                .replaceAll("");
     }
 
     private static boolean hasLink(String s) {

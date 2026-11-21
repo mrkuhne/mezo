@@ -194,7 +194,7 @@ class MailOutputValidatorTest {
     @Test
     void testClassified_shouldBlankALinkOrPhoneInModelWrittenStrings() {
         String raw = "{\"group\":\"rest\",\"category\":\"hír www.x.hu/pay\",\"title\":\"Cím\","
-            + "\"summary\":\"Nézd meg: https://evil.example\",\"carrier\":\"GLS shop.hu\"}";
+            + "\"summary\":\"Nézd meg: https://evil.example\",\"carrier\":\"GLS shop.hu/x\"}";
         ClassifiedMail c = classify(raw, "x").orElseThrow();
         assertThat(c.summary()).isEmpty();
         assertThat(c.category()).isEmpty();
@@ -233,5 +233,24 @@ class MailOutputValidatorTest {
             "[{\"id\":\"" + id + "\",\"score\":8,\"why\":\"Fizess: www.x.hu/pay\"}]", Set.of(id));
         assertThat(out).hasSize(1);
         assertThat(out.get(0).why()).isEmpty();
+    }
+
+    @Test
+    void testClassified_shouldAllowBareBrandDomains_butCatchPathsAndFullwidthForms() {
+        String brand = "{\"group\":\"deal\",\"title\":\"Alza.hu: 20% kedvezmény\","
+            + "\"summary\":\"Foglalás a Booking.com oldalon.\"}";
+        ClassifiedMail c = classify(brand, "x").orElseThrow();
+        assertThat(c.title()).isEqualTo("Alza.hu: 20% kedvezmény");
+        assertThat(c.summary()).isEqualTo("Foglalás a Booking.com oldalon.");
+
+        UUID id = UUID.randomUUID();
+        assertThat(MailOutputValidator.scores(
+            "[{\"id\":\"" + id + "\",\"score\":8,\"why\":\"Nézd: alza.hu/akcio\"}]", Set.of(id))
+            .get(0).why()).isEmpty();
+
+        String wide = "{\"group\":\"rest\",\"title\":\"Cím\",\"summary\":\"Lásd \uff57\uff57\uff57\uff0eevil\uff0ehu\"}";
+        assertThat(classify(wide, "x").orElseThrow().summary()).isEmpty();
+        String colon = "{\"group\":\"rest\",\"title\":\"Cím\",\"summary\":\"https\uff1a evil\"}";
+        assertThat(classify(colon, "x").orElseThrow().summary()).isEmpty();
     }
 }
