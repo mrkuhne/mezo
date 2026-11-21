@@ -37,7 +37,7 @@ struct EvadListTab: View {
                trailing: "\(l.items.filter { $0.checked && !$0.removed }.count)/\(l.items.filter { !$0.removed }.count) a kosárban") {
             Text("A jóváhagyott menü alapján. Minden tétel alatt látod, melyik ételhez kell.")
                 .nkFont(13).foregroundStyle(.white.opacity(0.55)).fixedSize(horizontal: false, vertical: true)
-            if let age = menu.ageText { EvadLine(text: "Offline vagy, ez a \(age) lista.") }
+            if let age = menu.listAgeText { EvadLine(text: "Offline vagy, ez a \(age) lista.") }
             if let problem = menu.actionProblem { EvadLine(text: problem) }
         }
         let changed = evadChangedItems(l)

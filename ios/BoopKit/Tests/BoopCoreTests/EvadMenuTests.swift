@@ -194,4 +194,30 @@ struct EvadMenuTests {
         #expect(store.listMissing && store.list == nil && store.listProblem == nil)
         #expect(stub.sent.map(\.path) == ["/api/seasons/shopping?weekStart=2026-11-23", "/api/seasons/shopping?weekStart=2026-11-16"])
     }
+
+    @Test func pastDaysAreRecognised() {
+        let wed = Self.at(2026, 11, 18)
+        #expect(evadIsPast("2026-11-17", now: wed, calendar: Self.cal))
+        #expect(!evadIsPast("2026-11-18", now: wed, calendar: Self.cal))
+        #expect(!evadIsPast("2026-11-24", now: wed, calendar: Self.cal))
+    }
+
+    @Test @MainActor func anOfflineListDoesNotMarkTheMenuOffline() async throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let cache = ServerCache(directory: dir)
+        let online = StubTransport()
+        online.on("getShoppingList", .json(200, EvadMenuFixtures.listJSON))
+        let first = EvadMenuStore(client: EvadClient(raw: EvadClientTests.raw(online)), cache: cache,
+                                  clock: { Self.at(2026, 11, 18) }, calendar: Self.cal)
+        await first.loadList()
+        let offline = StubTransport()
+        offline.on("getShoppingList", .fail(URLError(.notConnectedToInternet)))
+        offline.on("getMenuWeek", .json(200, EvadMenuFixtures.weekJSON(status: "proposed", weekStart: "2026-11-23")))
+        let later = EvadMenuStore(client: EvadClient(raw: EvadClientTests.raw(offline)), cache: cache,
+                                  clock: { Self.at(2026, 11, 18) }, calendar: Self.cal)
+        await later.loadList()
+        await later.loadMenu()
+        #expect(later.listOffline && later.list != nil)
+        #expect(!later.menuOffline && later.menuAgeText == nil)
+    }
 }

@@ -396,11 +396,16 @@ No season (nil overview), no candidates. The Ma wall loads the overview once (ca
 
 - **`allowedRecipes`** — the candidate choke point: with an active season that allows recipes, the room offers only those;
   an empty set means **no filter** (no season, or none chosen yet — otherwise the room would never offer a recipe).
-- **`approvedMeals(date)`** — an approved week's meal for the window `<slot>#<n>` is that window's suggestion
-  (`Suggestion.Kind.RECIPE`, reason „ez szerepel a jóváhagyott heti menüdben"); an ingredient-tip meal falls back to the
-  picker.
+- **`approvedMeals(date)`** — the **active** season's approved week's meal for the window `<slot>#<n>` is that window's
+  suggestion (`Suggestion.Kind.RECIPE`, reason „ez szerepel a jóváhagyott heti menüdben") **only while it still
+  belongs there**: it names a recipe that is still a candidate (allowed, not blocked by his rules) and the live window
+  budget is within 15 % of the `budgetKcal` it was planned for (a moved workout or a kímélő day re-shapes the windows,
+  so the key may point elsewhere); otherwise — and for a tip meal — the picker answers.
 
-**The mid-week re-fit (spec §5.12-4).** `SeasonService.apply` (active season) calls `MenuService.refit(owner, tomorrow)`:
+**The mid-week re-fit (spec §5.12-4).** `SeasonService.apply` and `putRecipes` (active season) run
+`MenuService.refitInOwnTransaction(owner, tomorrow)` **after their commit**, in a transaction of their own (a menu
+failure is logged and can never roll back his accepted change); the „changed" marks of the earlier re-fit are cleared
+first, so only the latest difference shows. A past day's meal is never swapped (400). The re-fit itself:
 this and next week's menu, days ≥ tomorrow, are re-framed; per new window a recipe that still fits (or one he chose —
 `locked`) is kept and re-scaled, otherwise the best alternative (else the tip); a window the day no longer has is deleted;
 moved meals get `changed = true`; an approved week's list is re-built (§3.13). Past days are never touched. The preview's
@@ -416,7 +421,8 @@ kamra ← legumes, grains, pasta, bakery, nuts_seeds, oils_fats, condiments, sna
 recipe names with „×n" when used n times. `amountText`: g / ml rounded **up** (to 5 under 100, to 10 under 1000), from
 1000 kg / l with one decimal and a Hungarian comma, db whole.
 
-- **Made** on approval (once per week); **re-built** after a swap or a re-fit: unchanged lines keep their tick, moved or new
+- **Made** on approval (once per week); **re-built** after a swap or a re-fit (earlier „changed" marks cleared first; a
+  merge key longer than 80 characters is shortened with a name-UUID of the whole): unchanged lines keep their tick, moved or new
   lines are `changed` (a bigger amount un-ticks), a line no longer needed keeps its row with no amount (`removed`) under
   „változott". Staples are untouched by a re-build.
 - **Check-off** `PUT …/shopping/items/{id}` (server-side, survives a reinstall). **Staples** — `season_staple`

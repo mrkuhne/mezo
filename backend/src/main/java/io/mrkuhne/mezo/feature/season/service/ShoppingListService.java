@@ -85,6 +85,8 @@ public class ShoppingListService {
             create(owner, week, meals);
             return;
         }
+        items.findByListId(list.getId()).stream().filter(ShoppingItemEntity::isChanged)
+            .forEach(i -> i.setChanged(false)); // „változott" shows only the latest difference
         Map<String, ShoppingItemEntity> old = items.findByListId(list.getId()).stream()
             .filter(i -> !i.isStaple())
             .collect(Collectors.toMap(ShoppingItemEntity::getItemKey, Function.identity(), (a, b) -> a));
@@ -240,8 +242,12 @@ public class ShoppingListService {
         return e;
     }
 
+    /** The merge key as stored (≤ 80): a long one is shortened with a hash of the whole, so two never collide. */
     private static String key(String raw) {
-        return raw.length() > 80 ? raw.substring(0, 80) : raw;
+        if (raw.length() <= 80) {
+            return raw;
+        }
+        return raw.substring(0, 43) + "#" + UUID.nameUUIDFromBytes(raw.getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 
     /** A line that still counts: a staple, or a recipe line with an amount (a "no longer needed" line does not). */

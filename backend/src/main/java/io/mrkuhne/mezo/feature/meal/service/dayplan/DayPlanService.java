@@ -243,13 +243,34 @@ public class DayPlanService {
      */
     private static Suggestion suggestion(SlotKey slot, Macros4 budget, SeasonMenuPort.MenuMeal menuMeal,
             List<RecipeCandidate> candidates, SensitivityProfile profile) {
-        if (menuMeal != null && menuMeal.recipeId() != null) {
+        if (menuMealStillFits(menuMeal, budget, candidates, profile)) {
             String protein = menuMeal.proteinG() == null ? "" : ", " + menuMeal.proteinG() + " g fehérje";
             return new Suggestion(Suggestion.Kind.RECIPE, menuMeal.recipeId(),
                 menuMeal.name() + " — " + menuMeal.kcal() + " kcal" + protein + ".",
                 "ez szerepel a jóváhagyott heti menüdben");
         }
         return SuggestionPicker.pick(slot, budget, candidates, profile);
+    }
+
+    /** The menu meal's own window may differ from today's by this much and still be its window. */
+    static final int MENU_WINDOW_TOLERANCE_PCT = 15;
+
+    /**
+     * An approved menu meal speaks for a window only while it still belongs there: it names a recipe, that recipe is
+     * still offered (allowed by the season, not blocked by his rules — he may have changed either since approving),
+     * and the live window is about the size the meal was planned for (a moved workout or a kímélő day re-shapes the
+     * windows; then the slot#n key may point at a different window).
+     */
+    private static boolean menuMealStillFits(SeasonMenuPort.MenuMeal m, Macros4 budget, List<RecipeCandidate> candidates,
+            SensitivityProfile profile) {
+        if (m == null || m.recipeId() == null || budget == null || m.budgetKcal() <= 0) {
+            return false;
+        }
+        RecipeCandidate r = candidates.stream().filter(c -> c.id().equals(m.recipeId())).findFirst().orElse(null);
+        if (r == null || SensitivityService.verdict(profile, r.allergens(), r.nova(), r.lactoseFree()).blocksSuggestion()) {
+            return false;
+        }
+        return Math.abs(budget.kcal() - m.budgetKcal()) <= m.budgetKcal() * MENU_WINDOW_TOLERANCE_PCT / 100.0;
     }
 
     /** The approved menu's meals of the date keyed like the windows' skip keys ({@code <slot>#<n>}). */

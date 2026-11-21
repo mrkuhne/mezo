@@ -26,12 +26,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
  * The season lifecycle (spec §5.2, §5.3): create (planned, with its planned goal) → activate (goal, slots, sleep
  * need, block — one transaction; the previous active season closes) → apply previewed changes (fingerprint-checked,
  * one transaction, a revision row) → close. Only these and {@link #putRules} write; previews never do.
  */
+@lombok.extern.slf4j.Slf4j
 @Service
 @RequiredArgsConstructor
 public class SeasonService {
@@ -130,9 +133,7 @@ public class SeasonService {
         replaceAllowed(owner, s.getId(), draft.allowedOrEmpty());
         revision(owner, s, draft, preview.before(), preview.after());
         if (SeasonEntity.STATUS_ACTIVE.equals(s.getStatus())) {
-            seasonRepository.flush();
-            // spec §5.12-4: the rest of an approved menu week follows the new budgets; past days stay
-            menuService.refit(owner, LocalDate.now().plusDays(1));
+            refitAfterCommit(owner); // spec §5.12-4: the rest of the menu follows the new budgets; past days stay
         }
         return s;
     }
@@ -154,7 +155,36 @@ public class SeasonService {
                 d.block()));
         }
         s.setUpdatedAt(Instant.now());
-        return seasonRepository.save(s);
+        SeasonEntity saved = seasonRepository.save(s);
+        if (SeasonEntity.STATUS_ACTIVE.equals(s.getStatus())) {
+            refitAfterCommit(owner); // a recipe he no longer allows leaves the menu from tomorrow
+        }
+        return saved;
+    }
+
+    /**
+     * Re-fits the menu from tomorrow once this transaction has committed, in its own transaction, so a menu problem
+     * never rolls back his change (it is logged; the menu keeps its old meals, and the day plan stops offering a meal
+     * that no longer fits its window or his allowed recipes on its own).
+     */
+    private void refitAfterCommit(UUID owner) {
+        Runnable refit = () -> {
+            try {
+                menuService.refitInOwnTransaction(owner, LocalDate.now().plusDays(1));
+            } catch (RuntimeException e) {
+                log.warn("Menu re-fit after a season change failed for {}", owner, e);
+            }
+        };
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    refit.run();
+                }
+            });
+        } else {
+            refit.run();
+        }
     }
 
     /**

@@ -40,12 +40,17 @@ public class SeasonMenuAdapter implements SeasonMenuPort {
     @Override
     @Transactional(readOnly = true)
     public List<MenuMeal> approvedMeals(UUID owner, LocalDate date) {
+        UUID active = seasons.findActive(owner).map(s -> s.getId()).orElse(null);
+        if (active == null) {
+            return List.of(); // a closed season's menu no longer drives the day
+        }
         LocalDate monday = date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         return weeks.findByCreatedByAndWeekStart(owner, monday)
             .filter(SeasonMenuWeekEntity::approved)
+            .filter(w -> active.equals(w.getSeasonId()))
             .map(w -> meals.findByWeekIdAndMealDate(w.getId(), date).stream()
                 .map(m -> new MenuMeal(m.getSlot(), m.getOrdinal(), m.getRecipeId(), m.getName(), m.getKcal(),
-                    m.getProteinG()))
+                    m.getProteinG(), m.getBudgetKcal() == null ? m.getKcal() : m.getBudgetKcal()))
                 .toList())
             .orElse(List.of());
     }

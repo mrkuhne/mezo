@@ -337,4 +337,60 @@ class MenuServiceIT extends AbstractIntegrationTest {
         assertThat(MenuService.due(6, "18:00", sunday.minusDays(1), LocalTime.of(20, 0))).isFalse();
         assertThat(MenuService.due(2, "09:00", sunday.minusDays(2), LocalTime.of(8, 0))).isTrue(); // catch-up Friday
     }
+
+    @Test
+    void anApprovedMealNoLongerAllowedIsNotTheDaySuggestion() {
+        UUID owner = fixture.owner("menu-unallowed@test.local");
+        Library lib = library(owner);
+        season(owner, lib.all());
+        LocalDate monday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        SeasonMenuWeek w = menuService.approve(owner, menuService.generate(owner, monday).getId());
+        em.flush();
+        Set<UUID> todays = w.getDays().stream().filter(d -> d.getDate().equals(LocalDate.now()))
+            .flatMap(d -> d.getMeals().stream()).map(SeasonMenuMeal::getRecipeId).collect(Collectors.toSet());
+        // he unselects today's recipes: the room must not keep offering them from the menu
+        List<UUID> kept = lib.all().stream().map(RecipeEntity::getId).filter(id -> !todays.contains(id)).toList();
+        seasonService.putRecipes(owner, seasonId(owner), kept, Set.copyOf(kept));
+        em.flush();
+
+        List<DayPlanWindow> windows = dayPlanService.plan(owner, LocalDate.now(), LocalTime.of(0, 1)).windows();
+
+        assertThat(windows.stream().map(DayPlanWindow::suggestion).filter(s -> s != null && s.recipeId() != null))
+            .allSatisfy(s -> assertThat(todays).doesNotContain(s.recipeId()));
+    }
+
+    @Test
+    void anApprovedMealWhoseWindowChangedIsNotTheDaySuggestion() {
+        UUID owner = fixture.owner("menu-window-moved@test.local");
+        Library lib = library(owner);
+        season(owner, lib.all());
+        LocalDate monday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        menuService.approve(owner, menuService.generate(owner, monday).getId());
+        em.flush();
+        // every approved meal of today now claims a budget far from its window's (as after a moved workout)
+        em.createNativeQuery("update season_menu_meal set budget_kcal = budget_kcal * 3 where meal_date = current_date")
+            .executeUpdate();
+        em.flush();
+        em.clear();
+
+        List<DayPlanWindow> windows = dayPlanService.plan(owner, LocalDate.now(), LocalTime.of(0, 1)).windows();
+
+        assertThat(windows.stream().map(DayPlanWindow::suggestion).filter(s -> s != null))
+            .noneMatch(s -> "ez szerepel a jóváhagyott heti menüdben".equals(s.reason()));
+    }
+
+    @Test
+    void aPastMealCannotBeSwapped() {
+        UUID owner = fixture.owner("menu-past@test.local");
+        Library lib = library(owner);
+        season(owner, lib.all());
+        LocalDate lastMonday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).minusWeeks(1);
+        SeasonMenuWeek w = menuService.generate(owner, lastMonday);
+        SeasonMenuMeal past = meals(w).get(0);
+        UUID other = lib.all().stream().filter(r -> r.getCategory().equals(past.getSlot().getValue()))
+            .map(RecipeEntity::getId).filter(id -> !id.equals(past.getRecipeId())).findFirst().orElseThrow();
+        assertThatThrownBy(() -> menuService.swap(owner, past.getId(), other))
+            .isInstanceOfSatisfying(SystemRuntimeErrorException.class,
+                e -> assertThat(e.getStatus().value()).isEqualTo(400));
+    }
 }

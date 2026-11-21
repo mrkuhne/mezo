@@ -22,8 +22,9 @@ public interface SeasonMenuPort {
 
     /**
      * One approved meal: the day's {@code ordinal}-th window of {@code slot} (wire value), a recipe scaled to it, or an
-     * ingredient tip ({@code recipeId} null, {@code name} the tip).
+     * ingredient tip ({@code recipeId} null, {@code name} the tip). {@code budgetKcal} is the window budget it was planned
+     * for — the day plan uses the meal only while its live window is still about that size.
      */
-    record MenuMeal(String slot, int ordinal, UUID recipeId, String name, int kcal, Integer proteinG) {
+    record MenuMeal(String slot, int ordinal, UUID recipeId, String name, int kcal, Integer proteinG, int budgetKcal) {
     }
 }

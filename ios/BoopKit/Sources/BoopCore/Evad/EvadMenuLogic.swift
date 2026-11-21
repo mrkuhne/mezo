@@ -6,7 +6,7 @@ import Foundation
 
 /// "2026-11-23": the Monday of the week `date` falls in (phone calendar, Monday-first).
 public func evadMonday(_ date: Date, calendar: Calendar = .current) -> String {
-    var cal = calendar; cal.firstWeekday = 2
+    var cal = Calendar(identifier: .gregorian); cal.timeZone = calendar.timeZone; cal.firstWeekday = 2
     let weekday = cal.component(.weekday, from: date) // 1 = Sunday … 7 = Saturday
     let back = (weekday + 5) % 7                         // Monday → 0, Sunday → 6
     let monday = cal.date(byAdding: .day, value: -back, to: cal.startOfDay(for: date)) ?? date
@@ -128,12 +128,13 @@ extension EvadWallID {
 public func evadMenuCandidate(_ o: EvadOverview, now: Date, calendar: Calendar = .current) -> WallCandidate? {
     guard let m = o.menu, m.status == "proposed", let menuDay = m.menuDay else { return nil }
     let p = m.weekStart.split(separator: "-").compactMap { Int($0) }
-    guard p.count == 3, let weekStart = calendar.date(from: DateComponents(year: p[0], month: p[1], day: p[2])) else {
+    var greg = Calendar(identifier: .gregorian); greg.timeZone = calendar.timeZone
+    guard p.count == 3, let weekStart = greg.date(from: DateComponents(year: p[0], month: p[1], day: p[2])) else {
         return nil
     }
-    let today = calendar.startOfDay(for: now)
+    let today = greg.startOfDay(for: now)
     guard today < weekStart else { return nil }
-    let daysBefore = calendar.dateComponents([.day], from: today, to: weekStart).day ?? 99
+    let daysBefore = greg.dateComponents([.day], from: today, to: weekStart).day ?? 99
     let dow = 7 - daysBefore // days before next Monday → 6 = vasárnap … 0 = hétfő
     guard dow >= menuDay else { return nil }
     return WallCandidate(
@@ -144,4 +145,14 @@ public func evadMenuCandidate(_ o: EvadOverview, now: Date, calendar: Calendar =
         primary: "Átnézem",
         settled: "Heti menü átnézve",
         why: "A kiválasztott receptjeidből állítottam össze \(evadWeekRange(m.weekStart)) hétre, az edzésnapjaidhoz igazítva. Amíg nem hagyod jóvá, semmi sem kerül a napi tervedbe.")
+}
+
+/// Whether `iso` (`yyyy-MM-dd`) is before today — a past day's meal is not swapped.
+public func evadIsPast(_ iso: String, now: Date = Date(), calendar: Calendar = .current) -> Bool {
+    iso < evadAddDays(evadMonday(now, calendar: calendar), dayIndex(now, calendar: calendar))
+}
+
+private func dayIndex(_ now: Date, calendar: Calendar) -> Int {
+    var greg = Calendar(identifier: .gregorian); greg.timeZone = calendar.timeZone
+    return (greg.component(.weekday, from: now) + 5) % 7
 }

@@ -35,6 +35,8 @@ public class MenuJob {
                 if (menuService.generateIfDue(s, now.toLocalDate(), now.toLocalTime())) {
                     log.info("Weekly menu proposed for season {}", s.getId());
                 }
+            } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                log.info("Weekly menu for season {} was made concurrently (he asked at the same minute)", s.getId());
             } catch (RuntimeException e) {
                 log.warn("Weekly menu generation failed for season {}", s.getId(), e);
             }

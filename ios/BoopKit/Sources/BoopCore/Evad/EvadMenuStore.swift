@@ -16,9 +16,14 @@ public final class EvadMenuStore {
     public private(set) var list: EvadShoppingList?
     /// No approved week yet, so no list (the Lista tab says how one is made).
     public private(set) var listMissing = false
-    /// The menu / list on screen came from the cache.
-    public private(set) var offline = false
-    public private(set) var age: TimeInterval?
+    /// The menu on screen came from the cache (and how old it is).
+    public private(set) var menuOffline = false
+    public private(set) var menuAge: TimeInterval?
+    /// The list on screen came from the cache (and how old it is).
+    public private(set) var listOffline = false
+    public private(set) var listAge: TimeInterval?
+    /// Lines whose tick is on its way to the server: another tap waits until it settles.
+    public private(set) var inFlight: Set<String> = []
     public private(set) var menuProblem: PlanFetchError?
     public private(set) var listProblem: PlanFetchError?
     public private(set) var busy = false
@@ -46,13 +51,14 @@ public final class EvadMenuStore {
     public var nextMonday: String { evadAddDays(thisMonday, 7) }
     /// The week on screen is next week's.
     public var showsNextWeek: Bool { week?.weekStart == nextMonday }
-    public var ageText: String? { offline ? penzAgeText(age) : nil }
+    public var menuAgeText: String? { menuOffline ? penzAgeText(menuAge) : nil }
+    public var listAgeText: String? { listOffline ? penzAgeText(listAge) : nil }
 
     // MARK: - The menu
 
     public func loadMenu(force: Bool = false) async {
         guard let client else { menuProblem = .unauthorized; return }
-        guard force || week == nil || offline else { return }
+        guard force || week == nil || menuOffline else { return }
         do throws(PlanFetchError) {
             let next = try await client.menu(weekStart: nextMonday)
             var shown = next
@@ -60,11 +66,11 @@ public final class EvadMenuStore {
                 let current = try await client.menu(weekStart: thisMonday)
                 if current.hasMeals { shown = current }
             }
-            week = shown; menuProblem = nil; offline = false; age = nil
+            week = shown; menuProblem = nil; menuOffline = false; menuAge = nil
             try? await cache?.put(shown, endpoint: Self.menuEndpoint, date: Self.key)
         } catch .offline {
             if let hit = await cache?.get(EvadMenuWeek.self, endpoint: Self.menuEndpoint, date: Self.key, maxAge: Self.maxAge) {
-                week = hit.value; age = hit.age; offline = true; menuProblem = nil
+                week = hit.value; menuAge = hit.age; menuOffline = true; menuProblem = nil
             } else if week == nil {
                 menuProblem = .offline
             }
@@ -119,7 +125,7 @@ public final class EvadMenuStore {
 
     public func loadList(force: Bool = false) async {
         guard let client else { listProblem = .unauthorized; return }
-        guard force || list == nil || offline else { return }
+        guard force || list == nil || listOffline else { return }
         do throws(PlanFetchError) {
             let found: EvadShoppingList?
             do throws(PlanFetchError) {
@@ -131,11 +137,11 @@ public final class EvadMenuStore {
                     found = nil
                 }
             }
-            list = found; listMissing = found == nil; listProblem = nil
+            list = found; listMissing = found == nil; listProblem = nil; listOffline = false; listAge = nil
             if let found { try? await cache?.put(found, endpoint: Self.listEndpoint, date: Self.key) }
         } catch .offline {
             if let hit = await cache?.get(EvadShoppingList.self, endpoint: Self.listEndpoint, date: Self.key, maxAge: Self.maxAge) {
-                list = hit.value; offline = true; age = hit.age; listProblem = nil; listMissing = false
+                list = hit.value; listOffline = true; listAge = hit.age; listProblem = nil; listMissing = false
             } else if list == nil {
                 listProblem = .offline
             }
@@ -146,7 +152,10 @@ public final class EvadMenuStore {
 
     /// Ticks a line off (or back on) at once; sent, then once more on a failure, else put back.
     public func toggle(_ item: EvadShoppingItem) async {
-        guard let client, var l = list, let i = l.items.firstIndex(where: { $0.id == item.id }) else { return }
+        guard let client, !inFlight.contains(item.id), var l = list,
+              let i = l.items.firstIndex(where: { $0.id == item.id }) else { return }
+        inFlight.insert(item.id)
+        defer { inFlight.remove(item.id) }
         let target = !l.items[i].checked
         l.items[i].checked = target
         list = l

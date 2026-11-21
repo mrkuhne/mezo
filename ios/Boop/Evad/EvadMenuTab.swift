@@ -29,7 +29,7 @@ struct EvadMenuTab: View {
 
     @ViewBuilder private func content(_ w: EvadMenuWeek) -> some View {
         let range = (menu.showsNextWeek ? "Jövő hét" : "E hét") + " · " + evadWeekRange(w.weekStart)
-        if let age = menu.ageText { EvadLine(text: "Offline vagy, ez a \(age) menü.") }
+        if let age = menu.menuAgeText { EvadLine(text: "Offline vagy, ez a \(age) menü.") }
         switch w.status {
         case "seeding":
             NKHighlight(hue: evadHue, label: "Heti menü",
@@ -100,7 +100,7 @@ struct EvadMenuTab: View {
             .padding(.top, 4).padding(.bottom, 12)
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: 0) {
-                    ForEach(d.meals) { meal in mealRow(meal) }
+                    ForEach(d.meals) { meal in mealRow(meal, past: evadIsPast(d.date)) }
                 }
             }
             .scrollBounceBehavior(.basedOnSize)
@@ -110,10 +110,10 @@ struct EvadMenuTab: View {
         .nkGlass(24)
     }
 
-    private func mealRow(_ meal: EvadMenuMeal) -> some View {
+    private func mealRow(_ meal: EvadMenuMeal, past: Bool) -> some View {
         VStack(spacing: 0) {
             Rectangle().fill(.white.opacity(0.08)).frame(height: 0.5)
-            Button { if meal.recipeId != nil || menu.week?.allowedCount ?? 0 > 0 { swap(meal) } } label: {
+            Button { if !past && (meal.recipeId != nil || menu.week?.allowedCount ?? 0 > 0) { swap(meal) } } label: {
                 HStack(alignment: .center, spacing: 10) {
                     VStack(alignment: .leading, spacing: 3) {
                         HStack(spacing: 6) {
@@ -131,7 +131,8 @@ struct EvadMenuTab: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityHint("Lecserélem")
+            .accessibilityHint(past ? "" : "Lecserélem")
+            .disabled(past)
         }
     }
 }

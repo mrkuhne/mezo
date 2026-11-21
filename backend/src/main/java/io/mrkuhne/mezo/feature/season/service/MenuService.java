@@ -188,6 +188,11 @@ public class MenuService {
     @Transactional
     public SeasonMenuWeek swap(UUID owner, UUID mealId, UUID recipeId) {
         SeasonMenuMealEntity meal = requireMeal(owner, mealId);
+        if (meal.getMealDate().isBefore(LocalDate.now())) {
+            // spec §5.12-4: a past day is never touched
+            throw new SystemRuntimeErrorException(SystemMessage.field("VALIDATION_INVALID_VALUE", "mealId").build(),
+                HttpStatus.BAD_REQUEST);
+        }
         SeasonEntity s = requireActive(owner);
         RecipeCandidate r = allowedCandidates(owner, s).stream().filter(c -> c.id().equals(recipeId)).findFirst()
             .orElseThrow(() -> new SystemRuntimeErrorException(
@@ -229,6 +234,8 @@ public class MenuService {
             SeasonMenuWeekEntity week = found.get();
             LocalDate start = from.isAfter(monday) ? from : monday;
             List<SeasonMenuMealEntity> all = meals.findByWeekIdOrderByMealDateAscIdAsc(week.getId());
+            all.stream().filter(SeasonMenuMealEntity::isChanged).forEach(m -> m.setChanged(false)); // only the latest
+
             Map<String, SeasonMenuMealEntity> old = all.stream().filter(m -> !m.getMealDate().isBefore(start))
                 .collect(Collectors.toMap(m -> key(m.getMealDate(), SlotKey.fromWire(m.getSlot()), m.getOrdinal()),
                     m -> m, (a, b) -> a, LinkedHashMap::new));
@@ -269,6 +276,15 @@ public class MenuService {
                 shopping.rebuild(owner, week, meals.findByWeekIdOrderByMealDateAscIdAsc(week.getId()));
             }
         }
+    }
+
+    /**
+     * {@link #refit} in a transaction of its own — called after a season change committed, so a menu problem can never
+     * roll back his accepted change.
+     */
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+    public void refitInOwnTransaction(UUID owner, LocalDate from) {
+        refit(owner, from);
     }
 
     /** The scheduled generation (spec §5.7): next week's proposal once the season's menu day and time have come. */
@@ -326,8 +342,7 @@ public class MenuService {
     }
 
     static MenuPlanner.DayBudget day(SeasonMenuSourcePort.DayFrame f) {
-        String kind = f.gym() && f.sport() ? MenuPlanner.KIND_TRAINING_SPORT
-            : f.gym() ? MenuPlanner.KIND_TRAINING : f.sport() ? MenuPlanner.KIND_SPORT : MenuPlanner.KIND_REST;
+        String kind = SeasonDayKind.of(f.gym(), f.sport()).key(); // the season's one day-kind vocabulary
         List<MenuPlanner.Window> windows = f.windows().stream()
             .filter(w -> w.budget() != null && w.budget().kcal() > 0)
             .map(w -> new MenuPlanner.Window(w.slot(), w.ordinal(), w.label(), w.budget(), w.atMin(), false))
