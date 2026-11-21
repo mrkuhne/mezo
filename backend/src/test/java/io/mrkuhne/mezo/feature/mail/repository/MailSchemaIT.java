@@ -32,6 +32,7 @@ class MailSchemaIT extends AbstractIntegrationTest {
     @Autowired private MailPopulator mail;
     @Autowired private ResetDatabase resetDatabase;
     @Autowired private JdbcTemplate jdbc;
+    @Autowired private MailMailboxRepository mailboxes;
 
     private UUID owner;
 
@@ -48,6 +49,20 @@ class MailSchemaIT extends AbstractIntegrationTest {
 
         jdbc.update("update mail_mailbox set is_deleted = true where id = ?", first.getId());
         assertThat(mail.mailbox(owner).getId()).isNotNull();
+    }
+
+    @Test
+    void testMailbox_shouldSaveDisconnectedWithNullSecrets() {
+        MailMailboxEntity e = mail.mailbox(owner);
+        e.setSecretCipher(null);
+        e.setSecretNonce(null);
+        e.setState("disconnected");
+        MailMailboxEntity saved = mailboxes.saveAndFlush(e);
+
+        assertThat(saved.getSecretCipher()).isNull();
+        assertThat(saved.getSecretNonce()).isNull();
+        assertThat(jdbc.queryForObject("select state from mail_mailbox where id = ?", String.class, saved.getId()))
+            .isEqualTo("disconnected");
     }
 
     @Test

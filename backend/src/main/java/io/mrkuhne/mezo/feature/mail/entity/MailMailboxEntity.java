@@ -30,10 +30,10 @@ public class MailMailboxEntity extends OwnedEntity {
     @Column(name = "address", nullable = false, length = 254)
     private String address;
 
-    @Column(name = "secret_cipher", nullable = false)
+    @Column(name = "secret_cipher")
     private byte[] secretCipher;
 
-    @Column(name = "secret_nonce", nullable = false)
+    @Column(name = "secret_nonce")
     private byte[] secretNonce;
 
     @Column(name = "state", nullable = false, length = 16)
