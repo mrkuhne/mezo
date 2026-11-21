@@ -64,7 +64,7 @@ public struct Trend: View {
 /// flatten into a blob, so they are drawn as thin outlines on the same 64-unit grid — as are the Napkelte-only glyphs
 /// `mic` (voice) and `offline` (a cloud with a slash, "nincs net"; B3, spike `RMicGlyph` / `ROfflineGlyph`).
 public struct NKGlyph: View {
-    static let outlined: Set<String> = ["check-ink", "clock-ink", "camera-ink", "book-sage", "mic", "offline", "e-penz"]
+    static let outlined: Set<String> = ["check-ink", "clock-ink", "camera-ink", "book-sage", "mic", "offline", "e-penz", "e-level"]
     let name: String, color: Color, size: CGFloat
     public init(_ name: String, _ color: Color, size: CGFloat = 18) { self.name = name; self.color = color; self.size = size }
 
@@ -101,6 +101,18 @@ public struct NKGlyph: View {
                             $0.move(to: CGPoint(x: 19, y: 29)); $0.addLine(to: CGPoint(x: 39, y: 29))
                             $0.move(to: CGPoint(x: 19, y: 38)); $0.addLine(to: CGPoint(x: 39, y: 38))
                         }, with: .color(color), style: st)
+                    case "e-level":
+                        // Levél's own mark (the spike's): an envelope whose flap is a soft wave, the morning sun
+                        // rising over its top edge.
+                        ctx.stroke(P { $0.addRoundedRect(in: CGRect(x: 7, y: 24, width: 50, height: 32), cornerSize: CGSize(width: 8, height: 8)) },
+                                   with: .color(color), style: st)
+                        ctx.stroke(P { p in
+                            p.move(to: CGPoint(x: 11, y: 30))
+                            p.addCurve(to: CGPoint(x: 32, y: 43), control1: CGPoint(x: 19, y: 33), control2: CGPoint(x: 25, y: 43))
+                            p.addCurve(to: CGPoint(x: 53, y: 30), control1: CGPoint(x: 39, y: 43), control2: CGPoint(x: 45, y: 33))
+                        }, with: .color(color), style: st)
+                        ctx.stroke(P { $0.addArc(center: CGPoint(x: 45, y: 19), radius: 6, startAngle: .degrees(180), endAngle: .degrees(360), clockwise: false) },
+                                   with: .color(color), style: st)
                     case "offline":
                         ctx.stroke(P {
                             $0.move(to: CGPoint(x: 18, y: 48)); $0.addLine(to: CGPoint(x: 46, y: 48))

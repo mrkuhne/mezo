@@ -174,7 +174,7 @@ function buildReleases() {
 // ---------- Szerverfunkciók ----------
 // The rebuild tracker (mezo-r36n9.126): every server capability, grouped by domain, with where it stands in the
 // iPhone app. One row per feature in _funkciok.json; the order of the file is the order on the page.
-const FEATURE_AREAS = ['Alapok', 'Edzés', 'Étel', 'Alvás és egészség', 'Napló és napi ritmus', 'Célok és évad', 'Boop és AI', 'Pénz'];
+const FEATURE_AREAS = ['Alapok', 'Edzés', 'Étel', 'Alvás és egészség', 'Napló és napi ritmus', 'Célok és évad', 'Boop és AI', 'Pénz', 'Levél'];
 const APP_STATES = ['Kész', 'Részben kész', 'Épül', 'Tervben', 'Nincs még', 'Nem kell'];
 const APP_ICON = { 'Kész': '✅', 'Részben kész': '🟡', 'Épül': '🔨', 'Tervben': '🗺️', 'Nincs még': '⬜', 'Nem kell': '🚫' };
 const APP_COLOR = { 'Kész': 'green_bg', 'Részben kész': 'yellow_bg', 'Épül': 'orange_bg', 'Tervben': 'blue_bg', 'Nincs még': 'gray_bg', 'Nem kell': 'gray_bg' };

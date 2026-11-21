@@ -12,6 +12,10 @@ key_files:
 related: [_platform-auth-security, _platform-design-system, companion, settings, _platform-api-backend]
 ---
 
+> **2026-11-21 — reviewed after the Levél final review (`mezo-r36n9.39`, no language-layer change).** The dummy mail key moved from `application.yml` to the test properties; no message keys changed.
+
+> **2026-11-21 — reviewed after Boop Levél L1+L2 (`mezo-r36n9.38/.39`, no language-layer change).** Mail error keys (`MAIL_AUTH_FAILED`, `MAIL_UNREACHABLE`, `MAIL_RUN_COOLDOWN`, `MAIL_NOT_CONNECTED`, `MAIL_ITEM_NOT_FOUND`, `MAIL_INTAKE_ERROR`, `MAIL_SECRET_UNREADABLE`) added to both bundles; the phone's Levél copy is Hungarian-only like the rest of Boop.
+
 > **2026-11-21 — reviewed after Boop B6 Évad S4 (`mezo-r36n9.16`).** Five `EXPERIMENT_*` keys added to both `messages_hu` and `messages_en` (parity kept); the experiment copy on the phone is Hungarian-only like the rest of Boop. No language mechanism changed. See [`season.md`](season.md) §3.14.
 
 > **2026-11-21 — reviewed after the Boop plan recommender (`mezo-r36n9.113`, no language-layer change).** Two new train error keys in both `messages_hu` and `messages_en` (parity kept): `TRAIN_MESO_EMPHASIZE_CAP` (400, more than `mezo.volume.bands.emphasize-max` Hangsúly muscles) and `TRAIN_MESO_SPLIT_UNKNOWN` (400, a `split` key not catalogued for the day count). A third, after the final review: `TRAIN_MESO_DISCARD_HAS_LOGS` (409, `POST /mesocycles/{id}/discard` on a block with a logged workout). Mechanics unchanged. See [`train.md`](train.md).

@@ -74,7 +74,7 @@ func areaGlyph(_ hue: Hue) -> String {
     case .pulzus: "heart-cream"
     case .forma: "spark-cream"
     case .penz: "e-penz"
-    case .level: "book-sage"
+    case .level: "e-level"
     }
 }
 
@@ -119,9 +119,6 @@ struct AreaRoom: View {
         case .penz:
             (nil, "A pénzed még nem él",
              "Ez a terület a keretedet, a költéseidet és a befektetéseidet fogja mutatni. Előbb a banki adatok kellenek hozzá.")
-        case .level:
-            (nil, "A leveleid még nem élnek",
-             "Ez a terület a reggeli postádat fogja átnézni helyetted. Előbb a postafiókod összekötése kell hozzá.")
         default:
             { let c = maiCopy(brief, key); return (c.score, c.headline, c.sentence) }()
         }
@@ -168,10 +165,10 @@ struct AreaRoom: View {
         case (.forma, "Ma"): formaMa
         case (.forma, _): formaMiHatRa
 
-        case (.penz, _), (.level, _): plannedTab
+        case (.penz, _): plannedTab
         default: formaMiHatRa
         }
-        if hue != .penz, hue != .level {
+        if hue != .penz {
             NKBare("MIT TEHETSZ", hue: hue) { actions }
         }
     }
@@ -421,7 +418,7 @@ struct AreaRoom: View {
     @ViewBuilder private var plannedTab: some View {
         let t = plannedText
         NKNotLiveYet(hue: hue, title: t.title, line: t.line)
-        NKAskRow(hue: hue, text: hue == .penz ? "Kérdezd meg Boopot a pénzedről" : "Kérdezd meg Boopot a leveleidről") { openPlace(.boop) }
+        NKAskRow(hue: hue, text: "Kérdezd meg Boopot a pénzedről") { openPlace(.boop) }
     }
 
     private var plannedText: (title: String, line: String) {
@@ -434,14 +431,8 @@ struct AreaRoom: View {
             ("Mire megy el", "A mai tételek, a heti keret és az, hogy belefér-e, amit épp vennél.")
         case (.penz, _):
             ("Gyakorlás", "Játékpénzes kereskedés, hogy a sajátod előtt gyakorolhass. A pénz-szakasszal jön.")
-        case (.level, "Ma"):
-            ("A reggeli postád", "Boop átnézi a leveleidet, és csak azt hagyja meg, ami megér egy percet.")
-        case (.level, "Figyelt"):
-            ("Amit figyelsz", "Termékek és árak, amiket kérsz, hogy tartsak szemmel — és szólok, ha tényleg olcsóbb.")
-        case (.level, "Szabályok"):
-            ("A szabályaid", "Mit dobjak ki magamtól, mit hagyjak meg, és mikor kérdezzek rá.")
         default:
-            ("A fiókjaid", "Melyik postafiókot nézem át. Semmit nem küldök el a nevedben.")
+            ("", "")
         }
     }
 

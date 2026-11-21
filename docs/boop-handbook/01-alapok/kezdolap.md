@@ -22,7 +22,7 @@ fotózott ködös hegygerinc, előtte lassan szálló köd.
 | **Energia** | A közérzeted területe |
 | **Forma** | Az összképed területe |
 | **Pénz** | Még nem él — koppintásra megmondja |
-| **Levél** | Még nem él — koppintásra megmondja |
+| **Levél** | A reggeli posta területe |
 
 Minden gömbben a mai száma áll, és annyira van tele, amennyi a szám (például az alvás 78). Ahol nincs mai adat,
 „–” áll, sosem 0. A **Nap gömbje** kivétel: ott nincs pontszám, mert egy napra nincs ilyen — az mutatja, mennyire
@@ -51,5 +51,5 @@ jelentheti, amit a neve mond: a te terved.
 Nincs saját beállítása. A csökkentett mozgást a telefon Kisegítő lehetőségei között kapcsolod.
 
 ## Mi jön még
-- A Pénz és a Levél gömb akkor élesedik ki, amikor azok a területek megépülnek.
+- A Levél gömbje megépült (a reggeli posta); a Pénz gömbje a saját területével él.
 - A kör **betelt nyolccal**. Ha egyszer jön egy kilencedik terület, azt külön ki kell találni (kisebb gömb a névvel benne, két kör egymásban, vagy a körben csak amit tényleg használsz) — az a te döntésed lesz.

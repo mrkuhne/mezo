@@ -33,7 +33,7 @@ A területek saját menüi (2026-11-16-tól, a szimulátorban jóváhagyott mint
 | **Pénz** | Ma · Pénzem · Költés · Gyakorlás |
 | **Levél** | Ma · Figyelt · Szabályok · Fiókok |
 
-A **Pénz** és a **Levél** oldala már most megvan, adat nélkül: minden fülük megmondja, mi lesz rajta, és egyetlen
+A **Pénz** és a **Levél** oldala is megvan, a Levélnek már valódi tartalma is van (a reggeli posta); ahol valami még nem él (például a Figyelt fül), a fül megmondja, mi lesz rajta, és egyetlen
 kitalált számot sem mutat. Ugyanez a szabály a többi területen is: ahol a minta olyat mutat, amit az app még nem
 tud (például a nyolchetes edzésblokk), ott a fül ezt kimondja.
 

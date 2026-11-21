@@ -13,6 +13,8 @@ public enum WallSources {
     public static let etel = "etel", edzes = "edzes", alvas = "alvas", energia = "energia", forma = "forma"
     /// The season (B6 Évad, `mezo-r36n9.16`): its candidates are `evadCandidates` in `BoopCore/Evad/EvadWall.swift`.
     public static let evad = "evad"
+    /// Levél (mezo-r36n9.39): its candidates are `levelWallCandidates` below.
+    public static let level = "level"
 }
 
 // MARK: - Étel
@@ -186,4 +188,60 @@ public func wallTime(_ date: Date, calendar: Calendar = .current) -> String {
 /// The end of the day the moment belongs to — what a thing with no clock of its own expires at.
 public func wallEndOfDay(_ now: Date, calendar: Calendar = .current) -> Date {
     calendar.date(bySettingHour: 23, minute: 59, second: 0, of: now) ?? now.addingTimeInterval(3600)
+}
+
+// MARK: - Levél
+
+
+// Levél's things to say on the living wall (mezo-r36n9.39). Pure: handed the digest the store holds, it returns
+// candidates — the wall engine chooses.
+//
+//   • `.expires` — only what the **server** marked `notifiable` (it already applied score ≥ 8, a CLEAN screen, the
+//     36 h window, and "deadline today or tomorrow"), and only if the item is not flagged and its screen is known:
+//     a stale cache saying "notifiable" never rings for a flagged or unjudged mail. `expiresAt` is the deal's
+//     valid-until or the deadline's due moment.
+//   • `.happened` — at most one: "Megjött a reggeli posta · N érdekes", when something is worth a minute and the last
+//     run was today (Budapest).
+// Every word of a card is the server's own (title, summary, why) or fixed Hungarian copy; no figure is invented.
+
+enum LevelWallID {
+    static let expires = "level-expires-"
+    static let post = "level-post-"
+}
+
+public func levelWallCandidates(_ d: LevelDigest?, now: Date, calendar: Calendar = levelCalendar) -> [WallCandidate] {
+    guard let d else { return [] }
+    var out: [WallCandidate] = []
+
+    for deal in d.deals where deal.notifiable && deal.isSafeToSurface && deal.screen == .clean {
+        guard let until = deal.validUntil, until > now else { continue }
+        out.append(expiring(deal, at: until))
+    }
+    for deadline in d.deadlines where deadline.notifiable && deadline.isSafeToSurface {
+        guard let due = deadline.dueAt, due > now else { continue }
+        out.append(expiring(deadline, at: due))
+    }
+
+    if d.worthAMinute > 0, let ran = d.lastRunAt, calendar.isDate(ran, inSameDayAs: now) {
+        out.append(WallCandidate(
+            id: LevelWallID.post + levelDay(ran, calendar: calendar), role: .happened, kind: .tortent,
+            area: WallSources.level, happenedAt: ran,
+            text: "Megjött a reggeli posta · \(d.worthAMinute) érdekes",
+            sub: "Átnéztem a leveleidet, a többit elintéztem.",
+            primary: "Megnézem",
+            settled: "Reggeli posta megnézve",
+            why: "Lefutott a postaátnézés, és \(d.worthAMinute) levél megér egy percet."))
+    }
+    return out
+}
+
+private func expiring(_ item: LevelItem, at end: Date) -> WallCandidate {
+    WallCandidate(
+        id: LevelWallID.expires + item.id, role: .expires, kind: .teendo, area: WallSources.level,
+        expiresAt: end,
+        text: "*\(item.title)*",
+        sub: item.summary,
+        primary: "Megnézem",
+        settled: "Levél megnézve",
+        why: item.why.isEmpty ? "Ez a levél hamarosan lejár, utána már nem ér semmit." : item.why)
 }

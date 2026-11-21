@@ -5,7 +5,8 @@ struct BoopSpikeApp: App {
     init() { Lagy.registerFonts() }
     var body: some Scene {
         WindowGroup {
-            if UserDefaults.standard.bool(forKey: "edzes") { EdzesRoot() }
+            if UserDefaults.standard.bool(forKey: "level") { LevelRoot() }
+            else if UserDefaults.standard.bool(forKey: "edzes") { EdzesRoot() }
             else if UserDefaults.standard.bool(forKey: "etel") { EtelRoot() }
             else if UserDefaults.standard.bool(forKey: "elet") { EletRoot() }
             else if UserDefaults.standard.bool(forKey: "ritmus") { RitmusRoot() }
