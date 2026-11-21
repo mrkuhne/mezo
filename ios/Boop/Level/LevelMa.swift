@@ -92,7 +92,7 @@ struct LevelMa: View {
             } else if let h = levelHighlight(d, now: now) {
                 NKHighlight(hue: hue, label: h.eyebrow, text: levelPlain(h.title), sub: levelPlain(h.sub),
                             actions: [NKHighlightAction("Megnyitás a Gmailben", weight: .link) { levelOpen(levelGmailURLs(messageId: h.item.gmailMessageId)) }],
-                            badge: levelHighlightScore(h, rulesOnly: d.rulesOnly).map { AnyView(LevelScoreChip(n: $0)) })
+                            badge: levelHighlightScore(h).map { AnyView(LevelScoreChip(n: $0)) })
             }
             NKStatRow(levelStats(d), hue: hue)
             if let heat = levelHeat(d) {
@@ -187,8 +187,7 @@ struct LevelMa: View {
             NKBare("Akciók és lehetőségek", hue: hue, glyph: "star-sun") {
                 VStack(spacing: 12) {
                     ForEach(items) { item in
-                        LevelDealCard(face: levelDealFace(item, now: now, scoreless: d.rulesOnly), pick: store.verdicts[item.id],
-                                      scoreless: d.rulesOnly,
+                        LevelDealCard(face: levelDealFace(item, now: now), pick: store.verdicts[item.id],
                                       onVerdict: { v in send(item, v) },
                                       onOpen: { levelOpen(levelGmailURLs(messageId: item.gmailMessageId)) })
                     }

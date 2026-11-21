@@ -86,7 +86,6 @@ struct LevelMarkRowView: View {
 struct LevelDealCard: View {
     let face: LevelDealFace
     var pick: LevelVerdict?
-    var scoreless = false
     var onVerdict: (LevelVerdict) -> Void
     var onOpen: () -> Void
     private var hue: Color { levelHue.glow }
@@ -104,7 +103,7 @@ struct LevelDealCard: View {
                     Text("nem pontoztam").nkFont(11, .semibold).foregroundStyle(levelAmber)
                         .padding(.horizontal, 10).frame(height: 30)
                         .background(Capsule().fill(levelAmber.opacity(0.14))).overlay(Capsule().stroke(levelAmber.opacity(0.5)))
-                } else if let s = face.score, !scoreless {
+                } else if let s = face.score {
                     LevelScoreChip(n: s)
                 } else {
                     Text("nincs pontszám").nkFont(11).foregroundStyle(.white.opacity(0.55))

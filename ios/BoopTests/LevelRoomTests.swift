@@ -73,17 +73,18 @@ struct LevelRoomTests {
 
     @Test func serverTextCannotLightTheHueWithAsterisks() {
         #expect(levelPlain("Most *ingyen*") == "Most ingyen")
-        let face = levelDealFace(LevelItem(id: "d", group: .deal, title: "*Akció*", why: "a *b*", score: 8, screen: .clean), now: now, scoreless: false)
+        let face = levelDealFace(LevelItem(id: "d", group: .deal, title: "*Akció*", why: "a *b*", score: 8, screen: .clean), now: now)
         #expect(face.title == "Akció" && face.why == "a b")
     }
 
     @Test func dealFaceUsesServerWordsAndNeverPricesAScorelessOrFlaggedCard() {
         let clean = LevelItem(id: "d1", group: .deal, title: "T", why: "W", score: 9, screen: .clean)
-        #expect(levelDealFace(clean, now: now, scoreless: false).score == 9)
-        #expect(levelDealFace(clean, now: now, scoreless: true).score == nil)
+        #expect(levelDealFace(clean, now: now).score == 9, "a score already given is shown even on a rules-only day")
+        var unscored = clean; unscored.score = nil
+        #expect(levelDealFace(unscored, now: now).score == nil)
         let bad = LevelItem(id: "d2", group: .deal, title: "T", why: "W", score: 9, screen: .flagged, flagged: true)
-        #expect(levelDealFace(bad, now: now, scoreless: false).warning)
-        #expect(!levelDealFace(clean, now: now, scoreless: false).warning)
+        #expect(levelDealFace(bad, now: now).warning)
+        #expect(!levelDealFace(clean, now: now).warning)
     }
 
     @Test func validLeftReadsTheServersDeadline() {
@@ -152,6 +153,7 @@ struct LevelRoomTests {
         let removed = levelRulesRemoving(rules, .silent, pattern: "Divat")!
         #expect(removed.silent.isEmpty && removed.sensitive == ["Fogász"])
         #expect(levelRulesAdding(nil, .silent, pattern: "x") == nil)
+        #expect(levelRulesRemoving(rules, .silent, pattern: "divat")?.silent.isEmpty == true, "removal matches like add: case-insensitive")
     }
 
     @Test func connectErrorNeverCarriesWhatHeTyped() {
@@ -197,11 +199,10 @@ struct LevelRoomTests {
     @Test func highlightShowsTheScoreOnlyForAScoredDeal() {
         let deal = LevelItem(id: "d", group: .deal, title: "T", why: "W", score: 9, screen: .clean, notifiable: true)
         let h = levelHighlight(LevelDigest(deals: [deal]), now: now)!
-        #expect(levelHighlightScore(h, rulesOnly: false) == 9)
-        #expect(levelHighlightScore(h, rulesOnly: true) == nil)
+        #expect(levelHighlightScore(h) == 9)
         let due = LevelItem(id: "k", group: .deadline, title: "K", dueAt: ISO8601DateFormatter().date(from: "2026-11-22T09:00:00Z"))
         let hd = levelHighlight(LevelDigest(deadlines: [due]), now: now)!
-        #expect(hd.kind == .deadline && levelHighlightScore(hd, rulesOnly: false) == nil)
+        #expect(hd.kind == .deadline && levelHighlightScore(hd) == nil)
     }
 
     @Test func theOrbIsHowMuchOfThePostIsHandled() {

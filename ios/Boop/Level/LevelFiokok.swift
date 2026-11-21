@@ -12,13 +12,14 @@ struct LevelFiokok: View {
     let store: LevelStore
     let now: Date
     var toast: (String) -> Void
+    /// Asks the room (page level) to confirm and then detach: a presentation inside the scroll content would not sit.
+    var onDetach: () -> Void
     @State private var address = ""
     @State private var secret = ""
     @State private var connecting = false
     @State private var formError: String?
     @State private var running = false
     @State private var runLine: String?
-    @State private var confirmDetach = false
     @FocusState private var focus: Field?
     private enum Field { case address, secret }
     private let hue = levelHue
@@ -29,7 +30,7 @@ struct LevelFiokok: View {
             case .failed(let e) where store.mailbox == nil:
                 NKBare("Postafiók", hue: hue, glyph: "e-level",
                        state: .failed(levelErrorText(e), { Task { await store.refresh() } })) { EmptyView() }
-            case .idle, .loading where store.mailbox == nil:
+            case .idle where store.mailbox == nil, .loading where store.mailbox == nil:
                 NKBare("Postafiók", hue: hue, glyph: "e-level", state: .loading) { EmptyView() }
             default:
                 switch levelMailboxMode(store.mailbox) {
@@ -41,12 +42,6 @@ struct LevelFiokok: View {
                            state: .failed("A postafiók állapotát most nem tudtam megnézni.", { Task { await store.refresh() } })) { EmptyView() }
                 }
             }
-        }
-        .confirmationDialog("Lecsatolod a postafiókot?", isPresented: $confirmDetach, titleVisibility: .visible) {
-            Button("Lecsatolás", role: .destructive) { Task { await detach() } }
-            Button("Mégse", role: .cancel) {}
-        } message: {
-            Text("A tárolt alkalmazásjelszó törlődik, és a Boop többé nem lát leveleket. A már átnézett levelek összefoglalói megmaradnak.")
         }
     }
 
@@ -110,7 +105,7 @@ struct LevelFiokok: View {
         Group {
             if secure {
                 SecureField("", text: text, prompt: Text(placeholder).foregroundStyle(.white.opacity(0.4)))
-                    .textContentType(.password).focused($focus, equals: .secret)
+                    .focused($focus, equals: .secret)
             } else {
                 TextField("", text: text, prompt: Text(placeholder).foregroundStyle(.white.opacity(0.4)))
                     .textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.emailAddress)
@@ -193,7 +188,7 @@ struct LevelFiokok: View {
                     .contentShape(Capsule())
                 }
                 .buttonStyle(.plain).disabled(running)
-                Button { confirmDetach = true } label: {
+                Button { onDetach() } label: {
                     Text("Lecsatolás").nkFont(15, .semibold).foregroundStyle(.white)
                         .frame(maxWidth: .infinity).frame(height: 48).background(Capsule().fill(.white.opacity(0.1)))
                         .overlay(Capsule().stroke(.white.opacity(0.2))).contentShape(Capsule())
@@ -221,17 +216,6 @@ struct LevelFiokok: View {
         case .failed(let e):
             runLine = levelErrorText(e)
         case .ignored:
-            break
-        }
-    }
-
-    private func detach() async {
-        switch await store.disconnect() {
-        case .done:
-            toast("Lecsatoltam a postafiókot")
-        case .failed(let e):
-            toast(levelErrorText(e))
-        default:
             break
         }
     }

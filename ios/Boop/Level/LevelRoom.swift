@@ -22,6 +22,8 @@ struct LevelRoom: View {
     @Environment(LevelStore.self) private var store: LevelStore?
     @SceneStorage("level.tab") private var selected: String = LevelTab.ma.rawValue
     @State private var toast: String?
+    /// The Lecsatolás confirm lives here, at page level, not inside the scrolling content.
+    @State private var confirmDetach = false
 
     init(tab: LevelTab = .ma) {
         #if DEBUG
@@ -54,6 +56,12 @@ struct LevelRoom: View {
         .toolbar(.hidden, for: .navigationBar)
         .background(RoomSwipeBack().frame(width: 0, height: 0).accessibilityHidden(true))
         .nkToast($toast)
+        .confirmationDialog("Lecsatolod a postafiókot?", isPresented: $confirmDetach, titleVisibility: .visible) {
+            Button("Lecsatolás", role: .destructive) { Task { await detach() } }
+            Button("Mégse", role: .cancel) {}
+        } message: {
+            Text("A tárolt alkalmazásjelszó törlődik, és a Boop többé nem lát leveleket. A már átnézett levelek összefoglalói megmaradnak.")
+        }
         .task { await store?.refresh() }
         // The rules are read when their tab is on screen.
         .task(id: selected) { if tab == .szabalyok { await store?.loadRules() } }
@@ -74,11 +82,20 @@ struct LevelRoom: View {
             case .szabalyok:
                 LevelSzabalyok(store: store, toast: { toast = $0 })
             case .fiokok:
-                LevelFiokok(store: store, now: Date(), toast: { toast = $0 })
+                LevelFiokok(store: store, now: Date(), toast: { toast = $0 }, onDetach: { confirmDetach = true })
             }
         } else {
             NKBare("Levél", hue: hue, glyph: "e-level",
                    state: .failed("A leveleket most nem érem el.", {})) { EmptyView() }
+        }
+    }
+
+    private func detach() async {
+        guard let store else { return }
+        switch await store.disconnect() {
+        case .done: toast = "Lecsatoltam a postafiókot"
+        case .failed(let e): toast = levelErrorText(e)
+        default: break
         }
     }
 }

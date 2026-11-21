@@ -282,9 +282,9 @@ struct LevelDealFace: Equatable {
     let warning: Bool
 }
 
-func levelDealFace(_ i: LevelItem, now: Date, scoreless: Bool) -> LevelDealFace {
+func levelDealFace(_ i: LevelItem, now: Date) -> LevelDealFace {
     LevelDealFace(from: levelSender(i), title: levelPlain(i.title), why: levelPlain(i.why),
-                  left: levelValidLeft(i.validUntil, now: now), score: scoreless ? nil : i.score, warning: !i.isSafeToSurface)
+                  left: levelValidLeft(i.validUntil, now: now), score: i.score, warning: !i.isSafeToSurface)
 }
 
 /// Ma's third block: only the deals, the way Ma has always shown them — worth a minute first.
@@ -333,10 +333,11 @@ func levelRulesAdding(_ rules: LevelRules?, _ list: LevelRuleList, pattern: Stri
 /// The owner's rules after taking a sender off a list. Seed rules are never removable.
 func levelRulesRemoving(_ rules: LevelRules?, _ list: LevelRuleList, pattern: String) -> LevelRulesRequest? {
     guard var req = rules?.ownerRequest else { return nil }
+    func same(_ s: String) -> Bool { s.caseInsensitiveCompare(pattern) == .orderedSame }
     switch list {
-    case .sensitive: req.sensitive.removeAll { $0 == pattern }
-    case .silent: req.silent.removeAll { $0 == pattern }
-    case .always: req.always.removeAll { $0 == pattern }
+    case .sensitive: req.sensitive.removeAll(where: same)
+    case .silent: req.silent.removeAll(where: same)
+    case .always: req.always.removeAll(where: same)
     }
     return req
 }
@@ -380,7 +381,7 @@ func levelToggleFold(_ open: Set<String>, _ category: String) -> Set<String> {
     return next
 }
 
-/// The highlight's score chip: only for a deal that has a score and was not made rules-only.
-func levelHighlightScore(_ h: LevelHighlight, rulesOnly: Bool) -> Int? {
-    h.kind == .deal && !rulesOnly ? h.item.score : nil
+/// The highlight's score chip: a deal that has a score (one already given stays shown on a rules-only day).
+func levelHighlightScore(_ h: LevelHighlight) -> Int? {
+    h.kind == .deal ? h.item.score : nil
 }
