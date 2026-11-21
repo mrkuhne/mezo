@@ -1091,6 +1091,8 @@ raw `0..1` decimal (`CharacterClaimDto.confidence`) for the FE to translate.
 
 ## 5. Integrations
 
+- No coupling to the B7 K1 capacity tables (`calendar_event_score`, `day_adjustment`, `capacity_*`, added under `1.1.0/script`); the character detectors do not read them yet ([`capacity.md`](capacity.md)).
+
 - **B1 touch-up (2026-11-11):** the `1.1.0/script` directory gained Boop B1 changesets (`health_sample`, `apns_device`, widened wearable/sleep/calendar/weight tables). None touch the character tables; this doc is unchanged in substance (verified).
 
 ### Memória mindenhol S10 (`mezo-eq85.10`, 2026-09-19) — both konzíliums read the memory platform
