@@ -38,7 +38,6 @@ struct MaWall: View {
     @Environment(\.openPlace) private var openPlace
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.scenePhase) private var scenePhase
 
     private var today: String { brief.date }
 
