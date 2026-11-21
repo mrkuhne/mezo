@@ -13,6 +13,8 @@ import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * The capacity lines for the companion (chat snapshot + {@code get_capacity}) through the companion-owned
@@ -22,7 +24,8 @@ import org.springframework.stereotype.Component;
  * run): the snapshot assemblers and the tools run inside the callers' transactions, where the scoring runner's
  * unique-violation swallowing is unsafe, and a chat or morning context must never spend the model. Today's unscored
  * events therefore show their rule score here; the Ma page's own read upgrades them in the background. Any failure
- * gives {@code ""}.
+ * gives {@code ""}. Both reads suspend the caller's transaction ({@code NOT_SUPPORTED}, read-only): a database fault
+ * inside them is swallowed here and must not mark the caller's writing transaction rollback-only.
  */
 @Slf4j
 @Component
@@ -36,6 +39,7 @@ public class CapacityContextAdapter implements CapacityContextPort {
     private final CapacityProperties props;
 
     @Override
+    @Transactional(propagation = Propagation.NOT_SUPPORTED, readOnly = true)
     public String render(UUID owner, LocalDate today) {
         if (!props.enabled()) {
             return "";
@@ -49,6 +53,7 @@ public class CapacityContextAdapter implements CapacityContextPort {
     }
 
     @Override
+    @Transactional(propagation = Propagation.NOT_SUPPORTED, readOnly = true)
     public String week(UUID owner, String week) {
         if (!props.enabled()) {
             return "";

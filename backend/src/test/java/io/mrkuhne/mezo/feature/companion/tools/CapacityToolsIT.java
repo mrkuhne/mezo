@@ -21,10 +21,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
-/** Boop B7 K2 (mezo-r36n9.17): get_capacity and the snapshot line, over a real (empty-calendar) owner. */
-@Transactional
+/**
+ * Boop B7 K2 (mezo-r36n9.17): get_capacity and the snapshot line, over a real (empty-calendar) owner. Not
+ * {@code @Transactional}: the capacity lines read outside the caller's transaction (a fault there must not poison it),
+ * so the fixtures must be committed to be seen; {@code ResetDatabase} clears them before the next test.
+ */
 @ActiveProfiles("companion-fake")
 @Import(CapacityToolsIT.PinnedClockConfig.class)
 class CapacityToolsIT extends AbstractIntegrationTest {

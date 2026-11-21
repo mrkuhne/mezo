@@ -38,13 +38,16 @@ public class ResetDatabase {
 
     @Transactional
     public void resetExceptMasterData() {
-        // Quotas reserve in REQUIRES_NEW. Holding their TRUNCATE lock in a test's outer
-        // rollback transaction would deadlock the independent reservation connection.
-        var quotaReset = new org.springframework.transaction.support.TransactionTemplate(transactionManager);
-        quotaReset.setPropagationBehavior(org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-        quotaReset.executeWithoutResult(status -> jdbc.execute("TRUNCATE TABLE character_council_quota CASCADE"));
+        // The TRUNCATEs commit on their own connection (REQUIRES_NEW), never inside a test's outer
+        // rollback transaction: TRUNCATE holds an ACCESS EXCLUSIVE lock until its transaction ends,
+        // so code that reads or writes on an independent connection (quota reservations; the
+        // capacity context lines, which suspend the caller's transaction — mezo-r36n9.17) would wait
+        // on the test's own lock forever.
+        var truncate = new org.springframework.transaction.support.TransactionTemplate(transactionManager);
+        truncate.setPropagationBehavior(org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        truncate.executeWithoutResult(status -> jdbc.execute("TRUNCATE TABLE character_council_quota CASCADE"));
         // TRUNCATE CASCADE handles FK dependencies between owned domain tables.
-        entityManager.createNativeQuery(
+        truncate.executeWithoutResult(status -> jdbc.execute(
             "TRUNCATE TABLE companion_preferences, invite, llm_log_history, screen_event, day_close_line_cache, day_close, check_in_snapshot, daily_metric, wearable_workout, health_sample, apns_device, boop_brief, workout_time_override, calendar_event, gamification_profile, push_subscription, notification_pref, push_log, notification_schedule, app_notification, coin_event, owned_title, needs_day, ritual_day, intention_creed, intention_focus, daily_intention, habit_day, habit_def, habit_chain, activity_log, daily_quest, challenge, diagnosis, experiment, prediction, weekly_review, weekly_score, day_review, memoir, weekly_suggestion, companion_message, text_signal, pattern_event, pattern, daily_summary, period_summary, memory_retrieval_feedback, memory_retrieval_result, memory_retrieval_run, memory_vector, memory_item, memory_embedding, message_feedback, feedback_rollup, ai_draft_outcome, companion_flag_log, companion_flag_trace, knowledge_node, knowledge_edge, fact_merge_ledger, learned_fact, knowledge_fact, ai_message, ai_conversation, supplement_intake, protocol_item, protocol, water_log, medication_dose, medication, meal_item, meal, recipe_ingredient, recipe, stored_image, pantry_import, pantry_item, weight_log, sleep_log, sleep_goal, fuel_settings, diet_settings, sensitivity_profile, gym_profile, exercise_discomfort, tutorial_progress, "
                 + "meal_slot_template, check_in, journal_entry, decision_entry, gratitude_entry, "
                 + "exercise_feedback, exercise_set_leg, exercise_set, exercise, workout_session, muscle_group_volume_log, workout_day_adjustment, readiness_choice, workout_timing_profile, exercise_weight_gap, meso_week_proposal, mesocycle, "
@@ -56,7 +59,7 @@ public class ResetDatabase {
                 + "team_chat_exception_hit, team_chat_exception, team_chat_line, team_chat_thread, team_edition_post, team_edition, character_council_edition, character_maturity_week, character_claim_revision, character_run, character_portrait_revision, character_conference, character_observation, character_reply, character_claim, character_dimension, "
                 + "penz_paper_trade, penz_proposal, penz_product, penz_weekly_review, penz_digest, penz_holding_event, penz_invest_txn, penz_holding, penz_news_article, penz_quote, penz_provider_status, "
                 + "penz_savings_goal, penz_transaction, penz_month_close, penz_recurring_rule, penz_category, penz_account, penz_settings, penz_sms_message, penz_api_key, penz_fx_rate, "
-                + "proactive_memory_use, effect_link, effect_mute, memory_forget_veto, person_fact, mention, person CASCADE").executeUpdate();
+                + "proactive_memory_use, effect_link, effect_mute, memory_forget_veto, person_fact, mention, person CASCADE"));
         // Hybrid catalog (S4, mezo-qw37.4): user-authored definitions go, loader master rows
         // (created_by IS NULL) survive. MUST run before the app_user delete — the FK is ON DELETE
         // SET NULL, so a deleted test user's rows would otherwise be promoted to master and leak.
