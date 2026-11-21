@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -145,7 +146,12 @@ public class PenzInvestTxnService {
                 ? links.adopt(adopted, holding.getName())
                 : links.createMoneyRow(owner, account, req.getSide(), accountAmount, date, holding.getName());
             stored.setTransactionId(money.getId());
-            stored = repository.saveAndFlush(stored);
+            try {
+                stored = repository.saveAndFlush(stored);
+            } catch (DataIntegrityViolationException e) {
+                // one link per money row (uq_penz_invest_txn_transaction_id): a concurrent buy adopted it first
+                throw PenzErrors.conflict("PENZ_SMS_LINK_MISMATCH");
+            }
         }
         return withRealized(owner, stored);
     }

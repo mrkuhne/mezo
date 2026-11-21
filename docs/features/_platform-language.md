@@ -13,6 +13,8 @@ related: [_platform-auth-security, _platform-design-system, companion, settings,
 ---
 
 > **2026-11-21 — reviewed after the rest-pause technique (`mezo-r36n9.125`, no language-layer change).** Only the `mezo.train.technique.rest-pause` block was added to `application.yml`; no message key, no bundle change. The visible name „Rest pause” lives in the iOS app. See [`train.md`](train.md).
+> **2026-11-21 — reviewed after the Boop Pénz weekly review (`mezo-r36n9.120`) and the `.119` review round (no language-layer change).** `backend/src/main/resources` changed only in the Liquibase changelog (`penz_weekly_review`, a unique index); no message key added or changed.
+
 > **2026-11-21 — reviewed after Boop Pénz investment ↔ money account (`mezo-r36n9.119`, no language-layer change).** Two `PENZ_*` keys added to both bundles (`PENZ_SMS_LINK_MISMATCH`, `PENZ_TRANSACTION_INVEST_LINKED`, parity kept); with the account-currency lock (`.108`) the bundle count line below is now 332 keys each. See [`penz.md`](penz.md) §3.6.
 
 > **2026-11-20 — reviewed after the Boop block day editor (`mezo-r36n9.116`, no language-layer change).** Two new train error keys in both `messages_hu` and `messages_en` (parity kept): `TRAIN_SUGGESTIONS_REQUEST_INVALID` (400, the day-suggestions request) and `TRAIN_DAY_WORKOUT_RUNNING` (409, a day with a running workout cannot be edited). Mechanics unchanged. See [`train.md`](train.md).

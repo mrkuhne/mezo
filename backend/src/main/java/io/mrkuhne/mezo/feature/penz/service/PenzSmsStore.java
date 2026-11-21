@@ -62,8 +62,10 @@ public class PenzSmsStore {
      * within ±3 days ({@link InvestSmsMatch#matchInvestBuyForSms}, the old {@code linkSmsToInvestBuy},
      * mezo-r36n9.119) is ADOPTED: it takes the SMS id and source {@code sms} (still reviewed), no second row is
      * written. Otherwise the review transaction (source sms, needs review, linked by {@code sms_message_id}) is
-     * written with the booked HUF twin. Either way the message flips to {@code converted} with the transaction id.
-     * Empty for a duplicate.
+     * written with the booked HUF twin. The candidates are read LOCKED
+     * ({@link PenzTransactionRepository#lockLiveInWindow}, review fix): a buy soft-deleted or adopted by another SMS
+     * before that read is skipped, and none can change under the adoption — never overwritten or resurrected.
+     * Either way the message flips to {@code converted} with the transaction id. Empty for a duplicate.
      */
     @Transactional
     public Optional<Converted> storeConverted(Received sms, Normalized result, SmsTxnPlan plan,
@@ -109,9 +111,8 @@ public class PenzSmsStore {
         if (!PenzTransactionEntity.KIND_EXPENSE.equals(plan.kind())) {
             return Optional.empty();
         }
-        List<PenzTransactionEntity> nearby = transactions.findByCreatedByAndAccountIdAndDateBetweenAndDeletedFalse(
-            owner, plan.accountId(), plan.date().minusDays(InvestSmsMatch.MATCH_DAYS),
-            plan.date().plusDays(InvestSmsMatch.MATCH_DAYS));
+        List<PenzTransactionEntity> nearby = transactions.lockLiveInWindow(owner, plan.accountId(),
+            plan.date().minusDays(InvestSmsMatch.MATCH_DAYS), plan.date().plusDays(InvestSmsMatch.MATCH_DAYS));
         return InvestSmsMatch.matchInvestBuyForSms(plan.kind(), plan.accountId(), plan.amountMinor(), plan.date(),
                 nearby.stream().map(PenzInvestLinkService::ref).toList())
             .flatMap(hit -> nearby.stream().filter(t -> t.getId().equals(hit.id())).findFirst());

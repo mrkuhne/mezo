@@ -121,12 +121,15 @@ public class PenzInvestLinkService {
 
     /**
      * The bank-SMS debit {@code transactionId} a buy of {@code amountMinor} (account currency) dated {@code date} on
-     * {@code account} adopts — 404 {@code PENZ_TRANSACTION_NOT_FOUND} when it is not his, 409
-     * {@code PENZ_SMS_LINK_MISMATCH} when it fails the candidates rule.
+     * {@code account} adopts — 404 {@code PENZ_TRANSACTION_NOT_FOUND} when it is not his (or deleted), 409
+     * {@code PENZ_SMS_LINK_MISMATCH} when it fails the candidates rule. The row is read LOCKED
+     * ({@link PenzTransactionRepository#lockLive}) and held until the caller's transaction ends, so a concurrent buy
+     * adopting the same debit waits, then re-checks against the committed link and loses with 409 (review fix,
+     * mezo-r36n9.119; the partial unique index on {@code penz_invest_txn.transaction_id} is the backstop).
      */
     public PenzTransactionEntity requireSmsCandidate(UUID owner, PenzAccountEntity account, UUID transactionId,
                                                      long amountMinor, LocalDate date) {
-        PenzTransactionEntity t = transactions.findByIdAndCreatedByAndDeletedFalse(transactionId, owner)
+        PenzTransactionEntity t = transactions.lockLive(transactionId, owner)
             .orElseThrow(() -> PenzErrors.notFound("PENZ_TRANSACTION_NOT_FOUND"));
         Set<UUID> linked = linkedIds(owner, List.of(t.getId()));
         if (!InvestSmsMatch.isSmsCandidate(hasSmsSender(account), account.getId(), amountMinor, date, ref(t), linked)) {
@@ -135,7 +138,10 @@ public class PenzInvestLinkService {
         return t;
     }
 
-    /** The bank-SMS expense becomes the buy's money row: kind invest_buy, no category, reviewed, the holding's name. */
+    /**
+     * The bank-SMS expense becomes the buy's money row: kind invest_buy, no category, reviewed, the holding's name.
+     * {@code t} must come from {@link #requireSmsCandidate} in the same transaction (it holds the row lock).
+     */
     public PenzTransactionEntity adopt(PenzTransactionEntity t, String holdingName) {
         t.setKind(PenzTransactionEntity.KIND_INVEST_BUY);
         t.setCategoryId(null);
@@ -165,13 +171,14 @@ public class PenzInvestLinkService {
 
     /**
      * Releases the money row of a deleted investment transaction: one carrying a bank SMS reverts to an expense (a
-     * buy) / income (a sell) waiting for review; any other is soft-deleted.
+     * buy) / income (a sell) waiting for review; any other is soft-deleted. Read locked, so a row soft-deleted
+     * meanwhile is left deleted (never resurrected).
      */
     public void release(UUID owner, PenzInvestTxnEntity investTxn) {
         if (investTxn.getTransactionId() == null) {
             return;
         }
-        transactions.findByIdAndCreatedByAndDeletedFalse(investTxn.getTransactionId(), owner).ifPresent(t -> {
+        transactions.lockLive(investTxn.getTransactionId(), owner).ifPresent(t -> {
             if (t.getSmsMessageId() != null) {
                 t.setKind(SIDE_BUY.equals(investTxn.getSide())
                     ? PenzTransactionEntity.KIND_EXPENSE : PenzTransactionEntity.KIND_INCOME);

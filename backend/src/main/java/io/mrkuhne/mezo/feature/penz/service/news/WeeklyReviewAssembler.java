@@ -114,6 +114,11 @@ public final class WeeklyReviewAssembler {
         return new PenzWeeklySectionJson.Story(i.id(), i.title(), holdingName, i.kind(), sources, i.publishedAt());
     }
 
+    /** Whether the model gave a usable answer at all — at least one readable section (mezo-r36n9.119 review). */
+    public static boolean readable(String rawModelAnswer) {
+        return !parse(rawModelAnswer).isEmpty();
+    }
+
     /** The model's sections by sleeve (first wins); anything unreadable → empty. Never throws. */
     static Map<String, WeeklyModelSection> parse(String raw) {
         Map<String, WeeklyModelSection> out = new HashMap<>();

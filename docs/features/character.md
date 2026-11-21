@@ -14,6 +14,8 @@ related: [companion, proactive, insights, me, _platform-api-backend]
 ---
 
 > **2026-11-21 — reviewed after Boop B6 Évad S2 (`mezo-r36n9.16`, no dossier change).** `ChatToolDomains` maps the new companion tool `get_season` to the `cel` topic (same as `get_goal`), so asking about the season does not read as a topic shift.
+> **2026-11-21 — reviewed after the Boop Pénz weekly review (`mezo-r36n9.120`) and the `.119` review round (no dossier change).** The shared `1.1.0/script` folder gained `202611211600_mezo-r36n9.120_penz_weekly_review.sql` (`penz_weekly_review`), and the unmerged `.119` changeset's index on `penz_invest_txn.transaction_id` became a partial unique index; no character table or behaviour changed.
+
 > **2026-11-21 — reviewed after Boop Pénz investment ↔ money account (`mezo-r36n9.119`, no dossier change).** The shared `1.1.0/script` folder gained `202611211400_mezo-r36n9.119_penz_invest_account_link.sql` (one nullable column on `penz_invest_txn`); no character table or behaviour changed.
 
 > **2026-11-20 — reviewed after Boop Pénz L7 (`mezo-r36n9.105`, no dossier change).** The shared `1.1.0/script` folder gained `202611202000_mezo-r36n9.105_penz_practice.sql` (`penz_paper_trade`) and `202611202010_mezo-r36n9.105_penz_proposals.sql` (`penz_product`, `penz_proposal`) — owned by [`penz.md`](penz.md); no Karakter table, detector or signal reads paper trades, the catalog or proposals.

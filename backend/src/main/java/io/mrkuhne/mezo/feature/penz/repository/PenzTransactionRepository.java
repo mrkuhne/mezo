@@ -2,11 +2,13 @@ package io.mrkuhne.mezo.feature.penz.repository;
 
 import io.mrkuhne.mezo.feature.penz.entity.PenzTransactionEntity;
 import io.mrkuhne.mezo.techcore.persistence.OwnedRepository;
+import jakarta.persistence.LockModeType;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -19,11 +21,34 @@ public interface PenzTransactionRepository extends OwnedRepository<PenzTransacti
 
     Optional<PenzTransactionEntity> findByIdAndCreatedByAndDeletedFalse(UUID id, UUID createdBy);
 
+    /**
+     * The owner's live row, locked {@code FOR UPDATE} until the transaction ends — every path that mutates a linked
+     * or adopted money row reads it through here (mezo-r36n9.119 review): a concurrent adopter waits and then sees
+     * the committed state; a row soft-deleted meanwhile comes back empty, so it is neither adopted nor resurrected.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select t from PenzTransactionEntity t where t.id = :id and t.createdBy = :createdBy and t.deleted = false")
+    Optional<PenzTransactionEntity> lockLive(@Param("id") UUID id, @Param("createdBy") UUID createdBy);
+
     /** One account's live rows in a date window (the invest-buy ↔ bank-SMS matching, mezo-r36n9.119). */
     List<PenzTransactionEntity> findByCreatedByAndAccountIdAndDateBetweenAndDeletedFalse(UUID createdBy,
                                                                                        UUID accountId,
                                                                                        LocalDate from,
                                                                                        LocalDate to);
+
+    /**
+     * The same window, every row locked {@code FOR UPDATE} — the SMS ingest reads its invest-buy candidates through
+     * here so the buy it adopts cannot be soft-deleted or adopted by another SMS before it commits (mezo-r36n9.119
+     * review). Read first in its transaction, so the rows are fresh, not a stale cached copy.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        select t from PenzTransactionEntity t
+        where t.createdBy = :createdBy and t.accountId = :accountId and t.date between :from and :to
+          and t.deleted = false
+        """)
+    List<PenzTransactionEntity> lockLiveInWindow(@Param("createdBy") UUID createdBy, @Param("accountId") UUID accountId,
+                                                 @Param("from") LocalDate from, @Param("to") LocalDate to);
 
     /** Whether the account carries any live transaction (its currency is then locked, mezo-r36n9.108). */
     boolean existsByAccountIdAndDeletedFalse(UUID accountId);

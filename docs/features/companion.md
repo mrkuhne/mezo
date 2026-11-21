@@ -13,6 +13,8 @@ key_files:
 related: [dayclose, boop-ios, insights, proactive, today, me, character, _platform-api-backend, _platform-auth-security, _platform-notifications, _platform-language, journal, ritual]
 ---
 
+> **2026-11-21 — Boop Pénz weekly review (`mezo-r36n9.120`): the weekly adapter.** `companion/llm/PenzWeeklyReviewLlmAdapter` adapts the penz-owned `PenzWeeklyReviewLlm` port on the cheap tier (call tagged `penz_weekly/narrate`, payload-free in the audit log via `LlmCallContext.FEATURE_PENZ_WEEKLY`; a budget refusal, throttle or provider error is an empty answer). Since the `.119` review round an empty / unparseable answer stores the week `failed` (fallback sections shown) so the next run retries — see [`penz.md`](penz.md) §3.14. `FakeCompanionLlm` gained a scriptable weekly answer for ITs.
+
 # Companion (AI chat brain) — Feature Documentation
 
 > **2026-11-21 — reviewed after the Évad S2 review round (`mezo-r36n9.16`).** A reasoned skip excuses only the session (food and night still count), today's night is never judged, the season title is made inert before it reaches a prompt, the learned-expenditure wall card is keyed on the ISO week, and the Hét tab no longer waits on the day judgement — all described below.

@@ -225,7 +225,9 @@ short transaction — the LLM and FX calls happen before, outside any transactio
    (`service/sms/InvestSmsMatch`). Found → that row takes the SMS (`sms_message_id`, `source = sms`;
    `needs_review` stays false, kind and date stay), the SMS flips to `converted` pointing at it, **no second row**;
    the response is `parsed` with that `transactionId` and reason **`invest_buy_linked`**. Not found → step 6's
-   normal expense.
+   normal expense. The candidate window is read **locked** (`PenzTransactionRepository.lockLiveInWindow`, `FOR
+   UPDATE`, live rows only — review fix): a buy soft-deleted before the read is never adopted (or resurrected), and
+   none can change under the adoption.
 
 `ignored` SMS drop their text; `failed` ones keep it for review. Response:
 `{status: parsed|ignored|failed|duplicate, transactionId?, reason?}` with reasons `no_amount`, `not_a_transaction`,
@@ -289,13 +291,17 @@ through `verdict`. Fixtures: `backend/src/test/resources/penz/guard-brief-{consi
   bank SMS (`source = sms` or an `sms_message_id`), no recurring rule, not already linked to an investment, exactly
   `amountMinor` in the account currency, dated within ±3 days — closest first; empty without an SMS sender. A buy
   with `linkTransactionId` re-checks the same rule (fail → 409 `PENZ_SMS_LINK_MISMATCH`; a sell, or no `accountId` →
-  400 field error) and the debit **becomes** the money row: kind → `invest_buy`, category null, reviewed, note = the
+  400 field error) — the debit is read **locked** (`lockLive`, `FOR UPDATE`, live only) before that re-check, so a
+  concurrent buy adopting the same debit waits and then loses with 409, and a partial **unique** index
+  (`uq_penz_invest_txn_transaction_id`, live rows) is the backstop: a lost race surfaces as 409
+  `PENZ_SMS_LINK_MISMATCH`, never a 500 (review fix) — and the debit **becomes** the money row: kind → `invest_buy`, category null, reviewed, note = the
   holding's name; the investment takes that row's **date** (one buy never carries two dates) and nothing new is
   written. The investment's own amount and twin stay as he typed them (holding currency).
 - **Delete releases the link.** Deleting an investment transaction (after the FIFO guard) releases its money row in
   the same transaction: one carrying an `sms_message_id` (the debit really happened) **reverts** to `expense` (buy) /
   `income` (sell) with `needs_review = true` — offered again by the candidates list when the buy is recorded again;
-  any other is soft-deleted. Deleting a holding releases every one of its transactions' rows the same way.
+  any other is soft-deleted. Deleting a holding releases every one of its transactions' rows the same way. The money
+  row is read locked (`lockLive`): one soft-deleted meanwhile stays deleted.
 - **The guard from the other side.** `PUT` / `DELETE /api/penz/transactions/{id}` of a row linked to a live
   investment → 409 `PENZ_TRANSACTION_INVEST_LINKED` (change it through the investment), so the two never drift;
   marking it reviewed stays allowed.
@@ -538,8 +544,11 @@ accepts anything else). Builder calls: [`2026-11-20-boop-penz-l7-build.md`](../s
   is left alone) — **and nothing outside his catalog** (`mezo-r36n9.121`): a capitalised word in mid-sentence, a word
   with two or more capitals anywhere (*OTP*, *BUX*) or a well-known asset name at a sentence start (*Bitcoin*,
   *Tesla*; `KNOWN_OUTSIDE_NAMES`) must be a word of a catalog product's name or description (inflected allowed:
-  *Vanguardnál*, *ETF-ben*) or one of a few generic words (*Boop, ETF, UCITS, TER, ISIN, EU, Magyar*) — else the
-  narration falls back; boundary stems HU + EN for buy-imperative, sell, urge, countdown, return promise and forecast —
+  *Vanguardnál*, *ETF-ben*; a Hungarian ending of up to 9 letters) or one of a few generic words, themselves
+  inflectable (*Boop, ETF, UCITS, TER, ISIN, EU, Magyar*, and since the `.119` review the institutions, places and
+  terms a plausible narration names: *MNB, EKB, Fed, TBSZ, NYESZ, USA, Amerika, Ázsia, Japán, Kína, ÁKK, MÁK,
+  Államkincstár, MÁP, PMÁP, FixMÁP, Nincs*) — a word right after an opening quote (*„ " “ »*) or a line-start list
+  marker (*1)*, *1.*, *-*, *•*) counts as a sentence start — else the narration falls back; boundary stems HU + EN for buy-imperative, sell, urge, countdown, return promise and forecast —
   `hozam` only inside the server's own option wording ("újrabefekteti / kifizeti a hozamot") and the fallback's
   no-claim sentence; no URL, no markup but `*emphasis*`, no prompt-leak marker).
   Any failure anywhere → the whole narration is `ProposalFallbackCopy` (`narratedBy: fallback`), built from the same
@@ -615,8 +624,13 @@ industry structure, regulation, technology, long-run financials; reactionary noi
    (`narratedBy: quiet`), never asked of the model. Every fixed string passes the validator (tested). Stories shown:
    ≤ 6 per section — the ones the model relied on first, then most sources, newest.
 8. **Store** (`PenzWeeklyReviewStore.replace`, one short transaction): `penz_weekly_review`, one live row per owner
-   and `week_start`; `ready` (any sleeve had stories), `quiet` (none — no model call), `failed` (the build itself
-   broke — the next run rebuilds it). Rejections are logged as sleeve + rule names only.
+   and `week_start`; `ready` (any sleeve had stories and the model answered — or no model is configured, a setting
+   not an outage: fallback copy), `quiet` (the week's digest rows exist — at least one for a day of that week — but no
+   sleeve had a story; no model call), `failed` (the build itself broke, **or** a configured model gave no usable
+   answer at all — empty, refused, unparseable: a passing outage, stored *with* the fallback sections so GET shows
+   something honest) — the next run rebuilds a `failed` week. A week with **no digest row at all** is not stored
+   (its digests may not exist yet — a premature `quiet` would freeze it; GET stays `pending`) — `.119` review fix.
+   Rejections are logged as sleeve + rule names only.
 9. **When** — `PenzNewsRunner.buildFor`, after each user's daily digest (job run and manual refresh alike):
    `buildIfMissing` builds the previous week's review if no non-failed row exists for it — so the **Monday 06:30**
    run creates it and a later run fills a missed week; idempotent, one review per week. No new cron, no new switch,
@@ -832,7 +846,8 @@ Backend only (`-Dmezo.test.use-testcontainers=true`, `ArchitectureTest` in the `
 - L6 ITs: `PenzPortfolioApiIT` (CRUD, ownership, FIFO and its guards, symbol check, FX booking, Pénzem figures),
   `PenzInvestAccountLinkApiIT` (`.119`: the money row on a HUF / same-currency / explicit / cross-currency account and
   the allowance `invested` line, sell → `invest_sell`, payable-account rule, ownership, `clientRef` replay, SMS
-  adoption + date from the bank row, link mismatch, delete / holding delete release, the 409 guard),
+  adoption + date from the bank row, link mismatch, two concurrent buys adopting one debit → one 201 + one 409,
+  delete / holding delete release, the 409 guard),
   `PenzQuoteServiceIT`, `PenzNewsDigestStoreIT` (article upsert / prune, digest round trip and replace),
   `PenzDigestPipelineIT` (companion-fake + WireMock feeds, pages, Yahoo: a full run's figures equal the portfolio's,
   holdings-only relevance, grouping, injection ignored / obeyed → fallback, quiet day, model failure, GET pending /
@@ -853,8 +868,10 @@ Backend only (`-Dmezo.test.use-testcontainers=true`, `ArchitectureTest` in the `
   sleeve's holding, a year, a URL…),PenzWeeklyReviewFallbackCopyTest (passes the validator),PenzWeeklyReviewAssemblerTest}`,
   `companion/llm/PenzWeeklyReviewFakeLlmTest`.
 - `.120` IT: `PenzWeeklyReviewIT` (companion-fake + WireMock: last week's digests → the run builds one review, GET
-  returns it, a second run does not duplicate, an obeying-injection answer → that sleeve falls back, empty week →
-  quiet without a model call, pending before any, a failed week is rebuilt, owner isolation).
+  returns it, a second run does not duplicate, an obeying-injection answer → that sleeve falls back, a week whose
+  digests had no story → quiet without a model call, a week with no digest → nothing stored, a model with no usable
+  answer → `failed` with fallback sections then rebuilt `ready`, pending before any, a failed week is rebuilt, owner
+  isolation).
 - L7 IT: `PenzProposalApiIT` (companion-fake: only approved products offered / accepted, every rule-breaking narration →
   fallback with figures unchanged, split rules, accept with his numbers + re-check, steps, supersede, dismiss, the
   monthly figure, seed once per owner, owner isolation, no money row written).

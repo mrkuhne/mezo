@@ -41,8 +41,10 @@ import org.springframework.test.context.DynamicPropertySource;
 /**
  * The weekly long-horizon review end to end (mezo-r36n9.120): the previous week's stored digests → the news run
  * builds one review (de-duplicated, three sleeves, the scripted fake narrates) → GET returns it; a second run does not
- * duplicate; a model that obeys an injected headline is replaced by fallback copy for that sleeve; an empty week is
- * quiet without a model call; pending before any; a failed week is rebuilt; owner isolation. WireMock answers the
+ * duplicate; a model that obeys an injected headline is replaced by fallback copy for that sleeve; a week whose
+ * digests carried no story is quiet without a model call, a week with no digest at all is not stored; a model outage
+ * stores {@code failed} (fallback sections) and the next run rebuilds it; pending before any; a failed week is
+ * rebuilt; owner isolation. WireMock answers the
  * feeds and Yahoo so the run never leaves the machine. Every holding, headline and figure is invented.
  */
 @ActiveProfiles("companion-fake")
@@ -245,6 +247,8 @@ class PenzWeeklyReviewIT extends ApiIntegrationTest {
 
     @Test
     void testBuild_shouldBeQuiet_withoutAModelCall_whenTheWeekHadNoStories() {
+        // review fix (mezo-r36n9.119): quiet needs the week's digests to exist — here one day's digest had no story
+        digests.replace(owner, week.plusDays(2), "quiet", List.of(), Instant.now(), null);
         int calls = fakeLlm.penzWeeklyCallCount();
 
         PenzWeeklyReviewEntity r = reviews.buildIfMissing(owner, today, Instant.now()).orElseThrow();
@@ -283,8 +287,52 @@ class PenzWeeklyReviewIT extends ApiIntegrationTest {
         assertThat(r.getStatus()).isEqualTo(PenzWeeklyReviewResponse.StatusEnum.PENDING);
         assertThat(r.getSections()).isEmpty();
 
-        PenzWeeklyReviewEntity his = reviews.buildIfMissing(other.id(), today, Instant.now()).orElseThrow();
-        assertThat(his.getStatus()).isEqualTo("quiet"); // the owner's digests are not his
+        // the owner's digests are not his: he has no digest that week, so nothing is stored for him (review fix)
+        assertThat(reviews.buildIfMissing(other.id(), today, Instant.now())).isEmpty();
+        assertThat(store.find(other.id(), week)).isEmpty();
         assertThat(store.find(owner, week).orElseThrow().getStatus()).isEqualTo("ready");
+    }
+
+    /**
+     * Review fix (mezo-r36n9.119): before the week's digests exist (a first run, or the news run failed all week)
+     * nothing is stored — a premature {@code quiet} row would freeze the week; GET stays pending.
+     */
+    @Test
+    void testBuildIfMissing_shouldStoreNothing_whenTheWeekHasNoDigestAtAll() {
+        digest(owner, week.minusDays(1), item("holding-before", world, "x", src("Lap", "Before", "d")));
+        int calls = fakeLlm.penzWeeklyCallCount();
+
+        assertThat(reviews.buildIfMissing(owner, today, Instant.now())).isEmpty();
+
+        assertThat(store.find(owner, week)).isEmpty();
+        assertThat(fakeLlm.penzWeeklyCallCount()).isEqualTo(calls);
+        assertThat(getForBody(URI, ownerAuthHeaders(), HttpStatus.OK, PenzWeeklyReviewResponse.class).getStatus())
+            .isEqualTo(PenzWeeklyReviewResponse.StatusEnum.PENDING);
+    }
+
+    /**
+     * Review fix (mezo-r36n9.119): a model that gives no usable answer at all is an outage, not a verdict — the week
+     * is stored {@code failed} with the honest fallback sections (GET shows them), and the next run rebuilds it.
+     */
+    @Test
+    void testBuild_shouldStoreFailedWithFallback_andRebuildNextRun_whenTheModelGaveNoAnswer() {
+        seedLastWeek();
+        fakeLlm.scriptPenzWeekly("nem json, csak zaj");
+
+        PenzWeeklyReviewEntity failed = reviews.buildIfMissing(owner, today, Instant.now()).orElseThrow();
+
+        assertThat(failed.getStatus()).isEqualTo("failed");
+        assertThat(failed.getSections()).extracting(PenzWeeklySectionJson::narratedBy)
+            .containsExactly("quiet", "fallback", "fallback");
+        PenzWeeklyReviewResponse body = getForBody(URI, ownerAuthHeaders(), HttpStatus.OK,
+            PenzWeeklyReviewResponse.class);
+        assertThat(body.getStatus()).isEqualTo(PenzWeeklyReviewResponse.StatusEnum.FAILED);
+        assertThat(body.getSections()).hasSize(3);
+
+        fakeLlm.scriptPenzWeekly(null); // the model is back
+        PenzWeeklyReviewEntity rebuilt = reviews.buildIfMissing(owner, today, Instant.now()).orElseThrow();
+        assertThat(rebuilt.getStatus()).isEqualTo("ready");
+        assertThat(rebuilt.getSections()).extracting(PenzWeeklySectionJson::narratedBy)
+            .containsExactly("quiet", "model", "model");
     }
 }

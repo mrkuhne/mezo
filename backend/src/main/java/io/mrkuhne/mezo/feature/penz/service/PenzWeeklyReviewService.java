@@ -34,10 +34,14 @@ import org.springframework.stereotype.Service;
  * Monday–Sunday week of his today (money timezone); when no row exists for it — or only a {@code failed} one — the
  * week's stored digests → de-duplicated stories → three sleeve sections with backend figures
  * ({@link WeeklyReviewSectioner}; current live holdings, the long sleeve's coverage months as Pénzem computes them)
- * → ONE narration call outside any transaction ({@link PenzWeeklyReviewLlm}; absent, refused or failed → fallback
- * copy) → the validator gate ({@link WeeklyReviewAssembler}) → one short write ({@link PenzWeeklyReviewStore}):
- * {@code ready} when any sleeve had stories, {@code quiet} when none did (no model call), {@code failed} when the build
- * itself broke (the next run retries). No new feed fetch, no article body, no push, no action. Rejections are logged
+ * → ONE narration call outside any transaction ({@link PenzWeeklyReviewLlm}) → the validator gate
+ * ({@link WeeklyReviewAssembler}) → one short write ({@link PenzWeeklyReviewStore}): {@code ready} when any sleeve
+ * had stories and the model answered (or no model is configured: fallback copy); {@code quiet} when the week's digest
+ * rows exist but no sleeve had a story (no model call); {@code failed} when the build itself broke, or when the model
+ * gave no usable answer at all (empty, refused, unparseable — a passing outage; stored with the fallback sections so
+ * GET shows something honest) — the next run retries either. A week with no digest row at all is not stored (its
+ * digests may not exist yet; a premature {@code quiet} would freeze it) — mezo-r36n9.119 review. No new feed fetch,
+ * no article body, no push, no action. Rejections are logged
  * by sleeve and rule names only — never prose or titles.
  */
 @Slf4j
@@ -75,19 +79,27 @@ public class PenzWeeklyReviewService {
         if (existing.isPresent() && !PenzWeeklyReviewEntity.STATUS_FAILED.equals(existing.get().getStatus())) {
             return Optional.empty();
         }
-        return Optional.of(build(owner, weekStart, today, now));
+        return build(owner, weekStart, today, now);
     }
 
-    /** Builds and stores the owner's review of the week starting {@code weekStart}, holdings as of {@code today}. */
-    public PenzWeeklyReviewEntity build(UUID owner, LocalDate weekStart, LocalDate today, Instant now) {
+    /**
+     * Builds and stores the owner's review of the week starting {@code weekStart}, holdings as of {@code today};
+     * empty (nothing stored) when the week has no digest row at all.
+     */
+    public Optional<PenzWeeklyReviewEntity> build(UUID owner, LocalDate weekStart, LocalDate today, Instant now) {
         List<WeeklySection> sections;
         List<NewsHolding> holdings;
         try {
+            List<PenzDigestEntity> week = digests
+                .findByCreatedByAndDigestDateBetweenAndDeletedFalseOrderByDigestDateAsc(owner, weekStart,
+                    weekStart.plusDays(6));
+            if (week.isEmpty()) {
+                return Optional.empty(); // the week's digests do not exist (yet): leave it pending
+            }
             List<PenzPositionView> positions = portfolio.positions(owner, today);
             holdings = positions.stream().map(PenzWeeklyReviewService::holding).toList();
             Map<LocalDate, List<PenzDigestItemJson>> byDay = new LinkedHashMap<>();
-            for (PenzDigestEntity d : digests.findByCreatedByAndDigestDateBetweenAndDeletedFalseOrderByDigestDateAsc(
-                owner, weekStart, weekStart.plusDays(6))) {
+            for (PenzDigestEntity d : week) {
                 byDay.put(d.getDigestDate(), d.getItems());
             }
             List<PenzDigestItemJson> items = WeeklyReviewSectioner.dedupe(byDay, weekStart);
@@ -95,16 +107,22 @@ public class PenzWeeklyReviewService {
         } catch (RuntimeException e) {
             log.warn("Penz weekly review build failed for owner {} week {}: {}", owner, weekStart,
                 e.getClass().getSimpleName());
-            return store.replace(owner, weekStart, PenzWeeklyReviewEntity.STATUS_FAILED, List.of(), now);
+            return Optional.of(store.replace(owner, weekStart, PenzWeeklyReviewEntity.STATUS_FAILED, List.of(), now));
         }
         if (sections.stream().allMatch(WeeklySection::quiet)) {
             List<PenzWeeklySectionJson> quiet = sections.stream().map(WeeklyReviewAssembler::quiet).toList();
-            return store.replace(owner, weekStart, PenzWeeklyReviewEntity.STATUS_QUIET, quiet, now);
+            return Optional.of(store.replace(owner, weekStart, PenzWeeklyReviewEntity.STATUS_QUIET, quiet, now));
         }
-        String raw = narrate(sections);
+        PenzWeeklyReviewLlm model = llm.getIfAvailable();
+        String raw = model == null ? null
+            : model.narrate(WeeklyReviewPrompt.SYSTEM_PROMPT, WeeklyReviewPrompt.userMessage(sections)).orElse(null);
+        boolean answered = WeeklyReviewAssembler.readable(raw);
         WeeklyReviewAssembler.Assembly assembly = WeeklyReviewAssembler.assemble(sections, holdings, raw);
-        logRejections(owner, weekStart, raw != null, assembly);
-        return store.replace(owner, weekStart, PenzWeeklyReviewEntity.STATUS_READY, assembly.sections(), now);
+        logRejections(owner, weekStart, answered, assembly);
+        // a configured model that gave no usable answer is a passing outage: failed (fallback shown), retried next run
+        String status = model != null && !answered
+            ? PenzWeeklyReviewEntity.STATUS_FAILED : PenzWeeklyReviewEntity.STATUS_READY;
+        return Optional.of(store.replace(owner, weekStart, status, assembly.sections(), now));
     }
 
     /** The long sleeve's coverage months; null when unknown or when computing it failed (never fails the review). */
@@ -115,14 +133,6 @@ public class PenzWeeklyReviewService {
             log.warn("Penz weekly review coverage unavailable for owner {}: {}", owner, e.getClass().getSimpleName());
             return null;
         }
-    }
-
-    private String narrate(List<WeeklySection> sections) {
-        PenzWeeklyReviewLlm model = llm.getIfAvailable();
-        if (model == null) {
-            return null;
-        }
-        return model.narrate(WeeklyReviewPrompt.SYSTEM_PROMPT, WeeklyReviewPrompt.userMessage(sections)).orElse(null);
     }
 
     private static NewsHolding holding(PenzPositionView p) {

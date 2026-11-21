@@ -27,6 +27,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +37,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * Boop Pénz L4 (mezo-r36n9.102): the iOS Shortcut's bank-SMS path over HTTP — API-key auth (its own chain: a JWT
@@ -53,6 +56,7 @@ class PenzSmsIngestApiIT extends ApiIntegrationTest {
 
     @Autowired private PenzSmsMessageRepository messages;
     @Autowired private PenzTransactionRepository transactions;
+    @Autowired private PlatformTransactionManager txManager;
     @Autowired private PenzApiKeyRepository apiKeys;
     @Autowired private FakeCompanionLlm fakeLlm;
     @Autowired private io.mrkuhne.mezo.support.populator.PenzPopulator penz;
@@ -472,6 +476,28 @@ class PenzSmsIngestApiIT extends ApiIntegrationTest {
             .filteredOn(t -> t.getId().equals(r.getTransactionId())).singleElement()
             .satisfies(t -> assertThat(t.getKind()).isEqualTo(PenzTransactionResponse.KindEnum.EXPENSE));
         assertThat(transactions.findById(buy.getTransactionId()).orElseThrow().getSmsMessageId()).isNull();
+    }
+
+    /** Review fix (mezo-r36n9.119): a deleted invest buy's money row is never adopted (nor resurrected) by an SMS. */
+    @Test
+    void aDeletedInvestBuyIsNotAdoptedByALaterSms() {
+        RegisteredUser u = registerUser("penz sms invest deleted");
+        PenzAccountResponse mbh = account(u.headers(), "MBH", true, SENDER);
+        UUID bond = penz.holding(u.id(), "MÁP Plusz", "bond", null, "short", "HUF", null).getId();
+        String key = createKey(u.headers());
+        PenzInvestTxnResponse buy = recordBuy(u.headers(), bond, 1_550_000L, DAY.minusDays(1), mbh.getId(), null);
+        deleteAndExpect("/api/penz/invest-transactions/" + buy.getId(), u.headers(), HttpStatus.NO_CONTENT);
+        Optional<PenzTransactionEntity> locked = new TransactionTemplate(txManager)
+            .execute(tx -> transactions.lockLive(buy.getTransactionId(), u.id()));
+        assertThat(locked).isEmpty(); // the locking read skips a deleted row
+
+        PenzSmsIngestResponse r = ingest(keyHeaders(key), sms("invest deleted"));
+        assertThat(r.getStatus()).isEqualTo(PenzSmsIngestResponse.StatusEnum.PARSED);
+        assertThat(r.getReason()).isNull();
+        assertThat(r.getTransactionId()).isNotEqualTo(buy.getTransactionId());
+        assertThat(transactions.findById(buy.getTransactionId())).isEmpty(); // still deleted
+        assertThat(monthOf(u.headers())).singleElement()
+            .satisfies(t -> assertThat(t.getKind()).isEqualTo(PenzTransactionResponse.KindEnum.EXPENSE));
     }
 
     @Test

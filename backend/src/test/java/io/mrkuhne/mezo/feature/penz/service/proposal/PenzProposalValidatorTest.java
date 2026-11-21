@@ -307,10 +307,28 @@ class PenzProposalValidatorTest {
             "Mivel a tartalékod még hiányos, ide kerül a nagyobb rész. Utána jön a többi.",
             "Ha változik a helyzeted: Akkor újra kérhetsz felosztást.",
             "Nem ismerem a terveidet, és a díjak az EU-ban is változhatnak.",
+            // review fix (mezo-r36n9.119): institutions, places and terms a plausible narration names
+            "Az MNB alapkamata is számít.",
+            "Az EKB döntései a kötvényekre hatnak.",
+            "Egy TBSZ-számlán az adó is más.",
+            "Az USA cégei nagy részt adnak.",
+            "A Magyar Államkincstárnál vezetik.",
+            "Ezért mondom: „Nincs teendőd” ebben a hónapban.",
+            "Ezért mondom „Nincs teendőd” ebben a hónapban.",           // after an opening quote
+            "Az Euró Kötvényeitekkel is euróban számoltok.",           // an 8-letter Hungarian ending
         })
         void testValidate_shouldNotFlagOrdinaryHungarianOrCatalogWords(String text) {
             // the summary may name every offered option
             assertThat(check(text, SHORT, MID, LONG, UNCERTAINTY)).isEmpty();
+        }
+
+        @Test
+        void testValidate_shouldTreatAWordAfterAListMarkerAsASentenceStart() {
+            // "1)" is a number the numerical gate judges on its own — only the outside-catalog verdict matters here
+            String list = "Két lépés:\n1) Rövid táv forintban.\n2. Közép táv.\n- Utána jön a többi.\n• Végül a hosszú táv.";
+            assertThat(rules(check(list, SHORT, MID, LONG, UNCERTAINTY))).doesNotContain(Rule.ENTITY_SWAP);
+            assertThat(rules(check("Két lépés:\n1) Tesla papír.", SHORT, MID, LONG, UNCERTAINTY)))
+                .contains(Rule.ENTITY_SWAP); // a known outside name is still caught at a list start
         }
 
         @Test

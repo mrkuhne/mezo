@@ -406,7 +406,9 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     official rate; no second amount field). For a buy whose account shares the holding's currency, the sheet asks
     `GET invest-transactions/sms-candidates` (debounced on account · amount · day, `penzSmsLookupAmount`) and, when
     any match, shows *EZ VOLT A BANKI TERHELÉS?* (chips "nov. 19. · Spar", *Egyik sem* default) → `linkTransactionId`,
-    so the bank row becomes the buy instead of counting twice. `PenzInvestTxnRequest` gained `accountId` /
+    so the bank row becomes the buy instead of counting twice. While that lookup is pending (the 450 ms debounce or
+    the request in flight, tracked per lookup key) *Rögzítem* is disabled, so a save never skips a possible bank
+    match (`.119` review). `PenzInvestTxnRequest` gained `accountId` /
     `accountAmountMinor` / `linkTransactionId` (sent only when set), `PenzInvestTxn` decodes `accountId` /
     `transactionId`; a save with an account re-reads the whole snapshot (the allowance and Költés moved), not only
     Pénzem. New refusals in Hungarian: `PENZ_SMS_LINK_MISMATCH` (the sheet looks the bank rows up again) and

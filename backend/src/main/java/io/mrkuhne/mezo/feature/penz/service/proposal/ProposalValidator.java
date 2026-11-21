@@ -85,7 +85,16 @@ public final class ProposalValidator {
     private static final Pattern SENTENCE_GAP = Pattern.compile("[\\s\"'„”“»«()*–—-]*$");
     /** Generic words a narration may capitalise mid-sentence or write in capitals (folded). */
     static final Set<String> NAME_WORD_ALLOW = Set.of("boop", "etf", "etfs", "ucits", "ter", "isin", "eu", "huf",
-        "eur", "usd", "ft", "magyar", "magyarorszag", "europa", "europai", "allampapir", "allampapirok");
+        "eur", "usd", "ft", "magyar", "magyarorszag", "europa", "europai", "allampapir", "allampapirok",
+        // institutions, places and terms a plausible narration names (mezo-r36n9.119 review)
+        "mnb", "ekb", "fed", "tbsz", "nyesz", "usa", "amerika", "azsia", "japan", "kina", "akk", "mak",
+        "allamkincstar", "map", "pmap", "fixmap", "nincs");
+    /** The longest Hungarian ending a known word may carry and still count as known ({@code -eitekkel}). */
+    private static final int MAX_ENDING = 9;
+    /** A word right after an opening quote: a quoted sentence starts there. */
+    private static final Pattern OPENING_QUOTE = Pattern.compile("[„\"“»]\\s*$");
+    /** A list marker at a line start ({@code 1)}, {@code 1.}, {@code -}, {@code •}) right before the word. */
+    private static final Pattern LIST_MARKER = Pattern.compile("(?:^|\\n)[ \\t]*(?:\\d+[.)]|[-•])[ \\t]*$");
     /** Well-known names outside any catalog, caught even at a sentence start (folded word-start stems). */
     static final List<String> KNOWN_OUTSIDE_NAMES = List.of("bitcoin", "ethereum", "ether", "btc", "solana",
         "dogecoin", "tether", "kriptovalut", "tesla", "apple", "nvidia", "microsoft", "amazon", "alphabet", "google",
@@ -246,7 +255,8 @@ public final class ProposalValidator {
     /**
      * mezo-r36n9.121 — a name that is no word of his catalog: a capitalised word in mid-sentence, a word with two or
      * more capitals anywhere, or a {@link #KNOWN_OUTSIDE_NAMES} stem anywhere, unless it is a {@code known} word
-     * (exact, or a known word of 3+ letters carrying a Hungarian ending of up to 7 letters).
+     * (exact, or a known / allowed word of 3+ letters carrying a Hungarian ending of up to {@link #MAX_ENDING}
+     * letters).
      */
     private static boolean namesOutsideTheCatalog(String prose, String folded, Set<String> known) {
         Matcher m = NAME_TOKEN.matcher(prose);
@@ -274,9 +284,15 @@ public final class ProposalValidator {
             .anyMatch(n -> NewsText.containsStem(folded, n));
     }
 
-    /** True at the text's start or after a sentence end ({@code . ! ? :} or a line break). */
+    /**
+     * True at the text's start, after a sentence end ({@code . ! ? :} or a line break), after an opening quote, or
+     * after a list marker at a line start.
+     */
     private static boolean sentenceStart(String prose, int index) {
         String before = prose.substring(0, index);
+        if (OPENING_QUOTE.matcher(before).find() || LIST_MARKER.matcher(before).find()) {
+            return true;
+        }
         String rest = SENTENCE_GAP.matcher(before).replaceFirst("");
         if (rest.isEmpty()) {
             return true;
@@ -290,8 +306,12 @@ public final class ProposalValidator {
         if (known.contains(folded) || NAME_WORD_ALLOW.contains(folded)) {
             return true;
         }
-        for (String k : known) {
-            if (k.length() >= 3 && folded.startsWith(k) && folded.length() - k.length() <= 7
+        return withEnding(folded, known) || withEnding(folded, NAME_WORD_ALLOW);
+    }
+
+    private static boolean withEnding(String folded, Set<String> stems) {
+        for (String k : stems) {
+            if (k.length() >= 3 && folded.startsWith(k) && folded.length() - k.length() <= MAX_ENDING
                 && folded.substring(k.length()).codePoints().allMatch(Character::isLetter)) {
                 return true;
             }

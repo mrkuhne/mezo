@@ -18,19 +18,28 @@ import io.mrkuhne.mezo.feature.penz.entity.PenzAccountEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzHoldingEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzTransactionEntity;
 import io.mrkuhne.mezo.feature.penz.repository.PenzAccountRepository;
+import io.mrkuhne.mezo.feature.penz.repository.PenzInvestTxnRepository;
 import io.mrkuhne.mezo.feature.penz.repository.PenzTransactionRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.PenzPopulator;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
@@ -65,6 +74,7 @@ class PenzInvestAccountLinkApiIT extends ApiIntegrationTest {
     @Autowired private PenzPopulator penz;
     @Autowired private PenzTransactionRepository transactionRows;
     @Autowired private PenzAccountRepository accountRows;
+    @Autowired private PenzInvestTxnRepository investRows;
 
     private LocalDate today;
 
@@ -294,6 +304,52 @@ class PenzInvestAccountLinkApiIT extends ApiIntegrationTest {
         assertHasRequestError(postForBody(TXNS, buy(bond.getId(), 100_000_00L, D, mbh.getId())
             .linkTransactionId(debit.getId()), u.headers(), HttpStatus.CONFLICT, String.class),
             "PENZ_SMS_LINK_MISMATCH");
+    }
+
+    /**
+     * Review fix (mezo-r36n9.119): two buys at once (different clientRefs) adopting the same bank debit — the money
+     * row is locked before the re-check and one link per money row is a unique index, so exactly one wins and the
+     * other gets 409 PENZ_SMS_LINK_MISMATCH (never a 500), and one investment row carries the link.
+     */
+    @Test
+    void twoConcurrentBuysAdoptingTheSameBankDebitLetExactlyOneThrough() throws Exception {
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            for (int round = 0; round < 6; round++) {
+                RegisteredUser u = registerUser("penz link race " + round);
+                PenzAccountEntity mbh = smsAccount(u.id());
+                PenzHoldingEntity bond = holding(u.id(), "MÁP Plusz", "HUF");
+                PenzTransactionEntity debit = smsDebit(u.id(), mbh.getId(), 100_000_00L, D);
+                // his settings row exists already (its lazy first insert would serialize the two requests)
+                getForBody("/api/penz/settings", u.headers(), HttpStatus.OK, String.class);
+                CountDownLatch go = new CountDownLatch(1);
+                List<Future<ResponseEntity<String>>> calls = new ArrayList<>();
+                for (int i = 0; i < 2; i++) {
+                    PenzInvestTxnRequest req = buy(bond.getId(), 100_000_00L, D, mbh.getId())
+                        .linkTransactionId(debit.getId()).clientRef(UUID.randomUUID());
+                    calls.add(pool.submit(() -> {
+                        go.await();
+                        return exchangeForResponse(HttpMethod.POST, TXNS, req, u.headers());
+                    }));
+                }
+                go.countDown();
+                List<Integer> statuses = new ArrayList<>();
+                List<String> bodies = new ArrayList<>();
+                for (Future<ResponseEntity<String>> f : calls) {
+                    ResponseEntity<String> resp = f.get(30, TimeUnit.SECONDS);
+                    statuses.add(resp.getStatusCode().value());
+                    bodies.add(resp.getBody());
+                }
+                assertThat(statuses).as("round %d: %s", round, bodies).containsExactlyInAnyOrder(201, 409);
+                assertThat(bodies).as("round %d", round).anyMatch(b -> b.contains("PENZ_SMS_LINK_MISMATCH"));
+                assertThat(investRows.findByCreatedByAndTransactionIdInAndDeletedFalse(u.id(),
+                    List.of(debit.getId()))).as("round %d", round).hasSize(1);
+                assertThat(getForList("/api/penz/holdings/" + bond.getId() + "/transactions", u.headers(),
+                    HttpStatus.OK, PenzInvestTxnResponse.class)).as("round %d", round).hasSize(1);
+            }
+        } finally {
+            pool.shutdownNow();
+        }
     }
 
     @Test

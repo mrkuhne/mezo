@@ -71,6 +71,8 @@ struct PenzRecordSheet: View {
     @State private var linkChoice: String? = "none"
     /// Bumped after a failed save, so a stale bank row is looked up again.
     @State private var lookupNonce = 0
+    /// The lookup key whose bank-row answer has arrived; while it differs, a lookup is pending (debounce or request).
+    @State private var lookedUpKey: String?
 
     @State private var saving = false
     @State private var error: String?
@@ -90,6 +92,8 @@ struct PenzRecordSheet: View {
     }
     /// What the bank-SMS lookup depends on; a change re-asks (debounced).
     private var lookupKey: String { "\(account?.id ?? "-")|\(lookupAmount.map(String.init) ?? "-")|\(penzDay(date))|\(lookupNonce)" }
+    /// A buy with an account whose bank-row lookup has not answered yet: saving now would skip a possible match.
+    private var lookupPending: Bool { side == "buy" && account != nil && lookupAmount != nil && lookedUpKey != lookupKey }
     private var linkedId: String? {
         guard side == "buy", account != nil, let id = linkChoice, candidates.contains(where: { $0.id == id }) else { return nil }
         return id
@@ -144,8 +148,8 @@ struct PenzRecordSheet: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 NKPill(saving ? "Rögzítem…" : "Rögzítem", glyph: "plus-ink") { Task { await save() } }
-                    .disabled(!ready || saving)
-                    .opacity(ready ? 1 : 0.5)
+                    .disabled(!ready || saving || lookupPending)
+                    .opacity(ready && !lookupPending ? 1 : 0.5)
             }
             .padding(.horizontal, 16).padding(.vertical, 10)
             .background(NK.ground.opacity(0.92))
@@ -194,6 +198,7 @@ struct PenzRecordSheet: View {
     private func lookUpBankRows() async {
         // never offer a row found for another amount, account or day while the new answer is on its way
         candidates = []
+        let key = lookupKey
         guard let account, let minor = lookupAmount else {
             linkChoice = "none"
             return
@@ -202,6 +207,7 @@ struct PenzRecordSheet: View {
         let found = await store.smsCandidates(accountId: account.id, amountMinor: minor, date: penzDay(date))
         guard !Task.isCancelled else { return }
         candidates = found
+        lookedUpKey = key
         if !found.contains(where: { $0.id == linkChoice }) { linkChoice = "none" }
     }
 
