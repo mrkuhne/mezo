@@ -74,7 +74,7 @@ public class BlockSuggestionService {
         }
         boolean replace = req.getMode() == BlockExerciseSuggestionsRequest.ModeEnum.REPLACE;
         List<String> tokens = req.getMuscles() == null ? List.of()
-            : req.getMuscles().stream().filter(Objects::nonNull).map(String::strip).distinct().toList();
+            : req.getMuscles().stream().filter(Objects::nonNull).map(t -> t.strip().toLowerCase(java.util.Locale.ROOT)).distinct().toList();
         if (replace ? req.getOutgoing() == null : !MuscleGroup.TOKENS.containsAll(tokens)) {
             throw new SystemRuntimeErrorException(SystemMessage.error(REQUEST_INVALID).build(), HttpStatus.BAD_REQUEST);
         }
@@ -113,7 +113,9 @@ public class BlockSuggestionService {
         boolean editsToday = req.getDayIndex() != null && req.getDayIndex() == weekdayIndex(today);
         Set<String> painJoints = editsToday ? reads.painJointsToday(userId, today) : Set.of();
         Context ctx = new Context(block.getGoalPreset(), false, painJoints, inDay, underBand);
+        boolean underBandAdd = !replace && group == null && tokens.isEmpty();
         Result result = replace ? ExerciseSubstituteRanker.rank(out, candidates, ctx)
+            : underBandAdd ? ExerciseSubstituteRanker.rankForGroups(wanted, g -> preferredType(pool, inDay, g), candidates, ctx)
             : group != null ? ExerciseSubstituteRanker.rankForGroup(group, preferredType(pool, inDay), candidates, ctx)
             : ExerciseSubstituteRanker.rankForTokens(wanted, preferredType(pool, inDay), candidates, ctx);
 
@@ -143,6 +145,11 @@ public class BlockSuggestionService {
     static String preferredType(List<ExerciseCatalogEntity> pool, Set<UUID> inDay) {
         return pool.stream().anyMatch(c -> inDay.contains(c.getId()) && "compound".equals(c.getType()))
             ? "isolation" : "compound";
+    }
+
+    /** {@link #preferredType(List, Set)} judged only on the rows of one coarse group. */
+    static String preferredType(List<ExerciseCatalogEntity> pool, Set<UUID> inDay, String group) {
+        return preferredType(pool.stream().filter(c -> Objects.equals(group, MuscleGroup.of(c.getMuscle()))).toList(), inDay);
     }
 
     /** Coarse groups whose weekly sets in the stored block are below their band's low end (the run evaluation). */

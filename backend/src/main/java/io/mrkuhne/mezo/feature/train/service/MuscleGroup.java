@@ -6,14 +6,9 @@ package io.mrkuhne.mezo.feature.train.service;
 public final class MuscleGroup {
     private MuscleGroup() {}
 
-    /** The 21 fine catalogue tokens (mezo-wu1s) — what the block day editor's multi-select add may send. */
-    public static final java.util.Set<String> TOKENS = java.util.Set.of(
-        "chest-upper", "chest-mid", "chest-lower",
-        "back-wide", "back-mid", "back-lower", "traps",
-        "shoulder-front", "shoulder-side", "shoulder-rear",
-        "biceps-long", "biceps-short", "biceps-brachialis",
-        "triceps-long", "triceps-lateral", "triceps-medial",
-        "quad", "ham", "glute", "calf", "core");
+    /** The 21 fine catalogue tokens (mezo-wu1s) — what the block day editor's multi-select add may send.
+     * One source with the loader's validation set, so the two cannot drift. */
+    public static final java.util.Set<String> TOKENS = io.mrkuhne.mezo.feature.train.ExerciseCatalogLoader.MUSCLES;
 
     public static String of(String zone) {
         if (zone == null || zone.isBlank()) return zone;

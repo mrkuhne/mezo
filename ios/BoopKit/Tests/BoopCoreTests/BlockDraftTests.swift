@@ -263,6 +263,17 @@ struct BlockDraftTests {
         #expect(stable.techniqueLockLabel == nil)
     }
 
+    @Test(.timeLimit(.minutes(1))) func aCustomCompoundNeverReadsAsAFreeWeightLift() throws {
+        // Cable Row without its catalogue id: a custom compound, no kit on record.
+        let json = PlanFixtures.blocksJSON().replacingOccurrences(
+            of: #"("name":"Cable Row"[^}]*?)"catalogId":"[^"]*","#, with: "$1", options: .regularExpression)
+        let block = try JSONDecoder().decode([WireBlock].self, from: Data(json.utf8))[0]
+        let d = BlockDraft(block: block, catalog: [])
+        let custom = try #require(d.days[1].exercises.first { $0.name == "Cable Row" })
+        #expect(custom.catalogId == nil && custom.type == "compound")
+        #expect(custom.techniqueLockLabel != "szabadsúlyos alapgyakorlat")
+    }
+
     @Test func addedAndSwappedRowsReadTheServerFlag() throws {
         var d = try draft(row: #","challengeAllowed":true"#, curl: #","challengeAllowed":true"#,
                           press: #","challengeAllowed":false"#)

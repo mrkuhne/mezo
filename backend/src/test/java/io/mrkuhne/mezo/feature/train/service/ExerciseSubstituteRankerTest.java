@@ -531,13 +531,42 @@ class ExerciseSubstituteRankerTest {
     }
 
     @Test
-    void rankForTokens_shouldEqualTheTokensOrder_forOneToken() {
+    void rankForTokens_shouldEqualRankForGroupOrder_forOneTokenOfTheGroup() {
         var pool = pool(
             x("Back Extension").muscle("back-lower").type("isolation").pattern("hinge").equipment("bench"),
             x("Rack Pull").muscle("back-lower").pattern("hinge").equipment("barbell"),
             x("Seated Row").muscle("back-mid").pattern("horizontal-pull").equipment("cable"));
         var r = ExerciseSubstituteRanker.rankForTokens(Set.of("back-lower"), "compound", pool, ctx());
         assertThat(names(r)).containsExactly("Rack Pull", "Back Extension");
+        assertThat(names(r)).containsExactlyElementsOf(names(
+            ExerciseSubstituteRanker.rankForGroup("back", "compound", pool.subList(0, 2), ctx())));
         assertThat(ExerciseSubstituteRanker.rankForTokens(List.of(), "compound", pool, ctx()).suggestions()).isEmpty();
+    }
+
+    @Test
+    void rankForGroups_shouldDealByCoarseGroup_notByFineToken() {
+        var pool = pool(
+            x("Shrug").muscle("traps").type("isolation").pattern("vertical-pull").equipment("dumbbell"),
+            x("Back Extension").muscle("back-lower").type("isolation").pattern("hinge").equipment("bench"),
+            x("Seated Row").muscle("back-mid").pattern("horizontal-pull").equipment("cable"),
+            x("Leg Press").muscle("quad").pattern("squat").equipment("machine"));
+        var r = ExerciseSubstituteRanker.rankForGroups(Set.of("traps", "back-lower", "back-mid", "quad"),
+            g -> "compound", pool, ctx());
+        // back: Seated Row, Shrug, Back Extension; quad: Leg Press — groups alternate, the second back row is not an isolation shrug first.
+        assertThat(names(r).get(0)).isIn("Seated Row", "Leg Press");
+        assertThat(names(r).subList(0, 2)).containsExactlyInAnyOrder("Seated Row", "Leg Press");
+    }
+
+    @Test
+    void rankForGroups_shouldJudgeThePreferredTypePerGroup() {
+        var pool = pool(
+            x("Bench Press").muscle("chest-mid").pattern("horizontal-push").equipment("barbell"),
+            x("Cable Fly").muscle("chest-mid").type("isolation").pattern("fly").equipment("cable"),
+            x("Leg Press").muscle("quad").pattern("squat").equipment("machine"),
+            x("Leg Extension").muscle("quad").type("isolation").pattern("extension").equipment("machine"));
+        // chest already has its compound -> isolation first there; quad keeps compound first.
+        var r = ExerciseSubstituteRanker.rankForGroups(Set.of("chest-mid", "quad"),
+            g -> "chest".equals(g) ? "isolation" : "compound", pool, ctx());
+        assertThat(names(r).subList(0, 2)).containsExactlyInAnyOrder("Cable Fly", "Leg Press");
     }
 }

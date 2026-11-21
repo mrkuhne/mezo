@@ -104,7 +104,7 @@ public final class ExerciseSubstituteRanker {
                 }
             }
         }
-        return finish(out, pool, picked, labels, ctx, false);
+        return finish(out, pool, picked, labels, ctx, Spread.NONE);
     }
 
     /**
@@ -115,8 +115,8 @@ public final class ExerciseSubstituteRanker {
      * trackability → lengthened → pool position. Same labels and eligibility as {@link #rank}.
      */
     public static Result rankForGroup(String group, String preferredType, List<Candidate> pool, Context ctx) {
-        return rankSlot(c -> group != null && group.equals(MuscleGroup.of(c.muscle())), false, preferredType, pool,
-            ctx);
+        return rankSlot(c -> group != null && group.equals(MuscleGroup.of(c.muscle())), Spread.NONE, g -> preferredType,
+            pool, ctx);
     }
 
     /**
@@ -128,24 +128,43 @@ public final class ExerciseSubstituteRanker {
     public static Result rankForTokens(Collection<String> tokens, String preferredType, List<Candidate> pool,
                                        Context ctx) {
         Set<String> wanted = tokens == null ? Set.of() : Set.copyOf(tokens);
-        return rankSlot(c -> c.muscle() != null && wanted.contains(c.muscle()), true, preferredType, pool, ctx);
+        return rankSlot(c -> c.muscle() != null && wanted.contains(c.muscle()), Spread.TOKEN, g -> preferredType, pool,
+            ctx);
     }
 
+    /**
+     * The block day editor's add with nothing picked (the week's under-band groups, mezo-r36n9.127): like
+     * {@link #rankForTokens} but dealt round-robin by COARSE group (a low Hat does not give one row per fine token
+     * ahead of a better second row), and the preferred type is decided per group ({@code typeByGroup}), so a
+     * compound already on the day for one group does not push the other groups to isolation.
+     */
+    public static Result rankForGroups(Collection<String> tokens, java.util.function.Function<String, String> typeByGroup,
+                                       List<Candidate> pool, Context ctx) {
+        Set<String> wanted = tokens == null ? Set.of() : Set.copyOf(tokens);
+        return rankSlot(c -> c.muscle() != null && wanted.contains(c.muscle()), Spread.GROUP, typeByGroup, pool, ctx);
+    }
+
+    private enum Spread { NONE, TOKEN, GROUP }
+
     /** The add slot: a muscle-less, pattern-less outgoing exercise of {@code preferredType} over the matching rows. */
-    private static Result rankSlot(Predicate<Candidate> matches, boolean spread, String preferredType,
-                                   List<Candidate> pool, Context ctx) {
-        Candidate slot = new Candidate(null, null, preferredType, null, null, null, null, null, null, null, null,
-            false, true, PainLevel.NONE, false);
+    private static Result rankSlot(Predicate<Candidate> matches, Spread spread,
+                                   java.util.function.Function<String, String> typeByGroup, List<Candidate> pool,
+                                   Context ctx) {
+        Map<String, Candidate> slots = new java.util.HashMap<>();
+        java.util.function.Function<Candidate, Candidate> slotFor = c -> slots.computeIfAbsent(
+            String.valueOf(typeByGroup.apply(MuscleGroup.of(c.muscle()))),
+            t -> new Candidate(null, null, "null".equals(t) ? null : t, null, null, null, null, null, null, null, null,
+                false, true, PainLevel.NONE, false));
         Set<UUID> inWorkout = ctx.inWorkout() == null ? Set.of() : ctx.inWorkout();
         Map<UUID, Label> labels = labels(pool);
         List<Integer> picked = new ArrayList<>();
         for (int i = 0; i < pool.size(); i++) {
             Candidate c = pool.get(i);
-            if (matches.test(c) && eligible(slot, c, inWorkout, labels)) {
+            if (matches.test(c) && eligible(slotFor.apply(c), c, inWorkout, labels)) {
                 picked.add(i);
             }
         }
-        return finish(slot, pool, picked, labels, ctx, spread);
+        return finish(slotFor, pool, picked, labels, ctx, spread);
     }
 
     /** Left out of the suggestions, labelled for the full list: unavailable kit, then a recent strong pain. */
@@ -163,29 +182,35 @@ public final class ExerciseSubstituteRanker {
 
     /** Scores, orders and explains the picked pool rows against {@code out}. */
     private static Result finish(Candidate out, List<Candidate> pool, List<Integer> picked, Map<UUID, Label> labels,
-                                 Context ctx, boolean spread) {
+                                 Context ctx, Spread spread) {
+        return finish(c -> out, pool, picked, labels, ctx, spread);
+    }
+
+    private static Result finish(java.util.function.Function<Candidate, Candidate> slotFor, List<Candidate> pool,
+                                 List<Integer> picked, Map<UUID, Label> labels, Context ctx, Spread spread) {
         Set<String> painJoints = ctx.painJointsToday() == null ? Set.of() : ctx.painJointsToday();
         Set<String> underBand = ctx.underBandGroups() == null ? Set.of() : ctx.underBandGroups();
         Goal goal = goal(ctx.goalPreset());
         // Today's pain only moves or explains a place when some joint in play actually loads it.
-        boolean painRelevant = hitsPainToday(out, painJoints)
+        boolean painRelevant = picked.stream().anyMatch(i -> hitsPainToday(slotFor.apply(pool.get(i)), painJoints))
             || picked.stream().anyMatch(i -> hitsPainToday(pool.get(i), painJoints));
         boolean gentle = ctx.soreNow() || painRelevant;
         List<Scored> ordered = picked.stream()
-            .map(i -> score(out, pool.get(i), i, ctx.soreNow(), painJoints, gentle, goal))
+            .map(i -> score(slotFor.apply(pool.get(i)), pool.get(i), i, ctx.soreNow(), painJoints, gentle, goal))
             .sorted(ORDER).toList();
-        List<Ranked> suggestions = (spread ? byToken(ordered) : ordered).stream().limit(MAX_SUGGESTIONS)
+        List<Ranked> suggestions = (spread == Spread.NONE ? ordered : deal(ordered, spread)).stream().limit(MAX_SUGGESTIONS)
             .map(s -> new Ranked(s.c().id(),
-                signals(out, s.c(), ctx.soreNow(), painRelevant, painJoints, underBand, goal)))
+                signals(slotFor.apply(s.c()), s.c(), ctx.soreNow(), painRelevant, painJoints, underBand, goal)))
             .toList();
         return new Result(suggestions, Map.copyOf(labels));
     }
 
-    /** Round-robin over the fine tokens, each token in the order of its best row; within a token the order holds. */
-    private static List<Scored> byToken(List<Scored> ordered) {
+    /** Round-robin over the fine tokens (or coarse groups), each bucket in the order of its best row; within a token the order holds. */
+    private static List<Scored> deal(List<Scored> ordered, Spread spread) {
         Map<String, ArrayDeque<Scored>> buckets = new LinkedHashMap<>();
         for (Scored s : ordered) {
-            buckets.computeIfAbsent(String.valueOf(s.c().muscle()), k -> new ArrayDeque<>()).add(s);
+            String key = spread == Spread.GROUP ? MuscleGroup.of(s.c().muscle()) : s.c().muscle();
+            buckets.computeIfAbsent(String.valueOf(key), k -> new ArrayDeque<>()).add(s);
         }
         List<Scored> out = new ArrayList<>(ordered.size());
         while (out.size() < ordered.size()) {

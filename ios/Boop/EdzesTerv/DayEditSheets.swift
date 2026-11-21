@@ -375,6 +375,8 @@ struct DayEditAddSheet: View {
     @State private var showAll = false
     @State private var query = ""
     @State private var load: DayEditSuggestLoad = .idle
+    /// A re-read for the new selection is on its way: the cards on screen still belong to the old one.
+    @State private var pending = false
     @State private var rowFrame: CGRect = .zero
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -400,6 +402,7 @@ struct DayEditAddSheet: View {
                     content(taken)
                 }
                 .scrollDisabled(open)
+                .accessibilityHidden(open)
 
                 if open {
                     Color.black.opacity(0.45).ignoresSafeArea()
@@ -428,12 +431,20 @@ struct DayEditAddSheet: View {
                 try? await Task.sleep(for: .milliseconds(250))
                 if Task.isCancelled { return }
             }
-            do { load = .ready(try await model.suggest(mode: "add", day: day, muscles: picked)) } catch {
+            do {
+                let answer = try await model.suggest(mode: "add", day: day, muscles: picked)
+                // A stale answer (a later tick cancelled this read) must not win.
+                guard !Task.isCancelled else { return }
+                load = .ready(answer)
+                pending = false
+            } catch {
                 // A tick cancels this read: the next one is already on its way, not failed.
                 if Task.isCancelled { return }
                 load = .failed
+                pending = false
             }
         }
+        .onChange(of: picked) { pending = true }
     }
 
     @ViewBuilder private func content(_ taken: Set<String>) -> some View {
@@ -454,10 +465,12 @@ struct DayEditAddSheet: View {
             if !nothingLow {
                 DayEditSuggestions(load: load, taken: taken, empty: "Most nincs jó ajánlásom — nézd meg a teljes listát",
                                    header: "AJÁNLOM · A HÉT KEVÉS IZMAIRA", onPick: pick)
+                    .opacity(pending ? 0.4 : 1).disabled(pending)
             }
         } else {
             DayEditSuggestions(load: load, taken: taken,
                                empty: "Ezekre az izmokra most nincs jó ajánlásom — nézd meg a teljes listát", onPick: pick)
+                .opacity(pending ? 0.4 : 1).disabled(pending)
         }
         let mine = none ? pool : pool.filter { picked.contains(($0.muscle ?? "").lowercased()) }
         DayEditFullList(showAll: $showAll, query: $query, forced: load == .failed,
@@ -680,7 +693,11 @@ struct DayEditSwapSheet: View {
             }
             .task(id: rowId) {
                 load = .loading
-                do { load = .ready(try await model.suggest(mode: "replace", day: at.day, outgoing: row)) } catch {
+                do {
+                    let answer = try await model.suggest(mode: "replace", day: at.day, outgoing: row)
+                    guard !Task.isCancelled else { return }
+                    load = .ready(answer)
+                } catch {
                     if Task.isCancelled { return }
                     load = .failed
                 }

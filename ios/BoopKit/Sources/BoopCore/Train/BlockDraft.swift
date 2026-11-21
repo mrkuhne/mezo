@@ -247,7 +247,8 @@ public struct DraftExercise: Identifiable, Equatable, Sendable {
     /// picker. A free-weight compound says so; any other locked row keeps the old wording.
     public var techniqueLockLabel: String? {
         guard allowedTechniques == [.none], !canTakeChallenge else { return nil }
-        return type == "compound" ? "szabadsúlyos alapgyakorlat" : "szabadsúly · nincs technika"
+        // Only a catalogue row can be known as a free-weight lift: a custom compound (no kit on record) is not one.
+        return type == "compound" && catalogId != nil ? "szabadsúlyos alapgyakorlat" : "szabadsúly · nincs technika"
     }
 
     /// Why a technique is not offered on this exercise, in his words; nil when it is.
