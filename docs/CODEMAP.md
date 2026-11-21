@@ -1294,7 +1294,8 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `RecoveryDayReleaseEntity`→`recovery_day_release`, `RecoveryPeriodEntity`→`recovery_period`,
     `RunSessionLogEntity`→`run_session_log`, `RunningBlockEntity`→`running_block`, `SportEventEntity`→`sport_event`,
     `SportScheduleSlotEntity`→`sport_schedule_slot`, `SportSessionEntity`→`sport_session`,
-    `SportSlotSkipEntity`→`sport_slot_skip`, `WorkoutDayAdjustmentEntity`→`workout_day_adjustment`,
+    `SportSlotSkipEntity`→`sport_slot_skip`, `TrainingYearBlockEntity`→`training_year_block`,
+    `TrainingYearPlanEntity`→`training_year_plan`, `WorkoutDayAdjustmentEntity`→`workout_day_adjustment`,
     `WorkoutSessionEntity`→`workout_session`, `WorkoutTimingProfileEntity`→`workout_timing_profile`
   - **repositories:** `ExerciseCatalogRepository`, `ExerciseDiscomfortRepository`, `ExerciseFeedbackRepository`,
     `ExerciseRepository`, `ExerciseSetLegRepository`, `ExerciseSetRepository`, `ExerciseWeightGapRepository`,
@@ -1302,8 +1303,8 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `MesocycleReportRepository`, `MesocycleRepository`, `MuscleGroupVolumeLogRepository`, `PlannedSkipRepository`,
     `ReadinessChoiceRepository`, `RecoveryDayReleaseRepository`, `RecoveryPeriodRepository`, `RunSessionLogRepository`,
     `RunningBlockRepository`, `SportEventRepository`, `SportScheduleSlotRepository`, `SportSessionRepository`,
-    `SportSlotSkipRepository`, `WorkoutDayAdjustmentRepository`, `WorkoutSessionRepository`,
-    `WorkoutTimingProfileRepository`
+    `SportSlotSkipRepository`, `TrainingYearBlockRepository`, `TrainingYearPlanRepository`,
+    `WorkoutDayAdjustmentRepository`, `WorkoutSessionRepository`, `WorkoutTimingProfileRepository`
   - **services:** `ActivityEnergyModel`, `AthleteBodyPort`, `BlockSuggestionService`, `CandidateRanker`,
     `CatalogAttributes`, `CatalogMediaResolver`, `ClosingBlockService`, `ComebackRamp`, `DayCheckInPort`,
     `DiscomfortHistory`, `E1rmSeries`, `EffortRamp`, `EnergyBalancePort`, `EvaluatorTechniques`, `EwmaEstimator`,
@@ -1336,7 +1337,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   - **mappers:** `MesoReportMapper`, `RunningMapper`, `TrainMapper`, `WeekProposalMapper`
   - **config:** `ClosingBlockProperties`, `HypertrophyProperties`, `MesoPlanProperties`, `ReadinessProperties`,
     `TimingProperties`, `TrainProperties`, `TrainStyleProperties`, `TrainSubstituteProperties`,
-    `TrainTechniqueProperties`, `VolumeProperties`
+    `TrainTechniqueProperties`, `VolumeProperties`, `YearPlanProperties`
   - **events/listeners:** `MesocycleClosed`
   - **other:** `ClosingBlockGate`, `ExerciseCatalogLoader`, `GymExerciseJson`, `HypertrophyDriveGate`,
     `MesoContextJson`, `MesoDayJson`, `MesoReportJson`, `MesoReviewGate`, `MesocycleActivated`, `ProvenanceEnvelope`,
@@ -1385,7 +1386,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     POST /api/train/running-blocks · PUT /api/train/running-blocks/{id} · DELETE /api/train/running-blocks/{id} ·
     POST /api/train/running-blocks/{id}/activate · POST /api/train/running-blocks/{id}/close ·
     GET /api/train/run-sessions · POST /api/train/run-sessions · GET /api/train/timing-profile
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 136 IT + 56 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 138 IT + 56 unit
   - **ITs:** `BlockExerciseSuggestionsIT`, `CatalogMediaResolutionIT`, `CatalogWriteContractIT`, `ClosingBlockIT`,
     `ClosingBlockSwitchOffIT`, `ClosingBlockVolumeFlagIT`, `ComebackTodayIT`, `CrossDayWorkoutIT`, `CustomWorkoutIT`,
     `ExerciseCatalogContractIT`, `ExerciseCatalogLoaderIT`, `ExerciseCatalogPermissionIT`, `ExerciseCatalogSlugRaceIT`,
@@ -1406,24 +1407,24 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `SetRecommendationServiceIT`, `SportContractIT`, `SportEventContractIT`, `SportServiceIT`, `SportSessionRangeIT`,
     `SportSlotSkipContractIT`, `SportSlotSkipPersistenceIT`, `TechniqueAiRefinerIT`, `TechniqueExclusionIT`,
     `TechniquePlanServiceIT`, `TimingProfileIT`, `TimingProfileSwitchOffIT`, `TrainContractIT`, `TrainSeedDataIT`,
-    `TrainServiceIT`, `TrainStylePropertiesIT`, `TrainTechniquePropertiesIT`, `VolumeAmountMigrationRunnerIT`,
-    `VolumeArcContractIT`, `VolumeArcVolumeFlagIT`, `VolumeLedgerIT`, `VolumeLedgerSwitchOffIT`,
-    `VolumeProgressionTierIT`, `VolumePropertiesIT`, `WarmupExclusionIT`, `WeekProposalApiAutoIT`, `WeekProposalApiIT`,
-    `WeekProposalAutoIT`, `WeekProposalAutoSwitchOffIT`, `WeekProposalDaySaveIT`, `WeekProposalLoadLinesIT`,
-    `WeekProposalLoadLinesSwitchOffIT`, `WeekProposalManualIT`, `WeekProposalRunModeIT`, `WeekProposalStallFailureIT`,
-    `WeekProposalStallIT`, `WeekProposalTechniqueIT`, `WeekProposalTierChangeApiIT`, `WeekProposalTierChangeIT`,
-    `WeekProposalTierIT`, `WeeklyPinIT`, `WeeklyScheduledActivityServiceIT`, `WeeklyScheduledActivityTrainingDaysIT`,
-    `WeeklySignalReaderIT`, `WorkoutAutoCloseIT`, `WorkoutClosingNoteApiIT`, `WorkoutContractIT`,
-    `WorkoutDayAdjustmentPersistenceIT`, `WorkoutDetailContractIT`, `WorkoutDoneSemanticsIT`,
-    `WorkoutExerciseChangeIT`, `WorkoutFinishNoLevelUpApiIT`, `WorkoutPlannedMuscleGroupsIT`, `WorkoutServiceIT`,
-    `WorkoutSessionRepositoryChallengeIT`, `WorkoutSetMutationIT`, `WorkoutTimingBackfillIT`, `WorkoutTimingIT`,
-    `WorkoutTodayAmountIT`, `WorkoutTodayAmountSwitchOffIT`, `WorkoutTodayPrescriptionIT`, `WorkoutTodayProgressionIT`,
-    `WorkoutTodayStyleIT`, `WorkoutTodayStyleSwitchOffIT`, `WorkoutTodayTechniqueIT`, `WorkoutWeightGapIT`,
-    `WorkoutWindowQueryServiceIT`
+    `TrainServiceIT`, `TrainStylePropertiesIT`, `TrainTechniquePropertiesIT`, `TrainingYearPlanRepositoryIT`,
+    `VolumeAmountMigrationRunnerIT`, `VolumeArcContractIT`, `VolumeArcVolumeFlagIT`, `VolumeLedgerIT`,
+    `VolumeLedgerSwitchOffIT`, `VolumeProgressionTierIT`, `VolumePropertiesIT`, `WarmupExclusionIT`,
+    `WeekProposalApiAutoIT`, `WeekProposalApiIT`, `WeekProposalAutoIT`, `WeekProposalAutoSwitchOffIT`,
+    `WeekProposalDaySaveIT`, `WeekProposalLoadLinesIT`, `WeekProposalLoadLinesSwitchOffIT`, `WeekProposalManualIT`,
+    `WeekProposalRunModeIT`, `WeekProposalStallFailureIT`, `WeekProposalStallIT`, `WeekProposalTechniqueIT`,
+    `WeekProposalTierChangeApiIT`, `WeekProposalTierChangeIT`, `WeekProposalTierIT`, `WeeklyPinIT`,
+    `WeeklyScheduledActivityServiceIT`, `WeeklyScheduledActivityTrainingDaysIT`, `WeeklySignalReaderIT`,
+    `WorkoutAutoCloseIT`, `WorkoutClosingNoteApiIT`, `WorkoutContractIT`, `WorkoutDayAdjustmentPersistenceIT`,
+    `WorkoutDetailContractIT`, `WorkoutDoneSemanticsIT`, `WorkoutExerciseChangeIT`, `WorkoutFinishNoLevelUpApiIT`,
+    `WorkoutPlannedMuscleGroupsIT`, `WorkoutServiceIT`, `WorkoutSessionRepositoryChallengeIT`, `WorkoutSetMutationIT`,
+    `WorkoutTimingBackfillIT`, `WorkoutTimingIT`, `WorkoutTodayAmountIT`, `WorkoutTodayAmountSwitchOffIT`,
+    `WorkoutTodayPrescriptionIT`, `WorkoutTodayProgressionIT`, `WorkoutTodayStyleIT`, `WorkoutTodayStyleSwitchOffIT`,
+    `WorkoutTodayTechniqueIT`, `WorkoutWeightGapIT`, `WorkoutWindowQueryServiceIT`, `YearPlanPropertiesBindingIT`
   - **populators:** `BiometricProfilePopulator`, `CheckInPopulator`, `DatabasePopulator`, `GoalPopulator`,
     `MesoTemplatePopulator`, `PlannedSkipPopulator`, `ReadinessChoicePopulator`, `RecoveryPeriodPopulator`,
-    `RunningPopulator`, `SleepLogPopulator`, `SportSlotSkipPopulator`, `TrainPopulator`, `UserPopulator`,
-    `WeightLogPopulator`, `WorkoutDayAdjustmentPopulator`
+    `RunningPopulator`, `SleepLogPopulator`, `SportSlotSkipPopulator`, `TrainPopulator`, `TrainingYearPlanPopulator`,
+    `UserPopulator`, `WeightLogPopulator`, `WorkoutDayAdjustmentPopulator`
 
 ### wearable
 
@@ -1481,9 +1482,9 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   `PlannedSkipPopulator`, `PredictionPopulator`, `ProtocolPopulator`, `ProtocolPopulatorIT`,
   `ReadinessChoicePopulator`, `RecipePopulator`, `RecoveryPeriodPopulator`, `RitualPopulator`, `RunningPopulator`,
   `SleepGoalPopulator`, `SleepLogPopulator`, `SportSlotSkipPopulator`, `SupplementIntakePopulator`,
-  `TextSignalPopulator`, `TrainPopulator`, `UsageSeamIT`, `UserPopulator`, `WaterLogPopulator`,
-  `WearableWorkoutPopulator`, `WeeklyReviewPopulator`, `WeeklyScorePopulator`, `WeeklySuggestionPopulator`,
-  `WeightLogPopulator`, `WorkoutDayAdjustmentPopulator`, `WorkoutTimeOverridePopulator`
+  `TextSignalPopulator`, `TrainPopulator`, `TrainingYearPlanPopulator`, `UsageSeamIT`, `UserPopulator`,
+  `WaterLogPopulator`, `WearableWorkoutPopulator`, `WeeklyReviewPopulator`, `WeeklyScorePopulator`,
+  `WeeklySuggestionPopulator`, `WeightLogPopulator`, `WorkoutDayAdjustmentPopulator`, `WorkoutTimeOverridePopulator`
 - **`ResetDatabase` TRUNCATE list** — 1 tables; a new owned domain table MUST be added here in the same change:
   - **tables:** `character_council_quota`
 
