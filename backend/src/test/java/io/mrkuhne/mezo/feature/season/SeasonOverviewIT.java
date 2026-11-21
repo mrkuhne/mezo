@@ -72,6 +72,7 @@ class SeasonOverviewIT extends AbstractIntegrationTest {
         assertThat(o.getAdherence()).isNotNull();
         assertThat(o.getAdherence().getSessionsPlanned()).isEqualTo(6);
         assertThat(o.getAdherence().getTrainingPlanned()).isEqualTo(4);
+        assertThat(o.getPillars().getFood().getTrainSportDayKcal()).isGreaterThan(o.getPillars().getFood().getTrainDayKcal());
         assertThat(o.getAdherence().getSportPlanned()).isEqualTo(2);
         assertThat(o.getAdherence().getSessionsDone()).isZero();
         assertThat(o.getAdherence().getFoodJudged()).isZero();

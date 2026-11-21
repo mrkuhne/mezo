@@ -38704,6 +38704,10 @@ components:
       properties:
         trainDayKcal:
           type: integer
+        trainSportDayKcal:
+          type: integer
+          nullable: true
+          description: A gym + sport day (both sessions); null when no weekday carries both
         restDayKcal:
           type: integer
           nullable: true

@@ -128,7 +128,7 @@ public class SeasonOverviewService {
             .pillars(SeasonPillars.builder()
                 .block(blockPillar(s, draft, block))
                 .food(SeasonFoodPillar.builder()
-                    .trainDayKcal(n.trainDayKcal()).restDayKcal(n.restDayKcal()).proteinG(n.proteinG())
+                    .trainDayKcal(n.trainDayKcal()).trainSportDayKcal(n.trainSportDayKcal()).restDayKcal(n.restDayKcal()).proteinG(n.proteinG())
                     .allowedCount((int) allowedRepository.countBySeasonId(s.getId()))
                     .recipeCount((int) metricsPort.recipeCount(owner))
                     .novaMax(s.getProcessedFoodMaxNova())

@@ -157,10 +157,12 @@ public struct EvadNumbers: Codable, Equatable, Hashable, Sendable {
     public let paceVerdict: String?
     public let kgPerWeek: Double?
     public let band: EvadBand?
-    /// The week's total planned intake (training days × their kcal + rest days × theirs); nil when not computed.
+    /// The week's total planned intake: the seven weekdays' targets, each with its own sessions; nil when not computed.
     public let weekKcal: Int?
     public let gymPerWeek: Int?
     public let sportPerWeek: Int?
+    /// A gym + sport day's target (both sessions); nil when no weekday carries both, or an older server.
+    public let trainSportDayKcal: Int?
 }
 
 public struct EvadTodo: Codable, Equatable, Hashable, Sendable {
@@ -278,6 +280,8 @@ public struct EvadBlockPillar: Codable, Equatable, Sendable {
 
 public struct EvadFoodPillar: Codable, Equatable, Sendable {
     public let trainDayKcal: Int?
+    /// A gym + sport day (both sessions); nil when no weekday carries both.
+    public let trainSportDayKcal: Int?
     public let restDayKcal: Int?
     public let proteinG: Int?
     public let allowedCount: Int?
@@ -312,11 +316,35 @@ public struct EvadPillars: Codable, Equatable, Sendable {
 public struct EvadAdherence: Codable, Equatable, Sendable {
     public let foodInBand: Int
     public let foodJudged: Int
+    /// training + sport — a gym + sport day counts two.
     public let sessionsDone: Int
     public let sessionsPlanned: Int
     public let nightsOk: Int
     public let nightsJudged: Int
     public let excusedDays: Int
+    /// Gym and block-run sessions; nil from an older server (then only the total is known).
+    public let trainingDone: Int?
+    public let trainingPlanned: Int?
+    public let sportDone: Int?
+    public let sportPlanned: Int?
+
+    public init(foodInBand: Int, foodJudged: Int, sessionsDone: Int, sessionsPlanned: Int, nightsOk: Int,
+                nightsJudged: Int, excusedDays: Int, trainingDone: Int? = nil, trainingPlanned: Int? = nil,
+                sportDone: Int? = nil, sportPlanned: Int? = nil) {
+        self.foodInBand = foodInBand; self.foodJudged = foodJudged; self.sessionsDone = sessionsDone
+        self.sessionsPlanned = sessionsPlanned; self.nightsOk = nightsOk; self.nightsJudged = nightsJudged
+        self.excusedDays = excusedDays; self.trainingDone = trainingDone; self.trainingPlanned = trainingPlanned
+        self.sportDone = sportDone; self.sportPlanned = sportPlanned
+    }
+}
+
+/// One planned session of a day (`SeasonAdherenceSession`): `kind` gym · sport · run; `done` nil when excused or
+/// today or later.
+public struct EvadDaySession: Codable, Equatable, Sendable {
+    public let kind: String
+    public let excused: Bool
+    public let done: Bool?
+    public init(kind: String, excused: Bool, done: Bool?) { self.kind = kind; self.excused = excused; self.done = done }
 }
 
 /// One day as the server judges it (`SeasonAdherenceDay`, `GET /api/seasons/adherence`) — the single source of day
@@ -325,9 +353,9 @@ public struct EvadAdherenceDay: Codable, Equatable, Sendable {
     public let date: String
     /// The food side counts: not today, not a kímélő day, something logged.
     public let judged: Bool
-    /// A kímélő day or a reasoned skip — left out of every count.
+    /// A kímélő day — left out of every count (a reasoned skip excuses only its own session).
     public let excused: Bool
-    /// `kimelo` · `skip`; nil when not excused.
+    /// `kimelo` · `skip`; nil when nothing is excused.
     public let excuse: String?
     public let kcal: Int?
     public let targetKcal: Int?
@@ -337,13 +365,18 @@ public struct EvadAdherenceDay: Codable, Equatable, Sendable {
     public let sleepMin: Int?
     public let needMin: Int?
     public let sleepOk: Bool?
+    /// `edzesnap` · `sport` · `edzes_sport` (two sessions) · `pihenonap`; nil from an older server.
+    public let dayKind: String?
+    /// One per planned session kind; a gym + sport day has two. Empty from an older server.
+    public let sessions: [EvadDaySession]
 
     public init(date: String, judged: Bool, excused: Bool, excuse: String?, kcal: Int? = nil, targetKcal: Int? = nil,
                 foodInBand: Bool? = nil, sessionPlanned: Bool = false, sessionDone: Bool? = nil, sleepMin: Int? = nil,
-                needMin: Int? = nil, sleepOk: Bool? = nil) {
+                needMin: Int? = nil, sleepOk: Bool? = nil, dayKind: String? = nil, sessions: [EvadDaySession] = []) {
         self.date = date; self.judged = judged; self.excused = excused; self.excuse = excuse; self.kcal = kcal
         self.targetKcal = targetKcal; self.foodInBand = foodInBand; self.sessionPlanned = sessionPlanned
         self.sessionDone = sessionDone; self.sleepMin = sleepMin; self.needMin = needMin; self.sleepOk = sleepOk
+        self.dayKind = dayKind; self.sessions = sessions
     }
 
     public init(from decoder: Decoder) throws {
@@ -360,6 +393,8 @@ public struct EvadAdherenceDay: Codable, Equatable, Sendable {
         sleepMin = try c.decodeIfPresent(Int.self, forKey: .sleepMin)
         needMin = try c.decodeIfPresent(Int.self, forKey: .needMin)
         sleepOk = try c.decodeIfPresent(Bool.self, forKey: .sleepOk)
+        dayKind = try c.decodeIfPresent(String.self, forKey: .dayKind)
+        sessions = try c.decodeIfPresent([EvadDaySession].self, forKey: .sessions) ?? []
     }
 }
 

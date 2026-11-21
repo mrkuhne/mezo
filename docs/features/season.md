@@ -52,10 +52,12 @@ The phone side lives in [`boop-ios.md`](boop-ios.md) §2 *Évad*; in short:
 - **Évad tab** — head (orb filled to *week / N*, eyebrow „Őszi fogyás · 12 hétből a 7.", a serif verdict chosen from
   the overview's `head.status`), **Mi mire hat** (the four pillars Edzés · Étel · Alvás · Súly with the computed
   links; a tap lights one), **Súly** (trend + target line, or a ±1 kg band for a maintain season), **Az évad terve**
-  (block + sport days, training/rest-day kcal + protein, sleep need + bedtime, target + date), **Következik** (deload
+  (block + sport days, training/rest-day kcal + protein — plus „edzés + sport napon N kcal" when a weekday carries both, sleep need + bedtime, target + date), **Következik** (deload
   weeks of the block, the season end), actions *Módosítás* · *Új évad*.
 - **Hogy megy** (S2) — the last seven days ending yesterday as plain counts, never a score: „4 / 5 napon belefértél a
-  keretbe", „3 / 4 edzés megvolt", „4 / 7 éjjel aludtál eleget" (for example). A fact with nothing to count is left out
+  keretbe", „3 / 4 edzés megvolt", „1 / 2 sport megvolt", „4 / 7 éjjel aludtál eleget" (for example) — training (gym +
+  block runs) and sport are counted apart, so a gym + sport day is one of each (mezo-r36n9.131; an older server's total
+  alone shows as „edzés"). A fact with nothing to count is left out
   (never „0 / 0"); a line under them says how many kímélő days were left out („1 kímélő nap nem számít bele. Ez nem
   pontszám, csak összesítés."). The block is absent when the overview's `adherence` is null.
 - **Amit Boop észrevett** (S2) — at most three insights, each only past its data gate (§3.8).
@@ -64,7 +66,7 @@ The phone side lives in [`boop-ios.md`](boop-ios.md) §2 *Évad*; in short:
 - **Ma wall** (S2) — the `evad` source adds at most two cards (§3.10).
 - **Menü · Lista · Hatás** tabs show the "not live yet" card until S3 / S4.
 - **Módosítás** — sessions per week, sport days, weekly pace → *Ennyi változna* (Most | Utána: Edzésnapon,
-  Pihenőnapon or „nincs pihenőnap", Szénhidrát edzésnapon, **Heti összesen**, Alvásigény, Lefekvés, Célba érsz / A
+  *Edzés + sport napon* (only when either side has such a day), Pihenőnapon or „nincs pihenőnap", Szénhidrát edzésnapon, **Heti összesen**, Alvásigény, Lefekvés, Célba érsz / A
   tempó or A sáv), red guard lines, *Ehhez ezt kell tenned*, *Elfogadom* / *Mégsem*. **While the season's block runs
   the gym days are locked** (the *Edzések hetente* stepper is disabled, a line says why); sport days, pace and gym time stay editable.
 - **Szabályok** — the season's switches (NOVA rule, Sunday menu, deload-maintain, learned expenditure, experiments) and
@@ -118,13 +120,20 @@ the bootstrap and in every projected segment; the running block's EAT is still a
 [`goal-engine.md`](goal-engine.md) §3 *Draft calculation*.
 
 - `SeasonNumbers` = `trainDayKcal`, `restDayKcal` (null when gym ∪ sport cover all seven weekdays), `proteinG`,
-  `carbsTrainG`, **`weekKcal`** (trainDayKcal × active days + restDayKcal × rest days; active = distinct weekdays with
-  gym or sport), `sleepNeedMin`, `bedtime`, cut/bulk only: `targetDate`, `weeksToTarget`, `paceVerdict`,
+  `carbsTrainG`, **`weekKcal`** (the seven weekdays' served targets, each projected through `DayTargetProjector` with
+  that weekday's own movement — a gym day its gym session, a sport day its sport slots, a gym + sport day both; a rest day
+  the rest target), **`trainSportDayKcal`** (a gym + sport day's target — the largest such weekday; null when no weekday
+  carries both, and in revision snapshots written before mezo-r36n9.131), `sleepNeedMin`, `bedtime`, cut/bulk only: `targetDate`, `weeksToTarget`, `paceVerdict`,
   `kgPerWeek`; maintain only: `bandLowKg` / `bandHighKg` (start ± 1 kg); `gymPerWeek`, `sportPerWeek`.
 - **Each day's own target is base + that day's movement + the goal balance** (the served-target model of mezo-tb3s2,
   `DayTargetProjector`). So adding a 5th session turns a rest day into a training day — it raises **the week total**,
   the sleep need and moves the bedtime, but it does **not** raise the training-day kcal. The preview shows exactly
-  what the day will serve; `weekKcal` is what makes the change visible as food.
+  what the day will serve; `weekKcal` is what makes the change visible as food. **A gym + sport day serves both
+  sessions' energy** (Fuel credits every logged session — `WorkoutWindowQueryService.movementBetween` sums planned and
+  extra kcal of all kinds — so no Fuel change was needed, mezo-r36n9.131); the preview prices it through
+  `SeasonTrainPort.weekdayMovementKcal` / `trainSportDayMovementKcal` (each slot at whole kcal via `draftSlotKcal`,
+  the way `trainDayMovementKcal` prices a gym day) and the goal adapter projects it (`DraftTargets.trainSportDay`,
+  `weekKcal`). The overview's food pillar carries `trainSportDayKcal` too.
 - `todo[]` — `SeasonTodoRules` (pure, fixed order: food ≥ ±40 kcal on a training day, earlier bedtime, block re-plan
   when the gym-day count changes, season length, sport days, mid-week menu re-fit — the last always off before S3).
 - `warnings[]` — strength guard, cut pace (`aggressive` or over the rate cap), muscles under their weekly volume floor
@@ -238,24 +247,33 @@ kcal and the kímélő mark are the same numbers on both surfaces. Per day:
   which the phone keeps as its offline fallback.
 - **foodInBand** = judged and |kcal − target| ≤ **10 %** of the day's served target — symmetric. (The Hét tab's amber
   warning pill still fires only **over 110 %**; the band is the summary's notion, the pill is a different signal.)
-- **sessionPlanned** = a weekly gym / sport slot on that weekday, or a `run` window of the running block that day
-  (`WorkoutWindowQueryService`), or a reasoned skip that day — **one flag per day**. **sessionDone** = a completed
-  workout instance, a sport session or a run log that date; null when nothing was planned, the session was skipped with
-  a reason, the day is kímélő, or it is today or later.
+- **sessions** (mezo-r36n9.131) = one entry per planned session **kind** of the day — `gym` (a weekly gym slot on that
+  weekday), `sport` (a weekly sport slot), `run` (a `run` window of the running block, `WorkoutWindowQueryService`) —
+  plus any kind skipped with a reason that day. **A gym + sport day carries two sessions.** Each session is `done` when a
+  session **of its own kind** exists that date (a completed workout instance / a sport session / a run log); `done` is
+  null when that session is excused (its own reasoned skip, or a kímélő day) or the date is today or later. Two slots
+  of the same kind on one day are still one session. **dayKind** = `SeasonDayKind` of the planned kinds: `edzesnap`
+  (gym or run), `sport`, `edzes_sport` (both), `pihenonap` — the same keys as the S3 menu planner's day kinds.
+- **sessionPlanned** = at least one session planned; **sessionDone** = every judged session done (null when none was
+  judged). Kept for older readers; the counts read `sessions`.
 - **sleepOk** = the night's minutes (`sleep_log`, the night ending that morning) ≥ **need − 15 min**; the need is the
   active season's `sleep_need_min`, else his sleep goal **only when set** — null when neither exists (never a default).
   A range ending today never judges today's night (the night is not over until the day is judged).
 - **excused** = a **kímélő day only** (`excuse: kimelo`): it leaves **every** count of the summary (food, sessions and
   nights) and is counted in `excusedDays`. A reasoned gym / sport / run skip (`excuse: skip`, `excused: false`)
-  excuses **only the session** (`sessionDone` null, out of `sessionsPlanned`); that day's food and night still count.
+  excuses **only that session** (its `done` null, out of the session counts); that day's other session, its food and
+  its night still count.
 
-Summary = `foodInBand / foodJudged`, `sessionsDone / sessionsPlanned`, `nightsOk / nightsJudged`, `excusedDays`.
+Summary = `foodInBand / foodJudged`, `sessionsDone / sessionsPlanned` (= training + sport), `trainingDone /
+trainingPlanned` (gym + run sessions), `sportDone / sportPlanned`, `nightsOk / nightsJudged`, `excusedDays`. The
+`[Évad]` AI line reads „edzés 3/4, sport 1/2" (sport only when some was planned).
 Range: inclusive, `to ≥ from`, **at most 62 days**, else 400 `VALIDATION_INVALID_VALUE` (field `to`).
 `lastWeek(owner, today)` = the seven days ending yesterday, empty when nothing at all could be judged.
 
-**Known limitations:** (1) planned sessions are read from **today's** weekly slots (and the running block's run
-windows), not from what the schedule was on that day — a schedule change re-labels past days; (2) one flag per day —
-gym and sport planned on the same day count as **one** planned session (and one done).
+**Known limitation:** planned sessions are read from **today's** weekly slots (and the running block's run windows),
+not from what the schedule was on that day — a schedule change re-labels past days. (The former second limitation —
+one flag per day, so a gym + sport day counted once — is fixed by mezo-r36n9.131.) A session of the other kind does
+not stand in: a volleyball game on a gym-only day does not tick the gym session.
 
 ### 3.8 Insights — „Amit Boop észrevett" (S2, spec §5.6)
 
@@ -457,7 +475,9 @@ the server's kímélő day and judged flag win, a day the server did not answer 
   dated schedule history; not built.
 - **Kímélő excuses the day, a skip excuses the session:** only a kímélő day leaves every count (and `excusedDays`); a
   reasoned skip takes just that day's session out — its food and night are still judged (owner review, 2026-11-21).
-- **One planned session per day** (§3.7): gym + sport on the same day are one flag, so a two-session day counts once.
+- **Sessions per kind, not per day** (§3.7, mezo-r36n9.131): a gym + sport day is two sessions everywhere (adherence,
+  the summary, Hogy megy, the `[Évad]` line, the preview's week total). Any new day judgement must read `sessions`, not
+  the legacy `sessionPlanned`/`sessionDone` pair.
 - **The renderer never throws** and leaves out what it cannot compute; adding a line must keep that (a context
   failure would break every chat turn).
 - **Per-turn cost** of the `[Évad]` block (§3.9): one read-only engine computation per chat turn / brief / coach call
