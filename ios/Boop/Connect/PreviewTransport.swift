@@ -10,6 +10,8 @@ struct PreviewTransport: ClientTransport {
     /// What the review has changed so far (DEBUG preview only): a moved session and the judged observations.
     nonisolated(unsafe) private static var movedTime: String?
     nonisolated(unsafe) private static var decided: Set<String> = []
+    /// B7: his event labels in the review (event key → drains | neutral | feeds).
+    nonisolated(unsafe) private static var capacityLabels: [String: String] = [:]
     /// Today's Boop conversation in the review (role, text); `-previewOpen chatAnswer` starts with one answered question.
     nonisolated(unsafe) private static var chatTurns: [(String, String)] =
         UserDefaults.standard.string(forKey: "previewOpen") == "chatAnswer" ? [("user", tiredQuestion), ("assistant", answers[tiredQuestion]!)] : []
@@ -572,6 +574,10 @@ struct PreviewTransport: ClientTransport {
         case "listCheckInsForDay": return json(pastCheckIns(on: queryDate(request)))
         case "generateDayCloseLine":
             return json(#"{"line":"Jó nap volt: a prezentáció sikerült, a fehérje és az edzés is megvolt. Délután leeresztettél, de estére összeszedted magad."}"#)
+        case "putCapacityEventFeedback":
+            let obj = (try? JSONSerialization.jsonObject(with: Data(sent.utf8))) as? [String: String]
+            if let key = obj?["eventKey"], let effect = obj?["effect"] { capacityLabels[key] = effect }
+            return (HTTPResponse(status: .noContent), nil)
         case "clearSessionTime":
             movedTime = nil
             return (HTTPResponse(status: .noContent), nil)
@@ -1168,8 +1174,44 @@ struct PreviewTransport: ClientTransport {
           "intention":{"creed":"Egyenletesen, nem erőből.","foci":["Nyugodt tempó","Vizet inni"]},
           "observations":[\#(observations)],
           "calendar":{"count":2,"busySlots":[\#(slots)]},
-          "weight":{"kg":78.4,"trendKg":78.1},"recovery":\#(recovery)}}
+          "weight":{"kg":78.4,"trendKg":78.1},"recovery":\#(recovery)}\#(previewCapacity(date: date))}
         """#
+    }
+
+    /// B7 `-previewCapacity szoros|tulSok|laza|nocal`: the brief's capacity block on invented figures (absent without
+    /// the switch, so every older review looks as it did). `nocal` = no calendar: only the session and the body.
+    /// A label sent from the day page re-scores its row here as the server would (feeds → „tölt").
+    private static func previewCapacity(date: String) -> String {
+        guard let mode = UserDefaults.standard.string(forKey: "previewCapacity") else { return "" }
+        let verdict = ["tulSok", "laza", "rendben"].contains(mode) ? mode : "szoros"
+        let ratio = ["tulSok": "1.18", "laza": "0.45", "rendben": "0.75"][verdict] ?? "0.94"
+        func level(_ key: String, _ base: String) -> String {
+            switch capacityLabels[key] {
+            case "feeds": "tolt"
+            case "neutral": "kicsi"
+            case "drains": base == "kicsi" || base == "tolt" ? "kozepes" : base
+            default: base
+            }
+        }
+        let calendar = mode != "nocal"
+        var demand: [String] = []
+        if calendar {
+            demand.append(#"{"label":"Négy megbeszélés egymás után","start":"\#(date)T08:00:00Z","kind":"meeting","level":"\#(level("prev-cal-1", "nagy"))","eventKey":"prev-cal-1"}"#)
+            demand.append(#"{"label":"1:1 Petrával","start":"\#(date)T14:00:00Z","kind":"social","level":"\#(level("prev-cal-2/x:y", "kicsi"))","eventKey":"prev-cal-2/x:y"}"#)
+        }
+        demand.append(#"{"label":"Vállak és hát","start":"\#(date)T16:30:00Z","kind":"training","level":"kozepes","eventKey":null}"#)
+        if calendar {
+            demand.append(#"{"label":"Vacsora a családdal","start":"\#(date)T18:30:00Z","kind":"social","level":"\#(level("prev-cal-3", "tolt"))","eventKey":"prev-cal-3"}"#)
+        }
+        let factors = [
+            #"{"key":"sleep","label":"Alvás","value":"6 ó 05 p · kevesebb a szokásosnál","effect":"rossz"}"#,
+            #"{"key":"rhr","label":"Pihenő pulzus","value":"58 · kicsit magasabb a szokásosnál","effect":"rossz"}"#,
+            #"{"key":"yesterday","label":"Tegnapi edzés","value":"pihenőnap volt","effect":"jo"}"#,
+            #"{"key":"fuel","label":"Tegnapi evés","value":"a keretben, elég fehérje","effect":"jo"}"#,
+            #"{"key":"checkin","label":"Reggeli bejelentkezés","value":"energia 6 / 10 · fejtisztaság 5 / 10","effect":"semleges"}"#,
+        ].joined(separator: ",")
+        let reason = calendar ? "rövid éjszaka · 4 megbeszélés délelőtt · edzés este" : "rövid éjszaka · edzés este"
+        return #","capacity":{"verdict":"\#(verdict)","reason":"\#(reason)","ratio":\#(ratio),"tanulo":true,"labelledDays":9,"calendarKnown":\#(calendar),"demand":[\#(demand.joined(separator: ","))],"factors":[\#(factors)]}"#
     }
 }
 #endif

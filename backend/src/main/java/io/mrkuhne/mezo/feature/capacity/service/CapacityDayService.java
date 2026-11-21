@@ -192,7 +192,8 @@ public class CapacityDayService {
                 continue;
             }
             items.add(new TimedDemand(e.start(), e.end(), s.mental(), s.social(), s.physical(), s.restores(),
-                e.title() == null ? "" : e.title(), s.kind()));
+                e.title() == null ? "" : e.title(), s.kind(),
+                e.externalId() == null ? null : EventScoringService.eventKey(e.externalId())));
         }
         for (Session s : sessions) {
             // a past planned session that was never logged did not happen; from the asked day on, the plan counts

@@ -11,6 +11,8 @@ key_files:
   - backend/src/main/resources/db/changelog/1.1.0/script
   - api/feature/boop/boop.yml
   - api/feature/wearable/wearable.yml
+  - api/feature/capacity/capacity.yml
+  - ios/Boop/Nap/DayCapacity.swift
 related: [boop-ios, companion, _platform-language, train]
 ---
 
@@ -18,7 +20,7 @@ related: [boop-ios, companion, _platform-language, train]
 
 > **2026-11-21 — reviewed after Boop B6 Évad S4 (`mezo-r36n9.16`).** The shared changelog folder gained `season_experiment` (the season's experiments); nothing in capacity changed.
 
-> Boop B7 (epic `mezo-r36n9`, issue `mezo-r36n9.17`). **K1 "Alap" shipped on the server + phone sync: ✅ backend, 🔶 phone shows nothing yet (the verdict is drawn from K2).** K2 (morning sentence, day page, Évad chart), K3 (Átrendezés, `day_adjustment` readers) and K4 (outcomes, patterns, Sunday job) are not built.
+> Boop B7 (epic `mezo-r36n9`, issue `mezo-r36n9.17`). **K1 "Alap" shipped on the server + phone sync: ✅ backend, 🔶 phone shows nothing yet (the verdict is drawn from K2).** **K2 Task 9 (on `feat/b7-k2`):** the morning verdict in Ma's plan card, the day page's capacity blocks and the event label (`PUT /api/capacity/event-feedback`). The rest of K2 (Évad chart, AI context), K3 (Átrendezés, `day_adjustment` readers) and K4 (outcomes, patterns, Sunday job) are not built.
 
 ## 1. Summary
 
@@ -30,7 +32,7 @@ Feature flag: `mezo.capacity.enabled` (default true); off → the brief carries 
 
 ## 2. User-facing behavior
 
-Nothing is visible in K1: the brief carries the block, the phone ignores it. From **K2** the Ma briefing row shows the verdict + one reason line, the day page gets *Mennyit bírsz ma* / *Mi visz el ma energiát* / *Amiből gazdálkodsz*, and the energy curve is bent by demand. While the learning state is on the owner will see "Még tanulom, mennyit bírsz". Handbook page: [`napi-kapacitas-atrendezes`](../boop-handbook/02-ma/napi-kapacitas-atrendezes.md).
+**K2 Task 9:** Ma's open plan card (*A mai terved*) leads with the verdict row — a still orb filled by the ratio, the verdict word (*Laza nap · Rendben lesz · Szoros, de belefér · Túl sok lenne*), the reason line (+ „naptár nélkül" when the calendar is unknown) and a chevron into the day page; the folded plan line starts with the verdict word. With `capacity: null` Ma is exactly as before. The day page (`DaySheet`) takes the verdict as its title and gets, under the curve, *Mennyit bírsz ma* / *Mi visz el ma energiát* / *Amiből gazdálkodsz* (the energy curve is bent by demand since K1). A tap on a calendar row opens „Hogy hat rád?" with three chips *Merít · Semleges · Feltölt*; the choice is stored (no model call), the row shows „te: feltölt" at once and the brief reloads. Training rows carry no key and are not tappable. *Mit tennél át?* stays hidden until K3. While the learning state is on the owner will see "Még tanulom, mennyit bírsz". Handbook page: [`napi-kapacitas-atrendezes`](../boop-handbook/02-ma/napi-kapacitas-atrendezes.md).
 
 ## 3. Architecture & data flow
 
@@ -60,10 +62,10 @@ GET /api/boop/brief → BoopBriefService → BoopCapacityPort.read → BoopCapac
 |---|---|---|
 | `calendar_event` (+ `attendee_count`, `attendee_names`, `organizer_is_me`, `location`, `recurring`, `availability`, `notes`) | the phone's events, all fields | written |
 | `calendar_event_score` | per event + input hash: `mental/social/physical 0–3`, `restores`, `kind`, `confidence`, `source llm\|rule` | written by the runner |
-| `capacity_event_feedback` | the owner's "drains / neutral / feeds" correction per event key | table + repo only (K2 writes) |
+| `capacity_event_feedback` | the owner's "drains / neutral / feeds" correction per event key | written by `EventFeedbackService` (native upsert on `(created_by, event_key)`, revives a soft-deleted row) |
 | `day_adjustment`, `capacity_proposal`, `capacity_pattern` | K3/K4 ledger, proposals, patterns | tables + repos only |
 
-**Contract.** `api/feature/wearable/wearable.yml` — calendar events gain `attendeeCount`, `attendeeNames` (≤ 50), `organizerIsMe`, `location`, `recurring`, `availability` (`busy|free|tentative|unavailable`), `notes` (≤ 2000); the per-request cap is 31 days. `api/feature/boop/boop.yml` — the brief gains nullable `capacity: BoopCapacity` = `verdict`, `reason`, `ratio`, `tanulo`, `labelledDays`, `calendarKnown`, `demand[]` (`label`, `start`, `kind`, `level` kicsi/kozepes/nagy/tolt, `eventKey`), `factors[]` (`key`, `label`, `value`, `effect` jo/semleges/rossz). The brief's input hash covers the capacity ratio (steps of 0.05) and the factors; the demand-bent hourly energy replaces the plain curve (`EnergyCurveModel.hourly` with `capacity.hourly19()`).
+**Contract.** `api/feature/wearable/wearable.yml` — calendar events gain `attendeeCount`, `attendeeNames` (≤ 50), `organizerIsMe`, `location`, `recurring`, `availability` (`busy|free|tentative|unavailable`), `notes` (≤ 2000); the per-request cap is 31 days. `api/feature/boop/boop.yml` — the brief gains nullable `capacity: BoopCapacity` = `verdict`, `reason`, `ratio`, `tanulo`, `labelledDays`, `calendarKnown`, `demand[]` (`label`, `start`, `kind`, `level` kicsi/kozepes/nagy/tolt, `eventKey`), `factors[]` (`key`, `label`, `value`, `effect` jo/semleges/rossz). Demand items carry `eventKey` = the calendar `external_id` without the trailing `|occurrence` (`EventScoringService.eventKey`), null for training. `api/feature/capacity/capacity.yml` — **`PUT /api/capacity/event-feedback`** (`putCapacityEventFeedback`, body `{eventKey ≤ 200, effect drains|neutral|feeds}`, 204; blank/long key or unknown effect = 400 `VALIDATION_INVALID_VALUE`). The key travels in the body, not the path: device ids carry `/` and `:` (an encoded `/` in a path is refused by the servlet firewall); the server stores it as sent (it never strips again — a device id may itself contain `|`). The label overrides the event's components at read time (`applyFeedback`). The brief's input hash covers the capacity ratio (steps of 0.05), the factors and **each demand item's key + level** (so a label regenerates the brief even when the day's units round the same); the demand-bent hourly energy replaces the plain curve (`EnergyCurveModel.hourly` with `capacity.hourly19()`).
 
 ## 5. Integrations
 
@@ -81,22 +83,24 @@ Server-side only: inject `CapacityDayService` (`day(owner, date)`, `week(owner, 
 
 ## 7. How to extend it
 
-K2: a correction endpoint writing `capacity_event_feedback` (applied in `EventScoringService` as override + few-shot), the Évad series, an AI-context renderer. K3: proposal generator over `CapacityDayService.week`, `day_adjustment` readers in train/fuel/boop. K4: outcomes, `capacity_pattern`, the Sunday job. Contract-first (`api/feature/…`), Liquibase for schema, messages in both `messages_*.properties` (the five `CAPACITY_*` keys already exist).
+K2 rest: the label as a few-shot example for the scoring model, the Évad series, an AI-context renderer. K3: proposal generator over `CapacityDayService.week`, `day_adjustment` readers in train/fuel/boop. K4: outcomes, `capacity_pattern`, the Sunday job. Contract-first (`api/feature/…`), Liquibase for schema, messages in both `messages_*.properties` (the five `CAPACITY_*` keys already exist).
 
 ## 8. Testing
 
-Unit: `DemandCalculatorTest`, `CapacityCalculatorTest`, `RuleEventScoreTest`, `LearningStateTest`, `VerdictsTest`, `BoopCapacityAdapterTest`, `CapacityDayServiceTest`, `BoopBriefHashTest`, `BoopCapacityReasonTest`, `EnergyCurveModelTest`. ITs (Testcontainers, `-Dmezo.test.use-testcontainers=true`): `CapacityRepositoryIT`, `EventScoringServiceIT`, `EventScoringBackgroundIT` (slow fake model: day read returns first, async upgrade, single-flight), `CapacityDayServiceIT`, `BoopBriefCapacityIT`, `BoopBriefCapacityOffIT`, `WearableContractIT`. iOS: `CalendarSnapshotTests`, `HealthSyncTests` (re-backfill key).
+Unit: `DemandCalculatorTest`, `CapacityCalculatorTest`, `RuleEventScoreTest`, `LearningStateTest`, `VerdictsTest`, `BoopCapacityAdapterTest`, `CapacityDayServiceTest`, `BoopBriefHashTest`, `BoopCapacityReasonTest`, `EnergyCurveModelTest`. ITs (Testcontainers, `-Dmezo.test.use-testcontainers=true`): `CapacityRepositoryIT`, `EventScoringServiceIT`, `EventScoringBackgroundIT` (slow fake model: day read returns first, async upgrade, single-flight), `CapacityFeedbackIT` (label re-scores the event, replace, 400s), `CapacityDayServiceIT`, `BoopBriefCapacityIT`, `BoopBriefCapacityOffIT`, `WearableContractIT`. iOS: `CalendarSnapshotTests`, `HealthSyncTests` (re-backfill key), `KapacitasLogicTests`, `KapacitasClientTests`. Simulator review: `-preview shell -previewHome nap -previewPhase reggel -previewCapacity szoros|tulSok|laza|rendben|nocal` (+ `-previewSheet day -previewDetent large`, `-previewDayBottom YES`, `-previewCapacityPick YES`); screenshots in `docs/superpowers/specs/assets/kapacitas/built/`.
 
 ## 9. Decisions, gotchas & deferred
 
 - Decisions 2026-11-21 (spec §2): learns from everything; moves only with approval and never touch the Évad plan; the calendar is never written; the model sees all fields.
 - **Gotcha:** scoring is async — the first read after a calendar change shows rule scores; tests must use Awaitility. A 3-day timed event loads a middle day with 24 h worth (clipping, not capped to waking hours).
-- Deferred: K2–K4 above; the verdict is not drawn on the phone yet (`mezo-r36n9.17` follow-ups).
+- Deferred: the rest of K2, K3, K4 (`mezo-r36n9.17` follow-ups).
+- The *Mennyit bírsz ma* bar's two marks (szoros 0.9/1.2, határ 1.0/1.2) are unlabelled, as in the approved spike: their words collide 8 % apart.
 
 ## 10. Key files
 
 - Backend: `backend/src/main/java/io/mrkuhne/mezo/feature/capacity/service/` (`CapacityDayService`, `DemandCalculator`, `CapacityCalculator`, `EventScoringService`, `EventScoringRunner`, `RuleEventScore`, `LearningState`, `Verdicts`, `BoopCapacityAdapter`), `…/capacity/config/CapacityProperties.java`, `…/capacity/entity`, `…/capacity/port`, `…/wearable/service/CalendarDaysReplacedEvent.java`, `…/boop/service/BoopBriefService.java`.
-- Contract: `api/feature/wearable/wearable.yml`, `api/feature/boop/boop.yml`.
+- Contract: `api/feature/wearable/wearable.yml`, `api/feature/boop/boop.yml`, `api/feature/capacity/capacity.yml`.
 - Migrations: `backend/src/main/resources/db/changelog/1.1.0/script/202611211200_mezo-r36n9.17_calendar_event_fields.sql`, `…/202611211210_mezo-r36n9.17_capacity.sql`.
-- iOS: `ios/BoopKit/Sources/BoopCore/Calendar/`, `…/Health/HealthSync.swift`.
+- iOS: `ios/BoopKit/Sources/BoopCore/Calendar/`, `…/Health/HealthSync.swift`, `…/BoopCore/Kapacitas/` (`KapacitasLogic`, `KapacitasWire`, `KapacitasClient`), `ios/Boop/Nap/DayCapacity.swift`, `MaPhases.swift`, `DaySheet.swift`.
+- Backend K2: `…/capacity/controller/CapacityController.java`, `…/capacity/service/EventFeedbackService.java`.
 - Docs: spec and plan above; [`boop-ios.md`](boop-ios.md).

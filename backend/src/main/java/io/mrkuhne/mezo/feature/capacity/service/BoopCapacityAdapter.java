@@ -41,7 +41,8 @@ public class BoopCapacityAdapter implements BoopCapacityPort {
         return new View(verdict, d.ratio(), d.tanulo(), d.labelledDays(), d.calendarKnown(),
             d.demand().units(), d.demand().hourly19(),
             d.demand().items().stream()
-                .map(i -> new Item(i.label(), i.kind(), i.start(), level(i.units(), i.restores()))).toList(),
+                .map(i -> new Item(i.label(), i.kind(), i.start(), level(i.units(), i.restores()), i.eventKey()))
+                .toList(),
             d.capacity().factors().stream()
                 .map(f -> new Factor(f.key(), f.label(), f.valueText(), effect(f.effect()))).toList(),
             d.reasonFacts() == null ? "" : d.reasonFacts());

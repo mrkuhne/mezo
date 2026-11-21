@@ -3,9 +3,46 @@ info: { title: mezo capacity fragment, version: 1.0.0 }
 tags:
   - name: Capacity
     description: >
-      Boop B7 K1 day capacity (mezo-r36n9.17) — how much a day asks of the owner against what his body offers, and
-      rearrangement proposals he accepts or declines. Nothing moves without his accept. Operations are added by the
-      following tasks; this fragment starts with the tag only.
-paths: {}
+      Boop B7 day capacity (mezo-r36n9.17) — how much a day asks of the owner against what his body offers, and
+      rearrangement proposals he accepts or declines. Nothing moves without his accept.
+paths:
+  /api/capacity/event-feedback:
+    put:
+      tags: [Capacity]
+      operationId: putCapacityEventFeedback
+      summary: Label how a calendar event felt (drains / neutral / feeds)
+      description: >
+        Stores or replaces the owner's label for one calendar event (all occurrences of a recurring event share it).
+        The label overrides the event's scored components at read time, so the next day read and the next brief
+        reflect it. No model call. The event key travels in the body, not the path: device calendar ids may carry
+        '/' and ':'.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CapacityEventFeedbackRequest' }
+      responses:
+        '204':
+          description: Stored
+        '400':
+          description: Missing or invalid event key or effect
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
 components:
-  schemas: {}
+  schemas:
+    CapacityEventFeedbackRequest:
+      type: object
+      required: [eventKey, effect]
+      properties:
+        eventKey:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: The calendar event's external id without the trailing "|occurrence" part
+        effect: { type: string, enum: [drains, neutral, feeds] }

@@ -117,6 +117,7 @@ public interface BoopBriefMapper {
             item.setStart(i.start().atOffset(ZoneOffset.UTC));
             item.setKind(i.kind());
             item.setLevel(BoopCapacityDemandItem.LevelEnum.fromValue(i.level()));
+            item.setEventKey(i.eventKey());
             return item;
         }).toList());
         out.setFactors(c.factors().stream().map(f -> {

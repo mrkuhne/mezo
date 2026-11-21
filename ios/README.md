@@ -47,6 +47,7 @@ Pass them after the bundle id: `xcrun simctl launch <sim> io.mrkuhne.boop -previ
 | `-previewDrill alvas` | opens Ma with that orb's room (the domain drill-down) pushed (`forma`, `alvas`, `mozgas`, `fuel`, `pulzus`) |
 | `-previewSheet sleep\|heart\|day`, `-previewDetent large` | opens that detail sheet (at the large detent) |
 | `-previewKept YES`, `-previewScrub 15.5` | A napod sheet: conflict kept; magnifier held at 15:30 |
+| `-previewCapacity szoros\|tulSok\|laza\|rendben\|nocal` | the brief carries a day-capacity block (B7): the verdict row in the plan card, the A napod blocks (`nocal` = no calendar); `-previewDayBottom YES` opens the A napod sheet scrolled to its end, `-previewCapacityPick YES` opens the first event's „Hogy hat rád?" sheet |
 | `-previewStep <step>` | onboarding opens on that step |
 | `-previewEvening YES` | the clock reads 21:10 and the brief is an evening one: dusk sky, *Esti check-in* / *Esti levezetés* pills, evening paths |
 | `-previewRecovery YES` | kímélő mód, day 2 of a cold: calm grey-blue sky, the banner, no session |

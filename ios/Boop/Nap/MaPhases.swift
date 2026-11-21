@@ -286,7 +286,7 @@ struct MaBelow: View {
                                                   rows: rows.count, goal: ritmus?.goal(on: today)?.text, calendar: ritmus?.calendar ?? .current)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(summary.title).nkFont(16, .medium).foregroundStyle(.white)
-                            if let sub = summary.sub {
+                            if let sub = collapsedSub(summary.sub) {
                                 Text(sub).nkFont(13.5).foregroundStyle(.white.opacity(0.55)).lineLimit(1)
                             }
                         }
@@ -305,6 +305,13 @@ struct MaBelow: View {
         }
     }
 
+    /// The folded plan's second line; with a capacity block (B7) the verdict word leads it.
+    private func collapsedSub(_ sub: String?) -> String? {
+        guard let capacity = brief.capacity else { return sub }
+        let word = verdictLine(capacity).word
+        return sub.map { "\(word) · \($0)" } ?? word
+    }
+
     private func planCard(_ rows: [PlanRow]) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
@@ -321,6 +328,11 @@ struct MaBelow: View {
                 }
             }
             .padding(.bottom, 8)
+            // B7: the morning verdict leads the plan (spike screen 01); without a capacity block nothing changes
+            if let capacity = brief.capacity {
+                MaVerdictRow(capacity: capacity) { onLink(.day) }
+                Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5)
+            }
             if rows.isEmpty {
                 Text("Ma nincs tervezett pont.").nkFont(14).foregroundStyle(.white.opacity(0.6)).padding(.vertical, 9)
             }

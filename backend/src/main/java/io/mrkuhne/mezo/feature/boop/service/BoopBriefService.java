@@ -263,8 +263,8 @@ public class BoopBriefService {
     }
 
     /**
-     * Also covers the capacity verdict, demand units (0.1), the load ratio (0.05) and the factors (key + effect), so a
-     * changed day regenerates.
+     * Also covers the capacity verdict, demand units (0.1), the load ratio (0.05), the factors (key + effect) and each
+     * demand item's level (so an event label regenerates), so a changed day regenerates.
      */
     static String inputHash(BoopDay d, LocalTime localNow, BoopCapacityPort.View capacity) {
         StringBuilder b = new StringBuilder("v2|").append(d.date()).append("|t:").append(timeBucket(localNow));
@@ -313,6 +313,12 @@ public class BoopBriefService {
                 .append(String.format(java.util.Locale.ROOT, "%.2f", Math.round(capacity.ratio() * 20) / 20.0));
             for (BoopCapacityPort.Factor f : capacity.factors()) {
                 b.append(';').append(f.key()).append('=').append(f.effect());
+            }
+            // an event label (Merít / Semleges / Feltölt) re-scores its item: its level changes the brief even when
+            // the day's units round to the same tenth
+            b.append("|items:");
+            for (BoopCapacityPort.Item i : capacity.demand()) {
+                b.append(i.eventKey()).append('@').append(i.start()).append('=').append(i.level()).append(';');
             }
         }
         return sha256(b.toString());

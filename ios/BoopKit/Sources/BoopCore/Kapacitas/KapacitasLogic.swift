@@ -46,6 +46,7 @@ private func kindWord(_ kind: String) -> String {
     case "call": "hívás"
     case "focus": "fókusz"
     case "social": "emberek közt"
+    case "training": "edzés"   // the server's kind for a gym / sport session (DemandCalculator.training)
     case "sport": "fizikai"
     case "travel": "út"
     case "errand": "ügyintézés"
@@ -75,7 +76,7 @@ public func demandRows(_ c: Components.Schemas.BoopCapacity, timeZone: TimeZone 
             glyph = "heart-cream"
         } else {
             switch d.kind {
-            case "sport": glyph = "dumbbell-ink"
+            case "sport", "training": glyph = "dumbbell-ink"
             case "social": glyph = "person-sage"
             default: glyph = "clock-ink"
             }
@@ -105,5 +106,24 @@ public func factorRows(_ c: Components.Schemas.BoopCapacity) -> [KapacitasRow] {
         default: glyph = "clock-ink"
         }
         return KapacitasRow(title: f.label, sub: f.value, value: value, hot: f.effect == .rossz, glyph: glyph)
+    }
+}
+
+/// The *Mennyit bírsz ma* bar's fill: the load ratio clamped to 0…1.2 and scaled so 1.2 fills the bar
+/// (the „szoros" tick sits at 0.9 / 1.2, „határ" at 1.0 / 1.2).
+public func capacityLevel(_ ratio: Double) -> Double {
+    min(1.2, max(0, ratio.isFinite ? ratio : 0)) / 1.2
+}
+
+/// The bar's landmarks as fractions of the bar (see `capacityLevel`).
+public let capacityTicks: [(at: Double, label: String)] = [(0.9 / 1.2, "szoros"), (1.0 / 1.2, "határ")]
+
+/// The one sentence under the bar — words only, from the verdict (no number of its own).
+public func capacitySentence(_ verdict: Components.Schemas.BoopCapacity.verdictPayload) -> String {
+    switch verdict {
+    case .laza: "A mai terhed jóval kevesebb annál, amennyit bírsz. Van benne mozgástér."
+    case .rendben: "A mai terhed belefér abba, amennyit bírsz."
+    case .szoros: "A mai terhed majdnem annyi, amennyit bírsz. Ha még valami bejön, estére elfogysz."
+    case .tulSok: "A mai terhed több annál, amennyit bírsz. Valamit érdemes lenne könnyíteni rajta."
     }
 }

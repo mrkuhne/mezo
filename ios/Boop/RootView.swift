@@ -19,6 +19,8 @@ struct RootView: View {
     @State private var penz: PenzStore?
     /// The Évad page's data (B6, mezo-r36n9.16): the season overview, its cache and the season writes.
     @State private var evad: EvadStore?
+    /// The day capacity's writes (B7, mezo-r36n9.17): his label of how an event felt.
+    @State private var kapacitas: KapacitasClient?
 
     var body: some View {
         Group {
@@ -59,6 +61,7 @@ struct RootView: View {
         .environment(\.workoutFolder, workoutFolder)
         .environment(penz)
         .environment(evad)
+        .environment(\.kapacitasClient, kapacitas)
         .onChange(of: session.state, initial: true) { _, state in updateLink(state) }
         .background { if let link, case .ready = session.state { SyncTriggers(link: link) } }
         .background { if let ritmus, case .ready = session.state { RitmusTriggers(env: ritmus, morning: morning) } }
@@ -76,7 +79,7 @@ struct RootView: View {
         // the session's client already carries another token, or none).
         guard let me else {
             ritmus?.retire(); link = nil; morning = nil; ritmus = nil; food = nil; train = nil; cache = nil; workoutFolder = nil
-            penz = nil; evad = nil
+            penz = nil; evad = nil; kapacitas = nil
             BackgroundSyncHost.ritmus = nil; return
         }
         if link?.userId != me.id {
@@ -100,6 +103,8 @@ struct RootView: View {
                 Task { await PenzPreview.primeCache(previewCache) }
                 evad = EvadStore(client: EvadPreviewFixtures.client, cache: cache)
                 Task { await EvadPreviewFixtures.primeCache(previewCache) }
+                kapacitas = KapacitasClient(raw: RawJSONClient(transport: PreviewTransport(), baseURL: URL(string: "https://preview.invalid")!,
+                                                               token: { "preview" }))
                 let previewFolder = RitmusEnvironment.directories(for: me.id).outbox
                 // A review launch starts the day over. The workout in progress is written to the user's own
                 // folder, not to the preview's scratch root, so without this a workout left running on one
@@ -119,6 +124,7 @@ struct RootView: View {
             cache = ServerCache(directory: RitmusEnvironment.directories(for: me.id).cache)
             penz = PenzStore(client: PenzClient(raw: session.raw), cache: cache)
             evad = EvadStore(client: EvadClient(raw: session.raw), cache: cache)
+            kapacitas = KapacitasClient(raw: session.raw)
             workoutFolder = RitmusEnvironment.directories(for: me.id).outbox
             BackgroundSyncHost.ritmus = ritmus
         }

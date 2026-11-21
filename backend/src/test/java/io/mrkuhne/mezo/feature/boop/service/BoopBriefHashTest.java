@@ -36,4 +36,17 @@ class BoopBriefHashTest {
         assertThat(hash(view(0.8, List.of(sleepBad)))).isNotEqualTo(hash(view(0.8, List.of(hrvBad))));
         assertThat(hash(view(0.8, List.of(sleepBad)))).isNotEqualTo(hash(view(0.8, List.of())));
     }
+
+    @Test
+    void anEventLabelChangesTheHashEvenWhenUnitsRoundTheSame() {
+        var drains = new BoopCapacityPort.Item("Tervezés", "meeting", java.time.Instant.parse("2026-11-23T08:00:00Z"),
+            "kozepes", "cal-1");
+        var feeds = new BoopCapacityPort.Item("Tervezés", "meeting", java.time.Instant.parse("2026-11-23T08:00:00Z"),
+            "tolt", "cal-1");
+        var a = new BoopCapacityPort.View("rendben", 0.8, true, 0, true, 4.0, new double[19], List.of(drains),
+            List.of(), "");
+        var b = new BoopCapacityPort.View("rendben", 0.8, true, 0, true, 4.0, new double[19], List.of(feeds),
+            List.of(), "");
+        assertThat(hash(a)).isNotEqualTo(hash(b));
+    }
 }
