@@ -1460,5 +1460,15 @@
     ],
     "mit_kapsz": "Ha éjfél körül kérdezed Boopot az alvásodról, edzésedről vagy az évadról, a te napodról válaszol, nem a szomszédosról.",
     "munkamenet": "b6-b7-epites-5d50e3"
+  },
+  "mezo-r36n9.138": {
+    "cim": "A nap gyakorlatsorainak áttervezése",
+    "tipus": "Kinézet",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "A blokképítő napjain a gyakorlatok sorai rendezettebbek lesznek: az izomrész, az ismétléstartomány és a tartalék külön kis címkékben áll, nem egy hosszú szövegsorban, így egy pillantással átlátod a napot.",
+    "munkamenet": "mezo-nippard-exercise-selection"
   }
 }
