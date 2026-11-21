@@ -581,7 +581,9 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     `EvadListTab` (screen 06: `evadShelfGroups`, `EvadTick` drawn tick, „Változott", staple chips, `ShareLink` with
     `evadShareText`, *Korábbi listák*, *Szokásos tételek*); sub-pages `EvadRecipesPage`, `EvadPastListsPage`,
     `EvadStaplesPage` (`EvadSub` receptek / listak / tetelek). Check-off is optimistic and outbox-free: one retry, then the
-    tick is put back with a line. Tab badges: Menü dot = next week `proposed` (overview), Lista = lines still to buy.
+    tick is put back with a line; a line with a tick still in flight ignores another tap (`inFlight`). The menu and the list
+    keep their own offline state and age (`menuOffline` / `listOffline`). A past day's meal is not tappable (`evadIsPast`);
+    week dates are computed on a Gregorian calendar whatever the phone's calendar setting. Tab badges: Menü dot = next week `proposed` (overview), Lista = lines still to buy.
     Wall: `evadMenuCandidate` — `.expires` from the menu day until the week starts (`expiresAt` = next Monday), *Átnézem*
     → `pendingSub = "menu"` → the Menü tab. DEBUG preview `EvadMenuPreview.swift` (`-evadMenu proposed|approved|seeding|none`,
     `-evadRepeated YES`, `-evadChanged YES`).
