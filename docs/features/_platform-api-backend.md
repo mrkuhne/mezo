@@ -13,7 +13,7 @@ key_files:
 related: [_platform-data-layer, _platform-auth-security, _platform-notifications, train, today, fuel, ritual, companion]
 ---
 
-> **2026-11-21 — reviewed after the Boop plan recommender (`mezo-r36n9.113`, no platform change).** Two new train error keys in both `messages_hu` and `messages_en` (parity kept): `TRAIN_MESO_EMPHASIZE_CAP` (400, more than `mezo.volume.bands.emphasize-max` Hangsúly muscles) and `TRAIN_MESO_SPLIT_UNKNOWN` (400, a `split` key not catalogued for the day count). Mechanics unchanged. See [`train.md`](train.md).
+> **2026-11-21 — reviewed after the Boop plan recommender (`mezo-r36n9.113`, no platform change).** Two new train error keys in both `messages_hu` and `messages_en` (parity kept): `TRAIN_MESO_EMPHASIZE_CAP` (400, more than `mezo.volume.bands.emphasize-max` Hangsúly muscles) and `TRAIN_MESO_SPLIT_UNKNOWN` (400, a `split` key not catalogued for the day count). A third, after the final review: `TRAIN_MESO_DISCARD_HAS_LOGS` (409, `POST /mesocycles/{id}/discard` on a block with a logged workout). Mechanics unchanged. See [`train.md`](train.md).
 > **2026-11-20 — reviewed after the Boop block day editor (`mezo-r36n9.116`, no platform change).** Two new train error keys in both `messages_hu` and `messages_en` (parity kept, bundles now 313 keys each): `TRAIN_SUGGESTIONS_REQUEST_INVALID` (400, the day-suggestions request) and `TRAIN_DAY_WORKOUT_RUNNING` (409, a day with a running workout cannot be edited). Mechanics unchanged. See [`train.md`](train.md).
 
 # Platform · API Contract & Backend Architecture — Feature Documentation

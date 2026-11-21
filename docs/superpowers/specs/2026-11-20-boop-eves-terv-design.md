@@ -145,6 +145,13 @@ trip, no LLM cost per candidate, ranking stays on the server.
    generate/candidates request over the Hangsúly cap (400) — the budget itself is advisory on the server (a plan
    edited by hand may exceed it; the evaluator flags it).
 
+   *Final-review ruling (2026-11-21, `mezo-r36n9.113`):* two budgets on purpose. The **builder** (a running or edited
+   block, `POST /evaluate`) keeps the peak-week budget above — a raise there changes later weeks, not week 1. The
+   **new-block intake** (`POST /candidates`) shows a **week-1** budget (`intakeBudget`), consistent with the candidate
+   filter (which judges week 1): its capacity is built from each training day's own minutes estimate, so an offered
+   candidate always fits it, and a raise is allowed only when the server, re-ranking with that one muscle a tier
+   higher, still finds a flawless candidate (`raiseAllowed`).
+
 8. **The builder** renders: the minutes per day (now with rest), the per-muscle *why* sheet, the consecutive-day hint.
 
 ### S2 — a new block on the phone

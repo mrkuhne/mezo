@@ -730,18 +730,25 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     Edzés → Blokk has an *Új blokk* button; the flow (`ios/Boop/EdzesTerv/UjBlokk/`, model `BoopCore/Train/NewBlockModel`)
     is **Alapok · Jelöltek · nem fér · létrehozva**. *Alapok* (step 1/2): the block length, the session minutes
     (*Meddig tarthat egy edzés*), the training days read from the season's gym slots (changing them is the Évad page's job;
-    no season → the *Előbb egy évad kell* state with a link, no call made), one tier switch per muscle (Hangsúly · Építés ·
-    Tartás) and the **heti keret** line from the server's `budget`. A raise is checked **one tier per tap** (`RaiseCheck`,
-    pure comparison of the server's numbers — no maths of our own): a third Hangsúly is refused (`emphasizeFull`) and a raise
-    whose `raiseCost` exceeds `capacitySets − usedSets` is refused (`noRoom`), the reason shown under the row. *Jelöltek*
+    no season → the *Előbb egy évad kell* state with a link, no call made; fewer than 2 or more than 6 gym days → the
+    `seasonDaysOutOfRange(n)` state *„Az évadodban n edzésnap van — a tervajánló 2–6 napra tud tervet adni…"* with the Évad
+    link, no call made), one tier switch per landmark muscle (Hangsúly · Építés · Tartás; no Törzs row) and the **heti
+    keret** line from the server's **`intakeBudget`** (week 1 of the lead candidate — *„az első héten"* — consistent with
+    the candidate filter; a failed refresh clears it so the failure notice shows). A raise is checked **one tier per tap**
+    (`RaiseCheck`, no maths of our own): a third Hangsúly is refused (`emphasizeFull`); a raise the server marked
+    `raiseAllowed[m] = false` (raising only that muscle leaves no candidate) is refused (`noRoom`), the reason shown under
+    the row; a missing key, no target, or a tier on screen other than the one the server priced is not a refusal. The
+    minutes pills add the current minutes as its own selected pill when a fix set one outside 45/60/75/90. *Jelöltek*
     (2/2): 1–3 ranked flawless candidates, the first marked *AJÁNLOTT*, each `splitLabel · ~N perc` (longest day) with the
     server's reasons and a **„miért?"** sheet; *Mikor kezdjük* (*Jövő hétfőn* default, or today). *nem fér*: when
     `nothingFits`, the closest candidate (*a legközelebbi, ha mégis kéred*) and the server's fixes as buttons (*EZ MEGOLDANÁ*:
-    more minutes applies, fewer Hangsúly lowers the heaviest one to Építés, more days sends him to the Évad tab).
-    *Ezzel kezdem* → `generate` (with the candidate's `splitKey`; a failed generate falls back to the candidate's own
+    more minutes applies, fewer Hangsúly lowers the muscle the server names in the fix — else the heaviest — to Építés, more
+    days sends him to the Évad tab).
+    *Ezzel kezdem* → `generate` (with the candidate's `splitKey` and the session minutes, so the server keeps the AI's picks
+    only while the plan still fits them; a failed generate falls back to the candidate's own
     template) → `createMesoTemplate` → `startMesoTemplate` (next Monday `planned`, or today `active`; a saved template is
     reused on retry, keyed by request + minutes) → the ordinary builder opens on the new block with **„Mégsem, eldobom"**
-    (`closeMesocycle`). A start failure keeps the candidates on screen with an inline error; `SEASON_REQUIRED` → the
+    (`discardMesocycle`: the server deletes the never-trained block and its template — no report, no AI review). A start failure keeps the candidates on screen with an inline error; `SEASON_REQUIRED` → the
     needs-season state. The builder itself gains the **heti keret** line (the server's `budget` for the open draft),
     the minutes row (pills = the session-minutes target) and a **„miért?"** sheet per muscle (the server's `basis` +
     band). No wording of a number is the phone's own: minutes, bands, costs and fixes all come from the candidates /
@@ -1052,14 +1059,14 @@ The builder and the review **do not use the generated client**. The generated co
 technique planner (T3) adds proposal line kinds (`technique`, `rep_range`), reason codes and evaluation fields while these
 screens are live — one unknown value would fail the whole response. So `RawJSONClient` (`BoopCore/Train/PlanTransport.swift`)
 sends JSON over the **same** `ClientTransport`, base URL and bearer token as the generated client (`Session.raw`), and
-`PlanWire.swift` declares hand-written `Decodable` shapes whose enums are plain `String`s. `PlanClient` wraps 14 operations (the first nine below, then the five of the new-block flow):
+`PlanWire.swift` declares hand-written `Decodable` shapes whose enums are plain `String`s. `PlanClient` wraps 15 operations (the first nine below, then the six of the new-block flow):
 `listMesocycles`, `getExerciseCatalog`, `evaluateMesoPlan`, `listWeekProposals`, `decideWeekProposal`, `replaceDayExercises`,
 `updateMesocycleMusclePriorities`, **`blockSuggestions`** (`mezo-r36n9.116`: `POST /api/train/mesocycles/{id}/exercise-suggestions`
 → `PlanWire.BlockSuggestions*`, each suggestion with an optional style `prescription`; `scripts/check-ios-contract.mjs` now also
 covers these raw-client operations), and **`updateMesocycleSettings`** (`PUT /api/train/mesocycles/{id}/settings`
 `{trainingStyle?, techniquesEnabled?, weeklyReviewMode?}`, absent = keep; the run's own review mode overrides
 `mezo.volume.weekly-review.mode`; `MesocycleResponse.weeklyReviewMode` is the effective mode — `docs/features/train.md` §4).
-**New-block calls (`mezo-r36n9.113`, same hand-decoded rule — enums are plain strings, so a new fix or reason code never fails the response):** **`candidates`** (`POST /api/train/meso-plans/candidates` → `PlanWire.WireCandidates {candidates[], nothingFits, fixes[]}` with `lead`, each candidate its `splitKey`, `splitLabel`, `template`, `evaluation`, `recommended`, `reasons`), **`generate`** (`POST /api/train/meso-plans/generate` with `split` = the candidate's key → `WireGenerateResponse`), **`createTemplate`** (`createMesoTemplate`, returns the template id), **`startTemplate`** (`startMesoTemplate` `{startDate, status}` → the block) and **`closeBlock`** (`closeMesocycle`, the *Mégsem, eldobom* path). `evaluate` and the builder's `WireEvaluation` carry the new `budget`, `basis` and `consecutiveHeavy` fields. **The BoopAPI generator filter is untouched.** Typed failures: `PlanFetchError` (`offline`, `unauthorized`, `notFound`,
+**New-block calls (`mezo-r36n9.113`, same hand-decoded rule — enums are plain strings, so a new fix or reason code never fails the response):** **`candidates`** (`POST /api/train/meso-plans/candidates` → `PlanWire.WireCandidates {candidates[], nothingFits, fixes[]}` with `lead`, each candidate its `splitKey`, `splitLabel`, `template`, `evaluation`, `recommended`, `reasons`), **`generate`** (`POST /api/train/meso-plans/generate` with `split` = the candidate's key → `WireGenerateResponse`), **`createTemplate`** (`createMesoTemplate`, returns the template id), **`startTemplate`** (`startMesoTemplate` `{startDate, status}` → the block) **`closeBlock`** (`closeMesocycle`) and **`discardBlock`** (`discardMesocycle`, the *Mégsem, eldobom* path; 409 `TRAIN_MESO_DISCARD_HAS_LOGS` when a workout is already logged). `WireCandidates` also carries `intakeBudget` (`WireIntakeBudget {usedSets, capacitySets?, emphasizeCount, emphasizeMax, raiseAllowed}`), `WireFix` an optional `muscle`, `WireGenerateRequest` optional `sessionMinutesTarget` + `sportGroups`. The builder's evaluate request always carries each row's `restSec` (minutes model v2 prices every set with its rest). `evaluate` and the builder's `WireEvaluation` carry the new `budget`, `basis` and `consecutiveHeavy` fields. **The BoopAPI generator filter is untouched.** Typed failures: `PlanFetchError` (`offline`, `unauthorized`, `notFound`,
 `rejected(code)` for 400, `conflict(code)` for 409, `server`).
 
 `ServerCache` (`BoopCore/ServerCache.swift`, `mezo-vxjj9`) is the read side's last-known-good cache: one JSON file per endpoint-and-day wrapping the payload and the instant it was fetched, so a screen can say how old what it shows is. It is read-only toward the server — no sender, no retry, no link to the outbox — and past `maxAge` a hit is not a hit (`get` returns nil and the caller says „nincs friss adat"). A corrupt entry is removed and reads as absent, unlike the outbox, which sets bad elements *aside* because those are the owner's unsent words. Its folder is `cache`, a third per-user folder beside `ledger` and `outbox`.

@@ -18,17 +18,22 @@ Ha nincs futó blokkod, az Edzés → Blokk fülön megjelenik az **Új blokk** 
 - **Melyik izomnak mi a szintje:** Hangsúly (itt építesz a legtöbbet), Építés (rendesen nő) vagy Tartás (megtartja, amit eddig
   felépítettél).
 Az edzésnapokat az évadodból veszi (az Évad oldalon állítható); ha még nincs évadod, előbb azt kéri, és nem csinál semmit.
-Alul egy **heti keret** sor mutatja, mennyi adag fér a napjaidba, és mennyit használ most a tervezett szint-beállításod.
+Ha az évadodban 2-nél kevesebb vagy 6-nál több edzésnap van, megmondja, hogy a tervajánló 2–6 napra tud tervet adni, és az Évad
+oldalra küld. Alul egy **heti keret** sor mutatja, mennyi adag fér az első hét napjaiba, és mennyit használ most a tervezett
+szint-beállításod. Egy izmot csak akkor tehetsz feljebb, ha Boop úgy is talál hibátlan tervet; ha nem, a sor alatt megmondja,
+miért nem.
 
 **2. Jelöltek.** Boop két-három **kész tervet** mutat, mindegyiknél a felosztás neve és a leghosszabb nap becsült ideje
 (például „Felső / Alsó · ~58 perc”). Az első az **ajánlott**; mindegyiknél ott van, miért jó (belefér az időbe, minden izom
 legalább hetente kétszer sorra kerül), és egy **„miért?”** lap. Kiválasztod, mikor kezdjétek (alapból jövő hétfőn, vagy ma), és
 az **Ezzel kezdem** gombbal a blokk létrejön, a megszokott blokképítő pedig megnyílik rajta. Ha mégsem tetszik: **„Mégsem,
-eldobom”** — a blokk lezárul, mintha meg sem kezdted volna.
+eldobom”** — a blokk és a hozzá készült sablon törlődik, nem készül róla összegzés, mintha meg sem kezdted volna. (Ha már
+rögzítettél benne edzést, nem dobható el — akkor le kell zárni.)
 
 **Ha semmi nem fér bele.** Boop nem ad hibás tervet. Azt mondja: „Ebbe az időbe most nem fér bele jó terv”, megmutatja a
-legközelebbit (ha mégis kéred), és **javításokat** ajánl, amelyek megoldanák: több perc, eggyel kevesebb Hangsúly-izom, vagy
-több edzésnap (ez utóbbi az Évad oldalon állítható). Egy koppintással alkalmazod, és a jelöltek újraszámolódnak.
+legközelebbit (ha mégis kéred), és **javításokat** ajánl, amelyek megoldanák: több perc (ha 90 percnél több kell, az is
+megjelenik választhatóként), egy megnevezett izom Hangsúly helyett Építésen, vagy több edzésnap (ez utóbbi az Évad oldalon
+állítható). Egy koppintással alkalmazod, és a jelöltek újraszámolódnak.
 
 ## Hogyan működik
 1. A telefon elküldi a hosszt, a napokat, a szinteket és az időkeretet a háttérrendszernek.
@@ -37,10 +42,12 @@ több edzésnap (ez utóbbi az Évad oldalon állítható). Egy koppintással al
 3. **Csak hibátlan jelölt kerül elő** — olyan, amelyben minden izom hetente legalább kétszer kap munkát, minden nap belefér az
    időkeretbe, és egy izom sem kap nagy terhelést két egymást követő napon. A hibátlanok közül előre kerül, amelyik kevesebb izmot
    hagy a sávján kívül, aztán amelyiknek rövidebb a leghosszabb napja.
-4. A **heti keret** azt mutatja, mennyi adagot bír el az időd; ennél többet a szintekkel nem lehet kérni. A telefon nem számol
-   semmit magától: a perceket, a sávokat és az árakat a háttérrendszer adja.
-5. **Az Ezzel kezdem** gomb kéri a teljes tervet a választott felosztáshoz, elmenti sablonnak, és elindítja a blokkot az aktív
-   évadodhoz kötve. Ha az indítás elakad, a jelöltek a képernyőn maradnak, és újra megpróbálhatod.
+4. A **heti keret** azt mutatja, mennyi adagot bír el az időd az első héten (ugyanazon a héten, amelyet a jelöltek szűrése is
+   néz). A háttérrendszer minden izomra kipróbálja, hogy egy szinttel feljebb téve marad-e hibátlan jelölt — a telefon csak ezt
+   a választ követi, nem számol semmit magától. A blokképítőben a keret a legnehezebb hetet mutatja, mert ott egy emelés a
+   későbbi heteket növeli.
+5. **Az Ezzel kezdem** gomb kéri a teljes tervet a választott felosztáshoz (az időkerettel együtt: ha az AI gyakorlatválasztása
+   kilógna belőle, a szabályokból készült terv marad), elmenti sablonnak, és elindítja a blokkot az aktív évadodhoz kötve. Ha az indítás elakad, a jelöltek a képernyőn maradnak, és újra megpróbálhatod.
 6. A blokképítőben minden izomnál ott a **„miért?”** (honnan jön a sávja), a nagy adag két egymást követő napon jelzést kap,
    és a becsült edzésidő a pihenőkkel együtt számolt.
 
