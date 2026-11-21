@@ -22,12 +22,13 @@ struct EvadOverviewTab: View {
         NKBare("Az évad terve", hue: evadHue, glyph: "star-ink") {
             NKRowList(planRows, hue: evadHue)
         }
-        if let a = o.adherence {
+        if let a = o.adherence, !evadAdherenceFacts(a).isEmpty || a.excusedDays > 0 {
             NKBare("Hogy megy", hue: evadHue, glyph: "check-ink", trailing: "az elmúlt héten") {
-                NKStatRow([NKStat(value: "\(a.foodInBand)", target: "\(a.foodJudged)", label: "napon belefértél a keretbe"),
-                           NKStat(value: "\(a.sessionsDone)", target: "\(a.sessionsPlanned)", label: "edzés megvolt"),
-                           NKStat(value: "\(a.nightsOk)", target: "\(a.nightsJudged)", label: "éjjel aludtál eleget")], hue: evadHue)
-                Text("A betegség miatti és az indokkal kihagyott napok nem számítanak. Ez nem pontszám, csak összesítés.")
+                let facts = evadAdherenceFacts(a)
+                if !facts.isEmpty {
+                    NKStatRow(facts.map { NKStat(value: $0.value, target: $0.target, label: $0.label) }, hue: evadHue)
+                }
+                Text(evadExcusedLine(a.excusedDays))
                     .nkFont(13).foregroundStyle(.white.opacity(0.55)).fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -136,7 +137,11 @@ struct EvadOverviewTab: View {
         var rows: [NKAreaRow] = []
         let sport = evadSportSummary(p.block.sport)
         let training = ["heti \(p.block.gymDays.count) edzés", sport.isEmpty ? nil : sport].compactMap { $0 }.joined(separator: " · ")
-        let done = o.adherence.map { "\($0.sessionsDone)/\($0.sessionsPlanned)" } ?? ""
+        // The Edzés row counts the gym (and block-run) sessions; sport has its own fact in Hogy megy. An older server
+        // sends only the total.
+        let done = o.adherence.map { a in
+            a.trainingPlanned.map { "\(a.trainingDone ?? 0)/\($0)" } ?? "\(a.sessionsDone)/\(a.sessionsPlanned)"
+        } ?? ""
         rows.append(NKAreaRow(id: "edzes", glyph: "dumbbell-ink", title: p.block.title.map { "Edzés · \($0)" } ?? "Edzés",
                               sub: training, value: done, valueSub: done.isEmpty ? "" : "az elmúlt héten"))
         if let food = evadFoodRow(p.food) {

@@ -126,7 +126,7 @@ private struct ReviewMuscleCard: View {
                 HStack(alignment: .center) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("\(position) · \(tier.hungarian.uppercased())").nkFont(11, .semibold, design: .monospaced).tracking(1.3).foregroundStyle(planHue.glow)
-                        Text(planMuscleName(muscle)).nkFont(34, design: .serif).foregroundStyle(.white)
+                        Text(SubMuscles.groupName(muscle)).nkFont(34, design: .serif).foregroundStyle(.white)
                     }
                     Spacer()
                     NKBodyMap([NKBodyHeat(muscle: muscle, level: 1)], hue: planHue, views: .auto)
@@ -324,7 +324,7 @@ private struct ReviewQuietCard: View {
                     ForEach(Array(quiet.enumerated()), id: \.element.muscle) { i, m in
                         if i > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
                         HStack {
-                            Text(planMuscleName(m.muscle)).nkFont(16, .medium).foregroundStyle(.white.opacity(0.95))
+                            Text(SubMuscles.groupName(m.muscle)).nkFont(16, .medium).foregroundStyle(.white.opacity(0.95))
                             PlanTierPill(tier: m.tier)
                             Spacer()
                             Text("\(m.setsBefore) sorozat").nkFont(15).foregroundStyle(.white.opacity(0.6))
@@ -498,7 +498,7 @@ private struct ReviewSummaryCard: View {
             if NKBodyMark.canDraw(muscle) { NKBodyMark(muscle: muscle, hue: planHue, height: 40).frame(width: 26).accessibilityHidden(true) }
             VStack(alignment: .leading, spacing: 5) {
                 HStack(spacing: 7) {
-                    Text(planMuscleName(muscle)).nkFont(15, .medium).foregroundStyle(.white.opacity(0.95))
+                    Text(SubMuscles.groupName(muscle)).nkFont(15, .medium).foregroundStyle(.white.opacity(0.95))
                     PlanTierPill(tier: review.muscle(muscle)?.tier ?? .grow)
                 }
                 NKFlowRow(spacing: 6, rowSpacing: 6) {

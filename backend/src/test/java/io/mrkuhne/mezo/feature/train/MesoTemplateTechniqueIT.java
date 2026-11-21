@@ -39,8 +39,9 @@ import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Set techniques on the plan template and the run (mezo-r36n9.80, T2 Task 4): the template save
- * stores and validates the technique / challenge of each exercise (stable only; partials and the
- * challenge also lengthened-friendly; one challenge a day), a web save carries them over, and the
+ * stores and validates the technique / challenge of each exercise (a technique needs a stable exercise, partials
+ * also a lengthened-friendly one; the challenge any counting exercise but a free-weight compound, owner decision
+ * #72; one challenge a day), a web save carries them over, and the
  * run inherits the block flag and the picks on start, rerun and day edit.
  */
 class MesoTemplateTechniqueIT extends ApiIntegrationTest {
@@ -125,6 +126,22 @@ class MesoTemplateTechniqueIT extends ApiIntegrationTest {
     }
 
     @Test
+    void restPauseTemplateExerciseIsTwentyReps() {
+        // mezo-r36n9.125: the template save pins the whole exercise to 20 and marks the range his
+        ownerId();
+        GymExerciseInput fly = tech(ex("Cable Fly", "chest-mid", catalog("cable-fly")), Technique.REST_PAUSE);
+
+        MesoTemplateResponse t = postForBody(TEMPLATES, request(true, List.of(fly)), ownerAuthHeaders(),
+            HttpStatus.OK, MesoTemplateResponse.class);
+
+        GymExercise e = t.getDays().get(0).getExercises().get(0);
+        assertThat(e.getTechnique()).isEqualTo(Technique.REST_PAUSE);
+        assertThat(e.getRepMin()).isEqualTo(20);
+        assertThat(e.getRepMax()).isEqualTo(20);
+        assertThat(e.getOverrides()).contains(io.mrkuhne.mezo.api.dto.StyleOverride.REP_RANGE);
+    }
+
+    @Test
     void freeExerciseTechniqueRejected() {
         ownerId();
         HttpHeaders auth = ownerAuthHeaders();
@@ -157,10 +174,10 @@ class MesoTemplateTechniqueIT extends ApiIntegrationTest {
             tech(ex("Machine Chest Press", "chest-mid", catalog("machine-chest-press")), Technique.PARTIALS))), auth,
             HttpStatus.BAD_REQUEST, String.class);
         assertHasRequestError(partials, "TRAIN_TECHNIQUE_NOT_LENGTHENED");
-        String chal = postForBody(TEMPLATES, request(true, List.of(
+        // the challenge no longer needs a lengthened-friendly exercise (owner decision #72)
+        postForBody(TEMPLATES, request(true, List.of(
             challenge(ex("Machine Chest Press", "chest-mid", catalog("machine-chest-press"))))), auth,
-            HttpStatus.BAD_REQUEST, String.class);
-        assertHasRequestError(chal, "TRAIN_TECHNIQUE_NOT_LENGTHENED");
+            HttpStatus.OK, MesoTemplateResponse.class);
         // a plain drop on it is fine
         postForBody(TEMPLATES, request(true, List.of(
             tech(ex("Machine Chest Press", "chest-mid", catalog("machine-chest-press")), Technique.DROP))), auth,
@@ -192,12 +209,35 @@ class MesoTemplateTechniqueIT extends ApiIntegrationTest {
         assertThat(saved.getTechnique()).isEqualTo(Technique.DROP);
         assertThat(saved.getChallenge()).isTrue();
 
-        // the challenge still needs a lengthened-friendly exercise, technique or not
-        GymExerciseInput unsafe = challenge(ex("Machine Chest Press", "chest-mid", catalog("machine-chest-press")));
-        unsafe.setTechnique(Technique.REST_DROP);
-        String res = postForBody(TEMPLATES, request(true, List.of(unsafe)), auth,
+        // a non-lengthened stable exercise takes both now (owner decision #72)
+        GymExerciseInput press = challenge(ex("Machine Chest Press", "chest-mid", catalog("machine-chest-press")));
+        press.setTechnique(Technique.REST_DROP);
+        postForBody(TEMPLATES, request(true, List.of(press)), auth, HttpStatus.OK, MesoTemplateResponse.class);
+    }
+
+    @Test
+    void challengeRule_cableCurlSaves_barbellBenchRefused() {
+        // owner decision #72: the challenge sits on any counting exercise but a free-weight compound
+        ownerId();
+        HttpHeaders auth = ownerAuthHeaders();
+        MesoTemplateResponse curl = postForBody(TEMPLATES, request(true, List.of(
+            challenge(ex("Cable Curl", "biceps-long", catalog("cable-curl"))))), auth,
+            HttpStatus.OK, MesoTemplateResponse.class);
+        assertThat(curl.getDays().get(0).getExercises().get(0).getChallenge()).isTrue();
+
+        String bench = postForBody(TEMPLATES, request(true, List.of(
+            challenge(ex("Barbell Bench Press", "chest-mid", catalog("barbell-bench-press"))))), auth,
             HttpStatus.BAD_REQUEST, String.class);
-        assertHasRequestError(res, "TRAIN_TECHNIQUE_NOT_LENGTHENED");
+        assertHasRequestError(bench, "TRAIN_CHALLENGE_FREE_WEIGHT_COMPOUND");
+        assertThat(bench).contains("Barbell Bench Press");
+
+        // the catalogue tells the phone the same answer
+        Map<String, Boolean> allowed = new java.util.HashMap<>();
+        getForList("/api/train/exercises", auth, HttpStatus.OK, io.mrkuhne.mezo.api.dto.ExerciseCatalogItem.class)
+            .forEach(i -> allowed.put(i.getName(), i.getChallengeAllowed()));
+        assertThat(allowed).containsEntry("Cable Curl", true).containsEntry("Barbell Bench Press", false)
+            .containsEntry("Hammer Curl", true).containsEntry("Pull-Up", true)
+            .containsEntry("Kettlebell Goblet Squat", false);
     }
 
     @Test

@@ -81,6 +81,7 @@ public class ExerciseTechniqueService {
         row.setTechnique(technique == Technique.NONE ? null : technique.wire());
         row.setTechniqueSource(active ? "owner" : null);
         row.setChallenge(challenge);
+        styler.pinRestPause(row); // rest-pause makes the whole exercise 20 reps (mezo-r36n9.125)
         exerciseRepository.save(row);
         if (challenge) {
             exerciseRepository.findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(

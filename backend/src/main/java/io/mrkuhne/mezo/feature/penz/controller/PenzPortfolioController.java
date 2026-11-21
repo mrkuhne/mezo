@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.api.dto.PenzHoldingResponse;
 import io.mrkuhne.mezo.api.dto.PenzInvestTxnRequest;
 import io.mrkuhne.mezo.api.dto.PenzInvestTxnResponse;
 import io.mrkuhne.mezo.api.dto.PenzPortfolioResponse;
+import io.mrkuhne.mezo.api.dto.PenzTransactionResponse;
 import io.mrkuhne.mezo.feature.penz.service.PenzHoldingEventService;
 import io.mrkuhne.mezo.feature.penz.service.PenzHoldingService;
 import io.mrkuhne.mezo.feature.penz.service.PenzInvestTxnService;
@@ -58,6 +59,12 @@ public class PenzPortfolioController implements PenzPortfolioApi {
     @Override
     public PenzInvestTxnResponse createPenzInvestTransaction(PenzInvestTxnRequest request) {
         return transactions.create(currentUserId.get(), request);
+    }
+
+    @Override
+    public List<PenzTransactionResponse> listPenzInvestSmsCandidates(UUID accountId, Long amountMinor,
+                                                                     LocalDate date) {
+        return transactions.smsCandidates(currentUserId.get(), accountId, amountMinor, date);
     }
 
     @Override

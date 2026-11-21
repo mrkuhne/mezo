@@ -24,6 +24,13 @@ Epic: `mezo-r36n9` · tükör jegy: `mezo-r36n9.29`.
 | `10-ai/` | AI és memória — emlékezet, éjszakai konzílium, javaslatok „miért?” |
 | `11-penz/` | Pénz — a heti maradék, a költések, a hónapzárás, később befektetések és gyakorlás |
 
+## Szerverfunkciók (`_funkciok.json`)
+
+Az újraépítés követője: a szerver **minden** funkciója területenként, és hogy hol tart az iPhone-appban
+(`Kész` · `Részben kész` · `Épül` · `Tervben` · `Nincs még` · `Nem kell`). Egy sor = egy funkció; a fájl sorrendje a
+Notion-oldal sorrendje területen belül. Mezők: `cim`, `terulet`, `mit_tud`, `app`, `app_megjegyzes`, `jegyek`
+(bd azonosítók), `kezikonyv` (oldal-útvonalak), `csomag` (a szerver-csomag neve, csak a gépnek).
+
 Minden mappában egy `00-attekintes.md` (szint: **Fő szekció**), alatta **Funkció** és **Kis funkció** oldalak.
 
 ## Egy oldal formátuma

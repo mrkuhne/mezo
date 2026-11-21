@@ -1,5 +1,9 @@
 package io.mrkuhne.mezo.feature.season.mapper;
 
+import io.mrkuhne.mezo.api.dto.SeasonAdherence;
+import io.mrkuhne.mezo.api.dto.SeasonAdherenceDay;
+import io.mrkuhne.mezo.api.dto.SeasonAdherenceSession;
+import io.mrkuhne.mezo.api.dto.SeasonAdherenceResponse;
 import io.mrkuhne.mezo.api.dto.SeasonBand;
 import io.mrkuhne.mezo.api.dto.SeasonBlockChoice;
 import io.mrkuhne.mezo.api.dto.SeasonDraft;
@@ -14,6 +18,7 @@ import io.mrkuhne.mezo.api.dto.SeasonWarning;
 import io.mrkuhne.mezo.feature.season.entity.SeasonDraftJson;
 import io.mrkuhne.mezo.feature.season.entity.SeasonEntity;
 import io.mrkuhne.mezo.feature.season.entity.SeasonNumbersJson;
+import io.mrkuhne.mezo.feature.season.service.AdherenceService;
 import io.mrkuhne.mezo.feature.season.service.SeasonPreviewService;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -85,6 +90,7 @@ public class SeasonMapper {
             .gymPerWeek(n.gymPerWeek())
             .sportPerWeek(n.sportPerWeek())
             .weekKcal(n.weekKcal())
+            .trainSportDayKcal(n.trainSportDayKcal())
             .build();
     }
 
@@ -121,6 +127,36 @@ public class SeasonMapper {
                 .menuTime(s.getMenuTime())
                 .build())
             .draft(toDto(current))
+            .build();
+    }
+
+    public SeasonAdherenceResponse toDto(AdherenceService.Result r) {
+        return SeasonAdherenceResponse.builder()
+            .days(new ArrayList<>(r.days().stream().map(SeasonMapper::day).toList()))
+            .summary(toDto(r.summary()))
+            .build();
+    }
+
+    public SeasonAdherence toDto(AdherenceService.Summary s) {
+        return SeasonAdherence.builder()
+            .foodInBand(s.foodInBand()).foodJudged(s.foodJudged())
+            .sessionsDone(s.sessionsDone()).sessionsPlanned(s.sessionsPlanned())
+            .nightsOk(s.nightsOk()).nightsJudged(s.nightsJudged())
+            .excusedDays(s.excusedDays())
+            .trainingDone(s.trainingDone()).trainingPlanned(s.trainingPlanned())
+            .sportDone(s.sportDone()).sportPlanned(s.sportPlanned())
+            .build();
+    }
+
+    private static SeasonAdherenceDay day(AdherenceService.AdherenceDay d) {
+        return SeasonAdherenceDay.builder()
+            .date(d.date()).judged(d.judged()).excused(d.excused()).excuse(d.excuse())
+            .kcal(d.kcal()).targetKcal(d.targetKcal()).proteinG(d.proteinG()).targetProteinG(d.targetProteinG())
+            .foodInBand(d.foodInBand()).sessionPlanned(d.sessionPlanned()).sessionDone(d.sessionDone())
+            .sleepMin(d.sleepMin()).needMin(d.needMin()).sleepOk(d.sleepOk())
+            .dayKind(d.dayKind())
+            .sessions(new ArrayList<>(d.sessions().stream().map(x -> SeasonAdherenceSession.builder()
+                .kind(x.kind()).excused(x.excused()).done(x.done()).build()).toList()))
             .build();
     }
 

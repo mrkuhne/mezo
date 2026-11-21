@@ -35,9 +35,11 @@ public interface SeasonGoalPort {
 
     /**
      * The served targets of a draft on a training day and on a rest day, from the segment covering the date, plus
-     * the segment's weekly planning kcal and the guard flags.
+     * the segment's weekly planning kcal and the guard flags. {@code trainSportDay} = a gym + sport day (null when the
+     * draft has none); {@code weekKcal} = the seven weekdays' served targets summed, each with its own sessions.
      */
-    record DraftTargets(DayTargets trainDay, DayTargets restDay, int segmentKcal, GuardFlags guards) {
+    record DraftTargets(DayTargets trainDay, DayTargets restDay, DayTargets trainSportDay, int weekKcal,
+                        int segmentKcal, GuardFlags guards) {
     }
 
     /** The draft schedule's energy, priced by the train side at the rest energy the calculator derives. */
@@ -47,6 +49,12 @@ public interface SeasonGoalPort {
 
         /** The net kcal one planned training day credits (a gym session, or a sport session without gym). */
         int trainDayMovementKcal(BigDecimal restKcalPerHour);
+
+        /** The net kcal each weekday (0 = hétfő … 6) credits: every session of that day. Seven values. */
+        List<Integer> weekdayMovementKcal(BigDecimal restKcalPerHour);
+
+        /** The net kcal a gym + sport day credits; null when the draft has no such day. */
+        Integer trainSportDayMovementKcal(BigDecimal restKcalPerHour);
     }
 
     /** {@code verdict}: feasible | warnings | aggressive. */
@@ -83,4 +91,14 @@ public interface SeasonGoalPort {
 
     /** Links the mesocycle to the goal from the week it starts in (week 1 when it started earlier); idempotent. */
     void link(UUID owner, UUID goalId, UUID mesocycleId, LocalDate mesocycleStart);
+
+    /** The planned (formula) and the learned daily expenditure, kcal; {@code learned} is what the engine now serves. */
+    record Expenditure(int plannedKcal, int learnedKcal) {
+    }
+
+    /**
+     * The goal's expenditure when the engine serves a LEARNED base ({@code LearnedBaseResolver}); empty while it still
+     * serves the formula (before learning, switch off, or no evaluated goal).
+     */
+    Optional<Expenditure> learnedExpenditure(UUID owner, UUID goalId);
 }

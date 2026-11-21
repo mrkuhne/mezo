@@ -37,9 +37,9 @@ struct EvadLogicTests {
             EvadLinkLine(from: "Étel", to: "Edzés", text: "szénhidrát az erőhöz"),
             EvadLinkLine(from: "Alvás", to: "Edzés", text: "kipihenten jobban edzel"),
         ])
-        #expect(mapLinkLines(o, lit: "suly").map(\.text) == ["\u{2212}0,4 kg/hét", "rossz alvás után többet eszel"],
-                "an unknown link key is left out")
-        #expect(mapLinkLines(o, lit: nil).count == 6)
+        #expect(mapLinkLines(o, lit: "suly").map(\.text) == ["\u{2212}0,4 kg/hét"],
+                "an unknown link key is left out, and so is sleep → food without the server's number")
+        #expect(mapLinkLines(o, lit: nil).count == 5)
     }
 
     @Test func linkWithoutANumberNeverInventsOne() {
@@ -88,6 +88,7 @@ struct EvadLogicTests {
         return try! JSONDecoder().decode(EvadNumbers.self, from: Data(json.utf8))
     }
 
+
     @Test func acceptOnlyWithAPreviewOfTheDraftOnScreen() {
         let d = EvadClientTests.draft
         var moved = d; moved.gymDays = [0, 2, 4]
@@ -111,5 +112,96 @@ struct EvadLogicTests {
         #expect(rows.first { $0.label == "Edzésnapon" }?.left == "2440 kcal", "a day's kcal stays ungrouped")
         #expect(!evadCompareRows(Self.numbers(nil), Self.numbers(nil)).contains { $0.label == "Heti összesen" },
                 "no weekly total from the server, no row")
+    }
+    // MARK: S2 — the server's sleep → food number, Hogy megy
+
+    @Test func sleepFoodLinkUsesTheServerNumberOrIsLeftOut() {
+        let link = { (v: Double?) in EvadMapLink(from: "alvas", to: "etel", key: "sleep_food", value: v) }
+        #expect(evadLinkText(link(nil), trajectory: "cut") == nil, "no computed effect, no line")
+        #expect(evadLinkText(link(283), trajectory: "cut") == "rövid éjszaka után +280 kcal", "rounded to 10 kcal")
+        #expect(evadLinkText(link(-120), trajectory: "cut") == "rövid éjszaka után \u{2212}120 kcal")
+    }
+
+    @Test func adherenceFactsArePlainCounts() {
+        let a = EvadAdherence(foodInBand: 5, foodJudged: 6, sessionsDone: 3, sessionsPlanned: 4, nightsOk: 4, nightsJudged: 7, excusedDays: 1)
+        let facts = evadAdherenceFacts(a)
+        #expect(facts == [EvadFact(value: "5", target: "6", label: "napon belefértél a keretbe"),
+                          EvadFact(value: "3", target: "4", label: "edzés megvolt"),
+                          EvadFact(value: "4", target: "7", label: "éjjel aludtál eleget")],
+                "a night counts at the need minus 15 minutes, so the label claims no hours")
+        // a fact with nothing to count is left out, never a 0 / 0
+        let quiet = EvadAdherence(foodInBand: 0, foodJudged: 0, sessionsDone: 0, sessionsPlanned: 2, nightsOk: 0, nightsJudged: 0, excusedDays: 0)
+        #expect(evadAdherenceFacts(quiet).map(\.label) == ["edzés megvolt"])
+    }
+
+    // MARK: mezo-r36n9.131 — a gym + sport day is two sessions
+
+    @Test func adherenceFactsCountTrainingAndSportApart() {
+        let a = EvadAdherence(foodInBand: 5, foodJudged: 6, sessionsDone: 5, sessionsPlanned: 7, nightsOk: 4,
+                              nightsJudged: 7, excusedDays: 0, trainingDone: 3, trainingPlanned: 4, sportDone: 2,
+                              sportPlanned: 3)
+        #expect(evadAdherenceFacts(a) == [EvadFact(value: "5", target: "6", label: "napon belefértél a keretbe"),
+                                          EvadFact(value: "3", target: "4", label: "edzés megvolt"),
+                                          EvadFact(value: "2", target: "3", label: "sport megvolt"),
+                                          EvadFact(value: "4", target: "7", label: "éjjel aludtál eleget")])
+        let noSport = EvadAdherence(foodInBand: 0, foodJudged: 0, sessionsDone: 2, sessionsPlanned: 4, nightsOk: 0,
+                                    nightsJudged: 0, excusedDays: 0, trainingDone: 2, trainingPlanned: 4, sportDone: 0,
+                                    sportPlanned: 0)
+        #expect(evadAdherenceFacts(noSport).map(\.label) == ["edzés megvolt"], "no sport planned, no 0 / 0")
+    }
+
+    @Test func adherenceFromAnOlderServerKeepsTheTotal() throws {
+        let a = try JSONDecoder().decode(EvadAdherence.self, from: Data(#"{"foodInBand":0,"foodJudged":0,"sessionsDone":3,"sessionsPlanned":4,"nightsOk":0,"nightsJudged":0,"excusedDays":0}"#.utf8))
+        #expect(a.trainingPlanned == nil)
+        #expect(evadAdherenceFacts(a) == [EvadFact(value: "3", target: "4", label: "edzés megvolt")])
+    }
+
+    @Test func adherenceDayCarriesItsKindAndSessions() throws {
+        let d = try JSONDecoder().decode(EvadAdherenceDay.self, from: Data(#"{"date":"2026-11-17","judged":true,"excused":false,"sessionPlanned":true,"sessionDone":false,"dayKind":"edzes_sport","sessions":[{"kind":"gym","excused":false,"done":true},{"kind":"sport","excused":false,"done":false}]}"#.utf8))
+        #expect(d.dayKind == "edzes_sport")
+        #expect(d.sessions.map(\.kind) == ["gym", "sport"] && d.sessions.map(\.done) == [true, false])
+        let old = try JSONDecoder().decode(EvadAdherenceDay.self, from: Data(#"{"date":"2026-11-17","judged":false,"excused":false,"sessionPlanned":false}"#.utf8))
+        #expect(old.dayKind == nil && old.sessions.isEmpty)
+    }
+
+    @Test func dayKindLabels() {
+        #expect(evadDayKindLabel("edzesnap") == "edzésnap")
+        #expect(evadDayKindLabel("sport") == "sportnap")
+        #expect(evadDayKindLabel("edzes_sport") == "edzés + sport nap")
+        #expect(evadDayKindLabel("pihenonap") == "pihenőnap")
+        #expect(evadDayKindLabel("valami_uj") == nil)
+    }
+
+    @Test func twoSessionDayKcalInEveryKcalSentence() throws {
+        let food = try JSONDecoder().decode(EvadFoodPillar.self, from: Data(#"{"trainDayKcal":2440,"trainSportDayKcal":2790,"restDayKcal":2270,"proteinG":170,"allowedCount":0,"novaMax":4}"#.utf8))
+        #expect(evadFoodRow(food)?.sub.hasPrefix("edzés- és pihenőnapon · edzés + sport napon 2790 kcal") == true)
+        let both = Self.numbers(17_800).with(trainSport: 2790)
+        let rows = evadCompareRows(Self.numbers(17_080), both)
+        #expect(rows.first { $0.label == "Edzés + sport napon" }.map { [$0.left, $0.right] } == ["–", "2790 kcal"])
+        #expect(!evadCompareRows(Self.numbers(1), Self.numbers(1)).contains { $0.label == "Edzés + sport napon" })
+        #expect(evadKcalSentence(both) == "Edzésnapon 2440, edzés + sport napon 2790, pihenőnapon 2270 kcal, 170 g fehérje.")
+        #expect(evadKcalSentence(Self.numbers(1)) == "Edzésnapon 2440, pihenőnapon 2270 kcal, 170 g fehérje.")
+        #expect(evadKcalSentence(Self.numbers(1, rest: nil)) == "Edzésnapon 2440 kcal, pihenőnap nincs, 170 g fehérje.")
+    }
+
+    @Test func pillarDetailNamesTheTwoSessionDay() {
+        let o = EvadFixtures.overview(food: #"{"trainDayKcal":2440,"trainSportDayKcal":2790,"restDayKcal":2270,"proteinG":170,"allowedCount":24,"recipeCount":53,"novaMax":2}"#)
+        #expect(evadPillarDetail(o, lit: "edzes").hasPrefix(
+            "A heti 4 edzés és a 2 sportnap miatt edzésnapon 2440, edzés + sport napon 2790, pihenőnapon 2270 kcal-t ehetsz."))
+    }
+
+    @Test func excusedLineOnlyWhenADayWasLeftOut() {
+        #expect(evadExcusedLine(0) == "Ez nem pontszám, csak összesítés.")
+        #expect(evadExcusedLine(1) == "1 kímélő nap nem számít bele. Ez nem pontszám, csak összesítés.")
+        #expect(evadExcusedLine(2) == "2 kímélő nap nem számít bele. Ez nem pontszám, csak összesítés.")
+    }
+}
+
+extension EvadNumbers {
+    /// The same figures with a gym + sport day's kcal (tests only).
+    func with(trainSport: Int?) -> EvadNumbers {
+        var obj = try! JSONSerialization.jsonObject(with: JSONEncoder().encode(self)) as! [String: Any]
+        obj["trainSportDayKcal"] = trainSport ?? NSNull()
+        return try! JSONDecoder().decode(EvadNumbers.self, from: JSONSerialization.data(withJSONObject: obj))
     }
 }

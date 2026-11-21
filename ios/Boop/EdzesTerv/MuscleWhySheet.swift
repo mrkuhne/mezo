@@ -21,7 +21,7 @@ struct MuscleWhySheet: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text(planMuscleName(muscle.muscle)).nkFont(30, design: .serif).foregroundStyle(.white)
+                    Text(SubMuscles.groupName(muscle.muscle)).nkFont(30, design: .serif).foregroundStyle(.white)
                     Spacer()
                     PlanTierPill(tier: tier)
                 }
@@ -75,7 +75,7 @@ struct MuscleWhySheet: View {
     /// „A hát két egymást követő napon kap nehéz adagot: hétfőn 7, kedden 4 kemény sorozatot."
     private func hint(_ c: WireConsecutive) -> String? {
         guard let a = weekday(c.dayIndex), let b = weekday(c.nextDayIndex) else { return nil }
-        let name = planMuscleName(muscle.muscle).lowercased()
+        let name = SubMuscles.groupName(muscle.muscle).lowercased()
         let article = "aáeéiíoóöőuúüű".contains(name.first ?? "x") ? "Az" : "A"
         return "\(article) \(name) két egymást követő napon kap nehéz adagot: \(planWeekdayOn(a)) \(c.sets), \(planWeekdayOn(b)) \(c.nextSets) kemény sorozatot. Ha az egyik napról egy gyakorlatot máshová teszel, rendben lesz."
     }

@@ -146,6 +146,19 @@ final class MealCoachPrompt {
         sb.append("- aktív gyógyszer: ").append(p.medication() == null ? "nincs rögzítve" : p.medication())
           .append('\n');
         appendSensitivities(sb, p.sensitivity());
+        appendSeasonRules(sb, p.seasonRules());
+    }
+
+    /**
+     * Boop B6 Évad S2 (mezo-r36n9.16): the active season's rules (allowed recipes, NOVA rule, day targets) — absent
+     * without a season, never a "nincs adat" line (no season is not a gap in the person).
+     */
+    private static void appendSeasonRules(StringBuilder sb, String rules) {
+        if (rules == null || rules.isBlank()) {
+            return;
+        }
+        sb.append("- AZ ÉVAD SZABÁLYAI (ezekhez igazítsd a javaslatot; ha egy étel megszegi, mondd ki kedvesen):\n");
+        rules.strip().lines().forEach(l -> sb.append("  ").append(l).append('\n'));
     }
 
     /**

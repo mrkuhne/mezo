@@ -6,22 +6,23 @@ allapot: Élesben
 hol: [iPhone app, Háttérrendszer]
 szulo: 00-attekintes
 szakasz: [B5]
-osszefoglalo: Egy gyakorlat utolsó sorozata helyett technikát (pihenős drop, drop set, myo set, félismétlések) vagy a nap kihívását írhatod elő, de a rendszer is elhelyezi őket a stílusos, technikás blokkban, és Boop a kézi heti átnézésben finomíthatja; edzés közben lépésről lépésre megmondja, a napló pedig rögzíti.
+osszefoglalo: Egy gyakorlat utolsó sorozata helyett technikát (pihenős drop, drop set, myo set, rest pause, félismétlések) vagy a nap kihívását írhatod elő, de a rendszer is elhelyezi őket a stílusos, technikás blokkban, és Boop a kézi heti átnézésben finomíthatja; edzés közben lépésről lépésre megmondja, a napló pedig rögzíti.
 ---
 
 ## Mit csinál
-Egy gyakorlat **utolsó munkasorozatát** le lehet cserélni egy **intenzitás-technikára**. Az öt lehetőség:
+Egy gyakorlat **utolsó munkasorozatát** le lehet cserélni egy **intenzitás-technikára**. A hat lehetőség:
 
 | Technika | Mit jelent |
 |---|---|
 | **Pihenős drop** (a te változatod) | Egy sorozat bukásig, rövid, 30 másodperces pihenő, majd kisebb súllyal (a súly 70%-ával) ugyanannyi ismétlés. |
 | **Drop set** | Egy sorozat bukásig, szünet nélkül kisebb súllyal (a súly 80%-ával) újra bukásig. |
 | **Myo set** | Egy aktiváló sorozat (egy ismétlésnyi tartalékkal), majd legfeljebb négy rövid, 5 ismétléses mini-sorozat 20 másodperces szünetekkel; ha egy mini-sorozat 3 ismétlés alá esik, vége. |
+| **Rest pause** (a te fix változatod, 2026-11-20) | 20 ismétlés, majd négyszer: 10 másodperc pihenő és 5 ismétlés. Fix menet: ha egy kör rövidebb, nem áll le magától, csak az „Elég volt” gombra. **Ha ezt választod, az egész gyakorlat 20 ismétlésre áll** (minden sorozata); ha később leveszed, a 20 marad, és kézzel átírhatod. |
 | **Félismétlések** | Egy sorozat bukásig, majd a nyújtott szakaszban végzett részismétlések bukásig. |
 | **Napi kihívás** | A nap egyik gyakorlatán félismétlések bukásig, és a rendszer megmondja az eddigi legjobbat ugyanazzal a súllyal. |
 
-A technikát **te is megadhatod** a tervben, a rendszer pedig (lásd lent) maga is elhelyezhet. Egy gyakorlatra egyszerre egy technika vagy a kihívás kerülhet;
-ha a kettő ütközik, a **kihívás nyer**. Egy napon legfeljebb **egy kihívás** lehet.
+A technikát **te is megadhatod** a tervben, a rendszer pedig (lásd lent) maga is elhelyezhet. Egy gyakorlaton lehet technika **és** a kihívás is
+(először a technika, a végén a kihívás félismétlései). Egy napon legfeljebb **egy kihívás** lehet.
 
 ## Az automatikus elhelyezés (2026-11-19)
 Ha a blokknak van **edzésstílusa**, és a **technikák be vannak kapcsolva**, a rendszer magától is elhelyezi a technikákat és a napi kihívást.
@@ -35,10 +36,10 @@ Más blokkban (a webesekben és a most futóban) ez nem történik meg.
 - **Csak stabil gyakorlat, az izom utolsó gyakorlata aznap**, és legalább két sorozatos legyen: a technika **egy sima sorozatot vált ki**
   (például 3 sorozatból 2 sima és 1 technikás lesz).
 - **Mit kap:** a sok ismétléses (15 fölötti) izolációs gyakorlat myo szettet; a gépes és kábeles gyakorlat a te pihenős dropodat. Drop setet és
-  félismétlést a rendszer magától nem választ.
+  félismétlést a rendszer magától nem választ, a rest pause-t sem — azt csak te teheted be (Boop sem javasolja).
 - **A sport által terhelt izomra sportnapon nincs technika.**
 
-**A napi kihívás** az **első héttől** jár: a nap első olyan gyakorlata kapja, amelyik stabil és nyújtott helyzetben is biztonságos; a Hangsúly izom
+**A napi kihívás** az **első héttől** jár: a nap első olyan gyakorlata kapja, amelyiken a kihívás megengedett (lásd lent, *Kinek lehet*); a Hangsúly izom
 előnyben. Ha a nap egyik izma sportnapon a sporttól amúgy is terhelt, azt kihagyja; ha nincs ilyen gyakorlat, aznap nincs kihívás. A kihívást
 sportnapon az edzés nem is mutatja.
 
@@ -70,7 +71,13 @@ Ha egy izom két hete nem fejlődik, a rendszer **egyetlen** javaslatot tesz, eb
 
 ## Kinek lehet
 - Csak **stabil** gyakorlat kaphat technikát (gép, kábel, támasztott hát, ülve — lásd [Edzésstílus](14-edzesstilus.md)): ott biztonságos bukásig menni.
-- A **félismétlés és a kihívás** ráadásul csak olyan gyakorlaton engedett, amely **nyújtott helyzetben is biztonságosan** terheli az izmot.
+- A **félismétlés mint technika** ráadásul csak olyan gyakorlaton engedett, amely **nyújtott helyzetben is biztonságosan** terheli az izmot.
+- **A napi kihívás** (tulajdonosi döntés, 2026-11-21) **minden olyan gyakorlaton** engedett, amely beleszámít a sorozatokba (nem törzs, nem
+  robbanékony ugrás), **kivéve a szabadsúlyos alapgyakorlatokat**: az összetett mozgást rúddal, kézisúlyzóval vagy kettlebellel (például
+  fekvenyomás rúddal vagy kézisúlyzóval, guggolás, felhúzás, serleg-guggolás kettlebellel). Kihívás jöhet tehát például kábeles bicepszre,
+  tricepsz-letolásra, lábnyújtásra, gépi mellnyomásra, lehúzásra, kézisúlyzós bicepszre (ez izolált mozgás) vagy húzódzkodásra (saját testsúly).
+  A katalógusban így kb. 95 gyakorlat kaphat kihívást (korábban csak 22). Ha a gyakorlat nincs a katalógusban (saját gyakorlat), nem tudjuk,
+  milyen eszközzel megy, ezért azon nincs kihívás. A kihívás nem kell, hogy stabil gépes gyakorlat legyen — a technikákhoz viszont továbbra is az kell.
 - A rendszer ezt a szerveren ellenőrzi: ha a kért gyakorlat nem felel meg, a mentés elutasításra kerül, és megmondja, miért. Ha egy gyakorlatot később
   átsorolsz, és a korábban beállított technika már nem érvényes, az **csendben lekerül** róla.
 
@@ -108,6 +115,7 @@ Ha egy izom két hete nem fejlődik, a rendszer **egyetlen** javaslatot tesz, eb
 | `mezo.train.technique.rest-drop` | Pihenős drop: tartalék, súlycsökkentés, pihenő | 0 · 30% · 30 mp |
 | `mezo.train.technique.drop` | Drop set: tartalék, súlycsökkentés, pihenő | 0 · 20% · 0 mp |
 | `mezo.train.technique.myo` | Myo: aktiváló tartalék, mini-ismétlés, alsó határ, pihenő, mini-sorozatok száma | 1 · 5 · 3 · 20 mp · 4 |
+| `mezo.train.technique.rest-pause` | Rest pause: az alapsorozat ismétlése (ennyire áll a gyakorlat is), tartalék, mini-ismétlés, pihenő, körök száma | 20 · 0 · 5 · 10 mp · 4 |
 | `mezo.train.technique.partials` | Félismétlések: tartalék | 0 |
 | `mezo.train.technique.cap-weight` | Hány sorozatnak számít a technikás sorozat a napi határoknál | 2 |
 | `mezo.feature.technique-ai.enabled` | Boop finomíthatja-e a technikákat a kézi heti átnézésben | be |

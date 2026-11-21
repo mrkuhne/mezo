@@ -284,29 +284,9 @@ struct SwapSheet: View {
     }
 
     private func card(_ p: Substitute, first: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(p.exercise.name).nkFont(17, .medium).foregroundStyle(.white).lineLimit(2).minimumScaleFactor(0.8)
-                Spacer(minLength: 8)
-                Text(roleLine(p.exercise)).nkFont(10, design: .monospaced).foregroundStyle(.white.opacity(0.5))
-                    .lineLimit(1)
-            }
-            Text(p.reason).nkFont(14).foregroundStyle(.white.opacity(0.82))
-                .fixedSize(horizontal: false, vertical: true)
-            if let last = p.lastTopSet {
-                Text("Legutóbb: \(Self.lastText(kg: last.kg, reps: last.reps))")
-                    .nkFont(12, design: .monospaced).foregroundStyle(hue.glow)
-            } else {
-                Text("Ezt még nem csináltad").nkFont(12, design: .monospaced).foregroundStyle(.white.opacity(0.4))
-            }
-        }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.white.opacity(first ? 0.11 : 0.06)))
-        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous)
-            .strokeBorder(.white.opacity(first ? 0.22 : 0), lineWidth: 0.5))
-        .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .accessibilityElement(children: .combine)
+        ExercisePickCard(name: p.exercise.name, image: BoopConfig.mediaURL(p.exercise.imageStartURL),
+                         role: roleLine(p.exercise), reason: p.reason,
+                         last: p.lastTopSet.map { Self.lastText(kg: $0.kg, reps: $0.reps) }, first: first, hue: hue)
     }
 
     /// „60 kg × 10"; a bodyweight set (no weight) is „12 ismétlés" — never „0 kg".
@@ -315,9 +295,7 @@ struct SwapSheet: View {
         return "\(nkKg(kg)) × \(reps)"
     }
 
-    private func roleLine(_ c: CatalogExercise) -> String {
-        "\(muscleName(c.muscle)) · \(Self.typeName(c.type))"
-    }
+    private func roleLine(_ c: CatalogExercise) -> String { exerciseRoleLine(muscle: c.muscle, type: c.type) }
 
     static func typeName(_ t: ExerciseType) -> String {
         switch t {
@@ -383,13 +361,74 @@ struct SwapSheet: View {
     }
 
     private func plainRow(_ c: CatalogExercise) -> some View {
-        let quiet = label(c)
-        return HStack(spacing: 10) {
-            NKRemoteThumb(BoopConfig.mediaURL(c.imageStartURL), size: 36)
-                .opacity(quiet == nil ? 1 : 0.6)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(c.name).nkFont(14).foregroundStyle(.white.opacity(quiet == nil ? 1 : 0.6)).lineLimit(1)
-                Text(roleLine(c)).nkFont(11, design: .monospaced).foregroundStyle(.white.opacity(0.45))
+        ExercisePickRow(name: c.name, image: BoopConfig.mediaURL(c.imageStartURL), role: roleLine(c), quiet: label(c))
+    }
+
+    // MARK: Loading
+
+    private func refresh() async {
+        if let fresh = await actions.substitutes(exerciseId) { load = .ready(fresh) } else { load = .failed }
+    }
+}
+
+// MARK: - Shared by every exercise picker (the player's swap, the builder's add and swap — mezo-r36n9.127)
+
+/// „hát · középső · összetett": the fine muscle (`SubMuscles`) and the movement type, under the exercise's name.
+func exerciseRoleLine(muscle: String, type: ExerciseType) -> String {
+    "\(SubMuscles.name(muscle).lowercased()) · \(SwapSheet.typeName(type))"
+}
+
+/// An AJÁNLOM card (approved spike `spike/boop-izomreszek`): the catalogue picture on the left (a quiet tile without
+/// one), the name, the sub-muscle line under it, the server's reason, the last top set.
+struct ExercisePickCard: View {
+    let name: String
+    let image: URL?
+    let role: String
+    let reason: String
+    let last: String?
+    let first: Bool
+    let hue: Hue
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            NKRemoteThumb(image, size: 44, corner: 12)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(name).nkFont(17, .medium).foregroundStyle(.white).lineLimit(2).minimumScaleFactor(0.8)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(role).nkFont(10, design: .monospaced).foregroundStyle(.white.opacity(0.5)).lineLimit(1)
+                Text(reason).nkFont(14).foregroundStyle(.white.opacity(0.82))
+                    .fixedSize(horizontal: false, vertical: true).padding(.top, 2)
+                if let last {
+                    Text("Legutóbb: \(last)").nkFont(12, design: .monospaced).foregroundStyle(hue.glow)
+                } else {
+                    Text("Ezt még nem csináltad").nkFont(12, design: .monospaced).foregroundStyle(.white.opacity(0.4))
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.white.opacity(first ? 0.11 : 0.06)))
+        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous)
+            .strokeBorder(.white.opacity(first ? 0.22 : 0), lineWidth: 0.5))
+        .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// A „Minden gyakorlat" row: the picture, the name, the sub-muscle line, the quiet label of a left-out exercise.
+struct ExercisePickRow: View {
+    let name: String
+    let image: URL?
+    let role: String
+    let quiet: String?
+
+    var body: some View {
+        HStack(spacing: 12) {
+            NKRemoteThumb(image, size: 44, corner: 12).opacity(quiet == nil ? 1 : 0.6)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(name).nkFont(15).foregroundStyle(.white.opacity(quiet == nil ? 1 : 0.6)).lineLimit(1)
+                Text(role).nkFont(11, design: .monospaced).foregroundStyle(.white.opacity(0.45)).lineLimit(1)
             }
             Spacer(minLength: 0)
             if let quiet {
@@ -399,15 +438,9 @@ struct SwapSheet: View {
                     .background(Capsule().fill(.white.opacity(0.08)))
             }
         }
-        .padding(.horizontal, 12).padding(.vertical, 9)
-        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(.white.opacity(0.05)))
-        .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .padding(.horizontal, 10).padding(.vertical, 8)
+        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(.white.opacity(0.05)))
+        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .accessibilityElement(children: .combine)
-    }
-
-    // MARK: Loading
-
-    private func refresh() async {
-        if let fresh = await actions.substitutes(exerciseId) { load = .ready(fresh) } else { load = .failed }
     }
 }

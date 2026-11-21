@@ -5,6 +5,8 @@ import io.mrkuhne.mezo.api.dto.PenzAccountResponse;
 import io.mrkuhne.mezo.feature.penz.entity.PenzAccountEntity;
 import io.mrkuhne.mezo.feature.penz.mapper.PenzMapper;
 import io.mrkuhne.mezo.feature.penz.repository.PenzAccountRepository;
+import io.mrkuhne.mezo.feature.penz.repository.PenzRecurringRuleRepository;
+import io.mrkuhne.mezo.feature.penz.repository.PenzTransactionRepository;
 import io.mrkuhne.mezo.feature.penz.service.engine.AccountRules;
 import io.mrkuhne.mezo.feature.penz.service.engine.AccountRules.AccountPatch;
 import io.mrkuhne.mezo.feature.penz.service.engine.AccountRules.AccountPlan;
@@ -29,6 +31,10 @@ import org.springframework.transaction.annotation.Transactional;
  * savings account takes it; a non-savings or archived account never holds it; losing it promotes another active
  * savings account). Archiving the last non-archived account is refused: 409 {@code PENZ_LAST_ACTIVE_ACCOUNT}.
  * "First" = creation order. Flags are written clear-first, so the partial unique indexes never see two holders.
+ * <p>
+ * The currency is locked once the account carries a live transaction or recurring rule: every row must be in its
+ * account's currency ({@code PENZ_CURRENCY_MISMATCH}), so a later change would recreate the mismatch and make the
+ * balances skip those rows — 409 {@code PENZ_ACCOUNT_CURRENCY_LOCKED} (mezo-r36n9.108).
  */
 @Service
 @RequiredArgsConstructor
@@ -36,6 +42,8 @@ public class PenzAccountService {
 
     private final PenzAccountRepository repository;
     private final PenzMapper mapper;
+    private final PenzTransactionRepository transactions;
+    private final PenzRecurringRuleRepository rules;
 
     @Transactional(readOnly = true)
     public List<PenzAccountResponse> list(UUID owner, boolean includeArchived) {
@@ -60,6 +68,10 @@ public class PenzAccountService {
     @Transactional
     public PenzAccountResponse update(UUID owner, UUID id, PenzAccountRequest req) {
         PenzAccountEntity row = require(owner, id);
+        if (!row.getCurrency().equals(req.getCurrency())
+            && (transactions.existsByAccountIdAndDeletedFalse(id) || rules.existsByAccountIdAndDeletedFalse(id))) {
+            throw PenzErrors.conflict("PENZ_ACCOUNT_CURRENCY_LOCKED");
+        }
         apply(row, req);
         row.setUpdatedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
         return mapper.toResponse(save(owner, row, Boolean.TRUE.equals(req.getIsDefault()),

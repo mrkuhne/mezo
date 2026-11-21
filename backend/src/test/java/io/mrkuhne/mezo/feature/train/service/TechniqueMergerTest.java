@@ -20,8 +20,8 @@ import org.junit.jupiter.api.Test;
 
 class TechniqueMergerTest {
     private static final TrainTechniqueProperties.Planner CFG = new TrainTechniqueProperties.Planner(3, 2, 1, 2, 15);
-    private static final CatalogAttributes.Attrs MACHINE = new CatalogAttributes.Attrs(true, false, "machine");
-    private static final CatalogAttributes.Attrs LENGTHENED = new CatalogAttributes.Attrs(true, true, "machine");
+    private static final CatalogAttributes.Attrs MACHINE = new CatalogAttributes.Attrs(true, false, "machine", false);
+    private static final CatalogAttributes.Attrs LENGTHENED = new CatalogAttributes.Attrs(true, true, "machine", true);
 
     private static UUID id(int day, int ex) {
         return new UUID(day, ex);

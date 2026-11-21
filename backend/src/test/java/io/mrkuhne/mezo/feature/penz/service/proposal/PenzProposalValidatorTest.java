@@ -277,6 +277,75 @@ class PenzProposalValidatorTest {
         }
     }
 
+    /** mezo-r36n9.121: a product, fund, bank or company that is not in his catalog at all. */
+    @Nested
+    class OutsideTheCatalog {
+
+        @ParameterizedTest
+        @ValueSource(strings = {
+            "A Bitcoin is szóba jöhetne.",            // mid-sentence proper noun
+            "Bitcoinba is tehetnéd.",                  // sentence-initial, a well-known asset
+            "Az OTP részvény is ilyen.",               // an acronym
+            "Hasonló a Tesla papírjához.",
+            "Apple részvény helyett ez olcsóbb.",
+            "Ez olyan, mint egy BUX-kosár.",
+            "A Revolutnál is van ilyen alap.",          // a platform / bank is not a product he was offered
+            "Erre a célra a Magyar Telekom osztaléka is jó lenne.",
+            "Az ethereum is ingadozik.",
+        })
+        void testValidate_shouldFlagAProductNeverInHisCatalog(String why) {
+            assertThat(rules(check(SUMMARY, SHORT, MID, why, UNCERTAINTY))).contains(Rule.ENTITY_SWAP);
+            assertThat(rules(check(why, SHORT, MID, LONG, UNCERTAINTY))).contains(Rule.ENTITY_SWAP);
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {
+            "Boop szerint ez nyugodt felosztás: a Forint Pénzpiaci Alap forintban van.",
+            "Az alapod ETF, és a TER az éves költsége.",          // generic product words
+            "A Kötvény ETF forintban számolva is olcsó.",           // a word of a catalog name, inflected
+            "Az Euró Kötvény ETF-ben euróban van a pénzed.",       // an offered name with a Hungarian ending
+            "Mivel a tartalékod még hiányos, ide kerül a nagyobb rész. Utána jön a többi.",
+            "Ha változik a helyzeted: Akkor újra kérhetsz felosztást.",
+            "Nem ismerem a terveidet, és a díjak az EU-ban is változhatnak.",
+            // review fix (mezo-r36n9.119): institutions, places and terms a plausible narration names
+            "Az MNB alapkamata is számít.",
+            "Az EKB döntései a kötvényekre hatnak.",
+            "Egy TBSZ-számlán az adó is más.",
+            "Az USA cégei nagy részt adnak.",
+            "A Magyar Államkincstárnál vezetik.",
+            "Ezért mondom: „Nincs teendőd” ebben a hónapban.",
+            "Ezért mondom „Nincs teendőd” ebben a hónapban.",           // after an opening quote
+            "Az Euró Kötvényeitekkel is euróban számoltok.",           // an 8-letter Hungarian ending
+        })
+        void testValidate_shouldNotFlagOrdinaryHungarianOrCatalogWords(String text) {
+            // the summary may name every offered option
+            assertThat(check(text, SHORT, MID, LONG, UNCERTAINTY)).isEmpty();
+        }
+
+        @Test
+        void testValidate_shouldTreatAWordAfterAListMarkerAsASentenceStart() {
+            // "1)" is a number the numerical gate judges on its own — only the outside-catalog verdict matters here
+            String list = "Két lépés:\n1) Rövid táv forintban.\n2. Közép táv.\n- Utána jön a többi.\n• Végül a hosszú táv.";
+            assertThat(rules(check(list, SHORT, MID, LONG, UNCERTAINTY))).doesNotContain(Rule.ENTITY_SWAP);
+            assertThat(rules(check("Két lépés:\n1) Tesla papír.", SHORT, MID, LONG, UNCERTAINTY)))
+                .contains(Rule.ENTITY_SWAP); // a known outside name is still caught at a list start
+        }
+
+        @Test
+        void testValidate_shouldAllowAnAcronymFromItsOwnOptionsName() {
+            CatalogProduct mbh = ProposalFixtures.product("MBH Megtakarítási Alap", "money_market", "HUF",
+                List.of("short"), "0.30", null, null, "accumulating", CatalogProduct.STATUS_APPROVED);
+            List<CatalogProduct> catalog = java.util.stream.Stream.concat(ProposalFixtures.CATALOG.stream(),
+                java.util.stream.Stream.of(mbh)).toList();
+            Map<Sleeve, String> why = new EnumMap<>(Sleeve.class);
+            why.put(Sleeve.SHORT, "Az MBH alapja forintban van.");
+            why.put(Sleeve.MID, MID);
+            why.put(Sleeve.LONG, LONG);
+            assertThat(ProposalValidator.validate(new ProposalNarration(SUMMARY, why, UNCERTAINTY),
+                ProposalFixtures.figures(ProposalFixtures.split(), catalog), catalog)).isEmpty();
+        }
+    }
+
     @Test
     void testParse_shouldNeedAllThreeSleevesOnce() {
         String ok = """

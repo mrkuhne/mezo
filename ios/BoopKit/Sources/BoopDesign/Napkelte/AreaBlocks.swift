@@ -353,6 +353,8 @@ public struct NKAreaRow: Identifiable {
     let state: NKRowState
     /// A second sub-line of small capsules — a skip reason, a tag, a warning.
     let chips: [String]
+    /// How many lines the sub may wrap to (1 = the usual truncated line; Pénz's weekly verdict wraps to 2).
+    let subLines: Int
     let photo: Image?
     /// What a search should also match besides the title and the sub — an exercise's muscle zone, a merchant's
     /// category. Never shown.
@@ -361,11 +363,11 @@ public struct NKAreaRow: Identifiable {
     public init(id: String? = nil, glyph: String, title: String, sub: String = "", value: String = "",
                 valueSub: String = "", level: Double? = nil, ticks: [NKLevelTick] = [], badge: Int = 0,
                 dot: Bool = false, hot: Bool = false, state: NKRowState = .normal, chips: [String] = [],
-                photo: Image? = nil, terms: [String] = [],
+                subLines: Int = 1, photo: Image? = nil, terms: [String] = [],
                 action: (@MainActor @Sendable () -> Void)? = nil) {
         self.id = id ?? title; self.glyph = glyph; self.title = title; self.sub = sub; self.value = value
         self.valueSub = valueSub; self.level = level; self.ticks = ticks; self.badge = badge; self.dot = dot
-        self.hot = hot; self.state = state; self.chips = chips
+        self.hot = hot; self.state = state; self.chips = chips; self.subLines = max(1, subLines)
         self.photo = photo; self.terms = terms; self.action = action
     }
 
@@ -441,7 +443,8 @@ public struct NKRowList: View {
                     if r.dot { NKBadge(dot: true, hue: hue) } else { NKBadge(r.badge, hue: hue) }
                 }
                 if !r.sub.isEmpty {
-                    Text(r.sub).nkFont(12).foregroundStyle(.white.opacity(0.55)).lineLimit(1)
+                    Text(r.sub).nkFont(12).foregroundStyle(.white.opacity(0.55)).lineLimit(r.subLines)
+                        .fixedSize(horizontal: false, vertical: r.subLines > 1)
                 }
                 if !r.chips.isEmpty {
                     NKFlowRow(spacing: 6, rowSpacing: 5) {

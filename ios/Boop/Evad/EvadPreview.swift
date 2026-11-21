@@ -14,7 +14,9 @@ import BoopCore
 /// server failing. `-previewOffline YES` is the same as `offline`. `-evadOpen modositas|szabalyok|uj` opens a sub-page,
 /// `-evadLit 0…3` lights a pillar, `-evadSessions 5` / `-evadPace 0.6` pre-set Módosítás, `-evadStale YES` answers the
 /// first accept with 409 SEASON_PREVIEW_STALE. The block runs by default (the gym days are locked in Módosítás);
-/// `-evadNoBlock YES` frees them.
+/// `-evadNoBlock YES` frees them. S2: the overview carries „Hogy megy" (adherence) and three insights; `-evadQuiet YES`
+/// leaves both out (data still short); `-evadEndSoon YES` puts the season in its last week (the wall's season-end
+/// card). `getAdherence` answers the same seven days the Étel preview's week holds (a stomach-bug day 4, today going).
 enum EvadPreviewFixtures {
     static let raw = RawJSONClient(transport: EvadPreviewTransport(), baseURL: URL(string: "https://preview.invalid")!,
                                    token: { "preview" })
@@ -47,6 +49,10 @@ final class EvadPreviewModel: @unchecked Sendable {
     let weight = 84.1, target = 82.0, tdee = 2_590.0
     /// `-evadNoBlock YES`: the season's block is not running, so Módosítás may move the gym days.
     let noBlock = UserDefaults.standard.bool(forKey: "evadNoBlock")
+    /// `-evadQuiet YES`: no adherence and no insights yet (the S1 look).
+    let quiet = UserDefaults.standard.bool(forKey: "evadQuiet")
+    /// `-evadEndSoon YES`: the season's last week.
+    let endSoon = UserDefaults.standard.bool(forKey: "evadEndSoon")
 
     init(state: String) {
         maintain = state == "maintain"
@@ -54,7 +60,8 @@ final class EvadPreviewModel: @unchecked Sendable {
         draft = [
             "title": maintain ? "Őszi súlytartás" : "Őszi fogyás",
             "trajectory": maintain ? "maintain" : "cut",
-            "startDate": Self.iso(Calendar.current.date(byAdding: .day, value: -45, to: Date())!),
+            "startDate": Self.iso(Calendar.current.date(byAdding: .day,
+                                                        value: UserDefaults.standard.bool(forKey: "evadEndSoon") ? -80 : -45, to: Date())!),
             "weeks": 12, "gymDays": [0, 2, 4, 5], "gymTime": "07:00",
             "sport": [["dayOfWeek": 1, "time": "19:00", "durationMin": 90, "sport": "volleyball"],
                       ["dayOfWeek": 3, "time": "19:00", "durationMin": 90, "sport": "volleyball"]],
@@ -178,7 +185,7 @@ final class EvadPreviewModel: @unchecked Sendable {
         let targetDate: Any = n["targetDate"] ?? NSNull()
         return [
             "season": season(),
-            "head": ["title": draft["title"]!, "week": 7, "weeks": draft["weeks"]!,
+            "head": ["title": draft["title"]!, "week": endSoon ? 12 : 7, "weeks": draft["weeks"]!,
                      "status": isMaintain ? "in_band" : "on_course", "trajectory": draft["trajectory"]!],
             "map": [
                 "pillars": [["key": "edzes", "value": sportCount > 0 ? "\(sessions) edzés + \(sportCount) röpi" : "\(sessions) edzés"],
@@ -188,7 +195,7 @@ final class EvadPreviewModel: @unchecked Sendable {
                 "links": [["from": "edzes", "to": "etel", "key": "train_food", "value": 290],
                           ["from": "edzes", "to": "alvas", "key": "train_sleep", "value": 12],
                           ["from": "etel", "to": "suly", "key": "food_weight", "value": kgPerWeek],
-                          ["from": "alvas", "to": "suly", "key": "sleep_food", "value": NSNull()],
+                          ["from": "alvas", "to": "etel", "key": "sleep_food", "value": quiet ? NSNull() : 283 as Any],
                           ["from": "etel", "to": "edzes", "key": "food_train", "value": NSNull()],
                           ["from": "alvas", "to": "edzes", "key": "sleep_train", "value": NSNull()]],
             ],
@@ -206,10 +213,55 @@ final class EvadPreviewModel: @unchecked Sendable {
                 "weight": ["targetKg": isMaintain ? NSNull() : 82.0 as Any, "targetDate": targetDate,
                            "deltaKg": isMaintain ? -0.2 : -2.8, "kgPerWeek": kgPerWeek, "band": band],
             ],
-            "adherence": NSNull(), "insights": [] as [Any],
+            "adherence": quiet ? NSNull() : ["foodInBand": 4, "foodJudged": 5, "sessionsDone": 4, "sessionsPlanned": 6,
+                                              "nightsOk": 4, "nightsJudged": 7, "excusedDays": 1, "trainingDone": 3,
+                                              "trainingPlanned": 4, "sportDone": 1, "sportPlanned": 2] as Any,
+            "insights": quiet ? [] as [Any] : insights,
             "upcoming": [["week": 10, "kind": "deload", "text": isMaintain ? "a könnyebb héten is tartjuk a súlyt" : "erre a hétre nem fogyunk: napi +350 kcal"],
                          ["week": draft["weeks"]!, "kind": "end", "text": "összefoglalom, mi vált be, és javaslok egy következőt"]],
         ]
+    }
+}
+
+extension EvadPreviewModel {
+    /// The spike's three insights (invented figures, "például").
+    var insights: [[String: Any]] {
+        [["key": "learned_expenditure", "title": "Kevesebbet égetsz, mint gondoltuk",
+          "body": "A terv napi 2650 kcal-lal számolt, de a mérleged és az étkezéseid alapján inkább 2580 körül égetsz. Hétfőn ehhez igazítanám a keretet; előtte megmutatom, mi változna."],
+         ["key": "short_night_intake", "title": "Rossz alvás után többet eszel",
+          "body": "Ha 7 óránál kevesebbet alszol, másnap átlagosan 280 kcal-lal többet eszel. Vagyis a jobb alvás is segít fogyni."],
+         ["key": "guard", "title": "Erre figyelek",
+          "body": "A mellizmodra jutó heti munka a minimum közelében van. Ha tovább csökkentjük a kalóriát, itt állhat meg először a fejlődés."]]
+    }
+
+    /// `getAdherence ?from&to`: the Étel preview's week judged the server's way — the fourth day is a kímélő day
+    /// (stomach bug), today is still going, the rest are logged and judged.
+    func adherence(query: String) -> [String: Any] {
+        let q = Dictionary(uniqueKeysWithValues: query.split(separator: "&").compactMap { pair -> (String, String)? in
+            let kv = pair.split(separator: "=", maxSplits: 1).map(String.init)
+            return kv.count == 2 ? (kv[0], kv[1]) : nil
+        })
+        let today = Self.iso(Date())
+        guard let from = q["from"].flatMap(DateFormatter.evadISO.date(from:)),
+              let to = q["to"].flatMap(DateFormatter.evadISO.date(from:)) else { return ["days": [], "summary": [:]] }
+        var days: [[String: Any]] = []
+        var day = from, i = 0
+        while day <= to, i < 62 {
+            let date = Self.iso(day)
+            let kimelo = i == 3, isToday = date == today
+            let judged = !kimelo && !isToday
+            days.append(["date": date, "judged": judged, "excused": kimelo, "excuse": kimelo ? "kimelo" : NSNull() as Any,
+                         "foodInBand": judged ? (i != 1) as Any : NSNull(), "sessionPlanned": [0, 2, 4, 5].contains(i % 7),
+                         "sleepOk": isToday ? NSNull() as Any : (i % 3 != 0) as Any])
+            day = Calendar.current.date(byAdding: .day, value: 1, to: day)!; i += 1
+        }
+        let judged = days.filter { $0["judged"] as? Bool == true }
+        return ["days": days,
+                "summary": ["foodInBand": judged.filter { $0["foodInBand"] as? Bool == true }.count, "foodJudged": judged.count,
+                            "sessionsDone": 3, "sessionsPlanned": 4,
+                            "nightsOk": days.filter { $0["sleepOk"] as? Bool == true }.count,
+                            "nightsJudged": days.filter { $0["sleepOk"] is Bool }.count,
+                            "excusedDays": days.filter { $0["excused"] as? Bool == true }.count]]
     }
 }
 
@@ -241,9 +293,17 @@ struct EvadPreviewTransport: ClientTransport {
             json(["messages": [["code": code, "text": code]]], status)
         }
         return m.lock.withLock {
+            if let (status, object) = EvadMenuPreviewModel.shared.answer(operationID, path: request.path ?? "", sent: sent) {
+                return json(object, status)
+            }
             switch operationID {
+            case "putSeasonRecipes":
+                var d = m.draft; d["allowedRecipeIds"] = sent["recipeIds"]; m.draft = d
+                return json(m.season())
             case "getSeasonOverview":
-                return m.hasSeason ? json(m.overview()) : refuse(404, "NOT_FOUND")
+                guard m.hasSeason else { return refuse(404, "NOT_FOUND") }
+                var o = m.overview(); o["menu"] = EvadMenuPreviewModel.shared.menuStatus()
+                return json(o)
             case "getFirstSeasonDraft":
                 return json(m.draft)
             case "previewSeasonDraft":
@@ -263,6 +323,8 @@ struct EvadPreviewTransport: ClientTransport {
             case "putSeasonRules":
                 m.rules = sent
                 return json(m.season())
+            case "getAdherence":
+                return json(m.adherence(query: String((request.path ?? "").split(separator: "?").dropFirst().first ?? "")))
             case "listSeasons":
                 return json(m.hasSeason ? [m.season()] : [])
             default:

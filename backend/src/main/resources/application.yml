@@ -481,6 +481,10 @@ mezo:
     mesocycle-gate:
       enabled: true
       planned-lead-days: 7
+    # Évad S3: the weekly menu is generated at each active season's menu_day/menu_time (checked every minute,
+    # idempotent per week). Needs mezo.techcore.scheduling on (off in the test profile).
+    menu-job:
+      enabled: true
   techcore:
     # Master switch for Spring's scheduling INFRASTRUCTURE (@EnableScheduling) — one level above
     # the per-job mezo.techcore.cron.* switches below. Those decide whether a job BEAN exists;
@@ -3045,6 +3049,8 @@ mezo:
       rest-drop: { main-reserve: 0, drop-percent: 30, rest-sec: 30 }
       drop:      { main-reserve: 0, drop-percent: 20, rest-sec: 0 }
       myo:       { main-reserve: 1, mini-reps: 5, mini-min-reps: 3, mini-rest-sec: 20, max-minis: 4 }
+      # the owner's fixed rest-pause (mezo-r36n9.125): main-reps also pins the exercise's rep range; no minimum
+      rest-pause: { main-reps: 20, main-reserve: 0, mini-reps: 5, mini-rest-sec: 10, minis: 4 }
       partials:  { main-reserve: 0 }
       cap-weight: 2
       # Default technique planner (mezo-r36n9.81, spec §6.5): techniques from start-week to the last non-deload

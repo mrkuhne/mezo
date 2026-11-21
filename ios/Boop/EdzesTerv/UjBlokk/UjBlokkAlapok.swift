@@ -63,7 +63,7 @@ struct UjBlokkAlapok: View {
                             ForEach(Array(Self.muscles.enumerated()), id: \.element) { i, m in
                                 if i > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
                                 VStack(alignment: .leading, spacing: 8) {
-                                    UjBlokkTierRow(name: planMuscleName(m), tier: MuscleTier(wire: model.tier(m)),
+                                    UjBlokkTierRow(name: SubMuscles.groupName(m), tier: MuscleTier(wire: model.tier(m)),
                                                    disabled: { model.check(m, to: $0.rawValue) != .ok }) { set(m, $0) }
                                     if let b = blocked, b.muscle == m {
                                         HStack(alignment: .top, spacing: 8) {

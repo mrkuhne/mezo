@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.techcore.security.LlmActorContext;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Map;
@@ -23,9 +24,11 @@ import org.springframework.stereotype.Service;
 /**
  * One news run of Boop Pénz L6 (mezo-r36n9.104, build notes §3.1): refresh the held quotes (the quote service
  * records the {@code yahoo} provider health itself) → poll the feeds → build every active user's digest for his
- * own today. The twice-daily job hands off to {@link #runAsync}; a manual refresh goes through
- * {@link #requestRefresh} (one per user per {@code refreshCooldownMinutes}, else 429). Both run on the dedicated
- * single-thread {@code penzNewsExecutor}, so runs never overlap. Each step keeps its own try/catch: a dead quote
+ * own today, then the previous week's long-horizon review when it is still missing ({@link PenzWeeklyReviewService},
+ * mezo-r36n9.120 — so the Monday 06:30 run creates it and a later run or refresh fills a missed week). The
+ * twice-daily job hands off to {@link #runAsync}; a manual refresh goes through {@link #requestRefresh} (one per
+ * user per {@code refreshCooldownMinutes}, else 429). Both run on the dedicated single-thread
+ * {@code penzNewsExecutor}, so runs never overlap. Each step keeps its own try/catch: a dead quote
  * source still lets the news run, a dead feed set still builds (quiet or fallback) digests.
  */
 @Slf4j
@@ -35,6 +38,7 @@ public class PenzNewsRunner {
     private final PenzQuoteService quotes;
     private final PenzNewsClient news;
     private final PenzDigestService digests;
+    private final PenzWeeklyReviewService weekly;
     private final PenzSettingsService settings;
     private final UserFanOut users;
     private final PenzNewsProperties props;
@@ -43,11 +47,13 @@ public class PenzNewsRunner {
     private final Map<UUID, Instant> lastRefresh = new ConcurrentHashMap<>();
 
     public PenzNewsRunner(PenzQuoteService quotes, PenzNewsClient news, PenzDigestService digests,
-                          PenzSettingsService settings, UserFanOut users, PenzNewsProperties props,
-                          @Qualifier(PenzNewsAsyncConfig.EXECUTOR) Executor executor, ObjectProvider<Clock> clock) {
+                          PenzWeeklyReviewService weekly, PenzSettingsService settings, UserFanOut users,
+                          PenzNewsProperties props, @Qualifier(PenzNewsAsyncConfig.EXECUTOR) Executor executor,
+                          ObjectProvider<Clock> clock) {
         this.quotes = quotes;
         this.news = news;
         this.digests = digests;
+        this.weekly = weekly;
         this.settings = settings;
         this.users = users;
         this.props = props;
@@ -126,11 +132,24 @@ public class PenzNewsRunner {
         }
     }
 
+    /** His digest for his own today, then — when it does not exist yet — the previous week's long-horizon review. */
     private void buildFor(UUID owner, ZonedDateTime now) {
+        LocalDate today;
         try {
-            digests.build(owner, now.withZoneSameInstant(settings.zone(owner)).toLocalDate(), now.toInstant());
+            today = now.withZoneSameInstant(settings.zone(owner)).toLocalDate();
         } catch (RuntimeException e) {
             log.warn("Penz digest failed for owner {}: {}", owner, e.getClass().getSimpleName());
+            return;
+        }
+        try {
+            digests.build(owner, today, now.toInstant());
+        } catch (RuntimeException e) {
+            log.warn("Penz digest failed for owner {}: {}", owner, e.getClass().getSimpleName());
+        }
+        try {
+            weekly.buildIfMissing(owner, today, now.toInstant());
+        } catch (RuntimeException e) {
+            log.warn("Penz weekly review failed for owner {}: {}", owner, e.getClass().getSimpleName());
         }
     }
 

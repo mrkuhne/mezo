@@ -26,6 +26,7 @@ func penzL6SectionGlyph(_ label: String) -> String? {
     case "GYAKORLÁS": "bolt-ink"
     case "PÉNZEM": "e-penz"
     case "AMI BENNE VAN": "chart-deep"
+    case "A HÉT, HOSSZÚ TÁVON": "search-ink"
     default: penzSectionGlyph(label)
     }
 }
@@ -34,9 +35,11 @@ func penzL6SectionGlyph(_ label: String) -> String? {
 struct PenzL6Section<Content: View>: View {
     let label: String
     var state: NKBlockState = .ready
+    /// A short line at the head's right end (the weekly block's "nov. 10–16.").
+    var trailing: String? = nil
     @ViewBuilder let content: () -> Content
     var body: some View {
-        NKBare(label, hue: penzHue, glyph: penzL6SectionGlyph(label), state: state, content: content)
+        NKBare(label, hue: penzHue, glyph: penzL6SectionGlyph(label), trailing: trailing, state: state, content: content)
     }
 }
 
@@ -191,6 +194,8 @@ struct PenzPenzem: View {
     let openPractice: () -> Void
     /// L7: the Termékjegyzék.
     let openCatalog: () -> Void
+    /// `mezo-r36n9.120`: one horizon's weekly review.
+    let openWeekly: (PenzWeeklyRow) -> Void
     let ask: () -> Void
     private let hue = penzHue
 
@@ -263,6 +268,7 @@ struct PenzPenzem: View {
         NKInfoRow("Miért évek a hosszú rekesz mérőszáma?", hue: hue) {
             open(.info(title: "Miért évek a hosszú rekesz mérőszáma?", body: penzCoverageInfoText(p)))
         }
+        PenzWeeklyBlock(view: penzWeeklyView(store.weekly?.value), open: openWeekly)
         let parts = penzComposition(p)
         if !parts.isEmpty {
             PenzL6Section(label: "MI VAN BENNE") {
@@ -319,6 +325,112 @@ func penzLargestSleeve(_ p: PenzPortfolio) -> String {
     penzSleeves(p).max { $0.valueHufMinor < $1.valueHufMinor }?.sleeve ?? "long"
 }
 
+
+// MARK: - The weekly long-horizon review (`mezo-r36n9.120`, owner decision #66)
+
+/// Under the three sleeves: one row per horizon — the verdict, and a quiet word (never lit, never green). Hidden when
+/// it was never read; the last one stays when a read fails. No push, no action button.
+struct PenzWeeklyBlock: View {
+    let view: PenzWeeklyView
+    let open: (PenzWeeklyRow) -> Void
+    private let hue = penzHue
+
+    var body: some View {
+        switch view {
+        case .hidden: EmptyView()
+        case .pending(let week): section(week) { quiet(penzWeeklyPendingText) }
+        case .line(let week, let text): section(week) { quiet(text) }
+        case .rows(let week, let rows):
+            section(week) {
+                NKRowList(rows.map { r in
+                    NKAreaRow(id: r.id, glyph: r.glyph, title: r.title, sub: r.verdict, valueSub: r.quietWord,
+                              subLines: 2) { open(r) }
+                }, hue: hue)
+            }
+        }
+    }
+
+    private func section<C: View>(_ week: String, @ViewBuilder _ content: @escaping () -> C) -> some View {
+        PenzL6Section(label: "A HÉT, HOSSZÚ TÁVON", trailing: week.isEmpty ? nil : week, content: content)
+    }
+
+    private func quiet(_ text: String) -> some View {
+        NKHueText(text, hue: hue, size: 13.5, opacity: 0.65).frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// One horizon's weekly review, built like the analysis page (`PenzNewsPage`) without the money figure and without
+/// buttons: what Boop thinks, how sure, where from (the week's stories, sources openable), why there is nothing to do.
+/// Fallback and quiet copy is shown as it came.
+struct PenzWeeklyPage: View {
+    let row: PenzWeeklyRow
+    let onBack: @MainActor @Sendable () -> Void
+    @Environment(\.openURL) private var openURL
+    private let hue = penzHue
+
+    var body: some View {
+        NKAreaSubPage(hue: hue, crumb: "Pénz · Pénzem",
+                      eyebrow: ["A hét, hosszú távon", row.week].filter { !$0.isEmpty }.joined(separator: " · "),
+                      title: row.title, sentence: row.verdict, onBack: onBack) {
+            NKNewsSection("Amit Boop gondol róla", glyph: "chat-ink", hue: hue) {
+                NKHueText(row.body, hue: hue, size: 15, opacity: 0.85)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                if let coverage = row.coverage {
+                    NKHueText(coverage, hue: hue, size: 13, opacity: 0.6)
+                        .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 10)
+                }
+            }
+            if !row.uncertainty.isEmpty {
+                NKNewsSection("Mennyire biztos", glyph: "scale-ink", hue: hue) {
+                    NKHueText(row.uncertainty, hue: hue, size: 14, opacity: 0.72)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+            NKNewsSection("Honnan van", glyph: "book-sage", hue: hue) {
+                Text(row.counts).nkFont(12.5).foregroundStyle(.white.opacity(0.5))
+                    .fixedSize(horizontal: false, vertical: true).padding(.bottom, row.stories.isEmpty ? 0 : 6)
+                ForEach(Array(row.stories.enumerated()), id: \.element.id) { i, story in
+                    if i > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
+                    storyView(story)
+                }
+            }
+            NKNothingToDo(row.noAction, hue: hue)
+        }
+    }
+
+    private func storyView(_ story: PenzWeeklyStoryLine) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(story.title).nkFont(14.5, .medium).foregroundStyle(.white.opacity(0.9))
+                .fixedSize(horizontal: false, vertical: true)
+            if !story.holding.isEmpty {
+                Text(story.holding).nkFont(12).foregroundStyle(.white.opacity(0.5))
+            }
+            if !story.sources.isEmpty {
+                NKFlowRow(spacing: 6, rowSpacing: 6) {
+                    ForEach(story.sources) { s in
+                        Button { if let u = s.url { openURL(u) } } label: {
+                            HStack(spacing: 5) {
+                                Text(s.text).nkFont(12, .medium).foregroundStyle(.white.opacity(0.78))
+                                if s.url != nil {
+                                    Image(systemName: "arrow.up.right").font(.system(size: 9, weight: .semibold))
+                                        .foregroundStyle(.white.opacity(0.45))
+                                }
+                            }
+                            .padding(.horizontal, 10).frame(minHeight: 28)
+                            .background(Capsule().fill(.white.opacity(0.08)))
+                            .contentShape(Capsule())
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(s.url == nil)
+                        .accessibilityHint(s.url == nil ? "" : "Megnyitja a cikket")
+                    }
+                }
+            }
+        }
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
 
 // MARK: - One sleeve
 

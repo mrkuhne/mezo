@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.season;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepGoalRepository;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
@@ -148,7 +149,33 @@ class SeasonPreviewIT extends AbstractIntegrationTest {
 
 
     @Test
-    void addingSportDayRaisesWeekKcal() {
+    void twoSessionDayHasItsOwnTargetAndTheWeekCountsIt() {
+        UUID owner = fixture.owner("season-preview-double@test.local");
+        SeasonEntity season = fixture.plannedSeason(owner, SeasonFixture.draft());
+
+        // The fixture: hétfő + péntek gym only, kedd + csütörtök gym and volleyball, three rest days.
+        SeasonNumbersJson n = previewService.preview(owner, season.getId(), SeasonFixture.draft()).after();
+
+        assertThat(n.trainSportDayKcal()).as("a gym + sport day serves both sessions' energy")
+            .isGreaterThan(n.trainDayKcal());
+        assertThat(n.weekKcal())
+            .isEqualTo(n.trainDayKcal() * 2 + n.trainSportDayKcal() * 2 + n.restDayKcal() * 3);
+    }
+
+    @Test
+    void noTwoSessionDayHasNoTwoSessionTarget() {
+        UUID owner = fixture.owner("season-preview-nodouble@test.local");
+        SeasonEntity season = fixture.plannedSeason(owner, SeasonFixture.draft());
+
+        SeasonNumbersJson n = previewService.preview(owner, season.getId(), SeasonFixture.draft("cut",
+            new BigDecimal("80.0"), null, SeasonFixture.GYM, List.of(new SeasonDraftJson.SportSlot(2, "19:00", 90,
+                "volleyball")))).after();
+
+        assertThat(n.trainSportDayKcal()).isNull();
+    }
+
+    @Test
+    void addingSportDayRaisesWeekKcalByThatSession() {
         UUID owner = fixture.owner("season-preview-weekkcal-sport@test.local");
         SeasonEntity season = fixture.plannedSeason(owner, SeasonFixture.draft());
         List<SeasonDraftJson.SportSlot> withSaturday = new java.util.ArrayList<>(SeasonFixture.SPORT);
@@ -157,9 +184,10 @@ class SeasonPreviewIT extends AbstractIntegrationTest {
         Preview p = previewService.preview(owner, season.getId(),
             SeasonFixture.draft("cut", new BigDecimal("80.0"), null, SeasonFixture.GYM, withSaturday));
 
-        assertThat(p.before().weekKcal()).isEqualTo(p.before().trainDayKcal() * 4 + p.before().restDayKcal() * 3);
-        assertThat(p.after().weekKcal() - p.before().weekKcal())
-            .isEqualTo(p.before().trainDayKcal() - p.before().restDayKcal());
+        // Saturday turns from a rest day into a sport day: the week grows by one 90-minute volleyball session —
+        // what a kedd adds on top of a gym-only day (± rounding of two projected days).
+        int volleyball = p.before().trainSportDayKcal() - p.before().trainDayKcal();
+        assertThat(p.after().weekKcal() - p.before().weekKcal()).isCloseTo(volleyball, within(2));
     }
 
     @Test
@@ -174,14 +202,14 @@ class SeasonPreviewIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void weekKcalIsSevenTrainingDaysWithoutARestDay() {
+    void weekKcalIsSevenTrainingDaysWhenEveryDayIsAGymDay() {
         UUID owner = fixture.owner("season-preview-weekkcal-allweek@test.local");
         SeasonEntity season = fixture.plannedSeason(owner, SeasonFixture.draft());
 
         SeasonNumbersJson n = previewService.preview(owner, season.getId(), SeasonFixture.draft("cut",
-            new BigDecimal("80.0"), null, List.of(0, 1, 2, 3, 4), List.of(new SeasonDraftJson.SportSlot(5, "10:00", 90,
-                "volleyball"), new SeasonDraftJson.SportSlot(6, "10:00", 90, "volleyball")))).after();
+            new BigDecimal("80.0"), null, List.of(0, 1, 2, 3, 4, 5, 6), List.of())).after();
 
+        assertThat(n.restDayKcal()).isNull();
         assertThat(n.weekKcal()).isEqualTo(n.trainDayKcal() * 7);
     }
 

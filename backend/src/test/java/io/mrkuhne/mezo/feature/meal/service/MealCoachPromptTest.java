@@ -204,6 +204,23 @@ class MealCoachPromptTest {
             .doesNotContain("20:00");
     }
 
+    /** Boop B6 Évad S2 (mezo-r36n9.16): the season's food rules reach the coach; absent without a season. */
+    @Test
+    void testUserMessage_shouldCarryTheSeasonRules_whenASeasonIsActive() {
+        var person = MealCoachContextReader.PersonContext.empty()
+            .withSeasonRules("[Évad] Recept-szabály: csak a kiválasztott 12 recept\n"
+                + "[Évad] Étel-szabály: csak kevéssé feldolgozott ételek (NOVA ≤ 2)");
+
+        String msg = MealCoachPrompt.userMessage(DATE, TARGETS, List.of(),
+            List.of(block("Zabkása", 1, BigDecimal.ZERO)), person);
+        String without = MealCoachPrompt.userMessage(DATE, TARGETS, List.of(),
+            List.of(block("Zabkása", 1, BigDecimal.ZERO)), MealCoachContextReader.PersonContext.empty());
+
+        assertThat(msg).contains("AZ ÉVAD SZABÁLYAI").contains("[Évad] Recept-szabály: csak a kiválasztott 12 recept")
+            .contains("NOVA ≤ 2");
+        assertThat(without).doesNotContain("ÉVAD").doesNotContain("[Évad]");
+    }
+
     @Test
     void testUserMessage_shouldSayNincsAdat_forAnUnknownPerson() {
         String msg = MealCoachPrompt.userMessage(DATE, TARGETS, List.of(),

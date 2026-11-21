@@ -92,15 +92,20 @@ public struct PenzInvestTxn: Codable, Equatable, Sendable, Identifiable {
     public var note: String?
     public var realizedHufMinor: Int64?
     public var clientRef: String?
+    /// The money account the buy was paid from / the sell paid into (`mezo-r36n9.119`); nil = not linked.
+    public var accountId: String?
+    /// The linked money row (kind `invest_buy` / `invest_sell`); nil = not linked.
+    public var transactionId: String?
 
     public init(id: String, holdingId: String, side: String, quantity: Double? = nil, amount: PenzMoney, fxRateDate: String? = nil,
-                date: String, note: String? = nil, realizedHufMinor: Int64? = nil, clientRef: String? = nil) {
+                date: String, note: String? = nil, realizedHufMinor: Int64? = nil, clientRef: String? = nil,
+                accountId: String? = nil, transactionId: String? = nil) {
         self.id = id; self.holdingId = holdingId; self.side = side; self.quantity = quantity; self.amount = amount
         self.fxRateDate = fxRateDate; self.date = date; self.note = note; self.realizedHufMinor = realizedHufMinor
-        self.clientRef = clientRef
+        self.clientRef = clientRef; self.accountId = accountId; self.transactionId = transactionId
     }
     private enum CodingKeys: String, CodingKey {
-        case id, holdingId, side, quantity, amount, fxRateDate, date, note, realizedHufMinor, clientRef
+        case id, holdingId, side, quantity, amount, fxRateDate, date, note, realizedHufMinor, clientRef, accountId, transactionId
     }
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -108,10 +113,12 @@ public struct PenzInvestTxn: Codable, Equatable, Sendable, Identifiable {
         holdingId = c.lenient(.holdingId, ""); side = c.lenient(.side, "buy"); quantity = c.optional(.quantity)
         amount = c.lenient(.amount, .zero); fxRateDate = c.optional(.fxRateDate); date = c.lenient(.date, "")
         note = c.optional(.note); realizedHufMinor = c.optional(.realizedHufMinor); clientRef = c.optional(.clientRef)
+        accountId = c.optional(.accountId); transactionId = c.optional(.transactionId)
     }
 }
 
-/// `POST /api/penz/invest-transactions`.
+/// `POST /api/penz/invest-transactions`. The three account fields (`mezo-r36n9.119`) are left out of the body when nil
+/// (synthesized `encodeIfPresent`), so a buy with no account is byte-for-byte the L6 request.
 public struct PenzInvestTxnRequest: Codable, Equatable, Sendable {
     public var clientRef: String?
     public var holdingId: String
@@ -121,11 +128,19 @@ public struct PenzInvestTxnRequest: Codable, Equatable, Sendable {
     public var amountMinor: Int64
     public var date: String
     public var note: String?
+    /// His live checking or cash account the buy was paid from / the sell paid into; nil = not linked (L6 behaviour).
+    public var accountId: String?
+    /// The exact amount in the ACCOUNT's currency, minor units; nil = the server converts.
+    public var accountAmountMinor: Int64?
+    /// A buy only, with `accountId`: the bank-SMS expense (from `smsCandidates`) to adopt as this buy.
+    public var linkTransactionId: String?
 
     public init(clientRef: String? = nil, holdingId: String, side: String, quantity: Double? = nil, amountMinor: Int64,
-                date: String, note: String? = nil) {
+                date: String, note: String? = nil, accountId: String? = nil, accountAmountMinor: Int64? = nil,
+                linkTransactionId: String? = nil) {
         self.clientRef = clientRef; self.holdingId = holdingId; self.side = side; self.quantity = quantity
         self.amountMinor = amountMinor; self.date = date; self.note = note
+        self.accountId = accountId; self.accountAmountMinor = accountAmountMinor; self.linkTransactionId = linkTransactionId
     }
 }
 

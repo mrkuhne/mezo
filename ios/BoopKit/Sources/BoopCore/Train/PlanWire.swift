@@ -57,7 +57,8 @@ public struct WireExercise: Codable, Equatable, Sendable {
     public var challenge: Bool?
 }
 
-/// The catalog attributes the technique rules need (`stability`, `lengthenedFriendly`).
+/// The catalog attributes the technique rules need (`stability`, `lengthenedFriendly`) and the challenge rule's
+/// answer (`challengeAllowed`, server-computed, owner decision #72) with the kit it falls back on (`gear`).
 public struct WireCatalogItem: Decodable, Equatable, Sendable {
     public let id: String
     public let name: String
@@ -65,6 +66,10 @@ public struct WireCatalogItem: Decodable, Equatable, Sendable {
     public let type: String?
     public let stability: String?
     public let lengthenedFriendly: Bool?
+    public let gear: [String]?
+    public let challengeAllowed: Bool?
+    /// The demo still (start position), a server path for `BoopConfig.mediaURL`; nil without a picture.
+    public let imageStartUrl: String?
 }
 
 // MARK: - The evaluator (POST /api/train/meso-plans/evaluate)
@@ -354,17 +359,20 @@ public struct WireSuggestionOutgoing: Encodable, Equatable, Sendable {
     }
 }
 
-/// `mode` is `replace` (needs `outgoing`) or `add` (needs the coarse `muscle` key); `dayIndex` 0 = Monday.
+/// `mode` is `replace` (needs `outgoing`) or `add`: the fine catalogue tokens picked in the add sheet (`muscles`,
+/// mezo-r36n9.127), else the legacy coarse `muscle`; both absent = the week's under-band groups. `dayIndex` 0 = Monday.
 /// Absent optionals are omitted from the JSON.
 public struct WireSuggestionsRequest: Encodable, Equatable, Sendable {
     public var mode: String
     public var dayIndex: Int
     public var outgoing: WireSuggestionOutgoing?
     public var muscle: String?
+    public var muscles: [String]?
     public var dayCatalogIds: [String]
-    public init(mode: String, dayIndex: Int, outgoing: WireSuggestionOutgoing?, muscle: String?, dayCatalogIds: [String]) {
+    public init(mode: String, dayIndex: Int, outgoing: WireSuggestionOutgoing?, muscle: String?,
+                muscles: [String]? = nil, dayCatalogIds: [String]) {
         self.mode = mode; self.dayIndex = dayIndex; self.outgoing = outgoing; self.muscle = muscle
-        self.dayCatalogIds = dayCatalogIds
+        self.muscles = muscles; self.dayCatalogIds = dayCatalogIds
     }
 }
 

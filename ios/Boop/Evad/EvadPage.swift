@@ -8,7 +8,7 @@ let evadHue: Hue = .forma
 
 /// The Évad page's sub-pages, presented at page level (boop-ios.md §9).
 enum EvadSub: String, Identifiable {
-    case modositas, szabalyok, uj
+    case modositas, szabalyok, uj, receptek, listak, tetelek
     var id: String { rawValue }
 }
 
@@ -22,6 +22,7 @@ struct EvadPage: View {
     @Environment(EvadStore.self) private var store: EvadStore?
     @State private var tab = "Évad"
     @State private var open: EvadSub?
+    @State private var swapMeal: EvadMenuMeal?
 
     var body: some View {
         Group {
@@ -46,10 +47,21 @@ struct EvadPage: View {
                 case .modositas: EvadWhatIf(close: { open = nil })
                 case .szabalyok: EvadRulesPage(close: { open = nil })
                 case .uj: EvadNewSeason(close: { open = nil })
+                case .receptek: EvadRecipesPage(close: { open = nil })
+                case .listak: EvadPastListsPage(close: { open = nil })
+                case .tetelek: EvadStaplesPage(close: { open = nil })
                 }
             }
             .environment(store)
         }
+        .sheet(item: $swapMeal) { meal in
+            if let menu = store?.menu {
+                EvadSwapSheet(meal: meal, menu: menu, close: { swapMeal = nil })
+            }
+        }
+        // the Ma wall's „Átnézem" asks for Módosítás: taken once the season is on screen
+        .onChange(of: store?.pendingSub, initial: true) { takePendingSub() }
+        .onChange(of: store?.overview == nil) { takePendingSub() }
         .onAppear {
             #if DEBUG
             // Simulator review: `-evadOpen modositas|szabalyok|uj`, `-evadTab Évad|Menü|Lista|Hatás`.
@@ -61,21 +73,28 @@ struct EvadPage: View {
         }
     }
 
+    private func takePendingSub() {
+        guard let store, let raw = store.pendingSub, store.overview != nil else { return }
+        store.pendingSub = nil
+        if raw == "menu" { tab = "Menü"; return } // the wall's weekly-menu card opens the Menü tab
+        open = EvadSub(rawValue: raw)
+    }
+
     private func season(_ o: EvadOverview, store: EvadStore) -> some View {
         let verdict = evadVerdict(o)
         return NKAreaPage(hue: evadHue, name: "Évad", eyebrow: evadEyebrow(o.head), level: evadLevel(o.head),
                           headline: verdict.headline, sentence: verdict.sentence, glyph: "link-deep",
                           actions: [NKAreaAction(glyph: "spark-cream", label: "Szabályok", action: { open = .szabalyok })]) {
-            NKAreaTabs(tabs: [NKAreaTab("Évad"), NKAreaTab("Menü"), NKAreaTab("Lista"), NKAreaTab("Hatás")],
+            NKAreaTabs(tabs: [NKAreaTab("Évad"), NKAreaTab("Menü", dot: o.menu?.status == "proposed"),
+                              NKAreaTab("Lista", badge: evadListLeft(store.menu.list)), NKAreaTab("Hatás")],
                        hue: evadHue, selected: $tab)
                 .padding(.horizontal, -18)
             switch tab {
             case "Menü":
-                NKNotLiveYet(hue: evadHue, title: "A heti menü hamarosan itt lesz",
-                             line: "A kiválasztott receptjeidből, az edzésnapjaidhoz igazítva állítom majd össze a jövő heti menüt.")
+                EvadMenuTab(o: o, menu: store.menu, openRecipes: { open = .receptek }, swap: { swapMeal = $0 })
             case "Lista":
-                NKNotLiveYet(hue: evadHue, title: "A bevásárlólista hamarosan itt lesz",
-                             line: "A jóváhagyott menüből készül majd, és minden tétel alatt látod, melyik ételhez kell.")
+                EvadListTab(menu: store.menu, openPast: { open = .listak }, openStaples: { open = .tetelek },
+                            openMenu: { tab = "Menü" })
             case "Hatás":
                 NKNotLiveYet(hue: evadHue, title: "A kísérletek hamarosan itt lesznek",
                              line: "Egyszerre egy kísérlet fut majd: megnézzük, tényleg hat-e, amit kipróbálsz.")
@@ -160,6 +179,11 @@ extension View {
         self
         #endif
     }
+}
+
+/// The Lista tab's badge: lines still to buy (0 = no badge).
+func evadListLeft(_ l: EvadShoppingList?) -> Int {
+    l?.items.filter { !$0.checked && !$0.removed }.count ?? 0
 }
 
 /// "0,40 kg".

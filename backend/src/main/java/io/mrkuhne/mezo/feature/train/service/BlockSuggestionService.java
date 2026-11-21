@@ -37,7 +37,9 @@ import org.springframework.transaction.annotation.Transactional;
  * {@link ExerciseSubstituteRanker} fed from a block's draft day instead of a running workout. The block's goal,
  * the gym profile and the discomfort history always apply; today's check-in pain only when the edited day is
  * today's weekday; nobody is "sore now" while planning. {@code replace} ranks alternatives to the outgoing row;
- * {@code add} ranks every catalogue row of the chosen coarse group ({@link ExerciseSubstituteRanker#rankForGroup}). Muscles
+ * {@code add} ranks the catalogue rows of the picked fine tokens ({@link ExerciseSubstituteRanker#rankForTokens},
+ * mezo-r36n9.127), else of one coarse group ({@link ExerciseSubstituteRanker#rankForGroup}), else of the week's
+ * under-band groups' tokens. Muscles
  * under their weekly band (the run evaluation's own numbers) are explained, never reordered. Each suggestion
  * carries the block style's prescription, computed read-only with {@link StyleStamper}. Pure read.
  */
@@ -71,7 +73,9 @@ public class BlockSuggestionService {
                 SystemMessage.error(ExerciseTechniqueService.RUN_NOT_EDITABLE).build(), HttpStatus.CONFLICT);
         }
         boolean replace = req.getMode() == BlockExerciseSuggestionsRequest.ModeEnum.REPLACE;
-        if (replace ? req.getOutgoing() == null : req.getMuscle() == null || req.getMuscle().isBlank()) {
+        List<String> tokens = req.getMuscles() == null ? List.of()
+            : req.getMuscles().stream().filter(Objects::nonNull).map(t -> t.strip().toLowerCase(java.util.Locale.ROOT)).distinct().toList();
+        if (replace ? req.getOutgoing() == null : !MuscleGroup.TOKENS.containsAll(tokens)) {
             throw new SystemRuntimeErrorException(SystemMessage.error(REQUEST_INVALID).build(), HttpStatus.BAD_REQUEST);
         }
         LocalDate today = LocalDate.now();
@@ -79,10 +83,18 @@ public class BlockSuggestionService {
             : req.getDayCatalogIds().stream().filter(Objects::nonNull).collect(Collectors.toSet());
 
         List<ExerciseCatalogEntity> all = reads.pool(userId);
-        String group = replace ? null : req.getMuscle().strip();
-        // Add: the chosen group's rows only — the suggestions and the full list filtered to that muscle.
+        Set<String> underBand = underBandGroups(userId, mesoId);
+        // Add (mezo-r36n9.127): the picked fine tokens; else the legacy coarse group; else — nothing picked — the
+        // tokens of the week's under-band groups. The pool is those rows only.
+        String group = replace || !tokens.isEmpty() || req.getMuscle() == null || req.getMuscle().isBlank() ? null
+            : req.getMuscle().strip();
+        Set<String> wanted = replace || group != null ? Set.of()
+            : !tokens.isEmpty() ? Set.copyOf(tokens)
+            : all.stream().map(ExerciseCatalogEntity::getMuscle)
+                .filter(m -> m != null && underBand.contains(MuscleGroup.of(m))).collect(Collectors.toSet());
         List<ExerciseCatalogEntity> pool = replace ? all
-            : all.stream().filter(c -> group.equals(MuscleGroup.of(c.getMuscle()))).toList();
+            : all.stream().filter(c -> group != null ? group.equals(MuscleGroup.of(c.getMuscle()))
+                : wanted.contains(c.getMuscle())).toList();
         Candidate out = replace ? replaceOut(all, req.getOutgoing()) : null;
 
         // History only for rows that can ever rank: the outgoing muscle's body region, or the whole group.
@@ -91,21 +103,27 @@ public class BlockSuggestionService {
             .filter(c -> Objects.equals(region, ExerciseSubstituteRanker.region(c.getMuscle())))
             .toList();
         GymAvailability gym = gymProfileService.availability(userId);
-        Map<UUID, PainLevel> pain = discomfortHistory.levels(userId, pool, today);
+        // The ranker sees the whole catalogue and filters to the group / tokens itself, so its quiet labels
+        // (NO_EQUIPMENT / HURT_BEFORE) cover every row the full list can show — not only the suggested muscles
+        // (mezo-r36n9.127). Pool is a subsequence of all in the same order: the tie-break by position is unchanged.
+        Map<UUID, PainLevel> pain = discomfortHistory.levels(userId, all, today);
         Map<UUID, ExerciseSetEntity> topSets = reads.topSets(userId, relevant);
-        List<Candidate> candidates = SubstituteReads.candidates(pool, gym, pain, topSets);
+        List<Candidate> candidates = SubstituteReads.candidates(all, gym, pain, topSets);
 
         boolean editsToday = req.getDayIndex() != null && req.getDayIndex() == weekdayIndex(today);
         Set<String> painJoints = editsToday ? reads.painJointsToday(userId, today) : Set.of();
-        Context ctx = new Context(block.getGoalPreset(), false, painJoints, inDay, underBandGroups(userId, mesoId));
+        Context ctx = new Context(block.getGoalPreset(), false, painJoints, inDay, underBand);
+        boolean underBandAdd = !replace && group == null && tokens.isEmpty();
         Result result = replace ? ExerciseSubstituteRanker.rank(out, candidates, ctx)
-            : ExerciseSubstituteRanker.rankForGroup(group, preferredType(pool, inDay), candidates, ctx);
+            : underBandAdd ? ExerciseSubstituteRanker.rankForGroups(wanted, g -> preferredType(pool, inDay, g), candidates, ctx)
+            : group != null ? ExerciseSubstituteRanker.rankForGroup(group, preferredType(pool, inDay), candidates, ctx)
+            : ExerciseSubstituteRanker.rankForTokens(wanted, preferredType(pool, inDay), candidates, ctx);
 
         TrainingStyle style = TrainingStyle.fromWire(block.getTrainingStyle());
         CatalogAttributes.Lookup stability = style == null ? CatalogAttributes.Lookup.EMPTY
             : catalogAttributes.load(result.suggestions().stream().map(Ranked::id).toList());
-        return reads.response(viewer, pool, result, SubstituteReads.painJointHu(painJoints, out == null ? null : out.joints()), topSets,
-            c -> prescription(c, style, stability.stable(c.getId()), styleProps));
+        return reads.response(viewer, all, result, SubstituteReads.painJointHu(painJoints, out == null ? null : out.joints()), topSets,
+            c -> prescription(c, style, stability.stable(c.getId()), styleProps), !replace);
     }
 
     /** 0 = Monday (Hét) … 6 = Sunday (Vas), the request's {@code dayIndex}. */
@@ -127,6 +145,11 @@ public class BlockSuggestionService {
     static String preferredType(List<ExerciseCatalogEntity> pool, Set<UUID> inDay) {
         return pool.stream().anyMatch(c -> inDay.contains(c.getId()) && "compound".equals(c.getType()))
             ? "isolation" : "compound";
+    }
+
+    /** {@link #preferredType(List, Set)} judged only on the rows of one coarse group. */
+    static String preferredType(List<ExerciseCatalogEntity> pool, Set<UUID> inDay, String group) {
+        return preferredType(pool.stream().filter(c -> Objects.equals(group, MuscleGroup.of(c.getMuscle()))).toList(), inDay);
     }
 
     /** Coarse groups whose weekly sets in the stored block are below their band's low end (the run evaluation). */

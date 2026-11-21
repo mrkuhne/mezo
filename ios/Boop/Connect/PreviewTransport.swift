@@ -695,8 +695,8 @@ struct PreviewTransport: ClientTransport {
         let profiles = previewMuscles.map { m in
             #""\#(m.key)":{"mev":\#(m.mev),"mav":\#(m.mav),"mrv":\#(m.mrv),"current":\#(previewCurrent(m)),"source":{"baseline":{"name":"\#(m.key)","mev":\#(m.mev),"mav":\#(m.mav),"mrv":\#(m.mrv)},"adjustments":[],"confidence":0.8}}"#
         }.joined(separator: ",")
-        let days = [("Hét", "Vállak és hát", "váll · hát", 5), ("Ke", "Láb", "comb · fenék", 6),
-                    ("Sze", "Pihenő", "regeneráció", 0), ("Csü", "Mell és kar", "mellkas · tricepsz", 5),
+        let days = [("Hét", "Vállak és hát", "váll · hát", 5), ("Ke", "Láb", "comb · far", 6),
+                    ("Sze", "Pihenő", "regeneráció", 0), ("Csü", "Mell és kar", "mell · tricepsz", 5),
                     ("Pé", "Hát és bicepsz", "hát · bicepsz", 5), ("Szo", "Röplabda", "egész test", 0),
                     ("Vas", "Pihenő", "regeneráció", 0)]
             .enumerated().map { i, d in
@@ -846,6 +846,9 @@ struct PreviewTransport: ClientTransport {
             legs = #"[{"kind":"drop","weightKg":\#(nkRound(drop)),"reps":\#(reps),"toFailure":false,"restBeforeSec":30,"dropPercent":30}]"#
         case "myo":
             let mini = #"{"kind":"mini","weightKg":\#(nkRound(target)),"reps":5,"minReps":3,"toFailure":false,"restBeforeSec":20}"#
+            legs = "[" + Array(repeating: mini, count: 4).joined(separator: ",") + "]"
+        case "rest_pause":
+            let mini = #"{"kind":"mini","weightKg":\#(nkRound(target)),"reps":5,"toFailure":false,"restBeforeSec":10}"#
             legs = "[" + Array(repeating: mini, count: 4).joined(separator: ",") + "]"
         default:
             legs = #"[{"kind":"partials","toFailure":true,"restBeforeSec":0}]"#

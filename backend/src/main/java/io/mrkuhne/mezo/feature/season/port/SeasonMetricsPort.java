@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.season.port;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -29,4 +30,7 @@ public interface SeasonMetricsPort {
 
     /** How many recipes he has. */
     long recipeCount(UUID owner);
+
+    /** Logged sleep minutes per wake morning ({@code sleep_log.date}) in {@code from..to}; a day without a night is absent. */
+    Map<LocalDate, Integer> sleepMinutes(UUID owner, LocalDate from, LocalDate to);
 }

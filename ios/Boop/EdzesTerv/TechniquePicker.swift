@@ -204,7 +204,7 @@ struct TechniquePicker: View {
         case .none: .keep
         case .restDrop: .timer
         case .drop: .drop
-        case .myo: .myo
+        case .myo, .restPause: .myo
         case .partials: .partials
         }
     }

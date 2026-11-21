@@ -4,7 +4,9 @@ import io.mrkuhne.mezo.feature.season.entity.SeasonDraftJson;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /** What the season needs from training (consumer-owned port): the weekly slots, their energy, the block. */
@@ -13,6 +15,20 @@ public interface SeasonTrainPort {
     /** The current weekly rhythm in the draft's shape. {@code gymTime} = the time every gym slot shares, or null when
      *  they differ (or there is none). */
     record Schedule(List<Integer> gymDays, String gymTime, List<SeasonDraftJson.SportSlot> sport) {
+    }
+
+    /** One kind of planned session; a day may carry several (gym and sport = two sessions). Gym and run are the
+     *  training side, sport the sport side. Two slots of the same kind on one day are still one session. */
+    enum SessionKind {
+        GYM, SPORT, RUN;
+
+        public String key() {
+            return name().toLowerCase(java.util.Locale.ROOT);
+        }
+
+        public boolean training() {
+            return this != SPORT;
+        }
     }
 
     record Block(UUID id, String title, String status, LocalDate startDate, LocalDate endDate, int weeks,
@@ -27,6 +43,13 @@ public interface SeasonTrainPort {
     /** Net kcal one planned training day credits under the draft (a gym session; sport when no gym day). */
     int trainDayMovementKcal(SeasonDraftJson draft, BigDecimal restKcalPerHour);
 
+    /** Net kcal each weekday (0 = hétfő … 6) credits under the draft: its gym session plus every sport slot that day —
+     *  a gym + sport day credits both. Seven values. */
+    List<Integer> weekdayMovementKcal(SeasonDraftJson draft, BigDecimal restKcalPerHour);
+
+    /** The largest movement of a weekday carrying both a gym and a sport session; empty when the draft has none. */
+    Optional<Integer> trainSportDayMovementKcal(SeasonDraftJson draft, BigDecimal restKcalPerHour);
+
     /** Replaces both weekly schedules with the draft's (each replace recomputes the active goal). */
     void replaceSlots(UUID owner, SeasonDraftJson draft);
 
@@ -39,4 +62,17 @@ public interface SeasonTrainPort {
 
     /** The template a mesocycle can be re-run from (materialised for a legacy run). */
     UUID templateOf(UUID owner, UUID mesocycleId);
+
+    /**
+     * The planned sessions per day of {@code from..to}: a weekly gym slot on that weekday (GYM), a weekly sport slot
+     * (SPORT) — the schedule as it stands — and a run the running block plans that day (RUN). Days without any are
+     * absent.
+     */
+    Map<LocalDate, Set<SessionKind>> plannedSessions(UUID owner, LocalDate from, LocalDate to);
+
+    /** The done sessions per day: a completed gym workout (GYM), a logged sport session (SPORT), a logged run (RUN). */
+    Map<LocalDate, Set<SessionKind>> doneSessions(UUID owner, LocalDate from, LocalDate to);
+
+    /** The sessions skipped with an excusing reason, per day and kind. */
+    Map<LocalDate, Set<SessionKind>> excusedSessions(UUID owner, LocalDate from, LocalDate to);
 }

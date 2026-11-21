@@ -37,7 +37,12 @@ import java.util.regex.Pattern;
  *       the proposal's options; no other catalog product (suggested, declined, another sleeve's) is ever named — not
  *       by its full name, its ticker (the symbol's root before the dot), its ISIN, nor a distinctive short form of
  *       its name ({@link #shortForms}: "MSCI World", "S&P 500", "LifeStrategy", "All-World"). A short form that also
- *       occurs in a name allowed in that field is ambiguous and left alone.</li>
+ *       occurs in a name allowed in that field is ambiguous and left alone. <b>And nothing outside his catalog</b>
+ *       (mezo-r36n9.121): Hungarian capitalises only proper nouns and sentence starts, so a capitalised word in
+ *       mid-sentence, a word with two or more capitals ({@code OTP}, {@code BUX}) anywhere, or a well-known asset
+ *       name ({@link #KNOWN_OUTSIDE_NAMES}, {@code Bitcoin} at a sentence start) is a name — and it must be a word of
+ *       a catalog product's name or description ({@code Vanguard}, {@code MBH}, inflected allowed) or one of the few
+ *       generic words of {@link #NAME_WORD_ALLOW} ({@code Boop}, {@code ETF}, {@code TER}, {@code EU}).</li>
  *   <li><b>Boundary</b> (spec §6): no buy imperative, sell, urge, countdown or return-promise / forecast wording
  *       (HU + EN, folded stems; letter-spaced words joined first; {@code hozam} only inside the server's own option
  *       wording, {@link #OWN_HOZAM_LINES}), no URL, no markup but {@code *emphasis*}, no prompt-leak marker.</li>
@@ -74,6 +79,26 @@ public final class ProposalValidator {
     private static final Pattern CAMEL = Pattern.compile("^\\p{L}{2,}?\\p{Ll}\\p{Lu}");
     private static final Pattern SPACED_LETTERS = Pattern.compile("(?<!\\p{L})\\p{L}(?: \\p{L}(?!\\p{L}))+");
     private static final Pattern MARKS = Pattern.compile("\\p{M}+");
+    /** A word for the outside-the-catalog check: letters, digits and {@code &}, at least one letter; split on hyphens. */
+    private static final Pattern NAME_TOKEN = Pattern.compile("[\\p{L}\\p{N}&]*\\p{L}[\\p{L}\\p{N}&]*");
+    /** What may stand between a sentence end and the next word: spaces, quotes, brackets, emphasis, dashes. */
+    private static final Pattern SENTENCE_GAP = Pattern.compile("[\\s\"'„”“»«()*–—-]*$");
+    /** Generic words a narration may capitalise mid-sentence or write in capitals (folded). */
+    static final Set<String> NAME_WORD_ALLOW = Set.of("boop", "etf", "etfs", "ucits", "ter", "isin", "eu", "huf",
+        "eur", "usd", "ft", "magyar", "magyarorszag", "europa", "europai", "allampapir", "allampapirok",
+        // institutions, places and terms a plausible narration names (mezo-r36n9.119 review)
+        "mnb", "ekb", "fed", "tbsz", "nyesz", "usa", "amerika", "azsia", "japan", "kina", "akk", "mak",
+        "allamkincstar", "map", "pmap", "fixmap", "nincs");
+    /** The longest Hungarian ending a known word may carry and still count as known ({@code -eitekkel}). */
+    private static final int MAX_ENDING = 9;
+    /** A word right after an opening quote: a quoted sentence starts there. */
+    private static final Pattern OPENING_QUOTE = Pattern.compile("[„\"“»]\\s*$");
+    /** A list marker at a line start ({@code 1)}, {@code 1.}, {@code -}, {@code •}) right before the word. */
+    private static final Pattern LIST_MARKER = Pattern.compile("(?:^|\\n)[ \\t]*(?:\\d+[.)]|[-•])[ \\t]*$");
+    /** Well-known names outside any catalog, caught even at a sentence start (folded word-start stems). */
+    static final List<String> KNOWN_OUTSIDE_NAMES = List.of("bitcoin", "ethereum", "ether", "btc", "solana",
+        "dogecoin", "tether", "kriptovalut", "tesla", "apple", "nvidia", "microsoft", "amazon", "alphabet", "google",
+        "facebook", "netflix", "otp", "mol", "richter", "telekom", "4ig", "opus", "bux", "nasdaq", "dow jones");
 
     /** Folded phrases at a word start: buy imperative / sell / urge / countdown / return promise (HU + EN). */
     static final List<String> BOUNDARY_STEMS = List.of(
@@ -124,6 +149,7 @@ public final class ProposalValidator {
             fields.put("why." + s.wire(), new Field(narration.why(s), WHY_MAX, figures.options(s).names()));
         }
         fields.put("uncertainty", new Field(narration.uncertainty(), UNCERTAINTY_MAX, allOffered));
+        Set<String> known = knownNameWords(catalog);
 
         for (Map.Entry<String, Field> e : fields.entrySet()) {
             String field = e.getKey();
@@ -143,6 +169,9 @@ public final class ProposalValidator {
             checkNumbers(field, prose, figures, out);
             if (namesForbiddenProduct(folded, catalog, f.allowedNames())) {
                 out.add(new DigestViolation(Rule.ENTITY_SWAP, field, "names a product that is not offered here"));
+            }
+            if (namesOutsideTheCatalog(prose, folded, known)) {
+                out.add(new DigestViolation(Rule.ENTITY_SWAP, field, "names a product outside his catalog"));
             }
             if (anyStem(withoutOwnHozamLines(folded), BOUNDARY_STEMS)
                 || anyStem(withoutOwnHozamLines(joined), BOUNDARY_STEMS)) {
@@ -221,6 +250,91 @@ public final class ProposalValidator {
             }
         }
         return false;
+    }
+
+    /**
+     * mezo-r36n9.121 — a name that is no word of his catalog: a capitalised word in mid-sentence, a word with two or
+     * more capitals anywhere, or a {@link #KNOWN_OUTSIDE_NAMES} stem anywhere, unless it is a {@code known} word
+     * (exact, or a known / allowed word of 3+ letters carrying a Hungarian ending of up to {@link #MAX_ENDING}
+     * letters).
+     */
+    private static boolean namesOutsideTheCatalog(String prose, String folded, Set<String> known) {
+        Matcher m = NAME_TOKEN.matcher(prose);
+        while (m.find()) {
+            for (String part : m.group().split("-")) {
+                if (part.isEmpty() || part.codePoints().noneMatch(Character::isLetter)) {
+                    continue;
+                }
+                long capitals = part.codePoints().filter(Character::isUpperCase).count();
+                boolean name = capitals >= 2
+                    || (Character.isUpperCase(part.codePointAt(0)) && !sentenceStart(prose, m.start()));
+                if (name && !knownWord(NewsText.fold(part), known)) {
+                    return true;
+                }
+            }
+        }
+        Matcher w = NAME_TOKEN.matcher(folded);
+        while (w.find()) {
+            String word = w.group();
+            if (!knownWord(word, known) && KNOWN_OUTSIDE_NAMES.stream().anyMatch(word::startsWith)) {
+                return true;
+            }
+        }
+        return KNOWN_OUTSIDE_NAMES.stream().filter(n -> n.contains(" "))
+            .anyMatch(n -> NewsText.containsStem(folded, n));
+    }
+
+    /**
+     * True at the text's start, after a sentence end ({@code . ! ? :} or a line break), after an opening quote, or
+     * after a list marker at a line start.
+     */
+    private static boolean sentenceStart(String prose, int index) {
+        String before = prose.substring(0, index);
+        if (OPENING_QUOTE.matcher(before).find() || LIST_MARKER.matcher(before).find()) {
+            return true;
+        }
+        String rest = SENTENCE_GAP.matcher(before).replaceFirst("");
+        if (rest.isEmpty()) {
+            return true;
+        }
+        char c = rest.charAt(rest.length() - 1);
+        return c == '.' || c == '!' || c == '?' || c == ':' || c == '\n'
+            || (before.length() > rest.length() && before.substring(rest.length()).contains("\n"));
+    }
+
+    private static boolean knownWord(String folded, Set<String> known) {
+        if (known.contains(folded) || NAME_WORD_ALLOW.contains(folded)) {
+            return true;
+        }
+        return withEnding(folded, known) || withEnding(folded, NAME_WORD_ALLOW);
+    }
+
+    private static boolean withEnding(String folded, Set<String> stems) {
+        for (String k : stems) {
+            if (k.length() >= 3 && folded.startsWith(k) && folded.length() - k.length() <= MAX_ENDING
+                && folded.substring(k.length()).codePoints().allMatch(Character::isLetter)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Every folded word of every catalog product's name and description (split on hyphens). */
+    private static Set<String> knownNameWords(List<CatalogProduct> catalog) {
+        Set<String> out = new LinkedHashSet<>();
+        for (CatalogProduct p : catalog) {
+            for (String text : new String[] {p.name(), p.whatItIs()}) {
+                Matcher m = NAME_TOKEN.matcher(NewsText.fold(text));
+                while (m.find()) {
+                    for (String part : m.group().split("-")) {
+                        if (!part.isEmpty()) {
+                            out.add(part);
+                        }
+                    }
+                }
+            }
+        }
+        return out;
     }
 
     /**

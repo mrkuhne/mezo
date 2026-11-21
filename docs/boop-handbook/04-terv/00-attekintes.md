@@ -25,10 +25,21 @@ Ezekből számolja Boop, mennyit egyél edzésnapon és pihenőnapon, mennyit al
 - **Edzésblokk csak évaddal indulhat.** A már futó blokk fut tovább.
 - A súlycél-motor számol mindent (lásd [Súlycél és célmotor](02-sulycel-celmotor.md)).
 
+**A második szakasz óta (2026-11-21) élesben:**
+- **„Hogy megy”** — az elmúlt hét tényei pontszám nélkül (például „4 / 5 napon belefértél a keretbe”); a kímélő napok
+  egyáltalán nem számítanak bele, egy indokkal kihagyott edzés pedig csak az edzések közül marad ki.
+- **„Amit Boop észrevett”** — legfeljebb három észrevétel, mindegyik csak akkor, ha már elég adat van mögötte.
+- **Egy napi ítélet mindenhol:** azt, hogy egy nap belefért-e a keretbe, a háttérrendszer dönti el egy helyen — az Évad
+  oldal, az Étel Hét füle és Boop ugyanazt mondja.
+- **Boop ismeri az évad szabályait** a beszélgetésben, a reggeli összefoglalóban és az étkezések értékelésében, és ha
+  kérdezed, elmondja, hogyan halad az évad.
+- **Kártyák a Ma falán:** az égetés-javaslat és az évad vége — lásd [Az évad](06-terv-csomag.md).
+- **Heti menü** (3. szakasz): vasárnap este a kiválasztott receptjeidből, az edzésnapjaidhoz igazítva — jóváhagyod, és
+  ezek lesznek a napi terved ételei; lásd [Heti menü](09-heti-menu.md).
+- **Bevásárlólista** (3. szakasz): a jóváhagyott menüből, polcok szerint, pipálható, megosztható; lásd
+  [Bevásárlólista](07-bevasarlolista.md).
+
 **Ami még jön:**
-- **2. szakasz:** „Hogy megy” (az elmúlt hét tényei pontszám nélkül), „Amit Boop észrevett”, az évad szabályai Boop minden
-  beszélgetésében és a reggeli összefoglalóban, és az évad kártyái a Ma falán.
-- **3. szakasz:** heti menü a kiválasztott receptekből és bevásárlólista (a „Menü” és „Lista” fül addig „hamarosan” lapot mutat).
 - **4. szakasz:** kísérletek — kipróbálsz valamit, és Boop megnézi, tényleg hat-e (a „Hatás” fül addig „hamarosan”).
 - **Korábbi évadok** oldal és a mostani súlyod az Új évad első lépésében.
 
@@ -59,7 +70,7 @@ Az egyes funkcióoldalak tartalmazzák (`mezo.season.*`, `mezo.goal.*`).
 | `goal_plan_link` | Az évad súlycéljához csatolt edzésblokk |
 
 ## Mi jön még
-- Az évad 2–4. szakasza (lásd fent).
+- Az évad 3–4. szakasza (lásd fent).
 - Egy elfogadással az edzésblokk napjai is átrendeződnek, ha az edzésnapok változnak (addig futó blokk alatt az edzésnapok zárolva).
 - **Testösszetétel:** a Test kártya és a Health-testzsír a motorban.
 

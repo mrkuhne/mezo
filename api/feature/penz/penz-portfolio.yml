@@ -95,6 +95,13 @@ paths:
         Record a buy or a sell he already made on his own platform — idempotent on clientRef. The currency is the
         holding's; a sell above the open quantity (or, without quantities, above the open cost) is 400
         PENZ_SELL_EXCEEDS_POSITION. Non-HUF amounts are booked at the date's ECB rate (503 PENZ_FX_UNAVAILABLE).
+        With accountId (mezo-r36n9.119) the buy / sell also lands on that money account as ONE penz_transaction
+        (kind invest_buy / invest_sell, in the ACCOUNT's currency: accountAmountMinor when given, else the amount
+        itself when the currencies agree, else its HUF twin on a HUF account, else the HUF twin converted at the
+        account currency's booking rate of the date, HALF_UP) — so the balance and the allowance "invested" line see
+        it. With linkTransactionId (a buy only) a bank-SMS debit on that account becomes that money row instead
+        (the buy takes its date); nothing new is written. A clientRef replay never writes a second money row. The
+        app never moves money: it only records what he already did.
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/PenzInvestTxnRequest' } } }
@@ -102,15 +109,40 @@ paths:
         '201':
           description: The stored transaction (also the answer to a replayed clientRef)
           content: { application/json: { schema: { $ref: '#/components/schemas/PenzInvestTxnResponse' } } }
-        '400': { description: 'Validation failure / PENZ_SELL_EXCEEDS_POSITION / PENZ_CURRENCY_MISMATCH', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '400': { description: 'Validation failure (VALIDATION_INVALID_VALUE on accountId for an account that cannot pay — only checking and cash can; on linkTransactionId for a sell or without accountId) / PENZ_SELL_EXCEEDS_POSITION / PENZ_CURRENCY_MISMATCH', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '404': { description: 'PENZ_HOLDING_NOT_FOUND', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: 'PENZ_HOLDING_NOT_FOUND / PENZ_ACCOUNT_NOT_FOUND (not his, deleted or archived) / PENZ_TRANSACTION_NOT_FOUND (linkTransactionId)', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '409': { description: 'PENZ_SMS_LINK_MISMATCH — linkTransactionId is not (any more) a bank-SMS debit this buy can adopt (same rule as the sms-candidates list)', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '503': { description: 'PENZ_FX_UNAVAILABLE', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/penz/invest-transactions/sms-candidates:
+    get:
+      tags: [PenzPortfolio]
+      operationId: listPenzInvestSmsCandidates
+      summary: >
+        Bank-SMS debits that may be this buy (mezo-r36n9.119): on an account with an SMS sender, live non-recurring
+        expenses that came from a bank SMS, not yet linked to an investment, with exactly amountMinor (the ACCOUNT's
+        currency) dated within ±3 days of date. Empty when the account receives no SMS. Closest date first.
+      parameters:
+        - { name: accountId, in: query, required: true, schema: { type: string, format: uuid } }
+        - { name: amountMinor, in: query, required: true, schema: { type: integer, format: int64, minimum: 1, maximum: 100000000000 } }
+        - { name: date, in: query, required: true, schema: { type: string, format: date } }
+      responses:
+        '200':
+          description: Candidate transactions (possibly empty)
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/PenzTransactionResponse' } }
+        '400': { description: 'Validation failure', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: 'PENZ_ACCOUNT_NOT_FOUND', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/penz/invest-transactions/{id}:
     delete:
       tags: [PenzPortfolio]
       operationId: deletePenzInvestTransaction
-      summary: Soft-delete a buy or sell (refused when it would leave a later sell above the open position)
+      summary: >
+        Soft-delete a buy or sell (refused when it would leave a later sell above the open position). Its linked
+        money row goes with it: one that carries a bank SMS (the debit really happened) reverts to an expense (a buy)
+        / income (a sell) waiting for review; any other is soft-deleted.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
@@ -242,6 +274,9 @@ components:
         date: { type: string, format: date }
         note: { type: string, nullable: true, maxLength: 500 }
         clientRef: { type: string, format: uuid, nullable: true }
+        accountId: { type: string, format: uuid, nullable: true, description: 'The money account it was paid from (buy) / paid into (sell); only checking or cash. Null = not linked to an account' }
+        accountAmountMinor: { type: integer, format: int64, nullable: true, minimum: 1, maximum: 100000000000, description: 'The exact amount in the ACCOUNT currency when he knows it (e.g. the bank debit); null = derived (see the operation)' }
+        linkTransactionId: { type: string, format: uuid, nullable: true, description: 'A buy only, with accountId: a bank-SMS expense from the sms-candidates list to adopt as this buy (its date wins)' }
     PenzInvestTxnResponse:
       type: object
       required: [id, holdingId, side, amount, date]
@@ -256,6 +291,8 @@ components:
         note: { type: string, nullable: true }
         realizedHufMinor: { type: integer, format: int64, nullable: true, description: 'A sell only: proceeds minus the FIFO cost of the lots it consumed (HUF minor)' }
         clientRef: { type: string, format: uuid, nullable: true }
+        accountId: { type: string, format: uuid, nullable: true, description: 'The money account of the linked money row; null = not linked' }
+        transactionId: { type: string, format: uuid, nullable: true, description: 'The linked money row (penz_transaction, kind invest_buy / invest_sell); null = not linked' }
     PenzHoldingEventRequest:
       type: object
       required: [holdingId, kind, date]

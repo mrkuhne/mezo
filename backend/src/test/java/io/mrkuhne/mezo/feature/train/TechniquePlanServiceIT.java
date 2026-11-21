@@ -63,7 +63,7 @@ class TechniquePlanServiceIT extends ApiIntegrationTest {
         MesocycleResponse run = startRun(TrainingStyle.BALANCED, true, null,
             day("Hét", pecDeck(), cableFly(), legExtension()));
 
-        // the day's first stable + lengthened-friendly counting row is the challenge, written by the planner
+        // the day's first counting row the challenge rule allows is the challenge, written by the planner
         assertThat(challengeRows(run.getId())).containsExactly("Pec Deck|planner|null");
         assertThat(jdbcTemplate.queryForObject(
             "select count(*) from exercise e join workout_session s on s.id = e.workout_session_id "

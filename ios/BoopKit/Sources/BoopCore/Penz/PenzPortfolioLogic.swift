@@ -366,6 +366,26 @@ public func penzHoldingChoices(_ p: PenzPortfolio?) -> [PenzHoldingChoice] {
     }
 }
 
+/// The accounts a buy can be paid from / a sell paid into (`mezo-r36n9.119`): his live checking and cash accounts,
+/// the default first — the server refuses any other (savings, investment, archived).
+public func penzPayableAccounts(_ accounts: [PenzAccount]) -> [PenzAccount] {
+    let payable = accounts.filter { !$0.archived && ($0.type == "checking" || $0.type == "cash") }
+    return payable.filter(\.isDefault) + payable.filter { !$0.isDefault }
+}
+
+/// The amount to ask the bank-SMS candidates for, in the ACCOUNT's currency — only a buy, only when the account and
+/// the holding share a currency (otherwise the server converts and an exact match is unlikely, so nothing is asked).
+public func penzSmsLookupAmount(side: String, account: PenzAccount?, holdingCurrency: String, amountMinor: Int64?) -> Int64? {
+    guard side == "buy", let account, let amountMinor, amountMinor > 0, account.currency == holdingCurrency else { return nil }
+    return amountMinor
+}
+
+/// "nov. 19. · Spar" — a bank-SMS candidate chip ("Bank" when the message had no merchant).
+public func penzSmsCandidateLabel(_ t: PenzTransaction) -> String {
+    let note = t.note?.trimmingCharacters(in: .whitespaces) ?? ""
+    return "\(penzShortDate(t.date)) · \(note.isEmpty ? "Bank" : note)"
+}
+
 public let penzAssetTypes: [(type: String, name: String)] = [
     ("etf", "ETF"), ("stock", "Részvény"), ("bond", "Állampapír / kötvény"), ("fund", "Alap"), ("crypto", "Kripto"), ("cash", "Pénzpiac / készpénz"),
 ]

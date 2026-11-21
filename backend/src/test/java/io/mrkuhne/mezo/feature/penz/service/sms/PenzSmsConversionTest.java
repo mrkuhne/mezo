@@ -15,8 +15,9 @@ import org.junit.jupiter.api.Test;
 /**
  * The applicable cases of the old {@code src/app/smsConversion.test.ts}: {@code pickSmsAccount} (1) and
  * {@code planSmsTxn} (5). {@code dedupePending} (2) is replaced by the database unique index and covered by
- * {@code PenzSmsIngestApiIT#replayIsADuplicateAndNeverASecondTransaction}; {@code matchInvestTxnForSms} (3) and
- * {@code runConvertSms} (3, all invest-buy adoption) are L6.
+ * {@code PenzSmsIngestApiIT#replayIsADuplicateAndNeverASecondTransaction}; {@code matchInvestTxnForSms} (3) is in
+ * {@link PenzInvestSmsMatchTest} and {@code runConvertSms} (3, all invest-buy adoption) in {@code PenzSmsIngestApiIT}
+ * (mezo-r36n9.119).
  */
 class PenzSmsConversionTest {
 

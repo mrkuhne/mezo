@@ -2,7 +2,7 @@
 title: Fuel (Nutrition)
 type: feature-domain
 status: done
-updated: 2026-11-19
+updated: 2026-11-21
 tags: [fuel, frontend, data-layer, boop, b4-etel, day-plan, meal-photos, client-ref]
 key_files:
   - api/feature/fuel/fuel.yml
@@ -11,10 +11,12 @@ key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/meal
   - backend/src/main/java/io/mrkuhne/mezo/feature/nutrition
   - backend/src/main/java/io/mrkuhne/mezo/feature/train/service/ActivityEnergyModel.java
-related: [_platform-data-layer, _platform-design-system, train, today, _platform-notifications, goal-engine, me, character]
+related: [_platform-data-layer, _platform-design-system, train, today, _platform-notifications, goal-engine, me, character, season]
 ---
 
 # Fuel (Nutrition) — Feature Documentation
+
+> **2026-11-21 — Boop B6 Évad S2 (`mezo-r36n9.16`): one day judgement, and the season reaches the meal coach.** The season's `AdherenceService` (`GET /api/seasons/adherence`) reads `FuelDayService.getWeek` — the rollup the Étel Hét tab renders — and is now **the single source of a day's judgement**: judged = before today, no fuel recovery mode (any mode), consumed kcal > 0; in band = within ±10 % of the served target; a kímélő day is excused from every count, a reasoned skip only from the session count (its food still counts). The phone's Hét tab takes the judged / kímélő flags from there and keeps its identical local rule only as the offline fallback (its amber pill still means „over 110 %"). The meal coach gains the season's rules: `MealCoachContextReader.PersonContext.seasonRules` (meal-owned `port/SeasonContextPort`, adapter season-side) → `MealCoachPrompt` appends „AZ ÉVAD SZABÁLYAI (ezekhez igazítsd a javaslatot; ha egy étel megszegi, mondd ki kedvesen)" + the `[Évad]` lines (allowed recipes, NOVA rule, day targets); absent without a season — never a „nincs adat" line. Test `MealCoachPromptTest`. See [`season.md`](season.md) §3.7, §3.9.
 
 > **2026-11-13 — Boop B4 Étel (`mezo-r36n9.14`): the day plan is now server-side, meals can carry a photo, writes are idempotent.** The native app's food room needed the planner the web app computes in `buildDayPlan.ts`, so the rules were **ported to the backend** (§3 *Server day plan*, §4 *B4 contract additions*): `GET /api/fuel/plan/{date}`, `GET /api/fuel/usuals`, `PUT/GET/DELETE /api/meal/{id}/photo`, optional `clientRef` + `capturedAt` on `createMeal` / `logWater` / `logIntake`, `MealResponse.hasPhoto`. The web app does **not** consume any of them yet — its own `buildDayPlan.ts` / `usualMeals.ts` stay as they are and the two implementations are kept equal only by the server's tests, which copy the web planner's pinned cases (a change to one rule must change both). The default number of eating occasions moved **4 → 5** (3 meals + 2 snacks, owner decision 21). The native side is documented in [`boop-ios.md`](boop-ios.md) §2 *The Étel room*.
 
@@ -443,6 +445,11 @@ View (features/fuel/pages/*.tsx)
 
 A deterministic port of the web planner so the native app gets one answer from one endpoint. **No LLM produces any number or sentence here.**
 
+- **Évad S3 (2026-11-21, `mezo-r36n9.16`).** The candidate list goes through `meal/port/SeasonMenuPort.allowedRecipes`
+  (an active season's allowed recipes only; empty = no filter), an approved weekly menu's meal for a window (`<slot>#<n>`)
+  is that window's suggestion (reason „ez szerepel a jóváhagyott heti menüdben") — only for the active season, while its recipe is still a candidate and the live window is within 15 % of the budget it was planned for, and `skeleton(owner, date)` /
+  `recipeCandidates(owner)` serve the season's menu planner the same windows, budgets and candidates — see
+  [`season.md`](season.md) §3.11–§3.12.
 - **Where it lives.** The pure rules are in `nutrition/service/dayplan/` — `WindowPlacer` (meal windows from wake / bed / the day's workouts / the slot template; ports `placeWindows`, `compileTemplate`, `widenWindows`, `resolveDayType`), `BudgetSplitter` (the per-window budget, by template percentage when rows carry one, role-multiplied macros; ports `splitBudget` / `splitBudgetPct`), `SuggestionPicker` (a recipe filtered by the sensitivity rules, with the ingredient-level fallback), `UsualMealRanker` (the last 28 days ranked by window asked, frequency, recency) and `MealSlots`. The orchestrator `DayPlanService`, its wire mapper `FuelPlanMapper` and `FuelPlanController` live in **`meal/service/dayplan/`**, not in `nutrition`, because it reads `FuelDayService`, recipes and fuel settings, which are all downstream of `nutrition` — putting it there would have created two new ArchUnit cycles. New slice edges: `meal → fuel`, `meal → wearable` (for the owner zone `mezo.wearable.zone`).
 - **Inputs.** `FuelDayService.getDay` (targets + consumed + skipped kcal + fuel mode + meals in one read), the sleep anchor port (wake / bed), `fuel_settings` + `meal_slot_template`, the recipe library, the owner's sensitivity profile, and the wearable zone.
 - **Output** (`FuelPlanResponse`): `windows[]` (`slot`, `kind` meal|snack, Hungarian `label`, `from`/`to` HH:mm, nullable `budget` macros, `state` done|now|pending|missed|skipped, `loggedMealIds`, nullable `suggestion{kind recipe|ingredients, recipeId?, text, reason}`), `remaining` (target − consumed − the kcal of skipped windows; **null on a kímélő GUIDANCE day**, which is not judged on kcal) and one `tip{text, reason}`.

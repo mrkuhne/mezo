@@ -15,6 +15,7 @@ class TrainTechniquePropertiesIT extends AbstractIntegrationTest {
         assertThat(props.restDrop()).isEqualTo(new TrainTechniqueProperties.Drop(0, 30, 30));
         assertThat(props.drop()).isEqualTo(new TrainTechniqueProperties.Drop(0, 20, 0));
         assertThat(props.myo()).isEqualTo(new TrainTechniqueProperties.Myo(1, 5, 3, 20, 4));
+        assertThat(props.restPause()).isEqualTo(new TrainTechniqueProperties.RestPause(20, 0, 5, 10, 4));
         assertThat(props.partials()).isEqualTo(new TrainTechniqueProperties.Partials(0));
         assertThat(props.capWeight()).isEqualTo(2);
         assertThat(props.planner()).isEqualTo(new TrainTechniqueProperties.Planner(3, 2, 1, 2, 15));

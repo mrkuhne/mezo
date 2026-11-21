@@ -66,4 +66,15 @@ class BlockSuggestionServiceTest {
         assertThat(BlockSuggestionService.preferredType(pool, Set.of(pullover.getId()))).isEqualTo("compound");
         assertThat(BlockSuggestionService.preferredType(pool, Set.of(rowCompound.getId()))).isEqualTo("isolation");
     }
+
+    @Test
+    void preferredType_shouldJudgeOnlyTheRowsOfTheAskedGroup() {
+        ExerciseCatalogEntity rowCompound = row("Seated Row", "back-mid", "compound");
+        ExerciseCatalogEntity legPress = row("Leg Press", "quad", "compound");
+        List<ExerciseCatalogEntity> pool = List.of(rowCompound, legPress);
+        Set<java.util.UUID> inDay = Set.of(rowCompound.getId());
+
+        assertThat(BlockSuggestionService.preferredType(pool, inDay, "back")).isEqualTo("isolation");
+        assertThat(BlockSuggestionService.preferredType(pool, inDay, "quad")).isEqualTo("compound");
+    }
 }

@@ -166,7 +166,7 @@
       "Terv"
     ],
     "mit_kapsz": "Egy néhány hetes évad céllal, amelyből az edzés, az étkezés, az alvás és a súly is következik; minden módosításnál élőben látod, mire hat. Heti menü, bevásárlólista és kísérletek arról, mi hat rád.",
-    "munkamenet": "ecstatic-babbage-7fa58b"
+    "munkamenet": "practical-lalande-806551"
   },
   "mezo-r36n9.17": {
     "cim": "B7 Napi kapacitás — mennyit bír ma a napod",
@@ -176,7 +176,8 @@
       "Ma",
       "AI és memória"
     ],
-    "mit_kapsz": "A naptár terhelése és a tested állapota alapján a Boop megmondja, belefér-e a nap, és napközben javasol, ha változik valami."
+    "mit_kapsz": "Reggel egy mondatban megtudod, belefér-e a nap. Egy új Átrendezés oldalon Boop megmutatja, mit tenne át a héten (edzés, alvás, étel, programok), minden kereszthatással; a jóváhagyásod után az appban mindenhol átkerül, de az Évad terve nem változik. Az áttételekből tanul, és előre szól, mielőtt túlvállalnád magad.",
+    "munkamenet": "b6-b7-epites-5d50e3"
   },
   "mezo-r36n9.18": {
     "cim": "B8 Az egy AI — minden adatot ismerő emlékezet",
@@ -409,7 +410,7 @@
       "Alapok"
     ],
     "mit_kapsz": "A havi kereted, a kategóriáid és a tételeid bekerülnek a Boopba, a banki üzeneteidből magától rögzül a költés, és beépül egy védelem, ami elkapja, ha az AI nagyobb összeget mondana, mint amennyi van.",
-    "allapot": "Később"
+    "allapot": "Lezárva"
   },
   "mezo-r36n9.42": {
     "cim": "L5 · A Pénz szoba",
@@ -419,7 +420,7 @@
       "Alapok"
     ],
     "mit_kapsz": "Egy képernyőn látod, hol tartasz a havi kerettel, mire megy el, mi jön még, és mennyi marad szabadon — ugyanolyan felületen, mint az alvás vagy az étel.",
-    "allapot": "Később"
+    "allapot": "Lezárva"
   },
   "mezo-r36n9.43": {
     "cim": "L6 · A Boop a pénzedet és a leveleidet is látja",
@@ -1149,7 +1150,9 @@
     ],
     "szulo": "mezo-r36n9.33",
     "cim": "Pénz · a régi pénzügyi app adatainak átköltöztetése",
-    "mit_kapsz": "Amikor a Pénz oldal elkészül, a régi pénzügyi appodban rögzített számláid és tételeid egyszer, egy megbeszélt napon átköltöznek a Boopba, így nem kell semmit újra beírnod. Előtte megnézzük, mennyi adat van a régi appban, és csak a jóváhagyásoddal írunk az éles adatbázisba."
+    "munkamenet": "boop-penz-import",
+    "mit_kapsz": "Amikor a Pénz oldal elkészül, a régi pénzügyi appodban rögzített számláid és tételeid egyszer, egy megbeszélt napon átköltöznek a Boopba, így nem kell semmit újra beírnod. Előtte megnézzük, mennyi adat van a régi appban, és csak a jóváhagyásoddal írunk az éles adatbázisba.",
+    "allapot": "Lezárva"
   },
   "mezo-r36n9.109": {
     "cim": "Étel: a Hét fül új, melegebb elrendezése",
@@ -1169,7 +1172,8 @@
     ],
     "szulo": "mezo-r36n9.33",
     "cim": "Pénz: egy számla pénzneme ne változhasson, ha már vannak tételei",
-    "mit_kapsz": "Ha egy számlán már vannak tételek, a pénznemét nem lehet utólag átállítani, így az egyenleg nem tud csendben elcsúszni."
+    "mit_kapsz": "Ha egy számlán már vannak tételek, a pénznemét nem lehet utólag átállítani, így az egyenleg nem tud csendben elcsúszni.",
+    "munkamenet": "boop-penz-followups"
   },
   "mezo-r36n9.111": {
     "cim": "A „nem esik jól” gomb jobban rendezze át az ajánlásokat",
@@ -1268,7 +1272,8 @@
     ],
     "szulo": "mezo-r36n9.33",
     "cim": "Pénz · befektetés a számládról, és a banki üzenetből",
-    "mit_kapsz": "Ha egy befektetést rögzítesz, megadhatod, melyik számládról ment — így a havi keretben is látszik, mennyit tettél félre befektetésre. Ha a bank SMS-ben jelzi a vásárlást, Boop felismeri és összeköti a rögzített befektetéssel."
+    "mit_kapsz": "Ha egy befektetést rögzítesz, megadhatod, melyik számládról ment — így a havi keretben is látszik, mennyit tettél félre befektetésre. Ha a bank SMS-ben jelzi a vásárlást, Boop felismeri és összeköti a rögzített befektetéssel.",
+    "munkamenet": "boop-penz-followups"
   },
   "mezo-r36n9.120": {
     "tipus": "Funkció",
@@ -1278,7 +1283,8 @@
     ],
     "szulo": "mezo-r36n9.33",
     "cim": "Pénz · heti áttekintés: mi számít tényleg hosszú távon",
-    "mit_kapsz": "Hetente egyszer egy rövid összefoglaló rekeszenként arról, mi az, ami a hosszú távú pénzedet tényleg érinti — a napi hírek zajától elkülönítve. Értesítés nélkül, teendő-gomb nélkül."
+    "mit_kapsz": "Hetente egyszer egy rövid összefoglaló rekeszenként arról, mi az, ami a hosszú távú pénzedet tényleg érinti — a napi hírek zajától elkülönítve. Értesítés nélkül, teendő-gomb nélkül.",
+    "munkamenet": "boop-penz-followups"
   },
   "mezo-r36n9.122": {
     "cim": "Évad: az edzésnapok módosítása a futó blokkot is átrendezi",
@@ -1318,6 +1324,87 @@
     ],
     "szulo": "mezo-r36n9.33",
     "cim": "Pénz · javaslatok: ismeretlen termék nevének kiszűrése",
-    "mit_kapsz": "Ha Boop egy javaslat szövegében olyan terméket említene, ami nincs is a termékjegyzékedben, a szöveg akkor is fennakad az ellenőrzésen, és a rögzített, biztonságos szöveg jelenik meg helyette."
+    "mit_kapsz": "Ha Boop egy javaslat szövegében olyan terméket említene, ami nincs is a termékjegyzékedben, a szöveg akkor is fennakad az ellenőrzésen, és a rögzített, biztonságos szöveg jelenik meg helyette.",
+    "munkamenet": "boop-penz-followups"
+  },
+  "mezo-r36n9.125": {
+    "cim": "Edzés: Rest pause technika (20 + 4 × 5, fix menet)",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Új technika a választóban: 20 ismétlés, aztán négyszer 10 mp pihenő és 5 ismétlés, fixen, magától nem áll le. Ha ezt választod, az egész gyakorlat 20 ismétlésre áll.",
+    "munkamenet": "rest-pause-set-technique"
+  },
+  "mezo-r36n9.126": {
+    "cim": "Notion: Szerverfunkciók — mi van meg az appban és mi nincs",
+    "tipus": "Karbantartás",
+    "szakasz": "Újratervezés",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Egy új Notion-oldal, ahol területenként (edzés, étel, alvás, napló, célok, Boop, pénz, alapok) fel van sorolva a szerver minden funkciója, és mindegyiknél látod, hol tart az iPhone-appban: kész, részben kész, épül, tervben, nincs még, vagy nem kell.",
+    "munkamenet": "notion-feature-tracker"
+  },
+  "mezo-r36n9.128": {
+    "cim": "Edzés: egy csere-teszt néha rossz sorrendet vár",
+    "tipus": "Hiba",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Nincs látható változás: egy belső ellenőrzés megbízhatóan zöld lesz, így a telefonos tesztek újra teljes biztonsággal jelzik, ha valami elromlik."
+  },
+  "mezo-r36n9.129": {
+    "cim": "Pénz: a heti áttekintésben egy szám csak a saját címkéje mellett állhat",
+    "tipus": "Apróságok",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "A heti pénzügyi áttekintés nem írhat le olyan számot, ami más adatból jön (például egy hírszámot fedezeti hónapként), így minden szám azt jelenti, amit mellette olvasol.",
+    "szulo": "mezo-r36n9.33"
+  },
+  "mezo-r36n9.127": {
+    "cim": "Blokképítő finomítások: izomrész-szűrő, képek, jobb indoklás, több kihívás",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "A gyakorlat hozzáadásánál egy kis legördülő listában több izomrészt is kipipálhatsz (például hát középső, mell felső), és az izomrész mindenhol látszik, ahol gyakorlat van. Az ajánlott gyakorlatok mellett kis kép van, a hozzáadásnál pedig az indoklás azt mondja meg, miért jó oda a gyakorlat. Kihívást mostantól szinte minden gyakorlaton választhatsz — csak a szabadsúlyos alapgyakorlatokon (guggolás, felhúzás, fekvenyomás és társaik) nem.",
+    "munkamenet": "mezo-nippard-exercise-selection"
+  },
+  "mezo-r36n9.130": {
+    "cim": "Két szerverteszt rendszeresen elbukik a teljes futásban",
+    "tipus": "Karbantartás",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Két automatikus ellenőrzés a teljes tesztfutásban rendszeresen elakad egy bejelentkezési kapcsolathiba miatt, egyedül futtatva viszont mindig átmegy. A javítás után a teljes futás eredménye megbízhatóan zöld lesz. A felületen semmi nem változik.",
+    "munkamenet": "mezo-nippard-exercise-selection"
+  },
+  "mezo-r36n9.131": {
+    "cim": "Évad: edzés és sport egy napon két alkalomnak számít",
+    "tipus": "Hiba",
+    "szakasz": "B6 A Terv",
+    "terulet": [
+      "Terv"
+    ],
+    "mit_kapsz": "Ha egy napon edzőterem és sport (például röplabda) is van, az Évad mostantól két alkalomnak veszi: a „Hogy megy” külön mutatja, hány edzés és hány sportalkalom volt meg, egy indokolt kihagyás csak azt az egy alkalmat menti fel, és a heti étel-összeg is számol a dupla napok nagyobb keretével. Az ilyen nap neve „edzés + sport nap”.",
+    "szulo": "mezo-r36n9.16",
+    "munkamenet": "evad-kettos-nap"
+  },
+  "mezo-r36n9.132": {
+    "cim": "Évad menü: kevesebb zaj a szerver naplójában, ha a heti menü nem készül el",
+    "tipus": "Karbantartás",
+    "szakasz": "B6 A Terv",
+    "terulet": [
+      "Terv"
+    ],
+    "mit_kapsz": "Ha a vasárnapi menü valamiért nem készül el, a szerver nem ismétli percenként ugyanazt a hibaüzenetet.",
+    "szulo": "mezo-r36n9.16"
   }
 }

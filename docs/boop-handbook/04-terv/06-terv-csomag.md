@@ -16,7 +16,7 @@ Egy **évad** 4–24 hétig tart, és ezeket fogja össze:
 - az **edzésblokkot** (a futó blokkot átveszi, vagy újat indít egy sablonból);
 - a **heti edzés- és sportnapokat** (például heti 4 edzés + kedden és csütörtökön röplabda);
 - az **alvásigényt** és a lefekvés idejét;
-- a **szabályokat** és a **kiválasztott recepteket** (a heti menü a 3. szakaszban épül rájuk).
+- a **szabályokat** és a **kiválasztott recepteket** (ezekből áll össze a heti menü — lásd [Heti menü](09-heti-menu.md)).
 
 Ebből számol: edzésnapi és pihenőnapi kalória, fehérje, szénhidrát edzésnapon, a **heti összes** kalória, alvásigény,
 lefekvés, céldátum és tempó (súlytartásnál a súlysáv).
@@ -37,6 +37,16 @@ Egy fontos részlet: **egy plusz edzés nem emeli az edzésnapi kalóriát.** Mi
 **Amíg fut az edzésblokk, az edzésnapok zárolva vannak:** a blokk napjai ezekhez igazodnak. Az „Edzések hetente”
 léptető ilyenkor szürke, és egy sor elmondja, miért. A sportnapok, a tempó és az edzés időpontja szabadon változtatható.
 
+**Boop ismeri az évadot (2026-11-21 óta).** Az évad szabályai — a cél és a tempó, a heti edzés- és sportnapok, az edzés- és
+pihenőnapi kalória és fehérje, a kiválasztott receptek szabálya, a feldolgozottsági szabály (ha nem „bármi mehet”), az
+alvásigény és a lefekvés — ott vannak Boop minden beszélgetésében, a reggeli összefoglalóban és az étkezések értékelésében.
+Így például egy étkezés értékelésekor kedvesen szól, ha egy étel nem fér bele az évad szabályaiba. Ha megkérdezed, hogyan
+halad az évad, Boop elmondja, hányadik hétnél tartasz, merre halad a súlyod, hogy ment az elmúlt hét, és mit vett észre.
+
+**Kártyák a Ma falán (2026-11-21 óta):** ha Boop rájött, hogy a valóságban más az égetésed, mint amivel a terv számolt, egy
+javaslat-kártya jelenik meg (hetente legfeljebb egyszer) „Átnézem” gombbal, ami a Módosításra visz — ott előbb látod, mi változna, és csak az elfogadásod
+után változik bármi. Ha az évad egy héten belül véget ér, azt is jelzi. Egyik kártya sem csörget.
+
 **Edzésblokk csak évaddal indulhat.** Ha nincs évad (vagy egy héten belül induló tervezett évad), az új blokk indítását a
 rendszer elutasítja, és Boop az Évad oldalra küld. A már futó blokk zavartalanul fut tovább.
 
@@ -54,13 +64,19 @@ rendszer elutasítja, és Boop az Évad oldalra küld. A már futó blokk zavart
    pontos lépésköz Boop kiinduló szabálya, nem mért érték. Az alapot az évad megjegyzi, így ismételt módosításnál nem
    halmozódik; az évad lezárásakor az alváscél visszaáll az alapra (hacsak közben magad nem írtad át).
 5. **Életciklus:** tervezett → aktív → lezárt. Egyszerre egy aktív évad lehet; egy új évad indítása lezárja az előzőt.
-6. **Az első évad** a meglévő súlycélodból, a futó blokkodból, a heti napjaidból és az alvásodból áll össze javaslatként; élesbe
+6. **Az évad Boop fejében:** a háttérrendszer minden beszélgetés, reggeli összefoglaló és étkezés-értékelés előtt röviden
+   összeírja az évad szabályait. Ha valamit nem tud kiszámolni (például hiányoznak a testadatok), azt a sort kihagyja,
+   sosem talál ki számot — és ha bármi hibázik, a beszélgetés akkor is megy tovább, csak az évad nélkül. Ára: aktív évad
+   alatt minden ilyen alkalom egy rövid, csak olvasó számolással jár; plusz AI-hívás nincs.
+7. **Az első évad** a meglévő súlycélodból, a futó blokkodból, a heti napjaidból és az alvásodból áll össze javaslatként; élesbe
    csak az „Indulhat az évad” gombra kerül.
 
 ## Miért így
 - A tulajdonos alapkérése: az étrend, az edzés, a súly és az alvás **egy** egység legyen, és minden változtatásnál lássa a
   következményt (döntések #61–#64).
 - Az étkezési számot a heti edzés- és sportnapok mozgatják, nem maga a blokk — ezért az évad birtokolja a heti napokat.
+- Az évad szabályai azért vannak Boop minden AI-jában, mert a tulajdonos kérése, hogy a terv egy rendszer legyen: ha Boop
+  nem tudna az évadról, olyat is javasolhatna, ami ellentmond neki.
 - Az elfogadás egy lépés, hogy soha ne legyen olyan pillanat, amikor a kalória már 5 edzéssel számol, a többi még 4-gyel.
 - Az edzésnapok zárolása futó blokk alatt átmeneti: amíg a blokk napjait nem lehet ugyanazzal az elfogadással átrendezni, így
   nem csúszhat szét a blokk és a heti beosztás.
@@ -88,12 +104,12 @@ rendszer elutasítja, és Boop az Évad oldalra küld. A már futó blokk zavart
 | `sleep_goal` | Az alváscél (aktív évad alatt az évad alvásigénye) |
 
 ## Mi jön még
-- 2. szakasz: tervhűség („Hogy megy”), Boop észrevételei, az évad szabályai minden beszélgetésben és a reggeli összefoglalóban, kártyák a Ma falán.
-- 3. szakasz: heti menü és bevásárlólista (lásd [Bevásárlólista](07-bevasarlolista.md)).
+- 3. szakasz (élesben): [Heti menü](09-heti-menu.md) és [Bevásárlólista](07-bevasarlolista.md).
 - 4. szakasz: kísérletek (lásd [Hatáskövetés](08-hataskovetes.md)).
 - Egy elfogadással a futó blokk napjai is átrendeződnek, ha az edzésnapok változnak.
 - A célsúly, az évad hossza és az ébredési idő állítása a Módosításban; Korábbi évadok oldal.
 
 ## Mi marad ki
-Életcélok (PERMAH-pillérek, jelkatalógus, „ha–akkor” szabályok) termékként; napi szintű újratervezés (7. szakasz); futóblokk az
+A tervben szereplő „hétfőn ehhez igazítanám a keretet” heti javaslat nem épült meg — az égetés-észrevétel ezért csak megmutatja
+az eltérést, a módosítás a te elfogadásodon múlik. Életcélok (PERMAH-pillérek, jelkatalógus, „ha–akkor” szabályok) termékként; napi szintű újratervezés (7. szakasz); futóblokk az
 évadban (döntés #44).

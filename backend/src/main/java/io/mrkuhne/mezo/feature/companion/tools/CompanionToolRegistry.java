@@ -39,6 +39,8 @@ public class CompanionToolRegistry {
     private final FeedContextTools feedContextTools;
     /** Boop B3 (mezo-r36n9.13): get_wearable / get_calendar — conversation-first planner reads. */
     private final DayTools dayTools;
+    /** Boop B6 Évad S2 (mezo-r36n9.16): get_season. */
+    private final SeasonTools seasonTools;
 
     /** Same owned source readers, without a fabricated current conversation. */
     public List<ToolCallback> feedCallbacks(ToolCallAudit audit) {
@@ -64,7 +66,7 @@ public class CompanionToolRegistry {
     public List<ToolCallback> callbacks(ToolCallAudit audit) {
         return Arrays.stream(
                         ToolCallbacks.from(trainTools, biometricsTools, fuelTools, goalTools, medicationTools,
-                                memoryTools, practiceTools, insightsTools, lifeGoalTools))
+                                memoryTools, practiceTools, insightsTools, lifeGoalTools, seasonTools))
                 .<ToolCallback>map(cb -> new RecordingToolCallback(cb, audit))
                 .toList();
     }

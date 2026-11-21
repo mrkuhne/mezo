@@ -156,15 +156,18 @@ public final class BlockBuilderModel {
 
     private static func lineup(_ d: BlockDraft) -> [[String]] { d.days.map { $0.exercises.map { "\($0.id)|\($0.identity)" } } }
 
-    /// The add / swap sheets' suggestions (`mode` `add` with a coarse muscle, `replace` with the outgoing row). The day
-    /// goes as its weekday (0 = Monday) with its current catalogue ids, lower-cased.
-    public func suggest(mode: String, day: Int, outgoing: DraftExercise? = nil, muscle: String? = nil) async throws(PlanFetchError) -> WireSuggestions {
+    /// The add / swap sheets' suggestions (`mode` `add` with the picked fine tokens — none = the week's under-band
+    /// groups — or a coarse muscle; `replace` with the outgoing row). The day goes as its weekday (0 = Monday) with its
+    /// current catalogue ids, lower-cased; the tokens go in body order.
+    public func suggest(mode: String, day: Int, outgoing: DraftExercise? = nil, muscle: String? = nil,
+                        muscles: Set<String>? = nil) async throws(PlanFetchError) -> WireSuggestions {
         guard let draft, draft.days.indices.contains(day) else { throw .server }
         let d = draft.days[day]
         let request = WireSuggestionsRequest(
             mode: mode, dayIndex: d.weekdayIndex ?? day,
             outgoing: outgoing.map { WireSuggestionOutgoing(catalogId: $0.catalogId?.lowercased(), name: $0.name, muscle: $0.muscleKey, type: $0.type) },
-            muscle: muscle, dayCatalogIds: d.exercises.compactMap { $0.catalogId?.lowercased() })
+            muscle: muscle, muscles: muscles.map(SubMuscles.ordered),
+            dayCatalogIds: d.exercises.compactMap { $0.catalogId?.lowercased() })
         return try await client.suggestions(blockId: draft.blockId, request)
     }
 

@@ -342,6 +342,17 @@ tags:
       those figures only (validated; fixed copy when it fails). He adjusts every
       number and accepts; the accepted plan is a checklist he ticks himself.
       Nothing here moves money, records a transaction or creates a holding.
+  - name: PenzWeekly
+    description: >
+      Boop Pénz (mezo-r36n9.120) — the weekly long-horizon review: "did anything
+      this week change the long-term picture?", one section per horizon (short
+      1–3 év, mid 5–10 év, long 10+ év). Built by the news run from the owner's
+      stored daily digests of the previous complete Monday–Sunday week (his
+      money timezone) — no new feed fetch, no article bodies; the model narrates
+      figures computed by the backend and a deterministic validator replaces any
+      section that breaks a rule with fixed fallback copy. A sleeve no story
+      touched gets fixed quiet copy without a model call. Never a buy / sell /
+      urge, no push, no action button; "nincs teendőd" is a complete answer.
   - name: Season
     description: >
       Boop B6 Évad (mezo-r36n9.16) — one N-week season that owns its goal (1:1),
@@ -1139,8 +1150,10 @@ paths:
         block's goal, the gym profile and the discomfort history, with today's
         check-in pain only when the edited day is today's weekday. Replace ranks
         alternatives to an outgoing exercise; add ranks the catalogue rows of
-        one coarse muscle group and explains a muscle under its weekly band.
-        Each suggestion carries the block style's prescription. Read-only.
+        the chosen fine muscle tokens (`muscles`, mezo-r36n9.127), else of one
+        coarse muscle group (`muscle`), else — both absent — of the week's
+        under-band groups, and explains a muscle under its weekly band. Each
+        suggestion carries the block style's prescription. Read-only.
       parameters:
         - name: id
           in: path
@@ -1162,7 +1175,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/ExerciseSubstitutesResponse'
         '400':
-          description: 'Validation error (replace without outgoing, add without muscle)'
+          description: >-
+            Validation error (replace without outgoing, add with an unknown
+            muscle token)
           content:
             application/json:
               schema:
@@ -14059,7 +14074,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
         '409':
-          description: It is the last non-archived account (PENZ_LAST_ACTIVE_ACCOUNT)
+          description: >-
+            It is the last non-archived account (PENZ_LAST_ACTIVE_ACCOUNT), or
+            the currency changes while the account has transactions or recurring
+            rules (PENZ_ACCOUNT_CURRENCY_LOCKED)
           content:
             application/json:
               schema:
@@ -14345,6 +14363,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            PENZ_TRANSACTION_INVEST_LINKED — the money row of a recorded
+            investment buy / sell; change or delete the investment record
+            instead
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '503':
           description: >-
             No exchange rate reachable for a non-HUF amount
@@ -14376,6 +14403,14 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: No such transaction of the caller
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            PENZ_TRANSACTION_INVEST_LINKED — the money row of a recorded
+            investment buy / sell; delete the investment record instead
           content:
             application/json:
               schema:
@@ -15159,7 +15194,17 @@ paths:
         on clientRef. The currency is the holding's; a sell above the open
         quantity (or, without quantities, above the open cost) is 400
         PENZ_SELL_EXCEEDS_POSITION. Non-HUF amounts are booked at the date's ECB
-        rate (503 PENZ_FX_UNAVAILABLE).
+        rate (503 PENZ_FX_UNAVAILABLE). With accountId (mezo-r36n9.119) the buy
+        / sell also lands on that money account as ONE penz_transaction (kind
+        invest_buy / invest_sell, in the ACCOUNT's currency: accountAmountMinor
+        when given, else the amount itself when the currencies agree, else its
+        HUF twin on a HUF account, else the HUF twin converted at the account
+        currency's booking rate of the date, HALF_UP) — so the balance and the
+        allowance "invested" line see it. With linkTransactionId (a buy only) a
+        bank-SMS debit on that account becomes that money row instead (the buy
+        takes its date); nothing new is written. A clientRef replay never writes
+        a second money row. The app never moves money: it only records what he
+        already did.
       requestBody:
         required: true
         content:
@@ -15175,8 +15220,10 @@ paths:
                 $ref: '#/components/schemas/PenzInvestTxnResponse'
         '400':
           description: >-
-            Validation failure / PENZ_SELL_EXCEEDS_POSITION /
-            PENZ_CURRENCY_MISMATCH
+            Validation failure (VALIDATION_INVALID_VALUE on accountId for an
+            account that cannot pay — only checking and cash can; on
+            linkTransactionId for a sell or without accountId) /
+            PENZ_SELL_EXCEEDS_POSITION / PENZ_CURRENCY_MISMATCH
           content:
             application/json:
               schema:
@@ -15188,7 +15235,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
-          description: PENZ_HOLDING_NOT_FOUND
+          description: >-
+            PENZ_HOLDING_NOT_FOUND / PENZ_ACCOUNT_NOT_FOUND (not his, deleted or
+            archived) / PENZ_TRANSACTION_NOT_FOUND (linkTransactionId)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            PENZ_SMS_LINK_MISMATCH — linkTransactionId is not (any more) a
+            bank-SMS debit this buy can adopt (same rule as the sms-candidates
+            list)
           content:
             application/json:
               schema:
@@ -15199,14 +15257,75 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/penz/invest-transactions/sms-candidates:
+    get:
+      tags:
+        - PenzPortfolio
+      operationId: listPenzInvestSmsCandidates
+      summary: >
+        Bank-SMS debits that may be this buy (mezo-r36n9.119): on an account
+        with an SMS sender, live non-recurring expenses that came from a bank
+        SMS, not yet linked to an investment, with exactly amountMinor (the
+        ACCOUNT's currency) dated within ±3 days of date. Empty when the account
+        receives no SMS. Closest date first.
+      parameters:
+        - name: accountId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: amountMinor
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+            maximum: 100000000000
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Candidate transactions (possibly empty)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PenzTransactionResponse'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_ACCOUNT_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/penz/invest-transactions/{id}':
     delete:
       tags:
         - PenzPortfolio
       operationId: deletePenzInvestTransaction
-      summary: >-
+      summary: >
         Soft-delete a buy or sell (refused when it would leave a later sell
-        above the open position)
+        above the open position). Its linked money row goes with it: one that
+        carries a bank SMS (the debit really happened) reverts to an expense (a
+        buy) / income (a sell) waiting for review; any other is soft-deleted.
       parameters:
         - name: id
           in: path
@@ -16273,6 +16392,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/penz/weekly-review:
+    get:
+      tags:
+        - PenzWeekly
+      operationId: getPenzWeeklyReview
+      summary: >
+        The weekly long-horizon review — of the week `week` falls in (a Monday;
+        another day means its week), else the latest stored one; status pending
+        when none was built yet
+      parameters:
+        - name: week
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: The weekly review
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzWeeklyReviewResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/seasons:
     get:
       tags:
@@ -16370,6 +16518,50 @@ paths:
                 $ref: '#/components/schemas/SeasonPreview'
         '400':
           description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/seasons/adherence:
+    get:
+      tags:
+        - Season
+      operationId: getAdherence
+      summary: >
+        The single source of day judgement (food inside the day's band, the
+        planned session done, the night long enough), served for every day
+        whether or not a season exists (without one the food budget is the
+        goal's served target). Today, kímélő days (any fuel recovery mode — the
+        same rule as the Étel Hét tab) and unlogged days are not judged;
+        reasoned skips excuse a session.
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Days
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeasonAdherenceResponse'
+        '400':
+          description: 'Validation error (to before from, or more than 62 days)'
           content:
             application/json:
               schema:
@@ -16619,6 +16811,466 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/seasons/menu:
+    get:
+      tags:
+        - Season
+      operationId: getMenuWeek
+      summary: >-
+        The menu of one week (S3). status none = no menu yet, seeding = the
+        season allows no recipe yet
+      parameters:
+        - name: weekStart
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          description: The Monday of the week
+      responses:
+        '200':
+          description: Menu week
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeasonMenuWeek'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No active season
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/seasons/menu/generate:
+    post:
+      tags:
+        - Season
+      operationId: generateMenuWeek
+      summary: >-
+        Plan (or re-plan, „Kérek másikat”) a proposed menu week from the allowed
+        recipes and each day's budget. An approved week is not re-planned
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SeasonMenuGenerate'
+      responses:
+        '200':
+          description: Menu week
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeasonMenuWeek'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No active season
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: MENU_NOT_PROPOSED — the week is already approved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/seasons/menu/{id}/approve':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags:
+        - Season
+      operationId: approveMenuWeek
+      summary: >-
+        Approve a proposed week — its meals become the Étel day plan's
+        suggestions and its shopping list is made. Idempotent
+      responses:
+        '200':
+          description: Menu week
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeasonMenuWeek'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/seasons/menu/meals/{id}':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      tags:
+        - Season
+      operationId: swapMenuMeal
+      summary: >-
+        Put another allowed recipe into this meal's window (scaled to it); on an
+        approved week the shopping list follows
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SeasonMenuChoice'
+      responses:
+        '200':
+          description: Menu week
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeasonMenuWeek'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/seasons/menu/meals/{id}/alternatives':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags:
+        - Season
+      operationId: listMenuAlternatives
+      summary: 'Allowed recipes that fit this meal''s window, fitting ones first'
+      responses:
+        '200':
+          description: Alternatives
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SeasonMenuAlternative'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/seasons/recipes:
+    get:
+      tags:
+        - Season
+      operationId: listSeasonRecipes
+      summary: >-
+        Every recipe of his with whether the active season allows it and whether
+        his rules let it into a menu
+      responses:
+        '200':
+          description: Recipes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SeasonRecipeOption'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No active season
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/seasons/{id}/recipes':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      tags:
+        - Season
+      operationId: putSeasonRecipes
+      summary: 'Replace the recipes the season allows (no kcal effect, so no preview)'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SeasonRecipeIds'
+      responses:
+        '200':
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeasonResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: SEASON_NOT_EDITABLE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/seasons/shopping:
+    get:
+      tags:
+        - Season
+      operationId: getShoppingList
+      summary: The shopping list of an approved menu week (404 when that week has none)
+      parameters:
+        - name: weekStart
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          description: The Monday of the week
+      responses:
+        '200':
+          description: List
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingListResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No list for that week
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/seasons/shopping/lists:
+    get:
+      tags:
+        - Season
+      operationId: listShoppingLists
+      summary: 'His lists, newest week first (past lists stay readable)'
+      responses:
+        '200':
+          description: Lists
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ShoppingListSummary'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/seasons/shopping/items/{id}':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      tags:
+        - Season
+      operationId: checkShoppingItem
+      summary: Tick a line off (or back on)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShoppingItemCheck'
+      responses:
+        '200':
+          description: Line
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingItem'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/seasons/shopping/{id}/staples':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags:
+        - Season
+      operationId: toggleShoppingStaple
+      summary: >-
+        Put one of his staples on this list (on = true) or take it off — staples
+        join a list only on his tap
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShoppingStapleToggle'
+      responses:
+        '200':
+          description: List
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingListResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/seasons/staples:
+    get:
+      tags:
+        - Season
+      operationId: listStaples
+      summary: His always-at-home items (the default six until he sets his own)
+      responses:
+        '200':
+          description: Staples
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeasonStaples'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    put:
+      tags:
+        - Season
+      operationId: putStaples
+      summary: Replace his staples
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SeasonStaples'
+      responses:
+        '200':
+          description: Staples
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeasonStaples'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
           content:
             application/json:
               schema:
@@ -19393,6 +20045,15 @@ components:
         lengthenedFriendly:
           type: boolean
           description: Whether the exercise loads the muscle well at long length.
+        challengeAllowed:
+          type: boolean
+          description: >-
+            Whether the day's challenge (half reps in the stretched position)
+            may sit on this exercise (owner decision #72, mezo-r36n9.127): every
+            non-plyo exercise except a free-weight compound (type compound with
+            barbell, dumbbell or kettlebell in its gear). A row with no known
+            kit (no gear and no equipment) is false. Server-computed; the
+            template save enforces the same rule.
         gear:
           type: array
           nullable: true
@@ -19523,8 +20184,19 @@ components:
           type: string
           nullable: true
           description: >-
-            Coarse muscle group key (back, chest, quad, …); required when mode =
-            add
+            Coarse muscle group key (back, chest, quad, …) for add; superseded
+            by `muscles` when that is non-empty. Kept for older phones.
+        muscles:
+          type: array
+          nullable: true
+          description: >-
+            Add mode (mezo-r36n9.127): the fine catalogue muscle tokens picked
+            in the add sheet (back-mid, chest-upper, …). Candidates are the
+            catalogue rows whose token is one of these, spread so every token
+            shows up near the top. Absent or empty together with `muscle`: the
+            week's under-band groups' tokens. An unknown token is a 400.
+          items:
+            type: string
         dayCatalogIds:
           type: array
           description: Catalogue ids of the draft day's current exercises — never suggested
@@ -20153,6 +20825,7 @@ components:
         - drop
         - myo
         - partials
+        - rest_pause
       description: Intensity technique applied to the last working set of an exercise.
     TechniqueSource:
       type: string
@@ -36526,6 +37199,12 @@ components:
         reason:
           type: string
           nullable: true
+          description: >
+            Why it ended as it did, e.g. no_amount, llm_error, amount_mismatch,
+            no_account, fx_unavailable, amount_too_small; with status parsed,
+            invest_buy_linked means the debit was adopted by an investment buy
+            he had already recorded on that account (transactionId is that buy's
+            money row; no new transaction).
     PenzSmsKeyResponse:
       type: object
       required:
@@ -36736,6 +37415,29 @@ components:
           type: string
           format: uuid
           nullable: true
+        accountId:
+          type: string
+          format: uuid
+          nullable: true
+          description: >-
+            The money account it was paid from (buy) / paid into (sell); only
+            checking or cash. Null = not linked to an account
+        accountAmountMinor:
+          type: integer
+          format: int64
+          nullable: true
+          minimum: 1
+          maximum: 100000000000
+          description: >-
+            The exact amount in the ACCOUNT currency when he knows it (e.g. the
+            bank debit); null = derived (see the operation)
+        linkTransactionId:
+          type: string
+          format: uuid
+          nullable: true
+          description: >-
+            A buy only, with accountId: a bank-SMS expense from the
+            sms-candidates list to adopt as this buy (its date wins)
     PenzInvestTxnResponse:
       type: object
       required:
@@ -36782,6 +37484,18 @@ components:
           type: string
           format: uuid
           nullable: true
+        accountId:
+          type: string
+          format: uuid
+          nullable: true
+          description: The money account of the linked money row; null = not linked
+        transactionId:
+          type: string
+          format: uuid
+          nullable: true
+          description: >-
+            The linked money row (penz_transaction, kind invest_buy /
+            invest_sell); null = not linked
     PenzHoldingEventRequest:
       type: object
       required:
@@ -38112,6 +38826,152 @@ components:
       properties:
         done:
           type: boolean
+    PenzWeeklyReviewResponse:
+      type: object
+      required:
+        - weekStart
+        - weekEnd
+        - status
+        - sections
+      properties:
+        weekStart:
+          type: string
+          format: date
+          description: The Monday of the reviewed week
+        weekEnd:
+          type: string
+          format: date
+          description: The Sunday of the reviewed week
+        status:
+          type: string
+          enum:
+            - pending
+            - ready
+            - quiet
+            - failed
+        generatedAt:
+          type: string
+          format: date-time
+          nullable: true
+        sections:
+          type: array
+          description: >-
+            Always short, mid, long in this order once built; empty while
+            pending or failed
+          items:
+            $ref: '#/components/schemas/PenzWeeklySection'
+    PenzWeeklySection:
+      type: object
+      required:
+        - sleeve
+        - horizonLabel
+        - storyCount
+        - sourceCount
+        - matters
+        - verdict
+        - body
+        - uncertainty
+        - noAction
+        - narratedBy
+        - stories
+      properties:
+        sleeve:
+          type: string
+          enum:
+            - short
+            - mid
+            - long
+        horizonLabel:
+          type: string
+          description: 'Fixed copy: 1–3 év · 5–10 év · 10+ év'
+        storyCount:
+          type: integer
+          description: Distinct stories of the week touching this sleeve (computed)
+        sourceCount:
+          type: integer
+          description: Distinct source names behind them (computed)
+        matters:
+          type: boolean
+          description: >-
+            True only when the model found a lasting change (validated); false
+            for fallback and quiet
+        verdict:
+          type: string
+          description: >-
+            One line: did the long-term picture of this horizon change (no
+            instruction)
+        body:
+          type: string
+          description: >-
+            The reading, paragraphs separated by a blank line; *emphasis*
+            allowed
+        uncertainty:
+          type: string
+          description: Where this could be wrong — never empty
+        noAction:
+          type: string
+          description: 'Why there is nothing to do, specific to this horizon'
+        narratedBy:
+          type: string
+          enum:
+            - model
+            - fallback
+            - quiet
+        coverageMonths:
+          type: integer
+          nullable: true
+          description: >-
+            long only: months of fixed costs the long sleeve covers, as Pénzem
+            computes it
+        stories:
+          type: array
+          description: >-
+            At most 6 — the stories the reading relies on first, then most
+            sources, then newest
+          items:
+            $ref: '#/components/schemas/PenzWeeklyStory'
+    PenzWeeklyStory:
+      type: object
+      required:
+        - id
+        - title
+        - kind
+        - sources
+      properties:
+        id:
+          type: string
+          description: The daily digest story id
+        title:
+          type: string
+          description: The headline the daily digest stored
+        holdingName:
+          type: string
+          nullable: true
+          description: From his ledger (holding stories only)
+        kind:
+          type: string
+          enum:
+            - holding
+            - fx
+            - rates
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/PenzWeeklySource'
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+    PenzWeeklySource:
+      type: object
+      required:
+        - name
+        - url
+      properties:
+        name:
+          type: string
+        url:
+          type: string
     SeasonSportSlot:
       type: object
       required:
@@ -38394,10 +39254,16 @@ components:
           type: integer
           nullable: true
           description: >-
-            The week's total planned intake: trainDayKcal × active days +
-            restDayKcal × rest days (active = distinct weekdays with gym or
-            sport). Moves when a session or sport day is added even though each
-            day's own target does not
+            The week's total planned intake: the seven weekdays' served targets,
+            each with its own sessions (a rest day, a gym day, a sport day, a
+            gym + sport day). Moves when a session or sport day is added even
+            though the training-day target does not
+        trainSportDayKcal:
+          type: integer
+          nullable: true
+          description: >-
+            A gym + sport day's served target (both sessions); null when no
+            weekday carries both
     SeasonTodo:
       type: object
       required:
@@ -38650,6 +39516,10 @@ components:
       properties:
         trainDayKcal:
           type: integer
+        trainSportDayKcal:
+          type: integer
+          nullable: true
+          description: A gym + sport day (both sessions); null when no weekday carries both
         restDayKcal:
           type: integer
           nullable: true
@@ -38726,6 +39596,111 @@ components:
           $ref: '#/components/schemas/SeasonSleepPillar'
         weight:
           $ref: '#/components/schemas/SeasonWeightPillar'
+    SeasonAdherenceDay:
+      type: object
+      required:
+        - date
+        - judged
+        - excused
+        - sessionPlanned
+        - dayKind
+        - sessions
+      properties:
+        date:
+          type: string
+          format: date
+        judged:
+          type: boolean
+          description: 'The food side counts: not today, not a kímélő day, something logged'
+        excused:
+          type: boolean
+          description: >-
+            A kímélő day — left out of every count. A reasoned skip only excuses
+            that one session, the day's other session, the food and the night
+            still count
+        excuse:
+          type: string
+          nullable: true
+          description: kimelo (the whole day is excused) or skip (at least one session is)
+        kcal:
+          type: integer
+          nullable: true
+        targetKcal:
+          type: integer
+          nullable: true
+          description: >-
+            The day's served target (DayTargetProjector); null when it cannot be
+            computed
+        proteinG:
+          type: integer
+          nullable: true
+        targetProteinG:
+          type: integer
+          nullable: true
+        foodInBand:
+          type: boolean
+          nullable: true
+          description: judged and |kcal − target| ≤ 10 % of target; null when not judged
+        sessionPlanned:
+          type: boolean
+          description: At least one session planned
+        sessionDone:
+          type: boolean
+          nullable: true
+          description: >-
+            Every judged session done; null when none was judged (nothing
+            planned, all excused, today)
+        dayKind:
+          type: string
+          description: >-
+            edzesnap (gym or a block run) | sport | edzes_sport (both — two
+            sessions) | pihenonap
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/SeasonAdherenceSession'
+          description: One per planned session kind of the day; a gym + sport day has two
+        sleepMin:
+          type: integer
+          nullable: true
+        needMin:
+          type: integer
+          nullable: true
+          description: 'The night''s need: the active season''s, else the sleep goal'
+        sleepOk:
+          type: boolean
+          nullable: true
+          description: sleepMin ≥ needMin − 15; null without a night
+    SeasonAdherenceSession:
+      type: object
+      required:
+        - kind
+        - excused
+      properties:
+        kind:
+          type: string
+          description: gym | sport | run
+        excused:
+          type: boolean
+          description: 'Skipped with a reason, or the day is kímélő'
+        done:
+          type: boolean
+          nullable: true
+          description: >-
+            A completed session of this kind that date; null when excused or
+            today+
+    SeasonAdherenceResponse:
+      type: object
+      required:
+        - days
+        - summary
+      properties:
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/SeasonAdherenceDay'
+        summary:
+          $ref: '#/components/schemas/SeasonAdherence'
     SeasonAdherence:
       type: object
       required:
@@ -38736,6 +39711,10 @@ components:
         - nightsOk
         - nightsJudged
         - excusedDays
+        - trainingDone
+        - trainingPlanned
+        - sportDone
+        - sportPlanned
       properties:
         foodInBand:
           type: integer
@@ -38743,13 +39722,24 @@ components:
           type: integer
         sessionsDone:
           type: integer
+          description: trainingDone + sportDone — a gym + sport day counts two
         sessionsPlanned:
           type: integer
+          description: trainingPlanned + sportPlanned
         nightsOk:
           type: integer
         nightsJudged:
           type: integer
         excusedDays:
+          type: integer
+        trainingDone:
+          type: integer
+          description: Gym and block-run sessions done
+        trainingPlanned:
+          type: integer
+        sportDone:
+          type: integer
+        sportPlanned:
           type: integer
     SeasonInsight:
       type: object
@@ -38815,3 +39805,375 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SeasonUpcoming'
+        menu:
+          allOf:
+            - $ref: '#/components/schemas/SeasonMenuStatus'
+          nullable: true
+          description: >-
+            S3 — next week's menu state (the wall's approval card); null without
+            a weekly menu (menuDay null)
+    SeasonMenuStatus:
+      type: object
+      required:
+        - weekStart
+        - status
+        - menuTime
+      properties:
+        weekStart:
+          type: string
+          format: date
+          description: Next week's Monday
+        weekId:
+          type: string
+          format: uuid
+          nullable: true
+        status:
+          type: string
+          enum:
+            - none
+            - seeding
+            - proposed
+            - approved
+        menuDay:
+          type: integer
+          nullable: true
+          description: 0 = hétfő .. 6 = vasárnap
+        menuTime:
+          type: string
+          example: '18:00'
+    SeasonMenuGenerate:
+      type: object
+      required:
+        - weekStart
+      properties:
+        weekStart:
+          type: string
+          format: date
+    SeasonMenuChoice:
+      type: object
+      required:
+        - recipeId
+      properties:
+        recipeId:
+          type: string
+          format: uuid
+    SeasonMenuWeek:
+      type: object
+      required:
+        - weekStart
+        - status
+        - repeated
+        - allowedCount
+        - recipeCount
+        - days
+      properties:
+        id:
+          type: string
+          format: uuid
+          nullable: true
+        weekStart:
+          type: string
+          format: date
+        status:
+          type: string
+          enum:
+            - none
+            - seeding
+            - proposed
+            - approved
+        repeated:
+          type: boolean
+          description: The allowed recipes were too few for the week without repeats
+        allowedCount:
+          type: integer
+        recipeCount:
+          type: integer
+        approvedAt:
+          type: string
+          format: date-time
+          nullable: true
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/SeasonMenuDay'
+    SeasonMenuDay:
+      type: object
+      required:
+        - date
+        - kind
+        - kcal
+        - meals
+      properties:
+        date:
+          type: string
+          format: date
+        kind:
+          type: string
+          enum:
+            - edzesnap
+            - sport
+            - edzes_sport
+            - pihenonap
+        sportName:
+          type: string
+          nullable: true
+        kcal:
+          type: integer
+          description: The day's planned meals summed
+        meals:
+          type: array
+          items:
+            $ref: '#/components/schemas/SeasonMenuMeal'
+    SeasonMenuMeal:
+      type: object
+      required:
+        - id
+        - slot
+        - label
+        - name
+        - kcal
+        - preSession
+        - locked
+        - changed
+      properties:
+        id:
+          type: string
+          format: uuid
+        slot:
+          type: string
+          enum:
+            - breakfast
+            - lunch
+            - dinner
+            - snack
+        label:
+          type: string
+        recipeId:
+          type: string
+          format: uuid
+          nullable: true
+          description: null = an ingredient tip (name is the tip)
+        name:
+          type: string
+        servings:
+          type: number
+          nullable: true
+        kcal:
+          type: integer
+        proteinG:
+          type: integer
+          nullable: true
+        preSession:
+          type: boolean
+        locked:
+          type: boolean
+          description: He chose it himself
+        changed:
+          type: boolean
+          description: A mid-week re-fit moved it
+    SeasonMenuAlternative:
+      type: object
+      required:
+        - recipeId
+        - name
+        - kcal
+        - servings
+        - fits
+      properties:
+        recipeId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        kcal:
+          type: integer
+        servings:
+          type: number
+        proteinG:
+          type: integer
+          nullable: true
+        fits:
+          type: boolean
+    SeasonRecipeOption:
+      type: object
+      required:
+        - id
+        - name
+        - category
+        - allowed
+        - usable
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        category:
+          type: string
+          nullable: true
+        kcal:
+          type: integer
+          nullable: true
+          description: Per serving
+        allowed:
+          type: boolean
+        usable:
+          type: boolean
+          description: >-
+            His sensitivity profile and the season's NOVA rule let it into a
+            menu
+        reason:
+          type: string
+          nullable: true
+          description: Why it cannot go into a menu
+    SeasonRecipeIds:
+      type: object
+      required:
+        - recipeIds
+      properties:
+        recipeIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+    ShoppingListResponse:
+      type: object
+      required:
+        - id
+        - weekStart
+        - items
+        - staples
+        - itemCount
+        - checkedCount
+        - changedCount
+      properties:
+        id:
+          type: string
+          format: uuid
+        weekStart:
+          type: string
+          format: date
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShoppingItem'
+        staples:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShoppingStapleChip'
+        itemCount:
+          type: integer
+        checkedCount:
+          type: integer
+        changedCount:
+          type: integer
+    ShoppingItem:
+      type: object
+      required:
+        - id
+        - name
+        - shelf
+        - forRecipes
+        - checked
+        - changed
+        - staple
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        amount:
+          type: number
+          nullable: true
+        unit:
+          type: string
+          nullable: true
+        amountText:
+          type: string
+          nullable: true
+          description: '„1,4 kg” — null for a staple or a line no longer needed'
+        shelf:
+          type: string
+          enum:
+            - zoldseg
+            - hus
+            - tej
+            - kamra
+            - egyeb
+        forRecipes:
+          type: array
+          items:
+            type: string
+        checked:
+          type: boolean
+        changed:
+          type: boolean
+          description: A mid-week re-fit moved it
+        removed:
+          type: boolean
+          description: A re-fit made it unnecessary (shown under változott)
+        staple:
+          type: boolean
+    ShoppingStapleChip:
+      type: object
+      required:
+        - name
+        - onList
+      properties:
+        name:
+          type: string
+        onList:
+          type: boolean
+    ShoppingListSummary:
+      type: object
+      required:
+        - id
+        - weekStart
+        - itemCount
+        - checkedCount
+      properties:
+        id:
+          type: string
+          format: uuid
+        weekStart:
+          type: string
+          format: date
+        itemCount:
+          type: integer
+        checkedCount:
+          type: integer
+    ShoppingItemCheck:
+      type: object
+      required:
+        - checked
+      properties:
+        checked:
+          type: boolean
+    ShoppingStapleToggle:
+      type: object
+      required:
+        - name
+        - 'on'
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        'on':
+          type: boolean
+    SeasonStaples:
+      type: object
+      required:
+        - names
+      properties:
+        names:
+          type: array
+          maxItems: 40
+          items:
+            type: string
+            minLength: 1
+            maxLength: 80
+        defaults:
+          type: boolean
+          description: True while he has not set his own (the six defaults)

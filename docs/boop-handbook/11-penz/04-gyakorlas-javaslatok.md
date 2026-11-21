@@ -52,7 +52,8 @@ osszefoglalo: A Gyakorlás oldalon valódi pénz nélkül, papíron gyakorolhato
 ## Hogyan működik
 - **Minden számot a rendszer számol** — a felosztást, a költségeket, az R-t, a heti hibát és annak árát. Az AI
   csak a szöveget írja a javaslathoz, és utána egy ellenőr átnézi: nem szerepelhet benne olyan szám, amit a rendszer
-  nem számolt ki, csak a rekesz jóváhagyott termékeit említheti, nem sürgethet, nem ígérhet hozamot, nem mondhat
+  nem számolt ki, csak a rekesz jóváhagyott termékeit említheti — olyan terméket, céget vagy bankot sem, ami nincs is
+  a jegyzékedben (például egy kriptovalutát vagy egy részvényt) —, nem sürgethet, nem ígérhet hozamot, nem mondhat
   eladást. Ha bármi nem stimmel, a rendszer ugyanazokból a számokból írt egyszerű, őszinte szöveget használ.
 - **A heti visszanézés nem AI**: rögzített mondatok, amik a számokból állnak össze — nem tud kitalálni semmit.
 - **Az állapotváltás szigorú:** egy kereskedés csak tervként jöhet létre, csak tervből nyitható, csak nyitottból
@@ -89,7 +90,6 @@ hosszú — a kártyán mindkét rekesznél két-három termék áll éves költ
 | `penz_proposal` | a javaslatok: a felosztás, az opciók, a kiszámolt számok, az elfogadott lista és a pipák |
 
 ## Mi jön még
-- A hosszú távú heti hírátnézés — külön jegy.
 - Az „élesre fordítás”: valódi pénzzel, a te kapcsolóddal — később, külön döntés.
 - Az „ennyit tudsz befektetni” szám a Ma oldalon, a Havi stratégia számából.
 

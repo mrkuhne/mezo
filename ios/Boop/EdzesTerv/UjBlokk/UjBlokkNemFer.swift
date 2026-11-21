@@ -49,7 +49,7 @@ struct UjBlokkNemFer: View {
     private func sub(_ fix: WireFix) -> String {
         switch fix.code {
         case "more_minutes": "újra megnézem vele"
-        case "fewer_emphasis": model.fewerEmphasisMuscle(fix).map { "\(planMuscleName($0)) Építésre megy" } ?? "az Alapoknál állíthatod"
+        case "fewer_emphasis": model.fewerEmphasisMuscle(fix).map { "\(SubMuscles.groupName($0)) Építésre megy" } ?? "az Alapoknál állíthatod"
         default: "az Évad oldalon"
         }
     }

@@ -30,7 +30,7 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 | Epic | State | What it is |
 |---|---|---|
-| `mezo-r36n9` — **Boop native iOS app** | ◐ S1, S2, S2.5, S3 shipped (2026-11-10); B0 deployed, B1 Adatalap (free team) + B2 Gerinc shipped (2026-11-11); B3 Napi ritmus shipped (2026-11-12); B4 Étel shipped (2026-11-13); **a kezdőlap (nyolc gömb körben), a közös területváz (L0) és az élő Ma-fal (L0/b) shipped (2026-11-16); **B5 Edzés — a terület, az eligazítás, a lejátszó és a lezárás — shipped (2026-11-17); a Gyakorlatok, az Előzmények, az Egyedi edzés, a Live Activity és a Watch még hátra; az edzésmotor magja (volumen-motor v2, S1: a terv a szám, `mezo-r36n9.65`) shipped (2026-11-18), a további szeletek (sáv-értékelő, heti javaslat API, stílus és technikák, Boop-képernyők) még hátra**; **B6 Évad S1 — a Terv helyén az Évad: az évad, az élő következmény-előnézet, az edzésblokk-kapu — shipped (2026-11-20, `mezo-r36n9.16`); S2–S4 (tervhűség + AI, heti menü + bevásárlólista, kísérletek) még hátra** | The native SwiftUI iPhone app in the Napkelte look (since S2.5; Lágy before) that replaces the web app once complete; S1 = frame (auth, onboarding, shell, weekly install); S2 = Apple Health + calendar data; S3 = the morning brief and the real Nap · Mai; B3 = the offline-first daily loop; B4 = the food room (Étel). **Re-planned 2026-11-11** as a standalone app, slices B0–B8 ([spec](../superpowers/specs/2026-11-11-boop-standalone-design.md)). [`boop-ios.md`](../features/boop-ios.md). |
+| `mezo-r36n9` — **Boop native iOS app** | ◐ S1, S2, S2.5, S3 shipped (2026-11-10); B0 deployed, B1 Adatalap (free team) + B2 Gerinc shipped (2026-11-11); B3 Napi ritmus shipped (2026-11-12); B4 Étel shipped (2026-11-13); **a kezdőlap (nyolc gömb körben), a közös területváz (L0) és az élő Ma-fal (L0/b) shipped (2026-11-16); **B5 Edzés — a terület, az eligazítás, a lejátszó és a lezárás — shipped (2026-11-17); a Gyakorlatok, az Előzmények, az Egyedi edzés, a Live Activity és a Watch még hátra; az edzésmotor magja (volumen-motor v2, S1: a terv a szám, `mezo-r36n9.65`) shipped (2026-11-18), a további szeletek (sáv-értékelő, heti javaslat API, stílus és technikák, Boop-képernyők) még hátra**; **B6 Évad S1 — a Terv helyén az Évad: az évad, az élő következmény-előnézet, az edzésblokk-kapu — shipped (2026-11-20, `mezo-r36n9.16`); S2 — tervhűség (egy napi ítélet a szerveren), észrevételek, az évad Boop minden AI-jában, a fal kártyái — shipped (2026-11-21); S3–S4 (heti menü + bevásárlólista, kísérletek) még hátra** | The native SwiftUI iPhone app in the Napkelte look (since S2.5; Lágy before) that replaces the web app once complete; S1 = frame (auth, onboarding, shell, weekly install); S2 = Apple Health + calendar data; S3 = the morning brief and the real Nap · Mai; B3 = the offline-first daily loop; B4 = the food room (Étel). **Re-planned 2026-11-11** as a standalone app, slices B0–B8 ([spec](../superpowers/specs/2026-11-11-boop-standalone-design.md)). [`boop-ios.md`](../features/boop-ios.md). |
 | `mezo-b3pp` — **Phase 5 deep memory** | ◐ 37/41 (90%) | See the Phase 5 bullet above. |
 | `mezo-1gim` — **Karakter (character dossier)** | ◐ 15/18 (83%) | 7-dimension user profile + the AI profiling „konzílium". [`character.md`](../features/character.md). |
 | `mezo-6dii` — **Shared RAG memory platform** | ◐ 9/9 (100%, not yet closed) | The canonical `memory_item`/`memory_vector` retrieval projection every AI consumer will read, plus the chat pilot behind an `OLD`/`SHADOW`/`NEW` switch. [ADR 0036](../decisions/0036-shared-memory-platform-with-gradual-consumer-adoption.md), [`companion.md`](../features/companion.md) §4. |
@@ -77,6 +77,34 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
   [2026-11-20-boop-eves-terv-design](../superpowers/specs/2026-11-20-boop-eves-terv-design.md), plan
   [2026-11-21-boop-eves-terv-s1-s2](../superpowers/plans/2026-11-21-boop-eves-terv-s1-s2.md); docs
   [`train.md`](../features/train.md), [`boop-ios.md`](../features/boop-ios.md).
+- **2026-11-21 — Boop B6 Évad S3: the weekly menu and the shopping list (`mezo-r36n9.16`).**
+  Five tables (`season_menu_week`, `season_menu_meal`, `shopping_list`, `shopping_item`, `season_staple`). The pure
+  `MenuPlanner` plans next week over the Étel day plan's own windows and budgets (`DayPlanService.skeleton`), only from
+  the season's allowed recipes minus the sensitivity / NOVA rules, portions scaled 0.5–2.0 to each window, no dinner twice
+  within 3 days, a sport day's pre-session snack, `repeated` / `seeding` states; `MenuJob` generates it at the season's
+  menu day/time; swap and approve over `/api/seasons/menu/**`; an approved meal is the room's suggestion for its window
+  and the room offers only allowed recipes (meal-owned `SeasonMenuPort`); an accepted change re-fits the remaining days.
+  `ShoppingListBuilder` merges lines per catalog item (g → kg, five shelves, mihez kell); check-off server-side, staples
+  only on tap, past lists, „változott" after a re-fit. iPhone: the Menü carousel + swap sheet, „Kiválasztott receptek",
+  the Lista tab with share, and the wall's `.expires` menu card on the menu day. Docs: [`season.md`](../features/season.md)
+  §3.11–§3.13, [`boop-ios.md`](../features/boop-ios.md) §2 *Évad*.
+- **2026-11-21 — Boop B6 Évad S2: adherence, insights, the season in every AI context, the wall (`mezo-r36n9.16`).**
+  One server source of day judgement: `GET /api/seasons/adherence?from&to` (`AdherenceService`, ≤ 62 days, with or
+  without a season) — judged = before today, no fuel recovery mode, something logged (the Étel Hét tab's own rule);
+  food in band = ±10 % of the day's served target; session planned from the weekly slots + the block's run windows,
+  done from workouts / sport sessions / runs; sleep ok = night ≥ need − 15 min (the season's need, else the sleep goal
+  when set; a range ending today never judges today's night); kímélő days leave every count, a reasoned skip only the
+  session count (one planned-session flag per day: gym + sport on one day count once — known limitation). The overview now carries last week's **Hogy megy**
+  counts, gated **insights** (learned expenditure ≥ 50 kcal off the plan, the short-night intake effect over 60 days,
+  the season's guard warnings) and the Alvás → Étel number. `SeasonContextRenderer` puts **`[Évad]` lines** into the
+  chat snapshot (both variants), the morning brief and the meal coach through three consumer-owned ports (never
+  throws; no profile → number lines left out), plus the **`get_season`** tool (`overview` | `rules`). iPhone: Hogy
+  megy facts without „0 / 0" („N / M éjjel aludtál eleget", „N kímélő nap nem számít bele."), the **Étel Hét tab reads the server's judgement** (local rule
+  kept offline), and the Ma wall's **`evad` source** (the learned-expenditure proposal „Átnézem" → Módosítás, at most once a week;
+  the season ending within 7 days). The season title is whitespace-collapsed and bracket-stripped before it enters a prompt. Known limitation: planned sessions read today's schedule, so a schedule change
+  re-labels past days. Plan [2026-11-20-boop-evad](../superpowers/plans/2026-11-20-boop-evad.md) Tasks 12–16;
+  [`season.md`](../features/season.md), [`boop-ios.md`](../features/boop-ios.md), [`companion.md`](../features/companion.md),
+  [`fuel.md`](../features/fuel.md).
 - **2026-11-20 — Boop block day editor (`mezo-r36n9.116`, small-phone button fix `mezo-r36n9.118`).**
   On Edzés → Blokk → Napok the owner now edits each day's exercises on the phone: ≡ drag reorder, ⋯ *Csere · Beállítások ·
   Törlés* (delete with undo), ＋ *Gyakorlat hozzáadása* (muscle chips, *kevés* first, ≤5 reasoned suggestions, full list with

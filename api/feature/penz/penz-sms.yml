@@ -86,7 +86,13 @@ components:
       properties:
         status: { type: string, enum: [parsed, ignored, failed, duplicate] }
         transactionId: { type: string, format: uuid, nullable: true }
-        reason: { type: string, nullable: true }
+        reason:
+          type: string
+          nullable: true
+          description: >
+            Why it ended as it did, e.g. no_amount, llm_error, amount_mismatch, no_account, fx_unavailable,
+            amount_too_small; with status parsed, invest_buy_linked means the debit was adopted by an investment buy
+            he had already recorded on that account (transactionId is that buy's money row; no new transaction).
     PenzSmsKeyResponse:
       type: object
       required: [id, name, last4, revoked, createdAt]

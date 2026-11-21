@@ -912,6 +912,123 @@
     "levaltotta": "—",
     "kovetkezmeny": "A régi automatikus kísérlet-javaslatok kikapcsolnak, hogy egyszerre csak egy kísérlet fusson."
   },
+  "d-2026-11-20-penz-nincs-atkoltoztetes": {
+    "datum": "2026-11-20",
+    "terulet": [
+      "Alapok"
+    ],
+    "cim": "A régi pénzügyi appból nem hozunk át adatot",
+    "suly": "Kicsi",
+    "valasztas": "A régi pénzügyi appot nem használtad, így nincs mit átköltöztetni. Nem készül átköltöztető, a Boop Pénz üresen indult, és a régi app bármikor kikapcsolható.",
+    "miert": "Üres adatra átköltöztetőt építeni felesleges munka lenne.",
+    "levaltotta": "—",
+    "kovetkezmeny": "A régi appot nyugodtan kikapcsolhatod. Ha a banki SMS-ek automatikus rögzítését szeretnéd, a telefonod parancsikonját egyszer be kell állítani a Boopra."
+  },
+  "d-2026-11-21-kapacitas-jelek": {
+    "cim": "A napi bírást mindenből tanulja a Boop",
+    "datum": "2026-11-21",
+    "suly": "Közepes",
+    "terulet": [
+      "Ma",
+      "AI és memória"
+    ],
+    "valasztas": "A Boop a naptárból, az alvásból, a pulzusból, a lépésekből, a megcsinált vagy kihagyott edzésekből és a logolt étkezésekből becsüli, mennyit bírsz egy nap. A bejelentkezés és az esti zárás is beleszámít, amikor kitöltöd: ezekből tudja meg, mennyire találta el. Egyik sem kötelező.",
+    "miert": "Így akkor is működik, ha egy nap nem töltesz ki semmit, de pontosabb lesz, ha igen.",
+    "levaltotta": "Nincs előzménye.",
+    "kovetkezmeny": "Az első hetekben azt írja: „még tanulom, mennyit bírsz”. Ez az időszak attól indul, hogy újra rendszeresen használod az appot."
+  },
+  "d-2026-11-21-atrendezes": {
+    "cim": "Átrendezés: Boop javasolja, mit tegyünk át, te hagyod jóvá",
+    "datum": "2026-11-21",
+    "suly": "Nagy",
+    "terulet": [
+      "Ma",
+      "Terv",
+      "Edzés",
+      "Étel",
+      "Alvás"
+    ],
+    "valasztas": "Egy új oldalon a Boop megmutatja, mit tenne át a héten: edzést másik napra vagy időpontra, rövidebb edzést, később fekvést és a másnap reggeli edzés csúsztatását, az étel elosztását, egy program lemondását vagy áttételét. Minden javaslatnál látod az összes kereszthatását. Csak a jóváhagyásod után mozdul bármi, és akkor az appban mindenhol, de csak arra a napra és hétre: az Évad terve nem változik.",
+    "miert": "A sűrű napok ne érjenek váratlanul, és lásd előre, mit jelent egy-egy áttétel a kajára, az alvásra és a célodra.",
+    "levaltotta": "Nincs előzménye.",
+    "kovetkezmeny": "Az áttételek egy helyre kerülnek, ahonnan az app minden része olvassa, így mindenhol ugyanaz látszik."
+  },
+  "d-2026-11-21-naptar-teendo": {
+    "cim": "A naptárat továbbra sem írja a Boop: egy program áttétele teendő marad",
+    "datum": "2026-11-21",
+    "suly": "Kicsi",
+    "terulet": [
+      "Ma",
+      "Apple Health és adatok"
+    ],
+    "valasztas": "Ha egy megbeszélés áttételét hagyod jóvá, a Boop teendőként felírja („tedd át a péntek 16:00-t”). Amikor a naptáradban átkerült, észreveszi, és mindent ahhoz igazít.",
+    "miert": "Egy téves koppintás így sem mozdít el egy valódi, másokkal közös megbeszélést.",
+    "levaltotta": "Megerősíti: A naptárat csak olvassuk (2026-11-09).",
+    "kovetkezmeny": "A naptárban az áttételt neked kell megcsinálnod."
+  },
+  "d-2026-11-21-naptar-mi-felismerheti": {
+    "cim": "A naptár minden adatát láthatja az MI",
+    "datum": "2026-11-21",
+    "suly": "Közepes",
+    "terulet": [
+      "AI és memória",
+      "Apple Health és adatok"
+    ],
+    "valasztas": "A programjaid címe, időpontja, résztvevői, helyszíne és ismétlődése is átmegy az MI-hez, hogy fel tudja címkézni, mennyire fáraszt egy program: szellemi teher, emberek közt töltött idő, fizikai.",
+    "miert": "Cím nélkül a Boop csak a hosszból becsülhetne, így viszont megtanulja, milyen fajta programok merítenek le.",
+    "levaltotta": "Felváltja a korábbi szabályt, hogy a programok címe soha nem kerül az MI-hez.",
+    "kovetkezmeny": "A címek ugyanoda mennek, ahová most az ételfotóid és a beszélgetéseid. A napod oldalán kézzel is megjelölheted, ha egy program feltölt vagy merít."
+  },
+  "d-2026-11-21-mozgatasi-naplo": {
+    "cim": "Minden áttételt megjegyez a Boop, és az évad szintjén is figyel",
+    "datum": "2026-11-21",
+    "suly": "Közepes",
+    "terulet": [
+      "Terv",
+      "AI és memória"
+    ],
+    "valasztas": "A Boop eltárolja, mit javasolt, mit hagytál jóvá, miért, és hogyan sült el utána a nap. Ebből mintákat tanul (például: a sűrű csütörtökökön elmarad az esti edzés), és előre szól: vasárnap a jövő hétről, és amikor új évadot tervezel. Az Évad oldalon hétről hétre látod a terhet a pihenéshez mérve.",
+    "miert": "Így nem vállalod túl magad, és az évad terve a valódi napirendedhez igazodik.",
+    "levaltotta": "Nincs előzménye.",
+    "kovetkezmeny": "Egy minta csak akkor jelenik meg, ha már többször ismétlődött."
+  },
+  "d-2026-11-21-edzes-csak-ures-napra": {
+    "cim": "Áttett edzés csak üres napra, a héten belül",
+    "datum": "2026-11-21",
+    "suly": "Kicsi",
+    "terulet": [
+      "Edzés",
+      "Ma"
+    ],
+    "valasztas": "Az Átrendezésben Boop egy edzést csak olyan napra tehet át, ahol nincs másik edzés, és ugyanazon a héten belül marad. Két edzést nem cserél meg, és a következő hétre sem visz át.",
+    "miert": "Így gyorsabban elkészül és kevésbé kockázatos; a javaslatok nagy része úgyis ilyen.",
+    "levaltotta": "Nincs előzménye.",
+    "kovetkezmeny": "A cserét és a hétvégén átnyúló áttételt később hozzá lehet tenni, ha hiányzik."
+  },
+  "d-2026-11-21-kihivas-szabaly": {
+    "cim": "Kihívás szinte minden gyakorlaton, a szabadsúlyos alapgyakorlatok kivételével",
+    "datum": "2026-11-21",
+    "suly": "Kicsi",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "A nap kihívása (néhány félismétlés a megnyújtott helyzetben az utolsó sorozat végén) minden gépes, csigás, Smith-keretes, saját testsúlyos és izoláló gyakorlaton választható. Tiltott marad minden rúddal, kézisúlyzóval vagy kettlebell-lel végzett összetett gyakorlaton.",
+    "miert": "A korábbi szabály csak 22 gyakorlatot engedett, és épp a legbiztonságosabb gépes és csigás gyakorlatokon tiltotta (például csigás bicepsz, tricepsz-letolás). A fáradtan végzett szabadsúlyos félismétlés viszont billegős és kockázatos.",
+    "levaltotta": "A „nyújtott helyzetben biztonságos” jelölésű 22 gyakorlatra szűkített szabályt.",
+    "kovetkezmeny": "A technikák (pihenős drop és a többi) továbbra is csak stabil gyakorlaton választhatók, és naponta egy kihívás lehet."
+  },
+  "d-2026-11-21-penz-heti-attekintes-helye": {
+    "datum": "2026-11-21",
+    "terulet": [
+      "Alapok"
+    ],
+    "cim": "A heti hosszú távú áttekintés a Pénzem oldalon jelenik meg",
+    "suly": "Kicsi",
+    "valasztas": "A heti áttekintés (rekeszenként: mi számított a múlt héten hosszú távon) a Pénzem oldalon, a három rekesz alatt kap helyet, a meglévő hírkártyák mintájára — koppintásra a teljes magyarázat.",
+    "miert": "Ott vannak a rekeszek, és ez a hosszú távú nézet helye; a Ma oldal maradjon a „mi a dolgom ma?” kérdésé.",
+    "levaltotta": "—",
+    "kovetkezmeny": "Értesítés és teendő-gomb nincs; hétfőnként frissül. A Ma oldal nem változik."
+  },
   "d-2026-11-20-boop-javasol-tervet": {
     "cim": "Boop kész tervet javasol új blokkhoz",
     "datum": "2026-11-20",
