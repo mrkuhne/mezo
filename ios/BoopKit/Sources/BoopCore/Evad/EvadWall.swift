@@ -2,8 +2,8 @@ import Foundation
 
 // The season's things to say on the living wall (B6 Évad S2, `mezo-r36n9.16`, spec §5.11). Pure: handed the
 // overview the Évad store already holds, it returns candidates — the wall engine chooses. No second card surface and
-// no second notification policy: nothing here is `.expires`, so nothing here may ring (decision #35). S3 adds the
-// weekly menu, S4 the experiments.
+// no second notification policy: only the weekly menu waiting for approval (S3) is `.expires`, so only it may ring,
+// within the wall's own cap (decision #35). S4 adds the experiments.
 
 /// Candidate ids, so the wall's tap can tell where each one opens (`evadWallOpens`).
 enum EvadWallID {
@@ -20,6 +20,7 @@ enum EvadWallID {
 public func evadCandidates(_ o: EvadOverview?, now: Date, calendar: Calendar = .current) -> [WallCandidate] {
     guard let o else { return [] }
     var out: [WallCandidate] = []
+    if let menu = evadMenuCandidate(o, now: now, calendar: calendar) { out.append(menu) }
 
     if let i = o.insights.first(where: { $0.key == "learned_expenditure" }) {
         out.append(WallCandidate(
@@ -46,9 +47,12 @@ public func evadCandidates(_ o: EvadOverview?, now: Date, calendar: Calendar = .
     return out
 }
 
-/// Where a tap on an Évad card lands: `modositas` for the correction proposal, nil for the Évad page itself.
+/// Where a tap on an Évad card lands: `modositas` for the correction proposal, `menu` (the Menü tab) for the weekly
+/// menu, nil for the Évad page itself.
 public func evadWallOpens(_ id: String) -> String? {
-    id.hasPrefix(EvadWallID.learned) ? "modositas" : nil
+    if id.hasPrefix(EvadWallID.learned) { return "modositas" }
+    if id.hasPrefix(EvadWallID.menu) { return "menu" }
+    return nil
 }
 
 /// "2026-W47": the ISO week `now` falls in, in the phone's time zone.

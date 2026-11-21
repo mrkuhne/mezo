@@ -19,4 +19,7 @@ public interface SeasonRepository extends JpaRepository<SeasonEntity, UUID> {
     List<SeasonEntity> findByCreatedByAndStatus(UUID owner, String status);
 
     Optional<SeasonEntity> findByIdAndCreatedBy(UUID id, UUID owner);
+
+    /** Every owner's seasons in that status (the weekly-menu job reads the active ones). */
+    List<SeasonEntity> findByStatus(String status);
 }

@@ -68,6 +68,7 @@ public class SeasonOverviewService {
     private final SeasonMapper mapper;
     private final AdherenceService adherenceService;
     private final SeasonInsights seasonInsights;
+    private final MenuService menuService;
 
     @Transactional(readOnly = true)
     public SeasonOverview overview(UUID owner) {
@@ -150,6 +151,7 @@ public class SeasonOverviewService {
             .insights(new ArrayList<>(insights.insights().stream().map(i -> SeasonInsight.builder()
                 .key(i.key()).title(i.title()).body(i.body()).build()).toList()))
             .upcoming(upcoming(s, block, week))
+            .menu(menuService.status(owner, s, today))
             .build();
     }
 

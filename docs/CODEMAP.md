@@ -795,7 +795,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   - **mappers:** `MealMapper`
   - **config:** `MealAiLogProperties`
   - **other:** `DayPlanService`, `FuelPlanMapper`, `MealItemRecipeOverrideJson`, `MealProvenanceJson`,
-    `MealRescoreRunner`, `MealSaturatedFatBackfillRunner`, `SeasonContextPort`
+    `MealRescoreRunner`, `MealSaturatedFatBackfillRunner`, `SeasonContextPort`, `SeasonMenuPort`
 - **Contract** `api/feature/meal/fuel-plan.yml` — 2 operations
   - **endpoints:** GET /api/fuel/plan/{date} · GET /api/fuel/usuals
 - **Contract** `api/feature/meal/meal-photo.yml` — 4 operations
@@ -1201,26 +1201,35 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/season`
   - **sub-features:** `port`
   - **entities→tables:** `SeasonAllowedRecipeEntity`→`season_allowed_recipe`, `SeasonEntity`→`season`,
-    `SeasonRevisionEntity`→`season_revision`
-  - **repositories:** `SeasonAllowedRecipeRepository`, `SeasonRepository`, `SeasonRevisionRepository`
-  - **services:** `AdherenceService`, `FirstSeasonAssembler`, `SeasonApiService`, `SeasonContextAdapter`,
-    `SeasonContextRenderer`, `SeasonDayKind`, `SeasonDraftMath`, `SeasonFingerprint`, `SeasonFormat`,
-    `SeasonGateAdapter`, `SeasonGoalAdapter`, `SeasonInsights`, `SeasonMealAdapter`, `SeasonMetricsAdapter`,
-    `SeasonOverviewService`, `SeasonPreviewService`, `SeasonService`, `SeasonSleepAdapter`, `SeasonTodoRules`,
-    `SeasonTrainAdapter`, `SleepNeedRule`
+    `SeasonMenuMealEntity`→`season_menu_meal`, `SeasonMenuWeekEntity`→`season_menu_week`,
+    `SeasonRevisionEntity`→`season_revision`, `SeasonStapleEntity`→`season_staple`,
+    `ShoppingItemEntity`→`shopping_item`, `ShoppingListEntity`→`shopping_list`
+  - **repositories:** `SeasonAllowedRecipeRepository`, `SeasonMenuMealRepository`, `SeasonMenuWeekRepository`,
+    `SeasonRepository`, `SeasonRevisionRepository`, `SeasonStapleRepository`, `ShoppingItemRepository`,
+    `ShoppingListRepository`
+  - **services:** `AdherenceService`, `FirstSeasonAssembler`, `MenuContextRenderer`, `MenuJob`, `MenuPlanner`,
+    `MenuService`, `SeasonApiService`, `SeasonContextAdapter`, `SeasonContextRenderer`, `SeasonDayKind`,
+    `SeasonDraftMath`, `SeasonFingerprint`, `SeasonFormat`, `SeasonGateAdapter`, `SeasonGoalAdapter`, `SeasonInsights`,
+    `SeasonMealAdapter`, `SeasonMenuAdapter`, `SeasonMenuSourceAdapter`, `SeasonMetricsAdapter`,
+    `SeasonOverviewService`, `SeasonPreviewService`, `SeasonRecipeService`, `SeasonService`, `SeasonSleepAdapter`,
+    `SeasonTodoRules`, `SeasonTrainAdapter`, `ShoppingListBuilder`, `ShoppingListService`, `SleepNeedRule`
   - **controllers→contract:** `SeasonController`→`SeasonApi`
   - **mappers:** `SeasonMapper`
   - **config:** `SeasonProperties`
-  - **other:** `SeasonDraftJson`, `SeasonGoalPort`, `SeasonMealPort`, `SeasonMetricsPort`, `SeasonNumbersJson`,
-    `SeasonSleepPort`, `SeasonTrainPort`
-- **Contract** `api/feature/season/season.yml` — 11 operations
+  - **other:** `SeasonDraftJson`, `SeasonGoalPort`, `SeasonMealPort`, `SeasonMenuSourcePort`, `SeasonMetricsPort`,
+    `SeasonNumbersJson`, `SeasonSleepPort`, `SeasonTrainPort`
+- **Contract** `api/feature/season/season.yml` — 24 operations
   - **endpoints:** GET /api/seasons · POST /api/seasons · GET /api/seasons/draft · POST /api/seasons/draft/preview ·
     GET /api/seasons/adherence · GET /api/seasons/active/overview · PUT /api/seasons/{id} ·
     POST /api/seasons/{id}/activate · POST /api/seasons/{id}/close · POST /api/seasons/{id}/preview ·
-    PUT /api/seasons/{id}/rules
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/season` — 9 IT + 5 unit
-  - **ITs:** `AdherenceServiceIT`, `MesocycleGateIT`, `SeasonApiIT`, `SeasonInsightsIT`, `SeasonOverviewIT`,
-    `SeasonPortsIT`, `SeasonPreviewIT`, `SeasonRepositoryIT`, `SeasonServiceIT`
+    PUT /api/seasons/{id}/rules · GET /api/seasons/menu · POST /api/seasons/menu/generate ·
+    POST /api/seasons/menu/{id}/approve · PUT /api/seasons/menu/meals/{id} ·
+    GET /api/seasons/menu/meals/{id}/alternatives · GET /api/seasons/recipes · PUT /api/seasons/{id}/recipes ·
+    GET /api/seasons/shopping · GET /api/seasons/shopping/lists · PUT /api/seasons/shopping/items/{id} ·
+    POST /api/seasons/shopping/{id}/staples · GET /api/seasons/staples · PUT /api/seasons/staples
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/season` — 11 IT + 7 unit
+  - **ITs:** `AdherenceServiceIT`, `MenuServiceIT`, `MesocycleGateIT`, `SeasonApiIT`, `SeasonInsightsIT`,
+    `SeasonMenuApiIT`, `SeasonOverviewIT`, `SeasonPortsIT`, `SeasonPreviewIT`, `SeasonRepositoryIT`, `SeasonServiceIT`
   - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPopulator`, `MealPopulator`,
     `MesoTemplatePopulator`, `PantryItemPopulator`, `PlannedSkipPopulator`, `RecipePopulator`,
     `RecoveryPeriodPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`, `TrainPopulator`, `WeightLogPopulator`

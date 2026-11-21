@@ -481,6 +481,10 @@ mezo:
     mesocycle-gate:
       enabled: true
       planned-lead-days: 7
+    # Évad S3: the weekly menu is generated at each active season's menu_day/menu_time (checked every minute,
+    # idempotent per week). Needs mezo.techcore.scheduling on (off in the test profile).
+    menu-job:
+      enabled: true
   techcore:
     # Master switch for Spring's scheduling INFRASTRUCTURE (@EnableScheduling) — one level above
     # the per-job mezo.techcore.cron.* switches below. Those decide whether a job BEAN exists;

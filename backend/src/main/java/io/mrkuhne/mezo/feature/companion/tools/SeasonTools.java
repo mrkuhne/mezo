@@ -16,15 +16,15 @@ import org.springframework.stereotype.Component;
 /**
  * Boop B6 Évad S2 (mezo-r36n9.16): {@code get_season}, the read tool next to {@code get_goal}. Pure composition over
  * the companion-owned {@link SeasonContextPort} (the season feature renders the lines). Scopes: {@code overview}
- * (default — week, status, last week's adherence, insights) and {@code rules} (the season's rules, the same lines the
- * context snapshot carries). {@code menu} / {@code experiment} arrive with S3 / S4.
+ * (default — week, status, last week's adherence, insights), {@code rules} (the season's rules, the same lines the
+ * context snapshot carries) and {@code menu} (S3 — this and next week's menu). {@code experiment} arrives with S4.
  */
 @Component
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = FeaturesConfiguration.COMPANION_SWITCH, havingValue = "true")
 public class SeasonTools {
 
-    private static final List<String> SCOPES = List.of("overview", "rules");
+    private static final List<String> SCOPES = List.of("overview", "rules", "menu");
     static final String NO_SEASON = "Évad: nincs aktív évad";
 
     private final SeasonContextPort seasonContext;
@@ -35,15 +35,18 @@ public class SeasonTools {
             + "alvás, a kímélő napok száma; egy indokolt kihagyás csak az edzést menti fel) és amit Boop észrevett. scope=rules — az évad "
             + "szabályai: cél és tempó vagy sáv, e heti edzés- és sportnapok, edzés- és pihenőnapi kcal és fehérje, "
             + "a kiválasztott receptek szabálya, a feldolgozottsági (NOVA) szabály, alvásigény és lefekvés. "
+            + "scope=menu — az e heti és a jövő heti menü napokra bontva (ablak, étel, kcal), és hogy jóváhagyta-e. "
             + "Használd, amikor a user az évadáról, a terve szabályairól, vagy arról kérdez, hogy hogyan halad.")
     public String getSeason(
-            @ToolParam(required = false, description = "overview|rules (alapértelmezés: overview).") String scope,
+            @ToolParam(required = false, description = "overview|rules|menu (alapértelmezés: overview).") String scope,
             ToolContext toolContext) {
         UUID userId = ToolContexts.userId(toolContext);
         LocalDate today = LocalDate.now();
-        String out = "rules".equals(normalize(scope))
-                ? seasonContext.render(userId, today)
-                : seasonContext.overview(userId, today);
+        String out = switch (normalize(scope)) {
+            case "rules" -> seasonContext.render(userId, today);
+            case "menu" -> seasonContext.menu(userId, today);
+            default -> seasonContext.overview(userId, today);
+        };
         if (out == null || out.isBlank()) {
             return NO_SEASON;
         }

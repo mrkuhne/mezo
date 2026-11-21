@@ -429,6 +429,8 @@ public struct EvadOverview: Codable, Equatable, Sendable {
     /// S2; empty in S1 — the "Amit Boop észrevett" block is left out.
     public let insights: [EvadInsight]
     public let upcoming: [EvadUpcoming]
+    /// S3 — next week's menu state; nil without a weekly menu (or from an older server).
+    public let menu: EvadMenuStatus?
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -440,5 +442,6 @@ public struct EvadOverview: Codable, Equatable, Sendable {
         adherence = try c.decodeIfPresent(EvadAdherence.self, forKey: .adherence)
         insights = try c.decodeIfPresent([EvadInsight].self, forKey: .insights) ?? []
         upcoming = try c.decodeIfPresent([EvadUpcoming].self, forKey: .upcoming) ?? []
+        menu = try c.decodeIfPresent(EvadMenuStatus.self, forKey: .menu)
     }
 }

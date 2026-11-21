@@ -17,6 +17,7 @@ import io.mrkuhne.mezo.feature.fuel.repository.FuelSettingsRepository;
 import io.mrkuhne.mezo.feature.fuel.repository.MealSlotTemplateRepository;
 import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
 import io.mrkuhne.mezo.feature.meal.entity.MealItemEntity;
+import io.mrkuhne.mezo.feature.meal.port.SeasonMenuPort;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
 import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
 import io.mrkuhne.mezo.feature.nutrition.service.AllergenState;
@@ -109,6 +110,7 @@ public class DayPlanService {
     private final RecipeMapper recipeMapper;
     private final SensitivityService sensitivities;
     private final WearableProperties wearableProperties;
+    private final SeasonMenuPort seasonMenu;
 
     /** The plan on the wire, as of the owner's current wall clock. */
     @Transactional(readOnly = true)
@@ -154,7 +156,8 @@ public class DayPlanService {
             anyOffer |= isOpen(states.get(i)) && budgets.get(i) != null;
         }
         SensitivityProfile profile = anyOffer ? sensitivities.profile(userId) : null;
-        List<RecipeCandidate> candidates = anyOffer ? candidates(userId) : List.of();
+        List<RecipeCandidate> candidates = anyOffer ? allowedCandidates(userId) : List.of();
+        Map<String, SeasonMenuPort.MenuMeal> menu = anyOffer ? approvedMenu(userId, date) : Map.of();
         List<DayPlanWindow> windows = new ArrayList<>(placed.size());
         for (int i = 0; i < placed.size(); i++) {
             PlannedWindow w = placed.get(i);
@@ -162,7 +165,7 @@ public class DayPlanService {
             boolean offer = isOpen(states.get(i)) && budget != null;
             windows.add(new DayPlanWindow(w.slotKey(), w.kind(), w.label(),
                 time(w.fromMin()), time(w.toMin()), budget, states.get(i), assigned.get(i),
-                offer ? SuggestionPicker.pick(w.slotKey(), budget, candidates, profile) : null));
+                offer ? suggestion(w.slotKey(), budget, menu.get(skipKeys.get(i)), candidates, profile) : null));
         }
 
         return new DayPlan(date, List.copyOf(windows), remaining(day, budgeted),
@@ -234,8 +237,102 @@ public class DayPlanService {
             .orElseGet(fuelSettingsDefaults::defaultMealsPerDay);
     }
 
-    /** The owner's recipes, per serving, with the facts the sensitivity rules need. */
-    private List<RecipeCandidate> candidates(UUID userId) {
+    /**
+     * The window's offer: the approved weekly menu's meal for this window wins (Évad S3 — the menu is the single
+     * source of the day's suggestions once he approved it); otherwise the picker over the allowed recipes.
+     */
+    private static Suggestion suggestion(SlotKey slot, Macros4 budget, SeasonMenuPort.MenuMeal menuMeal,
+            List<RecipeCandidate> candidates, SensitivityProfile profile) {
+        if (menuMealStillFits(menuMeal, budget, candidates, profile)) {
+            String protein = menuMeal.proteinG() == null ? "" : ", " + menuMeal.proteinG() + " g fehérje";
+            return new Suggestion(Suggestion.Kind.RECIPE, menuMeal.recipeId(),
+                menuMeal.name() + " — " + menuMeal.kcal() + " kcal" + protein + ".",
+                "ez szerepel a jóváhagyott heti menüdben");
+        }
+        return SuggestionPicker.pick(slot, budget, candidates, profile);
+    }
+
+    /** The menu meal's own window may differ from today's by this much and still be its window. */
+    static final int MENU_WINDOW_TOLERANCE_PCT = 15;
+
+    /**
+     * An approved menu meal speaks for a window only while it still belongs there: it names a recipe, that recipe is
+     * still offered (allowed by the season, not blocked by his rules — he may have changed either since approving),
+     * and the live window is about the size the meal was planned for (a moved workout or a kímélő day re-shapes the
+     * windows; then the slot#n key may point at a different window).
+     */
+    private static boolean menuMealStillFits(SeasonMenuPort.MenuMeal m, Macros4 budget, List<RecipeCandidate> candidates,
+            SensitivityProfile profile) {
+        if (m == null || m.recipeId() == null || budget == null || m.budgetKcal() <= 0) {
+            return false;
+        }
+        RecipeCandidate r = candidates.stream().filter(c -> c.id().equals(m.recipeId())).findFirst().orElse(null);
+        if (r == null || SensitivityService.verdict(profile, r.allergens(), r.nova(), r.lactoseFree()).blocksSuggestion()) {
+            return false;
+        }
+        return Math.abs(budget.kcal() - m.budgetKcal()) <= m.budgetKcal() * MENU_WINDOW_TOLERANCE_PCT / 100.0;
+    }
+
+    /** The approved menu's meals of the date keyed like the windows' skip keys ({@code <slot>#<n>}). */
+    private Map<String, SeasonMenuPort.MenuMeal> approvedMenu(UUID userId, LocalDate date) {
+        Map<String, SeasonMenuPort.MenuMeal> out = new java.util.HashMap<>();
+        for (SeasonMenuPort.MenuMeal m : seasonMenu.approvedMeals(userId, date)) {
+            out.put(m.slot() + "#" + m.ordinal(), m);
+        }
+        return out;
+    }
+
+    /**
+     * The candidate choke point (Évad S3, spec §5.7): with an active season that allows recipes, only those are ever
+     * offered; without one (or with none chosen yet) every recipe of his is.
+     */
+    private List<RecipeCandidate> allowedCandidates(UUID userId) {
+        Set<UUID> allowed = seasonMenu.allowedRecipes(userId);
+        List<RecipeCandidate> all = recipeCandidates(userId);
+        return allowed.isEmpty() ? all : all.stream().filter(r -> allowed.contains(r.id())).toList();
+    }
+
+    /**
+     * The meal windows a future (or any) day would have, with their budgets and no log folded in — the weekly menu's
+     * frame (Évad S3). Windows of a kímélő (GUIDANCE) day carry no budget. {@code ordinal} is the window's position
+     * among same-slot windows (the skip key's {@code n}); {@code sessions} are the day's workout windows.
+     */
+    @Transactional(readOnly = true)
+    public Skeleton skeleton(UUID userId, LocalDate date) {
+        FuelDayResponse day = fuelDays.getDay(userId, date);
+        boolean budgeted = day.getFuelMode() != FuelDayResponse.FuelModeEnum.GUIDANCE;
+        SleepAnchorPort.SleepAnchor anchor = sleepAnchor.resolve(userId);
+        List<WorkoutWindowQueryService.Window> sessions = workoutWindows.windowsFor(userId, date).stream()
+            .filter(w -> w.start() != null && w.end() != null)
+            .sorted(Comparator.comparing(WorkoutWindowQueryService.Window::start))
+            .toList();
+        List<TrainingBlock> blocks = sessions.stream()
+            .map(w -> TrainingBlock.of(w.start(), w.end(), w.label()))
+            .sorted(Comparator.comparingInt(TrainingBlock::startMin))
+            .toList();
+        List<PlannedWindow> placed = placeWindows(userId, anchor, blocks);
+        List<Macros4> budgets = BudgetSplitter.split(dayBudget(day), placed, budgeted);
+        Map<SlotKey, Integer> seen = new EnumMap<>(SlotKey.class);
+        List<SkeletonWindow> windows = new ArrayList<>(placed.size());
+        for (int i = 0; i < placed.size(); i++) {
+            PlannedWindow w = placed.get(i);
+            int n = seen.merge(w.slotKey(), 1, Integer::sum);
+            windows.add(new SkeletonWindow(w.slotKey(), n, w.label(), budgets.get(i), w.timeMin()));
+        }
+        return new Skeleton(date, List.copyOf(windows), sessions);
+    }
+
+    /** One window of {@link #skeleton}: owner-zone minutes since midnight; {@code budget} null on a kímélő day. */
+    public record SkeletonWindow(SlotKey slot, int ordinal, String label, Macros4 budget, int atMin) {
+    }
+
+    /** A day's frame for the weekly menu. */
+    public record Skeleton(LocalDate date, List<SkeletonWindow> windows, List<WorkoutWindowQueryService.Window> sessions) {
+    }
+
+    /** The owner's recipes, per serving, with the facts the sensitivity rules need (every recipe — no season filter). */
+    @Transactional(readOnly = true)
+    public List<RecipeCandidate> recipeCandidates(UUID userId) {
         List<RecipeCandidate> out = new ArrayList<>();
         for (RecipeEntity e : recipes.findByCreatedByAndDeletedFalseOrderByCreatedAtDesc(userId)) {
             SlotKey category = SlotKey.fromWire(e.getCategory());

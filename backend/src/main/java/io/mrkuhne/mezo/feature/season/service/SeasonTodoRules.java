@@ -33,7 +33,7 @@ public final class SeasonTodoRules {
 
     /**
      * @param refitFromDow the first weekday (0 = hétfő) of an approved, running menu week that a kcal change would
-     *                     re-fit, or {@code null} when no approved menu week is running (always null before S3)
+     *                     re-fit, or {@code null} when no approved menu week covers tomorrow
      */
     public static List<Todo> todo(SeasonNumbersJson before, SeasonNumbersJson after,
                                   SeasonDraftJson from, SeasonDraftJson to, Integer refitFromDow) {
@@ -66,7 +66,8 @@ public final class SeasonTodoRules {
             out.add(new Todo("sport", "Sportnapok",
                 "Sportnap reggelén több szénhidrát lesz a menüben, és a pihenőnapok is máshova kerülnek."));
         }
-        boolean kcalMoved = kcalDiff != 0 || !Objects.equals(before.restDayKcal(), after.restDayKcal());
+        boolean kcalMoved = kcalDiff != 0 || !Objects.equals(before.restDayKcal(), after.restDayKcal())
+            || !Objects.equals(before.weekKcal(), after.weekKcal());
         if (refitFromDow != null && kcalMoved && refitFromDow >= 0 && refitFromDow <= 6) {
             out.add(new Todo("refit_week", "A hét hátralévő napjai",
                 "%s vasárnapig igazodnak az adagok; a bevásárlólistán egy rövid »változott« rész jelenik meg."
