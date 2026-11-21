@@ -80,14 +80,40 @@ private func expiring(_ id: String, _ end: Date, area: String = WallSources.leve
         #expect(r.scheduled.map(\.id) == ["wall.b"])
     }
 
-    @Test func aSeenCandidateAlreadyPendingIsTakenBack() async {
+    @Test func aSeenCandidateDueTodayAlreadyPendingIsTakenBack() async {
         let r = FakeRinger(), n = notifier(r, defaults())
-        let c = expiring("a", at(11, 20))
+        let c = expiring("a", at(10, 14))
         await n.reconcile([c], now: at(10, 9))
         #expect(r.pending == ["wall.a"])
-        n.markSeen(["a"], now: at(10, 12))
-        await n.reconcile([c], now: at(10, 12))
+        n.markSeen(["a"], now: at(10, 10))
+        await n.reconcile([c], now: at(10, 10))
         #expect(r.pending.isEmpty)
+    }
+
+    @Test func seenTodayButDueTomorrowIsStillScheduledForTomorrowMorning() async {
+        let r = FakeRinger(), n = notifier(r, defaults()), now = at(10, 9)
+        n.markSeen(["a"], now: now)
+        await n.reconcile([expiring("a", at(11, 18))], now: now)
+        #expect(r.scheduled.map(\.id) == ["wall.a"])
+        #expect(r.scheduled.map(\.at) == [at(11, 8)])
+        // and a later look at it today does not take the request back
+        await n.reconcile([expiring("a", at(11, 18))], now: at(10, 12))
+        #expect(r.pending == ["wall.a"])
+    }
+
+    @Test func seenTodayAndDueTodayIsNotScheduled() async {
+        let r = FakeRinger(), n = notifier(r, defaults()), now = at(10, 9)
+        n.markSeen(["a"], now: now)
+        await n.reconcile([expiring("a", at(10, 14))], now: now)
+        #expect(r.scheduled.isEmpty)
+    }
+
+    @Test func theCapIsCountedPerFireDay() async {
+        let r = FakeRinger(), n = notifier(r, defaults()), now = at(10, 9)
+        let tomorrow = [expiring("a", at(11, 18)), expiring("b", at(11, 19)), expiring("c", at(11, 20))]
+        await n.reconcile(tomorrow + [expiring("d", at(10, 14))], now: now)
+        // tomorrow's two slots are full (c waits), today's own slot is untouched
+        #expect(Set(r.scheduled.map(\.id)) == ["wall.a", "wall.b", "wall.d"])
     }
 
     @Test func theNextDayStartsTheCountOver() async {

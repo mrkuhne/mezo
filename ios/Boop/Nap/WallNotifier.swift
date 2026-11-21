@@ -78,7 +78,9 @@ final class WallNotifier {
     static let idPrefix = "wall."
     static let cap = 2
 
-    private struct Day: Codable { var day: String; var rang: Set<String> = []; var seen: Set<String> = [] }
+    /// `seen` belongs to the day it was seen on (`day`); `rang` is keyed by the day the request FIRES on, so a request
+    /// scheduled today for tomorrow counts in tomorrow's cap, not today's.
+    private struct Day: Codable { var day: String; var rang: [String: Set<String>] = [:]; var seen: Set<String> = [] }
 
     private let center: WallRinger
     private let defaults: UserDefaults
@@ -96,17 +98,20 @@ final class WallNotifier {
     private var stateKey: String { "wall.notifier.\(userKey)" }
     private var askedKey: String { "wall.notifier.asked.\(userKey)" }
 
-    private func dayKey(_ now: Date) -> String {
-        let c = calendar.dateComponents([.year, .month, .day], from: now)
+    private func dayKey(_ date: Date) -> String {
+        let c = calendar.dateComponents([.year, .month, .day], from: date)
         return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
     }
 
+    /// The stored state for `now`'s day: what was seen yesterday is forgotten, past fire days are dropped.
     private func load(_ now: Date) -> Day {
         let today = dayKey(now)
-        if let data = defaults.data(forKey: stateKey), let d = try? JSONDecoder().decode(Day.self, from: data), d.day == today {
-            return d
+        var d = Day(day: today)
+        if let data = defaults.data(forKey: stateKey), let old = try? JSONDecoder().decode(Day.self, from: data) {
+            d.rang = old.rang.filter { $0.key >= today }
+            if old.day == today { d.seen = old.seen }
         }
-        return Day(day: today)
+        return d
     }
 
     private func save(_ d: Day) {
@@ -116,33 +121,44 @@ final class WallNotifier {
     /// What he has had on screen today.
     func seenToday(now: Date) -> Set<String> { load(now).seen }
 
-    /// These cards were on the wall while it was visible: Boop does not ring for them.
+    /// These cards were on the wall while it was visible: Boop does not ring for them **today**. A request whose time
+    /// falls on a later day is still fair game — he saw the card, not tomorrow's deadline.
     func markSeen(_ ids: [String], now: Date) {
         guard !ids.isEmpty else { return }
         var d = load(now)
-        let before = d.seen
         d.seen.formUnion(ids)
-        if d.seen != before || defaults.data(forKey: stateKey) == nil { save(d) }
+        save(d)
     }
 
-    /// Brings the waiting requests in line with the wall: removes the ones whose card is gone, acted on or seen, and
-    /// schedules the next ones the day's cap allows.
+    /// Brings the waiting requests in line with the wall: removes the ones whose card is gone, acted on or seen (and
+    /// due today), and schedules the next ones each fire day's cap allows.
     func reconcile(_ candidates: [WallCandidate], now: Date, acted: Set<String> = []) async {
         var d = load(now)
-        let live = Set(candidates.filter { $0.notifiable && !acted.contains($0.id) && !d.seen.contains($0.id) }
-            .map { Self.idPrefix + $0.id })
+        let today = dayKey(now)
+
+        // each card with an allowed moment before its end, with the day that moment falls on
+        var timed: [(card: WallCandidate, when: Date, day: String)] = []
+        for c in candidates where c.notifiable && !acted.contains(c.id) {
+            guard let end = c.expiresAt, let when = WallRingTime.fire(expiresAt: end, now: now, calendar: calendar) else { continue }
+            timed.append((c, when, dayKey(when)))
+        }
+        let live = Set(timed.filter { !(d.seen.contains($0.card.id) && $0.day == today) }.map { Self.idPrefix + $0.card.id })
         let stale = await center.pendingIds(withPrefix: Self.idPrefix).filter { !live.contains($0) }
         if !stale.isEmpty { center.cancel(ids: stale) }
 
-        // a card with no allowed moment before its end must not take a slot of the day
-        let ringable = candidates.filter { c in c.expiresAt.flatMap { WallRingTime.fire(expiresAt: $0, now: now, calendar: calendar) } != nil }
-        let next = wallNotifications(ringable, now: now, acted: acted, alreadyRang: d.rang, seen: d.seen, cap: Self.cap)
-        guard !next.isEmpty, await allowed() else { return }
-        for c in next {
-            guard let end = c.expiresAt, let when = WallRingTime.fire(expiresAt: end, now: now, calendar: calendar) else { continue }
+        let everRang = d.rang.values.reduce(into: Set<String>()) { $0.formUnion($1) }
+        var plan: [(card: WallCandidate, when: Date, day: String)] = []
+        for day in Set(timed.map(\.day)).sorted() {
+            let group = timed.filter { $0.day == day && !everRang.contains($0.card.id) }
+            let chosen = wallNotifications(group.map(\.card), now: now, acted: acted, alreadyRang: d.rang[day] ?? [],
+                                           seen: day == today ? d.seen : [], cap: Self.cap)
+            for c in chosen { if let t = group.first(where: { $0.card.id == c.id }) { plan.append(t) } }
+        }
+        guard !plan.isEmpty, await allowed() else { return }
+        for t in plan {
             do {
-                try await center.schedule(id: Self.idPrefix + c.id, at: when, title: Self.plain(c.text), body: c.sub)
-                d.rang.insert(c.id)
+                try await center.schedule(id: Self.idPrefix + t.card.id, at: t.when, title: Self.plain(t.card.text), body: t.card.sub)
+                d.rang[t.day, default: []].insert(t.card.id)
             } catch { continue }
         }
         save(d)
