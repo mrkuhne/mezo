@@ -1246,7 +1246,8 @@ private struct BuilderBlockView: View {
         VStack(alignment: .leading, spacing: 10) {
             Text("MEDDIG TARTHAT EGY EDZÉS").nkFont(10, .semibold, design: .monospaced).tracking(1.3).foregroundStyle(planHue.glow)
             HStack(spacing: 6) {
-                ForEach(NewBlockModel.minuteChoices, id: \.self) { m in
+                // A target outside the choices (an intake fix's 105) shows as its own, selected pill.
+                ForEach(Array(Set(NewBlockModel.minuteChoices + [model.minutesTarget].compactMap { $0 })).sorted(), id: \.self) { m in
                     minutesPill("\(m)", sub: "perc", on: model.minutesTarget == m) { model.minutesTarget = m }
                 }
                 minutesPill("Nincs", sub: nil, on: model.minutesTarget == nil) { model.minutesTarget = nil }

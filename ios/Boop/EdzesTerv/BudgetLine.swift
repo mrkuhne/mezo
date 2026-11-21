@@ -2,40 +2,66 @@ import SwiftUI
 import BoopCore
 import BoopDesign
 
-// „Heti keret" (mezo-r36n9.113, spike screens 2 and 4b): the heaviest week's sets against what fits in the training
-// days × the session minutes, split by tier colour, with the Hangsúly counter. Every number is the server's budget;
-// the tier split is read off the evaluation's own peak week.
+// „Heti keret" (mezo-r36n9.113, spike screens 2 and 4b): a week's sets against what fits in the training days × the
+// session minutes, split by tier colour, with the Hangsúly counter. Every number is the server's budget: the builder
+// shows the heaviest week (its tier split read off the evaluation's peak week), the new-block intake the first week
+// (the week the candidate filter judges, its tier split from the lead candidate's weekly sets).
 
 struct PlanBudget: Equatable {
-    let budget: WireBudget
-    /// Sets of the peak loading week by tier (Hangsúly · Építés · Tartás), from the evaluation's path.
+    let capacity: Int
+    let used: Int
+    let emphasizeMax: Int
+    /// Sets of the week the keret speaks for, by tier (Hangsúly · Építés · Tartás).
     let emphasize: Int, grow: Int, maintain: Int
     let minutes: Int
     let days: Int
     /// Hangsúly muscles as the screen shows them (the budget may lag an edit by one refresh).
     let emphasizeCount: Int
+    /// No one-tier raise fits any more.
+    let full: Bool
+    /// Which week the numbers are: the builder's heaviest week, the intake's first.
+    let week: String
 
-    /// nil without a capacity (no minutes target): the keret is not shown.
+    /// The builder's keret: the peak loading week. nil without a capacity (no minutes target): the keret is not shown.
     init?(_ budget: WireBudget?, evaluation: WireEvaluation?, tier: (String) -> MuscleTier, minutes: Int?, days: Int, emphasized: Int? = nil) {
-        guard let budget, budget.capacitySets != nil, let minutes else { return nil }
-        self.budget = budget
-        self.minutes = minutes
-        self.days = days
-        emphasizeCount = emphasized ?? budget.emphasizeCount
+        guard let budget, let capacity = budget.capacitySets, let minutes else { return nil }
         let loading = (evaluation?.path ?? []).filter { $0.phase.lowercased() != "deload" }
         let peak = loading.max { $0.total < $1.total }
         var by: [MuscleTier: Int] = [:]
         for (muscle, sets) in peak?.muscles ?? [:] { by[tier(muscle), default: 0] += sets }
+        self.init(capacity: capacity, used: budget.usedSets, emphasizeMax: budget.emphasizeMax, by: by, minutes: minutes,
+                  days: days, emphasizeCount: emphasized ?? budget.emphasizeCount,
+                  full: (budget.raiseCost.values.filter { $0 > 0 }.min() ?? .max) > capacity - budget.usedSets,
+                  week: "a legnehezebb héten")
+    }
+
+    /// The new-block intake's keret (mezo-r36n9.113): week 1 of the lead candidate, consistent with the candidate
+    /// filter. Full when the server found no muscle whose one-tier raise still offers a candidate.
+    init?(intake: WireIntakeBudget?, evaluation: WireEvaluation?, tier: (String) -> MuscleTier, minutes: Int, days: Int, emphasized: Int) {
+        guard let intake, let capacity = intake.capacitySets else { return nil }
+        var by: [MuscleTier: Int] = [:]
+        for m in evaluation?.muscles ?? [] { by[tier(m.muscle), default: 0] += m.weeklySets }
+        self.init(capacity: capacity, used: intake.usedSets, emphasizeMax: intake.emphasizeMax, by: by, minutes: minutes,
+                  days: days, emphasizeCount: emphasized,
+                  full: !intake.raiseAllowed.isEmpty && !intake.raiseAllowed.values.contains(true), week: "az első héten")
+    }
+
+    private init(capacity: Int, used: Int, emphasizeMax: Int, by: [MuscleTier: Int], minutes: Int, days: Int,
+                 emphasizeCount: Int, full: Bool, week: String) {
+        self.capacity = capacity
+        self.used = used
+        self.emphasizeMax = emphasizeMax
         emphasize = by[.emphasize] ?? 0
         grow = by[.grow] ?? 0
         maintain = by[.maintain] ?? 0
+        self.minutes = minutes
+        self.days = days
+        self.emphasizeCount = emphasizeCount
+        self.full = full
+        self.week = week
     }
 
-    var capacity: Int { budget.capacitySets ?? 0 }
-    var used: Int { budget.usedSets }
     var over: Bool { used > capacity }
-    /// No one-tier raise fits any more.
-    var full: Bool { !over && (budget.raiseCost.values.filter { $0 > 0 }.min() ?? .max) > capacity - used }
 }
 
 struct PlanBudgetCard: View {
@@ -71,8 +97,8 @@ struct PlanBudgetCard: View {
             .frame(height: compact ? 6 : 10)
             if !compact {
                 Text(data.over ? "Túllépi a keretet: vegyél le egy izmot Tartásra, vagy adj hozzá időt."
-                     : (data.full ? "A keret tele: feljebb csak úgy tehetsz egy izmot, ha egy másikat lejjebb veszel."
-                        : "a legnehezebb héten · \(data.days) × \(data.minutes) perc · még \(data.capacity - data.used) sorozat fér bele"))
+                     : (data.full && !data.over ? "A keret tele: feljebb csak úgy tehetsz egy izmot, ha egy másikat lejjebb veszel."
+                        : "\(data.week) · \(data.days) × \(data.minutes) perc · még \(data.capacity - data.used) sorozat fér bele"))
                     .nkFont(12, design: data.over || data.full ? .default : .monospaced)
                     .foregroundStyle(data.over ? planWarn : .white.opacity(0.55))
                     .fixedSize(horizontal: false, vertical: true)
@@ -83,11 +109,11 @@ struct PlanBudgetCard: View {
         .nkGlass(compact ? 18 : 22)
         .animation(reduceMotion ? nil : .snappy, value: data.used)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Heti keret: \(data.used) a \(data.capacity) sorozatból, Hangsúly \(data.emphasizeCount) a \(data.budget.emphasizeMax)-ből")
+        .accessibilityLabel("Heti keret: \(data.used) a \(data.capacity) sorozatból, Hangsúly \(data.emphasizeCount) a \(data.emphasizeMax)-ből")
     }
 
     private var emphasisCounter: some View {
-        let n = data.emphasizeCount, max = data.budget.emphasizeMax
+        let n = data.emphasizeCount, max = data.emphasizeMax
         return HStack(spacing: 5) {
             Text("Hangsúly").nkFont(compact ? 11 : 12).foregroundStyle(.white.opacity(0.65))
             Text("\(n) / \(max)").nkFont(compact ? 11 : 12, .semibold, design: .monospaced)

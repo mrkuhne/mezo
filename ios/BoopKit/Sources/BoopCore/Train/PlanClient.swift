@@ -84,4 +84,10 @@ public struct PlanClient: Sendable {
     public func closeBlock(id: String) async throws(PlanFetchError) {
         _ = try await raw.sendRaw(.post, "/api/train/mesocycles/\(id)/close", operationID: "closeMesocycle")
     }
+
+    /// Throws away a block that was never trained, with the template it came from when nothing else used it — no
+    /// report, no AI review. A 409 `TRAIN_MESO_DISCARD_HAS_LOGS` means a workout was already logged in it.
+    public func discardBlock(id: String) async throws(PlanFetchError) {
+        _ = try await raw.sendRaw(.post, "/api/train/mesocycles/\(id)/discard", operationID: "discardMesocycle")
+    }
 }

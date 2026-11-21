@@ -51,13 +51,13 @@ struct NewBlockModelTests {
         let stub = StubTransport()
         let m = await withCandidates(stub)
         guard case .candidates(let first) = m.phase else { Issue.record("no candidates: \(m.phase)"); return }
-        #expect(first.candidates.count == 2 && m.budget?.capacitySets == 60, "the budget is the recommended candidate's")
+        #expect(first.candidates.count == 2 && m.intakeBudget?.capacitySets == 60, "the keret is the server's intake budget")
         let request = try body(stub, "getMesoPlanCandidates")
         #expect(request["daysOfWeek"] as? [String] == ["Hét", "Csü"])
         #expect(request["weeks"] as? Int == 6 && request["sessionMinutesTarget"] as? Int == 60)
         #expect(request["priorities"] == nil, "no tier chosen = nothing sent")
 
-        stub.on("getMesoPlanCandidates", .json(200, PlanFixtures.candidatesJSON(budget: PlanFixtures.budgetJSON(capacity: 80))))
+        stub.on("getMesoPlanCandidates", .json(200, PlanFixtures.candidatesJSON(intake: PlanFixtures.intakeJSON(capacity: 80))))
         m.weeks = 7
         m.minutes = 75
         m.tiers = ["back": "emphasize", "chest": "grow"]
@@ -66,7 +66,7 @@ struct NewBlockModelTests {
         let again = try body(stub, "getMesoPlanCandidates")
         #expect(again["weeks"] as? Int == 7 && again["sessionMinutesTarget"] as? Int == 75)
         #expect(again["priorities"] as? [String: String] == ["back": "emphasize"], "Építés is the absence of a key")
-        #expect(m.budget?.capacitySets == 80)
+        #expect(m.intakeBudget?.capacitySets == 80)
     }
 
     @Test(.timeLimit(.minutes(1))) func weeksStayInRange() {
@@ -86,15 +86,61 @@ struct NewBlockModelTests {
 
     @Test(.timeLimit(.minutes(1))) func raiseBlockedWhenNoRoom() async {
         let m = await withCandidates(StubTransport())
-        // capacity 60, used 52 → room 8: biceps costs 12, chest 4.
+        // The server tried each raise: biceps one tier up leaves no candidate, chest still offers one.
         #expect(m.canRaise("biceps") == .noRoom(minutes: 60, days: 2))
         #expect(m.canRaise("chest") == .ok)
-        #expect(m.canRaise("calf") == .ok, "a muscle the budget has no cost for is not blocked")
+        #expect(m.canRaise("calf") == .ok, "a muscle the server did not price is not blocked")
     }
 
-    @Test(.timeLimit(.minutes(1))) func noCapacityNeverBlocksForRoom() async {
-        let m = await withCandidates(StubTransport(), json: PlanFixtures.candidatesJSON(budget: PlanFixtures.budgetJSON(capacity: nil)))
+    @Test(.timeLimit(.minutes(1))) func noVerdictsNeverBlockForRoom() async {
+        // Without a target the server sends no verdicts: only the Hangsúly cap can block.
+        let m = await withCandidates(StubTransport(), json: PlanFixtures.candidatesJSON(intake: PlanFixtures.intakeJSON(capacity: nil, raiseAllowed: "{}")))
         #expect(m.canRaise("biceps") == .ok)
+        let old = await withCandidates(StubTransport(), json: PlanFixtures.candidatesJSON().replacingOccurrences(of: #""intakeBudget":"#, with: #""oldServer":"#))
+        #expect(old.intakeBudget == nil && old.canRaise("biceps") == .ok, "a server without the intake budget blocks nothing")
+    }
+
+    @Test(.timeLimit(.minutes(1))) func verdictPricesOnlyTheTierTheServerSaw() async {
+        let stub = StubTransport()
+        let m = await withCandidates(stub)
+        stub.on("getMesoPlanCandidates", .slowJson(200, PlanFixtures.candidatesJSON(), ms: 2_000))
+        // biceps was priced from Építés; once it is Tartás on screen (the ask still on its way) the verdict is about
+        // another step and does not block.
+        m.tiers["biceps"] = "maintain"
+        #expect(m.canRaise("biceps") == .ok)
+        m.pendingRefresh?.cancel()
+    }
+
+    @Test(.timeLimit(.minutes(1))) func failedRefreshClearsTheKeret() async {
+        let stub = StubTransport()
+        let m = await withCandidates(stub)
+        #expect(m.intakeBudget != nil)
+        stub.on("getMesoPlanCandidates", .fail(URLError(.notConnectedToInternet)))
+        m.minutes = 75
+        await m.pendingRefresh?.value
+        #expect(m.phase == .failed(.offline))
+        #expect(m.intakeBudget == nil, "no stale keret beside the failure notice")
+    }
+
+    @Test(.timeLimit(.minutes(1))) func seasonDaysOutsideTwoToSixAskNothing() async {
+        for days in [[2], [0, 1, 2, 3, 4, 5, 6]] {
+            let stub = StubTransport()
+            let m = model(stub, days: days)
+            #expect(m.phase == .seasonDaysOutOfRange(days.count))
+            await m.refresh()
+            m.minutes = 75
+            try? await Task.sleep(for: .milliseconds(80))
+            #expect(m.phase == .seasonDaysOutOfRange(days.count) && stub.sent.isEmpty, "no candidates call for \(days.count) days")
+        }
+        #expect(model(StubTransport(), days: [0, 1, 2, 3, 4, 5]).phase == .editing)
+    }
+
+    @Test(.timeLimit(.minutes(1))) func minutesAboveTheChoicesGetTheirOwnPill() async {
+        let m = await withCandidates(StubTransport(), json: PlanFixtures.candidatesJSON(nothingFits: true))
+        #expect(m.minuteOptions == [45, 60, 75, 90])
+        #expect(m.applyFix(WireFix(code: "more_minutes", value: 105)) == .applied)
+        #expect(m.minuteOptions == [45, 60, 75, 90, 105] && m.minutes == 105)
+        m.pendingRefresh?.cancel()
     }
 
     @Test(.timeLimit(.minutes(1))) func loweringAlwaysAllowed() async {
@@ -119,6 +165,7 @@ struct NewBlockModelTests {
         let generate = try body(stub, "generateMesoPlan")
         #expect(generate["split"] as? String == "ul" && generate["weeks"] as? Int == 6)
         #expect(generate["daysOfWeek"] as? [String] == ["Hét", "Csü"])
+        #expect(generate["sessionMinutesTarget"] as? Int == 60, "the offered minutes ride along")
         let created = try body(stub, "createMesoTemplate")
         #expect(created["title"] as? String == "Generált", "the generated template is what is saved")
         let start = try body(stub, "startMesoTemplate")
@@ -254,6 +301,14 @@ struct NewBlockModelTests {
         #expect(m.applyFix(WireFix(code: "fewer_emphasis", value: nil)) == .applied)
         #expect(m.tier("back") == "grow" && m.tier("biceps") == "emphasize")
         #expect(m.applyFix(WireFix(code: "more_days", value: nil)) == .needsSeasonDays)
+        // The server names the muscle: exactly that one comes down, even when it is not the heaviest.
+        m.tiers = ["back": "emphasize", "biceps": "emphasize"]
+        #expect(m.applyFix(WireFix(code: "fewer_emphasis", value: nil, muscle: "biceps")) == .applied)
+        #expect(m.tier("biceps") == "grow" && m.tier("back") == "emphasize")
+        // A named muscle no longer on Hangsúly falls back to the heaviest.
+        m.tiers = ["back": "emphasize", "quad": "emphasize"]
+        #expect(m.applyFix(WireFix(code: "fewer_emphasis", value: nil, muscle: "biceps")) == .applied)
+        #expect(m.tier("back") == "grow" && m.tier("quad") == "emphasize")
         #expect(m.applyFix(WireFix(code: "future_fix", value: nil)) == .unknown)
     }
 

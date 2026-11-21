@@ -286,4 +286,16 @@ struct PlanClientTests {
         try await c.closeBlock(id: PlanFixtures.newBlockId)
         #expect(stub.sent[1].path == "/api/train/mesocycles/\(PlanFixtures.newBlockId)/close")
     }
+
+    @Test func discardUsesItsOwnPathAndReadsTheLogsConflict() async throws {
+        let stub = StubTransport()
+        stub.on("discardMesocycle", .status(204))
+        stub.on("discardMesocycle", .json(409, #"[{"code":"TRAIN_MESO_DISCARD_HAS_LOGS","type":"REQUEST"}]"#))
+        let c = PlanFixtures.planClient(stub)
+        try await c.discardBlock(id: PlanFixtures.newBlockId)
+        #expect(stub.sent[0].path == "/api/train/mesocycles/\(PlanFixtures.newBlockId)/discard")
+        await #expect(throws: PlanFetchError.conflict("TRAIN_MESO_DISCARD_HAS_LOGS")) {
+            try await c.discardBlock(id: PlanFixtures.newBlockId)
+        }
+    }
 }

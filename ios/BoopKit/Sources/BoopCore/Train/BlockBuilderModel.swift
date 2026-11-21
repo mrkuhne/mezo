@@ -267,13 +267,14 @@ public final class BlockBuilderModel {
         return result
     }
 
-    /// „Mégsem, eldobom": closes the block the intake just created and leaves the builder empty. A failure keeps the
-    /// block on screen with `discardError` set. Returns true when the block is gone.
+    /// „Mégsem, eldobom": throws away the block the intake just created (the server deletes it and its template — no
+    /// report, no AI review) and leaves the builder empty. A failure keeps the block on screen with `discardError`
+    /// set. Returns true when the block is gone.
     @discardableResult
     public func discard() async -> Bool {
         guard let blockId = draft?.blockId ?? original?.blockId else { return false }
         do {
-            try await client.closeBlock(id: blockId)
+            try await client.discardBlock(id: blockId)
         } catch {
             discardError = error
             return false

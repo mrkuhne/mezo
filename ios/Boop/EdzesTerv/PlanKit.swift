@@ -273,7 +273,7 @@ func planReasonLine(_ reason: WireReason, target: Int) -> (tone: PlanTone, text:
         return (.good, "Minden izom hetente \(v)×, naponta kevés sorozattal.")
     case "more_warmups":
         guard let v = reason.value else { return nil }
-        return (.neutral, "Minden nap mindenre bemelegítesz: hetente kb. \(v) bemelegítő sorozattal több.")
+        return (.neutral, "Több bemelegítés: hetente kb. \(v) bemelegítő sorozattal több.")
     default: return nil
     }
 }

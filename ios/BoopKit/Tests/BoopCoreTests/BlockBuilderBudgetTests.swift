@@ -77,13 +77,27 @@ struct BlockBuilderBudgetTests {
         #expect(m.phase == .ready)
     }
 
-    @Test(.timeLimit(.minutes(1))) func discardClosesJustCreatedBlock() async throws {
+    @Test(.timeLimit(.minutes(1))) func evaluationCarriesEveryRest() async throws {
+        // The evaluator's minutes model v2 prices each set with its rest: every row goes out with its own restSec.
+        let stub = StubTransport()
+        let m = await loaded(stub, minutes: 60)
+        let days = try #require(try lastEvaluate(stub)["days"] as? [[String: Any]])
+        let rows = days.flatMap { ($0["exercises"] as? [[String: Any]]) ?? [] }
+        let rests = rows.map { $0["restSec"] as? Int }
+        let expected = (m.draft?.days ?? []).flatMap { $0.exercises.map(\.restSec) }
+        #expect(rows.count == 5)
+        #expect(rests == expected)
+        #expect(rests.first == 120, "the stored rest of the first row")
+    }
+
+    @Test(.timeLimit(.minutes(1))) func discardThrowsAwayJustCreatedBlock() async throws {
         let stub = StubTransport()
         let m = await loaded(stub, status: "planned")
         m.justCreated = true
-        stub.on("closeMesocycle", .json(200, PlanFixtures.startedBlockJSON(status: "archived")))
+        stub.on("discardMesocycle", .status(204))
         #expect(await m.discard())
-        #expect(stub.sent.last?.path == "/api/train/mesocycles/\(PlanFixtures.blockId)/close")
+        #expect(stub.sent.last?.path == "/api/train/mesocycles/\(PlanFixtures.blockId)/discard")
+        #expect(!stub.ops.contains("closeMesocycle"), "a discard is not a close: no report, no AI review")
         #expect(m.phase == .noBlock && m.draft == nil && !m.justCreated)
     }
 
@@ -91,7 +105,7 @@ struct BlockBuilderBudgetTests {
         let stub = StubTransport()
         let m = await loaded(stub, status: "planned")
         m.justCreated = true
-        stub.on("closeMesocycle", .fail(URLError(.notConnectedToInternet)))
+        stub.on("discardMesocycle", .fail(URLError(.notConnectedToInternet)))
         #expect(await m.discard() == false)
         #expect(m.phase == .ready && m.justCreated && m.discardError == .offline)
     }

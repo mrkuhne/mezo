@@ -3,7 +3,7 @@ import Observation
 
 // The new-block intake (mezo-r36n9.113): he picks the length, the session minutes and the muscle tiers; the season's
 // gym days are the training days. The server answers with 1–3 ranked split candidates (or the closest one with what
-// would make it fit); every number on screen — minutes, bands, the tier budget, the raise costs — is the server's.
+// would make it fit); every number on screen — minutes, bands, the heti keret, which raises still fit — is the server's.
 // „Ezzel kezdem" asks the server for the full plan of the chosen split, saves it unchanged as a template and starts
 // it (next Monday as planned, or today as active).
 
@@ -35,6 +35,18 @@ public enum RaiseCheck: Equatable, Sendable {
         return .ok
     }
 
+    /// The intake's check (mezo-r36n9.113): the server already tried every one-tier raise — `raiseAllowed[m]` false
+    /// means raising only `m` leaves no candidate. A missing key (or no target) is not a refusal. The verdict prices the
+    /// step from the tier the server saw (`pricedTier`); while an edit is on its way it says nothing about another step.
+    static func check(muscle: String, from current: String, to target: String, emphasizeCount: Int,
+                      intake: WireIntakeBudget?, pricedTier: String, minutes: Int, days: Int) -> RaiseCheck {
+        let from = rank(current), wanted = rank(target)
+        guard wanted > from else { return .ok }
+        if from + 1 == 2, emphasizeCount >= (intake?.emphasizeMax ?? 2) { return .emphasizeFull }
+        if current == pricedTier, intake?.raiseAllowed[muscle] == false { return .noRoom(minutes: minutes, days: days) }
+        return .ok
+    }
+
     public static func rank(_ tier: String) -> Int { ["maintain": 0, "grow": 1, "emphasize": 2][tier] ?? 1 }
     static let tierNames = ["maintain", "grow", "emphasize"]
 
@@ -55,6 +67,8 @@ public final class NewBlockModel {
     public enum Phase: Equatable {
         /// No season gym days (or the server said no season covers the start): the season-needed state.
         case needsSeason
+        /// The season has gym days, but fewer than 2 or more than 6 — the recommender plans 2–6 days. Carries the count.
+        case seasonDaysOutOfRange(Int)
         case editing
         case loadingCandidates
         case candidates(WireCandidates)
@@ -65,6 +79,7 @@ public final class NewBlockModel {
 
     public static let weekRange = 4...8
     public static let minuteChoices = [45, 60, 75, 90]
+    public static let dayRange = 2...6
     /// Season weekday (0 = Monday) → the server's day token.
     public static let dayTokens = [0: "Hét", 1: "Kedd", 2: "Sze", 3: "Csü", 4: "Pén", 5: "Szo", 6: "Vas"]
 
@@ -89,8 +104,11 @@ public final class NewBlockModel {
     public private(set) var phase: Phase
     /// Why the last „Ezzel kezdem" failed (generate / save / start); the candidates stay on screen. nil otherwise.
     public private(set) var createError: PlanFetchError?
-    /// The lead candidate's tier budget (recommended, else the closest); refreshed with the candidates.
-    public private(set) var budget: WireBudget?
+    /// The intake's heti keret and raise verdicts (week 1 of the lead candidate); refreshed with the candidates, nil
+    /// when the last ask failed.
+    public private(set) var intakeBudget: WireIntakeBudget?
+    /// The tiers the intake budget was priced for (a missing key is Építés).
+    private var pricedTiers: [String: String] = [:]
     /// The training days as the server's tokens, in week order.
     public let days: [String]
 
@@ -117,8 +135,11 @@ public final class NewBlockModel {
         self.now = now
         self.calendar = calendar
         days = Array(Set(seasonGymDays ?? [])).sorted().compactMap { Self.dayTokens[$0] }
-        phase = days.isEmpty ? .needsSeason : .editing
+        phase = days.isEmpty ? .needsSeason : Self.dayRange.contains(days.count) ? .editing : .seasonDaysOutOfRange(days.count)
     }
+
+    /// The minutes pills: the fixed choices plus the current minutes when a fix set one outside them (e.g. 105).
+    public var minuteOptions: [Int] { Array(Set(Self.minuteChoices + [minutes])).sorted() }
 
     // MARK: candidates
 
@@ -134,7 +155,7 @@ public final class NewBlockModel {
 
     private var busy: Bool {
         switch phase {
-        case .needsSeason, .creating, .created: true
+        case .needsSeason, .seasonDaysOutOfRange, .creating, .created: true
         default: false
         }
     }
@@ -149,11 +170,14 @@ public final class NewBlockModel {
             // A newer edit already asked again; this answer belongs to older settings.
             guard request == candidatesRequest, !busy else { return }
             phase = .candidates(result)
-            budget = result.lead?.evaluation.budget
+            intakeBudget = result.intakeBudget
+            pricedTiers = request.priorities ?? [:]
             // New choices on screen: the old start failure no longer describes them.
             createError = nil
         } catch {
             guard request == candidatesRequest, !busy else { return }
+            // No stale keret beside the failure notice.
+            intakeBudget = nil
             phase = Self.isSeasonRequired(error) ? .needsSeason : .failed(error)
         }
     }
@@ -175,14 +199,16 @@ public final class NewBlockModel {
 
     /// May the muscle go one tier up now?
     public func canRaise(_ muscle: String) -> RaiseCheck {
-        RaiseCheck.raise(muscle: muscle, from: tier(muscle), emphasizeCount: emphasizeCount, budget: budget,
-                         minutes: minutes, days: days.count)
+        let current = tier(muscle)
+        return current == "emphasize" ? .emphasizeFull
+            : check(muscle, to: current == "maintain" ? "grow" : "emphasize")
     }
 
-    /// May the muscle move to `target` now? Lowering is always allowed.
+    /// May the muscle move to `target` now? Lowering is always allowed; a raise is checked one tier at a time against
+    /// the Hangsúly cap and the server's `raiseAllowed` verdict.
     public func check(_ muscle: String, to target: String) -> RaiseCheck {
-        RaiseCheck.check(muscle: muscle, from: tier(muscle), to: target, emphasizeCount: emphasizeCount, budget: budget,
-                         minutes: minutes, days: days.count)
+        RaiseCheck.check(muscle: muscle, from: tier(muscle), to: target, emphasizeCount: emphasizeCount,
+                         intake: intakeBudget, pricedTier: pricedTiers[muscle] ?? "grow", minutes: minutes, days: days.count)
     }
 
     private var emphasizeCount: Int { tiers.values.filter { $0 == "emphasize" }.count }
@@ -221,8 +247,14 @@ public final class NewBlockModel {
         return nil
     }
 
-    /// Applies one of the server's fixes: `more_minutes` sets its minutes, `fewer_emphasis` lowers the heaviest
-    /// Hangsúly muscle to Építés, `more_days` is the season's (`needsSeasonDays`).
+    /// The muscle `fewer_emphasis` lowers: the one the server named (when it is still on Hangsúly), else the heaviest.
+    public func fewerEmphasisMuscle(_ fix: WireFix) -> String? {
+        if let m = fix.muscle, tiers[m] == "emphasize" { return m }
+        return heaviestEmphasized
+    }
+
+    /// Applies one of the server's fixes: `more_minutes` sets its minutes, `fewer_emphasis` lowers the Hangsúly muscle
+    /// the server named (else the heaviest) to Építés, `more_days` is the season's (`needsSeasonDays`).
     public func applyFix(_ fix: WireFix) -> FixOutcome {
         switch fix.code {
         case "more_minutes":
@@ -230,7 +262,7 @@ public final class NewBlockModel {
             minutes = v
             return .applied
         case "fewer_emphasis":
-            guard let m = heaviestEmphasized else { return .unknown }
+            guard let m = fewerEmphasisMuscle(fix) else { return .unknown }
             tiers[m] = "grow"
             return .applied
         case "more_days": return .needsSeasonDays
@@ -250,7 +282,9 @@ public final class NewBlockModel {
         let before = phase
         createError = nil
         phase = .creating
-        let request = WireGenerateRequest(daysOfWeek: days, weeks: weeks, priorities: prioritiesWire, split: candidate.splitKey)
+        // The minutes ride along: the server keeps the AI's picks only while the plan still fits the offered minutes.
+        let request = WireGenerateRequest(daysOfWeek: days, weeks: weeks, priorities: prioritiesWire, split: candidate.splitKey,
+                                          sessionMinutesTarget: minutes)
         let key = SavedKey(request: request, minutes: minutes)
         do {
             let templateId: String

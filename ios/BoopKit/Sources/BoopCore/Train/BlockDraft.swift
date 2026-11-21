@@ -541,6 +541,8 @@ public struct BlockDraft: Equatable, Sendable {
             input.restSec = e.restSec
             input.overrides = keys.sorted()
         }
+        // The evaluator always gets the rest: its minutes model prices every set with it (mezo-r36n9.113).
+        if !forSave { input.restSec = e.restSec }
         // The technique trio goes out only for a row whose technique or challenge he changed (or a new identity): an
         // untouched row omits all three, so the server carries the stored pick and its source (a planner's pick stays
         // the planner's) and may clear a stored pick that has become invalid instead of refusing the whole day. The

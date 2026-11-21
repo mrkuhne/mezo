@@ -479,6 +479,40 @@ public struct WireReason: Decodable, Equatable, Sendable {
 public struct WireFix: Decodable, Equatable, Sendable {
     public let code: String
     public let value: Int?
+    /// `fewer_emphasis`: the Hangsúly muscle the server lowered to make it fit (absent on older servers).
+    public let muscle: String?
+
+    public init(code: String, value: Int?, muscle: String? = nil) { self.code = code; self.value = value; self.muscle = muscle }
+}
+
+/// The intake's weekly set budget (mezo-r36n9.113): week 1 of the lead candidate, consistent with the candidate
+/// filter. Every number and every verdict is the server's.
+public struct WireIntakeBudget: Decodable, Equatable, Sendable {
+    /// Week-1 counting working sets of the lead candidate.
+    public let usedSets: Int
+    /// What the lead candidate's training days fit in the session minutes; nil without a target.
+    public let capacitySets: Int?
+    public let emphasizeCount: Int
+    public let emphasizeMax: Int
+    /// Muscle → whether raising only it one tier still offers a candidate. Emphasized muscles are absent; a missing key
+    /// is not a refusal.
+    public let raiseAllowed: [String: Bool]
+
+    enum CodingKeys: String, CodingKey { case usedSets, capacitySets, emphasizeCount, emphasizeMax, raiseAllowed }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        usedSets = try c.decode(Int.self, forKey: .usedSets)
+        capacitySets = try c.decodeIfPresent(Int.self, forKey: .capacitySets)
+        emphasizeCount = try c.decodeIfPresent(Int.self, forKey: .emphasizeCount) ?? 0
+        emphasizeMax = try c.decodeIfPresent(Int.self, forKey: .emphasizeMax) ?? 2
+        raiseAllowed = try c.decodeIfPresent([String: Bool].self, forKey: .raiseAllowed) ?? [:]
+    }
+
+    public init(usedSets: Int, capacitySets: Int?, emphasizeCount: Int, emphasizeMax: Int, raiseAllowed: [String: Bool]) {
+        self.usedSets = usedSets; self.capacitySets = capacitySets; self.emphasizeCount = emphasizeCount
+        self.emphasizeMax = emphasizeMax; self.raiseAllowed = raiseAllowed
+    }
 }
 
 public struct WireCandidate: Decodable, Equatable, Sendable {
@@ -495,29 +529,37 @@ public struct WireCandidates: Decodable, Equatable, Sendable {
     public let candidates: [WireCandidate]
     public let nothingFits: Bool
     public let fixes: [WireFix]
+    /// The intake's heti keret and raise verdicts; nil when no candidate came back or the server predates it.
+    public let intakeBudget: WireIntakeBudget?
 
-    enum CodingKeys: String, CodingKey { case candidates, nothingFits, fixes }
+    enum CodingKeys: String, CodingKey { case candidates, nothingFits, fixes, intakeBudget }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         candidates = try c.decode([WireCandidate].self, forKey: .candidates)
         nothingFits = try c.decodeIfPresent(Bool.self, forKey: .nothingFits) ?? false
         fixes = try c.decodeIfPresent([WireFix].self, forKey: .fixes) ?? []
+        intakeBudget = try c.decodeIfPresent(WireIntakeBudget.self, forKey: .intakeBudget)
     }
 
     /// The candidate whose evaluation speaks for the intake: the recommended one, else the closest.
     public var lead: WireCandidate? { candidates.first { $0.recommended } ?? candidates.first }
 }
 
-/// POST /api/train/meso-plans/generate with the chosen candidate's `split`.
+/// POST /api/train/meso-plans/generate with the chosen candidate's `split` and the minutes it was offered under (the
+/// server keeps the AI's exercise picks only while the plan still fits them).
 public struct WireGenerateRequest: Encodable, Equatable, Sendable {
     public var daysOfWeek: [String]
     public var weeks: Int
     public var priorities: [String: String]?
     public var goalText: String?
     public var split: String?
-    public init(daysOfWeek: [String], weeks: Int, priorities: [String: String]?, goalText: String? = nil, split: String?) {
+    public var sessionMinutesTarget: Int?
+    public var sportGroups: [String]?
+    public init(daysOfWeek: [String], weeks: Int, priorities: [String: String]?, goalText: String? = nil, split: String?,
+                sessionMinutesTarget: Int? = nil, sportGroups: [String]? = nil) {
         self.daysOfWeek = daysOfWeek; self.weeks = weeks; self.priorities = priorities; self.goalText = goalText; self.split = split
+        self.sessionMinutesTarget = sessionMinutesTarget; self.sportGroups = sportGroups
     }
 }
 

@@ -37,6 +37,10 @@ struct UjBlokkFlow: View {
             if model.phase == .needsSeason {
                 PlanStateView(title: "Előbb egy évad kell", text: planErrorText(.conflict("SEASON_REQUIRED")), mark: .calendar,
                               action: ("Az Évad oldalra", { onOpenSeason(nil) }), onClose: onClose)
+            } else if case .seasonDaysOutOfRange(let n) = model.phase {
+                PlanStateView(title: "Ennyi napra nem tudok tervet adni",
+                              text: "Az évadodban \(n) edzésnap van — a tervajánló 2–6 napra tud tervet adni. Állítsd át az Évad oldalon.",
+                              mark: .calendar, action: ("Az Évad oldalra", { onOpenSeason(nil) }), onClose: onClose)
             } else {
                 switch step {
                 case .alapok:

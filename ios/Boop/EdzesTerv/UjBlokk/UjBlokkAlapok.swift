@@ -12,8 +12,8 @@ struct UjBlokkAlapok: View {
     let onNext: () -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    /// The muscles he sets a tier for, in body order.
-    static let muscles = ["back", "chest", "shoulder", "biceps", "triceps", "quad", "ham", "glute", "calf", "core"]
+    /// The muscles he sets a tier for, in body order: the landmark groups the plan is built from (core has no band).
+    static let muscles = ["back", "chest", "shoulder", "biceps", "triceps", "quad", "ham", "glute", "calf"]
 
     var body: some View {
         ZStack {
@@ -35,7 +35,8 @@ struct UjBlokkAlapok: View {
                     VStack(alignment: .leading, spacing: 12) {
                         UjBlokkLabel("Meddig tarthat egy edzés")
                         HStack(spacing: 6) {
-                            ForEach(NewBlockModel.minuteChoices, id: \.self) { m in
+                            // A fix may set minutes outside the choices (e.g. 105): it shows as its own, selected pill.
+                            ForEach(model.minuteOptions, id: \.self) { m in
                                 UjBlokkChoice(text: "\(m)", on: model.minutes == m, sub: "perc") { model.minutes = m; blocked = nil }
                             }
                         }
@@ -100,13 +101,13 @@ struct UjBlokkAlapok: View {
 
     private func set(_ muscle: String, _ tier: MuscleTier) {
         let result = model.setTier(muscle, tier.rawValue)
-        let max = model.budget?.emphasizeMax ?? 2
+        let max = model.intakeBudget?.emphasizeMax ?? 2
         blocked = planRaiseText(result, emphasizeMax: max).map { UjBlokkBlocked(muscle: muscle, text: $0) }
     }
 
     @ViewBuilder private var budget: some View {
         let evaluation: WireEvaluation? = { if case .candidates(let c) = model.phase { c.lead?.evaluation } else { nil } }()
-        if let data = PlanBudget(model.budget, evaluation: evaluation, tier: { MuscleTier(wire: model.tier($0)) },
+        if let data = PlanBudget(intake: model.intakeBudget, evaluation: evaluation, tier: { MuscleTier(wire: model.tier($0)) },
                                  minutes: model.minutes, days: model.days.count,
                                  emphasized: model.tiers.values.filter { $0 == "emphasize" }.count) {
             PlanBudgetCard(data: data)

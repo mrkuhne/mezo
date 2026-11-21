@@ -161,6 +161,7 @@ final class PlanPreviewTransport: ClientTransport, @unchecked Sendable {
                 var b = block; b["status"] = (sent?["status"] as? String) ?? "planned"; b["currentWeek"] = 1
                 return b
             case "closeMesocycle": return block
+            case "discardMesocycle": return [String: Any]()
             case "getBlockExerciseSuggestions": return Self.suggestions(sent ?? [:])
             case "listWeekProposals": return state == "empty" ? [] : [proposal()]
             case "decideWeekProposal":
@@ -480,6 +481,14 @@ final class PlanPreviewTransport: ClientTransport, @unchecked Sendable {
                 default: break
                 }
             }]
+        // The intake's week-1 keret: a raise is allowed while its cost still fits (the server re-ranks instead).
+        let room = capacity(target, days: days.count) - week1
+        let costs = budget["raiseCost"] as? [String: Int] ?? [:]
+        let intake: [String: Any] = [
+            "capacitySets": capacity(target, days: days.count), "usedSets": week1, "emphasizeCount": emphasized, "emphasizeMax": 2,
+            "raiseAllowed": costs.reduce(into: [String: Bool]()) { r, kv in
+                r[kv.key] = (tier(kv.key) == "grow" && emphasized >= 2) ? false : kv.value <= room
+            }]
         let scored: [(key: String, c: [String: Any], longest: Int, warmups: Int)] = ["ul", "full"].map { key in
             let b = build(key)
             var evaluation = evaluate(["days": b.days, "musclePriorities": tiers, "phaseCurve": phases, "sessionMinutesTarget": target])
@@ -496,7 +505,7 @@ final class PlanPreviewTransport: ClientTransport, @unchecked Sendable {
             var fixes: [[String: Any]] = [["code": "more_minutes", "value": Int((Double(closest.longest) / 15).rounded(.up)) * 15]]
             if emphasized > 0 { fixes.append(["code": "fewer_emphasis"]) }
             if days.count < 6 { fixes.append(["code": "more_days"]) }
-            return ["candidates": [c], "nothingFits": true, "fixes": fixes]
+            return ["candidates": [c], "nothingFits": true, "fixes": fixes, "intakeBudget": intake]
         }
         let base = fitting.first!.warmups
         let offered: [[String: Any]] = fitting.enumerated().map { i, s in
@@ -508,7 +517,7 @@ final class PlanPreviewTransport: ClientTransport, @unchecked Sendable {
             c["reasons"] = reasons
             return c
         }
-        return ["candidates": offered, "nothingFits": false, "fixes": []]
+        return ["candidates": offered, "nothingFits": false, "fixes": [], "intakeBudget": intake]
     }
 
     struct Line { let id, exercise, exerciseName, day, muscle, kind: String; let from, to: Double; let reasons: [String]; let dayIndex: Int }

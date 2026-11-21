@@ -114,8 +114,14 @@ enum PlanFixtures {
         #"{"capacitySets":\#(capacity.map(String.init) ?? "null"),"usedSets":\#(used),"emphasizeCount":\#(emphasizeCount),"emphasizeMax":2,"raiseCost":\#(raiseCost)}"#
     }
 
+    /// The intake's week-1 keret: room 8; raising chest or quad still offers a candidate, biceps does not, calf is unpriced.
+    static func intakeJSON(capacity: Int? = 60, used: Int = 52, raiseAllowed: String = #"{"chest":true,"biceps":false,"quad":true}"#) -> String {
+        #"{"usedSets":\#(used),"capacitySets":\#(capacity.map(String.init) ?? "null"),"emphasizeCount":1,"emphasizeMax":2,"raiseAllowed":\#(raiseAllowed)}"#
+    }
+
     /// Two offered candidates (the first recommended) with reasons, one of a code this build does not know.
-    static func candidatesJSON(budget: String = budgetJSON(), nothingFits: Bool = false) -> String {
+    static func candidatesJSON(budget: String = budgetJSON(), nothingFits: Bool = false, intake: String = intakeJSON(),
+                               fixes: String? = nil) -> String {
         #"""
         {"candidates":[
           {"splitKey":"ul","splitLabel":"Felső-alsó","template":\#(templateJSON()),"evaluation":\#(evaluationJSON(budget: budget)),
@@ -123,7 +129,8 @@ enum PlanFixtures {
           {"splitKey":"full","splitLabel":"Egész test","template":\#(templateJSON(title: "Egész test")),"evaluation":\#(evaluationJSON),
            "recommended":false,"reasons":[{"code":"more_warmups","value":4}]}],
          "nothingFits":\#(nothingFits),
-         "fixes":\#(nothingFits ? #"[{"code":"more_minutes","value":75},{"code":"future_fix"}]"# : "[]")}
+         "fixes":\#(fixes ?? (nothingFits ? #"[{"code":"more_minutes","value":75},{"code":"future_fix"}]"# : "[]")),
+         "intakeBudget":\#(intake)}
         """#
     }
 
