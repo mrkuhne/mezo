@@ -118,6 +118,7 @@ public interface BoopBriefMapper {
             item.setKind(i.kind());
             item.setLevel(BoopCapacityDemandItem.LevelEnum.fromValue(i.level()));
             item.setEventKey(i.eventKey());
+            item.setEffect(i.effect() == null ? null : BoopCapacityDemandItem.EffectEnum.fromValue(i.effect()));
             return item;
         }).toList());
         out.setFactors(c.factors().stream().map(f -> {

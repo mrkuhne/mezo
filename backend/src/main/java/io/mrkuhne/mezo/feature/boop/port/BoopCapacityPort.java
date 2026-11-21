@@ -27,9 +27,10 @@ public interface BoopCapacityPort {
 
     /**
      * level: kicsi | kozepes | nagy | tolt. {@code eventKey}: the calendar event's feedback key (external id without
-     * the occurrence part) the phone sends back with a label; {@code null} for a training session.
+     * the occurrence part) the phone sends back with a label; {@code null} for a training session. {@code effect}: the
+     * owner's own label of the event (drains | neutral | feeds), {@code null} when unlabelled.
      */
-    record Item(String label, String kind, Instant start, String level, String eventKey) {}
+    record Item(String label, String kind, Instant start, String level, String eventKey, String effect) {}
 
     /** effect: jo | semleges | rossz. */
     record Factor(String key, String label, String value, String effect) {}

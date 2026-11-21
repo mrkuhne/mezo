@@ -62,12 +62,14 @@ class CapacityFeedbackIT extends ApiIntegrationTest {
         BoopCapacityPort.Item b = item(before, "Tervezés");
         assertThat(b.eventKey()).isEqualTo(KEY);       // the occurrence part is stripped
         assertThat(b.level()).isNotEqualTo("tolt");
+        assertThat(b.effect()).isNull();               // no label yet
 
         putForBody("/api/capacity/event-feedback", body(KEY, EffectEnum.FEEDS), ownerAuthHeaders(),
             HttpStatus.NO_CONTENT, String.class);
 
         BoopCapacityPort.View after = capacity.read(owner, day);
         assertThat(item(after, "Tervezés").level()).isEqualTo("tolt");
+        assertThat(item(after, "Tervezés").effect()).isEqualTo("feeds"); // his label travels back to the phone
         assertThat(after.demandUnits()).isLessThan(before.demandUnits());
 
         // a second label replaces the first (one row per event key)
@@ -76,7 +78,9 @@ class CapacityFeedbackIT extends ApiIntegrationTest {
         List<CapacityEventFeedbackEntity> rows = feedback.findByCreatedByAndDeletedFalse(owner);
         assertThat(rows).extracting(CapacityEventFeedbackEntity::getEventKey).containsExactly(KEY);
         assertThat(rows).extracting(CapacityEventFeedbackEntity::getEffect).containsExactly("drains");
-        assertThat(item(capacity.read(owner, day), "Tervezés").level()).isNotEqualTo("tolt");
+        BoopCapacityPort.Item relabelled = item(capacity.read(owner, day), "Tervezés");
+        assertThat(relabelled.level()).isNotEqualTo("tolt");
+        assertThat(relabelled.effect()).isEqualTo("drains");
     }
 
     @Test

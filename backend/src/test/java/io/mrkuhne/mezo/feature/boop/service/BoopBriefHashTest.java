@@ -40,12 +40,26 @@ class BoopBriefHashTest {
     @Test
     void anEventLabelChangesTheHashEvenWhenUnitsRoundTheSame() {
         var drains = new BoopCapacityPort.Item("Tervezés", "meeting", java.time.Instant.parse("2026-11-23T08:00:00Z"),
-            "kozepes", "cal-1");
+            "kozepes", "cal-1", "drains");
         var feeds = new BoopCapacityPort.Item("Tervezés", "meeting", java.time.Instant.parse("2026-11-23T08:00:00Z"),
-            "tolt", "cal-1");
+            "tolt", "cal-1", "feeds");
         var a = new BoopCapacityPort.View("rendben", 0.8, true, 0, true, 4.0, new double[19], List.of(drains),
             List.of(), "");
         var b = new BoopCapacityPort.View("rendben", 0.8, true, 0, true, 4.0, new double[19], List.of(feeds),
+            List.of(), "");
+        assertThat(hash(a)).isNotEqualTo(hash(b));
+    }
+
+    @Test
+    void aLabelThatKeepsTheLevelStillChangesTheHash() {
+        // a small item labelled "neutral" stays "kicsi": the stored brief must still learn the label (its row shows it)
+        var unlabelled = new BoopCapacityPort.Item("Hívás", "call", java.time.Instant.parse("2026-11-23T08:00:00Z"),
+            "kicsi", "cal-2", null);
+        var neutral = new BoopCapacityPort.Item("Hívás", "call", java.time.Instant.parse("2026-11-23T08:00:00Z"),
+            "kicsi", "cal-2", "neutral");
+        var a = new BoopCapacityPort.View("rendben", 0.8, true, 0, true, 4.0, new double[19], List.of(unlabelled),
+            List.of(), "");
+        var b = new BoopCapacityPort.View("rendben", 0.8, true, 0, true, 4.0, new double[19], List.of(neutral),
             List.of(), "");
         assertThat(hash(a)).isNotEqualTo(hash(b));
     }

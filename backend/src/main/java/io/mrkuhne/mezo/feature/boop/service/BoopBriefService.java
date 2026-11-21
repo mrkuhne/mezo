@@ -315,10 +315,11 @@ public class BoopBriefService {
                 b.append(';').append(f.key()).append('=').append(f.effect());
             }
             // an event label (Merít / Semleges / Feltölt) re-scores its item: its level changes the brief even when
-            // the day's units round to the same tenth
+            // the day's units round to the same tenth; the label itself too (the stored brief shows it on the row)
             b.append("|items:");
             for (BoopCapacityPort.Item i : capacity.demand()) {
-                b.append(i.eventKey()).append('@').append(i.start()).append('=').append(i.level()).append(';');
+                b.append(i.eventKey()).append('@').append(i.start()).append('=').append(i.level())
+                    .append('/').append(i.effect()).append(';');
             }
         }
         return sha256(b.toString());
