@@ -3,8 +3,9 @@ import Foundation
 // The Éves terv wire shapes (mezo-r36n9.113; contract: api/feature/train/train.yml, YearPlan / YearBlock / YearNote /
 // YearNext / YearUnlinkedRunning / YearReview / YearPlanRequest / YearBlockPatch). Hand-written like PlanWire.swift:
 // every enum is a plain String (`status`, `kind`, `code`, `reason`), so a value the server adds later never fails the
-// plan — an unknown note code simply shows no line. The required numbers and `status` / `kind` decode strictly: a
-// malformed answer is the error state, never invented numbers. Every number and date the phone shows is the server's.
+// plan — an unknown note code simply shows no line. Every contract-required number, date, `status` and `kind` on the
+// plan and its blocks decodes strictly: a malformed answer is the error state, never invented numbers. Collections and
+// booleans stay lenient (a missing one is empty / false). Every number and date the phone shows is the server's.
 // Codable both ways: the last good plan is kept in the `ServerCache`.
 
 public struct WireYearPlan: Codable, Equatable, Sendable {
@@ -51,9 +52,9 @@ public struct WireYearPlan: Codable, Equatable, Sendable {
         currentWeek = try c.decodeIfPresent(Int.self, forKey: .currentWeek)
         blocks = try c.decodeIfPresent([WireYearBlock].self, forKey: .blocks) ?? []
         loadingBlocks = try c.decode(Int.self, forKey: .loadingBlocks)
-        bufferWeeks = try c.decodeIfPresent(Int.self, forKey: .bufferWeeks) ?? 0
+        bufferWeeks = try c.decode(Int.self, forKey: .bufferWeeks)
         bufferStart = try c.decodeIfPresent(String.self, forKey: .bufferStart)
-        overrunWeeks = try c.decodeIfPresent(Int.self, forKey: .overrunWeeks) ?? 0
+        overrunWeeks = try c.decode(Int.self, forKey: .overrunWeeks)
         relaxed = try c.decodeIfPresent([WireYearNote].self, forKey: .relaxed) ?? []
         warnings = try c.decodeIfPresent([WireYearNote].self, forKey: .warnings) ?? []
         focusCount = try c.decodeIfPresent([String: Int].self, forKey: .focusCount) ?? [:]
@@ -104,7 +105,7 @@ public struct WireYearBlock: Codable, Equatable, Sendable {
         weeks = try c.decode(Int.self, forKey: .weeks)
         plannedStart = try c.decode(String.self, forKey: .plannedStart)
         lastDay = try c.decode(String.self, forKey: .lastDay)
-        status = try c.decodeIfPresent(String.self, forKey: .status) ?? "planned"
+        status = try c.decode(String.self, forKey: .status)
         mesocycleId = try c.decodeIfPresent(String.self, forKey: .mesocycleId)
         currentWeek = try c.decodeIfPresent(Int.self, forKey: .currentWeek)
         adopted = try c.decodeIfPresent(Bool.self, forKey: .adopted) ?? false

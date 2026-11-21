@@ -319,7 +319,8 @@ struct PlanClientTests {
 
         // A required number missing is the error state, not an invented value; an unknown enum value is fine.
         for broken in [PlanFixtures.yearPlanJSON().replacingOccurrences(of: #""loadingBlocks":2,"#, with: ""),
-                       PlanFixtures.yearPlanJSON().replacingOccurrences(of: #""kind":"lower","#, with: "")] {
+                       PlanFixtures.yearPlanJSON().replacingOccurrences(of: #""kind":"lower","#, with: ""),
+                       PlanFixtures.yearPlanJSON().replacingOccurrences(of: #","overrunWeeks":0"#, with: "")] {
             #expect(throws: (any Error).self) { try JSONDecoder().decode(WireYearPlan.self, from: Data(broken.utf8)) }
         }
         let odd = PlanFixtures.yearPlanJSON().replacingOccurrences(of: #""kind":"lower""#, with: #""kind":"full_body""#)
