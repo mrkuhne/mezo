@@ -1416,5 +1416,17 @@
     ],
     "mit_kapsz": "Kisebb csiszolások a tervajánló után: az eldobott új blokk minden nyoma eltűnik, a jelöltek gyorsabban számolódnak, és a heti keret jelzése frissítés közben sem téved.",
     "munkamenet": "Muscle Ladder implementation"
+  },
+  "mezo-r36n9.133": {
+    "cim": "Napi bírás – apró javítások az alap után",
+    "tipus": "Apróságok",
+    "szakasz": "B7 Napi kapacitás",
+    "terulet": [
+      "Ma",
+      "AI és memória"
+    ],
+    "mit_kapsz": "Pontosabb becslés, ha az MI épp nem elérhető (például a „hátedzés” is edzésnek számít), a késő esti edzés nem csonkul éjfélnél, és a háttérben futó címkézés egy ritka hiba után sem áll le.",
+    "szulo": "mezo-r36n9.17",
+    "munkamenet": "b6-b7-epites-5d50e3"
   }
 }
