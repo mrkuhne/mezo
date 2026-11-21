@@ -51,6 +51,13 @@ class SeasonLoadModelTest {
     }
 
     @Test
+    void currentWeekRecoveryCountsOnlyItsLivedDays() {
+        // K2 final fix: Monday and Tuesday lived: two days' recovery, matching the two days' load
+        List<DayRecovery> lived = Collections.nCopies(2, new DayRecovery(null, null, null, null, 6.0));
+        assertThat(SeasonLoadModel.weekRecovery(lived)).isCloseTo(12.0, within(1e-9));
+    }
+
+    @Test
     void headlineNeedsThreeOverWeeksInARow() {
         List<WeekOut> three = SeasonLoadModel.weeks(List.of(
             new WeekIn(1, 50.0, 42.0, false, false), new WeekIn(2, 50.0, 42.0, false, false),

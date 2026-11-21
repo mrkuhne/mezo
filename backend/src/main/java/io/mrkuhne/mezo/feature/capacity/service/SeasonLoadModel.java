@@ -6,7 +6,7 @@ import java.util.List;
 /**
  * The pure season load-vs-recovery model (Boop B7 K2). A week's load is the sum of its day units; its recovery is the
  * mean over the week's days of (sleep / need, clamped 0.6..1.1) x (resting-HR baseline / resting HR, clamped
- * 0.85..1.1) x the day's base x 7. A missing input is a neutral 1, never a guess. A planned week carries only the
+ * 0.85..1.1) x the day's base, summed over the week's lived days (a full week: mean x 7). A missing input is a neutral 1, never a guess. A planned week carries only the
  * training load of its planned sessions and no recovery.
  */
 public final class SeasonLoadModel {
@@ -45,16 +45,17 @@ public final class SeasonLoadModel {
         return d.base() * f;
     }
 
-    /** The week's recovery: the mean of its days' recovery units times 7 (a short list still means a 7-day week). */
+    /**
+     * The recovery of a week's lived days: the sum of their recovery units. A full week is the mean x 7; the current
+     * week passes only its days up to today, so its recovery matches its lived load (the days still ahead count
+     * neither as load nor as recovery).
+     */
     public static double weekRecovery(List<DayRecovery> days) {
-        if (days.isEmpty()) {
-            return 0;
-        }
         double sum = 0;
         for (DayRecovery d : days) {
             sum += dayRecovery(d);
         }
-        return sum / days.size() * 7;
+        return sum;
     }
 
     public static List<WeekOut> weeks(List<WeekIn> in) {

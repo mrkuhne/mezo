@@ -57,11 +57,15 @@ class CapacitySeasonIT extends ApiIntegrationTest {
     @Autowired private DatabasePopulator databasePopulator;
 
     private UUID ownerWithSeason() {
+        return ownerWithSeason(START);
+    }
+
+    private UUID ownerWithSeason(LocalDate start) {
         UUID owner = fixture.owner(ownerProperties.ownerEmail());
         SeasonDraftJson d = SeasonFixture.draft();
         SeasonEntity s = fixture.plannedSeason(owner, d);
         s.setStatus(SeasonEntity.STATUS_ACTIVE);
-        s.setStartDate(START);
+        s.setStartDate(start);
         s.setWeeks(8);
         seasonRepository.saveAndFlush(s);
         return owner;
@@ -131,5 +135,43 @@ class CapacitySeasonIT extends ApiIntegrationTest {
         assertThat(week(l, 2).getLoad()).isGreaterThan(week(l, 2).getRecovery());
         assertThat(week(l, 1).getOver()).isFalse();
         assertThat(l.getStats().getOverloadedDays4w()).isPositive();
+    }
+
+    @Test
+    void overloadCountsTheFourWeeksBeforeAYoungSeason() {
+        // K2 final fix: a season that started 3 days ago (Fri Nov 20; week 1 = Nov 16-22) still counts the
+        // overloaded days of the 4 weeks before today, not only the days since its start
+        UUID owner = ownerWithSeason(NOW.minusDays(3));
+        for (int i = 0; i < 5; i++) { // Nov 2-6: before the season's first Monday, inside the 4-week window
+            LocalDate day = LocalDate.of(2026, 11, 2).plusDays(i);
+            packedDay(owner, day);
+            sleepPopulator.createSleepLog(owner, day, new BigDecimal("5.0"), 2);
+        }
+
+        CapacitySeasonLoad l = getForBody("/api/capacity/season", ownerAuthHeaders(), HttpStatus.OK,
+            CapacitySeasonLoad.class);
+
+        assertThat(l.getNowWeek()).isEqualTo(2);
+        assertThat(l.getStats().getOverloadedDays4w()).isPositive();
+    }
+
+    @Test
+    void currentWeekCountsOnlyItsLivedDays() {
+        // K2 final fix: today is Monday Nov 23 (week 4); what is still ahead this week does not load it
+        UUID owner = ownerWithSeason();
+        CapacitySeasonLoad before = getForBody("/api/capacity/season", ownerAuthHeaders(), HttpStatus.OK,
+            CapacitySeasonLoad.class);
+        for (int i = 1; i <= 6; i++) { // Tue Nov 24 - Sun Nov 29: packed, but not lived yet
+            packedDay(owner, NOW.plusDays(i));
+        }
+
+        CapacitySeasonLoad after = getForBody("/api/capacity/season", ownerAuthHeaders(), HttpStatus.OK,
+            CapacitySeasonLoad.class);
+
+        assertThat(week(after, 4).getLoad()).isEqualTo(week(before, 4).getLoad());
+        assertThat(week(after, 4).getRecovery()).isEqualTo(week(before, 4).getRecovery());
+        assertThat(week(after, 4).getOver()).isFalse();
+        // only Monday is lived: its recovery is one day's worth, a seventh of a full lived week's
+        assertThat(week(after, 4).getRecovery()).isLessThan(week(after, 3).getRecovery());
     }
 }

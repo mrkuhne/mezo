@@ -33,12 +33,15 @@ import org.springframework.stereotype.Service;
 
 /**
  * The Évad page's "Teher és pihenés" read (Boop B7 K2, mezo-r36n9.17): the weekly load against the recovery the body
- * offered, across the active season. Week 1 is the season's start week (Monday-Sunday, owner zone). Every week that
- * has started is read through {@link CapacityDayService#history} (stored or rule scores only, never a model call);
- * a week that starts after today carries the training load of the planned sessions only.
+ * offered, across the active season. Week 1 is the season's start week (Monday-Sunday, owner zone). Every lived day
+ * (up to today) of a started week is read through {@link CapacityDayService#history} (stored or rule scores only,
+ * never a model call); the current week counts only its lived days, so what is still ahead never makes it red. A week
+ * that starts after today carries the training load of the planned sessions only. The overloaded-day count looks at
+ * the 4 weeks before today whatever the season's age.
  *
- * <p>Cost: one batched history read for the whole started range (the day service's own ~8 range reads) plus one
- * yesterday-fuel read per day in it (at most ~7 x weeks), and one planned-sessions read for the rest of the season.
+ * <p>Cost: one batched history read from {@code min(season start Monday, today - 28)} to today (the day service's own
+ * ~8 range reads) plus one yesterday-fuel read per day in it, and one planned-sessions read for the rest of the
+ * season.
  */
 @Service
 @RequiredArgsConstructor
@@ -76,11 +79,11 @@ public class SeasonLoadService {
                 started = w;
             }
         }
+        // one batched read covers the lived season days and the overload window before today
+        LocalDate overloadFrom = today.minusDays(OVERLOAD_WINDOW_DAYS);
+        LocalDate readFrom = started > 0 && startMonday.isBefore(overloadFrom) ? startMonday : overloadFrom;
         Map<LocalDate, DayRead> read = new HashMap<>();
-        if (started > 0) {
-            days.history(owner, startMonday, startMonday.plusWeeks(started).minusDays(1))
-                .forEach(r -> read.put(r.day().date(), r));
-        }
+        days.history(owner, readFrom, today).forEach(r -> read.put(r.day().date(), r));
         LocalDate plannedFrom = startMonday.plusWeeks(started);
         Map<LocalDate, List<Session>> planned = started < weekCount
             ? train.sessions(owner, plannedFrom, startMonday.plusWeeks(weekCount).minusDays(1)) : Map.of();
@@ -91,7 +94,7 @@ public class SeasonLoadService {
             if (w <= started) {
                 double load = 0;
                 List<DayRecovery> rec = new ArrayList<>();
-                for (int i = 0; i < 7; i++) {
+                for (int i = 0; i < 7 && !monday.plusDays(i).isAfter(today); i++) { // lived days only
                     DayRead r = read.get(monday.plusDays(i));
                     load += r.day().demand().units();
                     rec.add(new DayRecovery(r.sleepMin(), r.needMin(), r.restingHr(), r.rhrBaseline(), r.base()));
@@ -104,7 +107,7 @@ public class SeasonLoadService {
         List<WeekOut> weeks = SeasonLoadModel.weeks(in);
 
         int overloaded = 0;
-        for (LocalDate d = today.minusDays(OVERLOAD_WINDOW_DAYS); d.isBefore(today); d = d.plusDays(1)) {
+        for (LocalDate d = overloadFrom; d.isBefore(today); d = d.plusDays(1)) {
             DayRead r = read.get(d);
             if (r != null && VERDICT_OVERLOADED.equals(r.day().verdict())) {
                 overloaded++;
