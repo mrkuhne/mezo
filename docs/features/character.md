@@ -14,6 +14,7 @@ related: [companion, proactive, insights, me, _platform-api-backend]
 ---
 
 > **2026-11-24 — reviewed after `mezo-r36n9.161` (no change).** The day's changeset folder gained `202611241400_mezo-r36n9.161_workout_session_client_ref.sql`; nothing of the character slice is affected.
+> **2026-11-21 — reviewed after Boop B7 K3 Task 17 (`mezo-r36n9.17`).** The shared changelog folder gained `202611251300_mezo-r36n9.17_capacity_proposal_fingerprint.sql`; nothing in character changed.
 
 > **2026-11-21 — reviewed after Boop B6 Évad S4 (`mezo-r36n9.16`).** The shared changelog folder gained `season_experiment` (the season's experiments); nothing in character changed.
 
