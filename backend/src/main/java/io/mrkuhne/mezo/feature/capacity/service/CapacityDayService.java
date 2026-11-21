@@ -93,7 +93,21 @@ public class CapacityDayService {
     }
 
     public CapacityDay day(UUID owner, LocalDate date) {
-        return build(owner, date, date).get(0);
+        return build(owner, date, date, false).get(0).day();
+    }
+
+    /** A day with the inputs its recovery came from (the season load reads these); see {@link #history}. */
+    public record DayRead(CapacityDay day, double base, Integer sleepMin, Integer needMin, Integer restingHr,
+                          Double rhrBaseline) {
+    }
+
+    /**
+     * The days of {@code first..last} for a history read: the same computation as {@link #day}, but it only ever
+     * uses stored or rule scores and never starts the background scoring run (a past range must not spend the model).
+     * One batch of reads for the whole range; the only per-day read is yesterday's fuel day.
+     */
+    public List<DayRead> history(UUID owner, LocalDate first, LocalDate last) {
+        return build(owner, first, last, true);
     }
 
     /** Seven days, {@code monday} first; a {@code monday} that is not a Monday is rejected (400, field "monday"). */
@@ -102,17 +116,19 @@ public class CapacityDayService {
             throw new SystemRuntimeErrorException(SystemMessage.field("VALIDATION_INVALID_VALUE", "monday").build(),
                 HttpStatus.BAD_REQUEST);
         }
-        return build(owner, monday, monday.plusDays(6));
+        return build(owner, monday, monday.plusDays(6), false).stream().map(DayRead::day).toList();
     }
 
-    private List<CapacityDay> build(UUID owner, LocalDate first, LocalDate last) {
+    private List<DayRead> build(UUID owner, LocalDate first, LocalDate last, boolean history) {
         ZoneId zone = ZoneId.of(wearable.zone());
         LocalDate histFrom = first.minusDays(HISTORY_DAYS);
         LocalDate asOf = LocalDate.now(clock.getIfAvailable(Clock::systemUTC).withZone(zone));
 
         List<CalendarEventView> events = calendar.events(owner, histFrom, last);
         Map<UUID, EventScore> scores = scoring.storedOrRule(owner, histFrom, last);
-        scoringRunner.requestIfUnscored(owner, events, scores);
+        if (!history) {
+            scoringRunner.requestIfUnscored(owner, events, scores);
+        }
         Map<LocalDate, List<CalendarEventView>> eventsByDate = events.stream()
             .collect(Collectors.groupingBy(CalendarEventView::date));
 
@@ -129,7 +145,7 @@ public class CapacityDayService {
             k -> demand(eventsByDate.getOrDefault(k, List.of()), scores, sessions.getOrDefault(k, List.of()), k, asOf,
                 zone));
 
-        List<CapacityDay> out = new ArrayList<>();
+        List<DayRead> out = new ArrayList<>();
         for (LocalDate d = first; !d.isAfter(last); d = d.plusDays(1)) {
             LocalDate winFrom = d.minusDays(HISTORY_DAYS);
             LocalDate winTo = d.minusDays(1);
@@ -176,8 +192,10 @@ public class CapacityDayService {
             Demand demand = demandOf.apply(d);
             double ratio = capacity.units() > 0 ? demand.units() / capacity.units() : 0;
             boolean tanulo = !haveBase || LearningState.of(fullDays, labelledDays, props);
-            out.add(new CapacityDay(d, Verdicts.word(ratio, props), ratio, tanulo, fullDays, labelledDays,
-                calendarKnown(events, d), demand, capacity, CapacityReasonFacts.of(demand, capacity, zone)));
+            CapacityDay day = new CapacityDay(d, Verdicts.word(ratio, props), ratio, tanulo, fullDays, labelledDays,
+                calendarKnown(events, d), demand, capacity, CapacityReasonFacts.of(demand, capacity, zone));
+            out.add(new DayRead(day, base, sleepMin.get(d), sleepMin.containsKey(d) ? needMin : null,
+                today == null ? null : today.restingHr(), baseline(rhr)));
         }
         return out;
     }

@@ -21,6 +21,7 @@ filter:
     - replaceCalendarDays
     - getBoopBrief
     - putCapacityEventFeedback
+    - getCapacitySeason
     - regenerateBoopBrief
     - setSessionTime
     - clearSessionTime
