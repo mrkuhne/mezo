@@ -7353,6 +7353,8 @@ without a second properties class.
 
 ## 5. Integrations
 
+- **Capacity (B7 K1, `mezo-r36n9.17`):** the capacity feature makes one cheap-tier `CompanionLlm` call per batch of new or changed calendar events (llm-log feature `capacity_event_score`, 45 s timeout, background threads only, booked to the owner via `LlmActorContext`); `FakeCompanionLlm` answers it in tests, with a `[fake-slow]` sentinel to simulate a slow model. See [`capacity.md`](capacity.md).
+
 Companion is a **Phase-3 domain that reads from the others, never the reverse** (the roadmap's
 coupling rule). Today only the platform seams are wired; the domain seams are named future work.
 

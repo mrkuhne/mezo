@@ -2,7 +2,7 @@
 cim: Napi bírás és Átrendezés
 szint: Funkció
 terulet: Ma
-allapot: Tervezve
+allapot: Részben kész
 hol: [iPhone app, Háttérrendszer, AI, Naptár, Apple Health]
 szulo: 00-attekintes
 szakasz: [B7]
@@ -59,8 +59,10 @@ figyel.
 | (épül) `capacity_proposal` | Minden javaslat, a döntésed és hogyan sült el |
 
 ## Mi jön még
-Négy lépésben épül: alap (címkézés és becslés), reggel és Évad, Átrendezés, előrejelzés. Az építés a B6 Évad második
-részének elkészülte után kezdődik.
+Négy lépésben épül: alap (címkézés és becslés), reggel és Évad, Átrendezés, előrejelzés. Az első lépés, a háttérben
+futó rész kész: a telefon elküldi a naptár minden adatát, a rendszer a háttérben felcímkézi a programokat (ha az MI épp
+nem ér rá, szabály alapján becsül), és kiszámolja, belefér-e a nap. A telefonon ebből még semmi sem látszik; a reggeli
+szó és a napod oldala a következő lépésben jelenik meg. Az Átrendezés és az előrejelzés még hátravan.
 
 ## Mi marad ki
 - A Boop nem ír a naptáradba, és nem mond le helyetted megbeszélést.

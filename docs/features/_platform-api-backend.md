@@ -164,6 +164,8 @@ For the actual screen flows that *consume* this spine, see the per-feature docs 
 
 ## 4. Data model & API
 
+- B7 K1 contract additions (`mezo-r36n9.17`): `wearable.yml` calendar-event fields (attendees, location, recurrence, availability, notes) and `boop.yml` `BoopCapacity` on the brief — see [`capacity.md`](capacity.md); the five `CAPACITY_*` keys are in `messages_hu.properties`.
+
 Central settings adds generated `CompanionPreferencesApi` operations in the companion fragment (GET/PUT preferences and GET exact personal context), plus `AuthApi` PUT `/api/auth/me`. Preferences remain owner-scoped domain storage; the settings frontend composes these APIs with existing domain contracts instead of adding a second settings aggregate. Preview and all chat paths share one personal-context assembler. See [settings](settings.md), [companion](companion.md) and [auth](_platform-auth-security.md).
 
 ### 4a. The contract layer (`api/`)

@@ -28,7 +28,20 @@ public final class CalendarKitReader: CalendarReader, @unchecked Sendable {
                              itemId: $0.calendarItemExternalIdentifier ?? $0.eventIdentifier ?? $0.calendarItemIdentifier,
                              occurrenceStart: $0.startDate),
                          title: $0.title ?? "", start: $0.startDate, end: $0.endDate,
-                         allDay: $0.isAllDay, calendar: $0.calendar?.title ?? "", attendees: $0.attendees?.count ?? 0)
+                         allDay: $0.isAllDay, calendar: $0.calendar?.title ?? "", attendees: $0.attendees?.count ?? 0,
+                         attendeeNames: $0.attendees?.compactMap(\.name) ?? [],
+                         organizerIsMe: $0.organizer?.isCurrentUser,
+                         location: $0.location, recurring: $0.hasRecurrenceRules,
+                         availability: Self.availabilityName($0.availability), notes: $0.notes)
+        }
+    }
+
+    private static func availabilityName(_ a: EKEventAvailability) -> String {
+        switch a {
+        case .free: "free"
+        case .tentative: "tentative"
+        case .unavailable: "unavailable"
+        default: "busy"      // .busy and .notSupported
         }
     }
 }

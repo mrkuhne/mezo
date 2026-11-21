@@ -485,6 +485,28 @@ mezo:
     # idempotent per week). Needs mezo.techcore.scheduling on (off in the test profile).
     menu-job:
       enabled: true
+  # Boop B7 K1 day capacity (mezo-r36n9.17): CapacityProperties.
+  capacity:
+    enabled: true
+    verdict:
+      laza: 0.6
+      rendben: 0.9
+      szoros: 1.0
+    headroom: 1.25
+    sequence-factor: 1.3
+    sequence-block-min: 90
+    gap-credit-min: 15
+    learning:
+      min-days: 14
+      min-labels: 5
+    proposals:
+      max-per-week: 5
+    live:
+      min-interval: PT3H
+    sunday:
+      cron: "0 0 18 * * SUN"
+    notes-max-chars: 2000
+    default-base-units: 6.0
   techcore:
     # Master switch for Spring's scheduling INFRASTRUCTURE (@EnableScheduling) — one level above
     # the per-job mezo.techcore.cron.* switches below. Those decide whether a job BEAN exists;

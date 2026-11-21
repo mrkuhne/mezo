@@ -17,19 +17,30 @@ public func buildCalendarDays(_ items: [CalendarItem], from: Date, through: Date
             .sorted { $0.start < $1.start }
             .map { Components.Schemas.CalendarEventIn(
                 externalId: $0.externalId, title: contractTitle($0.title), startAt: $0.start, endAt: $0.end,
-                allDay: $0.allDay, calendarName: String($0.calendar.prefix(80))) }
+                allDay: $0.allDay, calendarName: utf16Prefix($0.calendar, 80),
+                attendeeCount: max($0.attendees, $0.attendeeNames.count),
+                attendeeNames: Array($0.attendeeNames.prefix(50).map { utf16Prefix($0, 120) }),
+                organizerIsMe: $0.organizerIsMe, location: $0.location.map { utf16Prefix($0, 200) },
+                recurring: $0.recurring, availability: .init(rawValue: $0.availability) ?? .busy,
+                notes: $0.notes.map { utf16Prefix($0, 2000) }) }
         return .init(date: dayString(dayStart, calendar), events: events)
     }
 }
 
-/// Blank → "(cím nélkül)"; long → cut on a character boundary to at most 200 UTF-16 units (the server counts those).
+/// Cuts on a character boundary to at most `limit` UTF-16 units (the server counts those, not Characters).
+func utf16Prefix(_ s: String, _ limit: Int) -> String {
+    var out = ""
+    for ch in s {
+        if out.utf16.count + String(ch).utf16.count > limit { break }
+        out.append(ch)
+    }
+    return out
+}
+
+/// Blank → "(cím nélkül)"; long → cut to at most 200 UTF-16 units.
 func contractTitle(_ raw: String) -> String {
     let t = raw.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !t.isEmpty else { return "(cím nélkül)" }
-    var out = ""
-    for ch in t {
-        if out.utf16.count + String(ch).utf16.count > 200 { break }
-        out.append(ch)
-    }
+    let out = utf16Prefix(t, 200)
     return out.isEmpty ? "(cím nélkül)" : out
 }

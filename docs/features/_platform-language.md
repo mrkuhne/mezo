@@ -279,6 +279,8 @@ The five rules:
 
 ## 4. Data model & API
 
+- B7 K1 added five `CAPACITY_*` error keys (stale proposal, move onto an occupied day, move to another week, day already started, adjustment not undoable) to both `messages_hu.properties` and `messages_en.properties`; the K1 brief reason line is server-written Hungarian ([`capacity.md`](capacity.md)).
+
 - **Table:** `app_user.language varchar(2) NOT NULL DEFAULT 'hu'`, `ck_app_user_language CHECK (language IN ('hu','en'))` — `backend/src/main/resources/db/changelog/1.1.0/script/202610111200_mezo-n4wf5.11_app_user_language.sql`. Every existing account is `hu`.
 - **Contract:** [`api/feature/auth/auth.yml`](../../api/feature/auth/auth.yml) — `Language` enum (`hu` | `en`); `MeResponse.language` (required); `RegisterRequest.language` (optional, default `hu`); `PUT /api/auth/me/language` `{ language }` → `MeResponse` (400 `VALIDATION_INVALID_VALUE` for anything else). DTOs are generated.
 - **Entity / repository:** `AppUserEntity.language`; `AppUserRepository.updateLanguage(id, language)` (targeted `@Modifying`, like `updateAccount`). `AuthService.updateLanguage` / `register` normalise through `UserLanguage.normalize`.

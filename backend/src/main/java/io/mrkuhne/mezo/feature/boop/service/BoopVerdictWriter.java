@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.boop.service;
 
 import io.mrkuhne.mezo.feature.boop.config.BoopProperties;
+import io.mrkuhne.mezo.feature.boop.port.BoopCapacityPort;
 import io.mrkuhne.mezo.feature.boop.service.BoopScores.Scores;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
@@ -59,7 +60,20 @@ public class BoopVerdictWriter {
 
     /** Everything the brief says in words. Only {@code nextMealTip} and {@code conflict} may be null. */
     public record Verdicts(Verdict forma, Verdict alvas, Verdict mozgas, Verdict fuel, Verdict pulzus,
-                           List<BriefLine> brief, String tonightTip, String nextMealTip, Conflict conflict) {}
+                           List<BriefLine> brief, String tonightTip, String nextMealTip, Conflict conflict,
+                           String capacityReason) {
+
+        /** Without a capacity reason (it stays null). */
+        public Verdicts(Verdict forma, Verdict alvas, Verdict mozgas, Verdict fuel, Verdict pulzus,
+                        List<BriefLine> brief, String tonightTip, String nextMealTip, Conflict conflict) {
+            this(forma, alvas, mozgas, fuel, pulzus, brief, tonightTip, nextMealTip, conflict, null);
+        }
+
+        /** The same words with the rule-built capacity reason (the fallback the model may rephrase). */
+        public Verdicts withCapacityReason(String reason) {
+            return new Verdicts(forma, alvas, mozgas, fuel, pulzus, brief, tonightTip, nextMealTip, conflict, reason);
+        }
+    }
 
     private final ObjectProvider<CompanionLlm> companionLlm;
     private final LlmCallContextHolder llmCallContextHolder;
@@ -100,11 +114,17 @@ public class BoopVerdictWriter {
      * old cancel threw every answer away). The provider client's own timeouts end a hung call.
      */
     public CompletableFuture<Verdicts> ask(BoopDay d, Scores s, LocalTime now, Verdicts fallback) {
+        return ask(d, s, now, fallback, null);
+    }
+
+    /** As {@link #ask(BoopDay, Scores, LocalTime, Verdicts)}, with the day's capacity in the prompt (nullable). */
+    public CompletableFuture<Verdicts> ask(BoopDay d, Scores s, LocalTime now, Verdicts fallback,
+                                           BoopCapacityPort.View capacity) {
         CompanionLlm llm = companionLlm.getIfAvailable();
         if (llm == null) {
             return CompletableFuture.completedFuture(null);
         }
-        String userMessage = prompts.context(d, s, now, fallback.conflict());
+        String userMessage = prompts.context(d, s, now, fallback.conflict(), capacity);
         // The holder and the actor are thread-bound and the call runs on the pool, so both are bound
         // INSIDE the task (the LlmMemoryReranker pattern, mezo-ozri.1/.7): the llm-log row and the
         // per-user cap still see the owner.
@@ -161,7 +181,30 @@ public class BoopVerdictWriter {
             brief(answer.get("brief"), fallback.brief()),
             text(answer.get("tonightTip"), fallback.tonightTip()),
             text(answer.get("nextMealTip"), fallback.nextMealTip()),
-            fallback.conflict());
+            fallback.conflict(),
+            acceptReason(str(answer.get("capacityReason")), fallback.capacityReason()));
+    }
+
+    private static final java.util.regex.Pattern DIGITS = java.util.regex.Pattern.compile("\\d+");
+
+    /**
+     * The model may rephrase the capacity reason but never bring a number: it is accepted only if every digit run
+     * in it also appears in the rule text {@code facts}; otherwise (or when blank) the rule text stays.
+     */
+    static String acceptReason(String modelReason, String facts) {
+        if (modelReason == null || modelReason.isBlank()) {
+            return facts;
+        }
+        Set<String> allowed = new java.util.HashSet<>();
+        if (facts != null) {
+            DIGITS.matcher(facts).results().forEach(m -> allowed.add(m.group()));
+        }
+        boolean invented = DIGITS.matcher(modelReason).results().anyMatch(m -> !allowed.contains(m.group()));
+        if (invented) {
+            log.warn("Boop brief capacity reason had a number the rules did not give, using the rule reason");
+            return facts;
+        }
+        return modelReason;
     }
 
     /** The JSON object inside the answer, or null. */

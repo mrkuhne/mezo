@@ -6,6 +6,9 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+import java.util.List;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -45,4 +48,26 @@ public class CalendarEventEntity extends OwnedEntity {
 
     @Column(name = "calendar_name", length = 80)
     private String calendarName;
+
+    @Column(name = "attendee_count")
+    private Integer attendeeCount;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "attendee_names", columnDefinition = "jsonb")
+    private List<String> attendeeNames;
+
+    @Column(name = "organizer_is_me")
+    private Boolean organizerIsMe;
+
+    @Column(length = 200)
+    private String location;
+
+    private Boolean recurring;
+
+    /** busy | free | tentative | unavailable. */
+    @Column(length = 16)
+    private String availability;
+
+    @Column(length = 2000)
+    private String notes;
 }
