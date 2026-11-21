@@ -29,6 +29,7 @@ from the Levél area and the Ma wall.
 | 5 | Ship L1 alone (counts only) or with L2? | **One release.** The first thing he sees on the phone is the scored digest. |
 | 6 | What counts as worth a minute | **The four groups of §4**, proposed by Claude and accepted as proposed ("Igen, így jó"). |
 | 7 | How it is built | **The mirror Gmail read by the server twice a day** (§3, approach A). |
+| 8 | Does the mirror exist yet? | **No — he sets it up on 2026-11-21** from Claude's guide (new Gmail, 2-step verification, forwarding from Gmail and iCloud; the app password waits for the Fiókok screen). Real mail accumulates while the backend is built; the day-one header check and the carrier rules use it. |
 
 ## 3. Approaches
 
