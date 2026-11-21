@@ -198,6 +198,20 @@ class MailApiIT extends ApiIntegrationTest {
         sens.setParcelKey(null);
         sens.setSource("rule");
         items.saveAndFlush(sens);
+        MailMessageEntity news = mail.message(u.id(), box.getId(), 77L);
+        news.setFromName("Heti Receptek");
+        messages.saveAndFlush(news);
+        MailItemEntity newsItem = mail.item(u.id(), news.getId(), null, null);
+        newsItem.setGrp("rest");
+        newsItem.setCategory("hírlevél");
+        newsItem.setTitle("Öt vacsora a hétre");
+        newsItem.setSummary("Kitalált összefoglaló.");
+        newsItem.setWhy("");
+        newsItem.setParcelState(null);
+        newsItem.setCarrier(null);
+        newsItem.setParcelKey(null);
+        newsItem.setSource("rule");
+        items.saveAndFlush(newsItem);
 
         MailDigestResponse d = getForBody("/api/mail/digest?date=2026-11-21", u.headers(), HttpStatus.OK,
             MailDigestResponse.class);
@@ -218,7 +232,16 @@ class MailApiIT extends ApiIntegrationTest {
         assertThat(sc.getSummary()).isEmpty();
         assertThat(sc.getFromAddress()).isEqualTo("info@otpbank.hu");
         assertThat(d.getPeople()).isEmpty();
-        assertThat(d.getRest()).isEmpty();
+        assertThat(d.getRest()).hasSize(1);
+        var group = d.getRest().getFirst();
+        assertThat(group.getCategory()).isEqualTo("hírlevél");
+        assertThat(group.getCount()).isEqualTo(1);
+        assertThat(group.getItems()).hasSize(1);
+        assertThat(group.getItems().getFirst().getTitle()).isEqualTo("Öt vacsora a hétre");
+        assertThat(group.getItems().getFirst().getSummary()).isEqualTo("Kitalált összefoglaló.");
+        assertThat(group.getItems().getFirst().getFromName()).isEqualTo("Heti Receptek");
+        // a sensitive mail is never a line under "A többi"
+        assertThat(d.getRest()).flatExtracting(g -> g.getItems()).extracting(i -> i.getTitle()).doesNotContain("OTP Bank");
         assertThat(d.getRulesOnly()).isFalse();
     }
 

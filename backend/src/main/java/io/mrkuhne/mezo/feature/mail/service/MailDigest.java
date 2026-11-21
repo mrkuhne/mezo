@@ -37,7 +37,14 @@ public record MailDigest(Instant lastRunAt, String mailboxState, boolean rulesOn
                            Long gmMsgid) {
     }
 
-    /** One folded "A többi" row: a category and how many mails it holds. */
-    public record RestGroup(String category, int count) {
+    /**
+     * One folded "A többi" row: a category, how many mails it holds, and up to 20 of the newest as one line each.
+     * Never a sensitive mail — those are their own group, sender only.
+     */
+    public record RestGroup(String category, int count, List<RestItem> items) {
+    }
+
+    /** One line under a folded category: the mail's own title and summary, and who sent it. */
+    public record RestItem(UUID id, String title, String summary, String fromName) {
     }
 }

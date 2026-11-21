@@ -142,6 +142,38 @@ struct LevelLogicTests {
         #expect(ok?.title == "Akció k" && ok?.sub == "S k" && ok?.eyebrow.contains(where: \.isNumber) == false)
     }
 
+    @Test func highlightEyebrowsAreTheSpikesAndSubPrefersWhy() {
+        let now = Self.at(2026, 11, 21, 9)
+        let deal = LevelItem(id: "w", group: .deal, title: "T", summary: "Összefoglaló", why: "Mert a figyelőlistádon van.", score: 9,
+                             screen: .clean, notifiable: true)
+        let h = levelHighlight(LevelDigest(deals: [deal]), now: now)
+        #expect(h?.eyebrow == "Megér egy percet" && h?.sub == "Mert a figyelőlistádon van.")
+        var noWhy = deal; noWhy.why = ""
+        #expect(levelHighlight(LevelDigest(deals: [noWhy]), now: now)?.sub == "Összefoglaló")
+        let today = LevelItem(id: "d0", group: .deadline, title: "Ma", dueAt: Self.at(2026, 11, 21, 20))
+        let tomorrow = LevelItem(id: "d1", group: .deadline, title: "Holnap", dueAt: Self.at(2026, 11, 22, 10))
+        #expect(levelHighlight(LevelDigest(deadlines: [tomorrow]), now: now)?.eyebrow == "Holnap esedékes")
+        let both = levelHighlight(LevelDigest(deadlines: [tomorrow, today]), now: now)
+        #expect(both?.item.id == "d0" && both?.eyebrow == "Ma esedékes")
+    }
+
+    @Test func restGroupsCarryTheirLinesAndABadOneDropsOnlyItself() throws {
+        let json = #"""
+        {"rest":[{"category":"Hírlevelek","count":12,"items":[
+          {"id":"a","title":"Heti Receptek","summary":"Öt vacsora","fromName":"Receptek"},
+          {"id":5,"title":"bad id"},
+          {"id":"b","title":"Futónaptár","summary":"Őszi versenyek"}]},
+          {"category":"Értesítők","count":9}]}
+        """#
+        let d = try JSONDecoder().decode(LevelDigest.self, from: Data(json.utf8))
+        #expect(d.rest.map(\.count) == [12, 9])
+        #expect(d.rest[0].items.map(\.title) == ["Heti Receptek", "Futónaptár"])
+        #expect(d.rest[0].items[0].fromName == "Receptek")
+        #expect(d.rest[1].items.isEmpty, "an older server sends no items: still decodes")
+        let again = try JSONDecoder().decode(LevelDigest.self, from: JSONEncoder().encode(d))
+        #expect(again.rest == d.rest)
+    }
+
     @Test func errorTextNamesTheCooldownAndAuthFailure() {
         #expect(levelErrorText(.conflict("MAIL_RUN_COOLDOWN")).contains("várj"))
         #expect(levelErrorText(.rejected("MAIL_AUTH_FAILED")).contains("jelszót"))

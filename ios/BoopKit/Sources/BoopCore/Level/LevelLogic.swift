@@ -140,10 +140,10 @@ public struct LevelHighlight: Equatable, Sendable {
     public let eyebrow: String
     /// The server's own words — never composed from figures.
     public var title: String { item.title }
-    public var sub: String { item.summary }
+    public var sub: String { item.why.isEmpty ? item.summary : item.why }
 }
 
-/// The one card that reads big at the top: the best notifiable deal; else the nearest deadline due tomorrow; else the
+/// The one card that reads big at the top: the best notifiable deal; else the nearest deadline due today or tomorrow; else the
 /// best deal at score 7 or more; else nothing. Flagged and unknown-screen items are never picked.
 public func levelHighlight(_ d: LevelDigest?, now: Date, calendar: Calendar = levelCalendar) -> LevelHighlight? {
     guard let d else { return nil }
@@ -157,16 +157,17 @@ public func levelHighlight(_ d: LevelDigest?, now: Date, calendar: Calendar = le
     }
     let safeDeals = d.deals.filter { $0.isSafeToSurface && $0.screen == .clean }
     if let deal = best(safeDeals.filter(\.notifiable)) {
-        return LevelHighlight(item: deal, kind: .deal, eyebrow: "Hamarosan lejár")
+        return LevelHighlight(item: deal, kind: .deal, eyebrow: "Megér egy percet")
     }
-    let tomorrow = d.deadlines
-        .filter { $0.isSafeToSurface && $0.dueAt.map { levelDueMark($0, now: now, calendar: calendar) == "holnap" } == true }
+    let soon = d.deadlines
+        .filter { $0.isSafeToSurface && $0.dueAt.map { ["ma", "holnap"].contains(levelDueMark($0, now: now, calendar: calendar)) } == true }
         .min { ($0.dueAt ?? .distantFuture) < ($1.dueAt ?? .distantFuture) }
-    if let t = tomorrow {
-        return LevelHighlight(item: t, kind: .deadline, eyebrow: "Holnap esedékes")
+    if let t = soon {
+        let today = t.dueAt.map { levelDueMark($0, now: now, calendar: calendar) == "ma" } == true
+        return LevelHighlight(item: t, kind: .deadline, eyebrow: today ? "Ma esedékes" : "Holnap esedékes")
     }
     if let deal = best(safeDeals.filter { ($0.score ?? 0) >= 7 }) {
-        return LevelHighlight(item: deal, kind: .deal, eyebrow: "Megér egy pillantást")
+        return LevelHighlight(item: deal, kind: .deal, eyebrow: "Megér egy percet")
     }
     return nil
 }

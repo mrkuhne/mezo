@@ -169,18 +169,49 @@ struct LevelDealCard: View {
     }
 }
 
-/// One category of "A többi": its name and how many mails the server put there (nothing under it to unfold — the
-/// digest carries counts, not the mails).
+/// One category of "A többi": its name and how many mails the server put there; with lines under it, a tap unfolds
+/// one line per mail (collapsed by default, as in the spike).
 struct LevelRestRow: View {
     let category: String, count: Int
+    let lines: [LevelRestItem]
+    let open: Bool
+    var onToggle: () -> Void
+    private var hue: Color { levelHue.glow }
     var body: some View {
-        HStack(spacing: 12) {
-            Text(category).nkFont(15, .medium).foregroundStyle(.white)
-            Spacer()
-            Text("\(count)").font(.custom(Lagy.outfitFamily, size: 17).weight(.medium)).foregroundStyle(.white).monospacedDigit()
+        VStack(alignment: .leading, spacing: 0) {
+            Button(action: onToggle) {
+                HStack(spacing: 12) {
+                    Text(category).nkFont(15, .medium).foregroundStyle(.white)
+                    Spacer()
+                    Text("\(count)").font(.custom(Lagy.outfitFamily, size: 17).weight(.medium)).foregroundStyle(.white).monospacedDigit()
+                    Image(systemName: "chevron.right").nkFont(12, .semibold).foregroundStyle(.white.opacity(lines.isEmpty ? 0 : 0.5))
+                        .rotationEffect(.degrees(open ? 90 : 0))
+                }
+                .padding(.vertical, 14).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).allowsHitTesting(!lines.isEmpty)
+            .accessibilityElement(children: .combine)
+            .accessibilityHint(lines.isEmpty ? "" : (open ? "Összecsukja" : "Kinyitja"))
+            if open {
+                VStack(alignment: .leading, spacing: 12) {
+                    ForEach(lines) { l in
+                        HStack(alignment: .top, spacing: 12) {
+                            Capsule().fill(hue.opacity(0.7)).frame(width: 2.5, height: 28)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(levelPlain(l.title)).nkFont(14, .semibold).foregroundStyle(.white)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                if !l.summary.isEmpty {
+                                    Text(levelPlain(l.summary)).nkFont(12.5).foregroundStyle(.white.opacity(0.6))
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
+                        }
+                        .accessibilityElement(children: .combine)
+                    }
+                }
+                .padding(.bottom, 14).padding(.leading, 4)
+            }
         }
-        .padding(.vertical, 14)
-        .accessibilityElement(children: .combine)
     }
 }
 

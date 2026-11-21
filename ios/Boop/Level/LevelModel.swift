@@ -370,3 +370,17 @@ let levelGuideSteps: [(title: String, body: String)] = [
     ("Továbbítás az iCloudból", "Az iCloud-levelezésnél ugyanez, ha használod."),
     ("A Boop-fiók hozzáadása a Gmail-apphoz", "Így a „Megnyitás a Gmailben” gomb egyenesen a levelet nyitja meg."),
 ]
+
+// MARK: - "A többi" folds
+
+/// Which categories are unfolded after a tap on one. Collapsed by default; a second tap folds it again.
+func levelToggleFold(_ open: Set<String>, _ category: String) -> Set<String> {
+    var next = open
+    if !next.insert(category).inserted { next.remove(category) }
+    return next
+}
+
+/// The highlight's score chip: only for a deal that has a score and was not made rules-only.
+func levelHighlightScore(_ h: LevelHighlight, rulesOnly: Bool) -> Int? {
+    h.kind == .deal && !rulesOnly ? h.item.score : nil
+}

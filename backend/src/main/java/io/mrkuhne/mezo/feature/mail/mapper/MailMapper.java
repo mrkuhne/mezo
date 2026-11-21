@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.mail.mapper;
 import io.mrkuhne.mezo.api.dto.MailDigestItem;
 import io.mrkuhne.mezo.api.dto.MailDigestResponse;
 import io.mrkuhne.mezo.api.dto.MailDigestRestGroup;
+import io.mrkuhne.mezo.api.dto.MailDigestRestItem;
 import io.mrkuhne.mezo.api.dto.MailMailboxResponse;
 import io.mrkuhne.mezo.api.dto.MailRuleProposal;
 import io.mrkuhne.mezo.api.dto.MailRuleRow;
@@ -30,6 +31,8 @@ public interface MailMapper {
     MailDigestItem item(MailDigest.ItemView i);
 
     MailDigestRestGroup restGroup(MailDigest.RestGroup g);
+
+    MailDigestRestItem restItem(MailDigest.RestItem i);
 
     default MailDigestResponse digest(MailDigest d) {
         return new MailDigestResponse()

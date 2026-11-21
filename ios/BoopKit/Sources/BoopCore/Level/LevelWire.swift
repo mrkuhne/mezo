@@ -254,14 +254,36 @@ public struct LevelItem: Codable, Equatable, Sendable, Identifiable {
 }
 
 /// "category · count" of the mail Boop handled and folded away.
+/// One line under a folded category of "A többi": the mail's own title and summary, and who sent it.
+public struct LevelRestItem: Codable, Equatable, Sendable, Identifiable {
+    public var id: String
+    public var title: String
+    public var summary: String
+    public var fromName: String?
+    public init(id: String, title: String, summary: String = "", fromName: String? = nil) {
+        self.id = id; self.title = title; self.summary = summary; self.fromName = fromName
+    }
+    private enum CodingKeys: String, CodingKey { case id, title, summary, fromName }
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let id: String = try c.decode(String.self, forKey: .id)   // a line without an id is dropped (Lossy)
+        self.id = id
+        title = c.lenient(.title, ""); summary = c.lenient(.summary, ""); fromName = c.optional(.fromName)
+    }
+}
+
 public struct LevelRestGroup: Codable, Equatable, Sendable {
     public var category: String
     public var count: Int
-    public init(category: String, count: Int) { self.category = category; self.count = count }
-    private enum CodingKeys: String, CodingKey { case category, count }
+    /// Up to 20 of the newest mails of the category; empty from a server that does not send them yet.
+    public var items: [LevelRestItem]
+    public init(category: String, count: Int, items: [LevelRestItem] = []) {
+        self.category = category; self.count = count; self.items = items
+    }
+    private enum CodingKeys: String, CodingKey { case category, count, items }
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        category = c.lenient(.category, ""); count = c.lenient(.count, 0)
+        category = c.lenient(.category, ""); count = c.lenient(.count, 0); items = c.lossyList(.items)
     }
 }
 

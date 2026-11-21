@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.feature.mail.repository.MailMessageRepository;
 import io.mrkuhne.mezo.feature.mail.repository.MailRunRepository;
 import io.mrkuhne.mezo.feature.mail.service.MailDigest.ItemView;
 import io.mrkuhne.mezo.feature.mail.service.MailDigest.RestGroup;
+import io.mrkuhne.mezo.feature.mail.service.MailDigest.RestItem;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.Duration;
 import java.time.Instant;
@@ -40,6 +41,7 @@ import org.springframework.stereotype.Service;
 public class MailDigestQuery {
 
     private static final int SLOTS = 12;
+    private static final int REST_ITEMS = 20;
 
     private final MailItemRepository items;
     private final MailMessageRepository messages;
@@ -71,7 +73,7 @@ public class MailDigestQuery {
         List<ItemView> deadlines = new ArrayList<>();
         List<ItemView> parcels = new ArrayList<>();
         List<ItemView> deals = new ArrayList<>();
-        Map<String, Integer> rest = new TreeMap<>();
+        Map<String, List<ItemView>> rest = new TreeMap<>();
         int worth = 0;
         for (MailItemEntity i : open) {
             MailMessageEntity m = byMessage.get(i.getMessageId());
@@ -105,7 +107,7 @@ public class MailDigestQuery {
                 }
                 default -> {
                     if (!m.getCreatedAt().isBefore(dayStart) && m.getCreatedAt().isBefore(dayEnd)) {
-                        rest.merge(i.getCategory(), 1, Integer::sum); // "A többi" follows the fetch, like arrived
+                        rest.computeIfAbsent(i.getCategory(), k -> new ArrayList<>()).add(view); // follows the fetch, like arrived
                     }
                 }
             }
@@ -116,7 +118,10 @@ public class MailDigestQuery {
         parcels.sort(Comparator.comparing(ItemView::stateChangedAt).reversed());
         deals.sort(Comparator.comparing(ItemView::score, Comparator.nullsLast(Comparator.reverseOrder())));
         List<RestGroup> restGroups = rest.entrySet().stream()
-            .map(e -> new RestGroup(e.getKey(), e.getValue()))
+            .map(e -> new RestGroup(e.getKey(), e.getValue().size(), e.getValue().stream()
+                .sorted(Comparator.comparing(ItemView::receivedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .limit(REST_ITEMS)
+                .map(v -> new RestItem(v.id(), v.title(), v.summary(), v.fromName())).toList()))
             .sorted(Comparator.comparingInt(RestGroup::count).reversed()).toList();
 
         MailMailboxEntity mailbox = mailboxes.findByCreatedBy(user).orElse(null);

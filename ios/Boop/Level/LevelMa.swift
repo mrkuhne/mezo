@@ -14,6 +14,7 @@ struct LevelMa: View {
     var onFiokok: () -> Void
     var onAsk: () -> Void
     var toast: (String) -> Void
+    @State private var openRest: Set<String> = []
     private let hue = levelHue
 
     var body: some View {
@@ -90,7 +91,8 @@ struct LevelMa: View {
                 emptyHighlight
             } else if let h = levelHighlight(d, now: now) {
                 NKHighlight(hue: hue, label: h.eyebrow, text: levelPlain(h.title), sub: levelPlain(h.sub),
-                            actions: [NKHighlightAction("Megnyitás a Gmailben", weight: .link) { levelOpen(levelGmailURLs(messageId: h.item.gmailMessageId)) }])
+                            actions: [NKHighlightAction("Megnyitás a Gmailben", weight: .link) { levelOpen(levelGmailURLs(messageId: h.item.gmailMessageId)) }],
+                            badge: levelHighlightScore(h, rulesOnly: d.rulesOnly).map { AnyView(LevelScoreChip(n: $0)) })
             }
             NKStatRow(levelStats(d), hue: hue)
             if let heat = levelHeat(d) {
@@ -202,7 +204,10 @@ struct LevelMa: View {
                 VStack(spacing: 0) {
                     ForEach(Array(groups.enumerated()), id: \.offset) { i, g in
                         if i > 0 { LevelHairline(inset: 0) }
-                        LevelRestRow(category: levelPlain(g.category), count: g.count)
+                        LevelRestRow(category: levelPlain(g.category), count: g.count, lines: g.items,
+                                     open: openRest.contains(g.category)) {
+                            withAnimation(.easeInOut(duration: 0.2)) { openRest = levelToggleFold(openRest, g.category) }
+                        }
                     }
                     Text("Elolvastam és elrendeztem őket — egyik sem kötődik a céljaidhoz.")
                         .nkFont(12.5).foregroundStyle(.white.opacity(0.5)).padding(.top, 6)

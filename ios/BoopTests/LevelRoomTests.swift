@@ -183,6 +183,27 @@ struct LevelRoomTests {
         #expect(levelStale(isStale: true, age: 30 * 3600)?.loud == true)
     }
 
+    @Test func restFoldsAreCollapsedByDefaultAndToggle() {
+        var open = Set<String>()
+        #expect(open.isEmpty)
+        open = levelToggleFold(open, "Hírlevelek")
+        #expect(open == ["Hírlevelek"])
+        open = levelToggleFold(open, "Értesítők")
+        #expect(open == ["Hírlevelek", "Értesítők"])
+        open = levelToggleFold(open, "Hírlevelek")
+        #expect(open == ["Értesítők"])
+    }
+
+    @Test func highlightShowsTheScoreOnlyForAScoredDeal() {
+        let deal = LevelItem(id: "d", group: .deal, title: "T", why: "W", score: 9, screen: .clean, notifiable: true)
+        let h = levelHighlight(LevelDigest(deals: [deal]), now: now)!
+        #expect(levelHighlightScore(h, rulesOnly: false) == 9)
+        #expect(levelHighlightScore(h, rulesOnly: true) == nil)
+        let due = LevelItem(id: "k", group: .deadline, title: "K", dueAt: ISO8601DateFormatter().date(from: "2026-11-22T09:00:00Z"))
+        let hd = levelHighlight(LevelDigest(deadlines: [due]), now: now)!
+        #expect(hd.kind == .deadline && levelHighlightScore(hd, rulesOnly: false) == nil)
+    }
+
     @Test func theOrbIsHowMuchOfThePostIsHandled() {
         #expect(levelOrbLevel(nil) == nil)
         #expect(levelOrbLevel(LevelDigest(arrived: 0)) == 1)

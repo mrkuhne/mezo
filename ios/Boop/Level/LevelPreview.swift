@@ -115,7 +115,12 @@ final class LevelPreviewModel: @unchecked Sendable {
                 deal("e3", "Prémium Utazás Klub", "Maldív-szigetek, 70% kedvezmény",
                      "Gyanús levél: a link nem oda vezet, ahová írja. Nem pontoztam, és ne kattints rá.", nil, until: nil, flagged: true),
             ],
-            rest: [LevelRestGroup(category: "Hírlevelek", count: 12), LevelRestGroup(category: "Értesítők", count: 9),
+            rest: [LevelRestGroup(category: "Hírlevelek", count: 12, items: [
+                       LevelRestItem(id: "r1", title: "Heti Receptek", summary: "Öt vacsora, egyik sem a terved része"),
+                       LevelRestItem(id: "r2", title: "Futónaptár", summary: "Őszi versenyek a megyében"),
+                       LevelRestItem(id: "r3", title: "Tech Reggeli", summary: "Napi összefoglaló")]),
+                   LevelRestGroup(category: "Értesítők", count: 9, items: [
+                       LevelRestItem(id: "r4", title: "Jelszóváltás megerősítve", summary: "Egy webshop fiókjáról")]),
                    LevelRestGroup(category: "Közösségi", count: 6)])
     }
 }

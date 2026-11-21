@@ -603,6 +603,10 @@ class MailDigestPipelineIT extends AbstractIntegrationTest {
         assertThat(digest.deals().get(0).flagged()).isTrue();
         assertThat(digest.rest()).hasSize(1);
         assertThat(digest.rest().get(0).count()).isEqualTo(2);
+        assertThat(digest.rest().get(0).items()).extracting(MailDigest.RestItem::title)
+            .containsExactlyInAnyOrder("Hírlevél 1", "Hírlevél 2");
+        assertThat(digest.rest().stream().flatMap(rg -> rg.items().stream()).map(MailDigest.RestItem::title))
+            .doesNotContain(digest.sensitive().get(0).title());
         assertThat(digest.rulesOnly()).isFalse();
         assertThat(digest.mailboxState()).isEqualTo("connected");
         // notifiable: the deadline due tomorrow (rule-sourced, no screen needed); the deal has no valid-until

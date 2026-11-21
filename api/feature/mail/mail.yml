@@ -173,10 +173,19 @@ components:
         gmailMessageId: { type: string, nullable: true, description: 'X-GM-MSGID as a decimal string; the phone builds the Gmail link from it' }
     MailDigestRestGroup:
       type: object
-      required: [category, count]
+      required: [category, count, items]
       properties:
         category: { type: string }
         count: { type: integer }
+        items: { type: array, items: { $ref: '#/components/schemas/MailDigestRestItem' }, description: 'Up to 20 newest mails of the category, one line each; never a sensitive mail' }
+    MailDigestRestItem:
+      type: object
+      required: [id, title, summary]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        summary: { type: string }
+        fromName: { type: string, nullable: true }
     MailFeedbackRequest:
       type: object
       required: [verdict]
