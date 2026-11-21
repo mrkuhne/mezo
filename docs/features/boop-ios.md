@@ -741,18 +741,29 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     [`2026-11-20-boop-blokk-szerkeszto-design.md`](../superpowers/specs/2026-11-20-boop-blokk-szerkeszto-design.md) §6,
     look: the spike on `spike/boop-blokk-szerkeszto`)** — `BuilderDayCard` rows are ≡ handle (drag reorders through
     `BlockDraft.move`, no lift scale under reduced motion; VoiceOver *Feljebb/Lejjebb* actions), name, subtitle from the
-    row's own `repMin/repMax/targetRIR`, set stepper (wraps under the name when the card's inner width is under 364 pt),
+    row's own `repMin/repMax/targetRIR` led by the **sub-muscle** of the row's fine token (`DraftExercise.muscleKey` →
+    `SubMuscles.name`, e.g. *Hát · középső*; one line via `ViewThatFits`, else the muscle above the numbers — the day's
+    top chips stay coarse groups, volume still groups by `muscle`), set stepper (wraps under the name when the card's inner width is under 364 pt),
     ⋯ menu (*Csere · Beállítások · Törlés*); delete leaves an undo line; tap → `DayEditSettingsSheet` (rep range,
-    reserve, starting weight, warm-ups, *TE ÁLLÍTOTTAD*, *Visszaállítom az edzésmódra*); ＋ → `DayEditAddSheet` (muscle
-    chips *kevés* first, then the day's, then *Más izom*; ≤5 suggestions from `BlockBuilderModel.suggest`, then the
-    full list); ⋯ *Csere* → `DayEditSwapSheet`. Empty day line; the day of today's open workout
+    reserve, starting weight, warm-ups, *TE ÁLLÍTOTTAD*, *Visszaállítom az edzésmódra*); ＋ → `DayEditAddSheet`
+    (`mezo-r36n9.127`, look: spike `spike/boop-izomreszek`): a compact *Izmok: … ▾* dropdown (`SubMuscles.summary`, a
+    whole group by name, else *Hát · középső +2*, *Minden izom* when empty) opening `DayEditMusclePanel` — group
+    checkbox (all/none/partial, drawn `DayEditCheckbox`), sub-muscle pills, *kevés* once on a group under its band (on the
+    part for the stand-alone leg tokens), *Törlés* / *Kész*, scrolls on small phones, ticks apply live (250 ms settle);
+    ≤5 suggestions from `BlockBuilderModel.suggest(mode: "add", muscles:)` — nothing picked sends `muscles: []` and the
+    server answers for the week's under-band groups (*AJÁNLOM · A HÉT KEVÉS IZMAIRA* + the one-line hint) — then the full
+    list filtered to the picked tokens; ⋯ *Csere* → `DayEditSwapSheet`. Every card and list row in these sheets and the
+    player's `SwapSheet` is the shared `ExercisePickCard` / `ExercisePickRow` (`Edzes/SwapSheet.swift`): the catalogue
+    start still (`imageStartUrl` → `BoopConfig.mediaURL`, 44 pt `NKRemoteThumb`, the glyph tile without one), the
+    catalogue name, *hát · középső · összetett* (`exerciseRoleLine`), the server's reason only. Empty day line; the day of today's open workout
     (`BlockBuilderModel.lockedDay`, passed by `EdzesRoom`) is read-only; *Mentés* on a structurally changed day that a
     waiting weekly proposal touches (`pendingReviewDays`, from the proposals the load already read) asks *Függő heti
     javaslat* first. Indices of the evaluation (recommendations, cap warnings, proposals) are hidden while the line-up
     differs from the evaluated one (`indicesFresh`); a swapped/new row drops the weekly AI note (`aiNote(_:)`). The main
     button falls back to *Nincs változás* where *Nincs mit menteni* does not fit (`mezo-r36n9.118`). DEBUG (with
     `-previewBlokk YES -previewBlokkOpen epito -previewBlokkTab napok`): `-previewBlokkEdit
-    default|menu|settings|add|swap|undo|empty|locked|confirm`, `-previewBlokkDay N` (day page),
+    default|menu|settings|add|addOpen|addEmpty|swap|undo|empty|locked|confirm` (*add*: two sub-muscles picked,
+    *addOpen*: the dropdown open, *addEmpty*: nothing picked), `-previewBlokkDay N` (day page),
     `-previewBlokkSuggest fail` (suggestions 503 → the full list with its one-line note).
   - **The identity-aware draft (`BlockDraft`, `BlockBuilderModel`; no wire ids in the editor).** A `DraftExercise.id` is a
     **local key** — the server's row id for a loaded row, `new-<uuid>` for one added in the draft; a swap keeps the row's key,

@@ -4,7 +4,8 @@ import BoopCore
 import BoopDesign
 
 // The block builder's day editor (mezo-r36n9.116, spec 2026-11-20-boop-blokk-szerkeszto-design.md §6): the row's
-// settings sheet, the add sheet (muscle first, then up to five suggestions, then the full list) and the swap sheet
+// settings sheet, the add sheet (the sub-muscle dropdown, then up to five suggestions, then the full list — the
+// multi-select look is the approved spike `spike/boop-izomreszek`, mezo-r36n9.127) and the swap sheet
 // („Mire cseréljük a blokk végéig?"). The add and swap sheets wear the player's `SwapSheet` look. Every number and
 // suggestion comes from the server; the sheets only call the draft's edit API.
 
@@ -41,14 +42,14 @@ struct DayEditMenuBackdrop: ViewModifier {
 
 enum DayEditSheet: Identifiable, Equatable {
     case settings(String)
-    /// The day, and a muscle chosen up front (simulator review only).
-    case add(Int, muscle: String?)
+    /// The day, the sub-muscles picked up front and the dropdown open (both simulator review only).
+    case add(Int, muscles: Set<String> = [], open: Bool = false)
     case swap(String)
 
     var id: String {
         switch self {
         case .settings(let id): "s\(id)"
-        case .add(let d, _): "a\(d)"
+        case .add(let d, _, _): "a\(d)"
         case .swap(let id): "w\(id)"
         }
     }
@@ -248,13 +249,14 @@ private struct DayEditSuggestions: View {
     let load: DayEditSuggestLoad
     let taken: Set<String>
     let empty: String
+    var header = "AJÁNLOM"
     let onPick: (WireCatalogItem, Prescription?) -> Void
 
     var body: some View {
         switch load {
         case .idle: EmptyView()
         case .loading:
-            DayEditHeader()
+            DayEditHeader(text: header)
             ProgressView().tint(.white).frame(maxWidth: .infinity, minHeight: 90)
         case .failed:
             Text("Most nem érem el az ajánlásokat — a teljes listából választhatsz.")
@@ -263,7 +265,7 @@ private struct DayEditSuggestions: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
         case .ready(let s):
             let picks = Array(s.suggestions.filter { !$0.exercise.isOn(taken) && $0.exercise.asCatalog != nil }.prefix(5))
-            DayEditHeader()
+            DayEditHeader(text: header)
             if picks.isEmpty { NKNoFreshData(empty) }
             ForEach(Array(picks.enumerated()), id: \.element.exercise.id) { i, p in
                 Button { onPick(p.exercise, p.prescription) } label: { DayEditCard(s: p, first: i == 0) }.buttonStyle(.plain)
@@ -273,15 +275,16 @@ private struct DayEditSuggestions: View {
 }
 
 private struct DayEditHeader: View {
+    let text: String
     var body: some View {
-        Text("AJÁNLOM").nkFont(10, .medium, design: .monospaced).tracking(1.4)
+        Text(text).nkFont(10, .medium, design: .monospaced).tracking(1.4)
             .foregroundStyle(.white.opacity(0.5)).padding(.top, 4)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
 private func dayEditRoleLine(_ item: WireCatalogItem) -> String {
-    "\(planMuscleName(item.coarse)) · \(SwapSheet.typeName(ExerciseType(wire: item.type)))"
+    exerciseRoleLine(muscle: item.muscle ?? "", type: ExerciseType(wire: item.type))
 }
 
 private struct DayEditCard: View {
@@ -289,27 +292,10 @@ private struct DayEditCard: View {
     let first: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(s.exercise.name).nkFont(17, .medium).foregroundStyle(.white).lineLimit(2).minimumScaleFactor(0.8)
-                Spacer(minLength: 8)
-                Text(dayEditRoleLine(s.exercise)).nkFont(10, design: .monospaced).foregroundStyle(.white.opacity(0.5)).lineLimit(1)
-            }
-            Text(s.reasonText).nkFont(14).foregroundStyle(.white.opacity(0.82))
-                .fixedSize(horizontal: false, vertical: true)
-            if let last = s.lastTopSet {
-                Text("Legutóbb: \(SwapSheet.lastText(kg: last.weightKg, reps: last.reps))")
-                    .nkFont(12, design: .monospaced).foregroundStyle(planHue.glow)
-            } else {
-                Text("Ezt még nem csináltad").nkFont(12, design: .monospaced).foregroundStyle(.white.opacity(0.4))
-            }
-        }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.white.opacity(first ? 0.11 : 0.06)))
-        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(.white.opacity(first ? 0.22 : 0), lineWidth: 0.5))
-        .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .accessibilityElement(children: .combine)
+        ExercisePickCard(name: s.exercise.name, image: BoopConfig.mediaURL(s.exercise.imageStartUrl),
+                         role: dayEditRoleLine(s.exercise), reason: s.reasonText,
+                         last: s.lastTopSet.map { SwapSheet.lastText(kg: $0.weightKg, reps: $0.reps) },
+                         first: first, hue: planHue)
     }
 }
 
@@ -361,25 +347,8 @@ private struct DayEditFullList: View {
     }
 
     private func plainRow(_ item: WireCatalogItem) -> some View {
-        let quiet = label(item)
-        return HStack(spacing: 10) {
-            NKRemoteThumb(nil, size: 36).opacity(quiet == nil ? 1 : 0.6)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(item.name).nkFont(14).foregroundStyle(.white.opacity(quiet == nil ? 1 : 0.6)).lineLimit(1)
-                Text(dayEditRoleLine(item)).nkFont(11, design: .monospaced).foregroundStyle(.white.opacity(0.45))
-            }
-            Spacer(minLength: 0)
-            if let quiet {
-                Text(quiet).nkFont(10, .medium, design: .monospaced).foregroundStyle(.white.opacity(0.6))
-                    .lineLimit(1)
-                    .padding(.horizontal, 8).padding(.vertical, 4)
-                    .background(Capsule().fill(.white.opacity(0.08)))
-            }
-        }
-        .padding(.horizontal, 12).padding(.vertical, 9)
-        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(.white.opacity(0.05)))
-        .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .accessibilityElement(children: .combine)
+        ExercisePickRow(name: item.name, image: BoopConfig.mediaURL(item.imageStartUrl), role: dayEditRoleLine(item),
+                        quiet: label(item))
     }
 }
 
@@ -400,109 +369,285 @@ struct DayEditAddSheet: View {
     let model: BlockBuilderModel
     let day: Int
     let onPick: (WireCatalogItem, Prescription?) -> Void
-    @State private var muscle: String?
-    @State private var others = false
+    /// The fine catalogue tokens picked in the dropdown; none = the week's under-band groups (the server's).
+    @State private var picked: Set<String>
+    @State private var open: Bool
     @State private var showAll = false
     @State private var query = ""
     @State private var load: DayEditSuggestLoad = .idle
+    @State private var rowFrame: CGRect = .zero
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    init(model: BlockBuilderModel, day: Int, muscle: String?, onPick: @escaping (WireCatalogItem, Prescription?) -> Void) {
+    private static let space = "dayEditAdd"
+
+    init(model: BlockBuilderModel, day: Int, muscles: Set<String> = [], open: Bool = false,
+         onPick: @escaping (WireCatalogItem, Prescription?) -> Void) {
         self.model = model; self.day = day; self.onPick = onPick
-        _muscle = State(initialValue: muscle)
+        _picked = State(initialValue: muscles)
+        _open = State(initialValue: open)
     }
 
-    /// Muscles under their band this week (kevés) first, in body order.
-    private var under: [String] { model.outside.filter { $0.fit == "below" }.map(\.muscle) }
-    /// Then the banded muscles this day already trains.
-    private var dayMuscles: [String] {
-        let own = Set((model.draft?.days[safe: day]?.exercises ?? []).map(\.muscle))
-        return model.bandedMuscles.map(\.muscle).filter { own.contains($0) && !under.contains($0) }
-    }
-    /// Everything else behind „Más izom".
-    private var rest: [String] {
-        var seen = Set(under + dayMuscles)
-        return (model.bandedMuscles.map(\.muscle) + ["calf", "core"]).filter { seen.insert($0).inserted }
-    }
+    /// Coarse groups under their band this week (the evaluation's) — their „kevés" mark in the dropdown.
+    private var under: Set<String> { Set(model.outside.filter { $0.fit == "below" }.map(\.muscle)) }
 
     var body: some View {
         let d = model.draft?.days[safe: day]
         let taken = dayEditTaken(d)
-        NKSheetFrame(hue: planHue, eyebrow: d?.name ?? "", title: "Mit tegyünk a napra?") {
-            Text("MELYIK IZOMRA?").nkFont(10, .medium, design: .monospaced).tracking(1.4)
-                .foregroundStyle(.white.opacity(0.5)).frame(maxWidth: .infinity, alignment: .leading)
-            NKFlowRow(spacing: 8, rowSpacing: 8) {
-                ForEach(under, id: \.self) { m in chip(m, low: true) }
-                ForEach(dayMuscles, id: \.self) { m in chip(m, low: false) }
-                Button { animate { others.toggle() } } label: {
-                    HStack(spacing: 6) {
-                        Text("Más izom").nkFont(13, .medium)
-                        Image(systemName: others ? "chevron.up" : "chevron.down").font(.system(size: 10, weight: .semibold))
-                    }
-                    .foregroundStyle(.white.opacity(0.85))
-                    .padding(.horizontal, 14).frame(minHeight: 38)
-                    .background(Capsule().strokeBorder(.white.opacity(0.22), lineWidth: 0.5))
+        GeometryReader { geo in
+            ZStack(alignment: .topLeading) {
+                NKSheetFrame(hue: planHue, eyebrow: d?.name ?? "", title: "Mit tegyünk a napra?") {
+                    content(taken)
                 }
-                .buttonStyle(.plain)
-                if others { ForEach(rest, id: \.self) { m in chip(m, low: false) } }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+                .scrollDisabled(open)
 
-            if let muscle {
-                let pool = dayEditPool(model, taken: taken)
-                DayEditSuggestions(load: load, taken: taken, empty: "Erre az izomra most nincs jó ajánlásom — nézd meg a teljes listát",
-                                   onPick: pick)
-                DayEditFullList(showAll: $showAll, query: $query, forced: load == .failed,
-                                items: pool.filter { $0.coarse == muscle }, others: pool.filter { $0.coarse != muscle },
-                                label: load.label, onPick: { pick($0, load.prescription(for: $0)) })
-            } else {
-                Text("Válassz izmot, és mutatom, mi illik ide.")
-                    .nkFont(14).foregroundStyle(.white.opacity(0.6)).frame(maxWidth: .infinity, alignment: .leading)
+                if open {
+                    Color.black.opacity(0.45).ignoresSafeArea()
+                        .onTapGesture { animate { open = false } }
+                        .accessibilityHidden(true)
+                        .transition(.opacity)
+                    // The row stays lit above the dim, the panel hangs under it.
+                    dropdownRow
+                        .frame(width: rowFrame.width)
+                        .offset(x: rowFrame.minX, y: rowFrame.minY)
+                    DayEditMusclePanel(picked: $picked, under: under, done: { animate { open = false } })
+                        .frame(width: rowFrame.width)
+                        .frame(maxHeight: max(200, geo.size.height - rowFrame.maxY - 20))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .offset(x: rowFrame.minX, y: rowFrame.maxY + 8)
+                        .transition(.opacity.combined(with: .scale(scale: 0.97, anchor: .top)))
+                }
             }
-            Text("Az új gyakorlat a nap végére kerül, az edzésmód szerinti sorozatokkal. A döntés a tiéd — a teljes listából bármit választhatsz.")
-                .nkFont(12).foregroundStyle(.white.opacity(0.45))
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            .coordinateSpace(.named(Self.space))
         }
-        .task(id: muscle) {
-            guard let muscle else { load = .idle; return }
-            load = .loading
-            do { load = .ready(try await model.suggest(mode: "add", day: day, muscle: muscle)) } catch {
-                // A chip switch cancels this read: the next one is already loading, not failed.
+        .background(NK.ground)
+        .task(id: picked) {
+            // Ticks apply live: the cards already on screen stay while the next read is on its way.
+            let first = load.suggestions == nil
+            if first { load = .loading } else {
+                try? await Task.sleep(for: .milliseconds(250))
+                if Task.isCancelled { return }
+            }
+            do { load = .ready(try await model.suggest(mode: "add", day: day, muscles: picked)) } catch {
+                // A tick cancels this read: the next one is already on its way, not failed.
                 if Task.isCancelled { return }
                 load = .failed
             }
         }
     }
 
+    @ViewBuilder private func content(_ taken: Set<String>) -> some View {
+        let pool = dayEditPool(model, taken: taken)
+        let none = picked.isEmpty
+        dropdownRow
+            .onGeometryChange(for: CGRect.self) { $0.frame(in: .named(Self.space)) } action: { rowFrame = $0 }
+            .opacity(open ? 0 : 1)
+
+        if none {
+            // Nothing picked: the server suggests for the week's under-band groups; with none of those, only the hint.
+            let nothingLow = load.suggestions.map { $0.suggestions.isEmpty } ?? false
+            Text(nothingLow ? "Válassz izmot, és ajánlok hozzá."
+                 : "Válassz izmot, és ajánlok hozzá. Addig a hét kevés izmaira ajánlok.")
+                .nkFont(14).foregroundStyle(.white.opacity(0.6))
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            if !nothingLow {
+                DayEditSuggestions(load: load, taken: taken, empty: "Most nincs jó ajánlásom — nézd meg a teljes listát",
+                                   header: "AJÁNLOM · A HÉT KEVÉS IZMAIRA", onPick: pick)
+            }
+        } else {
+            DayEditSuggestions(load: load, taken: taken,
+                               empty: "Ezekre az izmokra most nincs jó ajánlásom — nézd meg a teljes listát", onPick: pick)
+        }
+        let mine = none ? pool : pool.filter { picked.contains(($0.muscle ?? "").lowercased()) }
+        DayEditFullList(showAll: $showAll, query: $query, forced: load == .failed,
+                        items: mine, others: none ? [] : pool.filter { !picked.contains(($0.muscle ?? "").lowercased()) },
+                        label: load.label, onPick: { pick($0, load.prescription(for: $0)) })
+        Text("Az új gyakorlat a nap végére kerül, az edzésmód szerinti sorozatokkal. A döntés a tiéd — a teljes listából bármit választhatsz.")
+            .nkFont(12).foregroundStyle(.white.opacity(0.45))
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// „Izmok  Hát · középső, Mell · felső ▾" — one line; too long → „Hát · középső +2"; nothing picked → „Minden izom".
+    private var dropdownRow: some View {
+        let parts = SubMuscles.summary(picked)
+        return Button { animate { open.toggle() } } label: {
+            HStack(spacing: 10) {
+                Text("Izmok").nkFont(14).foregroundStyle(.white.opacity(0.55))
+                Group {
+                    if parts.isEmpty {
+                        Text("Minden izom").foregroundStyle(.white.opacity(0.9))
+                    } else {
+                        ViewThatFits(in: .horizontal) {
+                            Text(parts.joined(separator: ", ")).lineLimit(1).fixedSize()
+                            if parts.count > 1 { Text("\(parts[0]) +\(parts.count - 1)").lineLimit(1).fixedSize() }
+                            Text(SubMuscles.shortSummary(picked) ?? "").lineLimit(1)
+                        }
+                        .foregroundStyle(.white)
+                    }
+                }
+                .nkFont(15, .medium)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 12, weight: .semibold)).foregroundStyle(.white.opacity(0.6))
+                    .rotationEffect(.degrees(open ? 180 : 0))
+            }
+            .padding(.horizontal, 16).frame(minHeight: 50)
+            .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color(white: open ? 0.17 : 0.12)))
+            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(.white.opacity(open ? 0.3 : 0.16), lineWidth: 0.5))
+            .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Izmok: \(parts.isEmpty ? "minden izom" : parts.joined(separator: ", "))")
+        .accessibilityHint(open ? "Bezárja a listát" : "Megnyitja az izmok listáját")
+    }
+
     private func animate(_ change: () -> Void) {
-        if reduceMotion { change() } else { withAnimation(.snappy(duration: 0.2)) { change() } }
+        if reduceMotion { change() } else { withAnimation(.snappy(duration: 0.22)) { change() } }
     }
 
     private func pick(_ item: WireCatalogItem, _ prescription: Prescription?) {
         onPick(item, prescription)
         dismiss()
     }
+}
 
-    private func chip(_ m: String, low: Bool) -> some View {
-        let on = muscle == m
-        return Button {
-            animate { muscle = on ? nil : m; showAll = false; query = "" }
-        } label: {
-            HStack(spacing: 6) {
-                Text(planMuscleName(m)).nkFont(13, .medium)
-                if low {
-                    Text("kevés").nkFont(10, .semibold, design: .monospaced)
-                        .foregroundStyle(on ? NK.ground.opacity(0.7) : planHue.glow)
+/// A drawn checkbox: an outline when off, the hue with a drawn tick when on, a dash when part of the group is on.
+struct DayEditCheckbox: View {
+    enum Mark { case off, on, partial }
+    let mark: Mark
+    var size: CGFloat = 22
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: size * 0.3, style: .continuous)
+                .fill(mark == .off ? Color.clear : planHue.glow)
+            RoundedRectangle(cornerRadius: size * 0.3, style: .continuous)
+                .strokeBorder(mark == .off ? .white.opacity(0.42) : .clear, lineWidth: 1.5)
+            switch mark {
+            case .on:
+                Path { p in
+                    p.move(to: CGPoint(x: size * 0.26, y: size * 0.52))
+                    p.addLine(to: CGPoint(x: size * 0.43, y: size * 0.69))
+                    p.addLine(to: CGPoint(x: size * 0.75, y: size * 0.33))
                 }
+                .stroke(NK.ground, style: StrokeStyle(lineWidth: size * 0.12, lineCap: .round, lineJoin: .round))
+            case .partial:
+                Capsule().fill(NK.ground).frame(width: size * 0.5, height: size * 0.12)
+            case .off: EmptyView()
             }
-            .foregroundStyle(on ? NK.ground : .white)
-            .padding(.horizontal, 14).frame(minHeight: 38)
-            .background(Capsule().fill(on ? .white : .white.opacity(0.1)))
-            .overlay(Capsule().strokeBorder(.white.opacity(on ? 0 : 0.18), lineWidth: 0.5))
+        }
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
+    }
+}
+
+/// The dropdown panel: one block per group (a group checkbox, then its parts as checkbox pills), Törlés · Kész below.
+/// „kevés" sits once on a group under its band — on a leg part, which is its own group, on the part.
+struct DayEditMusclePanel: View {
+    @Binding var picked: Set<String>
+    let under: Set<String>
+    let done: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ViewThatFits(in: .vertical) {
+                groupsList
+                ScrollView { groupsList }.scrollIndicators(.hidden)
+            }
+            Rectangle().fill(.white.opacity(0.1)).frame(height: 0.5)
+            HStack {
+                Button { picked = [] } label: {
+                    Text("Törlés").nkFont(15, .medium).foregroundStyle(.white.opacity(picked.isEmpty ? 0.35 : 0.85))
+                        .padding(.horizontal, 6).frame(minHeight: 44)
+                }
+                .buttonStyle(.plain).disabled(picked.isEmpty)
+                Spacer()
+                Button(action: done) {
+                    Text("Kész").nkFont(15, .semibold).foregroundStyle(NK.ground)
+                        .padding(.horizontal, 26).frame(minHeight: 40)
+                        .background(Capsule().fill(.white))
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 14).padding(.vertical, 8)
+        }
+        .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(Color(white: 0.115)))
+        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(.white.opacity(0.16), lineWidth: 0.5))
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .shadow(color: .black.opacity(0.55), radius: 24, y: 12)
+    }
+
+    private var groupsList: some View {
+        VStack(spacing: 0) {
+            ForEach(Array(SubMuscles.groups.enumerated()), id: \.element.id) { i, g in
+                if i > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5).padding(.leading, 50) }
+                groupBlock(g)
+            }
+        }
+        .padding(.vertical, 6)
+    }
+
+    private func mark(_ g: SubMuscles.Group) -> DayEditCheckbox.Mark {
+        let n = g.parts.filter { picked.contains($0.id) }.count
+        return n == 0 ? .off : n == g.parts.count ? .on : .partial
+    }
+
+    private func groupBlock(_ g: SubMuscles.Group) -> some View {
+        let m = mark(g)
+        let single = g.parts.count == 1
+        let on = g.parts.filter { picked.contains($0.id) }.count
+        return VStack(alignment: .leading, spacing: 8) {
+            Button {
+                if m == .on { picked.subtract(g.parts.map(\.id)) } else { picked.formUnion(g.parts.map(\.id)) }
+            } label: {
+                HStack(spacing: 12) {
+                    DayEditCheckbox(mark: m)
+                    Text(g.name).nkFont(16, .medium).foregroundStyle(.white)
+                    if SubMuscles.groupLow(g, under: under) { lowMark }
+                    Spacer(minLength: 0)
+                    if !single, m != .off {
+                        Text("\(on)/\(g.parts.count)").nkFont(11, design: .monospaced).foregroundStyle(.white.opacity(0.45))
+                    }
+                }
+                .frame(minHeight: 36)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(single ? g.name : "\(g.name), egész csoport\(SubMuscles.groupLow(g, under: under) ? ", kevés" : "")")
+            .accessibilityValue(m == .on ? "kijelölve" : m == .partial ? "részben" : "")
+            if !single {
+                NKFlowRow(spacing: 7, rowSpacing: 7) {
+                    ForEach(g.parts) { p in partPill(g, p) }
+                }
+                .padding(.leading, 34)
+            }
+        }
+        .padding(.horizontal, 16).padding(.vertical, 8)
+    }
+
+    private var lowMark: some View {
+        Text("kevés").nkFont(10, .semibold, design: .monospaced).foregroundStyle(planHue.glow)
+    }
+
+    private func partPill(_ g: SubMuscles.Group, _ p: SubMuscles.Part) -> some View {
+        let on = picked.contains(p.id)
+        let low = SubMuscles.partLow(g, p, under: under)
+        return Button {
+            if on { picked.remove(p.id) } else { picked.insert(p.id) }
+        } label: {
+            HStack(spacing: 7) {
+                DayEditCheckbox(mark: on ? .on : .off, size: 18)
+                Text(p.short).nkFont(14).foregroundStyle(.white.opacity(on ? 1 : 0.85)).lineLimit(1)
+                if low { lowMark }
+            }
+            .padding(.leading, 8).padding(.trailing, 11).frame(minHeight: 36)
+            .background(Capsule().fill(.white.opacity(on ? 0.13 : 0.06)))
+            .contentShape(Capsule())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(SubMuscles.name(p.id))\(low ? ", kevés" : "")")
         .accessibilityAddTraits(on ? .isSelected : [])
     }
 }

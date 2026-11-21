@@ -29,8 +29,10 @@ Ha a hét már életbe lépett, a kártya azt mutatja: „Indulhat, a hét szám
   a sáv és a te heti számod, alatta kis címkéken a sáv és hogy melyik napon hány sorozat van (például „Sáv 14–22 · Hétfő 6 ·
   Csütörtök 5”), a kártya alján pedig mindig ott van, **miért ez a sáv** (a szint és a sport alapján), és ha az izom kilóg a sávjából, egy **konkrét javaslat** („+1 Lehúzás
   (hétfő)”) **Elfogadom** és **miért?** gombbal.
-- **Napok** — naponként egy lap: becsült edzéshossz, aznap van-e sport, izomcsoportonkénti sorozatszám, gyakorlatonként egy
-  léptető (1–8 sorozat) és egyetlen címke a technikáról vagy a kihívásról. A címkére koppintva felugrik a **választó**: az öt
+- **Napok** — naponként egy lap: becsült edzéshossz, aznap van-e sport, izomcsoportonkénti sorozatszám (a felső címkék
+  továbbra is egész izomcsoportok), gyakorlatonként az **izomrész** a név alatt (például „Hát · középső”, „Bicepsz ·
+  brachialis”, „Comb”) az ismétléssel és a tartalékkal — egy sorban, ha elfér, különben az izomrész felül, a számok alatta —,
+  egy léptető (1–8 sorozat) és egyetlen címke a technikáról vagy a kihívásról. A címkére koppintva felugrik a **választó**: az öt
   technika (ami annál a gyakorlatnál nem választható, az halványan, az okával), alatta **a nap kihívása** (naponta egy
   gyakorlaton), és egy **„i” gomb**, ami mindegyik alá kiír egy rövid leírást. Amit Boop tett oda a heti javaslatban, azon
   **„Boop”** jelzés van, amíg át nem állítod. A lista tetején **Boop ajánlása** áll: a gyakorlat tulajdonságai
@@ -43,11 +45,20 @@ Ha a hét már életbe lépett, a kártya azt mutatja: „Indulhat, a hét szám
   - **Sorrend:** a gyakorlat bal szélén lévő **≡ fogónál** fogva húzod feljebb vagy lejjebb.
   - **„⋯” menü** gyakorlatonként: **Csere** · **Beállítások** · **Törlés**. A törlés után a sor helyén egy visszavonó sor marad,
     amíg meg nem gondolod magad. Ha kitörölsz mindent, a nap **pihenőnap helyett edzésnap marad** üres listával — nem tűnik el.
-  - **„＋ Gyakorlat hozzáadása”:** előbb izmot választasz (kis címkék; elöl az, amelyikre ezen a héten **„kevés”** jut, aztán a nap
-    többi izma, végül „Más izom”). Alatta legfeljebb öt **indokolt javaslat** áll, mindegyiken egy mondat arról, miért ez (például
-    „ezen a héten kevés jut erre az izomra”, vagy hogy kíméli azt az ízületet, amelyik fájt), alatta pedig a **teljes lista
-    kereséssel**. Ha a javaslatok nem érkeznek meg, a teljes lista egy rövid megjegyzéssel is használható.
-  - **Csere:** ugyanilyen javaslatokat kapsz a kicserélendő helyett. A csere **a blokk hátralévő részére** szól, és **megtartja
+  - **„＋ Gyakorlat hozzáadása”:** felül egy **kompakt izomválasztó** („Izmok: Hát · középső, Mell · felső ▾”; ha nem fér ki,
+    „Hát · középső +2”; ha semmi nincs kiválasztva, „Minden izom”). Rákoppintva lenyílik egy csoportosított lista: izomcsoportonként
+    egy jelölőnégyzet (mind / semmi / részben), alatta az **izomrészek** külön-külön bejelölhetők — **egyszerre több is, akár
+    különböző csoportokból** (például a hát közepe és a felső mell). A **„kevés”** jelzés a csoport nevén áll, ha arra a csoportra
+    ezen a héten a sávja alatt jut (a lábnál a comb, combhajlító, far és vádli maga egy-egy csoport, ott a részen). Lent **Törlés**
+    és **Kész**; kis telefonon a lista görgethető. Minden pipa azonnal frissíti a javaslatokat. Alatta legfeljebb öt **indokolt
+    javaslat** áll — a kiválasztott izomrészek mind előkerülnek az élen, nem csak az egyik —, mindegyiken **egy kis kép a
+    gyakorlatról** (ha van; ha nincs, egy csendes súlyzó-jel), a név (ahogy a gyakorlatlistában szerepel), alatta az izomrész és a
+    mozgás fajtája (például „hát · középső · összetett”), egy mondat arról, miért ez (a szerver rögzített mondatai közül, például
+    „Ezen a héten kevés jut erre az izomra.”) és a legutóbbi legjobb sorozat. Ha **semmit nem választasz**, a hét **„kevés”**
+    izmaira kapsz javaslatot („Válassz izmot, és ajánlok hozzá. Addig a hét kevés izmaira ajánlok.”). Alatta a **teljes lista
+    kereséssel**, szintén képpel és izomrésszel. Ha a javaslatok nem érkeznek meg, a teljes lista egy rövid megjegyzéssel is
+    használható.
+  - **Csere:** ugyanilyen javaslatokat kapsz a kicserélendő helyett (képpel és izomrésszel). A csere **a blokk hátralévő részére** szól, és **megtartja
     azt, amit te állítottál** (sorozatszám, tartomány, kezdősúly).
   - **Beállítások** (a gyakorlat sorára koppintva is): **ismétléstartomány**, **tartalék**, **kezdősúly**, **bemelegítés**.
     Amit te állítottál át az edzésmódhoz képest, azon **„TE ÁLLÍTOTTAD”** jelzés áll, a **„Visszaállítom az edzésmódra”** gomb
@@ -82,7 +93,8 @@ ha a „Nincs mit menteni” felirat nem fér el a gombon, helyette „Nincs vá
 6. Ha egy új szerver-oldali változás olyan javaslat-fajtát vagy okot küld, amit a telefon még nem ismer, a csempe akkor is
    megjelenik (egyszerű „mennyiről mennyire” formában), csak címke nélkül — sosem tűnik el a pakli miatta.
 
-7. **A javaslatokat a szerver adja**, a blokk edzésmódjának számaival (sorozat, ismétlés, tartalék) együtt, így a heti
+7. **A javaslatokat a szerver adja** — hozzáadáskor a kiválasztott izomrészekre (a szerver felváltva veszi őket, hogy mindegyik
+   az élre kerüljön), semmi kiválasztva esetén a hét sáv alatti izomcsoportjaira —, a blokk edzésmódjának számaival (sorozat, ismétlés, tartalék) együtt, így a heti
    sorozatszámok már **mentés előtt** pontosak. Egy új gyakorlat tehát nem „3 × 10”-ként érkezik, hanem úgy, ahogy az edzésmód
    beállítaná.
 8. **Egyetlen „Mentés” van**: a gyakorlat-, sorrend- és beállításváltozások a többivel együtt mennek el. A változtatás **a
