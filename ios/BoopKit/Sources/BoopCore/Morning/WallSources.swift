@@ -50,17 +50,10 @@ public func etelWallCandidates(plan: FuelPlan?, now: Date, calendar: Calendar = 
             why: "A napszakhoz kötött csoport még nincs kipipálva, és este már nem ér semmit."))
     }
 
-    // 3. improves — what to eat next, from the server's own tip
-    if let tip = plan?.tip {
-        out.append(WallCandidate(
-            id: "etel-tip", role: .improves, kind: .teendo, area: WallSources.etel, rank: 0.7,
-            text: tip.text, sub: tip.reason,
-            primary: "Megnézem",
-            settled: "Étel-tipp megnézve",
-            why: "A mai kereted alapján ez mozdítja a legtöbbet a napodon. \(tip.reason)"))
-    }
+    // (The "Következik: …" tip card was removed from the wall, owner 2026-11-21, mezo-r36n9.135 — the open window's
+    // own card above already says what to eat next.)
 
-    // 4. happened — the meal he just logged, and what it did
+    // 3. happened — the meal he just logged, and what it did
     if let m = lastMeal {
         out.append(WallCandidate(
             id: "etel-meal-\(Int(m.at.timeIntervalSince1970))", role: .happened, kind: .reakcio,

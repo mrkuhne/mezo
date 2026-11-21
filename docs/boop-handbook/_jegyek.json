@@ -1428,5 +1428,16 @@
     "mit_kapsz": "Pontosabb becslés, ha az MI épp nem elérhető (például a „hátedzés” is edzésnek számít), a késő esti edzés nem csonkul éjfélnél, és a háttérben futó címkézés egy ritka hiba után sem áll le.",
     "szulo": "mezo-r36n9.17",
     "munkamenet": "b6-b7-epites-5d50e3"
+  },
+  "mezo-r36n9.135": {
+    "cim": "Étel: keresés és szűrő a recept- és kamraválasztóban, vonalkód gomb és „Következik” kártya ki",
+    "tipus": "Fejlesztés",
+    "szakasz": "B4 Étel",
+    "terulet": [
+      "Étel"
+    ],
+    "mit_kapsz": "Étkezés rögzítésekor a recept- és a kamraválasztóban keresőmező és szűrő van (ékezet nélkül is talál; receptek étkezés szerint, kamra kategória szerint). Az Étel Ma oldaláról lekerült a vonalkód gomb, és eltűnt a „Következik: …” kártya az Étel Ma oldalról és a Ma falról is.",
+    "szulo": "mezo-r36n9.14",
+    "munkamenet": "etel-kereses"
   }
 }

@@ -13,7 +13,7 @@ osszefoglalo: Egy teljes étkezés-app a Boopon belül — fotóból, szóból v
 Az Étel szoba a Boop „teljes konyhája”. Nem egy lecsupaszított oldal, hanem egy egész étkezés-app a Boopon
 belül (a tulajdonos döntése, 2026-11-11: „teljes étel-app és teljes edzés-app”). Négy belső füle lesz:
 
-- **Ma** — a mai étkezések, a napi keret (mennyi fér még bele), a víz, és Boop tippje a következő étkezésre.
+- **Ma** — a mai étkezések, a napi keret (mennyi fér még bele), a víz és a kiegészítők.
 - **Receptek** — a saját receptek, a receptműhely (AI-val együtt összerakott receptek), recept behúzása egy weboldalról.
 - **Kamra** — az alapanyagok és termékek, behúzás termékoldalról, címkefotóról vagy vonalkódról.
 - **Hét** — a hét napjai a célokhoz mérve.

@@ -61,8 +61,6 @@ final class EtelStore {
     private(set) var busy: Set<String> = []
     var taken: Set<String> { Set(takenIds.keys) }
     private(set) var loading = false
-    /// The tip the owner sent away with *Most nem* (until the next load).
-    private(set) var tipDismissed = false
 
     @ObservationIgnored private var food: FoodClient?
     var currentFood: FoodClient? { food }
@@ -87,7 +85,6 @@ final class EtelStore {
     func load(food: FoodClient, now: Date, extras: Bool = true) async {
         self.food = food; self.now = now
         loading = true
-        tipDismissed = false
         // The taken state belongs to one day: a store left open past midnight starts the new day clean. The light read
         // (Ma's rows) always re-reads it, because the room — another store — may have ticked or unticked a group.
         let today = food.ymd(now)
@@ -500,8 +497,6 @@ final class EtelStore {
     private func persistTaken(_ dayKey: String) {
         UserDefaults.standard.set(takenIds.mapValues { $0.map(\.uuidString) }, forKey: "etel.takenIds.\(dayKey)")
     }
-
-    func dismissTip() { tipDismissed = true }
 }
 
 /// What an action of the room says back: whether it went through, and the sentence for the owner.
@@ -625,7 +620,7 @@ struct EtelRoom: View {
             switch tab {
             case .ma:
                 EtelMa(store: store, onDimension: { dimension = $0 }, onToast: { toast = $0 },
-                       onRetry: { Task { await reload() } }, onTab: { selected = $0.rawValue },
+                       onRetry: { Task { await reload() } },
                        onCapture: { composer = MealStart(entrance: $0) }, onCard: cardAction,
                        onSheet: { etelSheet = $0 }, onAsk: { openPlace(.boop) })
             case .receptek:
@@ -756,6 +751,8 @@ struct EtelRoom: View {
             case "add-barcode": kamraSheet = .add(.barcode)
             case "usuals": composer = MealStart(entrance: .usual)
             case "compose": composer = MealStart(entrance: .pick)
+            case "compose-recipe": composer = MealStart(entrance: .recipe)
+            case "compose-pantry": composer = MealStart(entrance: .pantry)
             case "sensitivity": etelSheet = .sensitivity
             case "diet": etelSheet = .diet
             case "rhythm": etelSheet = .rhythm

@@ -230,13 +230,12 @@ struct WallSourceTests {
         #expect(out.filter { $0.role == .expires }.isEmpty)
     }
 
-    @Test func theServersTipIsWhatImprovesTheDay() {
-        let out = etelWallCandidates(plan: plan([], tip: PlanTip(text: "Vacsorára 50 g fehérje kell",
+    @Test func theServersTipIsNoLongerACardOnTheWall() {
+        // Owner, 2026-11-21 (mezo-r36n9.135): the "Következik: …" card is gone; the open window's card says it.
+        let out = etelWallCandidates(plan: plan([], tip: PlanTip(text: "Következik: Vacsora, 18:00–20:00.",
                                                                  reason: "A napi 165-ből 115-nél jársz.")),
                                      now: now, calendar: cal)
-        let tip = out.first { $0.role == .improves }
-        #expect(tip?.text == "Vacsorára 50 g fehérje kell")
-        #expect(tip?.why.contains("165") == true, "the why repeats the server's own reason, not a made-up one")
+        #expect(out.allSatisfy { $0.id != "etel-tip" && !$0.text.hasPrefix("Következik") })
     }
 
     @Test func theLastMealIsWhatHappened() {
