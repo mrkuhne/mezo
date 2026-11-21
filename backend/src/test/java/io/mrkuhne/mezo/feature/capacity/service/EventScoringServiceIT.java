@@ -111,9 +111,65 @@ class EventScoringServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void neutralFeedbackCapsEverythingAtOne() {
+        UUID owner = databasePopulator.populateUser("cap-score5@test.local");
+        CalendarEventEntity ev = event(owner, "ek-5|2026-11-23T09:00:00Z", "Sync " + FakeCompanionLlm.FAIL_COMPLETE);
+        label(owner, "ek-5", FeedbackEffect.NEUTRAL);
+
+        EventScore s = service.scoresFor(owner, DAY, DAY).get(ev.getId()); // rule score is mental 2 social 2
+
+        assertThat(s.mental()).isEqualTo(1);
+        assertThat(s.social()).isEqualTo(1);
+        assertThat(s.physical()).isZero();
+        assertThat(s.restores()).isFalse();
+    }
+
+    @Test
+    void concurrentCallsOnAFreshEventNeverFail() throws Exception {
+        UUID owner = databasePopulator.populateUser("cap-score6@test.local");
+        CalendarEventEntity ev = event(owner, "ek-6|2026-11-23T09:00:00Z", "Heti sync");
+        java.util.concurrent.CyclicBarrier go = new java.util.concurrent.CyclicBarrier(2);
+        java.util.concurrent.ExecutorService pool = java.util.concurrent.Executors.newFixedThreadPool(2);
+        try {
+            List<java.util.concurrent.Future<EventScore>> results = new java.util.ArrayList<>();
+            for (int i = 0; i < 2; i++) {
+                results.add(pool.submit(() -> {
+                    go.await();
+                    return service.scoresFor(owner, DAY, DAY).get(ev.getId());
+                }));
+            }
+            for (java.util.concurrent.Future<EventScore> r : results) {
+                assertThat(r.get(20, java.util.concurrent.TimeUnit.SECONDS)).isNotNull();
+            }
+        } finally {
+            pool.shutdownNow();
+        }
+        assertThat(jdbc.queryForObject("select count(*) from calendar_event_score where event_id = ?", Integer.class,
+            ev.getId())).isEqualTo(1);
+    }
+
+    @Test
     void drainsLiftsTheMainComponent() {
-        EventScore weak = new EventScore(UUID.randomUUID(), 1, 0, 0, false, "meeting", 0.8, "llm");
-        EventScore s = EventScoringService.applyFeedback(weak, FeedbackEffect.DRAINS);
-        assertThat(s.mental()).isEqualTo(2);
+        UUID id = UUID.randomUUID();
+        EventScore mental = EventScoringService.applyFeedback(
+            new EventScore(id, 1, 0, 0, false, "meeting", 0.8, "llm"), FeedbackEffect.DRAINS);
+        assertThat(mental.mental()).isEqualTo(2);
+        EventScore social = EventScoringService.applyFeedback(
+            new EventScore(id, 0, 1, 0, true, "social", 0.8, "llm"), FeedbackEffect.DRAINS);
+        assertThat(social.social()).isEqualTo(2);
+        assertThat(social.mental()).isZero();
+        assertThat(social.restores()).isFalse();
+        EventScore physical = EventScoringService.applyFeedback(
+            new EventScore(id, 0, 0, 1, false, "sport", 0.8, "llm"), FeedbackEffect.DRAINS);
+        assertThat(physical.physical()).isEqualTo(2);
+        assertThat(physical.social()).isZero();
+    }
+
+    private void label(UUID owner, String key, FeedbackEffect effect) {
+        CapacityEventFeedbackEntity l = new CapacityEventFeedbackEntity();
+        l.setCreatedBy(owner);
+        l.setEventKey(key);
+        l.setEffect(effect.value());
+        feedback.saveAndFlush(l);
     }
 }

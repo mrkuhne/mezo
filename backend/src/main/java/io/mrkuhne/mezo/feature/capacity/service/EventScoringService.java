@@ -37,6 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.task.AsyncTaskExecutor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -146,7 +147,14 @@ public class EventScoringService {
                 toSave.add(upsert(owner, null, e.id(), hashes.get(e.id()), rule));
             }
         }
-        scores.saveAll(toSave);
+        for (CalendarEventScoreEntity row : toSave) {
+            try {
+                scores.saveAndFlush(row);
+            } catch (DataIntegrityViolationException e) {
+                // a concurrent call stored the same (event, input hash) first: its row stands, ours is dropped
+                log.debug("Capacity event score already stored by a concurrent call: {}", row.getEventId());
+            }
+        }
 
         Map<String, FeedbackEffect> labels = labels(owner);
         Map<UUID, EventScore> out = new LinkedHashMap<>();
@@ -218,13 +226,15 @@ public class EventScoringService {
         }
         String userMessage = prompt(events);
         UUID actor = LlmActorContext.capture();
+        CompletableFuture<String> call = null;
         try {
-            CompletableFuture<String> call = CompletableFuture.supplyAsync(() -> LlmActorContext.runAsCaptured(actor,
+            call = CompletableFuture.supplyAsync(() -> LlmActorContext.runAsCaptured(actor,
                 () -> llmCallContextHolder.runWith(new LlmCallContext(LLM_FEATURE, "score", null, null),
                     () -> llm.complete(SYSTEM_PROMPT, userMessage))), executor);
             String raw = call.get(LLM_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
             return parse(raw, events);
         } catch (TimeoutException e) {
+            call.cancel(true);
             log.info("Capacity event scoring took longer than {}, using rule scores", LLM_TIMEOUT);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
