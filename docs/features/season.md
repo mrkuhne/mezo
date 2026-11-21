@@ -288,6 +288,11 @@ Head status: `no_data` with fewer than 4 weigh-in days in the last 21 (or no tre
 
 ### 3.7 Adherence — the single source of day judgement (S2, spec §5.6)
 
+**Moved sessions (Boop B7 K3, `mezo-r36n9.17`).** The plan the adherence judges has the capacity ledger's accepted
+moves applied (`SeasonAdjustmentPort.movedSessions` → `AdherenceService.withMoves`). A gym session moved to another day
+of its week leaves its old day and is planned on its new one. It counts once: not missed on the old day, not doubled
+on the new one. Details: [`capacity.md`](capacity.md) §4.
+
 `AdherenceService.range(owner, from, to)` (`GET /api/seasons/adherence`) judges every day, **with or without a
 season** (without one the food budget is simply the goal's served target). The food side reads
 `SeasonMealPort.foodDays` → `FuelDayService.getWeek` — the same rollup the Étel Hét tab renders, so target, consumed

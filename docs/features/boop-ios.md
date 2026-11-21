@@ -1310,6 +1310,15 @@ Wearable workouts are display + AI context only (no calorie-target effect). Chan
 | `setSessionTime` | `PUT /api/boop/session-time` `{date, time HH:mm}` → `SessionTime{date,time,plannedTime}` | upsert into `workout_time_override`, last write wins; 404 `BOOP_NO_PLANNED_SESSION`; 400 on a bad time |
 | `clearSessionTime` | `DELETE /api/boop/session-time?date=` → 204 | soft-deletes the override; the planned time is back |
 
+**The capacity ledger in the brief (B7 K3, `mezo-r36n9.17`).** The brief's day follows what the owner accepted:
+- The session is the one moved onto the day, never the one moved away from it (train's ledger-aware resolution).
+- Its planned time comes from the plan day's gym slot.
+- An accepted time shift wins over a `workout_time_override` for the same day. Both are read, with no migration.
+- Sets and minutes follow an accepted lighten or shorten.
+- `day.bedtimeTarget` is the night's accepted bedtime (`BoopDayAdjustmentPort`), else the sleep goal's.
+
+Details: [`capacity.md`](capacity.md) §4.
+
 iOS also uses the existing `decidePattern` for the observation swipes. `BoopBrief` carries `date`, `generatedAt`, `state`
 (`good|okay|tired|learning`), `nightsKnown`, `metrics[5]` (`forma|alvas|mozgas|fuel|pulzus`: nullable `score`, `display`, `caption`,
 `headline`, `sentence`, `trendUp`), `brief[]` (text + link), `energy{hourly[19], dipHour}`, `tonightTip`, `nextMealTip`, `conflict`,
