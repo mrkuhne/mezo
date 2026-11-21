@@ -18,6 +18,7 @@ import io.mrkuhne.mezo.feature.biometrics.profile.repository.BiometricProfileRep
 import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.sleep.service.SleepAnchorPort;
+import io.mrkuhne.mezo.feature.companion.port.CapacityContextPort;
 import io.mrkuhne.mezo.feature.companion.port.SeasonContextPort;
 import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.weight.service.WeightTrendService;
@@ -140,6 +141,8 @@ public class ContextSnapshotAssembler {
     private final CompanionProperties properties;
     /** Boop B6 Évad S2 (mezo-r36n9.16): the season's rules, right after the goal block. */
     private final SeasonContextPort seasonContext;
+    /** Boop B7 K2 (mezo-r36n9.17): today's capacity verdict, right after the season lines. */
+    private final CapacityContextPort capacityContext;
 
     /**
      * The chat-turn variant — nine blocks, {@code [Emberek]} ({@link PeopleSnapshotBlock}) sitting
@@ -151,6 +154,7 @@ public class ContextSnapshotAssembler {
                 + profileBlock(userId, today, true) + '\n'
                 + goalBlock(userId, today) + '\n'
                 + seasonLines(userId, today)
+                + capacityLines(userId, today)
                 + lifeGoalLine(userId, today)
                 + trainBlock(userId, today) + '\n'
                 + practiceBlock(userId, today) + '\n'
@@ -178,6 +182,16 @@ public class ContextSnapshotAssembler {
         return block == null || block.isBlank() ? "" : block.strip() + '\n';
     }
 
+    /** Boop B7 K2: the [Kapacitás] line in BOTH variants; "" without data. Stored-only read, never breaks the context. */
+    private String capacityLines(UUID userId, LocalDate today) {
+        try {
+            String block = capacityContext.render(userId, today);
+            return block == null || block.isBlank() ? "" : block.strip() + '\n';
+        } catch (RuntimeException e) {
+            return "";
+        }
+    }
+
     /** mezo-iizd.10: [Célok] MINDKÉT variánsban — user-döntés: a reggeli cél-emlékeztető kívánt,
      *  támogató nudge (eltérés az [Emberek] chat-only precedensétől). "" ha konfigurálva ki. */
     private String lifeGoalLine(UUID userId, LocalDate today) {
@@ -198,6 +212,7 @@ public class ContextSnapshotAssembler {
                 + profileBlock(userId, today, false) + '\n'
                 + goalBlock(userId, today) + '\n'
                 + seasonLines(userId, today)
+                + capacityLines(userId, today)
                 + lifeGoalLine(userId, today)
                 + trainBlock(userId, today) + '\n'
                 + practiceBlock(userId, today) + '\n'
