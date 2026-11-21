@@ -23,6 +23,8 @@ import io.mrkuhne.mezo.api.dto.GymScheduleSlotInput;
 import io.mrkuhne.mezo.api.dto.GymScheduleSlotResponse;
 import io.mrkuhne.mezo.api.dto.MedalListResponse;
 import io.mrkuhne.mezo.api.dto.MesoDay;
+import io.mrkuhne.mezo.api.dto.MesoPlanCandidates;
+import io.mrkuhne.mezo.api.dto.MesoPlanCandidatesRequest;
 import io.mrkuhne.mezo.api.dto.MesoPlanEvaluateRequest;
 import io.mrkuhne.mezo.api.dto.MesoPlanEvaluation;
 import io.mrkuhne.mezo.api.dto.MesoPlanGenerateRequest;
@@ -62,6 +64,7 @@ import io.mrkuhne.mezo.api.dto.WorkoutSummaryResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
 import io.mrkuhne.mezo.feature.auth.service.CurrentUser;
 import io.mrkuhne.mezo.feature.train.service.EwmaEstimator;
+import io.mrkuhne.mezo.feature.train.service.MesocycleDiscardService;
 import io.mrkuhne.mezo.feature.train.service.ExerciseDiscomfortService;
 import io.mrkuhne.mezo.feature.train.service.ExerciseSubstituteService;
 import io.mrkuhne.mezo.feature.train.service.BlockSuggestionService;
@@ -70,6 +73,7 @@ import io.mrkuhne.mezo.feature.train.service.ExerciseRecordService;
 import io.mrkuhne.mezo.feature.train.service.GymProfileService;
 import io.mrkuhne.mezo.feature.train.service.GymScheduleService;
 import io.mrkuhne.mezo.feature.train.service.MedalService;
+import io.mrkuhne.mezo.feature.train.service.MesoPlanCandidatesService;
 import io.mrkuhne.mezo.feature.train.service.MesoPlanEvaluateService;
 import io.mrkuhne.mezo.feature.train.service.MesoPlanGeneratorService;
 import io.mrkuhne.mezo.feature.train.service.MesoTemplateService;
@@ -116,10 +120,12 @@ public class TrainController implements TrainApi {
     private final MedalService medalService;
     private final RunningService runningService;
     private final VolumeArcService volumeArcService;
+    private final MesocycleDiscardService discardService;
     private final CurrentUserId currentUserId;
     private final CurrentUser currentUser;
     private final MesoPlanGeneratorService mesoPlanGeneratorService;
     private final MesoPlanEvaluateService mesoPlanEvaluateService;
+    private final MesoPlanCandidatesService mesoPlanCandidatesService;
     private final TimingProfileService timingProfileService;
 
     @Override
@@ -227,6 +233,11 @@ public class TrainController implements TrainApi {
     }
 
     @Override
+    public void discardMesocycle(UUID id) {
+        discardService.discard(currentUserId.get(), id);
+    }
+
+    @Override
     public MesocycleResponse closeMesocycle(UUID id, MesocycleCloseRequest mesocycleCloseRequest) {
         // The body is optional (close without a self-eval note is the common case).
         return service.closeMesocycle(currentUserId.get(), id,
@@ -246,6 +257,11 @@ public class TrainController implements TrainApi {
     @Override
     public MesoPlanEvaluation evaluateMesoPlan(MesoPlanEvaluateRequest mesoPlanEvaluateRequest) {
         return mesoPlanEvaluateService.evaluate(currentUserId.get(), mesoPlanEvaluateRequest);
+    }
+
+    @Override
+    public MesoPlanCandidates getMesoPlanCandidates(MesoPlanCandidatesRequest mesoPlanCandidatesRequest) {
+        return mesoPlanCandidatesService.candidates(currentUserId.get(), mesoPlanCandidatesRequest);
     }
 
     @Override

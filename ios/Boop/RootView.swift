@@ -26,7 +26,7 @@ struct RootView: View {
             // Simulator review of the shared area-page kit: every block on one page, no sign-in needed.
             if UserDefaults.standard.bool(forKey: "previewKit") {
                 KitGallery()
-            } else if UserDefaults.standard.bool(forKey: "previewBlokk") {
+            } else if UserDefaults.standard.bool(forKey: "previewBlokk") || UserDefaults.standard.bool(forKey: "previewUjBlokk") {
                 // The block builder and the weekly review on fixtures (mezo-r36n9.83).
                 PlanPreviewRoot()
             } else {

@@ -38,7 +38,9 @@ public record VolumeProperties(
     public record Evaluator(
         @NotNull @Positive BigDecimal minutesPerWorkingSet,   // 2.4
         @NotNull @Positive BigDecimal minutesPerWarmupSet,    // 1.0
-        @NotNull @PositiveOrZero Integer sessionOverheadMinutes // 6
+        @NotNull @PositiveOrZero Integer sessionOverheadMinutes, // 6
+        @NotNull @Positive Integer setSeconds,                  // 40: time under tension per set (styled plans)
+        @NotNull @PositiveOrZero BigDecimal transitionMinutes   // 1: per exercise, styled plans
     ) {}
 
     /**
@@ -59,7 +61,9 @@ public record VolumeProperties(
         @NotNull @Positive Integer exerciseCap,          // working sets per exercise (5)
         @NotNull @Positive Integer sessionCap,           // working sets per muscle group per day (8)
         @NotNull @PositiveOrZero Integer sportLowShift,  // sport-loaded group: low -= this (1)
-        @NotNull @PositiveOrZero Integer sportHighShift  // sport-loaded group: high -= this (2)
+        @NotNull @PositiveOrZero Integer sportHighShift, // sport-loaded group: high -= this (2)
+        @NotNull @Positive Integer emphasizeMax,         // most muscles that may be Hangsúly at once (2)
+        @NotNull @Positive Integer consecutiveHeavySets  // hard sets on two consecutive days that flag a muscle (4)
     ) {}
 
     /** Weekly review proposal mode. */

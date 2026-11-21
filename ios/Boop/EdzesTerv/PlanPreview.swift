@@ -17,6 +17,14 @@ import BoopDesign
 //   -previewBlokkEdit default|menu|settings|add|addOpen|addEmpty|swap|undo|empty|locked|confirm   the Napok day editor's states
 //                                          (add: two sub-muscles picked, addOpen: the muscle dropdown open, addEmpty: none)
 //   -previewBlokkDay N                     the Napok tab's day page (0 = the first day)
+//   -previewBlokkMinutes 60                the builder's session-minutes target (the heti keret line under the head)
+//   -previewBlokkWhy back                  the builder opens that muscle's „miért?" sheet
+//   -previewUjBlokk YES                    the new-block flow (mezo-r36n9.113) on season days H·K·Cs·P
+//   -previewUjBlokkScreen alapok|tele|jeloltek|nemfer|letrehozva   one state of it (letrehozva: the builder on the
+//                                          block just created, with „Mégsem, eldobom")
+//   -previewUjBlokkSeason none             no season days: the needs-season state
+//   -previewUjBlokkScroll Y                the step opens scrolled down by Y points
+//   -previewUjBlokkStart fail              „Ezzel kezdem" fails at the start (503): the inline error under the button
 //
 // The evaluator below is a FIXTURE: it imitates the server's answer so the steppers move the numbers on screen. The
 // app itself never computes a band — it asks `POST /api/train/meso-plans/evaluate`.
@@ -24,18 +32,51 @@ import BoopDesign
 enum PlanPreview {
     static let client = PlanClient(raw: RawJSONClient(transport: PlanPreviewTransport(), baseURL: URL(string: "https://preview.invalid")!,
                                                       token: { "preview" }))
+
+    private static var screen: String? { UserDefaults.standard.string(forKey: "previewUjBlokkScreen") }
+
+    /// The intake as the spike's states open it (fresh: the back at Hangsúly, calf and core at Tartás).
+    @MainActor static func newBlockModel(screen: String? = PlanPreview.screen) -> NewBlockModel {
+        let days: [Int]? = UserDefaults.standard.string(forKey: "previewUjBlokkSeason") == "none" ? nil : [0, 1, 3, 4]
+        let m = NewBlockModel(client: client, seasonGymDays: days)
+        var tiers = ["back": "emphasize", "calf": "maintain", "core": "maintain"]
+        switch screen {
+        case "tele": tiers["chest"] = "emphasize"
+        case "nemfer": tiers["chest"] = "emphasize"; m.minutes = 45
+        default: break
+        }
+        m.tiers = tiers
+        return m
+    }
+
+    static var initialStep: UjBlokkFlow.Step { ["jeloltek", "nemfer"].contains(screen ?? "") ? .jeloltek : .alapok }
+
+    /// 2b: the calf's raise the full keret refused.
+    static var initialBlocked: UjBlokkBlocked? {
+        screen == "tele" ? UjBlokkBlocked(muscle: "calf", text: planRaiseText(.noRoom(minutes: 60, days: 4), emphasizeMax: 2) ?? "") : nil
+    }
 }
 
 struct PlanPreviewRoot: View {
     @State private var page: EdzesPage? = {
+        if UserDefaults.standard.bool(forKey: "previewUjBlokk") {
+            return UserDefaults.standard.string(forKey: "previewUjBlokkScreen") == "letrehozva" ? .builder : .newBlock
+        }
         switch UserDefaults.standard.string(forKey: "previewBlokkOpen") {
-        case "epito": .builder
-        case "het": .review
-        default: nil
+        case "epito": return .builder
+        case "het": return .review
+        default: return nil
         }
     }()
     @State private var review = WeekReviewModel(client: PlanPreview.client)
-    @State private var builder = BlockBuilderModel(client: PlanPreview.client)
+    @State private var builder: BlockBuilderModel = {
+        let m = BlockBuilderModel(client: PlanPreview.client)
+        let d = UserDefaults.standard
+        if d.object(forKey: "previewBlokkMinutes") != nil { m.minutesTarget = d.integer(forKey: "previewBlokkMinutes") }
+        if d.string(forKey: "previewUjBlokkScreen") == "letrehozva" { m.justCreated = true; m.minutesTarget = 60 }
+        return m
+    }()
+    @State private var newBlock = PlanPreview.newBlockModel()
     @Namespace private var zoom
 
     var body: some View {
@@ -51,7 +92,8 @@ struct PlanPreviewRoot: View {
             switch p {
             case .builder:
                 BlockBuilderPage(model: builder,
-                                 initialMode: BlockBuilderPage.Mode(rawValue: (UserDefaults.standard.string(forKey: "previewBlokkTab") ?? "").capitalized) ?? .izmok) {
+                                 initialMode: BlockBuilderPage.Mode(rawValue: (UserDefaults.standard.string(forKey: "previewBlokkTab") ?? "").capitalized) ?? .izmok,
+                                 onNewBlock: { newBlock = PlanPreview.newBlockModel(screen: nil); page = .newBlock }) {
                     page = nil
                     builder = BlockBuilderModel(client: PlanPreview.client)
                     Task { await builder.load() }
@@ -60,6 +102,17 @@ struct PlanPreviewRoot: View {
             case .review:
                 WeekReviewDeck(model: review) { page = nil; Task { await review.load() } }
                     .navigationTransition(.zoom(sourceID: PlanZoom.review, in: zoom))
+            case .newBlock:
+                UjBlokkFlow(model: newBlock, step: PlanPreview.initialStep, blocked: PlanPreview.initialBlocked,
+                            onClose: { page = nil },
+                            onCreated: { minutes in
+                                // The cover's content keeps the model it was built with: re-arm that one.
+                                builder.justCreated = true
+                                builder.minutesTarget = minutes
+                                page = .builder
+                                Task { await builder.load() }
+                            },
+                            onOpenSeason: { _ in page = nil })
             case .blockLoad:
                 EmptyView()
             }
@@ -80,6 +133,9 @@ final class PlanPreviewTransport: ClientTransport, @unchecked Sendable {
         try await Task.sleep(for: .milliseconds(state == "loading" ? 600_000 : 350))
         if state == "offline" { throw URLError(.notConnectedToInternet) }
         if state == "error" { return (HTTPResponse(status: .internalServerError), nil) }
+        if operationID == "startMesoTemplate", UserDefaults.standard.string(forKey: "previewUjBlokkStart") == "fail" {
+            return (HTTPResponse(status: .serviceUnavailable), nil)
+        }
         if operationID == "getBlockExerciseSuggestions", UserDefaults.standard.string(forKey: "previewBlokkSuggest") == "fail" {
             return (HTTPResponse(status: .serviceUnavailable), nil)
         }
@@ -96,6 +152,17 @@ final class PlanPreviewTransport: ClientTransport, @unchecked Sendable {
             case "listMesocycles": return state == "empty" ? [] : [block]
             case "getExerciseCatalog": return Self.catalog
             case "evaluateMesoPlan": return sent.map(Self.evaluate)
+            case "getMesoPlanCandidates": return Self.candidates(sent ?? [:])
+            case "generateMesoPlan":
+                let split = sent?["split"] as? String ?? "ul"
+                let c = Self.candidates(sent ?? [:])["candidates"] as? [[String: Any]] ?? []
+                return ["template": c.first { $0["splitKey"] as? String == split }?["template"] ?? [:], "llmUsed": false]
+            case "createMesoTemplate": return ["id": "7e000000-0000-4000-8000-0000000000aa"]
+            case "startMesoTemplate":
+                var b = block; b["status"] = (sent?["status"] as? String) ?? "planned"; b["currentWeek"] = 1
+                return b
+            case "closeMesocycle": return block
+            case "discardMesocycle": return [String: Any]()
             case "getBlockExerciseSuggestions": return Self.suggestions(sent ?? [:])
             case "listWeekProposals": return state == "empty" ? [] : [proposal()]
             case "decideWeekProposal":
@@ -330,7 +397,8 @@ final class PlanPreviewTransport: ClientTransport, @unchecked Sendable {
             muscles.append(["muscle": m, "tier": tier, "band": ["low": low, "high": high, "limit": mrv, "sportAdjusted": false],
                             "weeklySets": weekly, "fit": fit, "diff": fit == "below" ? low - weekly : (fit == "above" ? high - weekly : 0),
                             "spread": (perDay[m] ?? [:]).sorted { $0.key < $1.key }.map { ["dayIndex": $0.key, "sets": $0.value] },
-                            "proposal": proposal, "proposalBlocked": proposal.isEmpty && fit != "inside"])
+                            "proposal": proposal, "proposalBlocked": proposal.isEmpty && fit != "inside",
+                            "basis": ["source": tier == "maintain" ? "maintain_third" : "landmarks_rp"]])
         }
         let dayEvals: [[String: Any]] = days.enumerated().map { d, day in
             let ex = (day["exercises"] as? [[String: Any]]) ?? []
@@ -339,7 +407,7 @@ final class PlanPreviewTransport: ClientTransport, @unchecked Sendable {
                 guard let s = byDay[d], s > 8 else { return nil }
                 return ["muscle": m, "sets": s, "cap": 8]
             }
-            return ["dayIndex": d, "day": day["day"] as? String ?? "", "minutesEstimate": Int((Double(sets) * 2.4 + 6).rounded()),
+            return ["dayIndex": d, "day": day["day"] as? String ?? "", "minutesEstimate": ex.isEmpty ? 0 : Self.minutes(ex, styled: req["trainingStyle"] != nil),
                     "sessionCapWarnings": caps, "exerciseCapWarnings": [], "sportSameDay": d == 0 || d == 2 || d == 4]
         }
         let weekly = muscles.reduce(into: [String: Int]()) { $0[$1["muscle"] as! String] = $1["weeklySets"] as? Int }
@@ -364,8 +432,140 @@ final class PlanPreviewTransport: ClientTransport, @unchecked Sendable {
                              "reason": long ? "lengthened_safe" : "stable_machine", "challengeFit": long])
             }
         }
-        return ["deficit": true, "sportDays": [0, 2, 4], "suggestedSportGroups": [], "muscles": muscles, "days": dayEvals, "path": path,
-                "recommendations": recs]
+        var out: [String: Any] = ["deficit": true, "sportDays": [0, 2, 4], "suggestedSportGroups": [], "muscles": muscles, "days": dayEvals,
+                                  "path": path, "recommendations": recs]
+        if let target = req["sessionMinutesTarget"] as? Int {
+            let peak = path.filter { $0["phase"] as? String != "Deload" }.compactMap { $0["total"] as? Int }.max() ?? 0
+            let trainingDays = days.filter { !((($0["exercises"] as? [[String: Any]]) ?? []).isEmpty) }.count
+            out["budget"] = ["capacitySets": Self.capacity(target, days: trainingDays), "usedSets": peak,
+                             "emphasizeCount": tiers.values.filter { $0 == "emphasize" }.count, "emphasizeMax": 2,
+                             "raiseCost": muscles.reduce(into: [String: Int]()) { r, m in
+                                 let t = m["tier"] as? String
+                                 if t == "maintain" { r[m["muscle"] as! String] = 4 } else if t == "grow" { r[m["muscle"] as! String] = 6 }
+                             }]
+        }
+        return out
+    }
+
+    /// The server's session-minutes model (`mezo.train.evaluator`): unstyled = 2.4 per working set + 1 per warm-up set
+    /// + 6; styled = per set 40 s + its rest (else the flat figure) + 1 per exercise + 1 per warm-up set + 6.
+    static func minutes(_ exercises: [[String: Any]], styled: Bool) -> Int {
+        let working = exercises.map { $0["workingSets"] as? Int ?? 0 }.reduce(0, +)
+        let warmups = exercises.map { $0["warmupSets"] as? Int ?? 0 }.reduce(0, +)
+        var work = 2.4 * Double(working), transitions = 0.0
+        if styled {
+            work = exercises.map { e in
+                Double(e["workingSets"] as? Int ?? 0) * (40 + Double(e["restSec"] as? Int ?? Int(2.4 * 60 - 40))) / 60
+            }.reduce(0, +)
+            transitions = Double(exercises.count)
+        }
+        return Int((work + Double(warmups) + transitions + 6).rounded(.toNearestOrAwayFromZero))
+    }
+
+    /// The server's capacity (`TierBudget`, unstyled): per day floor((target − 6 − 2) / (2.4 + 1/3)).
+    static func capacity(_ target: Int, days: Int) -> Int {
+        days * max(0, Int((Double(target - 8) / (2.4 + 1.0 / 3.0) + 1e-9).rounded(.down)))
+    }
+
+    // MARK: the candidates FIXTURE (mezo-r36n9.113)
+
+    /// Weekly working sets per muscle at Tartás · Építés · Hangsúly (the spike's numbers).
+    private static let tierSets: [String: (Int, Int, Int)] = [
+        "back": (4, 9, 14), "chest": (4, 8, 13), "shoulder": (3, 8, 13), "biceps": (2, 6, 10), "triceps": (2, 6, 10),
+        "quad": (4, 8, 13), "ham": (3, 6, 10), "glute": (2, 5, 9), "calf": (3, 6, 10), "core": (2, 4, 6)]
+    private static let upper: Set<String> = ["back", "chest", "shoulder", "biceps", "triceps"]
+    private static let names: [String: String] = [
+        "back": "Seated Cable Row · Neutral", "chest": "Incline Machine Press", "shoulder": "Machine Lateral Raise",
+        "biceps": "Cable Curl", "triceps": "Single-Arm Pushdown", "quad": "Hack Squat", "ham": "Leg Curl",
+        "glute": "Machine Hip Abduction", "calf": "Seated Calf Raise", "core": "Cable Crunch"]
+
+    private static func sets(_ muscle: String, _ tier: String) -> Int {
+        let t = tierSets[muscle] ?? (2, 5, 8)
+        return tier == "maintain" ? t.0 : (tier == "emphasize" ? t.2 : t.1)
+    }
+
+    /// FIXTURE for POST /meso-plans/candidates: Felső / Alsó and Teljes test built from the tiers, evaluated with the
+    /// fixture evaluator (server minutes formula); a split whose longest day passes the target is offered, else the
+    /// closest one comes back with the fixes. Peak week = week 1 + 2 sets per Hangsúly muscle.
+    static func candidates(_ req: [String: Any]) -> [String: Any] {
+        let days = req["daysOfWeek"] as? [String] ?? []
+        let weeks = req["weeks"] as? Int ?? 6
+        let tiers = req["priorities"] as? [String: String] ?? [:]
+        let target = req["sessionMinutesTarget"] as? Int ?? 60
+        let muscles = Array(tierSets.keys).sorted()
+        func tier(_ m: String) -> String { tiers[m] ?? "grow" }
+        func build(_ key: String) -> (label: String, days: [[String: Any]]) {
+            let full = key == "full"
+            let dayMuscles: [[String]] = days.indices.map { i in
+                full ? muscles : muscles.filter { upper.contains($0) == (i % 2 == 0) }
+            }
+            let built: [[String: Any]] = days.enumerated().map { i, token in
+                let ms = dayMuscles[i]
+                let exercises: [[String: Any]] = ms.compactMap { m in
+                    let hits = dayMuscles.filter { $0.contains(m) }.count
+                    let before = dayMuscles[..<i].filter { $0.contains(m) }.count
+                    let total = sets(m, tier(m))
+                    let share = total / hits + (before < total % hits ? 1 : 0)
+                    guard share > 0 else { return nil }
+                    return ["name": names[m] ?? m, "muscle": m, "warmupSets": ["back", "chest", "quad"].contains(m) ? 1 : 0,
+                            "workingSets": share, "repMin": 8, "repMax": 12, "targetRIR": 2, "type": "compound",
+                            "countsTowardVolume": true]
+                }
+                return ["day": token, "type": full ? "Teljes test" : (i % 2 == 0 ? "Felső" : "Alsó"), "muscle": ms.first ?? "back",
+                        "muscleAccent": false, "exercises": exercises]
+            }
+            return (full ? "Teljes test ×\(days.count)" : "Felső / Alsó", built)
+        }
+        let phases = (0..<weeks).map { $0 == weeks - 1 ? "Deload" : ($0 == 0 ? "MEV" : ($0 == weeks - 2 ? "MRV" : "MAV")) }
+        let emphasized = tiers.values.filter { $0 == "emphasize" }.count
+        let week1 = muscles.map { sets($0, tier($0)) }.reduce(0, +)
+        let used = week1 + 2 * emphasized
+        let budget: [String: Any] = [
+            "capacitySets": capacity(target, days: days.count), "usedSets": used, "emphasizeCount": emphasized, "emphasizeMax": 2,
+            "raiseCost": muscles.reduce(into: [String: Int]()) { r, m in
+                switch tier(m) {
+                case "maintain": r[m] = sets(m, "grow") - sets(m, "maintain")
+                case "grow": r[m] = sets(m, "emphasize") - sets(m, "grow") + 2
+                default: break
+                }
+            }]
+        // The intake's week-1 keret: a raise is allowed while its cost still fits (the server re-ranks instead).
+        let room = capacity(target, days: days.count) - week1
+        let costs = budget["raiseCost"] as? [String: Int] ?? [:]
+        let intake: [String: Any] = [
+            "capacitySets": capacity(target, days: days.count), "usedSets": week1, "emphasizeCount": emphasized, "emphasizeMax": 2,
+            "raiseAllowed": costs.reduce(into: [String: Bool]()) { r, kv in
+                r[kv.key] = (tier(kv.key) == "grow" && emphasized >= 2) ? false : kv.value <= room
+            }]
+        let scored: [(key: String, c: [String: Any], longest: Int, warmups: Int)] = ["ul", "full"].map { key in
+            let b = build(key)
+            var evaluation = evaluate(["days": b.days, "musclePriorities": tiers, "phaseCurve": phases, "sessionMinutesTarget": target])
+            evaluation["budget"] = budget
+            let longest = (evaluation["days"] as? [[String: Any]] ?? []).compactMap { $0["minutesEstimate"] as? Int }.max() ?? 0
+            let warmups = b.days.flatMap { ($0["exercises"] as? [[String: Any]]) ?? [] }.map { $0["warmupSets"] as? Int ?? 0 }.reduce(0, +)
+            let template: [String: Any] = ["title": b.label, "weeks": weeks, "days": b.days]
+            return (key, ["splitKey": key, "splitLabel": b.label, "template": template, "evaluation": evaluation], longest, warmups)
+        }
+        let fitting = scored.filter { $0.longest <= target }
+        if fitting.isEmpty {
+            let closest = scored.min { $0.longest < $1.longest }!
+            var c = closest.c; c["recommended"] = false; c["reasons"] = []
+            var fixes: [[String: Any]] = [["code": "more_minutes", "value": Int((Double(closest.longest) / 15).rounded(.up)) * 15]]
+            if emphasized > 0 { fixes.append(["code": "fewer_emphasis"]) }
+            if days.count < 6 { fixes.append(["code": "more_days"]) }
+            return ["candidates": [c], "nothingFits": true, "fixes": fixes, "intakeBudget": intake]
+        }
+        let base = fitting.first!.warmups
+        let offered: [[String: Any]] = fitting.enumerated().map { i, s in
+            var c = s.c
+            c["recommended"] = i == 0
+            var reasons: [[String: Any]] = [["code": "fits_time", "value": s.longest]]
+            if s.key == "full" { reasons.append(["code": "freq_high", "value": days.count]) } else { reasons.append(["code": "freq_2x"]) }
+            if s.warmups > base { reasons.append(["code": "more_warmups", "value": (s.warmups - base) * 2]) }
+            c["reasons"] = reasons
+            return c
+        }
+        return ["candidates": offered, "nothingFits": false, "fixes": [], "intakeBudget": intake]
     }
 
     struct Line { let id, exercise, exerciseName, day, muscle, kind: String; let from, to: Double; let reasons: [String]; let dayIndex: Int }

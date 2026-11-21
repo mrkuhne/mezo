@@ -94,6 +94,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/train/mesocycles/{id}/discard:
+    post:
+      tags: [Train]
+      operationId: discardMesocycle
+      summary: Throw away a block that was never trained (mezo-r36n9.113) — soft-deletes the run, its days, exercises and volume rows, and the template it came from when that template has no other runs; no report, no close event, no AI
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Discarded
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Mesocycle not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: TRAIN_MESO_DISCARD_HAS_LOGS when the block has a logged session; TRAIN_RUN_NOT_EDITABLE when it is archived
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/train/mesocycles/{id}/muscle-priorities:
     put:
       tags: [Train]
@@ -572,6 +605,36 @@ paths:
                 $ref: '#/components/schemas/MesoPlanEvaluation'
         '400':
           description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/train/meso-plans/candidates:
+    post:
+      tags: [Train]
+      operationId: getMesoPlanCandidates
+      summary: Ranked, flawless split candidates for the chosen days (deterministic skeleton + fill + style stamp, no LLM, read-only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MesoPlanCandidatesRequest'
+      responses:
+        '200':
+          description: 1-3 ranked candidates, or the closest one flagged nothingFits with fixes — nothing is persisted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MesoPlanCandidates'
+        '400':
+          description: Validation error (incl. TRAIN_MESO_EMPHASIZE_CAP)
           content:
             application/json:
               schema:
@@ -2791,6 +2854,23 @@ components:
           nullable: true
           maxLength: 400
           description: Free-text goal steering exercise choice (e.g. "röplabda mellett, vállra figyelve")
+        split:
+          type: string
+          nullable: true
+          pattern: '^[a-z0-9_]{2,16}$'
+          description: Key of a catalogued split for the chosen day count (a candidate's splitKey from POST /meso-plans/candidates); absent = the default split
+        sessionMinutesTarget:
+          type: integer
+          nullable: true
+          minimum: 10
+          maximum: 300
+          description: The session-minutes target the chosen candidate was offered under (mezo-r36n9.113); with split, an LLM-merged plan that no longer passes the candidate filters falls back to the deterministic plan
+        sportGroups:
+          type: array
+          nullable: true
+          description: Coarse muscle groups a sport already loads (as on the candidates request); null = none
+          items:
+            type: string
     MesoPlanEvaluateRequest:
       type: object
       required: [weeks, phaseCurve, days]
@@ -2895,6 +2975,56 @@ components:
             $ref: '#/components/schemas/PlanProposalEdit'
         proposalBlocked:
           type: boolean
+        basis:
+          $ref: '#/components/schemas/MuscleBasis'
+        consecutiveHeavy:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConsecutiveHeavyDay'
+          description: Pairs of consecutive calendar days (Vas wraps to Hét) on which this muscle gets at least the heavy-set threshold of counting working sets both days.
+    MuscleBasis:
+      type: object
+      required: [source]
+      description: Why the band is what it is (the phone words it).
+      properties:
+        source:
+          type: string
+          enum: [landmarks_rp, maintain_third, sport_adjusted]
+          description: landmarks_rp = the RP landmarks for the tier; maintain_third = the Tartás band (a third of MEV up to MEV); sport_adjusted = lowered because the sport already trains the muscle.
+    ConsecutiveHeavyDay:
+      type: object
+      required: [dayIndex, nextDayIndex, sets, nextSets]
+      properties:
+        dayIndex:
+          type: integer
+        nextDayIndex:
+          type: integer
+          description: The plan day on the next calendar day
+        sets:
+          type: integer
+        nextSets:
+          type: integer
+    TierBudgetView:
+      type: object
+      required: [usedSets, emphasizeCount, emphasizeMax, raiseCost]
+      description: The weekly set budget the tiers spend.
+      properties:
+        capacitySets:
+          type: integer
+          nullable: true
+          description: Working sets the training days fit in the session-minutes target; null without a target.
+        usedSets:
+          type: integer
+          description: Peak weekly total over the non-deload weeks of the projected path.
+        emphasizeCount:
+          type: integer
+        emphasizeMax:
+          type: integer
+        raiseCost:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Muscle -> extra peak weekly sets if it were raised one tier (maintain -> grow -> emphasize); emphasized muscles are absent.
     SessionCapWarning:
       type: object
       required: [muscle, sets, cap]
@@ -3026,6 +3156,11 @@ components:
           items:
             $ref: '#/components/schemas/TechniqueRecommendation'
           description: Per-exercise technique recommendation for every exercise that may carry a technique (a stable one); null when the block does not opt in.
+        budget:
+          allOf:
+            - $ref: '#/components/schemas/TierBudgetView'
+          nullable: true
+          description: The tier budget; null when the plan has no counting exercises.
     TechniqueRecommendation:
       type: object
       required: [dayIndex, exerciseIndex, technique, reason, challengeFit]
@@ -3057,6 +3192,132 @@ components:
         llmUsed:
           type: boolean
           description: false when the LLM port was absent, failed, or its answer changed nothing (no accepted pick) — the deterministic filler produced the plan
+    MesoPlanCandidatesRequest:
+      type: object
+      required: [daysOfWeek, weeks]
+      properties:
+        daysOfWeek:
+          type: array
+          minItems: 2
+          maxItems: 6
+          uniqueItems: true
+          description: Training days, FE day tokens; any weekday incl. weekend
+          items:
+            type: string
+            pattern: '^(Hét|Kedd|Sze|Csü|Pén|Szo|Vas)$'
+        weeks:
+          type: integer
+          minimum: 4
+          maximum: 8
+          description: Total length incl. the terminal deload week
+        priorities:
+          type: object
+          nullable: true
+          description: Sparse per-muscle tier map over the coarse groups; absent = grow; more than emphasizeMax emphasize = 400
+          additionalProperties:
+            type: string
+            pattern: '^(emphasize|grow|maintain)$'
+        sessionMinutesTarget:
+          type: integer
+          nullable: true
+          minimum: 10
+          maximum: 300
+          description: Target session length; absent = no time filter
+        sportGroups:
+          type: array
+          nullable: true
+          description: Coarse muscle groups a sport already loads; null = none
+          items:
+            type: string
+    MesoPlanCandidates:
+      type: object
+      required: [candidates, nothingFits, fixes]
+      properties:
+        candidates:
+          type: array
+          description: Offered candidates, best first (max 3); when nothingFits, exactly the closest one
+          items:
+            $ref: '#/components/schemas/MesoPlanCandidate'
+        nothingFits:
+          type: boolean
+          description: true when no catalogued split passes every hard filter
+        fixes:
+          type: array
+          description: What would make a candidate pass; empty when something fits
+          items:
+            $ref: '#/components/schemas/CandidateFix'
+        intakeBudget:
+          allOf:
+            - $ref: '#/components/schemas/IntakeBudget'
+          nullable: true
+          description: The intake's weekly set budget (week 1 of the lead candidate); absent when no candidate came back
+    IntakeBudget:
+      type: object
+      required: [usedSets, emphasizeCount, emphasizeMax, raiseAllowed]
+      description: The new-block intake's tier budget (mezo-r36n9.113) — week-1 based, consistent with the candidate filter (the builder's TierBudgetView is peak-week based).
+      properties:
+        usedSets:
+          type: integer
+          description: Week-1 total counting working sets of the lead candidate (recommended, else the closest)
+        capacitySets:
+          type: integer
+          nullable: true
+          description: Sum over the lead candidate's training days of the working sets each day fits in the session-minutes target (minutes model v2, that day's real warm-ups); null without a target. An offered candidate always has usedSets <= capacitySets.
+        emphasizeCount:
+          type: integer
+        emphasizeMax:
+          type: integer
+        raiseAllowed:
+          type: object
+          additionalProperties:
+            type: boolean
+          description: Muscle -> true when raising only it one tier (maintain -> grow -> emphasize, within emphasizeMax) still offers at least one candidate; emphasized muscles are absent; empty without a target
+    MesoPlanCandidate:
+      type: object
+      required: [splitKey, splitLabel, template, evaluation, recommended, reasons]
+      properties:
+        splitKey:
+          type: string
+        splitLabel:
+          type: string
+        template:
+          $ref: '#/components/schemas/MesoTemplateUpsertRequest'
+        evaluation:
+          $ref: '#/components/schemas/MesoPlanEvaluation'
+        recommended:
+          type: boolean
+          description: true on the first offered candidate (false on a nothingFits closest one)
+        reasons:
+          type: array
+          description: Neutral or positive facts only; the phone owns the copy
+          items:
+            $ref: '#/components/schemas/CandidateReason'
+    CandidateReason:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+          enum: [fits_time, freq_2x, freq_high, more_warmups]
+        value:
+          type: integer
+          nullable: true
+          description: fits_time = longest day minutes; freq_high = least times per week any trained group is hit; more_warmups = extra warm-up sets per week vs the recommended
+    CandidateFix:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+          enum: [more_minutes, fewer_emphasis, more_days]
+        value:
+          type: integer
+          nullable: true
+          description: more_minutes = the session minutes the closest candidate needs (rounded up to 15)
+        muscle:
+          type: string
+          nullable: true
+          description: fewer_emphasis = the Hangsúly muscle to lower to Építés
     MesoTemplateUpsertRequest:
       type: object
       required:

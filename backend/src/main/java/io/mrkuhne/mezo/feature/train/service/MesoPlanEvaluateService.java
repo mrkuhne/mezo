@@ -1,17 +1,21 @@
 package io.mrkuhne.mezo.feature.train.service;
 
 import io.mrkuhne.mezo.api.dto.DayEvaluation;
+import io.mrkuhne.mezo.api.dto.ConsecutiveHeavyDay;
 import io.mrkuhne.mezo.api.dto.DaySetSpread;
 import io.mrkuhne.mezo.api.dto.ExerciseCapWarning;
 import io.mrkuhne.mezo.api.dto.GymExerciseInput;
 import io.mrkuhne.mezo.api.dto.MesoDayInput;
 import io.mrkuhne.mezo.api.dto.MesoPlanEvaluateRequest;
 import io.mrkuhne.mezo.api.dto.MesoPlanEvaluation;
+import io.mrkuhne.mezo.api.dto.MesoTemplateUpsertRequest;
+import io.mrkuhne.mezo.api.dto.MuscleBasis;
 import io.mrkuhne.mezo.api.dto.MuscleEvaluation;
 import io.mrkuhne.mezo.api.dto.PlanProposalEdit;
 import io.mrkuhne.mezo.api.dto.PlannedChallenge;
 import io.mrkuhne.mezo.api.dto.PlannedTechnique;
 import io.mrkuhne.mezo.api.dto.SessionCapWarning;
+import io.mrkuhne.mezo.api.dto.TierBudgetView;
 import io.mrkuhne.mezo.api.dto.VolumeBandView;
 import io.mrkuhne.mezo.api.dto.VolumePathWeek;
 import io.mrkuhne.mezo.feature.train.config.TrainTechniqueProperties;
@@ -62,8 +66,55 @@ public class MesoPlanEvaluateService {
     private final TrainTechniqueProperties techniqueProps;
     private final TechniquePlanService techniquePlanService;
 
+    /** The evaluation of a draft plus the evaluator input and result it was mapped from. */
+    public record Measured(PlanEvaluator.Input input, PlanEvaluator.Result result, MesoPlanEvaluation evaluation) {}
+
+    /**
+     * The owner's reads every draft measurement needs — sport slots and the deficit — read once so a caller
+     * measuring many drafts in one request (the candidates endpoint, mezo-r36n9.113) never repeats them.
+     */
+    public record Context(List<SportScheduleSlotEntity> slots, boolean deficit) {}
+
+    /** {@link Context} for {@code userId} now. */
+    public Context context(UUID userId) {
+        return new Context(sportSlotRepository.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId),
+            energyBalance.isInDeficit(userId, LocalDate.now()));
+    }
+
+    /**
+     * A generated template in the evaluate request's shape, so its evaluation is exactly what
+     * {@code POST /meso-plans/evaluate} returns for it.
+     */
+    public static MesoPlanEvaluateRequest requestFor(MesoTemplateUpsertRequest t, List<String> sportGroups,
+                                                     Integer sessionMinutesTarget) {
+        return MesoPlanEvaluateRequest.builder()
+            .weeks(t.getWeeks())
+            .phaseCurve(t.getPhaseCurve().stream()
+                .map(c -> MesoPlanEvaluateRequest.PhaseCurveEnum.fromValue(c.getValue())).toList())
+            .days(t.getDays())
+            .musclePriorities(t.getMusclePriorities())
+            .trainingStyle(t.getTrainingStyle())
+            .techniquesEnabled(t.getTechniquesEnabled())
+            .sportGroups(sportGroups)
+            .sessionMinutesTarget(sessionMinutesTarget)
+            .build();
+    }
+
     @Transactional(readOnly = true)
     public MesoPlanEvaluation evaluate(UUID userId, MesoPlanEvaluateRequest req) {
+        return measure(userId, req).evaluation();
+    }
+
+    /**
+     * {@link #evaluate}'s whole mapping, also handing back the evaluator result (the candidates endpoint ranks on
+     * it, mezo-r36n9.113). No transaction of its own: the caller's read-only transaction covers its reads.
+     */
+    public Measured measure(UUID userId, MesoPlanEvaluateRequest req) {
+        return measure(userId, req, context(userId));
+    }
+
+    /** {@link #measure(UUID, MesoPlanEvaluateRequest)} with the owner's reads already done. */
+    public Measured measure(UUID userId, MesoPlanEvaluateRequest req, Context ctx) {
         Map<String, String> priorities = PriorityTier.normalize(req.getMusclePriorities());
         List<String> sportGroups = SportGroups.normalize(req.getSportGroups(), props.baselines().keySet());
 
@@ -77,7 +128,8 @@ public class MesoPlanEvaluateService {
                     !Boolean.FALSE.equals(x.getCountsTowardVolume()),
                     TechniqueRules.capExtra(x.getTechnique() == null ? Technique.NONE
                             : Technique.fromWire(x.getTechnique().getValue()),
-                        Boolean.TRUE.equals(x.getChallenge()), optsIn, techniqueProps.capWeight())));
+                        Boolean.TRUE.equals(x.getChallenge()), optsIn, techniqueProps.capWeight()),
+                    x.getRestSec()));
             }
             days.add(new PlanEvaluator.PlanDay(d.getDay(), list));
         }
@@ -87,15 +139,16 @@ public class MesoPlanEvaluateService {
                 SystemMessage.error("TRAIN_MESO_PHASE_CURVE_LENGTH").build(), HttpStatus.BAD_REQUEST);
         }
 
-        List<SportScheduleSlotEntity> slots = sportSlotRepository
-            .findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId);
-        boolean deficit = energyBalance.isInDeficit(userId, LocalDate.now());
-        PlanEvaluator.Result result = PlanEvaluator.evaluate(new PlanEvaluator.Input(req.getWeeks(), phaseCurve, days,
+        List<SportScheduleSlotEntity> slots = ctx.slots();
+        boolean deficit = ctx.deficit();
+        PlanEvaluator.Input input = new PlanEvaluator.Input(req.getWeeks(), phaseCurve, days,
             priorities, sportGroups == null ? Set.of() : new HashSet<>(sportGroups), deficit,
-            req.getSessionMinutesTarget(), sportWeekdays(slots), props));
+            req.getSessionMinutesTarget(), sportWeekdays(slots), props, req.getTrainingStyle() != null);
+        PlanEvaluator.Result result = PlanEvaluator.evaluate(input);
         EvaluatorTechniques.Shown shown = optsIn
             ? EvaluatorTechniques.ofProjection(techniquePlanService.planDraft(userId, req)) : null;
-        return toResponse(deficit, result, slots, sportGroups == null, null, null, shown);
+        return new Measured(input, result, toResponse(deficit, result, slots, sportGroups == null, null, null, shown,
+            TierBudget.of(input, result)));
     }
 
     @Transactional(readOnly = true)
@@ -129,7 +182,8 @@ public class MesoPlanEvaluateService {
                 String group = e.getMuscle() == null || e.getMuscle().isBlank() ? null : MuscleGroup.of(e.getMuscle());
                 list.add(new PlanEvaluator.PlanExercise(group, e.getWorkingSets() == null ? 0 : e.getWorkingSets(),
                     e.getWarmupSets() == null ? 0 : e.getWarmupSets(), e.isCountsTowardVolume(),
-                    TechniqueRules.capExtra(e, run.isTechniquesEnabled(), techniqueProps.capWeight())));
+                    TechniqueRules.capExtra(e, run.isTechniquesEnabled(), techniqueProps.capWeight()),
+                    e.getRestSec()));
             }
             days.add(new PlanEvaluator.PlanDay(s.getDayLabel(), list, dayIndex));
         }
@@ -138,16 +192,17 @@ public class MesoPlanEvaluateService {
         List<SportScheduleSlotEntity> slots = sportSlotRepository
             .findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId);
         boolean deficit = volumeArcService.deficitFor(userId, run);
-        PlanEvaluator.Result result = PlanEvaluator.evaluate(new PlanEvaluator.Input(run.getWeeks(), phaseCurve, days,
+        PlanEvaluator.Input input = new PlanEvaluator.Input(run.getWeeks(), phaseCurve, days,
             run.getMusclePriorities(),
             run.getSportGroups() == null ? Set.of() : new HashSet<>(run.getSportGroups()),
-            deficit, null, sportWeekdays(slots), props));
+            deficit, null, sportWeekdays(slots), props, run.getTrainingStyle() != null);
+        PlanEvaluator.Result result = PlanEvaluator.evaluate(input);
         EvaluatorTechniques.Shown shown = optsIn
             ? EvaluatorTechniques.ofRun(techniquePlanService.planRun(userId, run), run.getCurrentWeek(),
                 storedTechniques, storedChallenges)
             : null;
         return toResponse(deficit, result, slots, run.getSportGroups() == null,
-            volumeArcService.plannedPath(userId, run, run.getCurrentWeek()), run, shown);
+            volumeArcService.plannedPath(userId, run, run.getCurrentWeek()), run, shown, TierBudget.of(input, result));
     }
 
     private static Set<Integer> sportWeekdays(List<SportScheduleSlotEntity> slots) {
@@ -158,7 +213,7 @@ public class MesoPlanEvaluateService {
 
     private MesoPlanEvaluation toResponse(boolean deficit, PlanEvaluator.Result r, List<SportScheduleSlotEntity> slots,
                                           boolean suggest, Map<String, int[]> plannedPath, MesocycleEntity run,
-                                          EvaluatorTechniques.Shown shown) {
+                                          EvaluatorTechniques.Shown shown, TierBudget.Result budget) {
         Set<String> suggested = new HashSet<>();
         if (suggest) {
             slots.stream().map(SportScheduleSlotEntity::getSport).distinct().forEach(sport ->
@@ -176,6 +231,10 @@ public class MesoPlanEvaluateService {
             .proposal(m.proposal().stream().map(p -> PlanProposalEdit.builder().dayIndex(p.dayIndex())
                 .exerciseIndex(p.exerciseIndex()).delta(p.delta()).build()).toList())
             .proposalBlocked(m.proposalBlocked())
+            .basis(MuscleBasis.builder().source(MuscleBasis.SourceEnum.fromValue(m.basis().name().toLowerCase())).build())
+            .consecutiveHeavy(m.consecutiveHeavy().stream().map(c -> ConsecutiveHeavyDay.builder()
+                .dayIndex(c.dayIndex()).nextDayIndex(c.nextDayIndex()).sets(c.sets()).nextSets(c.nextSets()).build())
+                .toList())
             .build()).toList();
         List<DayEvaluation> days = r.days().stream().map(d -> DayEvaluation.builder()
             .dayIndex(d.dayIndex()).day(d.day()).minutesEstimate(d.minutesEstimate()).overTarget(d.overTarget())
@@ -193,6 +252,9 @@ public class MesoPlanEvaluateService {
         return MesoPlanEvaluation.builder()
             .techniqueWarnings(shown == null ? null : shown.warnings())
             .recommendations(shown == null ? null : shown.recommendations())
+            .budget(budget == null ? null : TierBudgetView.builder().capacitySets(budget.capacitySets())
+                .usedSets(budget.usedSets()).emphasizeCount(budget.emphasizeCount())
+                .emphasizeMax(budget.emphasizeMax()).raiseCost(new TreeMap<>(budget.raiseCost())).build())
             .deficit(deficit)
             .sportDays(List.copyOf(sportWeekdays(slots)))
             .suggestedSportGroups(props.baselines().keySet().stream().filter(suggested::contains).toList())

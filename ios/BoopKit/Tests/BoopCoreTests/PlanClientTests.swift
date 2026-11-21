@@ -235,4 +235,67 @@ struct PlanClientTests {
         #expect(m.sendError == .conflict("TRAIN_WEEK_PROPOSAL_CLOSED"))
         #expect(m.review?.status == "expired")
     }
+
+    // MARK: the new-block intake's calls (mezo-r36n9.113)
+
+    @Test func candidatesDecodeLenientlyWithUnknownCodes() throws {
+        let c = try JSONDecoder().decode(WireCandidates.self, from: Data(PlanFixtures.candidatesJSON(nothingFits: true).utf8))
+        #expect(c.nothingFits && c.candidates.count == 2)
+        #expect(c.candidates[0].splitKey == "ul" && c.candidates[0].splitLabel == "Felső-alsó")
+        #expect(c.candidates[0].reasons.map(\.code) == ["fits_time", "freq_2x", "brand_new_reason"], "an unknown code is kept as text")
+        #expect(c.candidates[0].reasons[0].value == 58 && c.candidates[0].reasons[1].value == nil)
+        #expect(c.fixes.map(\.code) == ["more_minutes", "future_fix"] && c.fixes[0].value == 75)
+        let budget = try #require(c.candidates[0].evaluation.budget)
+        #expect(budget.capacitySets == 60 && budget.usedSets == 52 && budget.emphasizeMax == 2 && budget.raiseCost["biceps"] == 12)
+        #expect(c.candidates[1].evaluation.budget == nil, "an evaluation without a budget still decodes")
+        #expect(c.candidates[0].template.trainingStyle == "balanced" && c.candidates[0].template.dayCount == 2)
+    }
+
+    @Test func evaluationReadsBasisAndConsecutiveHeavy() throws {
+        let json = PlanFixtures.evaluationJSON.replacingOccurrences(of: #""proposal":[],"proposalBlocked":false}"#,
+            with: #""proposal":[],"proposalBlocked":false,"basis":{"source":"maintain_third"},"consecutiveHeavy":[{"dayIndex":0,"nextDayIndex":1,"sets":5,"nextSets":4}]}"#)
+        let e = try JSONDecoder().decode(WireEvaluation.self, from: Data(json.utf8))
+        let chest = try #require(e.muscles.first { $0.muscle == "chest" })
+        #expect(chest.basis?.source == "maintain_third")
+        #expect(chest.consecutiveHeavy?.first == WireConsecutive(dayIndex: 0, nextDayIndex: 1, sets: 5, nextSets: 4))
+        #expect(e.muscles[0].basis == nil && e.muscles[0].consecutiveHeavy == nil)
+    }
+
+    @Test func templateIsRelayedUnchanged() async throws {
+        let stub = StubTransport()
+        stub.on("createMesoTemplate", .json(200, #"{"id":"\#(PlanFixtures.templateId)","title":"x","weeks":6,"phaseCurve":[],"days":[],"runCount":0}"#))
+        let template = try JSONDecoder().decode(WireTemplate.self, from: Data(PlanFixtures.templateJSON().utf8))
+        let id = try await PlanFixtures.planClient(stub).createTemplate(template)
+        #expect(id == PlanFixtures.templateId)
+        #expect(stub.sent[0].path == "/api/train/meso-templates")
+        let sent = try JSONSerialization.jsonObject(with: Data(try #require(stub.sent[0].body).utf8)) as? NSDictionary
+        let original = try JSONSerialization.jsonObject(with: Data(PlanFixtures.templateJSON().utf8)) as? NSDictionary
+        #expect(sent == original, "every field, the unknown ones included, goes back as it came")
+    }
+
+    @Test func startAndCloseUseTheContractPaths() async throws {
+        let stub = StubTransport()
+        stub.on("startMesoTemplate", .json(200, PlanFixtures.startedBlockJSON()))
+        stub.on("closeMesocycle", .json(200, PlanFixtures.startedBlockJSON(status: "archived")))
+        let c = PlanFixtures.planClient(stub)
+        let block = try await c.startTemplate(id: PlanFixtures.templateId, startDate: "2026-11-23", status: "planned")
+        #expect(block.id == PlanFixtures.newBlockId && block.status == "planned")
+        #expect(stub.sent[0].path == "/api/train/meso-templates/\(PlanFixtures.templateId)/start")
+        let body = try JSONSerialization.jsonObject(with: Data(try #require(stub.sent[0].body).utf8)) as? [String: String]
+        #expect(body == ["startDate": "2026-11-23", "status": "planned"])
+        try await c.closeBlock(id: PlanFixtures.newBlockId)
+        #expect(stub.sent[1].path == "/api/train/mesocycles/\(PlanFixtures.newBlockId)/close")
+    }
+
+    @Test func discardUsesItsOwnPathAndReadsTheLogsConflict() async throws {
+        let stub = StubTransport()
+        stub.on("discardMesocycle", .status(204))
+        stub.on("discardMesocycle", .json(409, #"[{"code":"TRAIN_MESO_DISCARD_HAS_LOGS","type":"REQUEST"}]"#))
+        let c = PlanFixtures.planClient(stub)
+        try await c.discardBlock(id: PlanFixtures.newBlockId)
+        #expect(stub.sent[0].path == "/api/train/mesocycles/\(PlanFixtures.newBlockId)/discard")
+        await #expect(throws: PlanFetchError.conflict("TRAIN_MESO_DISCARD_HAS_LOGS")) {
+            try await c.discardBlock(id: PlanFixtures.newBlockId)
+        }
+    }
 }

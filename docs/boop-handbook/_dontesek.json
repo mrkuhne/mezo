@@ -1028,5 +1028,137 @@
     "miert": "Ott vannak a rekeszek, és ez a hosszú távú nézet helye; a Ma oldal maradjon a „mi a dolgom ma?” kérdésé.",
     "levaltotta": "—",
     "kovetkezmeny": "Értesítés és teendő-gomb nincs; hétfőnként frissül. A Ma oldal nem változik."
+  },
+  "d-2026-11-20-boop-javasol-tervet": {
+    "cim": "Boop kész tervet javasol új blokkhoz",
+    "datum": "2026-11-20",
+    "suly": "Nagy",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "Új blokk indításakor Boop két-három kész tervet mutat becsült idővel és indoklással, te választasz, aztán a megszokott építőben szerkesztheted. Nem az előző blokkból indul, és nem kérdezgeti végig a beállításokat.",
+    "miert": "Egy gombnyomásra kész, indokolt javaslatot kapsz ahelyett, hogy mindent magadnak kellene összerakni.",
+    "levaltotta": "—",
+    "kovetkezmeny": "A telefonon új „Új blokk” folyamat van; a háttérrendszer jelölteket rangsorol."
+  },
+  "d-2026-11-20-boop-eves-tervet-keszit": {
+    "cim": "Boop készít éves tervet, az ATLAS csak minta",
+    "datum": "2026-11-20",
+    "suly": "Nagy",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "Boop maga állít össze éves tervet (váltakozó hangsúlyú blokkok). A te ATLAS-od mintaként szolgál, nem importáljuk be.",
+    "miert": "Így a terv a te aktuális állapotodhoz igazodik, nem egy külső táblázathoz.",
+    "levaltotta": "—",
+    "kovetkezmeny": "Az éves terv a tervajánló harmadik szelete (még nincs kész)."
+  },
+  "d-2026-11-20-eves-terkep-elore": {
+    "cim": "Éves térkép előre, a részletek a blokk elején",
+    "datum": "2026-11-20",
+    "suly": "Közepes",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "Az éves térkép előre megmutatja, melyik blokk milyen hangsúllyal jön és mikor vannak a könnyű hetek; a gyakorlatok és sorozatok csak a blokk indulásakor készülnek, a friss állapotodból.",
+    "miert": "Az év áttekinthető, a részletek pedig nem avulnak el hónapokkal előre.",
+    "levaltotta": "—",
+    "kovetkezmeny": "Az éves térkép a harmadik szelet; a blokk-részletek mindig az indításkor épülnek."
+  },
+  "d-2026-11-20-sajat-eves-terkep": {
+    "cim": "Saját éves térkép a háttérrendszeren",
+    "datum": "2026-11-20",
+    "suly": "Közepes",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "Az éves térkép saját adatként a háttérrendszeren él — nem előre legyártott blokktervek sora, és nem csak a következő blokk.",
+    "miert": "Így az év egy helyen, következetesen követhető, és változtatható anélkül, hogy kész tervek avulnának el.",
+    "levaltotta": "—",
+    "kovetkezmeny": "A harmadik szelet új adatot hoz a háttérrendszerre."
+  },
+  "d-2026-11-20-negy-resz-sorrend": {
+    "cim": "Az éves terv négy része ebben a sorrendben épül",
+    "datum": "2026-11-20",
+    "suly": "Kicsi",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "1. okosabb blokképítés és ellenőrzés, 2. új blokk a telefonon, 3. az éves térkép, 4. a térkép követése.",
+    "miert": "Az első kettő önmagában is használható, így hamar kézbe kapod; az éves térkép ezekre épül.",
+    "levaltotta": "—",
+    "kovetkezmeny": "Az első két rész 2026-11-21-re elkészült (ellenőrzésre vár)."
+  },
+  "d-2026-11-20-uj-blokk-az-evadhoz": {
+    "cim": "Az új blokk az aktív évadhoz kerül",
+    "datum": "2026-11-20",
+    "suly": "Közepes",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "Egy új edzésblokk mindig az éppen aktív évadhoz tartozik; nem minden blokkból lesz új évad.",
+    "miert": "Az évad a cél kerete, a blokkok annak lépései — ez illik az Évad-központú tervhez.",
+    "levaltotta": "—",
+    "kovetkezmeny": "Évad nélkül nem indítható blokk: a telefon előbb az évadot kéri."
+  },
+  "d-2026-11-20-ev-vegen-konnyu-tartas": {
+    "cim": "Az év végén két hét könnyű szinten tartás",
+    "datum": "2026-11-20",
+    "suly": "Kicsi",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "Az éves terv záró blokkja két hét könnyű szinten tartás — nem szabad hét, és nem az ATLAS négy közel nulla hete.",
+    "miert": "Két hét elég a regenerálódásra anélkül, hogy az évvégi állapot elveszne.",
+    "levaltotta": "—",
+    "kovetkezmeny": "A záró blokk része lesz az éves térképnek (harmadik szelet)."
+  },
+  "d-2026-11-20-heti-keret-max-ket-hangsuly": {
+    "cim": "Heti keret és legfeljebb két Hangsúly-izom",
+    "datum": "2026-11-20",
+    "suly": "Nagy",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "Az időkeret szabja meg, hány izom lehet Építés vagy Hangsúly, és egyszerre legfeljebb kettő lehet Hangsúly. Nem fix darabszámok, és nem csak figyelmeztetés.",
+    "miert": "Így a terv sosem kér többet, mint amennyi belefér a napjaidba.",
+    "levaltotta": "—",
+    "kovetkezmeny": "A telefon a harmadik Hangsúlyt és az időkereten túli emelést nem engedi, az okát kiírja."
+  },
+  "d-2026-11-20-csak-hibatlan-jelolt": {
+    "cim": "Csak hibátlan tervjelöltet mutat Boop",
+    "datum": "2026-11-21",
+    "suly": "Nagy",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "Boop csak olyan jelöltet ajánl, amelyben minden izom hetente legalább kétszer sorra kerül, minden nap belefér az időkeretbe, és nincs nagy terhelés két egymást követő napon. Ha ilyen nincs, azt mondja meg, és javításokat ajánl.",
+    "miert": "Hibás tervet nem ajánlunk; inkább látod, min múlik, hogy menjen.",
+    "levaltotta": "—",
+    "kovetkezmeny": "Szoros időkeretnél előfordulhat, hogy nincs jelölt, csak javítások (több perc, kevesebb Hangsúly, több nap)."
+  },
+  "d-2026-11-21-realisabb-bemelegites": {
+    "cim": "Reálisabb bemelegítés: csak az első nehéz gyakorlat előtt",
+    "datum": "2026-11-21",
+    "suly": "Közepes",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "Egy napon csak az adott izomcsoport első összetett (nehéz) gyakorlata előtt van bemelegítő sorozat; a további gyakorlatok és az izolációs mozdulatok elé nem.",
+    "miert": "A bemelegítés főleg a nehéz terhelésnél számít; a többi csak az időt viszi.",
+    "levaltotta": "—",
+    "kovetkezmeny": "A becsült edzésidők rövidebbek lettek, így több terv fér az időkeretbe."
+  },
+  "d-2026-11-21-tartas-a-sav-aljarol": {
+    "cim": "A Tartás az első héten a sáv aljáról indul",
+    "datum": "2026-11-21",
+    "suly": "Közepes",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "A Tartás szintű izom a blokk első hetén a sávja alsó szélén kezd (a megtartó adag, nagyjából a minimum harmada), nem a tetején.",
+    "miert": "Korábban a Tartás majdnem növekedési adaggal indult, ezért a szint csökkentése szinte semmi helyet nem szabadított fel.",
+    "levaltotta": "A „Sáv széle” döntés Tartásra vonatkozó fele (a Tartás a sáv tetejéről indult); az Építés és a Hangsúly kezdőpontja marad.",
+    "kovetkezmeny": "A Tartásra állított izom valóban helyet szabadít a heti keretben; a 4 napos, 60 perces terv így belefér."
   }
 }
