@@ -118,7 +118,8 @@ struct BlockBuilderPage: View {
                         }
                     }
                 }
-                .presentationDetents(sheet.compactHeight.map { [.height($0)] } ?? [.large])
+                // The fixed height, and .large too, so large Dynamic Type never clips the small editors.
+                .presentationDetents(sheet.compactHeight.map { [.height($0), .large] } ?? [.large])
                 .presentationBackground(sheet.compactHeight == nil ? NK.ground : Color(hex: 0x161B22).opacity(0.96))
                 .presentationCornerRadius(sheet.compactHeight == nil ? nil : 30)
                 .presentationDragIndicator(sheet.compactHeight == nil ? .automatic : .visible)
@@ -846,6 +847,8 @@ private struct BuilderDayCard: View {
                     .frame(maxWidth: .infinity, minHeight: locked ? 30 : 44, alignment: .leading)
                     .accessibilityAddTraits(locked ? [] : .isButton)
                     .accessibilityHint(locked ? "" : "Beállítások")
+                    .accessibilityAction { if !locked { ui.menuRow = nil; ui.sheet = .settings(exercise.id) } }
+                    .accessibilityAction(named: "Beállítások") { if !locked { ui.menuRow = nil; ui.sheet = .settings(exercise.id) } }
                 if !locked { dots(exercise) }
             }
             cells(exercise, e, capped: capped, locked: locked).padding(.leading, lead)
@@ -1141,8 +1144,8 @@ private struct BuilderSetCell: View {
         ZStack {
             if !locked {
                 HStack(spacing: 0) {
-                    half("−", .leading, down)
-                    half("+", .trailing, up)
+                    half("−", .leading, "Kevesebb sorozat", down)
+                    half("+", .trailing, "Több sorozat", up)
                 }
             }
             VStack(spacing: 1) {
@@ -1155,19 +1158,12 @@ private struct BuilderSetCell: View {
         .modifier(BuilderCellFace(own: own))
         .opacity(locked ? 0.7 : 1)
         .sensoryFeedback(.impact(weight: .light), trigger: value)
-        .accessibilityElement(children: .ignore)
+        .accessibilityElement(children: .contain)
         .accessibilityLabel("\(name), \(value) sorozat\(own ? ", te állítottad" : "")")
-        .accessibilityAdjustableAction { direction in
-            guard !locked else { return }
-            switch direction {
-            case .increment: up()
-            case .decrement: down()
-            @unknown default: break
-            }
-        }
+        .modifier(BuilderAdjustable(enabled: !locked, down: down, up: up))
     }
 
-    private func half(_ mark: String, _ edge: Alignment, _ action: @escaping () -> Void) -> some View {
+    private func half(_ mark: String, _ edge: Alignment, _ label: String, _ action: @escaping () -> Void) -> some View {
         Button { withAnimation(reduceMotion ? nil : .snappy) { action() } } label: {
             Text(mark).nkFont(narrow ? 15 : 17, .medium).foregroundStyle(.white.opacity(0.85))
                 .frame(width: narrow ? 20 : 24, height: narrow ? 20 : 24)
@@ -1177,6 +1173,28 @@ private struct BuilderSetCell: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(label)
+        .accessibilityValue("\(value)")
+    }
+}
+
+/// VoiceOver's swipe up / down on the sorozat cell — only where it can be edited.
+private struct BuilderAdjustable: ViewModifier {
+    let enabled: Bool
+    let down: () -> Void
+    let up: () -> Void
+    func body(content: Content) -> some View {
+        if enabled {
+            content.accessibilityAdjustableAction { direction in
+                switch direction {
+                case .increment: up()
+                case .decrement: down()
+                @unknown default: break
+                }
+            }
+        } else {
+            content
+        }
     }
 }
 

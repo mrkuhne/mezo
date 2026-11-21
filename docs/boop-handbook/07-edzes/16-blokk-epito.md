@@ -74,8 +74,9 @@ Ha a hét már életbe lépett, a kártya azt mutatja: „Indulhat, a hét szám
     nagyban a tartománnyal (például „8–12 ismétlés”) és két léptetővel: **Legalább** és **Legfeljebb** (1–30; a „legalább”
     sosem lehet több a „legfeljebb”-nél, ha túllépné, a másik vele mozdul). A **tartalék** mezőre koppintva ugyanilyen lap
     jön egy léptetővel 0–4 között; a 0 neve „bukásig”. Ha az értéket te állítottad, a lapon ott áll: „Ezt te állítottad; az
-    edzésmód nem írja felül.”, alatta a **„Visszaállítom az edzésmódra”** (ez — ahogy a Beállításokban is — a gyakorlat
-    összes saját értékét visszaadja az edzésmódnak). A **„Kész”** bezárja a lapot; a változás a többivel együtt a
+    edzésmód nem írja felül.”, alatta a **„Visszaállítom az edzésmódra”** (itt csak azt az egy értéket adja vissza az
+    edzésmódnak — az ismétlést, illetve a tartalékot —, a többi saját értéked marad; a Beállítások lapon a gomb mindet
+    visszaadja). A **„Kész”** bezárja a lapot; a változás a többivel együtt a
     „Mentés”-sel megy el.
   - **Beállítások** (a gyakorlat sorának üres részére koppintva is): **ismétléstartomány**, **tartalék**, **kezdősúly**, **bemelegítés**.
     Amit te állítottál át az edzésmódhoz képest, azon **„TE ÁLLÍTOTTAD”** jelzés áll, a **„Visszaállítom az edzésmódra”** gomb

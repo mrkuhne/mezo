@@ -209,8 +209,8 @@ struct DayEditSettingsSheet: View {
 // MARK: - The small editor of one value (mezo-r36n9.138)
 
 /// What a row's ismétlés or tartalék cell opens: the value big, its steppers (ismétlés 1–30 as min–max, min ≤ max;
-/// tartalék 0–4, 0 = bukásig), the own-value line with „Visszaállítom az edzésmódra" (all the row's keys, as in the
-/// settings sheet) and „Kész". Every tap goes through the draft's edit API.
+/// tartalék 0–4, 0 = bukásig), the own-value line with „Visszaállítom az edzésmódra" (only this field's key; the
+/// settings sheet keeps its reset-all) and „Kész". Every tap goes through the draft's edit API.
 struct DayEditValueSheet: View {
     enum Field { case reps, reserve }
 
@@ -224,7 +224,8 @@ struct DayEditValueSheet: View {
         if let draft = model.draft, let at = draft.locate(rowId) {
             let row = draft.days[at.day].exercises[at.index]
             let reps = field == .reps
-            let own = row.overrides.contains(reps ? "repRange" : "targetRir")
+            let key = reps ? "repRange" : "targetRir"
+            let own = row.overrides.contains(key)
             VStack(alignment: .leading, spacing: 16) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(reps ? "ISMÉTLÉS" : "TARTALÉK").nkFont(11, .semibold, design: .monospaced).tracking(1.4)
@@ -267,7 +268,7 @@ struct DayEditValueSheet: View {
                             Text("Ezt te állítottad; az edzésmód nem írja felül.").nkFont(13).foregroundStyle(.white.opacity(0.7))
                                 .fixedSize(horizontal: false, vertical: true)
                         }
-                        Button { edit { $0.resetToStyle(day: at.day, at: at.index) } } label: {
+                        Button { edit { $0.resetToStyle(day: at.day, at: at.index, key: key) } } label: {
                             Text("Visszaállítom az edzésmódra").nkFont(14, .semibold).foregroundStyle(.white).underline()
                                 .frame(minHeight: 44).contentShape(Rectangle())
                         }

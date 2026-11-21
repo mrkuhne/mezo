@@ -898,8 +898,10 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     `BuilderValueCell` *ismétlés ⌄* / *tartalék ⌄* (0 amber) open the small editor `DayEditValueSheet` (sheet
     `.reps` / `.reserve`, fixed height 470 / 400): ismétlés *Legalább* / *Legfeljebb* 1–30 (min ≤ max, a min past the max
     lifts it, a max under the min lowers it) via `setRepRange`, tartalék 0–4 (*bukásig* at 0) via `setReserve`, the
-    own-value line *Ezt te állítottad; az edzésmód nem írja felül.* + *Visszaállítom az edzésmódra* (`resetToStyle`, all
-    the row's keys), *Kész*. A hue dot in a cell's corner marks the field in the row's `overrides` (`workingSets` /
+    own-value line *Ezt te állítottad; az edzésmód nem írja felül.* + *Visszaállítom az edzésmódra* (`resetToStyle(day:at:key:)`,
+    only that field's key; the settings sheet keeps the reset-all), *Kész*; detents `[.height(n), .large]`. The sorozat
+    halves are labelled *Kevesebb / Több sorozat*, the cell adjustable only on an editable day; the name carries the
+    settings as a VoiceOver action. A hue dot in a cell's corner marks the field in the row's `overrides` (`workingSets` /
     `repRange` / `targetRir`). **Pills** (`NKFlowRow`, wraps at 375 pt): the **sub-muscle** of the row's fine token
     (`DraftExercise.muscleKey` → `SubMuscles.name`, e.g. *Hát · középső*; the day's top chips stay coarse groups, volume
     still groups by `muscle`; a jump row says *ugrás · nem számít a sorozatokba* instead) and the technique chip. No

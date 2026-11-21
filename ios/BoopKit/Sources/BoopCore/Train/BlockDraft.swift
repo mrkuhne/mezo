@@ -543,6 +543,13 @@ public struct BlockDraft: Equatable, Sendable {
         days[day].exercises[index].overrides = []
     }
 
+    /// The small ismétlés / tartalék editor's reset (mezo-r36n9.138): only that one key (`repRange` or `targetRir`), so
+    /// the row's other own values stay his.
+    public mutating func resetToStyle(day: Int, at index: Int, key: String) {
+        guard has(day, index) else { return }
+        days[day].exercises[index].overrides.remove(key)
+    }
+
     // MARK: what is sent
 
     public func evaluateRequest() -> WireEvaluateRequest {

@@ -97,6 +97,17 @@ struct BlockDraftEditTests {
         #expect(d.days[0].exercises[0].overrides.isEmpty, "the loaded restSec key goes too")
     }
 
+    @Test(.timeLimit(.minutes(1))) func resetOneKeyKeepsTheOthers() {
+        var d = PlanFixtures.draft
+        d.setRepRange(day: 0, at: 1, min: 6, max: 10)
+        d.setReserve(day: 0, at: 1, 1)
+        d.resetToStyle(day: 0, at: 1, key: "repRange")
+        #expect(d.days[0].exercises[1].overrides == ["targetRir"], "the reserve stays his")
+        d.resetToStyle(day: 0, at: 1, key: "targetRir")
+        #expect(d.days[0].exercises[1].overrides.isEmpty)
+        d.resetToStyle(day: 9, at: 9, key: "repRange") // out of range: no crash
+    }
+
     @Test(.timeLimit(.minutes(1))) func boundsClamp() {
         var d = PlanFixtures.draft
         d.setRepRange(day: 0, at: 0, min: 0, max: 40)
