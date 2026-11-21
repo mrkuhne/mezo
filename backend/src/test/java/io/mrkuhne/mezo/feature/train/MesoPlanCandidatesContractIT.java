@@ -195,4 +195,25 @@ class MesoPlanCandidatesContractIT extends ApiIntegrationTest {
         assertThat(ul2.getEvaluation().getDays()).filteredOn(d -> "Hét".equals(d.getDay()))
             .extracting(DayEvaluation::getMinutesEstimate).containsExactly(76);
     }
+
+    /** Tartás starts at the band low (2026-11-21): back + chest Hangsúly, everything else Tartás — upper day ~74 min,
+     *  so 75 fits (ul2 recommended) while 60 still does not (the Hangsúly upper day alone is over). */
+    @Test
+    void tartasAtBandLowFitsSeventyFiveButNotSixty() {
+        Map<String, String> pr = Map.of("back", "emphasize", "chest", "emphasize", "shoulder", "maintain",
+            "biceps", "maintain", "triceps", "maintain", "quad", "maintain", "ham", "maintain", "glute", "maintain",
+            "calf", "maintain");
+        MesoPlanCandidates at75 = candidates(MesoPlanCandidatesRequest.builder()
+            .daysOfWeek(Set.of("Hét", "Kedd", "Csü", "Pén")).weeks(6).sessionMinutesTarget(75).priorities(pr).build());
+        assertWellFormed(at75);
+        assertThat(at75.getNothingFits()).isFalse();
+        assertThat(at75.getCandidates().get(0).getSplitKey()).isEqualTo("ul2");
+        assertThat(at75.getCandidates().get(0).getEvaluation().getDays()).extracting(DayEvaluation::getMinutesEstimate)
+            .allSatisfy(m -> assertThat(m).isLessThanOrEqualTo(75));
+
+        MesoPlanCandidates at60 = candidates(MesoPlanCandidatesRequest.builder()
+            .daysOfWeek(Set.of("Hét", "Kedd", "Csü", "Pén")).weeks(6).sessionMinutesTarget(60).priorities(pr).build());
+        assertWellFormed(at60);
+        assertThat(at60.getNothingFits()).isTrue();
+    }
 }

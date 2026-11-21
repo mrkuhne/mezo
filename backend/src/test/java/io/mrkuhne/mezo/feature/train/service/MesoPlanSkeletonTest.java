@@ -43,16 +43,27 @@ class MesoPlanSkeletonTest {
     void build_shouldStartInsideTheBand_whenPrioritiesGiven() {
         var s = MesoPlanSkeleton.build(List.of("Hét", "Sze", "Pén", "Szo"), 6,
             Map.of("back", "emphasize", "calf", "maintain"), RP, BANDS);
-        // emphasize back = band low mav-2 = 14; grow chest = mev 8; maintain calf (6/10/16) = band 2..5 -> top 5
-        assertThat(s.weekOneSets()).containsEntry("back", 14).containsEntry("chest", 8).containsEntry("calf", 5);
+        // emphasize back = band low mav-2 = 14; grow chest = mev 8; maintain calf (6/10/16) = band 2..5 -> low 2
+        assertThat(s.weekOneSets()).containsEntry("back", 14).containsEntry("chest", 8).containsEntry("calf", 2);
     }
 
     @Test
-    void startSets_shouldBeLowForGrowAndEmphasizeAndHighForMaintain() {
+    void startSets_shouldBeTheBandLowForEveryTier() {
         var band = new VolumeBands.Band(4, 9, 16, false);
         assertThat(MesoPlanSkeleton.startSets(band, PriorityTier.GROW)).isEqualTo(4);
         assertThat(MesoPlanSkeleton.startSets(band, PriorityTier.EMPHASIZE)).isEqualTo(4);
-        assertThat(MesoPlanSkeleton.startSets(band, PriorityTier.MAINTAIN)).isEqualTo(9);
+        assertThat(MesoPlanSkeleton.startSets(band, PriorityTier.MAINTAIN)).isEqualTo(4);
+    }
+
+    @Test
+    void maintainStartsAtBandLow() {
+        var days = List.of("Hét", "Sze", "Pén", "Szo");
+        assertThat(MesoPlanSkeleton.build(days, 6, Map.of("back", "maintain"), RP, BANDS).weekOneSets())
+            .containsEntry("back", 4);   // ceil(10/3)
+        assertThat(MesoPlanSkeleton.build(days, 6, Map.of("back", "grow"), RP, BANDS).weekOneSets())
+            .containsEntry("back", 10);
+        assertThat(MesoPlanSkeleton.build(days, 6, Map.of("back", "emphasize"), RP, BANDS).weekOneSets())
+            .containsEntry("back", 14);
     }
 
     @Test
