@@ -12,6 +12,7 @@ key_files:
 related: [_platform-auth-security, _platform-design-system, companion, settings, _platform-api-backend]
 ---
 
+> **2026-11-21 — reviewed after Boop B6 Évad S3 (`mezo-r36n9.16`, no language-layer change).** One new season error key in both `messages_hu` and `messages_en` (parity kept): `MENU_NOT_PROPOSED`; `application.yml` gained `mezo.season.menu-job.enabled`.
 > **2026-11-21 — reviewed after the rest-pause technique (`mezo-r36n9.125`, no language-layer change).** Only the `mezo.train.technique.rest-pause` block was added to `application.yml`; no message key, no bundle change. The visible name „Rest pause” lives in the iOS app. See [`train.md`](train.md).
 > **2026-11-21 — reviewed after the block day editor refinements (`mezo-r36n9.127`, no language-layer change).** One new train error key in both `messages_hu` and `messages_en` (parity kept): `TRAIN_CHALLENGE_FREE_WEIGHT_COMPOUND` (400, the day's challenge on a free-weight compound). `TRAIN_TECHNIQUE_NOT_STABLE` and `TRAIN_TECHNIQUE_NOT_LENGTHENED` no longer mention the challenge. Mechanics unchanged. See [`train.md`](train.md).
 > **2026-11-21 — reviewed after the Boop Pénz weekly review (`mezo-r36n9.120`) and the `.119` review round (no language-layer change).** `backend/src/main/resources` changed only in the Liquibase changelog (`penz_weekly_review`, a unique index); no message key added or changed.
