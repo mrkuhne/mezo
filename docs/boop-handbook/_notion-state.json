@@ -604,7 +604,7 @@
     },
     "kezikonyv:04-terv/01-terv-keret": {
       "page_id": "4168968e-752b-8197-a22b-c72ced5647ab",
-      "hash": "f745d5450e92"
+      "hash": "5818de40f2e7"
     },
     "kezikonyv:04-terv/02-sulycel-celmotor": {
       "page_id": "4168968e-752b-817c-a592-ecb076252fc5",
@@ -1436,7 +1436,7 @@
     },
     "kezikonyv:11-penz/03-portfolio-hirek": {
       "page_id": "41e8968e-752b-81ee-819e-d92332c66ce5",
-      "hash": "96d8ae12fe4d"
+      "hash": "067a9c58a296"
     },
     "jegyek:mezo-r36n9.116": {
       "page_id": "41e8968e-752b-816c-b2f4-ebb286228601",
@@ -2688,11 +2688,11 @@
     },
     "jegyek:mezo-r36n9.128": {
       "page_id": "41f8968e-752b-81dd-a076-c52a06dfc4c1",
-      "hash": "6f0a0c9849e3"
+      "hash": "61dad293b318"
     },
     "jegyek:mezo-r36n9.129": {
       "page_id": "41f8968e-752b-81fa-b0e7-d26935288d09",
-      "hash": "61e1b6b26c6a"
+      "hash": "d8102e720af6"
     },
     "kiadasok:a718f0d63": {
       "page_id": "41f8968e-752b-812a-95a6-e61f54556a19",
@@ -2721,6 +2721,14 @@
     "kiadasok:5b6a77e59": {
       "page_id": "41f8968e-752b-81d9-8bc7-ef2de92349c7",
       "hash": "e7eece160634"
+    },
+    "jegyek:mezo-r36n9.131": {
+      "page_id": "41f8968e-752b-81a9-ad9f-e4a96af7d3f7",
+      "hash": "767a52a30313"
+    },
+    "kiadasok:43379e07d": {
+      "page_id": "41f8968e-752b-81f1-9fec-d18451b12df7",
+      "hash": "9987cf826899"
     }
   }
 }
