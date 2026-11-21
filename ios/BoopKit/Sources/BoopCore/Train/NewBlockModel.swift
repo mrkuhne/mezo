@@ -35,7 +35,7 @@ public enum RaiseCheck: Equatable, Sendable {
         return .ok
     }
 
-    static func rank(_ tier: String) -> Int { ["maintain": 0, "grow": 1, "emphasize": 2][tier] ?? 1 }
+    public static func rank(_ tier: String) -> Int { ["maintain": 0, "grow": 1, "emphasize": 2][tier] ?? 1 }
     static let tierNames = ["maintain", "grow", "emphasize"]
 
     /// One tier up from `current`; Hangsúly has nothing above it.

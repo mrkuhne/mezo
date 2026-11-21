@@ -240,6 +240,76 @@ func planErrorText(_ error: PlanFetchError) -> String {
     case .server: "Valami elakadt a szerveren. Próbáld újra kicsit később."
     }
 }
+// MARK: - The new-block intake's sentences (mezo-r36n9.113)
+
+/// How a „why" line reads: a good fact, a neutral one, a warning.
+enum PlanTone: Equatable {
+    case good, neutral, warn
+    var color: Color {
+        switch self {
+        case .good: planGood
+        case .neutral: .white.opacity(0.6)
+        case .warn: planWarn
+        }
+    }
+    var mark: PlanMark.Kind {
+        switch self {
+        case .good: .check
+        case .neutral: .keep
+        case .warn: .flame
+        }
+    }
+}
+
+/// A candidate's reason code in his words; nil for a code this build does not know (no line is shown).
+func planReasonLine(_ reason: WireReason, target: Int) -> (tone: PlanTone, text: String)? {
+    switch reason.code {
+    case "fits_time":
+        guard let v = reason.value else { return nil }
+        return (.good, "Belefér a \(target) percbe: a leghosszabb nap kb. \(v) perc.")
+    case "freq_2x": return (.good, "Minden izom hetente kétszer kap kemény sorozatot.")
+    case "freq_high":
+        guard let v = reason.value else { return nil }
+        return (.good, "Minden izom hetente \(v)×, naponta kevés sorozattal.")
+    case "more_warmups":
+        guard let v = reason.value else { return nil }
+        return (.neutral, "Minden nap mindenre bemelegítesz: hetente kb. \(v) bemelegítő sorozattal több.")
+    default: return nil
+    }
+}
+
+/// What would make a plan fit, as the button says it; nil for a fix this build does not know.
+func planFixTitle(_ fix: WireFix, days: Int) -> String? {
+    switch fix.code {
+    case "more_minutes": fix.value.map { "Legyen \($0) perc" }
+    case "fewer_emphasis": "Egy izom Hangsúly helyett Építés"
+    case "more_days": "Legyen \(days + 1) nap"
+    default: nil
+    }
+}
+
+/// Why a tier raise is not possible now; nil when it is.
+func planRaiseText(_ check: RaiseCheck, emphasizeMax: Int) -> String? {
+    switch check {
+    case .ok: nil
+    case .emphasizeFull: "Már \(emphasizeMax) izom van Hangsúlyon — előbb vegyél le egyet."
+    case .noRoom(let minutes, let days): "Ez már nem fér a heti \(days) × \(minutes) percbe. Vegyél le egy izmot Tartásra, vagy adj hozzá időt."
+    }
+}
+
+/// The weekday's one- or three-letter label on the week strip (0 = Monday).
+let planWeekdayShort = ["H", "K", "Sze", "Cs", "P", "Szo", "V"]
+
+/// 0 = Monday, from a day token (`Hét`, `Kedd`, `Csü`…); nil for a token this build does not know.
+func planWeekdayIndex(_ token: String) -> Int? {
+    ["hét": 0, "ked": 1, "sze": 2, "csü": 3, "pén": 4, "szo": 5, "vas": 6][String(token.prefix(3)).lowercased()]
+}
+
+/// „hétfőn", „kedden"… — the day with its suffix, for a sentence (0 = Monday).
+func planWeekdayOn(_ index: Int) -> String {
+    ["hétfőn", "kedden", "szerdán", "csütörtökön", "pénteken", "szombaton", "vasárnap"][safe: index] ?? ""
+}
+
 /// The feature's own marks, drawn on the kit's 64-unit grid with the same round 5-unit stroke as the outlined
 /// `NKGlyph`s — so nothing here is an emoji or a system symbol.
 struct PlanMark: View {
