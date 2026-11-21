@@ -1,7 +1,6 @@
 package io.mrkuhne.mezo.feature.train.service;
 
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
-import io.mrkuhne.mezo.feature.train.entity.GymScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.port.TrainDayAdjustmentPort;
 import io.mrkuhne.mezo.feature.train.port.TrainDayAdjustmentPort.EffectiveSession;
@@ -16,7 +15,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -95,18 +93,9 @@ public class EffectivePlanService {
 
     /**
      * The dates of {@code from..to} with a planned gym session by the weekly gym slots, with the ledger's moves
-     * applied: a moved-away day drops out, a moved-in day joins. (Skips are the caller's business.)
-     */
-    public Set<LocalDate> plannedGymDates(UUID owner, LocalDate from, LocalDate to) {
-        Set<Integer> dows = gymSlots.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(owner).stream()
-            .map(GymScheduleSlotEntity::getDayOfWeek).collect(Collectors.toSet());
-        return plannedGymDates(dows, ledger.effectiveSessions(owner, from, to), from, to);
-    }
-
-    /**
-     * Pure form of {@link #plannedGymDates(UUID, LocalDate, LocalDate)}: {@code gymWeekdays} (0 = Monday) are the
-     * weekly gym slots' weekdays, {@code ledger} the range's {@link TrainDayAdjustmentPort#effectiveSessions}. A
-     * moved-in day is planned when its plan day's weekday has a slot.
+     * applied: a moved-away day drops out, a moved-in day joins when its plan day's weekday has a slot. (Skips are the
+     * caller's business.) {@code gymWeekdays} (0 = Monday) are the weekly gym slots' weekdays, {@code ledger} the
+     * range's {@link TrainDayAdjustmentPort#effectiveSessions}.
      */
     public static Set<LocalDate> plannedGymDates(Set<Integer> gymWeekdays, Map<LocalDate, EffectiveSession> ledger,
             LocalDate from, LocalDate to) {

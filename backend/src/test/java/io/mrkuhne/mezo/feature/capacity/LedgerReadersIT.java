@@ -15,6 +15,10 @@ import io.mrkuhne.mezo.feature.companion.flags.config.FlagProperties;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagOutcome;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.MissedWorkoutsRule;
 import io.mrkuhne.mezo.feature.companion.service.BoopDayContext;
+import io.mrkuhne.mezo.feature.companion.tools.ToolCallAudit;
+import io.mrkuhne.mezo.feature.companion.tools.ToolContexts;
+import io.mrkuhne.mezo.feature.companion.tools.TrainTools;
+import org.springframework.ai.chat.model.ToolContext;
 import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.feature.train.service.PlannedSkipService;
@@ -96,6 +100,7 @@ class LedgerReadersIT extends AbstractIntegrationTest {
     @Autowired private GoalRepository goalRepository;
     @Autowired private TdeeBootstrapService tdeeBootstrap;
     @Autowired private BoopDayContext chatContext;
+    @Autowired private TrainTools trainTools;
     @Autowired private MissedWorkoutsRule missedWorkouts;
     @Autowired private FlagProperties flagProperties;
     @Autowired private PlannedSkipService plannedSkips;
@@ -486,5 +491,22 @@ class LedgerReadersIT extends AbstractIntegrationTest {
         DayPlan after = dayPlans.plan(owner, today, early);
         assertThat(after.windows().getLast().from()).isBefore(lastBefore);
         assertThat(total(after)).isEqualTo(total(before));
+    }
+
+    @Test
+    void trainingPlanToolFollowsMoveAndLighten() {
+        owner("tool");
+        LocalDate monday = today.with(TemporalAdjusters.next(DayOfWeek.MONDAY));
+        LocalDate wednesday = monday.plusDays(2);
+        WorkoutSessionEntity session = templateOn(monday);
+        active(new MoveSessionDay(session.getId(), monday, wednesday));
+        active(new LightenSession(wednesday, 0.5));
+        ToolContext ctx = new ToolContext(Map.of(ToolContexts.USER_ID, owner, ToolContexts.AUDIT, new ToolCallAudit(6, 10)));
+
+        String wed = trainTools.getTrainingPlan("date", wednesday.toString(), ctx);
+        String mon = trainTools.getTrainingPlan("date", monday.toString(), ctx);
+
+        assertThat(wed).contains("gym (Sze): Evezés 2"); // the day it is done on, round(3 × 0.5) sets
+        assertThat(mon).contains("pihenőnap (gym)");
     }
 }

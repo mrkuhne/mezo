@@ -9,7 +9,6 @@ import io.mrkuhne.mezo.api.dto.RunningBlockResponse;
 import io.mrkuhne.mezo.api.dto.SportScheduleSlotResponse;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.service.ContextSnapshotAssembler;
-import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunSessionLogEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
@@ -19,7 +18,6 @@ import io.mrkuhne.mezo.feature.train.repository.ExerciseFeedbackRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
 import io.mrkuhne.mezo.feature.train.repository.RunSessionLogRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
-import io.mrkuhne.mezo.feature.train.repository.WorkoutDayAdjustmentRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.feature.train.service.ExerciseRecordService;
 import io.mrkuhne.mezo.feature.train.service.RunningService;
@@ -27,7 +25,7 @@ import io.mrkuhne.mezo.feature.train.service.SportService;
 import io.mrkuhne.mezo.feature.train.service.PlannedSkipService;
 import io.mrkuhne.mezo.feature.train.service.SportSlotSkipService;
 import io.mrkuhne.mezo.feature.train.service.TrainService;
-import io.mrkuhne.mezo.feature.train.service.WorkoutService;
+import io.mrkuhne.mezo.feature.train.service.EffectivePlanService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.model.ToolContext;
@@ -64,11 +62,10 @@ public class TrainTools {
     private final SportSessionRepository sportSessionRepository;
     private final RunSessionLogRepository runSessionLogRepository;
     private final CompanionProperties properties;
-    // Forward-plan collaborators (mezo-xixu): WorkoutService.findPlannedTemplateForDate (read-only —
+    // Forward-plan collaborators (mezo-xixu): the planned day through EffectivePlanService (read-only —
     // NEVER WorkoutService.getToday, which auto-closes stale instances + ensures closing exercises,
     // the ContextSnapshotAssembler.todayLine precedent), TrainService.listMesocycles for scope=meso,
     // RunningService.listBlocks for the active block's prescribed runs.
-    private final WorkoutService workoutService;
     private final ExerciseRepository exerciseRepository;
     private final ExerciseFeedbackRepository exerciseFeedbackRepository;
     private final TrainService trainService;
@@ -86,10 +83,9 @@ public class TrainTools {
     // Read-only compute-on-read aggregation over working sets (ExerciseRecordService#list) —
     // NEVER a write-transactional method; there is none on this service.
     private final ExerciseRecordService exerciseRecordService;
-    // mezo-d58h.5: the per-date lighten overlay — dayContentLine renders a future day straight from
-    // the template's raw workingSets (not through WorkoutService.getToday), so it must apply this
-    // itself or the AI contradicts the "lighten tomorrow" card the user just tapped.
-    private final WorkoutDayAdjustmentRepository workoutDayAdjustmentRepository;
+    // dayContentLine's effective planned session: the per-date lighten overlay (mezo-d58h.5 — the AI must not
+    // contradict the "lighten tomorrow" card) and, since Boop B7 K3 (mezo-r36n9.17), the ledger's move + lighten.
+    private final EffectivePlanService effectivePlan;
 
     @Tool(name = "get_training_log", description = "Múltbeli edzésnapló megadott ablakra scope szerint: "
             + "scope=latest — a legutóbbi sorozatokkal rögzített gym-edzés, az újabb üres lezárások jelzésével; "
@@ -328,7 +324,7 @@ public class TrainTools {
     }
 
     /**
-     * today/tomorrow/date renders: the resolved gym day (via {@link WorkoutService#findPlannedTemplateForDate}
+     * today/tomorrow/date renders: the resolved gym day (via {@link EffectivePlanService#plannedSession}
      * — read-only, never {@code WorkoutService.getToday}) + the active running block's prescribed session for
      * that weekday. "nincs adat" only when there is NEITHER an active mesocycle NOR an active running block at
      * all — a real rest day within an active plan renders "pihenőnap", never fabricated as "no data".
@@ -373,24 +369,18 @@ public class TrainTools {
      */
     private String dayContentLine(UUID userId, LocalDate date, List<RunningBlockResponse> activeBlocks,
             List<SportScheduleSlotResponse> sportSlots) {
-        Optional<WorkoutSessionEntity> template = workoutService.findPlannedTemplateForDateUnlessSkipped(userId, date);
-        List<ExerciseEntity> exercises = template.map(t -> exerciseRepository
-                .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(userId, List.of(t.getId())))
-                .orElse(List.of());
-        // mezo-d58h.5: per-date lighten overlay, looked up once for this date and applied to each
-        // exercise's raw template workingSets — same floor as WorkoutService.getToday.
-        int dayDelta = workoutDayAdjustmentRepository.findByCreatedByAndDateAndDeletedFalse(userId, date)
-                .map(a -> (int) a.getSetDelta())
-                .orElse(0);
+        // The effective plan (Boop B7 K3, mezo-r36n9.17) — the SAME helper ContextSnapshotAssembler.dayLine reads, so the
+        // tool and the chat snapshot cannot drift: a moved session on its new day under that day's label, the per-date
+        // lighten overlay (mezo-d58h.5) and then the ledger's accepted lighten.
         // mezo-4qu: the gym half is rendered by the SHARED ToolText.gymLine, exactly like the sport
         // half (ToolText.sportLine) — the tool and the chat snapshot can no longer disagree about a
-        // day. An absent template yields no exercises, which the helper reads as a rest day.
+        // day. An absent session yields no exercises, which the helper reads as a rest day.
+        Optional<EffectivePlanService.PlannedSession> planned = effectivePlan.plannedSession(userId, date);
         StringBuilder line = new StringBuilder(ToolText.gymLine(
-                template.map(WorkoutSessionEntity::getDayLabel).orElse(null),
-                exercises.stream()
-                        .map(e -> ToolText.exerciseLine(e.getName(), Math.max(1, e.getWorkingSets() + dayDelta),
-                                e.getRepMin(), e.getRepMax()))
-                        .toList()));
+                planned.map(EffectivePlanService.PlannedSession::label).orElse(null),
+                planned.map(p -> p.exercises().stream()
+                        .map(e -> ToolText.exerciseLine(e.getName(), p.sets(e), e.getRepMin(), e.getRepMax()))
+                        .toList()).orElse(List.of())));
         sportSlotsOn(userId, sportSlots, date).forEach(s -> line.append("; ").append(ToolText.sportLine(
                 s.getSport(), s.getTime(), s.getKind() == null ? null : s.getKind().getValue(),
                 s.getDurationMin())));
