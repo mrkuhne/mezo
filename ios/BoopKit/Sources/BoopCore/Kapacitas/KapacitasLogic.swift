@@ -127,3 +127,26 @@ public func capacitySentence(_ verdict: Components.Schemas.BoopCapacity.verdictP
     case .tulSok: "A mai terhed több annál, amennyit bírsz. Valamit érdemes lenne könnyíteni rajta."
     }
 }
+
+/// A figure of the Évad *Mennyit bírsz az évadban* row, UI-framework-free.
+public struct KapacitasSeasonStat: Equatable, Sendable {
+    public var value: String
+    public var target: String?
+    public var label: String
+    public var hot: Bool
+
+    public init(value: String, target: String? = nil, label: String, hot: Bool = false) {
+        self.value = value; self.target = target; self.label = label; self.hot = hot
+    }
+}
+
+/// The season stats as the row shows them: the overloaded-days count always; the two move figures only once he has
+/// accepted a move (a „0 mozgatás" / „0 / 0 sült el jól" says nothing).
+public func kapacitasSeasonStats(_ s: KapacitasSeasonStats) -> [KapacitasSeasonStat] {
+    var out = [KapacitasSeasonStat(value: "\(s.overloadedDays4w)", label: "túl sok nap az elmúlt 4 hétben")]
+    if s.moves > 0 {
+        out.append(KapacitasSeasonStat(value: "\(s.moves)", label: "mozgatás az évadban", hot: true))
+        out.append(KapacitasSeasonStat(value: "\(s.movesGood)", target: "\(s.moves)", label: "sült el jól"))
+    }
+    return out
+}

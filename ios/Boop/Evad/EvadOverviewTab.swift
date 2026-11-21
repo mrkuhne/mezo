@@ -11,6 +11,8 @@ struct EvadOverviewTab: View {
     let offline: Bool
     let open: @MainActor @Sendable (EvadSub) -> Void
 
+    @Environment(KapacitasStore.self) private var kapacitas: KapacitasStore?
+
     private var trajectory: String { o.head.trajectory }
 
     var body: some View {
@@ -51,6 +53,8 @@ struct EvadOverviewTab: View {
                    ? NKAction(glyph: "pen-sun", title: "Ehhez internet kell.", primary: true, action: {})
                    : NKAction(glyph: "pen-sun", title: "Módosítás", primary: true, action: { open(.modositas) }),
                    NKAction(glyph: "plus-ink", title: "Új évad", action: { open(.uj) })], hue: evadHue)
+        // a launch read that failed or found no net is retried when the tab is opened (cheap, idempotent)
+        .task { await kapacitas?.load() }
     }
 
     // MARK: Súly

@@ -26,6 +26,7 @@ public struct NKLoadWeek: Equatable, Sendable {
     public var spoken: String {
         let n = label.hasSuffix(".") ? String(label.dropLast()) : label
         if faint { return "\(n). hét: terv" }
+        if load == nil { return "\(n). hét: nincs adat" }
         return over ? "\(n). hét: több, mint amit pihentél" : "\(n). hét: teher rendben"
     }
 }

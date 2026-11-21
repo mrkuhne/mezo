@@ -24,10 +24,9 @@ struct EvadTeher: View {
                 // first read happens when the store is made (RootView); opening the tab refreshes it
                 .task { await store?.load(force: true) }
                 NKBare("Mennyit bírsz az évadban", hue: evadHue, glyph: "bolt-ink") {
-                    NKStatRow([NKStat(value: "\(s.stats.overloadedDays4w)", label: "túl sok nap az elmúlt 4 hétben"),
-                               NKStat(value: "\(s.stats.moves)", label: "mozgatás az évadban", hot: true),
-                               NKStat(value: "\(s.stats.movesGood)", target: "\(s.stats.moves)", label: "sült el jól")],
-                              hue: evadHue)
+                    NKStatRow(kapacitasSeasonStats(s.stats).map {
+                        NKStat(value: $0.value, target: $0.target, label: $0.label, hot: $0.hot)
+                    }, hue: evadHue)
                 }
             }
         }

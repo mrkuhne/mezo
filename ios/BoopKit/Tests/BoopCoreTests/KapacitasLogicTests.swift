@@ -100,4 +100,13 @@ struct KapacitasLogicTests {
         let row = demandRows(capacity(demand: [item]), timeZone: TimeZone(identifier: "UTC")!)[0]
         #expect(row.sub == "00:00 · edzés" && row.glyph == "dumbbell-ink" && row.eventKey == nil)
     }
+
+    @Test func seasonStatsHideMoveFiguresWithoutMoves() {
+        let none = kapacitasSeasonStats(KapacitasSeasonStats(overloadedDays4w: 2, moves: 0, movesGood: 0))
+        #expect(none.map(\.label) == ["túl sok nap az elmúlt 4 hétben"])
+        #expect(none[0].value == "2")
+        let some = kapacitasSeasonStats(KapacitasSeasonStats(overloadedDays4w: 0, moves: 11, movesGood: 8))
+        #expect(some.map(\.value) == ["0", "11", "8"])
+        #expect(some[2].target == "11" && some[1].hot)
+    }
 }
