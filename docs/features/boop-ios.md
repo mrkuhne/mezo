@@ -890,12 +890,21 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     `-previewBlokkState empty|loading|error|offline|applied`) over `PlanPreviewTransport` — whose evaluator is a fixture.
   - **The Napok day editor (`mezo-r36n9.116`, spec
     [`2026-11-20-boop-blokk-szerkeszto-design.md`](../superpowers/specs/2026-11-20-boop-blokk-szerkeszto-design.md) §6,
-    look: the spike on `spike/boop-blokk-szerkeszto`)** — `BuilderDayCard` rows are ≡ handle (drag reorders through
-    `BlockDraft.move`, no lift scale under reduced motion; VoiceOver *Feljebb/Lejjebb* actions), name, subtitle from the
-    row's own `repMin/repMax/targetRIR` led by the **sub-muscle** of the row's fine token (`DraftExercise.muscleKey` →
-    `SubMuscles.name`, e.g. *Hát · középső*; one line via `ViewThatFits`, else the muscle above the numbers — the day's
-    top chips stay coarse groups, volume still groups by `muscle`), set stepper (wraps under the name when the card's inner width is under 364 pt),
-    ⋯ menu (*Csere · Beállítások · Törlés*); delete leaves an undo line; tap → `DayEditSettingsSheet` (rep range,
+    look: the spike on `spike/boop-blokk-szerkeszto`; row layout `mezo-r36n9.138`, variant D of `spike/boop-nap-sorok`)** —
+    each `BuilderDayCard` row is three lines. **Top:** ≡ handle (drag reorders through `BlockDraft.move`, no lift scale
+    under reduced motion; VoiceOver *Feljebb/Lejjebb* actions), name, ⋯ menu (*Csere · Beállítások · Törlés*). **Cells:**
+    three equal tiles, big numeral over the written-out word — `BuilderSetCell` *sorozat* is itself the 1–8 stepper (left
+    half −, right half +, each ≥ 44 pt at 375 pt, `BlockDraft.step`; amber when the server's exercise cap warns),
+    `BuilderValueCell` *ismétlés ⌄* / *tartalék ⌄* (0 amber) open the small editor `DayEditValueSheet` (sheet
+    `.reps` / `.reserve`, fixed height 470 / 400): ismétlés *Legalább* / *Legfeljebb* 1–30 (min ≤ max, a min past the max
+    lifts it, a max under the min lowers it) via `setRepRange`, tartalék 0–4 (*bukásig* at 0) via `setReserve`, the
+    own-value line *Ezt te állítottad; az edzésmód nem írja felül.* + *Visszaállítom az edzésmódra* (`resetToStyle`, all
+    the row's keys), *Kész*. A hue dot in a cell's corner marks the field in the row's `overrides` (`workingSets` /
+    `repRange` / `targetRir`). **Pills** (`NKFlowRow`, wraps at 375 pt): the **sub-muscle** of the row's fine token
+    (`DraftExercise.muscleKey` → `SubMuscles.name`, e.g. *Hát · középső*; the day's top chips stay coarse groups, volume
+    still groups by `muscle`; a jump row says *ugrás · nem számít a sorozatokba* instead) and the technique chip. No
+    animation on cells/editors under reduced motion. Delete leaves an undo line; a tap elsewhere on the row →
+    `DayEditSettingsSheet` (rep range,
     reserve, starting weight, warm-ups, *TE ÁLLÍTOTTAD*, *Visszaállítom az edzésmódra*); ＋ → `DayEditAddSheet`
     (`mezo-r36n9.127`, look: spike `spike/boop-izomreszek`): a compact *Izmok: … ▾* dropdown (`SubMuscles.summary`, a
     whole group by name, else *Hát · középső +2*, *Minden izom* when empty) opening `DayEditMusclePanel` — group
@@ -917,7 +926,8 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     differs from the evaluated one (`indicesFresh`); a swapped/new row drops the weekly AI note (`aiNote(_:)`). The main
     button falls back to *Nincs változás* where *Nincs mit menteni* does not fit (`mezo-r36n9.118`). DEBUG (with
     `-previewBlokk YES -previewBlokkOpen epito -previewBlokkTab napok`): `-previewBlokkEdit
-    default|menu|settings|add|addOpen|addEmpty|swap|undo|empty|locked|confirm` (*add*: two sub-muscles picked,
+    default|menu|settings|reps|reserve|add|addOpen|addEmpty|swap|undo|empty|locked|confirm` (*reps* / *reserve*: the first
+    row's small ismétlés / tartalék editor; *add*: two sub-muscles picked,
     *addOpen*: the dropdown open, *addEmpty*: nothing picked), `-previewBlokkDay N` (day page),
     `-previewBlokkSuggest fail` (suggestions 503 → the full list with its one-line note).
   - **Új blokk — the new-block flow and the plan recommender (`mezo-r36n9.113`, S1 + S2, 2026-11-21; spec
