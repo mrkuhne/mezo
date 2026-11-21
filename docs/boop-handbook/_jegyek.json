@@ -1465,7 +1465,7 @@
   },
   "mezo-r36n9.138": {
     "cim": "A nap gyakorlatsorainak áttervezése",
-    "tipus": "Kinézet",
+    "tipus": "Funkció",
     "szakasz": "B5 Edzés + Watch",
     "terulet": [
       "Edzés"
@@ -1474,7 +1474,7 @@
     "munkamenet": "mezo-nippard-exercise-selection"
   },
   "mezo-r36n9.140": {
-    "tipus": "Feladat",
+    "tipus": "Apróságok",
     "szakasz": "Életpanel",
     "terulet": [
       "Alapok"
@@ -1484,7 +1484,7 @@
     "mit_kapsz": "Amint a gyűjtőfiókba megérkeznek az első valódi levelek, a futárcégek (GLS, Foxpost, Packeta, MPL, DPD) értesítőit és a továbbítás nyomait a valódi levelek alapján pontosítjuk, így a csomagok még biztosabban egy sorban maradnak."
   },
   "mezo-r36n9.141": {
-    "tipus": "Feladat",
+    "tipus": "Apróságok",
     "szakasz": "Életpanel",
     "terulet": [
       "Alapok"
@@ -1494,7 +1494,7 @@
     "mit_kapsz": "A fizetős Apple-fiók után a szerver maga szól a reggeli és délutáni átnézés végén, nem csak akkor, amikor megnyitod az appot."
   },
   "mezo-r36n9.142": {
-    "tipus": "Feladat",
+    "tipus": "Apróságok",
     "szakasz": "Életpanel",
     "terulet": [
       "Alapok"
@@ -1504,7 +1504,7 @@
     "mit_kapsz": "Ha egy levélről szól a telefon, a koppintás egyenesen a Levél oldalra visz, nem csak az appot nyitja meg."
   },
   "mezo-r36n9.143": {
-    "tipus": "Feladat",
+    "tipus": "Apróságok",
     "szakasz": "Életpanel",
     "terulet": [
       "Alapok"
@@ -1514,7 +1514,7 @@
     "mit_kapsz": "Az app indulásakor egy pillanatra még nincs meg minden adat — ilyenkor se törlődjön egy már betervezett értesítés."
   },
   "mezo-r36n9.144": {
-    "tipus": "Feladat",
+    "tipus": "Apróságok",
     "szakasz": "Életpanel",
     "terulet": [
       "Alapok"
@@ -1524,7 +1524,7 @@
     "mit_kapsz": "Ha ugyanarról a csomagról több forrásból jön hír, akkor is egyetlen sorban látszik, hol tart."
   },
   "mezo-r36n9.145": {
-    "tipus": "Feladat",
+    "tipus": "Apróságok",
     "szakasz": "Életpanel",
     "terulet": [
       "Alapok"
