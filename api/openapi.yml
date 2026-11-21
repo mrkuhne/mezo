@@ -38442,10 +38442,16 @@ components:
           type: integer
           nullable: true
           description: >-
-            The week's total planned intake: trainDayKcal × active days +
-            restDayKcal × rest days (active = distinct weekdays with gym or
-            sport). Moves when a session or sport day is added even though each
-            day's own target does not
+            The week's total planned intake: the seven weekdays' served targets,
+            each with its own sessions (a rest day, a gym day, a sport day, a
+            gym + sport day). Moves when a session or sport day is added even
+            though the training-day target does not
+        trainSportDayKcal:
+          type: integer
+          nullable: true
+          description: >-
+            A gym + sport day's served target (both sessions); null when no
+            weekday carries both
     SeasonTodo:
       type: object
       required:
@@ -38781,6 +38787,8 @@ components:
         - judged
         - excused
         - sessionPlanned
+        - dayKind
+        - sessions
       properties:
         date:
           type: string
@@ -38792,11 +38800,12 @@ components:
           type: boolean
           description: >-
             A kímélő day — left out of every count. A reasoned skip only excuses
-            the session (sessionDone null), the food and the night still count
+            that one session, the day's other session, the food and the night
+            still count
         excuse:
           type: string
           nullable: true
-          description: kimelo (the whole day is excused) or skip (only the session is)
+          description: kimelo (the whole day is excused) or skip (at least one session is)
         kcal:
           type: integer
           nullable: true
@@ -38818,10 +38827,23 @@ components:
           description: judged and |kcal − target| ≤ 10 % of target; null when not judged
         sessionPlanned:
           type: boolean
+          description: At least one session planned
         sessionDone:
           type: boolean
           nullable: true
-          description: null when no session was planned or it is excused / today
+          description: >-
+            Every judged session done; null when none was judged (nothing
+            planned, all excused, today)
+        dayKind:
+          type: string
+          description: >-
+            edzesnap (gym or a block run) | sport | edzes_sport (both — two
+            sessions) | pihenonap
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/SeasonAdherenceSession'
+          description: One per planned session kind of the day; a gym + sport day has two
         sleepMin:
           type: integer
           nullable: true
@@ -38833,6 +38855,24 @@ components:
           type: boolean
           nullable: true
           description: sleepMin ≥ needMin − 15; null without a night
+    SeasonAdherenceSession:
+      type: object
+      required:
+        - kind
+        - excused
+      properties:
+        kind:
+          type: string
+          description: gym | sport | run
+        excused:
+          type: boolean
+          description: 'Skipped with a reason, or the day is kímélő'
+        done:
+          type: boolean
+          nullable: true
+          description: >-
+            A completed session of this kind that date; null when excused or
+            today+
     SeasonAdherenceResponse:
       type: object
       required:
@@ -38855,6 +38895,10 @@ components:
         - nightsOk
         - nightsJudged
         - excusedDays
+        - trainingDone
+        - trainingPlanned
+        - sportDone
+        - sportPlanned
       properties:
         foodInBand:
           type: integer
@@ -38862,13 +38906,24 @@ components:
           type: integer
         sessionsDone:
           type: integer
+          description: trainingDone + sportDone — a gym + sport day counts two
         sessionsPlanned:
           type: integer
+          description: trainingPlanned + sportPlanned
         nightsOk:
           type: integer
         nightsJudged:
           type: integer
         excusedDays:
+          type: integer
+        trainingDone:
+          type: integer
+          description: Gym and block-run sessions done
+        trainingPlanned:
+          type: integer
+        sportDone:
+          type: integer
+        sportPlanned:
           type: integer
     SeasonInsight:
       type: object

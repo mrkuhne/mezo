@@ -134,8 +134,16 @@ class SeasonApiIT extends ApiIntegrationTest {
         assertThat(r.getDays().get(7).getJudged()).isFalse();
         assertThat(r.getDays().get(7).getSessionDone()).isNull();
         assertThat(r.getDays()).allSatisfy(d -> assertThat(d.getTargetKcal()).isNotNull());
-        // every weekday once before today: the fixture's four slot weekdays; today itself is never judged
-        assertThat(r.getSummary().getSessionsPlanned()).isEqualTo(4);
+        // every weekday once before today: four gym slots + two volleyball evenings (both on gym days = two
+        // sessions each, mezo-r36n9.131); today itself is never judged
+        assertThat(r.getSummary().getSessionsPlanned()).isEqualTo(6);
+        assertThat(r.getSummary().getTrainingPlanned()).isEqualTo(4);
+        assertThat(r.getSummary().getSportPlanned()).isEqualTo(2);
+        assertThat(r.getDays()).filteredOn(d -> d.getDate().getDayOfWeek() == java.time.DayOfWeek.TUESDAY)
+            .allSatisfy(d -> {
+                assertThat(d.getDayKind()).isEqualTo("edzes_sport");
+                assertThat(d.getSessions()).hasSize(2);
+            });
         assertThat(r.getSummary().getSessionsDone()).isZero();
 
         getForBody("/api/seasons/adherence?from=" + today.minusDays(61) + "&to=" + today, u.headers(), HttpStatus.OK,

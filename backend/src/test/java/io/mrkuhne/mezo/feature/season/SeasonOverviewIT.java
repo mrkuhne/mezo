@@ -70,7 +70,9 @@ class SeasonOverviewIT extends AbstractIntegrationTest {
         assertThat(pillar(o, SeasonMapPillar.KeyEnum.SULY)).isEqualTo("84,0 kg");
         assertThat(pillar(o, SeasonMapPillar.KeyEnum.ETEL)).matches("\\d \\d{3} kcal");
         assertThat(o.getAdherence()).isNotNull();
-        assertThat(o.getAdherence().getSessionsPlanned()).isEqualTo(4);
+        assertThat(o.getAdherence().getSessionsPlanned()).isEqualTo(6);
+        assertThat(o.getAdherence().getTrainingPlanned()).isEqualTo(4);
+        assertThat(o.getAdherence().getSportPlanned()).isEqualTo(2);
         assertThat(o.getAdherence().getSessionsDone()).isZero();
         assertThat(o.getAdherence().getFoodJudged()).isZero();
         assertThat(o.getInsights()).isEmpty();

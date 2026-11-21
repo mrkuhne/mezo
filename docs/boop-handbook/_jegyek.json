@@ -1384,5 +1384,16 @@
     ],
     "mit_kapsz": "Két automatikus ellenőrzés a teljes tesztfutásban rendszeresen elakad egy bejelentkezési kapcsolathiba miatt, egyedül futtatva viszont mindig átmegy. A javítás után a teljes futás eredménye megbízhatóan zöld lesz. A felületen semmi nem változik.",
     "munkamenet": "mezo-nippard-exercise-selection"
+  },
+  "mezo-r36n9.131": {
+    "cim": "Évad: edzés és sport egy napon két alkalomnak számít",
+    "tipus": "Javítás",
+    "szakasz": "B6 A Terv",
+    "terulet": [
+      "Terv"
+    ],
+    "mit_kapsz": "Ha egy napon edzőterem és sport (például röplabda) is van, az Évad mostantól két alkalomnak veszi: a „Hogy megy” külön mutatja, hány edzés és hány sportalkalom volt meg, egy indokolt kihagyás csak azt az egy alkalmat menti fel, és a heti étel-összeg is számol a dupla napok nagyobb keretével. Az ilyen nap neve „edzés + sport nap”.",
+    "szulo": "mezo-r36n9.16",
+    "munkamenet": "evad-kettos-nap"
   }
 }

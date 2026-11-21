@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.season;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.mrkuhne.mezo.api.dto.FuelDayRollup;
 import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
@@ -9,6 +10,7 @@ import io.mrkuhne.mezo.feature.season.port.SeasonGoalPort;
 import io.mrkuhne.mezo.feature.season.port.SeasonSleepPort;
 import io.mrkuhne.mezo.feature.season.service.AdherenceService;
 import io.mrkuhne.mezo.feature.season.service.AdherenceService.AdherenceDay;
+import io.mrkuhne.mezo.feature.season.service.AdherenceService.DaySession;
 import io.mrkuhne.mezo.feature.season.service.AdherenceService.Result;
 import io.mrkuhne.mezo.feature.season.service.SeasonDraftMath;
 import io.mrkuhne.mezo.feature.season.service.SeasonService;
@@ -132,18 +134,81 @@ class AdherenceServiceIT extends AbstractIntegrationTest {
     @Test
     void sessionDoneCountsACompletedWorkoutOrSportSession() {
         UUID owner = fixture.owner("adherence-done@test.local");
-        LocalDate tuesday = lastBefore(today, 1);
+        LocalDate monday = lastBefore(today, 0);
         LocalDate wednesday = lastBefore(today, 2);
-        trainPopulator.createSportSession(owner, tuesday);
+        gymDone(owner, monday);
 
-        Result r = adherence.range(owner, tuesday, tuesday);
+        Result r = adherence.range(owner, monday, monday);
         Result rest = adherence.range(owner, wednesday, wednesday);
 
         assertThat(r.days().get(0).sessionPlanned()).isTrue();
         assertThat(r.days().get(0).sessionDone()).isTrue();
+        assertThat(r.days().get(0).dayKind()).isEqualTo("edzesnap");
         assertThat(r.summary().sessionsDone()).isEqualTo(1);
         assertThat(rest.days().get(0).sessionPlanned()).isFalse();
         assertThat(rest.days().get(0).sessionDone()).isNull();
+        assertThat(rest.days().get(0).dayKind()).isEqualTo("pihenonap");
+        assertThat(rest.days().get(0).sessions()).isEmpty();
+    }
+
+    @Test
+    void gymAndSportOnOneDayAreTwoSessions() {
+        UUID owner = fixture.owner("adherence-double@test.local");
+        LocalDate tuesday = lastBefore(today, 1);
+        gymDone(owner, tuesday);
+        trainPopulator.createSportSession(owner, tuesday);
+
+        Result r = adherence.range(owner, tuesday, tuesday);
+
+        AdherenceDay d = r.days().get(0);
+        assertThat(d.dayKind()).isEqualTo("edzes_sport");
+        assertThat(d.sessions()).extracting(DaySession::kind).containsExactly("gym", "sport");
+        assertThat(d.sessions()).extracting(DaySession::done).containsExactly(true, true);
+        assertThat(d.sessionDone()).isTrue();
+        assertThat(r.summary().sessionsPlanned()).isEqualTo(2);
+        assertThat(r.summary().sessionsDone()).isEqualTo(2);
+        assertThat(r.summary().trainingPlanned()).isEqualTo(1);
+        assertThat(r.summary().trainingDone()).isEqualTo(1);
+        assertThat(r.summary().sportPlanned()).isEqualTo(1);
+        assertThat(r.summary().sportDone()).isEqualTo(1);
+    }
+
+    @Test
+    void twoSessionDayWithOnlyTheSportDoneIsOneOfTwo() {
+        UUID owner = fixture.owner("adherence-half@test.local");
+        LocalDate tuesday = lastBefore(today, 1);
+        trainPopulator.createSportSession(owner, tuesday);
+
+        Result r = adherence.range(owner, tuesday, tuesday);
+
+        AdherenceDay d = r.days().get(0);
+        assertThat(d.sessions()).extracting(DaySession::done).containsExactly(false, true);
+        assertThat(d.sessionDone()).as("not every planned session happened").isFalse();
+        assertThat(r.summary().sessionsPlanned()).isEqualTo(2);
+        assertThat(r.summary().sessionsDone()).isEqualTo(1);
+        assertThat(r.summary().trainingDone()).isZero();
+        assertThat(r.summary().sportDone()).isEqualTo(1);
+    }
+
+    @Test
+    void reasonedSkipOfOneSessionExcusesOnlyThatOne() {
+        UUID owner = fixture.owner("adherence-half-skip@test.local");
+        LocalDate tuesday = lastBefore(today, 1);
+        skipPopulator.create(owner, tuesday, Kind.SPORT, 1, "19:00", null, Reason.ILLNESS);
+        gymDone(owner, tuesday);
+
+        Result r = adherence.range(owner, tuesday, tuesday);
+
+        AdherenceDay d = r.days().get(0);
+        assertThat(d.excused()).isFalse();
+        assertThat(d.excuse()).isEqualTo("skip");
+        assertThat(d.dayKind()).as("the plan stays a two-session day").isEqualTo("edzes_sport");
+        assertThat(d.sessions()).extracting(DaySession::kind, DaySession::excused, DaySession::done)
+            .containsExactly(tuple("gym", false, true), tuple("sport", true, null));
+        assertThat(d.sessionDone()).isTrue();
+        assertThat(r.summary().sessionsPlanned()).isEqualTo(1);
+        assertThat(r.summary().sessionsDone()).isEqualTo(1);
+        assertThat(r.summary().sportPlanned()).isZero();
     }
 
     @Test
@@ -258,6 +323,11 @@ class AdherenceServiceIT extends AbstractIntegrationTest {
             assertThat(s.foodJudged()).isEqualTo(1);
             assertThat(s.sessionsPlanned()).isZero();
         });
+    }
+
+    private void gymDone(UUID owner, LocalDate day) {
+        trainPopulator.createWorkoutInstance(owner, trainPopulator.createCustomTemplateDay(owner, "Teszt nap"), day,
+            "completed");
     }
 
     private int servedTarget(UUID owner, LocalDate day) {

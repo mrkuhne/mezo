@@ -236,7 +236,8 @@ components:
         band: { allOf: [{ $ref: '#/components/schemas/SeasonBand' }], nullable: true }
         gymPerWeek: { type: integer }
         sportPerWeek: { type: integer }
-        weekKcal: { type: integer, nullable: true, description: 'The week''s total planned intake: trainDayKcal × active days + restDayKcal × rest days (active = distinct weekdays with gym or sport). Moves when a session or sport day is added even though each day''s own target does not' }
+        weekKcal: { type: integer, nullable: true, description: 'The week''s total planned intake: the seven weekdays'' served targets, each with its own sessions (a rest day, a gym day, a sport day, a gym + sport day). Moves when a session or sport day is added even though the training-day target does not' }
+        trainSportDayKcal: { type: integer, nullable: true, description: 'A gym + sport day''s served target (both sessions); null when no weekday carries both' }
     SeasonTodo:
       type: object
       required: [key, title, body]
@@ -362,22 +363,31 @@ components:
         weight: { $ref: '#/components/schemas/SeasonWeightPillar' }
     SeasonAdherenceDay:
       type: object
-      required: [date, judged, excused, sessionPlanned]
+      required: [date, judged, excused, sessionPlanned, dayKind, sessions]
       properties:
         date: { type: string, format: date }
         judged: { type: boolean, description: 'The food side counts: not today, not a kímélő day, something logged' }
-        excused: { type: boolean, description: 'A kímélő day — left out of every count. A reasoned skip only excuses the session (sessionDone null), the food and the night still count' }
-        excuse: { type: string, nullable: true, description: 'kimelo (the whole day is excused) or skip (only the session is)' }
+        excused: { type: boolean, description: 'A kímélő day — left out of every count. A reasoned skip only excuses that one session, the day''s other session, the food and the night still count' }
+        excuse: { type: string, nullable: true, description: 'kimelo (the whole day is excused) or skip (at least one session is)' }
         kcal: { type: integer, nullable: true }
         targetKcal: { type: integer, nullable: true, description: "The day's served target (DayTargetProjector); null when it cannot be computed" }
         proteinG: { type: integer, nullable: true }
         targetProteinG: { type: integer, nullable: true }
         foodInBand: { type: boolean, nullable: true, description: 'judged and |kcal − target| ≤ 10 % of target; null when not judged' }
-        sessionPlanned: { type: boolean }
-        sessionDone: { type: boolean, nullable: true, description: 'null when no session was planned or it is excused / today' }
+        sessionPlanned: { type: boolean, description: 'At least one session planned' }
+        sessionDone: { type: boolean, nullable: true, description: 'Every judged session done; null when none was judged (nothing planned, all excused, today)' }
+        dayKind: { type: string, description: 'edzesnap (gym or a block run) | sport | edzes_sport (both — two sessions) | pihenonap' }
+        sessions: { type: array, items: { $ref: '#/components/schemas/SeasonAdherenceSession' }, description: 'One per planned session kind of the day; a gym + sport day has two' }
         sleepMin: { type: integer, nullable: true }
         needMin: { type: integer, nullable: true, description: "The night's need: the active season's, else the sleep goal" }
         sleepOk: { type: boolean, nullable: true, description: 'sleepMin ≥ needMin − 15; null without a night' }
+    SeasonAdherenceSession:
+      type: object
+      required: [kind, excused]
+      properties:
+        kind: { type: string, description: 'gym | sport | run' }
+        excused: { type: boolean, description: 'Skipped with a reason, or the day is kímélő' }
+        done: { type: boolean, nullable: true, description: 'A completed session of this kind that date; null when excused or today+' }
     SeasonAdherenceResponse:
       type: object
       required: [days, summary]
@@ -386,15 +396,19 @@ components:
         summary: { $ref: '#/components/schemas/SeasonAdherence' }
     SeasonAdherence:
       type: object
-      required: [foodInBand, foodJudged, sessionsDone, sessionsPlanned, nightsOk, nightsJudged, excusedDays]
+      required: [foodInBand, foodJudged, sessionsDone, sessionsPlanned, nightsOk, nightsJudged, excusedDays, trainingDone, trainingPlanned, sportDone, sportPlanned]
       properties:
         foodInBand: { type: integer }
         foodJudged: { type: integer }
-        sessionsDone: { type: integer }
-        sessionsPlanned: { type: integer }
+        sessionsDone: { type: integer, description: 'trainingDone + sportDone — a gym + sport day counts two' }
+        sessionsPlanned: { type: integer, description: 'trainingPlanned + sportPlanned' }
         nightsOk: { type: integer }
         nightsJudged: { type: integer }
         excusedDays: { type: integer }
+        trainingDone: { type: integer, description: 'Gym and block-run sessions done' }
+        trainingPlanned: { type: integer }
+        sportDone: { type: integer }
+        sportPlanned: { type: integer }
     SeasonInsight:
       type: object
       required: [key, title, body]

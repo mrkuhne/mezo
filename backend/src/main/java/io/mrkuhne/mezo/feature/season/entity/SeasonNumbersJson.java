@@ -23,6 +23,7 @@ public record SeasonNumbersJson(
     BigDecimal bandHighKg,     // maintain only
     int gymPerWeek,
     int sportPerWeek,
-    Integer weekKcal           // trainDay × active days + restDay × the rest (trainDay × 7 without a rest day)
+    Integer weekKcal,          // the seven weekdays' served targets, each with its own sessions (a gym + sport day both)
+    Integer trainSportDayKcal  // a gym + sport day's target; null when no weekday carries both (or an older snapshot)
 ) {
 }
