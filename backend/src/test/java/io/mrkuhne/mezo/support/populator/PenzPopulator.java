@@ -140,8 +140,13 @@ public class PenzPopulator {
         e.setAccountId(accountId);
         e.setKind(kind);
         e.setAmountMinor(1L);
-        e.setCurrency("HUF");
+        String currency = accountRepository.findById(accountId).orElseThrow().getCurrency(); // the account's own
+        e.setCurrency(currency);
         e.setAmountHufMinor(1L);
+        if (!"HUF".equals(currency)) { // a foreign row carries its booking rate (ck_penz_transaction_fx)
+            e.setFxRate(java.math.BigDecimal.ONE);
+            e.setFxRateDate(date);
+        }
         e.setDate(date);
         e.setSource("recurring");
         e.setRecurringRuleId(ruleId);

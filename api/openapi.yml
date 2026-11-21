@@ -342,6 +342,17 @@ tags:
       those figures only (validated; fixed copy when it fails). He adjusts every
       number and accepts; the accepted plan is a checklist he ticks himself.
       Nothing here moves money, records a transaction or creates a holding.
+  - name: PenzWeekly
+    description: >
+      Boop Pénz (mezo-r36n9.120) — the weekly long-horizon review: "did anything
+      this week change the long-term picture?", one section per horizon (short
+      1–3 év, mid 5–10 év, long 10+ év). Built by the news run from the owner's
+      stored daily digests of the previous complete Monday–Sunday week (his
+      money timezone) — no new feed fetch, no article bodies; the model narrates
+      figures computed by the backend and a deterministic validator replaces any
+      section that breaks a rule with fixed fallback copy. A sleeve no story
+      touched gets fixed quiet copy without a model call. Never a buy / sell /
+      urge, no push, no action button; "nincs teendőd" is a complete answer.
   - name: Season
     description: >
       Boop B6 Évad (mezo-r36n9.16) — one N-week season that owns its goal (1:1),
@@ -13988,7 +13999,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
         '409':
-          description: It is the last non-archived account (PENZ_LAST_ACTIVE_ACCOUNT)
+          description: >-
+            It is the last non-archived account (PENZ_LAST_ACTIVE_ACCOUNT), or
+            the currency changes while the account has transactions or recurring
+            rules (PENZ_ACCOUNT_CURRENCY_LOCKED)
           content:
             application/json:
               schema:
@@ -14274,6 +14288,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            PENZ_TRANSACTION_INVEST_LINKED — the money row of a recorded
+            investment buy / sell; change or delete the investment record
+            instead
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '503':
           description: >-
             No exchange rate reachable for a non-HUF amount
@@ -14305,6 +14328,14 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: No such transaction of the caller
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            PENZ_TRANSACTION_INVEST_LINKED — the money row of a recorded
+            investment buy / sell; delete the investment record instead
           content:
             application/json:
               schema:
@@ -15088,7 +15119,17 @@ paths:
         on clientRef. The currency is the holding's; a sell above the open
         quantity (or, without quantities, above the open cost) is 400
         PENZ_SELL_EXCEEDS_POSITION. Non-HUF amounts are booked at the date's ECB
-        rate (503 PENZ_FX_UNAVAILABLE).
+        rate (503 PENZ_FX_UNAVAILABLE). With accountId (mezo-r36n9.119) the buy
+        / sell also lands on that money account as ONE penz_transaction (kind
+        invest_buy / invest_sell, in the ACCOUNT's currency: accountAmountMinor
+        when given, else the amount itself when the currencies agree, else its
+        HUF twin on a HUF account, else the HUF twin converted at the account
+        currency's booking rate of the date, HALF_UP) — so the balance and the
+        allowance "invested" line see it. With linkTransactionId (a buy only) a
+        bank-SMS debit on that account becomes that money row instead (the buy
+        takes its date); nothing new is written. A clientRef replay never writes
+        a second money row. The app never moves money: it only records what he
+        already did.
       requestBody:
         required: true
         content:
@@ -15104,8 +15145,10 @@ paths:
                 $ref: '#/components/schemas/PenzInvestTxnResponse'
         '400':
           description: >-
-            Validation failure / PENZ_SELL_EXCEEDS_POSITION /
-            PENZ_CURRENCY_MISMATCH
+            Validation failure (VALIDATION_INVALID_VALUE on accountId for an
+            account that cannot pay — only checking and cash can; on
+            linkTransactionId for a sell or without accountId) /
+            PENZ_SELL_EXCEEDS_POSITION / PENZ_CURRENCY_MISMATCH
           content:
             application/json:
               schema:
@@ -15117,7 +15160,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
-          description: PENZ_HOLDING_NOT_FOUND
+          description: >-
+            PENZ_HOLDING_NOT_FOUND / PENZ_ACCOUNT_NOT_FOUND (not his, deleted or
+            archived) / PENZ_TRANSACTION_NOT_FOUND (linkTransactionId)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            PENZ_SMS_LINK_MISMATCH — linkTransactionId is not (any more) a
+            bank-SMS debit this buy can adopt (same rule as the sms-candidates
+            list)
           content:
             application/json:
               schema:
@@ -15128,14 +15182,75 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/penz/invest-transactions/sms-candidates:
+    get:
+      tags:
+        - PenzPortfolio
+      operationId: listPenzInvestSmsCandidates
+      summary: >
+        Bank-SMS debits that may be this buy (mezo-r36n9.119): on an account
+        with an SMS sender, live non-recurring expenses that came from a bank
+        SMS, not yet linked to an investment, with exactly amountMinor (the
+        ACCOUNT's currency) dated within ±3 days of date. Empty when the account
+        receives no SMS. Closest date first.
+      parameters:
+        - name: accountId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: amountMinor
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+            maximum: 100000000000
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Candidate transactions (possibly empty)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PenzTransactionResponse'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: PENZ_ACCOUNT_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/penz/invest-transactions/{id}':
     delete:
       tags:
         - PenzPortfolio
       operationId: deletePenzInvestTransaction
-      summary: >-
+      summary: >
         Soft-delete a buy or sell (refused when it would leave a later sell
-        above the open position)
+        above the open position). Its linked money row goes with it: one that
+        carries a bank SMS (the debit really happened) reverts to an expense (a
+        buy) / income (a sell) waiting for review; any other is soft-deleted.
       parameters:
         - name: id
           in: path
@@ -16198,6 +16313,35 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '409':
           description: PENZ_PROPOSAL_STATE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/penz/weekly-review:
+    get:
+      tags:
+        - PenzWeekly
+      operationId: getPenzWeeklyReview
+      summary: >
+        The weekly long-horizon review — of the week `week` falls in (a Monday;
+        another day means its week), else the latest stored one; status pending
+        when none was built yet
+      parameters:
+        - name: week
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: The weekly review
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PenzWeeklyReviewResponse'
+        '401':
+          description: Missing/invalid token
           content:
             application/json:
               schema:
@@ -36243,6 +36387,12 @@ components:
         reason:
           type: string
           nullable: true
+          description: >
+            Why it ended as it did, e.g. no_amount, llm_error, amount_mismatch,
+            no_account, fx_unavailable, amount_too_small; with status parsed,
+            invest_buy_linked means the debit was adopted by an investment buy
+            he had already recorded on that account (transactionId is that buy's
+            money row; no new transaction).
     PenzSmsKeyResponse:
       type: object
       required:
@@ -36453,6 +36603,29 @@ components:
           type: string
           format: uuid
           nullable: true
+        accountId:
+          type: string
+          format: uuid
+          nullable: true
+          description: >-
+            The money account it was paid from (buy) / paid into (sell); only
+            checking or cash. Null = not linked to an account
+        accountAmountMinor:
+          type: integer
+          format: int64
+          nullable: true
+          minimum: 1
+          maximum: 100000000000
+          description: >-
+            The exact amount in the ACCOUNT currency when he knows it (e.g. the
+            bank debit); null = derived (see the operation)
+        linkTransactionId:
+          type: string
+          format: uuid
+          nullable: true
+          description: >-
+            A buy only, with accountId: a bank-SMS expense from the
+            sms-candidates list to adopt as this buy (its date wins)
     PenzInvestTxnResponse:
       type: object
       required:
@@ -36499,6 +36672,18 @@ components:
           type: string
           format: uuid
           nullable: true
+        accountId:
+          type: string
+          format: uuid
+          nullable: true
+          description: The money account of the linked money row; null = not linked
+        transactionId:
+          type: string
+          format: uuid
+          nullable: true
+          description: >-
+            The linked money row (penz_transaction, kind invest_buy /
+            invest_sell); null = not linked
     PenzHoldingEventRequest:
       type: object
       required:
@@ -37829,6 +38014,152 @@ components:
       properties:
         done:
           type: boolean
+    PenzWeeklyReviewResponse:
+      type: object
+      required:
+        - weekStart
+        - weekEnd
+        - status
+        - sections
+      properties:
+        weekStart:
+          type: string
+          format: date
+          description: The Monday of the reviewed week
+        weekEnd:
+          type: string
+          format: date
+          description: The Sunday of the reviewed week
+        status:
+          type: string
+          enum:
+            - pending
+            - ready
+            - quiet
+            - failed
+        generatedAt:
+          type: string
+          format: date-time
+          nullable: true
+        sections:
+          type: array
+          description: >-
+            Always short, mid, long in this order once built; empty while
+            pending or failed
+          items:
+            $ref: '#/components/schemas/PenzWeeklySection'
+    PenzWeeklySection:
+      type: object
+      required:
+        - sleeve
+        - horizonLabel
+        - storyCount
+        - sourceCount
+        - matters
+        - verdict
+        - body
+        - uncertainty
+        - noAction
+        - narratedBy
+        - stories
+      properties:
+        sleeve:
+          type: string
+          enum:
+            - short
+            - mid
+            - long
+        horizonLabel:
+          type: string
+          description: 'Fixed copy: 1–3 év · 5–10 év · 10+ év'
+        storyCount:
+          type: integer
+          description: Distinct stories of the week touching this sleeve (computed)
+        sourceCount:
+          type: integer
+          description: Distinct source names behind them (computed)
+        matters:
+          type: boolean
+          description: >-
+            True only when the model found a lasting change (validated); false
+            for fallback and quiet
+        verdict:
+          type: string
+          description: >-
+            One line: did the long-term picture of this horizon change (no
+            instruction)
+        body:
+          type: string
+          description: >-
+            The reading, paragraphs separated by a blank line; *emphasis*
+            allowed
+        uncertainty:
+          type: string
+          description: Where this could be wrong — never empty
+        noAction:
+          type: string
+          description: 'Why there is nothing to do, specific to this horizon'
+        narratedBy:
+          type: string
+          enum:
+            - model
+            - fallback
+            - quiet
+        coverageMonths:
+          type: integer
+          nullable: true
+          description: >-
+            long only: months of fixed costs the long sleeve covers, as Pénzem
+            computes it
+        stories:
+          type: array
+          description: >-
+            At most 6 — the stories the reading relies on first, then most
+            sources, then newest
+          items:
+            $ref: '#/components/schemas/PenzWeeklyStory'
+    PenzWeeklyStory:
+      type: object
+      required:
+        - id
+        - title
+        - kind
+        - sources
+      properties:
+        id:
+          type: string
+          description: The daily digest story id
+        title:
+          type: string
+          description: The headline the daily digest stored
+        holdingName:
+          type: string
+          nullable: true
+          description: From his ledger (holding stories only)
+        kind:
+          type: string
+          enum:
+            - holding
+            - fx
+            - rates
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/PenzWeeklySource'
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+    PenzWeeklySource:
+      type: object
+      required:
+        - name
+        - url
+      properties:
+        name:
+          type: string
+        url:
+          type: string
     SeasonSportSlot:
       type: object
       required:

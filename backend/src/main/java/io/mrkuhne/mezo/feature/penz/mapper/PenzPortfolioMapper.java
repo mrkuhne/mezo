@@ -40,6 +40,7 @@ public interface PenzPortfolioMapper {
     @Mapping(target = "amount", expression = "java(money(e.getAmountMinor(), e.getCurrency(), e.getAmountHufMinor()))")
     @Mapping(target = "quantity", expression = "java(plain(e.getQuantity()))")
     @Mapping(target = "realizedHufMinor", ignore = true)
+    @Mapping(target = "accountId", ignore = true)
     PenzInvestTxnResponse toResponse(PenzInvestTxnEntity e);
 
     /** An event with its holding's name and sleeve; {@code amountHufMinor} valued by the caller (valuation policy). */

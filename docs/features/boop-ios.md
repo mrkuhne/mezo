@@ -399,6 +399,37 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     another; both refs live for the sheet so a retry never doubles); `PenzEventSheet` → POST holding-events. Pénzem is
     re-read after each. `PENZ_SYMBOL_UNKNOWN` / `PENZ_SELL_EXCEEDS_POSITION` / `PENZ_FX_UNAVAILABLE` are said in
     Hungarian (`penzErrorText`); `RawJSONClient` maps a 503 that carries a message code to `.conflict(code)`.
+  - **Paid from / into a money account (`mezo-r36n9.119`, 2026-11-21)**: under the date the record sheet offers
+    *MELYIK SZÁMLÁDRÓL* (a sell: *MELYIK SZÁMLÁDRA*) — *Nem adom meg* (default: no `accountId`, the L6 request
+    byte-for-byte) plus his live checking and cash accounts, default first (`penzPayableAccounts`); hidden when he has
+    none. An account in another currency than the holding gets one quiet line (the server converts at the day's
+    official rate; no second amount field). For a buy whose account shares the holding's currency, the sheet asks
+    `GET invest-transactions/sms-candidates` (debounced on account · amount · day, `penzSmsLookupAmount`) and, when
+    any match, shows *EZ VOLT A BANKI TERHELÉS?* (chips "nov. 19. · Spar", *Egyik sem* default) → `linkTransactionId`,
+    so the bank row becomes the buy instead of counting twice. While that lookup is pending (the 450 ms debounce or
+    the request in flight, tracked per lookup key) *Rögzítem* is disabled, so a save never skips a possible bank
+    match (`.119` review). `PenzInvestTxnRequest` gained `accountId` /
+    `accountAmountMinor` / `linkTransactionId` (sent only when set), `PenzInvestTxn` decodes `accountId` /
+    `transactionId`; a save with an account re-reads the whole snapshot (the allowance and Költés moved), not only
+    Pénzem. New refusals in Hungarian: `PENZ_SMS_LINK_MISMATCH` (the sheet looks the bank rows up again) and
+    `PENZ_TRANSACTION_INVEST_LINKED` (editing / deleting a money row that belongs to a recorded investment).
+  - **The weekly long-horizon review (`mezo-r36n9.120`, owner decision #66, 2026-11-21; contract
+    `api/feature/penz/penz-weekly.yml`, server side [`penz.md`](penz.md) §3.14)**: on Pénzem, under *A HÉT, HOSSZÚ
+    TÁVON* (search glyph, the reviewed week "nov. 10–16." at the head's right) right after the three sleeves and their
+    info row — built only from existing parts, no new look, **no push, no action button, Ma unchanged**. One
+    `NKAreaRow` per horizon in short → mid → long order: title = the horizon label, sub = the verdict (wraps to two
+    lines — the kit's new `NKAreaRow.subLines`, default 1), right side a quiet word ("számít" when `matters`, else
+    "nincs teendő"; never `hot`). A tap opens `PenzWeeklyPage` (page `PenzPage.weekly`, `NKAreaSubPage`, crumb "Pénz ·
+    Pénzem", title = the horizon, sentence = the verdict): *Amit Boop gondol róla* (`NKHueText` for `*emphasis*`, plus
+    the long sleeve's coverage sentence when known), *Mennyire biztos* (uncertainty), *Honnan van* (story / source
+    counts, then each story: headline, holding, source capsules that open their http(s) link), `NKNothingToDo` with the
+    per-horizon `noAction`. Fallback and quiet copy is shown as it came. States (`penzWeeklyView`): never loaded or the
+    first read failed → no block (never breaks Pénzem); `pending` → one line „Az első heti áttekintés hétfő reggel
+    készül el."; `quiet` / `failed` with no sections → one honest line; `failed` with sections → the rows. Data:
+    `PenzWeeklyWire.swift` (lenient), `PenzClient.weeklyReview(week:)`, `PenzStore.weekly` read with the full load
+    and cached in `ServerCache` (`penz/weekly` "current"; a failure keeps the last one), pure builders in
+    `PenzWeeklyLogic.swift`, tests `PenzWeeklyTests.swift`. Review: `-penzWeekly ready|pending|quiet|failed|error`,
+    `-penzPage weekly|weekly-short|weekly-mid`.
   - **Data**: `PenzPortfolioWire.swift` (lenient), `PenzPortfolioClient.swift` (portfolio, digest, holdings CRUD,
     invest-transactions, `holdings/{id}/transactions`, holding-events), `PenzStore.portfolio` / `.digest` read beside the
     snapshot, each with its own problem/offline flags, cached in `ServerCache` (`penz/portfolio` "current", `penz/digest`

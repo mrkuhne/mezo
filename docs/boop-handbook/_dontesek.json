@@ -1016,5 +1016,17 @@
     "miert": "A korábbi szabály csak 22 gyakorlatot engedett, és épp a legbiztonságosabb gépes és csigás gyakorlatokon tiltotta (például csigás bicepsz, tricepsz-letolás). A fáradtan végzett szabadsúlyos félismétlés viszont billegős és kockázatos.",
     "levaltotta": "A „nyújtott helyzetben biztonságos” jelölésű 22 gyakorlatra szűkített szabályt.",
     "kovetkezmeny": "A technikák (pihenős drop és a többi) továbbra is csak stabil gyakorlaton választhatók, és naponta egy kihívás lehet."
+  },
+  "d-2026-11-21-penz-heti-attekintes-helye": {
+    "datum": "2026-11-21",
+    "terulet": [
+      "Pénz"
+    ],
+    "cim": "A heti hosszú távú áttekintés a Pénzem oldalon jelenik meg",
+    "suly": "Kicsi",
+    "valasztas": "A heti áttekintés (rekeszenként: mi számított a múlt héten hosszú távon) a Pénzem oldalon, a három rekesz alatt kap helyet, a meglévő hírkártyák mintájára — koppintásra a teljes magyarázat.",
+    "miert": "Ott vannak a rekeszek, és ez a hosszú távú nézet helye; a Ma oldal maradjon a „mi a dolgom ma?” kérdésé.",
+    "levaltotta": "—",
+    "kovetkezmeny": "Értesítés és teendő-gomb nincs; hétfőnként frissül. A Ma oldal nem változik."
   }
 }

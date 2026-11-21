@@ -35,7 +35,7 @@ import tools.jackson.databind.ObjectMapper;
  *       HTTP call, so create / update run it BEFORE their write transaction (a {@link TransactionTemplate}).</li>
  *   <li>The currency cannot change once the holding has a transaction (400 {@code PENZ_CURRENCY_MISMATCH}): its
  *       amounts and lots are in that currency.</li>
- *   <li>Delete soft-deletes the holding with its transactions and events.</li>
+ *   <li>Delete soft-deletes the holding with its transactions and events (their linked money rows released).</li>
  * </ul>
  */
 @Service
@@ -44,6 +44,7 @@ public class PenzHoldingService {
 
     private final PenzHoldingRepository repository;
     private final PenzInvestTxnRepository txns;
+    private final PenzInvestLinkService links;
     private final PenzHoldingEventRepository events;
     private final PenzQuoteService quotes;
     private final PenzPortfolioMapper mapper;
@@ -110,12 +111,17 @@ public class PenzHoldingService {
         });
     }
 
-    /** Soft-deletes the holding, its transactions and its events. */
+    /**
+     * Soft-deletes the holding, its transactions and its events; the transactions' linked money rows are released
+     * first, as deleting each transaction would (mezo-r36n9.119).
+     */
     @Transactional
     public void delete(UUID owner, UUID id) {
         PenzHoldingEntity row = require(owner, id);
         repository.delete(row);
         repository.flush();
+        txns.findByCreatedByAndHoldingIdAndDeletedFalseOrderByCreatedAtAsc(owner, id)
+            .forEach(t -> links.release(owner, t));
         txns.softDeleteByHolding(owner, id);
         events.softDeleteByHolding(owner, id);
     }

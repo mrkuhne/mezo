@@ -92,6 +92,18 @@ public class PenzPortfolioService {
         }).toList();
     }
 
+    /**
+     * The long sleeve's coverage of his fixed costs in months on {@code date}, exactly as Pénzem computes it
+     * ({@link PortfolioEngine}: {@code floor(long value / fixedCosts)}) — from the CACHED quotes, no fetch; null when
+     * fixed costs are unknown. The weekly long-horizon review's only money figure (mezo-r36n9.120).
+     */
+    public Integer longCoverageMonths(UUID owner, LocalDate date) {
+        List<PenzHoldingEntity> held = held(owner);
+        Valued valued = value(owner, date, held);
+        return PortfolioEngine.build(date, valued.positions(), fixedCosts(owner, date), false).sleeves().stream()
+            .filter(s -> s.sleeve() == Sleeve.LONG).findFirst().map(s -> s.coverageMonths()).orElse(null);
+    }
+
     private List<PenzHoldingEntity> held(UUID owner) {
         return holdingRows.findByCreatedByAndDeletedFalseOrderByPositionAscCreatedAtAsc(owner).stream()
             .filter(h -> !h.isArchived())

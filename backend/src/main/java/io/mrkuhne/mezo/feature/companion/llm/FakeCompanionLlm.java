@@ -661,6 +661,22 @@ public class FakeCompanionLlm implements CompanionLlm {
     private final java.util.concurrent.atomic.AtomicInteger penzDigestCalls = new java.util.concurrent.atomic.AtomicInteger();
     public int penzDigestCallCount() { return penzDigestCalls.get(); }
 
+    /** Mirror of penz WeeklyReviewPrompt.MARKER (mezo-r36n9.120) — LITERAL, like the digest mirror. */
+    public static final String PENZ_WEEKLY_MARKER_MIRROR = "BOOP_PENZ_WEEKLY_V1";
+    /** Scripts the weekly answer: {@code [fake-penz-weekly:<base64 of the JSON answer>]} anywhere in the user message. */
+    private static final Pattern PENZ_WEEKLY_SCRIPT = Pattern.compile("\\[fake-penz-weekly:([A-Za-z0-9+/=]+)]");
+    /** Mirrors WeeklyReviewPrompt.SECTION_PREFIX; a section header is always a line of its own. */
+    private static final Pattern PENZ_WEEKLY_SECTION = Pattern.compile("(?m)^SECTION sleeve=(short|mid|long)$");
+    /** Mirrors WeeklyReviewPrompt.STORY_OPEN: the first story fence after a section header. */
+    private static final Pattern PENZ_WEEKLY_STORY = Pattern.compile("(?m)^<<<STORY id=([A-Za-z0-9_-]+) kind=");
+    private final java.util.concurrent.atomic.AtomicInteger penzWeeklyCalls = new java.util.concurrent.atomic.AtomicInteger();
+    /** An IT scripts the next weekly answers here (null = the clean default or the base64 sentinel). */
+    private final java.util.concurrent.atomic.AtomicReference<String> penzWeeklyScript = new java.util.concurrent.atomic.AtomicReference<>();
+    private volatile String lastPenzWeeklyUserMessage;
+    public int penzWeeklyCallCount() { return penzWeeklyCalls.get(); }
+    public void scriptPenzWeekly(String rawAnswer) { penzWeeklyScript.set(rawAnswer); }
+    public String lastPenzWeeklyUserMessage() { return lastPenzWeeklyUserMessage; }
+
     /** Mirror of penz ProposalPrompt.MARKER (Boop Pénz L7, mezo-r36n9.105) — LITERAL, like the digest mirror. */
     public static final String PENZ_PROPOSAL_MARKER_MIRROR = "BOOP_PENZ_PROPOSAL_V1";
     /** The unscripted proposal narration: valid, validator-clean (no number, no product name, no boundary word). */
@@ -959,6 +975,35 @@ public class FakeCompanionLlm implements CompanionLlm {
         return "{\"items\":[" + items + "]}";
     }
 
+    /**
+     * The weekly review narration (mezo-r36n9.120): scripted, or one valid, validator-clean entry per SECTION header —
+     * matters:true resting on the section's first story, no number, no holding name, no boundary word — so an IT can
+     * run the whole pipeline and get model-narrated sections.
+     */
+    private static String penzWeeklyAnswer(String userMessage) {
+        Matcher scripted = PENZ_WEEKLY_SCRIPT.matcher(userMessage);
+        if (scripted.find()) {
+            return new String(Base64.getDecoder().decode(scripted.group(1)), StandardCharsets.UTF_8);
+        }
+        StringBuilder sections = new StringBuilder();
+        Matcher section = PENZ_WEEKLY_SECTION.matcher(userMessage);
+        while (section.find()) {
+            Matcher story = PENZ_WEEKLY_STORY.matcher(userMessage);
+            String firstStory = story.find(section.end()) ? story.group(1) : null;
+            if (sections.length() > 0) {
+                sections.append(',');
+            }
+            sections.append("{\"sleeve\":\"").append(section.group(1)).append("\",\"matters\":")
+                .append(firstStory != null).append(",\"storyIds\":[")
+                .append(firstStory == null ? "" : "\"" + jsonEscape(firstStory) + "\"")
+                .append("],\"verdict\":\"A teszt-modell szerint volt a héten egy tartósnak látszó hír ennél a résznél.\",")
+                .append("\"body\":\"Ez a teszt-modell heti összefoglalója.\\n\\nA történeteket a rendszer csoportosította.\",")
+                .append("\"uncertainty\":\"Ez a teszt-modell válasza, a híreket valójában nem olvasta.\",")
+                .append("\"noAction\":\"A teszt-modell szerint ennél a résznél nincs teendőd.\"}");
+        }
+        return "{\"sections\":[" + sections + "]}";
+    }
+
     @Override
     public String complete(String systemPrompt, List<Turn> history, String userMessage,
                            List<ToolCallback> tools, Map<String, Object> toolContext) {
@@ -998,6 +1043,12 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (systemPrompt.startsWith(PENZ_DIGEST_MARKER_MIRROR)) {
             penzDigestCalls.incrementAndGet();
             return penzDigestAnswer(userMessage);
+        }
+        if (systemPrompt.startsWith(PENZ_WEEKLY_MARKER_MIRROR)) {
+            penzWeeklyCalls.incrementAndGet();
+            lastPenzWeeklyUserMessage = userMessage;
+            String scripted = penzWeeklyScript.get();
+            return scripted == null ? penzWeeklyAnswer(userMessage) : scripted;
         }
         if (systemPrompt.startsWith(PENZ_PROPOSAL_MARKER_MIRROR)) {
             penzProposalCalls.incrementAndGet();

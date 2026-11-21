@@ -12,4 +12,7 @@ public interface PenzRecurringRuleRepository extends JpaRepository<PenzRecurring
     List<PenzRecurringRuleEntity> findByCreatedByAndDeletedFalseOrderByNameAsc(UUID createdBy);
 
     Optional<PenzRecurringRuleEntity> findByIdAndCreatedByAndDeletedFalse(UUID id, UUID createdBy);
+
+    /** Whether the account carries any live recurring rule (its currency is then locked, mezo-r36n9.108). */
+    boolean existsByAccountIdAndDeletedFalse(UUID accountId);
 }

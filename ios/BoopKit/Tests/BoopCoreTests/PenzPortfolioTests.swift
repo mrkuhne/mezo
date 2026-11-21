@@ -172,6 +172,7 @@ struct PenzPortfolioClientTests {
         scriptL5(stub)
         stub.on("getPenzPortfolio", .json(200, PenzL6Fixtures.portfolioJSON))
         stub.on("getPenzDigest", .json(200, PenzL6Fixtures.digestJSON))
+        stub.on("getPenzWeeklyReview", .status(404))
         let store = PenzStore(client: PenzClient(raw: Self.raw(stub)), cache: cache, clock: { clock.now })
         await store.load()
         #expect(store.portfolio?.value.totalHufMinor == 641_800_000 && store.portfolioProblem == nil)
@@ -180,7 +181,7 @@ struct PenzPortfolioClientTests {
         clock.advance(2 * 3600)
         let off = StubTransport()
         for op in ["getPenzAllowance", "listPenzTransactions", "listPenzCategories", "listPenzAccounts", "listOpenPenzMonths",
-                   "listPenzSavingsGoals", "getPenzSettings", "getPenzPortfolio", "getPenzDigest"] {
+                   "listPenzSavingsGoals", "getPenzSettings", "getPenzPortfolio", "getPenzDigest", "getPenzWeeklyReview"] {
             off.on(op, .fail(URLError(.notConnectedToInternet)))
         }
         let later = PenzStore(client: PenzClient(raw: Self.raw(off)), cache: cache, clock: { clock.now })
@@ -195,6 +196,7 @@ struct PenzPortfolioClientTests {
         scriptL5(stub)
         stub.on("getPenzPortfolio", .json(200, PenzL6Fixtures.portfolioJSON))
         stub.on("getPenzDigest", .status(500))
+        stub.on("getPenzWeeklyReview", .status(404))
         let store = PenzStore(client: PenzClient(raw: Self.raw(stub)), cache: nil)
         await store.load()
         #expect(store.allowance != nil && store.portfolio != nil)
@@ -492,5 +494,115 @@ struct PenzPortfolioLogicTests {
         #expect(penzDigestView(digest: nil, problem: nil, portfolio: nil) == .loading)
         guard case .failed(let line) = penzDigestView(digest: nil, problem: .offline, portfolio: p) else { Issue.record("failed"); return }
         #expect(line.contains("Nincs net"))
+    }
+}
+
+@Suite("Pénz — a buy or sell paid from a money account (mezo-r36n9.119)")
+@MainActor
+struct PenzInvestAccountTests {
+    static func raw(_ stub: StubTransport) -> RawJSONClient {
+        RawJSONClient(transport: stub, baseURL: URL(string: "https://example.test")!, token: { "tok" })
+    }
+    static let txnJSON = #"{"id":"t1","holdingId":"h1","side":"buy","amount":{"minor":824000,"currency":"HUF","hufMinor":824000},"date":"2026-11-20","accountId":"a1","transactionId":"m7"}"#
+
+    @Test func withoutAnAccountTheBodyIsTheL6One() throws {
+        let body = String(decoding: try JSONEncoder().encode(
+            PenzInvestTxnRequest(clientRef: "r", holdingId: "h1", side: "buy", amountMinor: 100, date: "2026-11-20")), as: UTF8.self)
+        #expect(!body.contains("accountId") && !body.contains("accountAmountMinor") && !body.contains("linkTransactionId"))
+    }
+
+    @Test func theAccountFieldsTravelWhenSetAndTheAnswerCarriesTheLink() async throws {
+        let stub = StubTransport()
+        stub.on("createPenzInvestTransaction", .json(201, Self.txnJSON))
+        let t = try await PenzClient(raw: Self.raw(stub)).createInvestTransaction(PenzInvestTxnRequest(
+            clientRef: "r", holdingId: "h1", side: "buy", amountMinor: 824_000, date: "2026-11-20",
+            accountId: "a1", accountAmountMinor: 824_000, linkTransactionId: "m7"))
+        let body = stub.sent[0].body ?? ""
+        #expect(body.contains(#""accountId":"a1""#) && body.contains(#""accountAmountMinor":824000"#)
+                && body.contains(#""linkTransactionId":"m7""#))
+        #expect(t.accountId == "a1" && t.transactionId == "m7")
+        // an L6 answer (no link) still decodes
+        stub.on("createPenzInvestTransaction", .json(201, #"{"id":"t2","holdingId":"h1","side":"buy","amount":{"minor":1,"currency":"HUF"},"date":"2026-11-20","accountId":null}"#))
+        let old = try await PenzClient(raw: Self.raw(stub)).createInvestTransaction(
+            PenzInvestTxnRequest(holdingId: "h1", side: "buy", amountMinor: 1, date: "2026-11-20"))
+        #expect(old.accountId == nil && old.transactionId == nil)
+    }
+
+    @Test func smsCandidatesAskTheContractPathAndDecodeTransactions() async throws {
+        let stub = StubTransport()
+        stub.on("listPenzInvestSmsCandidates", .json(200, #"[{"id":"m7","accountId":"a1","kind":"expense","amount":{"minor":824000,"currency":"HUF","hufMinor":824000},"date":"2026-11-19","note":"Revolut","source":"sms","needsReview":true}]"#))
+        let found = try await PenzClient(raw: Self.raw(stub)).smsCandidates(accountId: "a1", amountMinor: 824_000, date: "2026-11-20")
+        #expect(found.map(\.id) == ["m7"] && found[0].source == "sms")
+        #expect(stub.sent[0].path == "/api/penz/invest-transactions/sms-candidates?accountId=a1&amountMinor=824000&date=2026-11-20")
+    }
+
+    @Test func aFailedCandidateReadIsJustNoOffer() async {
+        let stub = StubTransport()
+        stub.on("listPenzInvestSmsCandidates", .status(500))
+        let store = PenzStore(client: PenzClient(raw: Self.raw(stub)), cache: nil)
+        #expect(await store.smsCandidates(accountId: "a1", amountMinor: 1, date: "2026-11-20").isEmpty)
+    }
+
+    @Test func theTwoNewRefusalsReadInHungarian() async {
+        let stub = StubTransport()
+        stub.on("createPenzInvestTransaction", .json(409, #"{"messages":[{"code":"PENZ_SMS_LINK_MISMATCH"}]}"#))
+        let c = PenzClient(raw: Self.raw(stub))
+        do {
+            _ = try await c.createInvestTransaction(PenzInvestTxnRequest(holdingId: "h1", side: "buy", amountMinor: 1, date: "2026-11-20",
+                                                                         accountId: "a1", linkTransactionId: "m7"))
+            Issue.record("expected a refusal")
+        } catch {
+            #expect(error == .conflict("PENZ_SMS_LINK_MISMATCH"))
+            #expect(penzErrorText(error) == "Ez a banki terhelés már nem illik ehhez a vásárláshoz — válaszd újra, vagy rögzítsd nélküle.")
+        }
+        #expect(penzErrorText(.conflict("PENZ_TRANSACTION_INVEST_LINKED"))
+                == "Ez a tétel egy rögzített befektetéshez tartozik — a befektetést töröld, ha javítani akarod.")
+    }
+
+    @Test func aBuyFromAnAccountReadsTheMoneySnapshotAgainToo() async {
+        let stub = StubTransport()
+        stub.on("createPenzInvestTransaction", .json(201, Self.txnJSON))
+        stub.on("getPenzAllowance", .json(200, PenzClientTests.allowanceJSON))
+        stub.on("listPenzTransactions", .json(200, "[]"))
+        stub.on("listPenzCategories", .json(200, "[]"))
+        stub.on("listPenzAccounts", .json(200, "[]"))
+        stub.on("listOpenPenzMonths", .json(200, "[]"))
+        stub.on("listPenzSavingsGoals", .json(200, "[]"))
+        stub.on("getPenzSettings", .json(200, #"{"savingsTargetHufMinor":0,"practiceMonthlyHufMinor":0}"#))
+        stub.on("getPenzPortfolio", .json(200, PenzL6Fixtures.portfolioJSON))
+        stub.on("getPenzDigest", .json(200, PenzL6Fixtures.digestJSON))
+        stub.on("getPenzWeeklyReview", .status(404))
+        let store = PenzStore(client: PenzClient(raw: Self.raw(stub)), cache: nil)
+        let error = await store.recordInvestment(newHolding: nil, holdingId: "h1", transaction: PenzInvestTxnRequest(
+            holdingId: "", side: "buy", amountMinor: 824_000, date: "2026-11-20", accountId: "a1"))
+        #expect(error == nil)
+        #expect(stub.ops.first == "createPenzInvestTransaction" && stub.ops.contains("getPenzAllowance")
+                && stub.ops.contains("listPenzTransactions") && stub.ops.contains("getPenzPortfolio"))
+        #expect(store.allowance != nil && store.portfolio != nil)
+    }
+
+    @Test func payableAccountsAreLiveCheckingAndCashDefaultFirst() {
+        let accounts = [
+            PenzAccount(id: "s", name: "Megtakarítás", type: "savings"),
+            PenzAccount(id: "c", name: "Készpénz", type: "cash"),
+            PenzAccount(id: "old", name: "Régi", type: "checking", archived: true),
+            PenzAccount(id: "b", name: "Folyószámla", type: "checking", isDefault: true),
+            PenzAccount(id: "i", name: "Befektetési", type: "investment"),
+        ]
+        #expect(penzPayableAccounts(accounts).map(\.id) == ["b", "c"])
+        #expect(penzPayableAccounts([]).isEmpty)
+    }
+
+    @Test func theBankLookupOnlyRunsForABuyInTheAccountsCurrency() {
+        let huf = PenzAccount(id: "b", name: "Folyószámla", type: "checking")
+        #expect(penzSmsLookupAmount(side: "buy", account: huf, holdingCurrency: "HUF", amountMinor: 824_000) == 824_000)
+        #expect(penzSmsLookupAmount(side: "sell", account: huf, holdingCurrency: "HUF", amountMinor: 824_000) == nil)
+        #expect(penzSmsLookupAmount(side: "buy", account: huf, holdingCurrency: "EUR", amountMinor: 12_000) == nil)
+        #expect(penzSmsLookupAmount(side: "buy", account: nil, holdingCurrency: "HUF", amountMinor: 824_000) == nil)
+        #expect(penzSmsLookupAmount(side: "buy", account: huf, holdingCurrency: "HUF", amountMinor: nil) == nil)
+        let t = PenzTransaction(id: "m", accountId: "b", kind: "expense", amount: .huf(1), date: "2026-11-19", note: "Revolut", source: "sms")
+        #expect(penzSmsCandidateLabel(t) == "nov. 19. · Revolut")
+        var bare = t; bare.note = "  "
+        #expect(penzSmsCandidateLabel(bare) == "nov. 19. · Bank")
     }
 }

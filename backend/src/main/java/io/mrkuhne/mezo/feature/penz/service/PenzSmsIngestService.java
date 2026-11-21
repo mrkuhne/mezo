@@ -8,7 +8,6 @@ import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.feature.penz.entity.PenzAccountEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzCategoryEntity;
 import io.mrkuhne.mezo.feature.penz.entity.PenzSmsMessageEntity;
-import io.mrkuhne.mezo.feature.penz.entity.PenzTransactionEntity;
 import io.mrkuhne.mezo.feature.penz.repository.PenzAccountRepository;
 import io.mrkuhne.mezo.feature.penz.repository.PenzCategoryRepository;
 import io.mrkuhne.mezo.feature.penz.repository.PenzSmsMessageRepository;
@@ -57,10 +56,13 @@ import tools.jackson.databind.ObjectMapper;
  *       no rate → stored {@code parsed/fx_unavailable}; an amount that converts to zero → stored
  *       {@code parsed/amount_too_small}; otherwise the review transaction (source sms, needs
  *       review) and the SMS flips to {@code converted}. The response says {@code parsed} with its id.</li>
+ *   <li>Invest-buy adoption (mezo-r36n9.119, the old {@code linkSmsToInvestBuy}): before that expense is written, a
+ *       buy he already recorded on the same account with the same amount (account currency), no SMS yet and
+ *       within ±3 days takes the SMS instead (source sms, still reviewed) — no second row; the response is
+ *       {@code parsed} with that row's id and reason {@code invest_buy_linked}.</li>
  * </ol>
  * The SMS text and the key are never logged, and the LLM audit row of the parse keeps no payload
- * ({@link LlmCallContext#FEATURE_PENZ_SMS} is payload-free) — an SMS the model ignores leaves its text nowhere. Adopting a recorded invest buy instead of booking an expense (the
- * old {@code linkSmsToInvestBuy}) is L6.
+ * ({@link LlmCallContext#FEATURE_PENZ_SMS} is payload-free) — an SMS the model ignores leaves its text nowhere.
  */
 @Slf4j
 @Service
@@ -69,6 +71,8 @@ public class PenzSmsIngestService {
     /** Payload-free in the LLM audit log ({@link LlmCallContext#keepsPayload}): the SMS text is never kept there. */
     static final String LLM_FEATURE = LlmCallContext.FEATURE_PENZ_SMS;
     static final String LLM_OPERATION = "parse";
+    /** A parsed debit adopted by an invest buy he had already recorded (mezo-r36n9.119). */
+    static final String REASON_INVEST_BUY_LINKED = "invest_buy_linked";
 
     private final PenzSmsMessageRepository messages;
     private final PenzAccountRepository accounts;
@@ -160,11 +164,13 @@ public class PenzSmsIngestService {
             // a tiny amount converted into the account currency rounds to nothing: no zero transaction
             return stored(owner, sms, result, "amount_too_small", true);
         }
-        Optional<PenzTransactionEntity> txn = store.storeConverted(sms, result, plan, booking);
-        if (txn.isEmpty()) {
+        Optional<PenzSmsStore.Converted> converted = store.storeConverted(sms, result, plan, booking);
+        if (converted.isEmpty()) {
             return duplicate(owner, sms);
         }
-        return new PenzSmsIngestResponse().status(StatusEnum.PARSED).transactionId(txn.get().getId());
+        return new PenzSmsIngestResponse().status(StatusEnum.PARSED)
+            .transactionId(converted.get().transaction().getId())
+            .reason(converted.get().investBuyLinked() ? REASON_INVEST_BUY_LINKED : null);
     }
 
     /** The LLM read of the SMS through the ported guards; every failure is {@code failed/llm_error}. */

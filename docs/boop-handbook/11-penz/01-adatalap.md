@@ -45,7 +45,13 @@ legközelebb ránéz a pénzedre.
 **A banki SMS útja.** A parancsikon egy saját kulccsal küld — ez a kulcs csak erre az egy dologra jó, másra nem.
 Egy kulccsal percenként legfeljebb 20, naponta legfeljebb 500 üzenet jöhet. Ugyanaz az üzenet kétszer soha nem lesz
 két tétel. Ami nem pénzről szól (például egy belépési kód), azt Boop eldobja, a szövegét nem tartja meg. Az összeget
-Boop csak akkor fogadja el, ha betű szerint benne van az üzenetben.
+Boop csak akkor fogadja el, ha betű szerint benne van az üzenetben. Ha az üzenet egy olyan befektetési vásárlásról
+szól, amit már rögzítettél (ugyanaz a számla, ugyanaz az összeg, legfeljebb három nap eltéréssel), Boop nem csinál
+belőle második költést: az SMS a rögzített vásárláshoz kapcsolódik.
+
+**A számla pénzneme.** Amíg egy számlán nincs tétel, a pénznemét átállíthatod. Ha már van rajta tétel vagy
+ismétlődő tétel, a pénznem zárolva van — különben a régi tételek csendben kiesnének az egyenlegből. Másik
+pénznemhez nyiss új számlát.
 
 ## Miért így
 - A tulajdonos döntése: a gyakorlás saját sor legyen, és a hónapzárás hiánya vigye át a következő hónapra.
@@ -79,5 +85,4 @@ Boop csak akkor fogadja el, ha betű szerint benne van az üzenetben.
 - (A Pénz oldal a telefonon, a „mire gyűjtök” rész és a keretek elkészültek — lásd: *A terület*.)
 
 ## Mi marad ki
-- Egy SMS-ben jött befektetési vásárlás összepárosítása a rögzített vásárlással — a 3. lépés hozza.
 - Értesítés pénzügyekről — nem lesz.
