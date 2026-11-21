@@ -10,24 +10,6 @@ let planHue = Hue.mozgas
 let planWarn = Color(hex: 0xF2C94C)
 let planGood = Color(hex: 0x9FD8A8)
 
-/// The muscle the way he says it.
-func planMuscleName(_ key: String) -> String {
-    switch key {
-    case "back": "Hát"
-    case "biceps": "Bicepsz"
-    case "shoulder": "Váll"
-    case "chest": "Mellkas"
-    case "triceps": "Tricepsz"
-    case "quad": "Comb eleje"
-    case "ham": "Comb hátulja"
-    case "glute": "Fenék"
-    case "calf": "Vádli"
-    case "core": "Törzs"
-    case "traps": "Csuklyás"
-    default: "Egyéb"
-    }
-}
-
 /// The sky of the Edzés area behind a full-screen page, fading into the ground.
 struct PlanSky: View {
     var height: CGFloat = 420

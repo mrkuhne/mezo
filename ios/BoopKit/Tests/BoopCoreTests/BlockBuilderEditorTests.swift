@@ -78,6 +78,22 @@ struct BlockBuilderEditorTests {
         #expect(out["name"] as? String == "Barbell Bench Press" && out["muscle"] as? String == "chest-mid")
     }
 
+    @Test(.timeLimit(.minutes(1))) func addSendsThePickedSubMusclesInBodyOrder() async throws {
+        let stub = StubTransport()
+        let m = await loaded(stub)
+        stub.on("getBlockExerciseSuggestions", .json(200, #"{"suggestions":[],"labels":[]}"#))
+        stub.on("getBlockExerciseSuggestions", .json(200, #"{"suggestions":[],"labels":[]}"#))
+        _ = try await m.suggest(mode: "add", day: 0, muscles: ["chest-upper", "back-mid", "not-a-token"])
+        let objBody = try #require(stub.sent.last?.body)
+        var obj = try #require(JSONSerialization.jsonObject(with: Data(objBody.utf8)) as? [String: Any])
+        #expect(obj["muscles"] as? [String] == ["back-mid", "chest-upper"], "body order, unknown tokens dropped")
+        #expect(obj["muscle"] == nil)
+        _ = try await m.suggest(mode: "add", day: 0, muscles: [])
+        let emptyBody = try #require(stub.sent.last?.body)
+        obj = try #require(JSONSerialization.jsonObject(with: Data(emptyBody.utf8)) as? [String: Any])
+        #expect(obj["muscles"] as? [String] == [], "nothing picked: an empty list (the server reads the under-band groups)")
+    }
+
     @Test(.timeLimit(.minutes(1))) func aSwappedRowLosesTheWeeklyNote() async throws {
         let notes = PlanFixtures.proposalJSON().replacingOccurrences(
             of: #""kind":"reps","from":12,"to":13,"reasons":["reserve_left"]"#,

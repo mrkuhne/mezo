@@ -33,7 +33,7 @@ class StallOffersTest {
         "heavy", new Style(5, 8, 8, 12, null, 2, null, null, null, 180, 120, 2),
         "allout", new Style(6, 10, 8, 12, 2, 0, null, null, null, 180, 120, 2)),
         1, 56, 2, new TrainStyleProperties.Ramp(1, 2, 2, 1));
-    private static final CatalogAttributes.Attrs MACHINE = new CatalogAttributes.Attrs(true, true, "machine");
+    private static final CatalogAttributes.Attrs MACHINE = new CatalogAttributes.Attrs(true, true, "machine", true);
 
     // ── builders ────────────────────────────────────────────────────────────────────────────────
 

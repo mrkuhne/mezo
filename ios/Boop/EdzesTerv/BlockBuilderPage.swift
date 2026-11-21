@@ -85,8 +85,8 @@ struct BlockBuilderPage: View {
                 Group {
                     switch sheet {
                     case .settings(let id): DayEditSettingsSheet(model: model, rowId: id)
-                    case .add(let d, let muscle):
-                        DayEditAddSheet(model: model, day: d, muscle: muscle) { item, rx in
+                    case .add(let d, let muscles, let open):
+                        DayEditAddSheet(model: model, day: d, muscles: muscles, open: open) { item, rx in
                             guard let c = item.asCatalog else { return }
                             withAnimation(reduceMotion ? nil : .snappy) { model.draft?.add(day: d, catalog: c, prescription: rx) }
                             edit.structuralEdit(day: d)
@@ -144,7 +144,7 @@ struct BlockBuilderPage: View {
 
     #if DEBUG
     /// Simulator review of the day editor (boop-ios.md, preview flags): `-previewBlokkEdit
-    /// default|menu|settings|add|swap|undo|empty|locked|confirm`, `-previewBlokkDay N` for the day page.
+    /// default|menu|settings|add|addOpen|addEmpty|swap|undo|empty|locked|confirm`, `-previewBlokkDay N` for the day page.
     private func applyPreviewEdit() {
         guard !previewApplied, model.evaluation != nil, let draft = model.draft,
               let state = UserDefaults.standard.string(forKey: "previewBlokkEdit") else { return }
@@ -171,7 +171,9 @@ struct BlockBuilderPage: View {
             try? await Task.sleep(for: .milliseconds(500))
             switch state {
             case "settings": if let id = rows.first?.id { edit.sheet = .settings(id) }
-            case "add": edit.sheet = .add(d, muscle: "back")
+            case "add": edit.sheet = .add(d, muscles: ["back-mid", "chest-upper"])
+            case "addOpen": edit.sheet = .add(d, muscles: ["back-wide", "back-mid", "chest-upper", "chest-mid", "chest-lower"], open: true)
+            case "addEmpty": edit.sheet = .add(d)
             case "swap": if let id = rows.first?.id { edit.sheet = .swap(id) }
             case "confirm": edit.confirm = true
             default: break
@@ -387,7 +389,7 @@ private struct BuilderMusclesView: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(planMuscleName(m.muscle))
+                .accessibilityLabel(SubMuscles.groupName(m.muscle))
             }
         }
         .padding(.vertical, 2)
@@ -407,7 +409,7 @@ private struct BuilderMuscleCard: View {
             ScrollView {
                 VStack(spacing: 12) {
                     HStack(alignment: .firstTextBaseline) {
-                        Text(planMuscleName(muscle)).nkFont(26, design: .serif).foregroundStyle(.white)
+                        Text(SubMuscles.groupName(muscle)).nkFont(26, design: .serif).foregroundStyle(.white)
                         Spacer()
                         Text(verdict(m)).nkFont(13, .medium).foregroundStyle(inside ? planGood : planWarn)
                     }
@@ -668,7 +670,7 @@ private struct BuilderDayCard: View {
                     if locked { lockLine }
                     if !day.exercises.isEmpty { muscleChips(evaluation) }
                     ForEach(Array((evaluation?.sessionCapWarnings ?? []).enumerated()), id: \.offset) { _, w in
-                        Text("\(planMuscleName(w.muscle ?? "")): \(w.sets) sorozat egy edzésen. \(w.cap) fölött már nem ad többet, oszd el két napra.")
+                        Text("\(SubMuscles.groupName(w.muscle ?? "")): \(w.sets) sorozat egy edzésen. \(w.cap) fölött már nem ad többet, oszd el két napra.")
                             .nkFont(13).foregroundStyle(planWarn).fixedSize(horizontal: false, vertical: true)
                     }
                     if !draft.techniquesEnabled, !locked, day.exercises.contains(where: { $0.stable && $0.judged }) {
@@ -740,7 +742,7 @@ private struct BuilderDayCard: View {
                 let sets = model.sets(m.muscle, day: index)
                 let over = evaluation?.sessionCapWarnings.contains { $0.muscle == m.muscle } == true
                 HStack(spacing: 6) {
-                    Text(planMuscleName(m.muscle)).nkFont(12, .medium).foregroundStyle(.white.opacity(0.85))
+                    Text(SubMuscles.groupName(m.muscle)).nkFont(12, .medium).foregroundStyle(.white.opacity(0.85))
                     Text("\(sets)").nkFont(13, .semibold).foregroundStyle(over ? planWarn : planHue.glow)
                         .contentTransition(.numericText())
                 }
@@ -798,8 +800,7 @@ private struct BuilderDayCard: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(exercise.name).nkFont(16, .medium).foregroundStyle(.white.opacity(locked ? 0.7 : 0.95))
                 .lineLimit(2).minimumScaleFactor(0.85).fixedSize(horizontal: false, vertical: true)
-            Text(subtitle(exercise)).nkFont(12).foregroundStyle(capped ? planWarn : .white.opacity(0.5))
-                .fixedSize(horizontal: false, vertical: true)
+            subtitle(exercise).nkFont(12).foregroundStyle(capped ? planWarn : .white.opacity(0.5))
             if exercise.judged, draft.techniquesEnabled, !locked {
                 // One pill, whatever is chosen: the row keeps its height when he picks (owner, 2026-11-19).
                 BuilderTechniqueChip(exercise: exercise) { ui.menuRow = nil; pick(TechniquePick(day: index, exercise: e)) }
@@ -814,11 +815,23 @@ private struct BuilderDayCard: View {
         .accessibilityHint(locked ? "" : "Beállítások")
     }
 
-    /// `<izom> · <min>–<max> ism. · <r> tartalék`, from the row's own numbers (his edits show at once).
-    private func subtitle(_ exercise: DraftExercise) -> String {
-        guard exercise.counts, exercise.type != "plyo" else { return "ugrás · nem számít a sorozatokba" }
-        let reserve = exercise.targetRIR == 0 ? "bukásig" : "\(exercise.targetRIR) tartalék"
-        return "\(planMuscleName(exercise.muscle)) · \(exercise.repMin)–\(exercise.repMax) ism. · \(reserve)"
+    /// `<izomrész> · <min>–<max> ism. · <r> tartalék` from the row's own numbers (his edits show at once) — one line
+    /// when it fits, else the sub-muscle above the numbers, never a break inside „10–12 ism." (mezo-r36n9.127).
+    @ViewBuilder private func subtitle(_ exercise: DraftExercise) -> some View {
+        if exercise.counts, exercise.type != "plyo" {
+            let reserve = exercise.targetRIR == 0 ? "bukásig" : "\(exercise.targetRIR) tartalék"
+            let muscle = SubMuscles.name(exercise.muscleKey)
+            let numbers = "\(exercise.repMin)–\(exercise.repMax) ism. · \(reserve)"
+            ViewThatFits(in: .horizontal) {
+                Text("\(muscle) · \(numbers)").lineLimit(1).fixedSize()
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(muscle).fixedSize(horizontal: false, vertical: true)
+                    Text(numbers).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        } else {
+            Text("ugrás · nem számít a sorozatokba").fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     private func stepper(_ exercise: DraftExercise, _ e: Int, locked: Bool) -> some View {
@@ -950,7 +963,7 @@ private struct BuilderDayCard: View {
     }
 
     private var addRow: some View {
-        Button { ui.menuRow = nil; ui.sheet = .add(index, muscle: nil) } label: {
+        Button { ui.menuRow = nil; ui.sheet = .add(index) } label: {
             HStack(spacing: 12) {
                 Text("+").nkFont(19, .medium).foregroundStyle(planHue.glow)
                     .frame(width: 34, height: 34)
@@ -972,11 +985,13 @@ private struct BuilderTechniqueChip: View {
     let open: () -> Void
 
     var body: some View {
-        if !exercise.stable {
+        // A free-weight row takes no technique, but since decision #72 a free-weight isolation may still take the day's
+        // challenge: the chip then opens the picker (techniques dimmed with their reason, the challenge selectable).
+        if let quiet = exercise.techniqueLockLabel {
             // Not `PlanPill`: its fixed width would push the editor row (handle, stepper, ⋯) past the card.
             HStack(spacing: 5) {
                 PlanMark(.shield, color: .white.opacity(0.4), size: 13)
-                Text("szabadsúly · nincs technika").nkFont(12, .medium).foregroundStyle(.white.opacity(0.4))
+                Text(quiet).nkFont(12, .medium).foregroundStyle(.white.opacity(0.4))
                     .lineLimit(1).minimumScaleFactor(0.8)
             }
             .padding(.horizontal, 10).padding(.vertical, 5)
@@ -1084,7 +1099,7 @@ private struct BuilderBlockView: View {
                         let top = Double(max(1, values.max() ?? 1))
                         HStack(spacing: 10) {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(planMuscleName(m.muscle)).nkFont(15, .medium).foregroundStyle(.white.opacity(0.95))
+                                Text(SubMuscles.groupName(m.muscle)).nkFont(15, .medium).foregroundStyle(.white.opacity(0.95))
                                 PlanTierPill(tier: draft?.tier(m.muscle) ?? .grow)
                             }
                             .frame(width: 104, alignment: .leading)
@@ -1104,7 +1119,7 @@ private struct BuilderBlockView: View {
                         }
                         .padding(.vertical, 10)
                         .accessibilityElement(children: .ignore)
-                        .accessibilityLabel("\(planMuscleName(m.muscle)): \(values.map(String.init).joined(separator: ", ")) sorozat hetente")
+                        .accessibilityLabel("\(SubMuscles.groupName(m.muscle)): \(values.map(String.init).joined(separator: ", ")) sorozat hetente")
                     }
                 }
                 .padding(.horizontal, 18).padding(.vertical, 6).nkGlass(26)

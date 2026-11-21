@@ -1004,5 +1004,17 @@
     "miert": "Így gyorsabban elkészül és kevésbé kockázatos; a javaslatok nagy része úgyis ilyen.",
     "levaltotta": "Nincs előzménye.",
     "kovetkezmeny": "A cserét és a hétvégén átnyúló áttételt később hozzá lehet tenni, ha hiányzik."
+  },
+  "d-2026-11-21-kihivas-szabaly": {
+    "cim": "Kihívás szinte minden gyakorlaton, a szabadsúlyos alapgyakorlatok kivételével",
+    "datum": "2026-11-21",
+    "suly": "Kicsi",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "A nap kihívása (néhány félismétlés a megnyújtott helyzetben az utolsó sorozat végén) minden gépes, csigás, Smith-keretes, saját testsúlyos és izoláló gyakorlaton választható. Tiltott marad minden rúddal, kézisúlyzóval vagy kettlebell-lel végzett összetett gyakorlaton.",
+    "miert": "A korábbi szabály csak 22 gyakorlatot engedett, és épp a legbiztonságosabb gépes és csigás gyakorlatokon tiltotta (például csigás bicepsz, tricepsz-letolás). A fáradtan végzett szabadsúlyos félismétlés viszont billegős és kockázatos.",
+    "levaltotta": "A „nyújtott helyzetben biztonságos” jelölésű 22 gyakorlatra szűkített szabályt.",
+    "kovetkezmeny": "A technikák (pihenős drop és a többi) továbbra is csak stabil gyakorlaton választhatók, és naponta egy kihívás lehet."
   }
 }

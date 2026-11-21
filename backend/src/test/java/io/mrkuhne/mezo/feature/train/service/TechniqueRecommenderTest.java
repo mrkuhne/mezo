@@ -25,7 +25,7 @@ class TechniqueRecommenderTest {
 
     @Test
     void highRepStableIsolation_isMyo_isolationPump() {
-        Recommendation r = rec(row("isolation", 20, new CatalogAttributes.Attrs(true, true, "machine"),
+        Recommendation r = rec(row("isolation", 20, new CatalogAttributes.Attrs(true, true, "machine", true),
             TrainingStyle.VOLUME));
         assertThat(r.technique()).isEqualTo(Technique.MYO);
         assertThat(r.reason()).isEqualTo("isolation_pump");
@@ -34,12 +34,16 @@ class TechniqueRecommenderTest {
 
     @Test
     void machineOrCable_isRestDrop_stableMachine() {
-        Recommendation machine = rec(row("compound", 10, new CatalogAttributes.Attrs(true, false, "machine"),
+        Recommendation machine = rec(row("compound", 10, new CatalogAttributes.Attrs(true, false, "machine", true),
             TrainingStyle.BALANCED));
         assertThat(machine.technique()).isEqualTo(Technique.REST_DROP);
         assertThat(machine.reason()).isEqualTo("stable_machine");
-        assertThat(machine.challengeFit()).isFalse();   // not lengthened-friendly
-        Recommendation cable = rec(row("isolation", 12, new CatalogAttributes.Attrs(true, true, "cable"),
+        // owner decision #72: the challenge follows the challenge rule, not lengthened-friendliness
+        assertThat(machine.challengeFit()).isTrue();
+        Recommendation refused = rec(row("compound", 10, new CatalogAttributes.Attrs(true, false, "machine", false),
+            TrainingStyle.BALANCED));
+        assertThat(refused.challengeFit()).isFalse();
+        Recommendation cable = rec(row("isolation", 12, new CatalogAttributes.Attrs(true, true, "cable", true),
             TrainingStyle.BALANCED));
         assertThat(cable.technique()).isEqualTo(Technique.REST_DROP);
         assertThat(cable.challengeFit()).isTrue();
@@ -47,7 +51,7 @@ class TechniqueRecommenderTest {
 
     @Test
     void stableLengthenedFreeEquipment_isPartials_lengthenedSafe() {
-        Recommendation r = rec(row("isolation", 12, new CatalogAttributes.Attrs(true, true, "dumbbell"),
+        Recommendation r = rec(row("isolation", 12, new CatalogAttributes.Attrs(true, true, "dumbbell", true),
             TrainingStyle.BALANCED));
         assertThat(r.technique()).isEqualTo(Technique.PARTIALS);
         assertThat(r.reason()).isEqualTo("lengthened_safe");
@@ -56,7 +60,7 @@ class TechniqueRecommenderTest {
 
     @Test
     void allOut_isNone_allOut() {
-        Recommendation r = rec(row("isolation", 20, new CatalogAttributes.Attrs(true, true, "machine"),
+        Recommendation r = rec(row("isolation", 20, new CatalogAttributes.Attrs(true, true, "machine", true),
             TrainingStyle.ALLOUT));
         assertThat(r.technique()).isEqualTo(Technique.NONE);
         assertThat(r.reason()).isEqualTo("all_out");
@@ -65,7 +69,7 @@ class TechniqueRecommenderTest {
 
     @Test
     void stableButNothingFits_isNone_noSafeTechnique() {
-        Recommendation r = rec(row("compound", 10, new CatalogAttributes.Attrs(true, false, "dumbbell"),
+        Recommendation r = rec(row("compound", 10, new CatalogAttributes.Attrs(true, false, "dumbbell", false),
             TrainingStyle.BALANCED));
         assertThat(r.technique()).isEqualTo(Technique.NONE);
         assertThat(r.reason()).isEqualTo("no_safe_technique");
@@ -80,13 +84,13 @@ class TechniqueRecommenderTest {
 
     @Test
     void sameTechniqueAsThePlannerPicks() {
-        PlanRow r = row("isolation", 20, new CatalogAttributes.Attrs(true, false, "cable"), TrainingStyle.BALANCED);
+        PlanRow r = row("isolation", 20, new CatalogAttributes.Attrs(true, false, "cable", false), TrainingStyle.BALANCED);
         assertThat(rec(r).technique()).isEqualTo(TechniquePlanner.defaultTechnique(r, CFG).orElseThrow());
     }
 
     @Test
     void blockRecommendations_byDayThenPosition() {
-        CatalogAttributes.Attrs machine = new CatalogAttributes.Attrs(true, false, "machine");
+        CatalogAttributes.Attrs machine = new CatalogAttributes.Attrs(true, false, "machine", false);
         PlanRow a = new PlanRow(1, 1, UUID.randomUUID(), "chest", true, 3, "compound", 10, machine,
             TrainingStyle.BALANCED, Technique.NONE, null, false);
         PlanRow free = new PlanRow(1, 0, UUID.randomUUID(), "chest", true, 3, "compound", 10,

@@ -247,7 +247,7 @@ public final class TechniquePlanner {
         return row.workingSets() + TechniqueRules.capExtra(row.technique(), isChallenge, true, in.capWeight());
     }
 
-    /** §6.6: the day's first stable + lengthened-friendly counting row, Hangsúly first, then Építés, then the rest. */
+    /** §6.6: the day's first counting row the challenge rule allows, Hangsúly first, then Építés, then the rest. */
     private static Optional<PlanRow> challengeCandidate(PlanDay day, Input in) {
         return day.rows().stream()
             .filter(r -> challengeValid(r, day, in))
@@ -257,11 +257,11 @@ public final class TechniquePlanner {
     }
 
     /**
-     * §6.6 on one row: it counts, it is stable and lengthened-friendly, and it is not a sport-loaded group on a
-     * sport day. The AI may move the challenge only onto such a row (T4).
+     * §6.6 on one row: it counts, the challenge rule allows it ({@link TechniqueRules#check}, owner decision #72 —
+     * no free-weight compound), and it is not a sport-loaded group on a sport day. The AI may move the challenge only onto such a row (T4).
      */
     public static boolean challengeValid(PlanRow r, PlanDay day, Input in) {
-        return r.counts() && r.attrs().stable() && r.attrs().lengthenedFriendly()
+        return r.counts() && TechniqueRules.check(Technique.NONE, true, r.attrs()).isEmpty()
             && !(day.sportDay() && r.group() != null && in.sportGroups().contains(r.group()));
     }
 

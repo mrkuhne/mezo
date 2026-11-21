@@ -2,7 +2,7 @@
 title: Platform · API Contract & Backend Architecture
 type: feature-platform
 status: done
-updated: 2026-11-20
+updated: 2026-11-21
 tags: [platform, backend, data-layer, frontend, boop, b4-etel, idempotency]
 key_files:
   - api/openapi.yml
@@ -13,6 +13,7 @@ key_files:
 related: [_platform-data-layer, _platform-auth-security, _platform-notifications, train, today, fuel, ritual, companion]
 ---
 
+> **2026-11-21 — reviewed after the block day editor refinements (`mezo-r36n9.127`, no platform change).** One new train error key in both `messages_hu` and `messages_en` (parity kept): `TRAIN_CHALLENGE_FREE_WEIGHT_COMPOUND` (400, the day's challenge on a free-weight compound, owner decision #72). `TRAIN_TECHNIQUE_NOT_STABLE` and `TRAIN_TECHNIQUE_NOT_LENGTHENED` no longer mention the challenge. The day-suggestions request gained the additive `muscles: string[]` (an unknown token reuses `TRAIN_SUGGESTIONS_REQUEST_INVALID`). Mechanics unchanged. See [`train.md`](train.md).
 > **2026-11-20 — reviewed after the Boop block day editor (`mezo-r36n9.116`, no platform change).** Two new train error keys in both `messages_hu` and `messages_en` (parity kept, bundles now 313 keys each): `TRAIN_SUGGESTIONS_REQUEST_INVALID` (400, the day-suggestions request) and `TRAIN_DAY_WORKOUT_RUNNING` (409, a day with a running workout cannot be edited). Mechanics unchanged. See [`train.md`](train.md).
 
 # Platform · API Contract & Backend Architecture — Feature Documentation

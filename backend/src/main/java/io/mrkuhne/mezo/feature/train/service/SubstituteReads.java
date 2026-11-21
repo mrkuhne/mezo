@@ -107,11 +107,19 @@ class SubstituteReads {
 
     /**
      * Renders the ranker's result: suggestion items with their reason sentence, signals, last top set and the
-     * caller's prescription (null-returning for the workout swap), then the quiet labels in pool order.
+     * caller's prescription (null-returning for the workout swap), then the quiet labels in pool order. An
+     * {@code add} (block day editor, no outgoing exercise) words the reason without the role phrase.
      */
     ExerciseSubstitutesResponse response(AppUserEntity viewer, List<ExerciseCatalogEntity> pool, Result result,
                                          String painJointHu, Map<UUID, ExerciseSetEntity> topSets,
                                          Function<ExerciseCatalogEntity, SuggestionPrescription> prescription) {
+        return response(viewer, pool, result, painJointHu, topSets, prescription, false);
+    }
+
+    ExerciseSubstitutesResponse response(AppUserEntity viewer, List<ExerciseCatalogEntity> pool, Result result,
+                                         String painJointHu, Map<UUID, ExerciseSetEntity> topSets,
+                                         Function<ExerciseCatalogEntity, SuggestionPrescription> prescription,
+                                         boolean add) {
         Map<UUID, ExerciseCatalogEntity> byId = pool.stream()
             .collect(Collectors.toMap(ExerciseCatalogEntity::getId, Function.identity()));
         List<ExerciseCatalogItem> items = exerciseCatalogService.toItems(viewer,
@@ -122,7 +130,8 @@ class SubstituteReads {
             ExerciseCatalogEntity entity = byId.get(r.id());
             suggestions.add(new ExerciseSubstitute()
                 .exercise(items.get(i))
-                .reasonText(SubstituteReason.sentence(r.signals(), painJointHu, entity.getType()))
+                .reasonText(add ? SubstituteReason.addSentence(r.signals(), painJointHu, entity.getType())
+                    : SubstituteReason.sentence(r.signals(), painJointHu, entity.getType()))
                 .signals(r.signals().stream().map(Enum::name).toList())
                 .lastTopSet(lastTopSet(topSets.get(r.id())))
                 .prescription(prescription.apply(entity)));

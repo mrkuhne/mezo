@@ -641,7 +641,7 @@ private struct ExerciseCard: View {
                 }
             }
             VStack(alignment: .leading, spacing: 3) {
-                Text(muscleName(exercise.muscle).uppercased())
+                Text(SubMuscles.name(exercise.muscle).uppercased())
                     .nkFont(10, .medium, design: .monospaced).tracking(1.2)
                     .foregroundStyle(hue.glow)
                 Text(exercise.name)
@@ -654,7 +654,7 @@ private struct ExerciseCard: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .nkGlass()
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(exercise.name), \(muscleName(exercise.muscle))\(done ? ", megvan" : "")")
+        .accessibilityLabel("\(exercise.name), \(SubMuscles.name(exercise.muscle))\(done ? ", megvan" : "")")
     }
 }
 
@@ -771,23 +771,12 @@ private struct DayCard: View {
 
 // MARK: - Words
 
-/// A muscle group the way he says it, not the way the database spells it.
+/// A muscle group the way he says it, lower-case for running text („hát", „mell", „comb") — the shared
+/// `SubMuscles.groupName` (mezo-r36n9.127); `arms` is „kar", an unknown key stays as it is.
 func muscleName(_ key: String) -> String {
-    switch key.lowercased() {
-    case "chest", "chest-mid", "chest-upper", "chest-lower": "mellkas"
-    case "back", "back-wide", "back-mid", "back-lower", "lats": "hát"
-    case "traps": "csuklyás"
-    case "shoulder", "shoulders", "shoulder-front", "shoulder-side", "shoulder-rear", "rear-delt": "váll"
-    case "biceps", "biceps-long", "biceps-short", "biceps-brachialis": "bicepsz"
-    case "triceps", "triceps-long", "triceps-lateral", "triceps-medial": "tricepsz"
-    case "arms": "kar"
-    case "quad", "quads", "quadriceps": "comb eleje"
-    case "ham", "hams", "hamstring": "comb hátulja"
-    case "glute", "glutes", "gluteal": "fenék"
-    case "calf", "calves": "vádli"
-    case "core", "abs": "törzs"
-    default: key
-    }
+    if key.lowercased() == "arms" { return "kar" }
+    let name = SubMuscles.groupName(key)
+    return name == "Egyéb" ? key : name.lowercased()
 }
 
 /// A weight the way he reads it: „80 kg", „77,5 kg" — a Hungarian decimal comma, and no „.0".

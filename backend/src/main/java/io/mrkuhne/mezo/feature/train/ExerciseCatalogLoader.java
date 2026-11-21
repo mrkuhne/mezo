@@ -30,7 +30,7 @@ import tools.jackson.databind.ObjectMapper;
 @RequiredArgsConstructor
 public class ExerciseCatalogLoader implements CommandLineRunner {
 
-    static final Set<String> MUSCLES = Set.of(
+    public static final Set<String> MUSCLES = Set.of(
         "chest-upper", "chest-mid", "chest-lower", "back-wide", "back-mid", "back-lower", "traps",
         "shoulder-front", "shoulder-side", "shoulder-rear", "biceps-long", "biceps-short",
         "biceps-brachialis", "triceps-long", "triceps-lateral", "triceps-medial",

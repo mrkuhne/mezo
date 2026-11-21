@@ -153,6 +153,9 @@ public struct DraftExercise: Identifiable, Equatable, Sendable {
     /// Catalog attributes the technique rules read; false when the exercise has no catalog row.
     public let stable: Bool
     public let lengthened: Bool
+    /// The challenge rule's answer for the exercise itself (owner decision #72): the server's flag, else computed —
+    /// see `DraftExercise.challengeAllowed(item:type:gear:)`. Whether it counts is `judged`'s.
+    public let challengeAllowed: Bool
     public var technique: SetTechnique
     public var challenge: Bool
     /// The exercise's own style; nil = the block's.
@@ -175,7 +178,8 @@ public struct DraftExercise: Identifiable, Equatable, Sendable {
         DraftExercise(id: newId, name: name, muscle: muscle, muscleKey: muscleKey, catalogId: catalogId, type: type,
                       sets: sets, repMin: repMin, repMax: repMax, targetRIR: targetRIR, warmups: warmups,
                       anchorWeightKg: anchorWeightKg, restSec: restSec, overrides: overrides, counts: counts,
-                      isolation: isolation, stable: stable, lengthened: lengthened, technique: technique,
+                      isolation: isolation, stable: stable, lengthened: lengthened,
+                      challengeAllowed: challengeAllowed, technique: technique,
                       challenge: challenge, ownStyle: ownStyle, wire: wire)
     }
 
@@ -202,7 +206,26 @@ public struct DraftExercise: Identifiable, Equatable, Sendable {
         return lengthened ? [.none, .restDrop, .drop, .myo, .restPause, .partials] : [.none, .restDrop, .drop, .myo, .restPause]
     }
 
-    public var canTakeChallenge: Bool { stable && lengthened && judged }
+    /// The day's challenge may sit here: it takes part in the volume and the challenge rule allows the exercise
+    /// (every exercise but a free-weight compound, owner decision #72).
+    public var canTakeChallenge: Bool { challengeAllowed && judged }
+
+    /// The kit that makes a compound a free-weight lift.
+    static let freeWeightKit: Set<String> = ["barbell", "dumbbell", "kettlebell"]
+
+    /// The challenge rule for one exercise: the server's `challengeAllowed` when it sent one; else, with the kit known
+    /// (`gear`), every non-plyo exercise but a compound with a barbell, dumbbell or kettlebell; else (an older server
+    /// without the kit) the old stable + lengthened rule. No catalogue row at all: no challenge (unknown kit).
+    static func challengeAllowed(item: WireCatalogItem?, type: String, gear fallbackGear: [String]? = nil) -> Bool {
+        if let flag = item?.challengeAllowed { return flag }
+        let kit = item?.gear ?? fallbackGear
+        guard item != nil || kit != nil else { return false }
+        if let kit, !kit.isEmpty {
+            let t = item?.type ?? type
+            return t != "plyo" && !(t == "compound" && kit.contains(where: freeWeightKit.contains))
+        }
+        return item?.stability == "stable" && (item?.lengthenedFriendly ?? false)
+    }
 
     /// The pick on screen is Boop's own (the planner or the AI put it there, he has not touched it).
     public var pickedByBoop: Bool {
@@ -215,8 +238,17 @@ public struct DraftExercise: Identifiable, Equatable, Sendable {
     public var challengeUnavailableReason: String? {
         if canTakeChallenge { return nil }
         if !judged { return "Ez a gyakorlat nem számít bele a sorozatokba." }
-        if !stable { return "Szabadsúlyos gyakorlaton nincs kihívás." }
-        return "A kihívás félismétlés a nyújtott helyzetben — ennél a gyakorlatnál ez nem biztonságos."
+        if catalogId == nil { return "Saját gyakorlaton nincs kihívás." }
+        return "Szabadsúlyos alapgyakorlaton nincs kihívás."
+    }
+
+    /// The builder chip's grey, untappable label when the row can carry neither a technique nor the day's challenge;
+    /// nil = the chip opens the picker. A free-weight isolation (no technique, but the challenge, decision #72) gets the
+    /// picker. A free-weight compound says so; any other locked row keeps the old wording.
+    public var techniqueLockLabel: String? {
+        guard allowedTechniques == [.none], !canTakeChallenge else { return nil }
+        // Only a catalogue row can be known as a free-weight lift: a custom compound (no kit on record) is not one.
+        return type == "compound" && catalogId != nil ? "szabadsúlyos alapgyakorlat" : "szabadsúly · nincs technika"
     }
 
     /// Why a technique is not offered on this exercise, in his words; nil when it is.
@@ -302,6 +334,7 @@ public struct BlockDraft: Equatable, Sendable {
                                      overrides: Set(e.overrides ?? []),
                                      counts: e.countsTowardVolume ?? true, isolation: e.type == "isolation",
                                      stable: cat?.stability == "stable", lengthened: cat?.lengthenedFriendly ?? false,
+                                     challengeAllowed: DraftExercise.challengeAllowed(item: cat, type: e.type ?? "compound"),
                                      technique: SetTechnique(wire: e.technique), challenge: e.challenge ?? false,
                                      ownStyle: e.trainingStyle.flatMap(BlockStyle.init(rawValue:)), wire: e)
             })
@@ -415,7 +448,9 @@ public struct BlockDraft: Equatable, Sendable {
             catalogId: catalogId, type: catalog.type.rawValue, sets: p.workingSets, repMin: p.repMin, repMax: p.repMax,
             targetRIR: p.targetRIR, warmups: 0, anchorWeightKg: nil, restSec: p.restSec, overrides: [], counts: true,
             isolation: catalog.type == .isolation, stable: item?.stability == "stable",
-            lengthened: item?.lengthenedFriendly ?? false, technique: .none, challenge: false, ownStyle: nil, wire: wire))
+            lengthened: item?.lengthenedFriendly ?? false,
+            challengeAllowed: DraftExercise.challengeAllowed(item: item, type: catalog.type.rawValue, gear: catalog.gear),
+            technique: .none, challenge: false, ownStyle: nil, wire: wire))
     }
 
     /// Takes the row off the day and hands it back, so the undo line can put it back where it was.
@@ -466,6 +501,7 @@ public struct BlockDraft: Equatable, Sendable {
             targetRIR: o.contains("targetRir") ? old.targetRIR : p.targetRIR, warmups: old.warmups, anchorWeightKg: nil,
             restSec: old.restSec, overrides: o, counts: old.counts, isolation: catalog.type == .isolation,
             stable: item?.stability == "stable", lengthened: item?.lengthenedFriendly ?? false,
+            challengeAllowed: DraftExercise.challengeAllowed(item: item, type: catalog.type.rawValue, gear: catalog.gear),
             technique: .none, challenge: false, ownStyle: old.ownStyle, wire: old.wire)
         if row.allowedTechniques.contains(old.technique) { row.technique = old.technique }
         if old.challenge, row.canTakeChallenge { row.challenge = true }

@@ -1360,5 +1360,25 @@
     ],
     "mit_kapsz": "A heti pénzügyi áttekintés nem írhat le olyan számot, ami más adatból jön (például egy hírszámot fedezeti hónapként), így minden szám azt jelenti, amit mellette olvasol.",
     "szulo": "mezo-r36n9.33"
+  },
+  "mezo-r36n9.127": {
+    "cim": "Blokképítő finomítások: izomrész-szűrő, képek, jobb indoklás, több kihívás",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "A gyakorlat hozzáadásánál egy kis legördülő listában több izomrészt is kipipálhatsz (például hát középső, mell felső), és az izomrész mindenhol látszik, ahol gyakorlat van. Az ajánlott gyakorlatok mellett kis kép van, a hozzáadásnál pedig az indoklás azt mondja meg, miért jó oda a gyakorlat. Kihívást mostantól szinte minden gyakorlaton választhatsz — csak a szabadsúlyos alapgyakorlatokon (guggolás, felhúzás, fekvenyomás és társaik) nem.",
+    "munkamenet": "mezo-nippard-exercise-selection"
+  },
+  "mezo-r36n9.130": {
+    "cim": "Két szerverteszt rendszeresen elbukik a teljes futásban",
+    "tipus": "Karbantartás",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Két automatikus ellenőrzés a teljes tesztfutásban rendszeresen elakad egy bejelentkezési kapcsolathiba miatt, egyedül futtatva viszont mindig átmegy. A javítás után a teljes futás eredménye megbízhatóan zöld lesz. A felületen semmi nem változik.",
+    "munkamenet": "mezo-nippard-exercise-selection"
   }
 }

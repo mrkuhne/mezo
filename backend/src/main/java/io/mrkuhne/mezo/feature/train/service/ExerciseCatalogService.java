@@ -208,6 +208,7 @@ public class ExerciseCatalogService {
         dto.setAuthorName(master ? null : names.get(e.getCreatedBy()));
         dto.setEditable(!master && (mine || viewer.isOwner()));
         dto.setMediaEditable(master ? viewer.isOwner() : (mine || viewer.isOwner()));
+        dto.setChallengeAllowed(CatalogAttributes.challengeAllowed(e));
         return dto;
     }
 
