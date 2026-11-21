@@ -136,7 +136,7 @@ struct MaWall: View {
 
     private func reconcileNotifications(markSeen: Bool) {
         guard let key = ritmus?.userKey else { return }
-        let notifier = WallNotifier(userKey: key)
+        let notifier = WallNotifier.shared(for: key)
         let now = ctx.now, candidates = allExpiring, acted = acted
         if markSeen { notifier.markSeen(wall.cards.filter(\.notifiable).map(\.id), now: now) }
         Task { await notifier.reconcile(candidates, now: now, acted: acted) }

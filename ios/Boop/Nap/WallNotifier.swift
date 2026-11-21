@@ -80,7 +80,14 @@ final class WallNotifier {
 
     /// `seen` belongs to the day it was seen on (`day`); `rang` is keyed by the day the request FIRES on, so a request
     /// scheduled today for tomorrow counts in tomorrow's cap, not today's.
-    private struct Day: Codable { var day: String; var rang: [String: Set<String>] = [:]; var seen: Set<String> = [] }
+    /// `ringed` remembers every request by card id and the deadline it was made for, until that deadline has passed:
+    /// the same card with the same deadline never rings twice, whatever day the count is on.
+    private struct Day: Codable {
+        var day: String
+        var rang: [String: Set<String>] = [:]
+        var seen: Set<String> = []
+        var ringed: [String: Double] = [:]
+    }
 
     private let center: WallRinger
     private let defaults: UserDefaults
@@ -109,6 +116,7 @@ final class WallNotifier {
         var d = Day(day: today)
         if let data = defaults.data(forKey: stateKey), let old = try? JSONDecoder().decode(Day.self, from: data) {
             d.rang = old.rang.filter { $0.key >= today }
+            d.ringed = old.ringed.filter { $0.value > now.timeIntervalSince1970 }
             if old.day == today { d.seen = old.seen }
         }
         return d
@@ -130,9 +138,31 @@ final class WallNotifier {
         save(d)
     }
 
+    /// One notifier per user for the whole app (several views ask for it; they must share one queue).
+    private static var shared: [String: WallNotifier] = [:]
+    static func shared(for userKey: String) -> WallNotifier {
+        if let n = shared[userKey] { return n }
+        let n = WallNotifier(userKey: userKey)
+        shared[userKey] = n
+        return n
+    }
+
+    /// The previous run: reconciles are serialised, so two overlapping asks never plan from the same stale state.
+    private var tail: Task<Void, Never>?
+
     /// Brings the waiting requests in line with the wall: removes the ones whose card is gone, acted on or seen (and
     /// due today), and schedules the next ones each fire day's cap allows.
     func reconcile(_ candidates: [WallCandidate], now: Date, acted: Set<String> = []) async {
+        let previous = tail
+        let run = Task { @MainActor in
+            await previous?.value
+            await self.run(candidates, now: now, acted: acted)
+        }
+        tail = run
+        await run.value
+    }
+
+    private func run(_ candidates: [WallCandidate], now: Date, acted: Set<String>) async {
         var d = load(now)
         let today = dayKey(now)
 
@@ -144,24 +174,44 @@ final class WallNotifier {
         }
         let live = Set(timed.filter { !(d.seen.contains($0.card.id) && $0.day == today) }.map { Self.idPrefix + $0.card.id })
         let stale = await center.pendingIds(withPrefix: Self.idPrefix).filter { !live.contains($0) }
+        let freed = stale.map { String($0.dropFirst(Self.idPrefix.count)) }
         if !stale.isEmpty { center.cancel(ids: stale) }
+        Self.free(freed, in: &d)
 
         let everRang = d.rang.values.reduce(into: Set<String>()) { $0.formUnion($1) }
         var plan: [(card: WallCandidate, when: Date, day: String)] = []
         for day in Set(timed.map(\.day)).sorted() {
-            let group = timed.filter { $0.day == day && !everRang.contains($0.card.id) }
+            let group = timed.filter { t in
+                t.day == day && !everRang.contains(t.card.id)
+                    && t.card.expiresAt.map { d.ringed[t.card.id] != $0.timeIntervalSince1970 } == true
+            }
             let chosen = wallNotifications(group.map(\.card), now: now, acted: acted, alreadyRang: d.rang[day] ?? [],
                                            seen: day == today ? d.seen : [], cap: Self.cap)
             for c in chosen { if let t = group.first(where: { $0.card.id == c.id }) { plan.append(t) } }
         }
-        guard !plan.isEmpty, await allowed() else { return }
-        for t in plan {
-            do {
-                try await center.schedule(id: Self.idPrefix + t.card.id, at: t.when, title: Self.plain(t.card.text), body: t.card.sub)
-                d.rang[t.day, default: []].insert(t.card.id)
-            } catch { continue }
+
+        var done: [(day: String, id: String, expires: Double)] = []
+        if !plan.isEmpty, await allowed() {
+            for t in plan {
+                do {
+                    try await center.schedule(id: Self.idPrefix + t.card.id, at: t.when, title: Self.plain(t.card.text), body: t.card.sub)
+                    done.append((t.day, t.card.id, t.card.expiresAt?.timeIntervalSince1970 ?? 0))
+                } catch { continue }
+            }
         }
-        save(d)
+        // the state is read again right before it is written: a card marked seen while the centre was being
+        // talked to is not lost, only this run's own changes are applied
+        var fresh = load(now)
+        Self.free(freed, in: &fresh)
+        for r in done { fresh.rang[r.day, default: []].insert(r.id); fresh.ringed[r.id] = r.expires }
+        save(fresh)
+    }
+
+    /// A request that was taken back no longer holds a slot of its day.
+    private static func free(_ ids: [String], in d: inout Day) {
+        guard !ids.isEmpty else { return }
+        for k in Array(d.rang.keys) { d.rang[k]?.subtract(ids) }
+        for id in ids { d.ringed[id] = nil }
     }
 
     /// Asks for permission once per user (the system itself asks once); denied means silence.

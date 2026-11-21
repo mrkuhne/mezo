@@ -11,11 +11,13 @@ private final class FakeRinger: WallRinger, @unchecked Sendable {
     var scheduled: [(id: String, at: Date, title: String, body: String)] = []
     var cancelled: [String] = []
     var pending: Set<String> = []
+    var delay: Duration = .zero
     init(_ permission: ReminderPermission = .allowed, grants: Bool = true) { self.permission = permission; self.grants = grants }
 
     func status() async -> ReminderPermission { permission }
     func request() async -> Bool { requests += 1; permission = grants ? .allowed : .denied; return grants }
     func schedule(id: String, at: Date, title: String, body: String) async throws {
+        if delay > .zero { try? await Task.sleep(for: delay) }
         scheduled.append((id, at, title, body)); pending.insert(id)
     }
     func pendingIds(withPrefix prefix: String) async -> [String] { pending.filter { $0.hasPrefix(prefix) }.sorted() }
@@ -227,5 +229,48 @@ private func expiring(_ id: String, _ end: Date, area: String = WallSources.leve
         r.permission = .notDetermined
         await n.reconcile([expiring("a", at(10, 14))], now: at(10, 11))
         #expect(r.requests == 1)
+    }
+
+    @Test func aCardNeverRingsTwiceForTheSameDeadline() async {
+        let r = FakeRinger(), n = notifier(r, defaults())
+        let c = expiring("a", at(11, 8, 45))
+        await n.reconcile([c], now: at(10, 20, 40))      // within 12 h: rings at once, on the 10th
+        #expect(r.scheduled.count == 1)
+        r.pending = []                                    // it has rung and is gone from the pending list
+        await n.reconcile([c], now: at(11, 8, 30))        // the 10th's count is gone, the deadline is not
+        #expect(r.scheduled.count == 1)
+    }
+
+    @Test func overlappingReconcilesNeverBreakTheCap() async {
+        let r = FakeRinger(); r.delay = .milliseconds(30)
+        let n = notifier(r, defaults())
+        let cs = [expiring("a", at(10, 14)), expiring("b", at(10, 15)), expiring("c", at(10, 16))]
+        let t1 = Task { await n.reconcile(cs, now: at(10, 10)) }
+        let t2 = Task { await n.reconcile(cs, now: at(10, 10)) }
+        await t1.value; await t2.value
+        #expect(r.scheduled.count == 2)
+    }
+
+    @Test func aCardSeenWhileAReconcileRunsIsNotLost() async {
+        let r = FakeRinger(); r.delay = .milliseconds(60)
+        let n = notifier(r, defaults())
+        let t = Task { await n.reconcile([expiring("a", at(10, 14))], now: at(10, 10)) }
+        try? await Task.sleep(for: .milliseconds(20))
+        n.markSeen(["zz"], now: at(10, 10))
+        await t.value
+        #expect(n.seenToday(now: at(10, 10)) == ["zz"])
+    }
+
+    @Test func aTakenBackRequestFreesItsSlot() async {
+        let r = FakeRinger(), n = notifier(r, defaults())
+        await n.reconcile([expiring("a", at(10, 14)), expiring("b", at(10, 15))], now: at(10, 10))
+        // a is acted on: its request goes and its slot is free for c
+        await n.reconcile([expiring("a", at(10, 14)), expiring("b", at(10, 15)), expiring("c", at(10, 16))],
+                          now: at(10, 11), acted: ["a"])
+        #expect(r.scheduled.map(\.id) == ["wall.a", "wall.b", "wall.c"])
+    }
+
+    @Test func aWallRingShowsWhileTheAppIsOpen() {
+        #expect(ReminderPresenter.presentation(for: "wall.level-expires-x") == ReminderPresenter.foregroundOptions)
     }
 }
