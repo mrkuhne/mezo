@@ -17997,6 +17997,200 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/capacity/week:
+    get:
+      tags:
+        - Capacity
+      operationId: getCapacityWeek
+      summary: >-
+        The Átrendezés page's week — day verdicts, proposals, accepted changes,
+        patterns
+      description: >
+        Settles stale ledger rows first (a move whose target gained a session
+        expires, a passed one is done). Returns the seven days (Monday first,
+        his zone) with the load model's verdict, the stored proposals of the
+        week, every ledger row touching the week and the learned patterns (empty
+        until K4). For the current or the next week, a week with no proposal yet
+        gets them generated and stored on this read (rule-built words; a
+        background rephrase may later reword the title, effect and why lines
+        without changing a number). Past and later weeks are read-only. Never
+        waits for a model.
+      parameters:
+        - name: monday
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: The week
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CapacityWeek'
+        '400':
+          description: The date is not a Monday
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/capacity/proposals/regenerate:
+    post:
+      tags:
+        - Capacity
+      operationId: regenerateCapacityProposals
+      summary: Ask for new proposals for the week ("Kérek más javaslatot")
+      description: >
+        Replaces the week's open proposals (they become ignored) with freshly
+        generated ones; accepted and declined proposals stay. A declined
+        proposal's kind is not proposed again for the same day. Only the current
+        or the next week. Returns the week as GET /api/capacity/week does.
+      parameters:
+        - name: monday
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: The week with the new proposals
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CapacityWeek'
+        '400':
+          description: 'Not a Monday, or not the current or the next week'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/capacity/proposals/{id}/accept':
+    post:
+      tags:
+        - Capacity
+      operationId: acceptCapacityProposal
+      summary: Accept a proposal — its steps go into the day-adjustment ledger together
+      description: >
+        Writes every step of the proposal (one bundle) and marks it accepted.
+        The same clientRef again returns the rows already written (an offline
+        replay never moves twice); a clientRef already used for another proposal
+        is 409. 409 CAPACITY_PROPOSAL_STALE when the proposal is no longer open
+        or the week it was built from changed (plan, calendar or accepted
+        changes of a day it touches).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CapacityProposalAcceptRequest'
+      responses:
+        '200':
+          description: The ledger rows of the bundle
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CapacityAdjustment'
+        '400':
+          description: Missing clientRef
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No such proposal for the caller
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >
+            Stale proposal (CAPACITY_PROPOSAL_STALE), a day already started
+            (CAPACITY_DAY_STARTED), a running session
+            (TRAIN_DAY_WORKOUT_RUNNING) or a clientRef used for another proposal
+            (CAPACITY_CLIENT_REF_REUSED)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '422':
+          description: >-
+            The target day is no longer empty (CAPACITY_MOVE_NOT_EMPTY_DAY) or
+            in another week
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/capacity/proposals/{id}/decline':
+    post:
+      tags:
+        - Capacity
+      operationId: declineCapacityProposal
+      summary: Decline a proposal ("Most nem")
+      description: >
+        Marks the proposal declined; nothing moves. Its kind is not proposed
+        again for the same day when the week is regenerated. Declining a
+        declined proposal is a no-op; any other settled state is 409.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The declined proposal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CapacityProposal'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No such proposal for the caller
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: 'Already accepted, undone or expired (CAPACITY_PROPOSAL_STALE)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/mail/mailbox:
     get:
       tags:
@@ -42431,6 +42625,204 @@ components:
           type: string
           format: date-time
           nullable: true
+    CapacityWeek:
+      type: object
+      required:
+        - monday
+        - days
+        - proposals
+        - adjustments
+        - patterns
+      properties:
+        monday:
+          type: string
+          format: date
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/CapacityWeekDay'
+        proposals:
+          type: array
+          items:
+            $ref: '#/components/schemas/CapacityProposal'
+        adjustments:
+          type: array
+          items:
+            $ref: '#/components/schemas/CapacityAdjustment'
+        patterns:
+          type: array
+          items:
+            $ref: '#/components/schemas/CapacityPattern'
+    CapacityWeekDay:
+      type: object
+      required:
+        - date
+        - verdict
+        - label
+        - ratio
+        - calendarKnown
+      properties:
+        date:
+          type: string
+          format: date
+        verdict:
+          type: string
+          enum:
+            - laza
+            - rendben
+            - szoros
+            - tulSok
+        label:
+          type: string
+          description: 'The verdict word as shown ("laza", "rendben", "szoros", "túl sok")'
+        ratio:
+          type: number
+          format: double
+          description: Day load / capacity
+        calendarKnown:
+          type: boolean
+          description: False when no calendar rows arrived lately
+    CapacityProposal:
+      type: object
+      required:
+        - id
+        - kind
+        - status
+        - title
+        - move
+        - effectLines
+        - why
+        - effects
+        - steps
+        - touchedDays
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum:
+            - MOVE_SESSION_DAY
+            - SHIFT_SESSION_TIME
+            - SHORTEN_SESSION
+            - LIGHTEN_SESSION
+            - SWAP_SESSION_KIND
+            - SKIP_SESSION
+            - SHIFT_BEDTIME
+            - MOVE_MEAL_ENERGY
+            - CALENDAR_TODO
+        day:
+          type: string
+          format: date
+          nullable: true
+          description: The day the proposal is about
+        status:
+          type: string
+          enum:
+            - open
+            - accepted
+            - declined
+            - ignored
+            - undone
+            - expired
+        title:
+          type: string
+        move:
+          type: string
+          description: The from → to line
+        effectLines:
+          type: array
+          items:
+            type: string
+          description: Three or four short cross-effect lines
+        why:
+          type: array
+          items:
+            type: string
+          description: The "Miért javaslom" lines
+        effects:
+          type: array
+          items:
+            $ref: '#/components/schemas/CapacityCompareLine'
+          description: >-
+            The "Minden hatása" compare lines (Most → Utána); every figure comes
+            from an engine
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/CapacityProposalStep'
+        touchedDays:
+          type: array
+          items:
+            type: string
+            format: date
+        decidedAt:
+          type: string
+          format: date-time
+          nullable: true
+    CapacityProposalStep:
+      type: object
+      required:
+        - kind
+        - payload
+      properties:
+        kind:
+          type: string
+          enum:
+            - MOVE_SESSION_DAY
+            - SHIFT_SESSION_TIME
+            - SHORTEN_SESSION
+            - LIGHTEN_SESSION
+            - SWAP_SESSION_KIND
+            - SKIP_SESSION
+            - SHIFT_BEDTIME
+            - MOVE_MEAL_ENERGY
+            - CALENDAR_TODO
+        payload:
+          type: object
+          additionalProperties: true
+          description: 'The step''s payload, the same shape as CapacityAdjustment.payload'
+    CapacityCompareLine:
+      type: object
+      required:
+        - label
+        - before
+        - after
+        - favours
+      properties:
+        label:
+          type: string
+        before:
+          type: string
+          description: '"–" when unknown'
+        after:
+          type: string
+          description: '"–" when unknown'
+        favours:
+          type: integer
+          description: '1 = the change helps, -1 = it costs, 0 = neutral'
+    CapacityPattern:
+      type: object
+      required:
+        - key
+        - line
+        - evidence
+      properties:
+        key:
+          type: string
+        line:
+          type: string
+        evidence:
+          type: integer
+    CapacityProposalAcceptRequest:
+      type: object
+      required:
+        - clientRef
+      properties:
+        clientRef:
+          type: string
+          format: uuid
+          description: The phone's idempotency key for this accept
     MailMailboxRequest:
       type: object
       required:

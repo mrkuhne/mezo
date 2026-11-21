@@ -65,8 +65,32 @@ public class PlannedSkipService {
     // Boop B7 K3 (mezo-r36n9.17): an accepted move re-dates a planned gym day (repository-only adapter, no cycle).
     private final io.mrkuhne.mezo.feature.train.port.TrainDayAdjustmentPort dayAdjustments;
 
+    /**
+     * The public path ({@code PUT /api/train/skips}): every reason except {@code KAPACITAS}, which only an accepted
+     * capacity proposal may write ({@link #upsertForCapacity}) — otherwise a hand-made "capacity" skip would be
+     * excused without spending the weekly pass.
+     */
     @Transactional
     public PlannedSkipResponse upsert(UUID user, PlannedSkipRequest req) {
+        if (req.getReasonCategory() != null && Reason.valueOf(req.getReasonCategory().getValue()) == Reason.KAPACITAS) {
+            throw bad("TRAIN_SKIP_REASON_INVALID");
+        }
+        return write(user, req);
+    }
+
+    /**
+     * The trusted entry point of the capacity ledger (Boop B7 K3, mezo-r36n9.17): a GYM skip with reason
+     * {@code KAPACITAS}, written inside the ledger's transaction. Any other kind or reason is refused.
+     */
+    @Transactional
+    public PlannedSkipResponse upsertForCapacity(UUID user, LocalDate date) {
+        return write(user, new PlannedSkipRequest()
+            .date(date)
+            .kind(PlannedSkipKind.GYM)
+            .reasonCategory(PlannedSkipReason.KAPACITAS));
+    }
+
+    private PlannedSkipResponse write(UUID user, PlannedSkipRequest req) {
         LocalDate today = LocalDate.now(TZ);
         LocalDate date = req.getDate();
         LocalDate sunday = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));

@@ -62,10 +62,12 @@ public class DayAdjustmentService {
     private final CapacitySkipPort skips;
     private final WearableProperties wearable;
     private final ObjectProvider<Clock> clock;
+    private final CapacityLock lock;
 
     public DayAdjustmentService(DayAdjustmentRepository rows, CapacityProposalRepository proposals,
                                 CapacityTrainPort train, CapacitySkipPort skips, WearableProperties wearable,
-                                ObjectProvider<Clock> clock) {
+                                ObjectProvider<Clock> clock, CapacityLock lock) {
+        this.lock = lock;
         this.rows = rows;
         this.proposals = proposals;
         this.train = train;
@@ -78,17 +80,23 @@ public class DayAdjustmentService {
 
     /**
      * Writes every step of the proposal's bundle in one transaction (shared {@code bundle_id}) and marks the proposal
-     * accepted. Same {@code clientRef} again → the rows already written (an Outbox replay never moves twice).
+     * accepted. Same {@code clientRef} again → the rows already written (an Outbox replay never moves twice); the same
+     * {@code clientRef} with another proposal → 409 {@code CAPACITY_CLIENT_REF_REUSED}, never the first one's rows.
      * A proposal that is no longer {@code open}, or whose steps no longer match the plan → 409
-     * {@code CAPACITY_PROPOSAL_STALE}.
+     * {@code CAPACITY_PROPOSAL_STALE}. Runs under the owner's {@link CapacityLock}: two different proposals accepted
+     * at the same moment serialize, so the second sees the first one's move and cannot claim the same target day.
      */
     @Transactional
     public List<DayAdjustmentView> applyBundle(UUID owner, UUID proposalId, UUID clientRef) {
         Objects.requireNonNull(clientRef, "clientRef");
+        lock.lock(owner);
         CapacityProposalEntity proposal = proposals.findWithLockByIdAndCreatedByAndDeletedFalse(proposalId, owner)
             .orElseThrow(DayAdjustmentService::notFound);
         Optional<DayAdjustmentEntity> replay = rows.findByCreatedByAndClientRefAndDeletedFalse(owner, clientRef);
         if (replay.isPresent()) {
+            if (!proposalId.equals(replay.get().getProposalId())) {
+                throw error("CAPACITY_CLIENT_REF_REUSED", HttpStatus.CONFLICT);
+            }
             return rows.findByCreatedByAndBundleIdAndDeletedFalseOrderByCreatedAtAsc(owner, replay.get().getBundleId())
                 .stream().map(DayAdjustmentService::view).toList();
         }

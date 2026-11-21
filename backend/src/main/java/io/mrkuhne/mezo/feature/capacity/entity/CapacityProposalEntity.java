@@ -75,6 +75,10 @@ public class CapacityProposalEntity extends OwnedEntity {
     @Column(columnDefinition = "jsonb")
     private Map<String, Object> outcome;
 
+    /** SHA-256 of the week parts the proposal was built from ({@code ProposalFingerprint}); null = not checked. */
+    @Column(length = 64)
+    private String fingerprint;
+
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt = Instant.now();
 }
