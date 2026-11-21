@@ -7,6 +7,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -22,7 +23,10 @@ import java.util.regex.Pattern;
  *       months); no % at all; no scale word / other currency next to a figure; the horizon digits only inside the
  *       sleeve's own horizon phrase; {@code HufAmountGuard.verdict} against an EMPTY allowed set (the weekly review
  *       has no forint figure — any forint amount is invented); no spelled-out number beyond egy..hat, no bare
- *       {@code Ft}. Digits inside the section's ledger names are skipped.</li>
+ *       {@code Ft}. Digits inside the section's ledger names are skipped. <b>And a figure only next to its own
+ *       label</b> (mezo-r36n9.129): within the next three words a story count is followed by a story word
+ *       ({@code hír}, {@code cikk}), a source count by {@code forrás}, the coverage months by {@code hónap} — so a
+ *       story count of 12 cannot pose as "12 hónapnyi fedezet".</li>
  *   <li><b>Entity Swap</b>: only holdings of this section (its sleeve's live holdings and the stories' own) may be
  *       named — no other holding's name or match terms.</li>
  *   <li><b>Negation Flip</b>: no figure has a direction, so only the sign rule — no signed figure.</li>
@@ -75,11 +79,49 @@ public final class WeeklyReviewValidator {
 
             DigestValidator.checkTemporal(field, prose, folded, out);
             DigestValidator.checkNumbers(field, noHorizon, figures.allowedNumbers(), null, Set.of(), out);
+            checkLabelled(field, noHorizon, figures, out);
             DigestValidator.checkSigned(field, noHorizon, out);
             DigestValidator.checkEntities(field, folded, forbidden, out);
             DigestValidator.checkBoundary(field, raw, folded, joined, LEAK_STEMS, out);
         }
         return out;
+    }
+
+    private static final Pattern NEXT_WORDS = Pattern.compile("^[\\s\\p{Punct}–—]*((?:\\p{L}+[\\s\\p{Punct}–—]*){1,3})");
+    private static final List<String> STORY_WORDS = List.of("hir", "cikk", "tortenet");
+    private static final List<String> SOURCE_WORDS = List.of("forras");
+    private static final List<String> COVERAGE_WORDS = List.of("honap");
+
+    /**
+     * mezo-r36n9.129 — every digit figure must be followed, within three words, by its own label: a story count by a
+     * story word, a source count by a source word, the coverage months by a month word. A value shared by two figures
+     * may stand next to either label.
+     */
+    static void checkLabelled(String field, String text, WeeklyFigures figures, List<DigestViolation> out) {
+        Matcher m = DigestFigures.NUMBER.matcher(text);
+        while (m.find()) {
+            String token = DigestFigures.normalizeNumber(m.group());
+            Matcher next = NEXT_WORDS.matcher(text.substring(m.end()));
+            String words = next.find() ? NewsText.fold(next.group(1)) : "";
+            boolean ok = (token.equals(String.valueOf(figures.storyCount())) && labelled(words, STORY_WORDS))
+                || (token.equals(String.valueOf(figures.sourceCount())) && labelled(words, SOURCE_WORDS))
+                || (figures.coverageMonths() != null
+                    && token.equals(String.valueOf(Math.abs(figures.coverageMonths())))
+                    && labelled(words, COVERAGE_WORDS));
+            if (!ok) {
+                out.add(new DigestViolation(Rule.NUMERICAL_ERROR, field, "figure away from its own label"));
+                return;
+            }
+        }
+    }
+
+    private static boolean labelled(String foldedWords, List<String> stems) {
+        for (String w : foldedWords.split("[^\\p{L}]+")) {
+            if (stems.stream().anyMatch(w::startsWith)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** The section's own story ids among {@code storyIds}, in the model's order (unknown ids ignored). */
