@@ -389,7 +389,7 @@ private struct BuilderMusclesView: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(planMuscleName(m.muscle))
+                .accessibilityLabel(SubMuscles.groupName(m.muscle))
             }
         }
         .padding(.vertical, 2)
@@ -409,7 +409,7 @@ private struct BuilderMuscleCard: View {
             ScrollView {
                 VStack(spacing: 12) {
                     HStack(alignment: .firstTextBaseline) {
-                        Text(planMuscleName(muscle)).nkFont(26, design: .serif).foregroundStyle(.white)
+                        Text(SubMuscles.groupName(muscle)).nkFont(26, design: .serif).foregroundStyle(.white)
                         Spacer()
                         Text(verdict(m)).nkFont(13, .medium).foregroundStyle(inside ? planGood : planWarn)
                     }
@@ -670,7 +670,7 @@ private struct BuilderDayCard: View {
                     if locked { lockLine }
                     if !day.exercises.isEmpty { muscleChips(evaluation) }
                     ForEach(Array((evaluation?.sessionCapWarnings ?? []).enumerated()), id: \.offset) { _, w in
-                        Text("\(planMuscleName(w.muscle ?? "")): \(w.sets) sorozat egy edzésen. \(w.cap) fölött már nem ad többet, oszd el két napra.")
+                        Text("\(SubMuscles.groupName(w.muscle ?? "")): \(w.sets) sorozat egy edzésen. \(w.cap) fölött már nem ad többet, oszd el két napra.")
                             .nkFont(13).foregroundStyle(planWarn).fixedSize(horizontal: false, vertical: true)
                     }
                     if !draft.techniquesEnabled, !locked, day.exercises.contains(where: { $0.stable && $0.judged }) {
@@ -1099,7 +1099,7 @@ private struct BuilderBlockView: View {
                         let top = Double(max(1, values.max() ?? 1))
                         HStack(spacing: 10) {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(planMuscleName(m.muscle)).nkFont(15, .medium).foregroundStyle(.white.opacity(0.95))
+                                Text(SubMuscles.groupName(m.muscle)).nkFont(15, .medium).foregroundStyle(.white.opacity(0.95))
                                 PlanTierPill(tier: draft?.tier(m.muscle) ?? .grow)
                             }
                             .frame(width: 104, alignment: .leading)
@@ -1119,7 +1119,7 @@ private struct BuilderBlockView: View {
                         }
                         .padding(.vertical, 10)
                         .accessibilityElement(children: .ignore)
-                        .accessibilityLabel("\(planMuscleName(m.muscle)): \(values.map(String.init).joined(separator: ", ")) sorozat hetente")
+                        .accessibilityLabel("\(SubMuscles.groupName(m.muscle)): \(values.map(String.init).joined(separator: ", ")) sorozat hetente")
                     }
                 }
                 .padding(.horizontal, 18).padding(.vertical, 6).nkGlass(26)

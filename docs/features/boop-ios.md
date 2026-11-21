@@ -759,7 +759,9 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     player's `SwapSheet` is the shared `ExercisePickCard` / `ExercisePickRow` (`Edzes/SwapSheet.swift`): the catalogue
     start still (`imageStartUrl` → `BoopConfig.mediaURL`, 44 pt `NKRemoteThumb`, the glyph tile without one), the
     catalogue name, *hát · középső · összetett* (`exerciseRoleLine`), the server's reason only. The day card's top chips
-    stay coarse groups with counts but are spelled by `SubMuscles.groupName` (*Mell*, *Comb*, *Combhajlító*, *Far* …);
+    stay coarse groups with counts but are spelled by `SubMuscles.groupName` (*Mell*, *Comb*, *Combhajlító*, *Far* …) —
+    as is every muscle word in the app now: the Izmok tab, the weekly review deck, cap warnings and the player (`muscleName`
+    is the lower-case group name for running text; an exercise's own line in the player reads `SubMuscles.name`);
     the quiet full-list labels cover the whole catalogue (the server labels every row in add mode). Empty day line; the day of today's open workout
     (`BlockBuilderModel.lockedDay`, passed by `EdzesRoom`) is read-only; *Mentés* on a structurally changed day that a
     waiting weekly proposal touches (`pendingReviewDays`, from the proposals the load already read) asks *Függő heti

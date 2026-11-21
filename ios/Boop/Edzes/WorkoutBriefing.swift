@@ -241,7 +241,7 @@ struct WorkoutBriefing: View {
                 .nkFont(13, .medium, design: .monospaced).foregroundStyle(.white.opacity(0.35))
             NKRemoteThumb(BoopConfig.mediaURL(e.imageStartURL), size: 46)
             VStack(alignment: .leading, spacing: 2) {
-                Text(muscleName(e.muscle).uppercased())
+                Text(SubMuscles.name(e.muscle).uppercased())
                     .nkFont(9, .medium, design: .monospaced).tracking(1.1)
                     .foregroundStyle(hue.glow.opacity(0.85))
                 Text(e.name).nkFont(15).foregroundStyle(.white).lineLimit(2)

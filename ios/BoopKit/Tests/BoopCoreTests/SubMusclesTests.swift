@@ -53,5 +53,7 @@ struct SubMusclesTests {
         let names = ["back", "chest", "shoulder", "biceps", "triceps", "quad", "ham", "glute", "calf", "core"]
             .map(SubMuscles.groupName)
         #expect(names == ["Hát", "Mell", "Váll", "Bicepsz", "Tricepsz", "Comb", "Combhajlító", "Far", "Vádli", "Törzs"])
+        #expect(SubMuscles.groupName("traps") == "Hát", "the traps count with the back")
+        #expect(SubMuscles.groupName("chest-upper") == "Mell", "a fine token names its group")
     }
 }

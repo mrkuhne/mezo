@@ -219,9 +219,14 @@ struct EdzesMaLogicTests {
     }
 
     @Test func muscleNamesAreTheOnesHeUses() {
-        #expect(muscleName("chest") == "mellkas")
-        #expect(muscleName("ham") == "comb hátulja")
+        // The shared group names (mezo-r36n9.127), lower-case for running text.
+        #expect(muscleName("chest") == "mell")
+        #expect(muscleName("chest-upper") == "mell")
+        #expect(muscleName("ham") == "combhajlító")
+        #expect(muscleName("glute") == "far")
+        #expect(muscleName("traps") == "hát")
         #expect(muscleName("core") == "törzs")
+        #expect(muscleName("arms") == "kar")
         // An unknown key is passed through rather than renamed into something invented.
         #expect(muscleName("tibialis") == "tibialis")
     }

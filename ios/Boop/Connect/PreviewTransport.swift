@@ -695,8 +695,8 @@ struct PreviewTransport: ClientTransport {
         let profiles = previewMuscles.map { m in
             #""\#(m.key)":{"mev":\#(m.mev),"mav":\#(m.mav),"mrv":\#(m.mrv),"current":\#(previewCurrent(m)),"source":{"baseline":{"name":"\#(m.key)","mev":\#(m.mev),"mav":\#(m.mav),"mrv":\#(m.mrv)},"adjustments":[],"confidence":0.8}}"#
         }.joined(separator: ",")
-        let days = [("Hét", "Vállak és hát", "váll · hát", 5), ("Ke", "Láb", "comb · fenék", 6),
-                    ("Sze", "Pihenő", "regeneráció", 0), ("Csü", "Mell és kar", "mellkas · tricepsz", 5),
+        let days = [("Hét", "Vállak és hát", "váll · hát", 5), ("Ke", "Láb", "comb · far", 6),
+                    ("Sze", "Pihenő", "regeneráció", 0), ("Csü", "Mell és kar", "mell · tricepsz", 5),
                     ("Pé", "Hát és bicepsz", "hát · bicepsz", 5), ("Szo", "Röplabda", "egész test", 0),
                     ("Vas", "Pihenő", "regeneráció", 0)]
             .enumerated().map { i, d in
