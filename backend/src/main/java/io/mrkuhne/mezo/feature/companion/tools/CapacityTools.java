@@ -1,8 +1,8 @@
 package io.mrkuhne.mezo.feature.companion.tools;
 
 import io.mrkuhne.mezo.feature.companion.port.CapacityContextPort;
+import io.mrkuhne.mezo.feature.companion.service.OwnerToday;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
-import java.time.LocalDate;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.model.ToolContext;
@@ -23,6 +23,8 @@ public class CapacityTools {
     static final String NO_DATA = "Kapacitás: nincs adat";
 
     private final CapacityContextPort capacity;
+    /** The owner's day (mezo.wearable.zone), never the server's zone. */
+    private final OwnerToday ownerToday;
 
     @Tool(name = "get_capacity", description = "Mennyire terhes a nap a testi jelekhez képest (alvás, pulzus, "
             + "naptár, edzés): laza, rendben, szoros vagy túl sok, a két fő okkal. Paraméter nélkül a mai nap; "
@@ -33,7 +35,7 @@ public class CapacityTools {
             String week,
             ToolContext toolContext) {
         UUID userId = ToolContexts.userId(toolContext);
-        String out = week == null || week.isBlank() ? capacity.render(userId, LocalDate.now())
+        String out = week == null || week.isBlank() ? capacity.render(userId, ownerToday.today())
                 : capacity.week(userId, week);
         if (out == null || out.isBlank()) {
             return NO_DATA;
