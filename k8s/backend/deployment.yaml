@@ -172,6 +172,13 @@ spec:
             # precedent) rather than relying on the application.yml default.
             - name: MEZO_FEATURE_PROACTIVE_ENABLED
               value: "true"
+            # mezo-r36n9.38/.39 Boop Levél, the morning post: the feature (API, cipher, pipeline) and its
+            # 08:00 + 15:00 Budapest job. Flipped AFTER MEZO_MAIL_SECRET_KEY landed (separate merge).
+            # Rollback = delete these two entries (the mailbox row and its sealed password stay).
+            - name: MEZO_MAIL_ENABLED
+              value: "true"
+            - name: MEZO_TECHCORE_CRON_MAILJOB_ENABLED
+              value: "true"
             # LLM call audit log (mezo-2zyu): every Gemini call lands in llm_log_history with
             # its token/cost breakdown and its caller attribution (feature/operation/entity).
             # Default-on in application.yml since mezo-ozri.1 — this explicit pin is now
