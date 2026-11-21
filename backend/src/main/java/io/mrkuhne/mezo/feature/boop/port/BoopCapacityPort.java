@@ -25,8 +25,12 @@ public interface BoopCapacityPort {
                 double demandUnits, double[] hourly19, List<Item> demand, List<Factor> factors,
                 String reasonFacts) {}
 
-    /** level: kicsi | kozepes | nagy | tolt. */
-    record Item(String label, String kind, Instant start, String level) {}
+    /**
+     * level: kicsi | kozepes | nagy | tolt. {@code eventKey}: the calendar event's feedback key (external id without
+     * the occurrence part) the phone sends back with a label; {@code null} for a training session. {@code effect}: the
+     * owner's own label of the event (drains | neutral | feeds), {@code null} when unlabelled.
+     */
+    record Item(String label, String kind, Instant start, String level, String eventKey, String effect) {}
 
     /** effect: jo | semleges | rossz. */
     record Factor(String key, String label, String value, String effect) {}

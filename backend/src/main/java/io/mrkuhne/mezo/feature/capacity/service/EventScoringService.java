@@ -221,7 +221,10 @@ public class EventScoringService {
         return bar < 0 ? externalId : externalId.substring(0, bar);
     }
 
-    /** The owner's labels override the three components: drains lifts the main one to 2, feeds/neutral cap at 1. */
+    /**
+     * The owner's labels override the three components: drains lifts the main one to 2, feeds/neutral cap at 1. The
+     * label itself rides on the score ({@link EventScore#feedback()}) so the phone can show it after a relaunch.
+     */
     static EventScore applyFeedback(EventScore s, FeedbackEffect effect) {
         if (effect == null) {
             return s;
@@ -236,12 +239,12 @@ public class EventScoringService {
                 } else {
                     p = Math.max(p, 2);
                 }
-                yield new EventScore(s.eventId(), m, so, p, false, s.kind(), s.confidence(), s.source());
+                yield new EventScore(s.eventId(), m, so, p, false, s.kind(), s.confidence(), s.source(), effect.value());
             }
             case FEEDS -> new EventScore(s.eventId(), Math.min(s.mental(), 1), Math.min(s.social(), 1),
-                Math.min(s.physical(), 1), true, s.kind(), s.confidence(), s.source());
+                Math.min(s.physical(), 1), true, s.kind(), s.confidence(), s.source(), effect.value());
             case NEUTRAL -> new EventScore(s.eventId(), Math.min(s.mental(), 1), Math.min(s.social(), 1),
-                Math.min(s.physical(), 1), false, s.kind(), s.confidence(), s.source());
+                Math.min(s.physical(), 1), false, s.kind(), s.confidence(), s.source(), effect.value());
         };
     }
 

@@ -59,10 +59,7 @@ figyel.
 | (épül) `capacity_proposal` | Minden javaslat, a döntésed és hogyan sült el |
 
 ## Mi jön még
-Négy lépésben épül: alap (címkézés és becslés), reggel és Évad, Átrendezés, előrejelzés. Az első lépés, a háttérben
-futó rész kész: a telefon elküldi a naptár minden adatát, a rendszer a háttérben felcímkézi a programokat (ha az MI épp
-nem ér rá, szabály alapján becsül), és kiszámolja, belefér-e a nap. A telefonon ebből még semmi sem látszik; a reggeli
-szó és a napod oldala a következő lépésben jelenik meg. Az Átrendezés és az előrejelzés még hátravan.
+Négy lépésben épül: alap (címkézés és becslés), reggel és Évad, Átrendezés, előrejelzés. Az első kettő kész: a Ma oldal reggeli sorában ott a nap szava és az oka, a napod oldalán a „Mennyit bírsz ma”, a „Mi visz el ma energiát” (egy programot megjelölhetsz: merít, semleges vagy feltölt, és ez újraindítás után is látszik) és az „Amiből gazdálkodsz” rész, az Évad oldalon a heti teher és pihenés képe, és Boop beszélgetés közben is tudja, milyen napod lesz. Az Átrendezés oldal és a vasárnapi előrejelzés még hátravan.
 
 ## Mi marad ki
 - A Boop nem ír a naptáradba, és nem mond le helyetted megbeszélést.

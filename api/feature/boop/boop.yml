@@ -184,6 +184,13 @@ components:
         kind: { type: string }
         level: { type: string, enum: [kicsi, kozepes, nagy, tolt] }
         eventKey: { type: string, nullable: true }
+        effect:
+          type: string
+          nullable: true
+          enum: [drains, neutral, feeds]
+          description: >-
+            The owner's own label of how this event felt (Merít / Semleges / Feltölt), null when unlabelled or for a
+            training session. The phone shows it on the row and pre-selects it in the label sheet.
     BoopCapacityFactor:
       type: object
       required: [key, label, value, effect]

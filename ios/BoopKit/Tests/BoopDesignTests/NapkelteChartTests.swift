@@ -63,3 +63,17 @@ import SwiftUI
     #expect(abs(glowLineValue(pts, at: 9) - 0.4) < 1e-9)         // clamps to the ends
     #expect(abs(glowLineValue([0.7], at: 3) - 0.7) < 1e-9)
 }
+
+// K2 final fix (mezo-r36n9.17): one lived week with recovery has no neighbour to draw a line to — it must still show.
+@Test func seasonRecoveryRunsSplitOnMissingWeeks() {
+    func wk(_ r: Double?) -> NKLoadWeek { NKLoadWeek(label: "x", load: 3, recovery: r, over: false, faint: r == nil) }
+    #expect(NKSeasonLoadChart.recoveryRuns([wk(4), wk(nil), wk(nil)]) == [0...0])
+    #expect(NKSeasonLoadChart.recoveryRuns([wk(4), wk(5), wk(nil), wk(6)]) == [0...1, 3...3])
+    #expect(NKSeasonLoadChart.recoveryRuns([wk(nil), wk(nil)]).isEmpty)
+}
+
+@Test @MainActor func seasonChartRendersOneLivedWeek() {
+    let weeks = [NKLoadWeek(label: "1.", load: 3.2, recovery: 4.1, over: false, faint: false)]
+        + (2...8).map { NKLoadWeek(label: "\($0).", load: 3.0, recovery: nil, over: false, faint: true) }
+    #expect(render(NKSeasonLoadChart(weeks: weeks, nowIndex: 0, hue: .forma), width: 340, height: 200) != nil)
+}

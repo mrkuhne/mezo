@@ -24,13 +24,25 @@ public final class DemandCalculator {
     private DemandCalculator() {
     }
 
-    /** One thing with a start and an end that loads the day. */
+    /**
+     * One thing with a start and an end that loads the day. {@code eventKey}: the calendar event's feedback key
+     * (external id without the occurrence part), {@code null} for a training session. {@code feedback}: the owner's
+     * own label of the event (drains | neutral | feeds), {@code null} when unlabelled.
+     */
     public record TimedDemand(Instant start, Instant end, int mental, int social, int physical, boolean restores,
-                              String label, String kind) {
+                              String label, String kind, String eventKey, String feedback) {
+        public TimedDemand(Instant start, Instant end, int mental, int social, int physical, boolean restores,
+                           String label, String kind) {
+            this(start, end, mental, social, physical, restores, label, kind, null, null);
+        }
     }
 
-    /** One item's contribution to the day, after the sequence factor. */
-    public record DemandItem(String label, String kind, Instant start, Instant end, double units, boolean restores) {
+    /**
+     * One item's contribution to the day, after the sequence factor; {@code eventKey} and {@code feedback} as on
+     * {@link TimedDemand}.
+     */
+    public record DemandItem(String label, String kind, Instant start, Instant end, double units, boolean restores,
+                             String eventKey, String feedback) {
     }
 
     public record Demand(double units, double mental, double social, double physical, List<DemandItem> items,
@@ -63,7 +75,7 @@ public final class DemandCalculator {
             Instant e = t.end().isAfter(to) ? to : t.end();
             if (e.isAfter(s)) {
                 clipped.add(new TimedDemand(s, e, t.mental(), t.social(), t.physical(), t.restores(), t.label(),
-                    t.kind()));
+                    t.kind(), t.eventKey(), t.feedback()));
             }
         }
         return day(clipped, p, zone);
@@ -88,7 +100,8 @@ public final class DemandCalculator {
             social += hours * t.social() / 3.0 * f;
             physical += hours * t.physical() / 3.0 * f;
             spread(hourly, t, units, zone);
-            out.add(new DemandItem(t.label(), t.kind(), t.start(), t.end(), units, t.restores()));
+            out.add(new DemandItem(t.label(), t.kind(), t.start(), t.end(), units, t.restores(), t.eventKey(),
+                t.feedback()));
         }
         total = Math.max(0, total - credit);
         return new Demand(total, mental, social, physical, List.copyOf(out), hourly);

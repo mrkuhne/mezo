@@ -20,6 +20,8 @@ filter:
     - deleteHealthRecords
     - replaceCalendarDays
     - getBoopBrief
+    - putCapacityEventFeedback
+    - getCapacitySeason
     - regenerateBoopBrief
     - setSessionTime
     - clearSessionTime
