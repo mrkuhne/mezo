@@ -105,7 +105,7 @@ rendszer elutasítja, és Boop az Évad oldalra küld. A már futó blokk zavart
 
 ## Mi jön még
 - 3. szakasz (élesben): [Heti menü](09-heti-menu.md) és [Bevásárlólista](07-bevasarlolista.md).
-- 4. szakasz: kísérletek (lásd [Hatáskövetés](08-hataskovetes.md)).
+- 4. szakasz (élesben): kísérletek (lásd [Hatás — kísérletek](08-hataskovetes.md)).
 - Egy elfogadással a futó blokk napjai is átrendeződnek, ha az edzésnapok változnak.
 - A célsúly, az évad hossza és az ébredési idő állítása a Módosításban; Korábbi évadok oldal.
 

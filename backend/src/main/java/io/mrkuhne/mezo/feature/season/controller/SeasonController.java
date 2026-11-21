@@ -2,6 +2,10 @@ package io.mrkuhne.mezo.feature.season.controller;
 
 import io.mrkuhne.mezo.api.controller.SeasonApi;
 import io.mrkuhne.mezo.api.dto.SeasonAdherenceResponse;
+import io.mrkuhne.mezo.api.dto.SeasonExperiment;
+import io.mrkuhne.mezo.api.dto.SeasonExperimentCreate;
+import io.mrkuhne.mezo.api.dto.SeasonExperimentMark;
+import io.mrkuhne.mezo.api.dto.SeasonExperiments;
 import io.mrkuhne.mezo.api.dto.SeasonMenuAlternative;
 import io.mrkuhne.mezo.api.dto.SeasonMenuChoice;
 import io.mrkuhne.mezo.api.dto.SeasonMenuGenerate;
@@ -156,5 +160,37 @@ public class SeasonController implements SeasonApi {
     @Override
     public SeasonStaples putStaples(SeasonStaples body) {
         return service.putStaples(currentUserId.get(), body.getNames());
+    }
+
+    // --- S4: experiments ---
+
+    @Override
+    public SeasonExperiments listExperiments() {
+        return service.experiments(currentUserId.get());
+    }
+
+    @Override
+    public SeasonExperiment createExperiment(SeasonExperimentCreate body) {
+        return service.createExperiment(currentUserId.get(), body);
+    }
+
+    @Override
+    public SeasonExperiment startExperiment(UUID id) {
+        return service.startExperiment(currentUserId.get(), id);
+    }
+
+    @Override
+    public SeasonExperiment markExperimentDay(UUID id, SeasonExperimentMark body) {
+        return service.markExperimentDay(currentUserId.get(), id, body);
+    }
+
+    @Override
+    public SeasonExperiment dismissExperiment(UUID id) {
+        return service.dismissExperiment(currentUserId.get(), id);
+    }
+
+    @Override
+    public SeasonExperiment keepExperiment(UUID id) {
+        return service.keepExperiment(currentUserId.get(), id);
     }
 }

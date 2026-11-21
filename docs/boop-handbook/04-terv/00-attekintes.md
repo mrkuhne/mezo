@@ -40,7 +40,7 @@ Ezekből számolja Boop, mennyit egyél edzésnapon és pihenőnapon, mennyit al
   [Bevásárlólista](07-bevasarlolista.md).
 
 **Ami még jön:**
-- **4. szakasz:** kísérletek — kipróbálsz valamit, és Boop megnézi, tényleg hat-e (a „Hatás” fül addig „hamarosan”).
+- **4. szakasz (élesben):** kísérletek — kipróbálsz valamit, és Boop megnézi, tényleg hat-e (lásd [Hatás — kísérletek](08-hataskovetes.md)).
 - **Korábbi évadok** oldal és a mostani súlyod az Új évad első lépésében.
 
 ## Hogyan működik

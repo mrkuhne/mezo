@@ -10,7 +10,9 @@ import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.repository.GymScheduleSlotRepository;
 import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity;
+import io.mrkuhne.mezo.feature.train.entity.RecoveryPeriodEntity;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
+import io.mrkuhne.mezo.feature.train.repository.RecoveryPeriodRepository;
 import io.mrkuhne.mezo.feature.train.repository.RunSessionLogRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
@@ -62,6 +64,7 @@ public class SeasonTrainAdapter implements SeasonTrainPort {
     private final SportSessionRepository sportSessionRepository;
     private final RunSessionLogRepository runSessionLogRepository;
     private final PlannedSkipService plannedSkipService;
+    private final RecoveryPeriodRepository recoveryPeriodRepository;
 
     @Override
     public Schedule currentSchedule(UUID owner) {
@@ -230,6 +233,35 @@ public class SeasonTrainAdapter implements SeasonTrainPort {
         kinds.forEach((skip, kind) -> plannedSkipService.excusedDates(owner, skip, from, to)
             .forEach(d -> add(days, d, kind)));
         return days;
+    }
+
+    @Override
+    public List<TrainEvent> trainEvents(UUID owner, LocalDate from, LocalDate to) {
+        List<TrainEvent> out = new ArrayList<>();
+        for (MesocycleEntity m : mesocycleRepository.findByCreatedByAndDeletedFalseOrderByStartDateAsc(owner)) {
+            LocalDate start = m.getStartDate();
+            if (start == null) {
+                continue;
+            }
+            if (!start.isBefore(from) && !start.isAfter(to)) {
+                out.add(new TrainEvent(TrainEventKind.MESOCYCLE, start));
+            }
+            List<String> curve = m.getPhaseCurve() == null ? List.of() : m.getPhaseCurve();
+            for (int i = 0; i < curve.size(); i++) {
+                LocalDate week = start.plusWeeks(i);
+                if ("deload".equalsIgnoreCase(curve.get(i)) && !week.isBefore(from) && !week.isAfter(to)) {
+                    out.add(new TrainEvent(TrainEventKind.DELOAD, week));
+                }
+            }
+        }
+        for (RecoveryPeriodEntity p : recoveryPeriodRepository.findByCreatedByAndStartDateLessThanEqualAndDeletedFalse(owner, to)) {
+            LocalDate end = p.getEndedOn();
+            if (p.getStartDate() != null && (end == null || !end.isBefore(from))) {
+                out.add(new TrainEvent(TrainEventKind.KIMELO, p.getStartDate().isBefore(from) ? from : p.getStartDate()));
+            }
+        }
+        out.sort(java.util.Comparator.comparing(TrainEvent::date));
+        return out;
     }
 
     private static void add(Map<LocalDate, Set<SessionKind>> days, LocalDate day, SessionKind kind) {

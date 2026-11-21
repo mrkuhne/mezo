@@ -29,7 +29,8 @@ struct MaWall: View {
     @AppStorage("wallActed") private var actedRaw = ""
     @AppStorage("wallSettled") private var settledRaw = ""
     @State private var why: WallCandidate?
-    /// The season (B6 Évad): its overview feeds the `evad` source; a tap on its card opens the Évad place.
+    /// The season (B6 Évad): its overview and experiments feed the `evad` source; a tap on its card opens the Évad
+    /// place (an experiment proposal's „Indulhat" starts it instead).
     @Environment(EvadStore.self) private var evad: EvadStore?
     @Environment(\.openPlace) private var openPlace
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -52,8 +53,8 @@ struct MaWall: View {
         r.register(WallSource(id: "brief") { [brief] input in
             briefWallCandidates(brief, now: input.now)
         })
-        r.register(WallSource(id: WallSources.evad) { [overview = evad?.overview] input in
-            evadCandidates(overview, now: input.now)
+        r.register(WallSource(id: WallSources.evad) { [overview = evad?.overview, experiments = evad?.experiments.data] input in
+            evadCandidates(overview, experiments: experiments, now: input.now)
         })
         return r
     }
@@ -114,7 +115,11 @@ struct MaWall: View {
         .animation(reduceMotion ? nil : .smooth(duration: 0.35), value: wall.cards.map(\.id))
         .sheet(item: $why) { c in whySheet(c) }
         // the season's overview is read once (cached offline) so the wall knows what the Évad page knows
-        .task(id: evad.map(ObjectIdentifier.init)) { await evad?.load() }
+        .task(id: evad.map(ObjectIdentifier.init)) {
+            await evad?.load()
+            // the experiments too (S4): the proposal and a fresh result are wall cards
+            if evad?.overview != nil { await evad?.experiments.load() }
+        }
     }
 
     @State private var settledOpen = false
@@ -147,6 +152,10 @@ struct MaWall: View {
         if c.id.hasPrefix("etel-window") { onMeal() }
         else if c.id == "etel-supplements" { onEtelRoom() }
         else if c.id == "edzes-keszulj" { onDrill(.mozgas) }
+        else if let id = evadWallProposalID(c.id) {
+            // „Indulhat" starts Boop's experiment proposal right here; the Hatás tab shows it running
+            Task { await evad?.experiments.start(id) }
+        }
         else if c.area == WallSources.evad { evad?.pendingSub = evadWallOpens(c.id); openPlace(.terv) }
         settle(id: c.id, line: c.settled)
     }

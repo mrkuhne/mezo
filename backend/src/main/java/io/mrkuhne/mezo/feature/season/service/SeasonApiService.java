@@ -1,6 +1,10 @@
 package io.mrkuhne.mezo.feature.season.service;
 
 import io.mrkuhne.mezo.api.dto.SeasonAdherenceResponse;
+import io.mrkuhne.mezo.api.dto.SeasonExperiment;
+import io.mrkuhne.mezo.api.dto.SeasonExperimentCreate;
+import io.mrkuhne.mezo.api.dto.SeasonExperimentMark;
+import io.mrkuhne.mezo.api.dto.SeasonExperiments;
 import io.mrkuhne.mezo.api.dto.SeasonMenuAlternative;
 import io.mrkuhne.mezo.api.dto.SeasonMenuWeek;
 import io.mrkuhne.mezo.api.dto.SeasonRecipeOption;
@@ -41,6 +45,7 @@ public class SeasonApiService {
     private final MenuService menuService;
     private final ShoppingListService shoppingListService;
     private final SeasonRecipeService recipeService;
+    private final ExperimentService experimentService;
 
     @Transactional(readOnly = true)
     public List<SeasonResponse> list(UUID owner) {
@@ -145,6 +150,35 @@ public class SeasonApiService {
 
     public SeasonStaples putStaples(UUID owner, List<String> names) {
         return shoppingListService.putStaples(owner, names);
+    }
+
+    // --- S4: experiments (today = the server's local day, like the other season ops) ---
+
+    public SeasonExperiments experiments(UUID owner) {
+        return mapper.toDto(experimentService.list(owner, LocalDate.now()));
+    }
+
+    public SeasonExperiment createExperiment(UUID owner, SeasonExperimentCreate body) {
+        return mapper.toDto(experimentService.create(owner, body.getTitle(),
+            body.getSubjectKind() == null ? null : body.getSubjectKind().getValue(), body.getSubjectRef(),
+            body.getLengthDays(), LocalDate.now()));
+    }
+
+    public SeasonExperiment startExperiment(UUID owner, UUID id) {
+        return mapper.toDto(experimentService.start(owner, id, LocalDate.now()));
+    }
+
+    public SeasonExperiment markExperimentDay(UUID owner, UUID id, SeasonExperimentMark body) {
+        return mapper.toDto(experimentService.markDay(owner, id, body.getDate(), Boolean.TRUE.equals(body.getDone()),
+            LocalDate.now()));
+    }
+
+    public SeasonExperiment dismissExperiment(UUID owner, UUID id) {
+        return mapper.toDto(experimentService.dismiss(owner, id, LocalDate.now()));
+    }
+
+    public SeasonExperiment keepExperiment(UUID owner, UUID id) {
+        return mapper.toDto(experimentService.keep(owner, id, LocalDate.now()));
     }
 
     private SeasonResponse response(UUID owner, SeasonEntity s) {

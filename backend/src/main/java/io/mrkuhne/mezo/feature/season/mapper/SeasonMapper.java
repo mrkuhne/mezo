@@ -7,6 +7,12 @@ import io.mrkuhne.mezo.api.dto.SeasonAdherenceResponse;
 import io.mrkuhne.mezo.api.dto.SeasonBand;
 import io.mrkuhne.mezo.api.dto.SeasonBlockChoice;
 import io.mrkuhne.mezo.api.dto.SeasonDraft;
+import io.mrkuhne.mezo.api.dto.SeasonExperiment;
+import io.mrkuhne.mezo.api.dto.SeasonExperimentOverlap;
+import io.mrkuhne.mezo.api.dto.SeasonExperimentResult;
+import io.mrkuhne.mezo.api.dto.SeasonExperimentSignal;
+import io.mrkuhne.mezo.api.dto.SeasonExperimentSignalKey;
+import io.mrkuhne.mezo.api.dto.SeasonExperiments;
 import io.mrkuhne.mezo.api.dto.SeasonNumbers;
 import io.mrkuhne.mezo.api.dto.SeasonPreview;
 import io.mrkuhne.mezo.api.dto.SeasonResponse;
@@ -17,8 +23,11 @@ import io.mrkuhne.mezo.api.dto.SeasonTodo;
 import io.mrkuhne.mezo.api.dto.SeasonWarning;
 import io.mrkuhne.mezo.feature.season.entity.SeasonDraftJson;
 import io.mrkuhne.mezo.feature.season.entity.SeasonEntity;
+import io.mrkuhne.mezo.feature.season.entity.SeasonExperimentEntity;
+import io.mrkuhne.mezo.feature.season.entity.SeasonExperimentResultJson;
 import io.mrkuhne.mezo.feature.season.entity.SeasonNumbersJson;
 import io.mrkuhne.mezo.feature.season.service.AdherenceService;
+import io.mrkuhne.mezo.feature.season.service.ExperimentService;
 import io.mrkuhne.mezo.feature.season.service.SeasonPreviewService;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -162,5 +171,51 @@ public class SeasonMapper {
 
     public static SeasonBand band(BigDecimal low, BigDecimal high) {
         return low == null || high == null ? null : SeasonBand.builder().lowKg(low).highKg(high).build();
+    }
+
+    // --- S4: experiments ---
+
+    public SeasonExperiments toDto(ExperimentService.Listing l) {
+        return SeasonExperiments.builder()
+            .proposal(l.proposal() == null ? null : toDto(l.proposal()))
+            .running(l.running() == null ? null : toDto(l.running()))
+            .past(new ArrayList<>(l.past().stream().map(this::toDto).toList()))
+            .proposeOn(l.proposeOn())
+            .build();
+    }
+
+    public SeasonExperiment toDto(ExperimentService.View v) {
+        SeasonExperimentEntity e = v.experiment();
+        SeasonExperimentResultJson r = e.getResult();
+        return SeasonExperiment.builder()
+            .id(e.getId())
+            .subjectKind(SeasonExperiment.SubjectKindEnum.fromValue(e.getSubjectKind()))
+            .subjectRef(e.getSubjectRef())
+            .title(e.getTitle())
+            .reason(e.getReason())
+            .startDate(e.getStartDate())
+            .endDate(e.endDate())
+            .lengthDays(e.getLengthDays())
+            .status(SeasonExperiment.StatusEnum.fromValue(e.getStatus()))
+            .dayIndex(v.dayIndex())
+            .markedDays(new ArrayList<>(e.getMarkedDays() == null ? List.of() : e.getMarkedDays()))
+            .needDays(v.needDays())
+            .watched(new ArrayList<>(v.watched().stream().map(SeasonExperimentSignalKey::fromValue).toList()))
+            .overlaps(new ArrayList<>(v.overlaps().stream().map(o -> SeasonExperimentOverlap.builder()
+                .kind(SeasonExperimentOverlap.KindEnum.fromValue(o.kind())).date(o.date()).text(o.text()).build())
+                .toList()))
+            .result(r == null ? null : SeasonExperimentResult.builder()
+                .verdict(SeasonExperimentResult.VerdictEnum.fromValue(r.verdict()))
+                .signals(new ArrayList<>(r.signalsOrEmpty().stream().map(x -> SeasonExperimentSignal.builder()
+                    .key(SeasonExperimentSignalKey.fromValue(x.key()))
+                    .before(x.before()).after(x.after()).nBefore(x.nBefore()).nAfter(x.nAfter())
+                    .cliffsDelta(x.cliffsDelta()).clear(x.clear()).better(x.better()).build()).toList()))
+                .baselineFrom(r.baselineFrom())
+                .baselineTo(r.baselineTo())
+                .markedCount(r.markedCount())
+                .build())
+            .finishedOn(e.getFinishedOn())
+            .kept(e.isKept())
+            .build();
     }
 }

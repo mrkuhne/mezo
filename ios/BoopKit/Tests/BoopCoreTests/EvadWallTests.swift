@@ -76,4 +76,47 @@ struct EvadWallTests {
         let c = try #require(evadCandidates(Self.overview(), now: Self.at(2026, 12, 22), calendar: Self.cal).first)
         #expect(c.why == "Az évad utolsó napja: dec. 27.")
     }
+
+    // MARK: - S4: experiments
+
+    private static func experiments(_ json: String) -> EvadExperiments {
+        try! JSONDecoder().decode(EvadExperiments.self, from: Data(json.utf8))
+    }
+
+    @Test func proposalIsImproves() throws {
+        let x = Self.experiments(EvadExperimentFixtures.listJSON)
+        let all = evadCandidates(Self.overview(), experiments: x, now: Self.at(2026, 11, 20), calendar: Self.cal)
+        let c = try #require(all.first { $0.role == .improves })
+        #expect(c.kind == .teendo && c.area == WallSources.evad)
+        #expect(c.primary == "Indulhat", "one tap starts it")
+        #expect(c.text.contains("Esti magnézium") && c.text.contains("kísérletet"))
+        #expect(c.sub == "Hétfő óta szedsz esti magnéziumot.", "the sub is the server's reason")
+        #expect(c.why.contains("Hétfő óta") && c.why.contains("vetem össze az előző két héttel"),
+                "the why says why and what is compared")
+        #expect(c.rank < 0.7, "below the food tip")
+        #expect(!c.notifiable)
+        #expect(evadWallProposalID(c.id) == "p1")
+        #expect(evadWallOpens(c.id) == "hatas")
+        // no season → no card, even with a proposal
+        #expect(evadCandidates(nil, experiments: x, now: Self.at(2026, 11, 20), calendar: Self.cal).isEmpty)
+    }
+
+    @Test func resultIsHappened() throws {
+        let x = Self.experiments(EvadExperimentFixtures.listJSON) // "d1" finished 2026-11-19
+        let c = try #require(evadCandidates(Self.overview(), experiments: x, now: Self.at(2026, 11, 20), calendar: Self.cal)
+            .first { $0.role == .happened })
+        #expect(c.kind == .tortent && c.text.contains("Kész a kísérlet") && c.text.contains("Reggeli séta"))
+        #expect(c.sub.hasPrefix("14 nap · "))
+        #expect(c.happenedAt == Self.cal.date(from: DateComponents(year: 2026, month: 11, day: 19)))
+        #expect(!c.notifiable && evadWallProposalID(c.id) == nil)
+        #expect(evadWallOpens(c.id) == "kiserlet:d1", "a tap opens Évad → Hatás → that result")
+        // within three days (the day it finished and the next two); later it is not news
+        #expect(evadCandidates(Self.overview(), experiments: x, now: Self.at(2026, 11, 21), calendar: Self.cal)
+            .contains { $0.role == .happened })
+        #expect(!evadCandidates(Self.overview(), experiments: x, now: Self.at(2026, 11, 22), calendar: Self.cal)
+            .contains { $0.role == .happened })
+        // the older result ("d2", finished in October) never shows
+        #expect(evadCandidates(Self.overview(), experiments: x, now: Self.at(2026, 11, 20), calendar: Self.cal)
+            .filter { $0.role == .happened }.count == 1)
+    }
 }

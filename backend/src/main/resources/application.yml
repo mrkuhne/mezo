@@ -485,6 +485,10 @@ mezo:
     # idempotent per week). Needs mezo.techcore.scheduling on (off in the test profile).
     menu-job:
       enabled: true
+    # Évad S4: once a day (04:40 in the Boop zone) every active season's due experiment is finished and Boop may
+    # propose one (SeasonExperimentJob). Needs mezo.techcore.scheduling on (off in the test profile).
+    experiment-job:
+      enabled: true
   # Boop B7 K1 day capacity (mezo-r36n9.17): CapacityProperties.
   capacity:
     enabled: true
@@ -634,9 +638,11 @@ mezo:
       prediction-job:
         enabled: true
       # P2 weekly proposal + daily outcome evaluation (schedules: mezo.proactive.experiment.*);
-      # off = the ExperimentJob bean does not exist (the lazy propose on GET still serves)
+      # off = the ExperimentJob bean does not exist (the lazy propose on GET still serves).
+      # OFF since Boop B6 Évad S4 (mezo-r36n9.16, spec §5.12-2): the season's experiments (Hatás tab,
+      # SeasonExperimentJob) replace the proactive weekly proposals; the proactive table stays.
       experiment-job:
-        enabled: true
+        enabled: false
       # Workout challenges midnight pre-generation + daily outcome backstop (schedules:
       # mezo.proactive.challenge.generate-cron / outcome-cron); off = the ChallengeJob bean does not
       # exist (the lazy GET still generates on workout open)

@@ -9,6 +9,8 @@ let evadHue: Hue = .forma
 /// The Évad page's sub-pages, presented at page level (boop-ios.md §9).
 enum EvadSub: String, Identifiable {
     case modositas, szabalyok, uj, receptek, listak, tetelek
+    /// S4: one finished experiment's result, and „Új kísérlet".
+    case kiserlet, ujkiserlet
     var id: String { rawValue }
 }
 
@@ -23,6 +25,8 @@ struct EvadPage: View {
     @State private var tab = "Évad"
     @State private var open: EvadSub?
     @State private var swapMeal: EvadMenuMeal?
+    /// The experiment the result page shows (nil = the newest finished one).
+    @State private var experimentId: String?
 
     var body: some View {
         Group {
@@ -50,6 +54,8 @@ struct EvadPage: View {
                 case .receptek: EvadRecipesPage(close: { open = nil })
                 case .listak: EvadPastListsPage(close: { open = nil })
                 case .tetelek: EvadStaplesPage(close: { open = nil })
+                case .kiserlet: EvadExperimentPage(id: experimentId, close: { open = nil })
+                case .ujkiserlet: EvadNewExperimentPage(close: { open = nil })
                 }
             }
             .environment(store)
@@ -64,8 +70,10 @@ struct EvadPage: View {
         .onChange(of: store?.overview == nil) { takePendingSub() }
         .onAppear {
             #if DEBUG
-            // Simulator review: `-evadOpen modositas|szabalyok|uj`, `-evadTab Évad|Menü|Lista|Hatás`.
+            // Simulator review: `-evadOpen modositas|szabalyok|uj|kiserlet|ujkiserlet`, `-evadTab Évad|Menü|Lista|Hatás`.
             if let t = UserDefaults.standard.string(forKey: "evadTab") { tab = t }
+            // `-evadExperiment <id>` picks which result `-evadOpen kiserlet` shows (default the newest finished)
+            experimentId = UserDefaults.standard.string(forKey: "evadExperiment")
             if let o = UserDefaults.standard.string(forKey: "evadOpen").flatMap(EvadSub.init(rawValue:)) {
                 Task { try? await Task.sleep(for: .seconds(1.2)); open = o }
             }
@@ -77,6 +85,11 @@ struct EvadPage: View {
         guard let store, let raw = store.pendingSub, store.overview != nil else { return }
         store.pendingSub = nil
         if raw == "menu" { tab = "Menü"; return } // the wall's weekly-menu card opens the Menü tab
+        if raw == "hatas" { tab = "Hatás"; return } // an experiment proposal opens the Hatás tab
+        if raw.hasPrefix("kiserlet:") {           // a fresh result opens Hatás → that result
+            tab = "Hatás"; experimentId = String(raw.dropFirst("kiserlet:".count)); open = .kiserlet
+            return
+        }
         open = EvadSub(rawValue: raw)
     }
 
@@ -96,8 +109,9 @@ struct EvadPage: View {
                 EvadListTab(menu: store.menu, openPast: { open = .listak }, openStaples: { open = .tetelek },
                             openMenu: { tab = "Menü" })
             case "Hatás":
-                NKNotLiveYet(hue: evadHue, title: "A kísérletek hamarosan itt lesznek",
-                             line: "Egyszerre egy kísérlet fut majd: megnézzük, tényleg hat-e, amit kipróbálsz.")
+                EvadEffectTab(exp: store.experiments,
+                              openResult: { experimentId = $0; open = .kiserlet },
+                              openNew: { open = .ujkiserlet })
             default:
                 EvadOverviewTab(o: o, ageText: store.ageText, offline: store.offline, open: { open = $0 })
             }

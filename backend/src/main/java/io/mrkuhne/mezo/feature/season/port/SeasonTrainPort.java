@@ -35,6 +35,13 @@ public interface SeasonTrainPort {
                  List<String> phaseCurve) {
     }
 
+    /** A training change on a day (Évad S4 experiment overlaps): a block started (MESOCYCLE), a deload week of a
+     *  block began (DELOAD), a kímélő period began (KIMELO). */
+    record TrainEvent(TrainEventKind kind, LocalDate date) {
+    }
+
+    enum TrainEventKind { MESOCYCLE, DELOAD, KIMELO }
+
     Schedule currentSchedule(UUID owner);
 
     /** The draft's gym + sport weekly EAT (kcal/day) at the given rest energy — pure. */
@@ -75,4 +82,10 @@ public interface SeasonTrainPort {
 
     /** The sessions skipped with an excusing reason, per day and kind. */
     Map<LocalDate, Set<SessionKind>> excusedSessions(UUID owner, LocalDate from, LocalDate to);
+
+    /**
+     * The training changes inside {@code from..to}, oldest first: each block that started then, each deload week of
+     * a block that began then, and each kímélő period that was on then (dated its first day inside the range).
+     */
+    List<TrainEvent> trainEvents(UUID owner, LocalDate from, LocalDate to);
 }
