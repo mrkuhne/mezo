@@ -820,5 +820,19 @@
       "mezo-r36n9.39"
     ],
     "mi_valtozott": "Megnyílt a Levél terület. A Gmailed és az iCloudod egy külön, csak Boopnak szánt Gmail-fiókba továbbít, amit Boop reggel 8-kor és délután 3-kor átnéz. A posta négy részre bomlik: határidős (számlák, programok, foglalások), csomagok (hol tartanak), akciók és lehetőségek 1–10 ponttal, és a többi összecsukva. Embertől jött levél és a bank mindig előre kerül — bankos, hivatali, egészségügyi levelet gép soha nem olvas. Az „érdekel / nem érdekel” gombokból tanul. A kezdőlapon megjelenik a Levél kártyája, és a telefon szól, ha egy jó akció vagy egy számla holnap lejár (naponta legfeljebb kétszer — ez az Étel és az Edzés lejáró dolgaira is érvényes mostantól). Az árellenőrzés és a figyelt termékek a következő lépésben jönnek."
+  },
+  "984e54af2": {
+    "cim": "Rendezettebb gyakorlatsorok a blokképítő napjain",
+    "datum": "2026-11-21",
+    "verzio": "",
+    "tipus": "Kinézet",
+    "hova": [
+      "iPhone app"
+    ],
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.138"
+    ],
+    "mi_valtozott": "A blokképítő napjain minden gyakorlat sora rendezett: fent a neve, alatta három kis cella — sorozat (itt állítod − és + gombbal), ismétlés és tartalék —, legalul az izomrész és a technika vagy a kihívás. Az ismétlés vagy a tartalék cellájára koppintva egy kis szerkesztő nyílik csak arra az értékre; a visszaállítás is csak azt az egy értéket érinti. A sorra koppintva továbbra is a teljes beállítások jönnek."
   }
 }
