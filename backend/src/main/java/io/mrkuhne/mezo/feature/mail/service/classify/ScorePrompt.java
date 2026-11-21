@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.mail.service.classify;
 
+import io.mrkuhne.mezo.feature.mail.service.redact.MailRedactor;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -68,8 +69,8 @@ public final class ScorePrompt {
         sb.append("Jelöltek:\n");
         for (Candidate c : candidates) {
             sb.append(MailFence.fence("id=" + c.id(),
-                "Cím: " + MailFence.sanitizeUntrusted(c.title()) + " / Összefoglaló: "
-                    + MailFence.sanitizeUntrusted(c.summary())));
+                "Cím: " + MailFence.sanitizeUntrusted(MailRedactor.mask(c.title())) + " / Összefoglaló: "
+                    + MailFence.sanitizeUntrusted(MailRedactor.mask(c.summary()))));
         }
         sb.append("\nReminder: ").append(UNTRUSTED_RULE).append(" Answer with the JSON array only.\n");
         return sb.toString();

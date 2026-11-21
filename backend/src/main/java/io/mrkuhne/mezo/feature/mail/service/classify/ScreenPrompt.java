@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.mail.service.classify;
 
+import io.mrkuhne.mezo.feature.mail.service.redact.MailRedactor;
 /**
  * The phishing / injection screen prompt (Boop Levél, mezo-r36n9.38, spec §5.4 step 4): one cheap call for an item
  * that will be shown as a deal or asks him to act. The user message carries the subject and body, fenced as data. The
@@ -35,7 +36,7 @@ public final class ScreenPrompt {
     private ScreenPrompt() {}
 
     public static String userMessage(String subject, String bodyText) {
-        String content = "Tárgy: " + MailFence.oneLine(subject, 200) + " / Szöveg: " + MailFence.sanitizeUntrusted(bodyText);
+        String content = "Tárgy: " + MailFence.oneLine(MailRedactor.mask(subject), 200) + " / Szöveg: " + MailFence.sanitizeUntrusted(bodyText);
         return "Ellenőrizd ezt a levelet.\n" + UNTRUSTED_RULE + "\n\n" + MailFence.fence("", content)
             + "\nReminder: " + UNTRUSTED_RULE + " Answer with the JSON object only.\n";
     }

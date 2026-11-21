@@ -38,7 +38,7 @@ public final class MailRedactor {
             "(?<![\\w+])(?:(?:\\+|00)\\d{1,3}[\\s./-]?\\(?\\d{1,3}\\)?(?:[\\s./-]?\\d{2,4}){2,4}"
                     + "|06[\\s./-]?\\d{1,2}[\\s./-]\\d{3}[\\s./-]\\d{3,4})(?!\\d)");
     private static final Pattern LONG_DIGITS = Pattern.compile("\\d{8,}");
-    private static final Pattern BARE_URL = Pattern.compile("https?://[^\\s<>\"')\\]]+");
+    private static final Pattern BARE_URL = Pattern.compile("(?:https?://|(?<![\\w.@/-])www\\.)[^\\s<>\"')\\]]+");
 
     private MailRedactor() {}
 
@@ -132,7 +132,8 @@ public final class MailRedactor {
 
     private static String hostOf(String url) {
         try {
-            String host = URI.create(url.strip()).getHost();
+            String u = url.strip();
+            String host = URI.create(u.regionMatches(true, 0, "www.", 0, 4) ? "http://" + u : u).getHost();
             return host == null ? null : host.toLowerCase(Locale.ROOT);
         } catch (java.lang.IllegalArgumentException e) {
             return null;
@@ -147,7 +148,11 @@ public final class MailRedactor {
         return t.strip();
     }
 
-    static String mask(String s) {
+    /** Masks identifiers (addresses, cards, IBANs, references, phones, long digit runs); safe for any model-bound string. */
+    public static String mask(String s) {
+        if (s == null) {
+            return "";
+        }
         String t = EMAIL.matcher(s).replaceAll(MASK);
         t = IBAN.matcher(t).replaceAll(MASK);
         t = CARD.matcher(t).replaceAll(MASK);

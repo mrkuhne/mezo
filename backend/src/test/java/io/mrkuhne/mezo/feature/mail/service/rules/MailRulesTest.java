@@ -82,9 +82,11 @@ class MailRulesTest {
     }
 
     @Test
-    void personToPersonMailIsPerson() {
+    void headerlessMailIsLeftToTheModelNotCalledPerson() {
         assertThat(decide(h("anna@example.org", "Szombat?", Map.of()), body("Ráérsz szombaton?")))
-                .isEqualTo(new RuleVerdict.Person());
+                .isEqualTo(new RuleVerdict.NeedsModel(false));
+        assertThat(decide(h("szamla@szolgaltato.example", "Számla", Map.of()), body("Esedékes: 2026.11.25.")))
+                .isEqualTo(new RuleVerdict.NeedsModel(false));
     }
 
     @Test

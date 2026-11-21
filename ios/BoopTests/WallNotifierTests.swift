@@ -273,4 +273,20 @@ private func expiring(_ id: String, _ end: Date, area: String = WallSources.leve
     @Test func aWallRingShowsWhileTheAppIsOpen() {
         #expect(ReminderPresenter.presentation(for: "wall.level-expires-x") == ReminderPresenter.foregroundOptions)
     }
+
+    @Test func clearingOnLogoutCancelsEveryWaitingRequestAndForgetsTheDay() async {
+        let r = FakeRinger(), d = defaults(), n = notifier(r, d), now = at(10, 10)
+        await n.reconcile([expiring("a", at(10, 14)), expiring("b", at(11, 20))], now: now)
+        #expect(Set(r.pending) == ["wall.a", "wall.b"])
+        r.pending.insert("other.keep") // not the wall's
+
+        await n.clear()
+
+        #expect(r.pending == ["other.keep"])
+        #expect(Set(r.cancelled) == ["wall.a", "wall.b"])
+        #expect(n.seenToday(now: now).isEmpty)
+        // the next account on this phone starts with an empty cap: the same card may ring again
+        await notifier(r, d).reconcile([expiring("a", at(10, 14))], now: now)
+        #expect(r.pending.contains("wall.a"))
+    }
 }

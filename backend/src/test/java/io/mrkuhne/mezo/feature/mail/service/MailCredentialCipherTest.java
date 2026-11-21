@@ -54,6 +54,20 @@ class MailCredentialCipherTest {
     }
 
     @Test
+    void knownDummyKeyRefusedWhenStrict() {
+        assertThatThrownBy(() -> new MailCredentialCipher(props(MailCredentialCipher.DEV_DUMMY_KEY), true))
+            .isInstanceOf(SystemRuntimeErrorException.class);
+        // non-strict (dev/test) still accepts it
+        assertThat(new MailCredentialCipher(props(MailCredentialCipher.DEV_DUMMY_KEY), false)).isNotNull();
+    }
+
+    @Test
+    void blankKeyRejected() {
+        assertThatThrownBy(() -> new MailCredentialCipher(props("")))
+            .isInstanceOf(SystemRuntimeErrorException.class);
+    }
+
+    @Test
     void toStringNeverLeaks() {
         Sealed s = cipher.seal("hunter2-secret");
         assertThat(s.toString()).doesNotContain("hunter2").doesNotContain("secret");

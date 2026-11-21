@@ -147,6 +147,25 @@ final class WallNotifier {
         return n
     }
 
+    /// Signed out (or another account): the wall's waiting requests are the previous user's, so they go, and so does the
+    /// day's bookkeeping. Queued after any running reconcile, so a late reconcile cannot bring them back.
+    static func signedOut(userKey: String) {
+        let n = shared.removeValue(forKey: userKey) ?? WallNotifier(userKey: userKey)
+        Task { await n.clear() }
+    }
+
+    func clear() async {
+        let previous = tail
+        let run = Task { @MainActor in
+            await previous?.value
+            let ids = await self.center.pendingIds(withPrefix: Self.idPrefix)
+            if !ids.isEmpty { self.center.cancel(ids: ids) }
+            self.defaults.removeObject(forKey: self.stateKey)
+        }
+        tail = run
+        await run.value
+    }
+
     /// The previous run: reconciles are serialised, so two overlapping asks never plan from the same stale state.
     private var tail: Task<Void, Never>?
 

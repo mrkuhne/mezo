@@ -470,10 +470,10 @@ mezo:
     lifegoal-ai-propose:
       enabled: true
   # Boop Levél (mezo-r36n9.38): the morning post (MailProperties). Off by default; prod turns it on at deploy.
-  # secret-key is a DEV-ONLY dummy; production supplies MEZO_MAIL_SECRET_KEY (base64, 32 bytes).
+  # secret-key has NO default: enabled without MEZO_MAIL_SECRET_KEY (base64, 32 bytes) fails at startup.
   mail:
     enabled: false
-    secret-key: ${MEZO_MAIL_SECRET_KEY:Ym9vcC1kZXYtb25seS1tYWlsLWtleS0zMmJ5dGVzISE=}
+    secret-key: ${MEZO_MAIL_SECRET_KEY:}
     cron: "0 0 8,15 * * *"
     zone: Europe/Budapest
     daily-usd-cap: 0.15

@@ -12,6 +12,8 @@ import io.mrkuhne.mezo.feature.mail.service.classify.MailOutputValidator;
 import io.mrkuhne.mezo.feature.mail.service.classify.ScoredDeal;
 import io.mrkuhne.mezo.feature.mail.service.classify.ScorePrompt;
 import io.mrkuhne.mezo.feature.mail.service.classify.ScreenPrompt;
+import io.mrkuhne.mezo.feature.mail.service.classify.ScreenVerdict;
+import io.mrkuhne.mezo.feature.mail.service.redact.MailRedactor;
 import io.mrkuhne.mezo.feature.mail.service.redact.RedactedMail;
 import io.mrkuhne.mezo.feature.mail.service.rules.Group;
 import io.mrkuhne.mezo.feature.mail.service.rules.MailHeaders;
@@ -72,6 +74,7 @@ public class MailDigestService {
     static final String CAT_PARCEL = "csomag";
     static final String CAT_DEAL = "akció";
     static final String CAT_DEADLINE = "határidő";
+    static final String CAT_SUSPECT = "Gyanús";
     static final String SENSITIVE = "sensitive";
 
     private static final Logger LOG = LoggerFactory.getLogger(MailDigestService.class);
@@ -88,7 +91,7 @@ public class MailDigestService {
 
     /** One message to turn into a card: from this run's intake, or an earlier one a crash left behind. */
     private record Work(UUID messageId, MailHeaders headers, RedactedMail redacted, RuleVerdict verdict,
-                        Instant receivedAt, boolean fromStore) {
+                        Instant receivedAt, boolean fromStore, boolean spam) {
     }
 
     /** A deal or model-read deadline waiting for its score and/or screen. */
@@ -193,7 +196,7 @@ public class MailDigestService {
         for (IntakedMail m : result.mails()) {
             MailMessageEntity e = stored.get(m.messageId());
             work.add(new Work(m.messageId(), m.headers(), m.redacted(), m.verdict(),
-                e == null ? now : e.getReceivedAt(), false));
+                e == null ? now : e.getReceivedAt(), false, e != null && MailIntakeService.SPAM_FOLDER.equals(e.getFolder())));
             seen.add(m.messageId());
         }
         try {
@@ -218,7 +221,11 @@ public class MailDigestService {
         RedactedMail redacted = new RedactedMail(body, List.of(), List.of());
         RuleVerdict verdict = e.isSensitive() ? new RuleVerdict.Sensitive("stored")
             : MailRules.decide(headers, body, redacted, rules);
-        return new Work(e.getId(), headers, redacted, verdict, e.getReceivedAt(), true);
+        if (verdict instanceof RuleVerdict.NeedsModel) {
+            verdict = new RuleVerdict.Person(); // recovery is rules-only and the bulk headers are gone: as before
+        }
+        return new Work(e.getId(), headers, redacted, verdict, e.getReceivedAt(), true,
+            MailIntakeService.SPAM_FOLDER.equals(e.getFolder()));
     }
 
     // ---- one mail -------------------------------------------------------------------------------------------
@@ -233,7 +240,7 @@ public class MailDigestService {
             }
             case RuleVerdict.Structured s -> saveStructured(pass, w, s, pending);
             case RuleVerdict.Rest r -> save(rest(pass, w, "rest", clip(r.category(), 24), null, null));
-            case RuleVerdict.Person p -> save(person(pass, w, null));
+            case RuleVerdict.Person p -> save(personOrSuspect(pass, w, null)); // spam folder: only when screened clean
             case RuleVerdict.NeedsModel nm -> saveModelled(pass, c, w, nm, pending);
         }
     }
@@ -272,6 +279,26 @@ public class MailDigestService {
     private NewItem person(Pass pass, Work w, ClassifiedMail model) {
         return rest(pass, w, "person", CAT_PERSON, model == null ? null : model.title(),
             model == null ? null : model.summary());
+    }
+
+    /**
+     * A person-looking mail. From the spam folder it may be shown among people only when the screen clears it
+     * (phishing loves to look like a person); anything else (flagged, unknown, no model, cap) is filed as "Gyanús".
+     */
+    private NewItem personOrSuspect(Pass pass, Work w, ClassifiedMail model) {
+        if (!w.spam()) {
+            return person(pass, w, model);
+        }
+        if (pass.canCall()) {
+            Optional<String> raw = pass.model.screen(ScreenPrompt.SYSTEM_PROMPT,
+                ScreenPrompt.userMessage(w.headers().subject(), w.redacted().text()));
+            if (raw.isEmpty()) {
+                pass.failed();
+            } else if (MailOutputValidator.screen(raw.get()) == ScreenVerdict.CLEAN) {
+                return person(pass, w, model);
+            }
+        }
+        return rest(pass, w, "rest", CAT_SUSPECT, null, null);
     }
 
     // ---- JSON-LD --------------------------------------------------------------------------------------------
@@ -403,7 +430,7 @@ public class MailDigestService {
     private void saveModelled(Pass pass, Clock c, Work w, RuleVerdict.NeedsModel nm, List<Pending> pending) {
         Optional<ClassifiedMail> classified = classify(pass, c, w);
         if (classified.isEmpty()) {
-            save(nm.bulk() ? rest(pass, w, "rest", FALLBACK_REST, null, null) : person(pass, w, null));
+            save(nm.bulk() ? rest(pass, w, "rest", FALLBACK_REST, null, null) : personOrSuspect(pass, w, null));
             return;
         }
         ClassifiedMail m = classified.get();
@@ -436,14 +463,14 @@ public class MailDigestService {
                         m.parcelState() == null ? ParcelState.IN_TRANSIT : m.parcelState(), "model"));
                 }
             }
-            case PERSON -> save(person(pass, w, m));
+            case PERSON -> save(personOrSuspect(pass, w, m));
             default -> save(rest(pass, w, "rest", category, title, summary));
         }
     }
 
     private Pending pending(Saved saved, Work w, String grp, String title, String summary) {
-        return new Pending(saved.id(), grp, w.headers().from(), w.headers().subject(), w.redacted().text(),
-            title == null ? "" : title, summary);
+        return new Pending(saved.id(), grp, w.headers().from(), MailRedactor.mask(w.headers().subject()),
+            w.redacted().text(), title == null ? "" : MailRedactor.mask(title), MailRedactor.mask(summary));
     }
 
     private Optional<ClassifiedMail> classify(Pass pass, Clock c, Work w) {
@@ -456,8 +483,11 @@ public class MailDigestService {
             pass.failed();
             return Optional.empty();
         }
-        // the text checked is exactly the redacted text that was put into the prompt
-        Optional<ClassifiedMail> out = MailOutputValidator.classified(raw.get(), w.redacted(), pass.zone, c);
+        // the text checked is exactly what was put into the prompt: masked subject + redacted body
+        // ...plus the masked subject, which was put into the prompt too (a due date may be stated only there)
+        RedactedMail seen = new RedactedMail(MailRedactor.mask(w.headers().subject()) + "\n" + w.redacted().text(),
+            w.redacted().hosts(), w.redacted().jsonLd());
+        Optional<ClassifiedMail> out = MailOutputValidator.classified(raw.get(), seen, pass.zone, c);
         out.ifPresent(x -> pass.classified++);
         return out;
     }

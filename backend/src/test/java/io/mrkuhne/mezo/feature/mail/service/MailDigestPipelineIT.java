@@ -837,4 +837,130 @@ class MailDigestPipelineIT extends AbstractIntegrationTest {
         assertThat(digest().deadlines()).hasSize(1);
         assertThat(digest().deadlines().get(0).notifiable()).isFalse();
     }
+
+    // ---- final whole-branch review ------------------------------------------------------------------------------
+
+    private static String personJson() {
+        return "{\"group\":\"person\",\"category\":\"személyes\",\"title\":\"Levél\",\"summary\":\"Egy ember írt.\","
+            + "\"dueAt\":null,\"validUntil\":null,\"amount\":null,\"currency\":null,\"carrier\":null,"
+            + "\"parcelState\":null}";
+    }
+
+    private void inSpamFolder(MailMessageEntity m) {
+        jdbc.update("update mail_message set folder = '[Gmail]/Spam' where id = ?", m.getId());
+    }
+
+    @Test
+    void subjectIdentifiersNeverReachAnyPrompt() {
+        String subject = "Rendelésszám: AB12345 visszaigazolás minta.nev@example.org";
+        List<String> prompts = new CopyOnWriteArrayList<>();
+        llm.classify = user -> {
+            prompts.add(user);
+            return Optional.of(dealJson("Cipő akció", null));
+        };
+        llm.score = user -> {
+            prompts.add(user);
+            return Optional.of(scoresFor(user, 9));
+        };
+        llm.screen = user -> {
+            prompts.add(user);
+            return Optional.of("{\"flagged\":false,\"reason\":\"\"}");
+        };
+        MailMessageEntity a = message("akcio@boltok.example.test", "Példa Küldő", subject, "Kitalált akció.",
+            clock.instant().minusSeconds(60), false);
+        // a JSON-LD deal without a name: its title falls back to the subject
+        MailMessageEntity b = message("akcio@masik.example.test", "Példa Küldő", subject, "Kitalált akció kettő.",
+            clock.instant().minusSeconds(30), false);
+        MailHeaders hb = new MailHeaders(b.getFromAddr(), "", subject, Map.of());
+
+        process(needsModel(a, true), new IntakedMail(b.getId(), hb, "x", new RedactedMail("x", List.of(), List.of()),
+            new RuleVerdict.Structured(io.mrkuhne.mezo.feature.mail.service.rules.Group.DEAL,
+                Map.of("price", "1000", "priceCurrency", "HUF"))));
+
+        assertThat(prompts).hasSizeGreaterThanOrEqualTo(3); // classify, score, screen all captured
+        assertThat(prompts).noneMatch(p -> p.contains("AB12345") || p.contains("minta.nev"));
+        assertThat(prompts).anyMatch(p -> p.contains("[azonosító]"));
+    }
+
+    @Test
+    void aDueDateStatedOnlyInTheSubjectIsKept() {
+        llm.classify = user -> Optional.of("{\"group\":\"deadline\",\"category\":\"számla\",\"title\":\"Számla\","
+            + "\"summary\":\"Fizetendő.\",\"dueAt\":\"2026-11-25\",\"validUntil\":null,\"amount\":null,"
+            + "\"currency\":null,\"carrier\":null,\"parcelState\":null}");
+        llm.screen = user -> Optional.of("{\"flagged\":false,\"reason\":\"\"}");
+        MailMessageEntity m = message("hir@lapok.example.test", "Példa Küldő", "Számla esedékes: 2026.11.25",
+            "Kérjük, rendezd.", clock.instant().minusSeconds(60), false);
+
+        process(needsModel(m, true));
+
+        assertThat(dbItem(m.getId()).getGrp()).isEqualTo("deadline");
+        assertThat(dbItem(m.getId()).getDueAt()).isNotNull();
+    }
+
+    @Test
+    void aHeaderlessBillGoesThroughTheRealRulesToTheModel() {
+        llm.classify = user -> Optional.of("{\"group\":\"deadline\",\"category\":\"számla\",\"title\":\"Áramszámla\","
+            + "\"summary\":\"Fizetendő.\",\"dueAt\":\"2026-11-25\",\"validUntil\":null,\"amount\":null,"
+            + "\"currency\":null,\"carrier\":null,\"parcelState\":null}");
+        llm.screen = user -> Optional.of("{\"flagged\":false,\"reason\":\"\"}");
+        String body = "Az áramszámla esedékes: 2026.11.25.";
+        MailMessageEntity m = message("szamla@szolgaltato.example", "Szolgáltató", "Számla", body,
+            clock.instant().minusSeconds(60), false);
+
+        process(intaked(m, "Számla", body, List.of())); // the REAL rules decide, not a hand-built NeedsModel
+
+        MailItemEntity item = dbItem(m.getId());
+        assertThat(item.getGrp()).isEqualTo("deadline");
+        assertThat(item.getSource()).isEqualTo("model");
+    }
+
+    @Test
+    void aSpamFolderPersonLookingMailIsShownAmongPeopleOnlyWhenScreenedClean() {
+        llm.classify = user -> Optional.of(personJson());
+        llm.screen = user -> Optional.of(user.contains("GYANUS")
+            ? "{\"flagged\":true,\"reason\":\"Adathalászat.\"}" : "{\"flagged\":false,\"reason\":\"\"}");
+        MailMessageEntity bad = message("anna@gmail.example", "Anna", "Szia GYANUS", "Kattints ide GYANUS.",
+            clock.instant().minusSeconds(60), false);
+        MailMessageEntity good = message("bela@gmail.example", "Béla", "Szia", "Találkozzunk holnap.",
+            clock.instant().minusSeconds(30), false);
+        inSpamFolder(bad);
+        inSpamFolder(good);
+
+        process(intaked(bad, "Szia GYANUS", "Kattints ide GYANUS.", List.of()),
+            intaked(good, "Szia", "Találkozzunk holnap.", List.of()));
+
+        MailItemEntity b = dbItem(bad.getId());
+        assertThat(b.getGrp()).isEqualTo("rest");
+        assertThat(b.getCategory()).isEqualTo("Gyanús");
+        assertThat(dbItem(good.getId()).getGrp()).isEqualTo("person");
+    }
+
+    @Test
+    void aSpamFolderMailWithoutAModelIsSuspectNotPerson() {
+        llm.classify = user -> Optional.empty(); // model failing: cannot be screened
+        MailMessageEntity m = message("anna@gmail.example", "Anna", "Szia", "Szia, hogy vagy?",
+            clock.instant().minusSeconds(60), false);
+        inSpamFolder(m);
+
+        process(intaked(m, "Szia", "Szia, hogy vagy?", List.of()));
+
+        assertThat(dbItem(m.getId()).getGrp()).isEqualTo("rest");
+        assertThat(dbItem(m.getId()).getCategory()).isEqualTo("Gyanús");
+    }
+
+    @Test
+    void rulesOnlyFollowsTheLatestRunOfTheDay() {
+        llm.classify = user -> Optional.empty(); // the morning: the model fails
+        MailMessageEntity a = message("hir@lapok.example.test", "Heti hírlevél", "Kitalált hírek egy.");
+        process(needsModel(a, true));
+        assertThat(digest().rulesOnly()).isTrue();
+
+        clock.set("2026-11-21T14:00:00Z"); // the 15:00 run is clean
+        llm.classify = null;
+        MailMessageEntity b = message("hir@masik.example.test", "Másik hírlevél", "Kitalált hírek kettő.");
+        process(needsModel(b, true));
+
+        assertThat(digest().rulesOnly()).isFalse();
+        assertThat(digest().rulesOnlyReason()).isNull();
+    }
 }

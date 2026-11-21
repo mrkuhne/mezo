@@ -11,6 +11,8 @@ import java.util.Base64;
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -37,7 +39,19 @@ public class MailCredentialCipher {
     private final SecretKeySpec key;
     private final SecureRandom random = new SecureRandom();
 
+    /** The well-known dev/test key; refused outright when {@code mezo.auth.strict} (production). */
+    public static final String DEV_DUMMY_KEY = "Ym9vcC1kZXYtb25seS1tYWlsLWtleS0zMmJ5dGVzISE=";
+
     public MailCredentialCipher(MailProperties properties) {
+        this(properties, false);
+    }
+
+    @Autowired
+    public MailCredentialCipher(MailProperties properties, @Value("${mezo.auth.strict:false}") boolean strict) {
+        if (properties.secretKey() == null || properties.secretKey().isBlank()
+            || (strict && DEV_DUMMY_KEY.equals(properties.secretKey()))) {
+            throw unreadable();
+        }
         byte[] raw;
         try {
             raw = Base64.getDecoder().decode(properties.secretKey());

@@ -94,4 +94,17 @@ class MailRedactorTest {
         RedactedMail r = html("<p>Tom &amp; Jerry, 5 &lt; 6</p>");
         assertThat(r.text()).isEqualTo("Tom & Jerry, 5 < 6");
     }
+
+    @Test
+    void schemelessWwwUrlReducedToBareHost() {
+        String t = MailRedactor.redact("Nézd meg: www.shop.example/akcio?token=abc123&u=77 még ma.", null, 6000).text();
+        assertThat(t).isEqualTo("Nézd meg: www.shop.example még ma.");
+        assertThat(t).doesNotContain("token", "abc123", "akcio");
+    }
+
+    @Test
+    void publicMaskMasksSubjectIdentifiers() {
+        String t = MailRedactor.mask("Rendelésszám: AB12345 minta.nev@example.org");
+        assertThat(t).doesNotContain("AB12345", "minta.nev");
+    }
 }

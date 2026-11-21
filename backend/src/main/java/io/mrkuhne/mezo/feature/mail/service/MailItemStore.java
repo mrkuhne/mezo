@@ -25,8 +25,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * The writes of the digest pipeline (mezo-r36n9.39), each one short transaction — every model call happens BEFORE or
- * AFTER, never inside. A model-sourced deal or deadline is stored {@code flagged} until its screen answers CLEAN
- * (fail-closed: the {@code screen} column starts at {@code none}; only {@code clean} may ever notify).
+ * AFTER, never inside. A model-sourced deal or deadline is stored with screen {@code none} until its screen answers
+ * (fail-closed: only {@code clean} may ever notify; {@code flagged} is shown with a warning).
  */
 @Service
 @RequiredArgsConstructor

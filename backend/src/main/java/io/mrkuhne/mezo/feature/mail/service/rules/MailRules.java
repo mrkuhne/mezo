@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
 
 /**
  * Decides, without any model, what most mail is (spec §5.4 step 1). Order: sensitive (owner or seed) -> login
- * codes -> owner "always" -> owner silent -> carrier -> JSON-LD -> known rest senders -> person -> needs model.
+ * codes -> owner "always" -> owner silent -> carrier -> JSON-LD -> known rest senders -> needs model (bulk or not; owner "always" is the only rule that says person).
  */
 public final class MailRules {
 
@@ -61,10 +61,9 @@ public final class MailRules {
         if (rest.isPresent()) {
             return new RuleVerdict.Rest(rest.get());
         }
-        if (!BulkDetector.isBulk(h)) {
-            return new RuleVerdict.Person();
-        }
-        return new RuleVerdict.NeedsModel(true);
+        // no header marks it bulk: still asked of the model (a header-less bill, "info@" notice) - the model has a
+        // person group, and with no model (or at the cap) the digest falls back to person for non-bulk mail
+        return new RuleVerdict.NeedsModel(BulkDetector.isBulk(h));
     }
 
     /**

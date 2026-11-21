@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.mail.service.classify;
 
+import io.mrkuhne.mezo.feature.mail.service.redact.MailRedactor;
 /**
  * The per-mail classify-and-extract prompt (Boop Levél, mezo-r36n9.38, spec §5.4 step 2) — Java constants (ADR 0012)
  * plus a builder. The system prompt is stable; the user message carries one mail, fenced as untrusted data:
@@ -55,7 +56,7 @@ public final class ClassifyPrompt {
 
     /** The user message for one mail: its sender domain, subject and redacted body text, fenced as data. */
     public static String userMessage(String subject, String senderDomain, String bodyText) {
-        String content = "Feladó: " + MailFence.oneLine(senderDomain, 80) + " / Tárgy: " + MailFence.oneLine(subject, 200)
+        String content = "Feladó: " + MailFence.oneLine(senderDomain, 80) + " / Tárgy: " + MailFence.oneLine(MailRedactor.mask(subject), 200)
             + " / Szöveg: " + MailFence.sanitizeUntrusted(bodyText);
         return "Sorold be ezt a levelet.\n" + UNTRUSTED_RULE + "\n\n" + MailFence.fence("", content)
             + "\nReminder: " + UNTRUSTED_RULE + " Answer with the JSON object only.\n";

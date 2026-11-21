@@ -12,7 +12,8 @@ import org.springframework.validation.annotation.Validated;
  * Boop Levél (the morning post) tunables (mezo-r36n9.38).
  *
  * @param secretKey                 base64 of the 32-byte AES key sealing the mailbox app password; validated by
- *                                  {@code MailCredentialCipher} at startup. Never logged.
+ *                                  {@code MailCredentialCipher} at startup (blank fails an enabled mail feature;
+ *                                  it stays blank, and unused, while the feature is off). Never logged.
  * @param cron                      when the post runs (08:00 and 15:00).
  * @param zone                      the cron's zone and the "day" of the LLM cap.
  * @param dailyUsdCap               mail LLM spend cap per Budapest day (about 3 EUR a month).
@@ -31,7 +32,7 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties(prefix = "mezo.mail")
 public record MailProperties(
-        @NotBlank String secretKey,
+        String secretKey,
         @DefaultValue("0 0 8,15 * * *") @NotBlank String cron,
         @DefaultValue("Europe/Budapest") @NotBlank String zone,
         @DefaultValue("0.15") @DecimalMin("0.0") double dailyUsdCap,

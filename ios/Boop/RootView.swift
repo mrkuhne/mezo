@@ -75,6 +75,8 @@ struct RootView: View {
         case .needsOnboarding(let m), .ready(let m): me = m
         default: me = nil
         }
+        // The wall's waiting notifications belong to the account that made them.
+        if let old = ritmus?.userKey, link?.userId != me?.id { WallNotifier.signedOut(userKey: old) }
         // Signed out, or another user: the old daily loop stops sending at once (its queue stays on disk for that user;
         // the session's client already carries another token, or none).
         guard let me else {
