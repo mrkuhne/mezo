@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.feature.boop.port.BoopCapacityPort;
 import io.mrkuhne.mezo.feature.capacity.config.CapacityProperties;
 import java.time.LocalDate;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Component;
  * brief's words. Deliberately not
  * {@code @Transactional} (the day read may call the scoring model).
  */
+@Slf4j
 @Component
 public class BoopCapacityAdapter implements BoopCapacityPort {
 
@@ -32,7 +34,12 @@ public class BoopCapacityAdapter implements BoopCapacityPort {
             return null;
         }
         CapacityDay d = days.day(owner, date);
-        return new View(verdict(d.verdict()), d.ratio(), d.tanulo(), d.labelledDays(), d.calendarKnown(),
+        String verdict = verdict(d.verdict());
+        if (verdict == null) {
+            log.warn("Boop capacity: unexpected verdict '{}', the brief goes without the capacity block", d.verdict());
+            return null;
+        }
+        return new View(verdict, d.ratio(), d.tanulo(), d.labelledDays(), d.calendarKnown(),
             d.demand().units(), d.demand().hourly19(),
             d.demand().items().stream()
                 .map(i -> new Item(i.label(), i.kind(), i.start(), level(i.units(), i.restores()))).toList(),
@@ -42,7 +49,10 @@ public class BoopCapacityAdapter implements BoopCapacityPort {
     }
 
     static String verdict(String hu) {
-        return "túl sok".equals(hu) ? "tulSok" : hu;
+        if ("túl sok".equals(hu)) {
+            return "tulSok";
+        }
+        return "laza".equals(hu) || "rendben".equals(hu) || "szoros".equals(hu) ? hu : null;
     }
 
     static String level(double units, boolean restores) {

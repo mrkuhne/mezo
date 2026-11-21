@@ -59,13 +59,16 @@ class BoopBriefCapacityIT extends AbstractIntegrationTest {
     @Test
     void briefWithoutCapacityStillServes() {
         UUID user = databasePopulator.populateUser("brief-capacity-fail@test.local");
-        doThrow(new IllegalStateException("capacity down")).when(adapter).read(any(), any());
+        try {
+            doThrow(new IllegalStateException("capacity down")).when(adapter).read(any(), any());
 
-        BoopBrief b = service.get(user, DAY, NOW);
+            BoopBrief b = service.get(user, DAY, NOW);
 
-        assertThat(b.getCapacity()).isNull();
-        assertThat(b.getMetrics()).hasSize(5);
-        assertThat(b.getEnergy().getHourly()).hasSize(19);
-        Mockito.reset(adapter);
+            assertThat(b.getCapacity()).isNull();
+            assertThat(b.getMetrics()).hasSize(5);
+            assertThat(b.getEnergy().getHourly()).hasSize(19);
+        } finally {
+            Mockito.reset(adapter);
+        }
     }
 }

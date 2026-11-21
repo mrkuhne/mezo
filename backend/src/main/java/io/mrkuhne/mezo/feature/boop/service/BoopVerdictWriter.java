@@ -182,7 +182,29 @@ public class BoopVerdictWriter {
             text(answer.get("tonightTip"), fallback.tonightTip()),
             text(answer.get("nextMealTip"), fallback.nextMealTip()),
             fallback.conflict(),
-            text(answer.get("capacityReason"), fallback.capacityReason()));
+            acceptReason(str(answer.get("capacityReason")), fallback.capacityReason()));
+    }
+
+    private static final java.util.regex.Pattern DIGITS = java.util.regex.Pattern.compile("\\d+");
+
+    /**
+     * The model may rephrase the capacity reason but never bring a number: it is accepted only if every digit run
+     * in it also appears in the rule text {@code facts}; otherwise (or when blank) the rule text stays.
+     */
+    static String acceptReason(String modelReason, String facts) {
+        if (modelReason == null || modelReason.isBlank()) {
+            return facts;
+        }
+        Set<String> allowed = new java.util.HashSet<>();
+        if (facts != null) {
+            DIGITS.matcher(facts).results().forEach(m -> allowed.add(m.group()));
+        }
+        boolean invented = DIGITS.matcher(modelReason).results().anyMatch(m -> !allowed.contains(m.group()));
+        if (invented) {
+            log.warn("Boop brief capacity reason had a number the rules did not give, using the rule reason");
+            return facts;
+        }
+        return modelReason;
     }
 
     /** The JSON object inside the answer, or null. */
