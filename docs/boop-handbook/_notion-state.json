@@ -224,7 +224,7 @@
     },
     "jegyek:mezo-r36n9.17": {
       "page_id": "4168968e-752b-81d9-9448-c7846b8b3377",
-      "hash": "49765778d6ef"
+      "hash": "7edde5178f2a"
     },
     "jegyek:mezo-r36n9.18": {
       "page_id": "4168968e-752b-81a2-adff-e71b81a0e3d3",
@@ -516,7 +516,7 @@
     },
     "kezikonyv:02-ma/elo-fal": {
       "page_id": "41a8968e-752b-8171-9ec2-f9a141185bf9",
-      "hash": "7c79471927c5"
+      "hash": "ef9db0468868"
     },
     "kezikonyv:02-ma/este-keret": {
       "page_id": "4168968e-752b-812a-b752-e42df8ffcbfd",
@@ -532,23 +532,23 @@
     },
     "kezikonyv:02-ma/napkozben-idovonal": {
       "page_id": "4168968e-752b-81e1-b499-df1b77032226",
-      "hash": "c3b4d2c7e494"
+      "hash": "4c5e40d1cc86"
     },
     "kezikonyv:02-ma/reggeli-itelet": {
       "page_id": "4168968e-752b-8167-8daf-d7efe8c867b5",
-      "hash": "7c72cd23b4ca"
+      "hash": "80d004c77450"
     },
     "kezikonyv:02-ma/reggeli-terv": {
       "page_id": "4168968e-752b-81aa-89c9-db4df6156dba",
-      "hash": "e09371a4c16f"
+      "hash": "70a8ab417bcb"
     },
     "kezikonyv:02-ma/reszletes-lapok": {
       "page_id": "4168968e-752b-81c5-a750-e28777cbca77",
-      "hash": "069ad56019d1"
+      "hash": "ab464705dedc"
     },
     "kezikonyv:02-ma/szobak": {
       "page_id": "4168968e-752b-816f-96ea-fccbf8410c7c",
-      "hash": "db955b5d8460"
+      "hash": "8b8775af52ca"
     },
     "kezikonyv:03-naplo/00-attekintes": {
       "page_id": "4168968e-752b-816a-a192-d4caddbb782e",
@@ -600,11 +600,11 @@
     },
     "kezikonyv:04-terv/00-attekintes": {
       "page_id": "4168968e-752b-81c6-a15f-d115f1a8c6e1",
-      "hash": "60ef77d1b81c"
+      "hash": "59c99b54a981"
     },
     "kezikonyv:04-terv/01-terv-keret": {
       "page_id": "4168968e-752b-8197-a22b-c72ced5647ab",
-      "hash": "8ea10bfe49dc"
+      "hash": "f745d5450e92"
     },
     "kezikonyv:04-terv/02-sulycel-celmotor": {
       "page_id": "4168968e-752b-817c-a592-ecb076252fc5",
@@ -624,7 +624,7 @@
     },
     "kezikonyv:04-terv/06-terv-csomag": {
       "page_id": "4168968e-752b-81c2-b09d-e11a0ba276cf",
-      "hash": "f3d8e4e2bc6f"
+      "hash": "298f8c747cab"
     },
     "kezikonyv:04-terv/07-bevasarlolista": {
       "page_id": "4168968e-752b-81c4-ab54-c295e5a48d60",
@@ -684,7 +684,7 @@
     },
     "kezikonyv:06-etel/04-napi-keret": {
       "page_id": "4168968e-752b-8109-800f-e787a78acfe6",
-      "hash": "a2f331fdb982"
+      "hash": "b1cd327a5280"
     },
     "kezikonyv:06-etel/05-receptek": {
       "page_id": "4168968e-752b-816b-af92-d893e20f59e2",
@@ -2657,6 +2657,34 @@
     "funkciok:penz-regi-app-import": {
       "page_id": "41e8968e-752b-812e-b40b-c2da36011d7d",
       "hash": "825ed45770b7"
+    },
+    "dontesek:d-2026-11-21-kapacitas-jelek": {
+      "page_id": "41f8968e-752b-81bc-9572-e6df3d58d7d7",
+      "hash": "4c478c39d6e1"
+    },
+    "dontesek:d-2026-11-21-atrendezes": {
+      "page_id": "41f8968e-752b-81f0-93d6-f120db6876f4",
+      "hash": "6f30a783e882"
+    },
+    "dontesek:d-2026-11-21-naptar-teendo": {
+      "page_id": "41f8968e-752b-81dc-9ea9-e5ed0d42d9f5",
+      "hash": "e776c5e9f9b9"
+    },
+    "dontesek:d-2026-11-21-naptar-mi-felismerheti": {
+      "page_id": "41f8968e-752b-8187-aafd-cd927f064619",
+      "hash": "66034b625011"
+    },
+    "dontesek:d-2026-11-21-mozgatasi-naplo": {
+      "page_id": "41f8968e-752b-8125-9094-d1135811bee3",
+      "hash": "1b009f22cc41"
+    },
+    "dontesek:d-2026-11-21-edzes-csak-ures-napra": {
+      "page_id": "41f8968e-752b-8146-a729-f4b810b15ba1",
+      "hash": "d846a17ae74c"
+    },
+    "kezikonyv:02-ma/napi-kapacitas-atrendezes": {
+      "page_id": "41f8968e-752b-81a6-957a-dabdf4fea4e9",
+      "hash": "1e7824946d0d"
     }
   }
 }

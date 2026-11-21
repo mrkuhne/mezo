@@ -176,7 +176,8 @@
       "Ma",
       "AI és memória"
     ],
-    "mit_kapsz": "A naptár terhelése és a tested állapota alapján a Boop megmondja, belefér-e a nap, és napközben javasol, ha változik valami."
+    "mit_kapsz": "Reggel egy mondatban megtudod, belefér-e a nap. Egy új Átrendezés oldalon Boop megmutatja, mit tenne át a héten (edzés, alvás, étel, programok), minden kereszthatással; a jóváhagyásod után az appban mindenhol átkerül, de az Évad terve nem változik. Az áttételekből tanul, és előre szól, mielőtt túlvállalnád magad.",
+    "munkamenet": "b6-b7-epites-5d50e3"
   },
   "mezo-r36n9.18": {
     "cim": "B8 Az egy AI — minden adatot ismerő emlékezet",
