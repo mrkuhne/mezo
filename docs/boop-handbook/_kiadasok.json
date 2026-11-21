@@ -805,5 +805,20 @@
       "mezo-r36n9.17"
     ],
     "mi_valtozott": "A Ma oldal „Mai terved” kártyájában reggel ott a nap szava és az oka (például: „Szoros, de belefér: rövid éjszaka, 4 megbeszélés délelőtt”). Rákoppintva a napod oldalán látod, mennyit bírsz ma, mi visz el energiát (minden programnál: szellemi, emberek közti vagy fizikai, és mennyire), és miből gazdálkodsz (alvás, pulzus, tegnapi edzés és evés, bejelentkezés). Egy programot megjelölhetsz: merít, semleges vagy feltölt — ez újraindítás után is látszik, és a becslés ehhez igazodik. Az Évad oldalon a „Hogy megy” alatt hétről hétre látod a terhedet a pihenésedhez mérve, és hogy az elmúlt 4 hétben hány nap volt túl sok. Boop beszélgetés közben is tudja, milyen napod lesz. Amíg kevés az adat, kiírja: „még tanulom, mennyit bírsz”."
+  },
+  "004f571c1": {
+    "cim": "Levél: a reggeli posta",
+    "datum": "2026-11-21",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app",
+      "Háttérrendszer"
+    ],
+    "szakasz": "Életpanel",
+    "jegyek": [
+      "mezo-r36n9.38",
+      "mezo-r36n9.39"
+    ],
+    "mi_valtozott": "Megnyílt a Levél terület. A Gmailed és az iCloudod egy külön, csak Boopnak szánt Gmail-fiókba továbbít, amit Boop reggel 8-kor és délután 3-kor átnéz. A posta négy részre bomlik: határidős (számlák, programok, foglalások), csomagok (hol tartanak), akciók és lehetőségek 1–10 ponttal, és a többi összecsukva. Embertől jött levél és a bank mindig előre kerül — bankos, hivatali, egészségügyi levelet gép soha nem olvas. Az „érdekel / nem érdekel” gombokból tanul. A kezdőlapon megjelenik a Levél kártyája, és a telefon szól, ha egy jó akció vagy egy számla holnap lejár (naponta legfeljebb kétszer — ez az Étel és az Edzés lejáró dolgaira is érvényes mostantól). Az árellenőrzés és a figyelt termékek a következő lépésben jönnek."
   }
 }
