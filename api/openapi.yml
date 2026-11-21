@@ -20364,6 +20364,15 @@ components:
           enum:
             - active
             - planned
+        yearBlockId:
+          type: string
+          format: uuid
+          nullable: true
+          description: >-
+            The Éves terv block this run starts (mezo-r36n9.113). Optional; an
+            id that is not a planned, unlinked block of the active plan falls
+            back to the ±14-day rule (nearest planned block), and never fails
+            the start.
     MesocycleSettingsUpdateRequest:
       type: object
       description: >-

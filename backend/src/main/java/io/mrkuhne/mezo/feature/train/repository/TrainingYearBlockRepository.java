@@ -12,5 +12,6 @@ public interface TrainingYearBlockRepository extends JpaRepository<TrainingYearB
 
     Optional<TrainingYearBlockEntity> findByIdAndCreatedByAndDeletedFalse(UUID id, UUID createdBy);
 
-    Optional<TrainingYearBlockEntity> findByCreatedByAndMesocycleIdAndDeletedFalse(UUID createdBy, UUID mesocycleId);
+    /** Every block holding the mesocycle — a list, because the index is not unique (callers keep it to one). */
+    List<TrainingYearBlockEntity> findByCreatedByAndMesocycleIdAndDeletedFalse(UUID createdBy, UUID mesocycleId);
 }

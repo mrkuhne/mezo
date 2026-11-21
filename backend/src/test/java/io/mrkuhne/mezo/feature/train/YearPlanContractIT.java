@@ -346,6 +346,26 @@ class YearPlanContractIT extends ApiIntegrationTest {
 
         assertThat(archived.getStatus()).isEqualTo(YearPlan.StatusEnum.ARCHIVED);
         getForBody(PLANS + "/active", auth, HttpStatus.NOT_FOUND, String.class);
+        // stamped from the injected clock, not the wall clock
+        assertThat(jdbc.queryForObject("select archived_at from training_year_plan where id = ?",
+            java.sql.Timestamp.class, plan.getId()).toInstant())
+            .isEqualTo(TODAY.atTime(9, 0).atZone(BUD).toInstant());
+    }
+
+    @Test
+    void anotherUserCannotPatchOrArchive() {
+        owner();
+        HttpHeaders auth = ownerAuthHeaders();
+        YearPlan plan = create(auth);
+        HttpHeaders stranger = registerUser("Idegen").headers();
+
+        patchForBody(BLOCKS + at(plan, 1).getId(), Map.of("skip", true), stranger, HttpStatus.NOT_FOUND,
+            String.class);
+        postForBody(PLANS + "/" + plan.getId() + "/archive", null, stranger, HttpStatus.NOT_FOUND, String.class);
+
+        YearPlan untouched = active(auth);
+        assertThat(untouched.getStatus()).isEqualTo(YearPlan.StatusEnum.ACTIVE);
+        assertThat(at(untouched, 1).getStatus()).isEqualTo(YearBlock.StatusEnum.PLANNED);
     }
 
     /** An active 6-week block started Monday 2026-11-16 with quad at Hangsúly. */

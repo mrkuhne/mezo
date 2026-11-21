@@ -91,6 +91,7 @@ import io.mrkuhne.mezo.feature.train.service.TrainService;
 import io.mrkuhne.mezo.feature.train.service.VolumeArcService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutExerciseChangeService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
+import io.mrkuhne.mezo.feature.train.service.PlannedBlockStarter;
 import io.mrkuhne.mezo.feature.train.service.YearPlanService;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
 import java.math.BigDecimal;
@@ -132,10 +133,13 @@ public class TrainController implements TrainApi {
     private final MesoPlanCandidatesService mesoPlanCandidatesService;
     private final TimingProfileService timingProfileService;
     private final YearPlanService yearPlanService;
+    private final PlannedBlockStarter plannedBlockStarter;
 
     @Override
     public List<MesocycleResponse> listMesocycles() {
-        return service.listMesocycles(currentUserId.get());
+        UUID user = currentUserId.get();
+        plannedBlockStarter.startDue(user); // here, not in TrainService: the starter depends on it (no cycle)
+        return service.listMesocycles(user);
     }
 
     @Override
@@ -276,7 +280,9 @@ public class TrainController implements TrainApi {
 
     @Override
     public YearPlan getActiveYearPlan() {
-        return yearPlanService.active(currentUserId.get());
+        UUID user = currentUserId.get();
+        plannedBlockStarter.startDue(user); // a block due today shows as running, not as "indul"
+        return yearPlanService.active(user);
     }
 
     @Override

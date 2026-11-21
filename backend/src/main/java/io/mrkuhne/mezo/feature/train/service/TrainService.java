@@ -96,6 +96,8 @@ public class TrainService {
     private final ApplicationEventPublisher eventPublisher;
     // Boop B6 Évad (mezo-r36n9.16): no new block outside a season — the stamp + real-activation paths ask the gate.
     private final SeasonGatePort seasonGate;
+    // Éves terv (mezo-r36n9.113): a started run joins its year block in the stamp transaction.
+    private final YearPlanLinker yearPlanLinker;
 
     public List<MesocycleResponse> listMesocycles(UUID createdBy) {
         List<MesocycleEntity> mesos = mesocycleRepository.findByCreatedByAndDeletedFalseOrderByStartDateAsc(createdBy);
@@ -216,7 +218,8 @@ public class TrainService {
         Map<String, VolumeBaseline> volumePerMuscle,
         Map<String, String> musclePriorities,
         List<String> sportGroups,
-        boolean techniquesEnabled
+        boolean techniquesEnabled,
+        UUID yearBlockId // the Éves terv block this run starts; null = the ±14-day rule (mezo-r36n9.113)
     ) {}
 
     /**
@@ -297,6 +300,7 @@ public class TrainService {
         if (active) {
             volumeLedger.sync(createdBy, saved.getId());
         }
+        yearPlanLinker.linkStarted(createdBy, saved, src.yearBlockId());
         return assembleResponse(createdBy, saved);
     }
 
