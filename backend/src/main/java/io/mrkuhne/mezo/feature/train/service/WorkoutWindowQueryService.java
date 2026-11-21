@@ -375,6 +375,20 @@ public class WorkoutWindowQueryService {
         return result;
     }
 
+    /**
+     * The expected net kcal of ONE planned gym session of {@code minutes} on {@code date} — exactly the per-session
+     * figure {@link #movementOn}'s {@code pendingKcal} adds for an unlogged gym slot (the same energy model and the
+     * same body lookup, as of {@code date}); 0 for an unknown body, never an invented estimate. Boop B7 K3 reads it to
+     * say how much expected extra a moved, shortened or skipped session carries.
+     */
+    @Transactional(readOnly = true)
+    public int plannedGymKcal(UUID userId, LocalDate date, int minutes) {
+        BigDecimal rest = athleteBodyPort.bodyAt(userId, date)
+            .flatMap(b -> ActivityEnergyModel.restKcalPerHour(b.bmrKcal(), b.weightKg()))
+            .orElse(null);
+        return activityEnergyModel.netKcal("gym", null, minutes, rest).orElse(0);
+    }
+
     /** One date's movement from pre-fetched, range-batched data — no query in here except the lazy,
      *  range-memoized body lookup; the per-day rules are documented on {@link #movementOn}. */
     private DayMovement movementForDay(LocalDate date, List<GymScheduleSlotEntity> gymSlots,

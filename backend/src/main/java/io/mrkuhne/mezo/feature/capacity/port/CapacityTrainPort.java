@@ -30,6 +30,12 @@ public interface CapacityTrainPort {
 
     SlotCounts weeklySlots(UUID owner);
 
+    /**
+     * The expected net kcal of one planned gym session of {@code minutes} on {@code date} — the very figure the fuel
+     * day's pending preview adds per unlogged gym session (same energy model, same body); 0 for an unknown body.
+     */
+    int plannedGymKcal(UUID owner, LocalDate date, int minutes);
+
     // ── day-adjustment ledger checks (Boop B7 K3) — read-only, and always the RAW plan: the weekly gym schedule and
     // the active meso's day labels, never the ledger itself (a reader that honours the ledger would see a moved
     // session on its new day and the ledger would then expire its own move) ──

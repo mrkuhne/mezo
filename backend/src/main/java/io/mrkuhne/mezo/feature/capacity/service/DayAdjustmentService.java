@@ -15,12 +15,10 @@ import io.mrkuhne.mezo.feature.wearable.config.WearableProperties;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.time.Clock;
-import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -54,7 +52,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class DayAdjustmentService {
 
     /** Train's code for "a workout of that day is running" — surfaced as-is so the phone shows train's own words. */
-    static final String TRAIN_DAY_WORKOUT_RUNNING = "TRAIN_DAY_WORKOUT_RUNNING";
+    static final String TRAIN_DAY_WORKOUT_RUNNING = AdjustmentRules.TRAIN_DAY_WORKOUT_RUNNING;
     private static final int MAX_RANGE_DAYS = 62;
     private static final List<String> LIVE = List.of(AdjustmentState.ACTIVE.wire(), AdjustmentState.WAITING.wire());
 
@@ -157,60 +155,22 @@ public class DayAdjustmentService {
 
     private void validate(UUID owner, AdjustmentPayload step, LocalDate today, Set<LocalDate> claimedTargets,
                           Set<LocalDate> movedFrom) {
-        for (LocalDate d : step.touchedDays()) {
-            if (d.isBefore(today)) {
-                throw error("CAPACITY_DAY_STARTED", HttpStatus.CONFLICT);
-            }
-        }
-        switch (step) {
-            case MoveSessionDay m -> {
-                if (!train.ownsTemplate(owner, m.templateSessionId())) {
-                    throw error("CAPACITY_PROPOSAL_STALE", HttpStatus.CONFLICT);
-                }
-                if (!monday(m.fromDate()).equals(monday(m.toDate()))) {
-                    throw error("CAPACITY_MOVE_OTHER_WEEK", HttpStatus.UNPROCESSABLE_ENTITY);
-                }
-                if (train.workoutRunning(owner, m.templateSessionId())) {
-                    throw error(TRAIN_DAY_WORKOUT_RUNNING, HttpStatus.CONFLICT);
-                }
-                if (train.gymDoneOn(owner, m.fromDate())) {
-                    throw error("CAPACITY_DAY_STARTED", HttpStatus.CONFLICT);
-                }
-                if (!train.gymPlanned(owner, m.fromDate()) || movedFrom.contains(m.fromDate())) {
-                    throw error("CAPACITY_PROPOSAL_STALE", HttpStatus.CONFLICT);
-                }
-                if (claimedTargets.contains(m.toDate()) || train.gymPlanned(owner, m.toDate())
-                    || train.gymDoneOn(owner, m.toDate())) {
-                    throw error("CAPACITY_MOVE_NOT_EMPTY_DAY", HttpStatus.UNPROCESSABLE_ENTITY);
-                }
-                claimedTargets.add(m.toDate());
-                movedFrom.add(m.fromDate());
-            }
-            case SkipSession s -> {
-                sessionNotStarted(owner, s.date());
-                if (!train.gymPlanned(owner, s.date()) || skips.gymSkipped(owner, s.date())) {
-                    throw error("CAPACITY_PROPOSAL_STALE", HttpStatus.CONFLICT);
-                }
-            }
-            case AdjustmentPayload.ShiftSessionTime x -> sessionNotStarted(owner, x.date());
-            case AdjustmentPayload.ShortenSession x -> sessionNotStarted(owner, x.date());
-            case AdjustmentPayload.LightenSession x -> sessionNotStarted(owner, x.date());
-            case AdjustmentPayload.SwapSessionKind x -> sessionNotStarted(owner, x.date());
-            case AdjustmentPayload.ShiftBedtime x -> { }
-            case AdjustmentPayload.MoveMealEnergy x -> { }
-            case AdjustmentPayload.CalendarTodo x -> { }
-        }
+        AdjustmentRules.check(step, today, planView(owner), claimedTargets, movedFrom)
+            .ifPresent(v -> {
+                throw error(v.code(), v.status());
+            });
     }
 
-    /** The day's planned session must not be running (train's 409) or already done. */
-    private void sessionNotStarted(UUID owner, LocalDate date) {
-        Optional<UUID> template = train.plannedTemplate(owner, date);
-        if (template.isPresent() && train.workoutRunning(owner, template.get())) {
-            throw error(TRAIN_DAY_WORKOUT_RUNNING, HttpStatus.CONFLICT);
-        }
-        if (train.gymDoneOn(owner, date)) {
-            throw error("CAPACITY_DAY_STARTED", HttpStatus.CONFLICT);
-        }
+    /** The accept rules' view of the plan: the raw-plan ports (never the ledger itself). */
+    private AdjustmentRules.PlanView planView(UUID owner) {
+        return new AdjustmentRules.PlanView() {
+            @Override public boolean gymPlanned(LocalDate date) { return train.gymPlanned(owner, date); }
+            @Override public boolean gymDoneOn(LocalDate date) { return train.gymDoneOn(owner, date); }
+            @Override public Optional<UUID> plannedTemplate(LocalDate date) { return train.plannedTemplate(owner, date); }
+            @Override public boolean ownsTemplate(UUID id) { return train.ownsTemplate(owner, id); }
+            @Override public boolean workoutRunning(UUID id) { return train.workoutRunning(owner, id); }
+            @Override public boolean gymSkipped(LocalDate date) { return skips.gymSkipped(owner, date); }
+        };
     }
 
     // ── undo ──────────────────────────────────────────────────────────────────
@@ -366,10 +326,6 @@ public class DayAdjustmentService {
 
     private LocalDate today() {
         return LocalDate.now(clock().withZone(ZoneId.of(wearable.zone())));
-    }
-
-    private static LocalDate monday(LocalDate d) {
-        return d.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
     }
 
     private static SystemRuntimeErrorException notFound() {

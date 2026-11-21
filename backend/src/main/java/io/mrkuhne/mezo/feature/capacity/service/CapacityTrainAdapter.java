@@ -67,6 +67,11 @@ public class CapacityTrainAdapter implements CapacityTrainPort {
     }
 
     @Override
+    public int plannedGymKcal(UUID owner, LocalDate date, int minutes) {
+        return windows.plannedGymKcal(owner, date, minutes);
+    }
+
+    @Override
     public boolean gymPlanned(UUID owner, LocalDate date) {
         int dow = date.getDayOfWeek().getValue() - 1; // 0 = Monday, the gym_schedule_slot convention
         return gymSlots.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(owner).stream()
