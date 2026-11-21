@@ -113,4 +113,32 @@ struct NewBlockPrefillTests {
         let monday = Self.budapest.date(from: d)!
         #expect(model(StubTransport(), prefill(1, today: monday), now: monday).startChoice == .today)
     }
+
+    @Test func prefillCarriesOrdinalAndFocus() {
+        let p = prefill(1)
+        #expect(p.ordinal == PlanFixtures.yearPlan.blocks[1].ordinal)
+        #expect(p.focus == PlanFixtures.yearPlan.blocks[1].focus)
+        #expect(prefill(2).focus.isEmpty, "a consolidation has no focus")
+    }
+
+    /// The start-day choices: the year block's own day first (when it is still ahead), then next Monday, then today;
+    /// next Monday is left out when it is that same day.
+    @Test func startOptionsOfferThePlannedDate() {
+        let ahead = model(StubTransport(), prefill(1))
+        #expect(ahead.startOptions == [.planned("2027-01-11"), .nextMonday, .today])
+
+        // Planned for next Monday (2026-11-23 from Saturday 2026-11-21): one choice for that day, not two.
+        let nextWeek = YearBlockPrefill(yearBlockId: "x", tiers: [:], weeks: 6, consolidation: false, startDate: "2026-11-23")
+        #expect(model(StubTransport(), nextWeek).startOptions == [.planned("2026-11-23"), .today])
+
+        // Due: no planned day, the plain pair.
+        var c = DateComponents(); c.year = 2027; c.month = 1; c.day = 13; c.hour = 12
+        let wednesday = Self.budapest.date(from: c)!
+        #expect(model(StubTransport(), prefill(1, today: wednesday), now: wednesday).startOptions == [.nextMonday, .today])
+
+        // A free new block: the plain pair.
+        let free = NewBlockModel(client: PlanFixtures.planClient(StubTransport()), seasonGymDays: [0, 3],
+                                 now: { Self.saturday }, calendar: Self.budapest)
+        #expect(free.startOptions == [.nextMonday, .today])
+    }
 }

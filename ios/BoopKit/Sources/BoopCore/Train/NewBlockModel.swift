@@ -64,7 +64,7 @@ public enum RaiseCheck: Equatable, Sendable {
 public final class NewBlockModel {
     /// `planned(date)`: the year block's own start day (`yyyy-MM-dd`), the default when the intake opens from a year
     /// block that is still ahead.
-    public enum StartChoice: Equatable, Sendable { case nextMonday, today, planned(String) }
+    public enum StartChoice: Hashable, Sendable { case nextMonday, today, planned(String) }
 
     public enum Phase: Equatable {
         /// No season gym days (or the server said no season covers the start): the season-needed state.
@@ -158,6 +158,20 @@ public final class NewBlockModel {
             // A block still ahead starts on its own day; a due or overdue one today (a week late would re-date the year).
             startChoice = prefill.startDate.map { .planned($0) } ?? .today
         }
+    }
+
+    /// The start-day choices, in screen order: the year block's own day first (when it is still ahead), then next
+    /// Monday — left out when it is that same day — then today.
+    public var startOptions: [StartChoice] {
+        var out: [StartChoice] = []
+        if let day = prefill?.startDate {
+            out.append(.planned(day))
+            if Self.startDate(.nextMonday, now: now(), calendar: calendar) != day { out.append(.nextMonday) }
+        } else {
+            out.append(.nextMonday)
+        }
+        out.append(.today)
+        return out
     }
 
     /// The minutes pills: the fixed choices plus the current minutes when a fix set one outside them (e.g. 105).

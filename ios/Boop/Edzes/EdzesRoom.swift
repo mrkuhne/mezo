@@ -64,6 +64,8 @@ struct EdzesRoom: View {
     /// The Éves terv on screen (mezo-r36n9.113, `ios/Boop/EdzesTerv/EvesTerv/`): its own cover, the model riding on
     /// the item — a model kept in separate state was read as nil by a cover built in the same update.
     @State private var yearPlan: YearPlanCover?
+    /// The year plan behind the Ma tab's Következik card; the card reads only a freshly loaded plan (`freshPlan`).
+    @State private var year: YearPlanModel?
     /// The builder and the review zoom out of the button / card that opened them.
     @Namespace private var planZoom
     /// Which of the workout's own surfaces is up. The session itself lives in the store, so
@@ -167,6 +169,9 @@ struct EdzesRoom: View {
         .fullScreenCover(item: $yearPlan) { cover in
             EvesTervPage(model: cover.model) { yearPlan = nil }
         }
+        // The year may have moved on behind a cover (a block started from the card, an edit on the map): read it again.
+        .onChange(of: page) { _, now in if now == nil { Task { await year?.load() } } }
+        .onChange(of: yearPlan?.id) { _, now in if now == nil { Task { await year?.load() } } }
         .fullScreenCover(isPresented: Binding(get: { phase == .briefing && workout != nil },
                                               set: { if !$0 { phase = .hidden } })) {
             if let w = workout {
@@ -234,20 +239,35 @@ struct EdzesRoom: View {
             }
             #endif
             if weekReview == nil, let plan { weekReview = WeekReviewModel(client: plan) }
+            if year == nil, let plan { year = YearPlanModel(client: plan, cache: cache) }
             async let preload: Void = prepareBuilder(fresh: false)
+            async let yearLoad: Void = loadYear()
             await weekReview?.load()
             await preload
+            await yearLoad
             if blockDay == nil { blockDay = block?.days.first(where: \.isCurrent)?.day ?? block?.days.first?.day }
         }
     }
 
-    /// Opens the new-block flow on the season's training days (read from the Évad overview, cached when offline).
-    private func openNewBlock() {
+    /// Opens the new-block flow on the season's training days (read from the Évad overview, cached when offline);
+    /// `prefill` when it starts a year block (the Következik card's „Indítás").
+    private func openNewBlock(prefill: YearBlockPrefill? = nil) {
         guard let plan else { return }
         Task {
             await evad?.load()
-            newBlock = NewBlockModel(client: plan, seasonGymDays: evad?.overview?.pillars.block.gymDays)
+            newBlock = NewBlockModel(client: plan, seasonGymDays: evad?.overview?.pillars.block.gymDays, prefill: prefill)
             page = .newBlock
+        }
+    }
+
+    private func loadYear() async { await year?.load() }
+
+    /// The Következik card: only for a plan just read from the server, and only while it names a next block.
+    @ViewBuilder private var kovetkezik: some View {
+        if let year, let fresh = year.freshPlan, let content = KovetkezikContent(plan: fresh, today: kovetkezikToday()) {
+            KovetkezikCard(content: content, hue: hue,
+                           onStart: { openNewBlock(prefill: year.prefill(for: content.block, today: Date())) },
+                           onYear: { openYearPlan() })
         }
     }
 
@@ -286,6 +306,7 @@ struct EdzesRoom: View {
     // MARK: - Ma
 
     @ViewBuilder private var ma: some View {
+        kovetkezik
         highlight
         todaysLoad
         timeline

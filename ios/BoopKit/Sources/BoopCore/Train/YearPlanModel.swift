@@ -17,10 +17,15 @@ public struct YearBlockPrefill: Equatable, Sendable {
     /// The block's planned start when it is still ahead (`yyyy-MM-dd`); nil once its day has come (the intake then
     /// defaults to today: a week late would re-date the whole year).
     public let startDate: String?
+    /// The block's place in the year (the intake's head: „Az éves terved 3. blokkja"); 0 when unknown.
+    public let ordinal: Int
+    /// The block's focus groups as the server listed them; empty for a consolidation.
+    public let focus: [String]
 
-    public init(yearBlockId: String?, tiers: [String: String], weeks: Int, consolidation: Bool, startDate: String?) {
+    public init(yearBlockId: String?, tiers: [String: String], weeks: Int, consolidation: Bool, startDate: String?,
+                ordinal: Int = 0, focus: [String] = []) {
         self.yearBlockId = yearBlockId; self.tiers = tiers; self.weeks = weeks; self.consolidation = consolidation
-        self.startDate = startDate
+        self.startDate = startDate; self.ordinal = ordinal; self.focus = focus
     }
 }
 
@@ -256,7 +261,8 @@ public final class YearPlanModel {
         // yyyy-MM-dd compares in date order.
         let start = block.plannedStart > todayString ? block.plannedStart : nil
         return YearBlockPrefill(yearBlockId: block.id, tiers: tiers, weeks: block.weeks,
-                                consolidation: block.isConsolidation, startDate: start)
+                                consolidation: block.isConsolidation, startDate: start, ordinal: block.ordinal,
+                                focus: block.isConsolidation ? [] : block.focus)
     }
 
     // MARK: dates and age

@@ -26,6 +26,8 @@ import BoopDesign
 //   -previewUjBlokkScroll Y                the step opens scrolled down by Y points
 //   -previewUjBlokkStart fail              „Ezzel kezdem" fails at the start (503): the inline error under the button
 //   -previewEvesTerv YES                   the Éves terv (mezo-r36n9.113); its states in EvesTerv/EvesTervPreview.swift
+//   -previewKovetkezik YES|nincs|lezaras   with `-preview shell -previewHome edzes`: the Ma tab's Következik card and the
+//                                          pre-filled intake behind „Indítás" (scenarios in EvesTerv/EvesTervPreview.swift)
 //
 // The evaluator below is a FIXTURE: it imitates the server's answer so the steppers move the numbers on screen. The
 // app itself never computes a band — it asks `POST /api/train/meso-plans/evaluate`.
@@ -160,6 +162,7 @@ final class PlanPreviewTransport: ClientTransport, @unchecked Sendable {
                 return ["template": c.first { $0["splitKey"] as? String == split }?["template"] ?? [:], "llmUsed": false]
             case "createMesoTemplate": return ["id": "7e000000-0000-4000-8000-0000000000aa"]
             case "startMesoTemplate":
+                EvesTervPreviewServer.started(yearBlockId: sent?["yearBlockId"] as? String)
                 var b = block; b["status"] = (sent?["status"] as? String) ?? "planned"; b["currentWeek"] = 1
                 return b
             case "closeMesocycle": return block

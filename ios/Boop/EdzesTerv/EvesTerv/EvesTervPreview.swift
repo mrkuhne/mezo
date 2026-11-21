@@ -14,6 +14,9 @@ import BoopDesign
 //        lezaras     the consolidation runs: the year-review card and „Jövő évi terv"
 //        csuszas     a late year: buffer eaten, consolidation 1 week, the year 1 week over 52, rule-break cards
 //        kotetlen    the plan starts next week while an unlinked block runs: the banner
+//   -previewKovetkezik YES|nincs|lezaras             the Következik card's year (Task 10; with `-preview shell
+//        -previewHome edzes`): YES the running block's last week, nincs no block runs and the next is due, lezaras the
+//        consolidation is next. Dates follow today, so the next block starts next Monday.
 //   -previewBlokkState loading|error|offline        the shared preview states (offline: the last plan, 3 hours old)
 //   -previewEvesTervScroll Y                         the page opens scrolled down by Y points
 //
@@ -22,6 +25,8 @@ import BoopDesign
 
 enum EvesTervPreview {
     static var screen: String { UserDefaults.standard.string(forKey: "previewEvesTervScreen") ?? "terkep" }
+    /// `-previewKovetkezik`: the Következik card's scenario, else nil.
+    static var kovetkezik: String? { UserDefaults.standard.string(forKey: "previewKovetkezik") }
 }
 
 struct EvesTervPreviewRoot: View {
@@ -83,6 +88,12 @@ final class EvesTervFixture {
     var unlinked: [String: Any]?
     var exists = true
     var archived = false
+    /// The server's `next.reason` and, when it differs from the block's own day, `next.startsOn` (no_block: the Monday
+    /// on/after today).
+    var nextReason = "last_week"
+    var nextStartsOn: String?
+    /// The next block was started from the card: a planned mesocycle exists, so the server names no next block.
+    var nextStarted = false
 
     init(start: String, blockWeeks: Int, emphasis: [String], focus: [[String]], currentWeek: Int?) {
         self.start = start
@@ -104,9 +115,31 @@ final class EvesTervFixture {
         ["back", "shoulder"], ["quad", "calf"], ["chest", "triceps"], ["ham", "glute"],
     ]
 
+    /// The Monday strictly after today, `yyyy-MM-dd`.
+    private static var nextMonday: String { evesTodayMonday(Date().addingTimeInterval(86_400)) }
+
     /// One review state of the year.
     static func scenario(_ name: String) -> EvesTervFixture {
         switch name {
+        case "kovetkezik-lezaras":
+            // Week 50: every loading block done, the buffer runs, the consolidation starts next Monday.
+            let f = EvesTervFixture(start: evesAdding(days: -50 * 7, to: nextMonday) ?? nextMonday, blockWeeks: 6,
+                                    emphasis: ["shoulder", "calf"], focus: spikeFocus, currentWeek: 50)
+            f.nextReason = "no_block"
+            return f
+        case "kovetkezik-nincs":
+            // Block 2 ended last Sunday; block 3 was due this Monday and is not started: due, offered from next Monday.
+            let thisMonday = evesAdding(days: -7, to: nextMonday) ?? nextMonday
+            let f = EvesTervFixture(start: evesAdding(days: -12 * 7, to: thisMonday) ?? thisMonday, blockWeeks: 6,
+                                    emphasis: ["shoulder", "calf"], focus: spikeFocus, currentWeek: 13)
+            f.blocks[2].forced = "planned"
+            f.nextReason = "no_block"
+            f.nextStartsOn = nextMonday
+            return f
+        case "kovetkezik-YES", "kovetkezik-yes":
+            // Week 12: block 2 is in its last week, block 3 (chest + shoulder) starts next Monday.
+            return EvesTervFixture(start: evesAdding(days: -12 * 7, to: nextMonday) ?? nextMonday, blockWeeks: 6,
+                                   emphasis: ["shoulder", "calf"], focus: spikeFocus, currentWeek: 12)
         case "lezaras":
             let f = EvesTervFixture(start: "2025-11-24", blockWeeks: 6, emphasis: ["shoulder", "calf"], focus: spikeFocus, currentWeek: 52)
             f.blocks[3].skipped = true
@@ -197,6 +230,7 @@ final class EvesTervFixture {
         func day(_ d: Int) -> String { evesAdding(days: d, to: start) ?? start }
         func status(_ first: Int, _ days: Int, forced: String?, skipped: Bool) -> (String, Int?) {
             if skipped { return ("skipped", nil) }
+            if forced == "planned" { return ("planned", nil) }
             if let forced { return (forced, 3) }
             guard let c = currentWeek else { return ("planned", nil) }
             let a = first / 7 + 1, e = a + days / 7 - 1
@@ -275,7 +309,9 @@ final class EvesTervFixture {
         if ids { plan["id"] = Self.planId }
         if let c = currentWeek { plan["currentWeek"] = c }
         if buffer > 0 { plan["bufferStart"] = day(bufferStart) }
-        if let nextId, let nextStart { plan["next"] = ["blockId": nextId, "startsOn": nextStart, "reason": "last_week"] }
+        if let nextId, let nextStart, !nextStarted {
+            plan["next"] = ["blockId": nextId, "startsOn": nextStartsOn ?? nextStart, "reason": nextReason]
+        }
         if let unlinked { plan["unlinkedRunning"] = unlinked }
         return plan
     }
@@ -283,7 +319,14 @@ final class EvesTervFixture {
 
 /// The year-plan operations of `PlanPreviewTransport`: nil = 404.
 enum EvesTervPreviewServer {
-    nonisolated(unsafe) private static var plan = EvesTervFixture.scenario(EvesTervPreview.screen)
+    nonisolated(unsafe) private static var plan = EvesTervFixture.scenario(
+        EvesTervPreview.kovetkezik.map { "kovetkezik-\($0)" } ?? EvesTervPreview.screen)
+
+    /// A block was started with a year block id (the card's „Indítás"): the year now has a planned mesocycle.
+    static func started(yearBlockId: String?) {
+        guard yearBlockId != nil else { return }
+        plan.nextStarted = true
+    }
 
     static func answer(_ operationID: String, path: String?, sent: [String: Any]?) -> Any? {
         switch operationID {
