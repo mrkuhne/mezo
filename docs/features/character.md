@@ -69,6 +69,8 @@ related: [companion, proactive, insights, me, _platform-api-backend]
 
 > **2026-09-30 — Kihagyás S2 (`mezo-q4xt2.2`).** No character-detector change; the 1.1.0 changelog folder gained the `recovery_period`/`recovery_day_release` migration (see [`train.md`](train.md) §2 "Kihagyás S2").
 
+> **2026-11-21 — Boop B7 K3 (`mezo-r36n9.17`).** No character change. The migration that adds `KAPACITAS` to the `planned_skip` reason check (`202611251200_mezo-r36n9.17_planned_skip_kapacitas.sql`) lives in the shared `1.1.0` folder, so this doc's key_file shows it.
+
 > **2026-09-29 — Kihagyás S1 (`mezo-q4xt2.1`).** No character-detector change — the new `planned_skip` table lives in the same `1.1.0` changelog folder as `character`'s own S1 migration, which is why this doc's key_file directory shows commits it doesn't otherwise concern (the table and its follow-up `idx_` index rename). See [`train.md`](train.md) "Kihagyás (S1)".
 
 > **2026-09-29 — `mezo-mobji` (no character change).** The 1.1.0 changelog gained three train-owned `exercise` columns (`replaces_exercise_id`, `added_in_workout_id`, `saved_to_plan`, [`train.md` §4](train.md)); `CharacterSignalReads` resolves exercise names by id and keeps working for the new instance-scoped rows.
