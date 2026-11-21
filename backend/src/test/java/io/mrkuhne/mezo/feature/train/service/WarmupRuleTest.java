@@ -24,7 +24,17 @@ class WarmupRuleTest {
 
         WarmupRule.apply(day, 2, 1);
 
-        assertThat(day).extracting(GymExerciseInput::getWarmupSets).containsExactly(2, 0, 1, 0, 0, 2);
+        assertThat(day).extracting(GymExerciseInput::getWarmupSets).containsExactly(2, 0, 0, 0, 0, 2);
+    }
+
+    @Test
+    void isolationBeforeCompoundDoesNotUseUpTheGroupsWarmup() {
+        List<GymExerciseInput> day = List.of(ex("triceps-long", GymExerciseInput.TypeEnum.ISOLATION),
+            ex("triceps-lateral", GymExerciseInput.TypeEnum.COMPOUND), ex("triceps-long", GymExerciseInput.TypeEnum.COMPOUND));
+
+        WarmupRule.apply(day, 2, 1);
+
+        assertThat(day).extracting(GymExerciseInput::getWarmupSets).containsExactly(0, 2, 0);
     }
 
     @Test
@@ -34,6 +44,6 @@ class WarmupRuleTest {
 
         WarmupRule.apply(day, 2, 1);
 
-        assertThat(day).extracting(GymExerciseInput::getWarmupSets).containsExactly(1, 0, 2);
+        assertThat(day).extracting(GymExerciseInput::getWarmupSets).containsExactly(0, 0, 2);
     }
 }

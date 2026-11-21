@@ -232,8 +232,8 @@ class MesoPlanGenerateContractIT extends ApiIntegrationTest {
             Set<String> seen = new java.util.HashSet<>();
             for (GymExerciseInput e : day.getExercises()) {
                 boolean compound = e.getType() == GymExerciseInput.TypeEnum.COMPOUND;
-                if (seen.add(String.valueOf(MuscleGroup.of(e.getMuscle())))) {
-                    assertThat(e.getWarmupSets()).as(day.getDay() + " " + e.getName()).isEqualTo(compound ? 2 : 1);
+                if (compound && seen.add(String.valueOf(MuscleGroup.of(e.getMuscle())))) {
+                    assertThat(e.getWarmupSets()).as(day.getDay() + " " + e.getName()).isEqualTo(2);
                 } else {
                     assertThat(e.getWarmupSets()).as(day.getDay() + " " + e.getName()).isZero();
                 }
