@@ -17,6 +17,10 @@ import BoopCore
 /// (`limited`: quiet, and a refresh answers 429) (default `ready`: three items like the spike — a holding falling, a rates decision at 0 Ft, a forint move). Writes
 /// are kept for the run; the symbol `NOPE` is refused as unknown, a sell above the value is refused, and a non-forint
 /// buy dated on a Sunday answers „no FX rate", so every server refusal can be seen.
+///
+/// `mezo-r36n9.120`: `-penzWeekly ready|pending|quiet|failed|error` (default `ready`: last week's long-horizon review with
+/// one sleeve that matters, one quiet, one fallback) — Pénzem's *A HÉT, HOSSZÚ TÁVON*; `-penzPage weekly|weekly-short|
+/// weekly-mid` opens one horizon's page.
 enum PenzPreview {
     static let raw = RawJSONClient(transport: PenzPreviewTransport(), baseURL: URL(string: "https://preview.invalid")!,
                                    token: { "preview" })
@@ -25,6 +29,7 @@ enum PenzPreview {
     static var state: String { UserDefaults.standard.string(forKey: "penzState") ?? "review" }
     static var portfolioState: String { UserDefaults.standard.string(forKey: "penzPortfolio") ?? "full" }
     static var digestState: String { UserDefaults.standard.string(forKey: "penzDigest") ?? "ready" }
+    static var weeklyState: String { UserDefaults.standard.string(forKey: "penzWeekly") ?? "ready" }
 
     /// `-penzState offline`: what the cache would hold from a read five hours ago.
     static func primeCache(_ directory: URL) async {
@@ -35,6 +40,7 @@ enum PenzPreview {
         try? await cache.put(model.snapshot(), endpoint: "penz/snapshot", date: "current")
         try? await cache.put(model.portfolio(), endpoint: "penz/portfolio", date: "current")
         try? await cache.put(model.digest(), endpoint: "penz/digest", date: model.today)
+        try? await cache.put(model.weekly(), endpoint: "penz/weekly", date: "current")
         try? await cache.put(PenzPreviewL7.shared.overview(), endpoint: "penz/practice", date: "current")
         try? await cache.put(PenzPreviewL7.shared.proposals, endpoint: "penz/proposals", date: "current")
         try? await cache.put(PenzPreviewL7.shared.catalog, endpoint: "penz/catalog", date: "current")
@@ -322,6 +328,63 @@ final class PenzPreviewModel: @unchecked Sendable {
         ])
     }
 
+    /// Last complete Monday–Sunday week's long-horizon review (invented copy, no real figures).
+    func weekly() -> PenzWeeklyReview {
+        let cal = penzCalendar
+        let now = Date()
+        let weekday = cal.component(.weekday, from: now)            // 1 = Sunday … 2 = Monday
+        let sinceMonday = (weekday + 5) % 7
+        let thisMonday = cal.date(byAdding: .day, value: -sinceMonday, to: now) ?? now
+        let start = penzDay(cal.date(byAdding: .day, value: -7, to: thisMonday) ?? now)
+        let end = penzDay(cal.date(byAdding: .day, value: -1, to: thisMonday) ?? now)
+        let generated = ISO8601DateFormatter().string(from: cal.date(bySettingHour: 6, minute: 31, second: 0, of: thisMonday) ?? now)
+        switch PenzPreview.weeklyState {
+        case "pending": return PenzWeeklyReview(weekStart: start, weekEnd: end, status: "pending")
+        case "quiet": return PenzWeeklyReview(weekStart: start, weekEnd: end, status: "quiet", generatedAt: generated)
+        case "failed": return PenzWeeklyReview(weekStart: start, weekEnd: end, status: "failed", generatedAt: generated)
+        default: break
+        }
+        func src(_ name: String, _ host: String) -> PenzWeeklySource { PenzWeeklySource(name: name, url: "https://\(host)/") }
+        return PenzWeeklyReview(weekStart: start, weekEnd: end, status: "ready", generatedAt: generated, sections: [
+            PenzWeeklySection(
+                sleeve: "short", horizonLabel: "1–3 év", storyCount: 0, sourceCount: 0, matters: false,
+                verdict: "Ezen a héten egyetlen hír sem érintette a biztonsági rekeszedet.",
+                body: "Ezen a héten egyetlen hír sem érintette a biztonsági rekeszedet. A papírjaid a megszokott módon futnak tovább.",
+                uncertainty: "Itt nincs mit mérlegelni: nem volt hír, amit értelmezni kellett volna.",
+                noAction: "Az 1–3 éves pénz arra való, hogy kéznél legyen. Egy csendes hét pontosan ilyen.",
+                narratedBy: "quiet"),
+            PenzWeeklySection(
+                sleeve: "mid", horizonLabel: "5–10 év", storyCount: 2, sourceCount: 3, matters: false,
+                verdict: "Ezt a hetet nem tudtam megbízhatóan összefoglalni — két hír érintette ezt a rekeszt.",
+                body: "Ezt a hetet nem tudtam megbízhatóan összefoglalni, ezért nem írok róla véleményt. Két hír érintette ezt a rekeszt; lent megtalálod őket a forrásaikkal.",
+                uncertainty: "Mivel nincs összefoglaló, nincs mit bizonytalannak jelölnöm — a hírek maguk rendben vannak.",
+                noAction: "Az 5–10 éves pénznél egy hét hírei ritkán számítanak. Nincs teendőd.",
+                narratedBy: "fallback",
+                stories: [
+                    PenzWeeklyStory(id: "w3", title: "A forint erősödött az euróval szemben", kind: "fx",
+                                    sources: [src("MNB", "www.mnb.hu"), src("Portfolio", "www.portfolio.hu")]),
+                    PenzWeeklyStory(id: "w4", title: "Kötvénypiac: csendes hét a hosszú hozamokon", holdingName: "Kötvény-ETF",
+                                    kind: "holding", sources: [src("Reuters", "www.reuters.com")]),
+                ]),
+            PenzWeeklySection(
+                sleeve: "long", horizonLabel: "10+ év", storyCount: 3, sourceCount: 5, matters: true,
+                verdict: "Egy szabályozási döntés tartósan átrendezheti az alapod egyik iparágát — ez számít a 10+ éves képben.",
+                body: "A héten elfogadott szabályozás hosszú távon érinti az alapod egyik nagy iparágát: évekig tartó átállást jelent, nem egy heti mozgást.\n\nA te rekeszed mérőszáma — *hány hónapnyi fix kiadásodat fedezi* — ettől most nem változott. Amit érdemes tudnod: ez az a fajta hír, ami a következő években számíthat, nem a következő napokban.",
+                uncertainty: "Az, hogy a szabály megszületett, tény. Hogy mennyire és milyen gyorsan érinti a cégeket, arról a források nem értenek egyet — én sem tudom.",
+                noAction: "Ez a pénz 10+ évre szól. Egy tartós változásról is elég tudni — lépni nem kell miatta.",
+                narratedBy: "model", coverageMonths: 55,
+                stories: [
+                    PenzWeeklyStory(id: "w1", title: "Új szabályozás a technológiai cégekre", holdingName: "Világ-ETF", kind: "holding",
+                                    sources: [src("Reuters", "www.reuters.com"), src("Bloomberg", "www.bloomberg.com"),
+                                              src("Portfolio", "www.portfolio.hu")]),
+                    PenzWeeklyStory(id: "w2", title: "Az alapkezelő negyedéves jelentése", holdingName: "Világ-ETF", kind: "holding",
+                                    sources: [src("Az alapkezelő", "www.vanguard.com"), src("FT", "www.ft.com")]),
+                    PenzWeeklyStory(id: "w3", title: "A forint erősödött az euróval szemben", kind: "fx",
+                                    sources: [src("MNB", "www.mnb.hu")]),
+                ]),
+        ])
+    }
+
     /// A recorded buy or sell, applied to the invented valuation. nil = accepted; else the refusal code.
     func record(_ r: PenzInvestTxnRequest) -> String? {
         guard let i = lines.firstIndex(where: { $0.holding.id == r.holdingId }) else { return "PENZ_HOLDING_NOT_FOUND" }
@@ -419,6 +482,9 @@ struct PenzPreviewTransport: ClientTransport {
             case "getPenzDigest":
                 if PenzPreview.digestState == "error" { return (HTTPResponse(status: .internalServerError), nil) }
                 return try json(m.digest())
+            case "getPenzWeeklyReview":
+                if PenzPreview.weeklyState == "error" { return (HTTPResponse(status: .internalServerError), nil) }
+                return try json(m.weekly())
             case "refreshPenzDigest":
                 if PenzPreview.digestState == "limited" { return refuse(429, "PENZ_DIGEST_REFRESH_LIMITED") }
                 m.refreshed = true

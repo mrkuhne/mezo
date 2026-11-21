@@ -413,6 +413,23 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     `transactionId`; a save with an account re-reads the whole snapshot (the allowance and Költés moved), not only
     Pénzem. New refusals in Hungarian: `PENZ_SMS_LINK_MISMATCH` (the sheet looks the bank rows up again) and
     `PENZ_TRANSACTION_INVEST_LINKED` (editing / deleting a money row that belongs to a recorded investment).
+  - **The weekly long-horizon review (`mezo-r36n9.120`, owner decision #66, 2026-11-21; contract
+    `api/feature/penz/penz-weekly.yml`, server side [`penz.md`](penz.md) §3.14)**: on Pénzem, under *A HÉT, HOSSZÚ
+    TÁVON* (search glyph, the reviewed week "nov. 10–16." at the head's right) right after the three sleeves and their
+    info row — built only from existing parts, no new look, **no push, no action button, Ma unchanged**. One
+    `NKAreaRow` per horizon in short → mid → long order: title = the horizon label, sub = the verdict (wraps to two
+    lines — the kit's new `NKAreaRow.subLines`, default 1), right side a quiet word ("számít" when `matters`, else
+    "nincs teendő"; never `hot`). A tap opens `PenzWeeklyPage` (page `PenzPage.weekly`, `NKAreaSubPage`, crumb "Pénz ·
+    Pénzem", title = the horizon, sentence = the verdict): *Amit Boop gondol róla* (`NKHueText` for `*emphasis*`, plus
+    the long sleeve's coverage sentence when known), *Mennyire biztos* (uncertainty), *Honnan van* (story / source
+    counts, then each story: headline, holding, source capsules that open their http(s) link), `NKNothingToDo` with the
+    per-horizon `noAction`. Fallback and quiet copy is shown as it came. States (`penzWeeklyView`): never loaded or the
+    first read failed → no block (never breaks Pénzem); `pending` → one line „Az első heti áttekintés hétfő reggel
+    készül el."; `quiet` / `failed` with no sections → one honest line; `failed` with sections → the rows. Data:
+    `PenzWeeklyWire.swift` (lenient), `PenzClient.weeklyReview(week:)`, `PenzStore.weekly` read with the full load
+    and cached in `ServerCache` (`penz/weekly` "current"; a failure keeps the last one), pure builders in
+    `PenzWeeklyLogic.swift`, tests `PenzWeeklyTests.swift`. Review: `-penzWeekly ready|pending|quiet|failed|error`,
+    `-penzPage weekly|weekly-short|weekly-mid`.
   - **Data**: `PenzPortfolioWire.swift` (lenient), `PenzPortfolioClient.swift` (portfolio, digest, holdings CRUD,
     invest-transactions, `holdings/{id}/transactions`, holding-events), `PenzStore.portfolio` / `.digest` read beside the
     snapshot, each with its own problem/offline flags, cached in `ServerCache` (`penz/portfolio` "current", `penz/digest`

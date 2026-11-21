@@ -52,6 +52,11 @@ public final class PenzStore {
     public private(set) var digest: Cached<PenzDigest>?
     public private(set) var digestProblem: PlanFetchError?
     public private(set) var digestOffline = false
+    /// The weekly long-horizon review (`mezo-r36n9.120`, fresh or cached). It loads and fails on its own: a failure
+    /// keeps the last one, and never touches Pénzem.
+    public private(set) var weekly: Cached<PenzWeeklyReview>?
+    public private(set) var weeklyProblem: PlanFetchError?
+    public private(set) var weeklyOffline = false
 
     // L7 (`mezo-r36n9.105`): Gyakorlás, the proposals, the catalog and the strategy — each read on its own, when its
     // screen asks (`PenzStore+Practice.swift`), so a practice or proposal fault never takes the week with it.
@@ -80,6 +85,7 @@ public final class PenzStore {
     static let key = "current"
     static let portfolioEndpoint = "penz/portfolio"
     static let digestEndpoint = "penz/digest"
+    static let weeklyEndpoint = "penz/weekly"
     static let practiceEndpoint = "penz/practice"
     static let proposalsEndpoint = "penz/proposals"
     static let catalogEndpoint = "penz/catalog"
@@ -138,10 +144,12 @@ public final class PenzStore {
         async let s = Self.attempt { try await client.settings() }
         async let pf = Self.attempt { try await client.portfolio() }
         async let dg = Self.attempt { try await client.digest() }
+        async let wk = Self.attempt { try await client.weeklyReview() }
         let (ra, rt, rc, racc, ro, rg, rs) = await (a, t, c, acc, o, g, s)
-        let (rpf, rdg) = await (pf, dg)
+        let (rpf, rdg, rwk) = await (pf, dg, wk)
         await applyPortfolio(rpf)
         await applyDigest(rdg)
+        await applyWeekly(rwk)
 
         let previous: PenzSnapshot?
         if let snapshot { previous = snapshot.value } else {
@@ -201,6 +209,17 @@ public final class PenzStore {
         // Keyed by the day: yesterday's stories are not this morning's.
         let current = digest.flatMap { $0.value.date == today || $0.value.date.isEmpty ? $0 : nil }
         (digest, digestProblem, digestOffline) = await settle(r, current: current, endpoint: Self.digestEndpoint, key: today)
+    }
+
+    private func applyWeekly(_ r: Result<PenzWeeklyReview, PlanFetchError>) async {
+        // The latest review, one key: last week's reading stays true until the next one is built.
+        (weekly, weeklyProblem, weeklyOffline) = await settle(r, current: weekly, endpoint: Self.weeklyEndpoint, key: Self.key)
+    }
+
+    /// Re-reads the weekly review alone.
+    public func reloadWeekly() async {
+        guard let client else { return }
+        await applyWeekly(await Self.attempt { try await client.weeklyReview() })
     }
 
     // MARK: - Asking for a fresh digest

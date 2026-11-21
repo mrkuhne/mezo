@@ -16,6 +16,12 @@ extension PenzClient {
         try await raw.get("/api/penz/digest" + (date.map { "?date=\($0)" } ?? ""), operationID: "getPenzDigest")
     }
 
+    /// The weekly long-horizon review (`mezo-r36n9.120`) of the week `week` (a Monday) falls in; nil = the latest
+    /// stored one (`pending` when none was built yet).
+    public func weeklyReview(week: String? = nil) async throws(PlanFetchError) -> PenzWeeklyReview {
+        try await raw.get("/api/penz/weekly-review" + (week.map { "?week=\($0)" } ?? ""), operationID: "getPenzWeeklyReview")
+    }
+
     public func holdings() async throws(PlanFetchError) -> [PenzHolding] {
         try await raw.get("/api/penz/holdings", operationID: "listPenzHoldings")
     }

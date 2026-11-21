@@ -172,6 +172,7 @@ struct PenzPortfolioClientTests {
         scriptL5(stub)
         stub.on("getPenzPortfolio", .json(200, PenzL6Fixtures.portfolioJSON))
         stub.on("getPenzDigest", .json(200, PenzL6Fixtures.digestJSON))
+        stub.on("getPenzWeeklyReview", .status(404))
         let store = PenzStore(client: PenzClient(raw: Self.raw(stub)), cache: cache, clock: { clock.now })
         await store.load()
         #expect(store.portfolio?.value.totalHufMinor == 641_800_000 && store.portfolioProblem == nil)
@@ -180,7 +181,7 @@ struct PenzPortfolioClientTests {
         clock.advance(2 * 3600)
         let off = StubTransport()
         for op in ["getPenzAllowance", "listPenzTransactions", "listPenzCategories", "listPenzAccounts", "listOpenPenzMonths",
-                   "listPenzSavingsGoals", "getPenzSettings", "getPenzPortfolio", "getPenzDigest"] {
+                   "listPenzSavingsGoals", "getPenzSettings", "getPenzPortfolio", "getPenzDigest", "getPenzWeeklyReview"] {
             off.on(op, .fail(URLError(.notConnectedToInternet)))
         }
         let later = PenzStore(client: PenzClient(raw: Self.raw(off)), cache: cache, clock: { clock.now })
@@ -195,6 +196,7 @@ struct PenzPortfolioClientTests {
         scriptL5(stub)
         stub.on("getPenzPortfolio", .json(200, PenzL6Fixtures.portfolioJSON))
         stub.on("getPenzDigest", .status(500))
+        stub.on("getPenzWeeklyReview", .status(404))
         let store = PenzStore(client: PenzClient(raw: Self.raw(stub)), cache: nil)
         await store.load()
         #expect(store.allowance != nil && store.portfolio != nil)
@@ -569,6 +571,7 @@ struct PenzInvestAccountTests {
         stub.on("getPenzSettings", .json(200, #"{"savingsTargetHufMinor":0,"practiceMonthlyHufMinor":0}"#))
         stub.on("getPenzPortfolio", .json(200, PenzL6Fixtures.portfolioJSON))
         stub.on("getPenzDigest", .json(200, PenzL6Fixtures.digestJSON))
+        stub.on("getPenzWeeklyReview", .status(404))
         let store = PenzStore(client: PenzClient(raw: Self.raw(stub)), cache: nil)
         let error = await store.recordInvestment(newHolding: nil, holdingId: "h1", transaction: PenzInvestTxnRequest(
             holdingId: "", side: "buy", amountMinor: 824_000, date: "2026-11-20", accountId: "a1"))

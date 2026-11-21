@@ -48,6 +48,8 @@ enum PenzPage: Identifiable, Equatable {
     case month
     case news(PenzNewsCardModel)
     case sleeve(String)
+    /// `mezo-r36n9.120`: one horizon's weekly long-horizon review.
+    case weekly(PenzWeeklyRow)
     /// L7: the full practice journal, a proposal, the monthly strategy, the catalog (and the proposal it returns to).
     case journal
     case proposal(String)
@@ -58,6 +60,7 @@ enum PenzPage: Identifiable, Equatable {
         case .month: "month"
         case .news(let n): "news-\(n.id)"
         case .sleeve(let s): "sleeve-\(s)"
+        case .weekly(let r): "weekly-\(r.id)"
         case .journal: "journal"
         case .proposal(let id): "proposal-\(id)"
         case .strategy: "strategy"
@@ -195,6 +198,12 @@ struct PenzRoom: View {
             case "sleeve": page = .sleeve("long")
             case "sleeve-short": page = .sleeve("short")
             case "sleeve-mid": page = .sleeve("mid")
+            // `weekly|weekly-short|weekly-mid`: one horizon's weekly review (default the long one)
+            case let w? where w.hasPrefix("weekly"):
+                let sleeve = w.hasPrefix("weekly-") ? String(w.dropFirst(7)) : "long"
+                if case .rows(_, let rows) = penzWeeklyView(store?.weekly?.value), let r = rows.first(where: { $0.sleeve == sleeve }) {
+                    page = .weekly(r)
+                }
             // L7: `journal`, `proposal` (the first open one), `proposal-accepted`, `strategy`, `catalog`
             case "journal": page = .journal
             case "strategy": page = .strategy
@@ -251,7 +260,8 @@ struct PenzRoom: View {
         case .penzem:
             PenzPenzem(store: store, open: { sheet = $0 }, openSleeve: { page = .sleeve($0) },
                        openPractice: { selected = PenzTab.gyakorlas.rawValue },
-                       openCatalog: { page = .catalog(returnTo: nil) }, ask: { openPlace(.boop) })
+                       openCatalog: { page = .catalog(returnTo: nil) }, openWeekly: { page = .weekly($0) },
+                       ask: { openPlace(.boop) })
         case .gyakorlas:
             PenzGyakorlas(store: store, open: { sheet = $0 }, openJournal: { page = .journal }, ask: { openPlace(.boop) })
         }
@@ -284,6 +294,8 @@ struct PenzRoom: View {
                     Task { @MainActor in try? await Task.sleep(for: .milliseconds(450)); sheet = .record }
                 })
             }
+        case .weekly(let row):
+            PenzWeeklyPage(row: row) { page = nil }
         case .journal:
             if let store { PenzJournalPage(store: store) { page = nil } }
         case .proposal(let id):
