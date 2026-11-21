@@ -249,13 +249,19 @@ struct EdzesSwapTests {
         private var puts = 0
         /// The 1-based PUT numbers the server refuses.
         let refuse: Set<Int>
-        init(off: [String], refuse: Set<Int> = []) { self.off = off; self.refuse = refuse }
+        /// Refuses every PUT whose body names this kind — keyed by content, not by arrival order, so two racing
+        /// taps get the same answer whichever reaches the server first (mezo-r36n9.128).
+        let refuseNaming: String?
+        init(off: [String], refuse: Set<Int> = [], refuseNaming: String? = nil) {
+            self.off = off; self.refuse = refuse; self.refuseNaming = refuseNaming
+        }
         var json: String { lock.withLock { Self.render(off) } }
         func elsewhere(_ kinds: [String]) { lock.withLock { off = kinds } }
         func put(_ body: String) -> (Int, String) {
             lock.withLock {
                 puts += 1
                 if refuse.contains(puts) { return (400, "") }
+                if let refuseNaming, body.contains("\"\(refuseNaming)\"") { return (400, "") }
                 let data = Data(body.utf8)
                 let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
                 off = obj?["offKinds"] as? [String] ?? []
@@ -286,17 +292,21 @@ struct EdzesSwapTests {
 
     @Test func overlappingSavesLeaveTheStoreAsTheServerHasIt() async {
         // Tap A's PUT is refused, tap B's goes through: the store must end on the server's truth, not on a
-        // snapshot from before A.
-        let server = ServerGym(off: [], refuse: [1])
-        serve(server)
-        let s = store()
-        async let a = s.markMissing(.kind(.cable))
-        async let b = s.markMissing(.kind(.dumbbell))
-        let (ra, rb) = await (a, b)
-        #expect(ra != nil)
-        #expect(rb == nil)
-        #expect(s.gym.offKinds == ["dumbbell"])
-        #expect(server.json.contains("dumbbell") && !server.json.contains("cable"))
+        // snapshot from before A. The two taps race, so the refusal follows A's content (cable), not "the first
+        // PUT" — whichever order they land in, A is refused and B stands (mezo-r36n9.128).
+        // Raced 20 times, so either arrival order is exercised in one run.
+        for _ in 0..<20 {
+            let server = ServerGym(off: [], refuseNaming: "cable")
+            serve(server)
+            let s = store()
+            async let a = s.markMissing(.kind(.cable))
+            async let b = s.markMissing(.kind(.dumbbell))
+            let (ra, rb) = await (a, b)
+            #expect(ra != nil)
+            #expect(rb == nil)
+            #expect(s.gym.offKinds == ["dumbbell"])
+            #expect(server.json.contains("dumbbell") && !server.json.contains("cable"))
+        }
     }
 
     @Test func aRefusedUndoSaysSo() async {
