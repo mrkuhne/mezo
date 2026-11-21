@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.boop.service;
 
+import io.mrkuhne.mezo.feature.boop.port.BoopCapacityPort;
 import io.mrkuhne.mezo.feature.boop.service.BoopScores.Scores;
 import io.mrkuhne.mezo.feature.boop.service.BoopVerdictWriter.Conflict;
 import java.time.LocalTime;
@@ -36,7 +37,11 @@ final class BoopPrompts {
         {"forma":{"headline":"...","sentence":"..."},"alvas":{"headline":"...","sentence":"..."},
          "mozgas":{"headline":"...","sentence":"..."},"fuel":{"headline":"...","sentence":"..."},
          "pulzus":{"headline":"...","sentence":"..."},
-         "brief":[{"text":"...","link":"sleep"}],"tonightTip":"...","nextMealTip":"..."}""";
+         "brief":[{"text":"...","link":"sleep"}],"tonightTip":"...","nextMealTip":"...",
+         "capacityReason":"..."}
+        A [Kapacitás] sor a nap terheléséről szól: az ítéletet (laza, rendben, szoros, túl sok) és
+        a számokat már kiszámoltuk. A capacityReason egyetlen rövid mondat az okról; csak a megadott
+        okot fogalmazd át, új számot vagy új okot ne tegyél hozzá. Ha nincs [Kapacitás] sor, hagyd el.""";
 
     private final int stepsGoal;
     private final int nightsNeeded;
@@ -51,6 +56,10 @@ final class BoopPrompts {
     }
 
     String context(BoopDay d, Scores s, LocalTime now, Conflict conflict) {
+        return context(d, s, now, conflict, null);
+    }
+
+    String context(BoopDay d, Scores s, LocalTime now, Conflict conflict, BoopCapacityPort.View capacity) {
         StringBuilder b = new StringBuilder();
         b.append("[Idő] ").append(d.date()).append(' ').append(RuleVerdicts.hhmm(now)).append('\n');
         b.append("[Állapot] ").append(s.state()).append('\n');
@@ -110,6 +119,12 @@ final class BoopPrompts {
         b.append("[Naptár] ").append(calendar(d)).append('\n');
         if (conflict != null) {
             b.append("[Ütközés] ").append(conflict.text()).append('\n');
+        }
+        if (capacity != null) {
+            b.append("[Kapacitás] ítélet ").append(capacity.verdict().equals("tulSok") ? "túl sok" : capacity.verdict())
+                .append(capacity.reasonFacts() == null || capacity.reasonFacts().isBlank() ? ""
+                    : ", ok: " + capacity.reasonFacts())
+                .append(capacity.calendarKnown() ? "" : " (a naptárról nincs adat)").append('\n');
         }
         b.append("[Lefekvési cél] ").append(RuleVerdicts.hhmm(d.bedtimeTarget())).append('\n');
         if (d.seasonRules() != null && !d.seasonRules().isBlank()) {

@@ -16,8 +16,33 @@ public final class EnergyCurveModel {
 
     private EnergyCurveModel() {}
 
-    /** Nullable {@code forma} = unknown (scale 0.8); nullable times = no session / unknown lunch. */
+    private static final double DEMAND_STEP = 0.08;
+    private static final double DEMAND_MAX_DROP = 0.35;
+
+    /** The template curve without any demand (B3 behaviour). */
     public static double[] hourly(Integer forma, LocalTime sessionTime, LocalTime lunch) {
+        return hourly(forma, sessionTime, lunch, new double[POINTS]);
+    }
+
+    /**
+     * With the day's demand (B7 K1): each hour's value is lowered by {@code min(0.35, 0.08 × demand units in
+     * that hour and the hour before)} (multiplicative) — the height bends, the template's peak and dip hours
+     * do not (see {@link #template}). {@code demandHourly19} is 06:00..24:00, null = no demand.
+     * Nullable {@code forma} = unknown (scale 0.8); nullable times = no session / unknown lunch.
+     */
+    public static double[] hourly(Integer forma, LocalTime sessionTime, LocalTime lunch, double[] demandHourly19) {
+        double[] out = hourly0(forma, sessionTime, lunch);
+        if (demandHourly19 == null) {
+            return out;
+        }
+        for (int i = 0; i < POINTS && i < demandHourly19.length; i++) {
+            double units = demandHourly19[i] + (i > 0 ? demandHourly19[i - 1] : 0);
+            out[i] *= 1 - Math.min(DEMAND_MAX_DROP, DEMAND_STEP * units);
+        }
+        return out;
+    }
+
+    private static double[] hourly0(Integer forma, LocalTime sessionTime, LocalTime lunch) {
         double scale = forma == null ? 0.8 : 0.6 + 0.4 * forma / 100.0;
         double[] out = new double[POINTS];
         for (int i = 0; i < POINTS; i++) out[i] = template(FIRST_HOUR + i) * scale;
