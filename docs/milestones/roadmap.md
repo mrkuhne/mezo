@@ -63,6 +63,17 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-11-21 — Boop B6 Évad S3: the weekly menu and the shopping list (`mezo-r36n9.16`).**
+  Five tables (`season_menu_week`, `season_menu_meal`, `shopping_list`, `shopping_item`, `season_staple`). The pure
+  `MenuPlanner` plans next week over the Étel day plan's own windows and budgets (`DayPlanService.skeleton`), only from
+  the season's allowed recipes minus the sensitivity / NOVA rules, portions scaled 0.5–2.0 to each window, no dinner twice
+  within 3 days, a sport day's pre-session snack, `repeated` / `seeding` states; `MenuJob` generates it at the season's
+  menu day/time; swap and approve over `/api/seasons/menu/**`; an approved meal is the room's suggestion for its window
+  and the room offers only allowed recipes (meal-owned `SeasonMenuPort`); an accepted change re-fits the remaining days.
+  `ShoppingListBuilder` merges lines per catalog item (g → kg, five shelves, mihez kell); check-off server-side, staples
+  only on tap, past lists, „változott" after a re-fit. iPhone: the Menü carousel + swap sheet, „Kiválasztott receptek",
+  the Lista tab with share, and the wall's `.expires` menu card on the menu day. Docs: [`season.md`](../features/season.md)
+  §3.11–§3.13, [`boop-ios.md`](../features/boop-ios.md) §2 *Évad*.
 - **2026-11-21 — Boop B6 Évad S2: adherence, insights, the season in every AI context, the wall (`mezo-r36n9.16`).**
   One server source of day judgement: `GET /api/seasons/adherence?from&to` (`AdherenceService`, ≤ 62 days, with or
   without a season) — judged = before today, no fuel recovery mode, something logged (the Étel Hét tab's own rule);

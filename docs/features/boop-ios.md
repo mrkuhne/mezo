@@ -18,6 +18,12 @@ related: [season, penz, fuel, pantry, recipe, dayclose, intention, journal, comp
 
 # Boop — native iOS app — Feature Documentation
 
+> **2026-11-21 — Boop B6 Évad S3 (`mezo-r36n9.16`).** The Évad page's **Menü** and **Lista** tabs are live: next week's
+> menu as a carousel of seven day cards (approve, swap a meal, another menu, „Kiválasztott receptek"), and the approved
+> week's shopping list (shelves, „mihez kell", check-off, „Változott", staples on tap, plain-text share, past lists). The
+> Ma wall's `evad` source adds the menu waiting for approval as an `.expires` card on the menu day — see **Évad** in §2
+> and [`season.md`](season.md) §3.11–§3.13.
+
 > **2026-11-21 — Évad: a gym + sport day is two sessions (`mezo-r36n9.131`).** Hogy megy counts training and sport
 > apart („3 / 4 edzés megvolt", „1 / 2 sport megvolt"; an older server's total alone still shows as „edzés"), the food
 > row, the *Mi mire hat* Edzés sentence, the new-season summary (`evadKcalSentence`) and *Ennyi változna* („Edzés +
@@ -567,6 +573,18 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     number; `-evadEndSoon YES` puts the season in its last week (the wall's season-end card); `getAdherence` answers
     the Étel preview's week (day 4 a kímélő day, today still going). The preview's learned-insight body still carries
     the spike's Monday sentence — the server no longer says it.
+  - **Menü + Lista (S3, 2026-11-21).** `EvadStore.menu` is an `EvadMenuStore` (`BoopCore/Evad/EvadMenuStore.swift`, same
+    client + `ServerCache`, keys `evad/menu` / `evad/list`, offline = last answer with its age). It shows next week's menu
+    when it has meals, else this week's, else next week's empty state; the list is next week's, else this week's (404 =
+    `listMissing`). `EvadMenuTab` (screen 05: `NKHighlight` approve, `NKCarousel` of day cards 372 pt × 0.84, a meal tap →
+    `EvadSwapSheet` presented at page level, *Kérek másikat*, *Kiválasztott receptek*; seeding / none / repeated states),
+    `EvadListTab` (screen 06: `evadShelfGroups`, `EvadTick` drawn tick, „Változott", staple chips, `ShareLink` with
+    `evadShareText`, *Korábbi listák*, *Szokásos tételek*); sub-pages `EvadRecipesPage`, `EvadPastListsPage`,
+    `EvadStaplesPage` (`EvadSub` receptek / listak / tetelek). Check-off is optimistic and outbox-free: one retry, then the
+    tick is put back with a line. Tab badges: Menü dot = next week `proposed` (overview), Lista = lines still to buy.
+    Wall: `evadMenuCandidate` — `.expires` from the menu day until the week starts (`expiresAt` = next Monday), *Átnézem*
+    → `pendingSub = "menu"` → the Menü tab. DEBUG preview `EvadMenuPreview.swift` (`-evadMenu proposed|approved|seeding|none`,
+    `-evadRepeated YES`, `-evadChanged YES`).
 - **The Edzés room (B5 phase 1, `mezo-r36n9.15`)** — the same page, with its own data. Edzés left `AreaRoom`
   for `ios/Boop/Edzes/EdzesRoom.swift`, branched beside `EtelRoom()` in `NapView`, because the morning brief
   cannot carry what the training API knows. **The frame is still the kit's** (`NKAreaPage`, the area's own bar,

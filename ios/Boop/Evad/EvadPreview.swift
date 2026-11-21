@@ -293,9 +293,17 @@ struct EvadPreviewTransport: ClientTransport {
             json(["messages": [["code": code, "text": code]]], status)
         }
         return m.lock.withLock {
+            if let (status, object) = EvadMenuPreviewModel.shared.answer(operationID, path: request.path ?? "", sent: sent) {
+                return json(object, status)
+            }
             switch operationID {
+            case "putSeasonRecipes":
+                var d = m.draft; d["allowedRecipeIds"] = sent["recipeIds"]; m.draft = d
+                return json(m.season())
             case "getSeasonOverview":
-                return m.hasSeason ? json(m.overview()) : refuse(404, "NOT_FOUND")
+                guard m.hasSeason else { return refuse(404, "NOT_FOUND") }
+                var o = m.overview(); o["menu"] = EvadMenuPreviewModel.shared.menuStatus()
+                return json(o)
             case "getFirstSeasonDraft":
                 return json(m.draft)
             case "previewSeasonDraft":

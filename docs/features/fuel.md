@@ -445,6 +445,11 @@ View (features/fuel/pages/*.tsx)
 
 A deterministic port of the web planner so the native app gets one answer from one endpoint. **No LLM produces any number or sentence here.**
 
+- **Évad S3 (2026-11-21, `mezo-r36n9.16`).** The candidate list goes through `meal/port/SeasonMenuPort.allowedRecipes`
+  (an active season's allowed recipes only; empty = no filter), an approved weekly menu's meal for a window (`<slot>#<n>`)
+  is that window's suggestion (reason „ez szerepel a jóváhagyott heti menüdben"), and `skeleton(owner, date)` /
+  `recipeCandidates(owner)` serve the season's menu planner the same windows, budgets and candidates — see
+  [`season.md`](season.md) §3.11–§3.12.
 - **Where it lives.** The pure rules are in `nutrition/service/dayplan/` — `WindowPlacer` (meal windows from wake / bed / the day's workouts / the slot template; ports `placeWindows`, `compileTemplate`, `widenWindows`, `resolveDayType`), `BudgetSplitter` (the per-window budget, by template percentage when rows carry one, role-multiplied macros; ports `splitBudget` / `splitBudgetPct`), `SuggestionPicker` (a recipe filtered by the sensitivity rules, with the ingredient-level fallback), `UsualMealRanker` (the last 28 days ranked by window asked, frequency, recency) and `MealSlots`. The orchestrator `DayPlanService`, its wire mapper `FuelPlanMapper` and `FuelPlanController` live in **`meal/service/dayplan/`**, not in `nutrition`, because it reads `FuelDayService`, recipes and fuel settings, which are all downstream of `nutrition` — putting it there would have created two new ArchUnit cycles. New slice edges: `meal → fuel`, `meal → wearable` (for the owner zone `mezo.wearable.zone`).
 - **Inputs.** `FuelDayService.getDay` (targets + consumed + skipped kcal + fuel mode + meals in one read), the sleep anchor port (wake / bed), `fuel_settings` + `meal_slot_template`, the recipe library, the owner's sensitivity profile, and the wearable zone.
 - **Output** (`FuelPlanResponse`): `windows[]` (`slot`, `kind` meal|snack, Hungarian `label`, `from`/`to` HH:mm, nullable `budget` macros, `state` done|now|pending|missed|skipped, `loggedMealIds`, nullable `suggestion{kind recipe|ingredients, recipeId?, text, reason}`), `remaining` (target − consumed − the kcal of skipped windows; **null on a kímélő GUIDANCE day**, which is not judged on kcal) and one `tip{text, reason}`.

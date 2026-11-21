@@ -34,9 +34,12 @@ Ezekből számolja Boop, mennyit egyél edzésnapon és pihenőnapon, mennyit al
 - **Boop ismeri az évad szabályait** a beszélgetésben, a reggeli összefoglalóban és az étkezések értékelésében, és ha
   kérdezed, elmondja, hogyan halad az évad.
 - **Kártyák a Ma falán:** az égetés-javaslat és az évad vége — lásd [Az évad](06-terv-csomag.md).
+- **Heti menü** (3. szakasz): vasárnap este a kiválasztott receptjeidből, az edzésnapjaidhoz igazítva — jóváhagyod, és
+  ezek lesznek a napi terved ételei; lásd [Heti menü](09-heti-menu.md).
+- **Bevásárlólista** (3. szakasz): a jóváhagyott menüből, polcok szerint, pipálható, megosztható; lásd
+  [Bevásárlólista](07-bevasarlolista.md).
 
 **Ami még jön:**
-- **3. szakasz:** heti menü a kiválasztott receptekből és bevásárlólista (a „Menü” és „Lista” fül addig „hamarosan” lapot mutat).
 - **4. szakasz:** kísérletek — kipróbálsz valamit, és Boop megnézi, tényleg hat-e (a „Hatás” fül addig „hamarosan”).
 - **Korábbi évadok** oldal és a mostani súlyod az Új évad első lépésében.
 

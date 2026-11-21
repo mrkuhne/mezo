@@ -41,7 +41,9 @@ mentél a sávból”, kevés mérlegelésnél pedig az, hogy még nincs elég a
 6. **Következik** — a könnyebb edzéshetek és az évad vége.
 7. Gombok: **Módosítás** és **Új évad**.
 
-**Menü, Lista, Hatás:** egyelőre egy „hamarosan” lap mondja el, mi lesz ott.
+**Menü:** a jövő heti menü hét napkártyán, jóváhagyással és cserével — lásd [Heti menü](09-heti-menu.md). **Lista:** a
+jóváhagyott menü bevásárlólistája — lásd [Bevásárlólista](07-bevasarlolista.md). **Hatás:** egyelőre egy „hamarosan”
+lap mondja el, mi lesz ott.
 
 **Szabályok:** kapcsolók — „Csak kevéssé feldolgozott ételek”, „Vasárnap este kérem a jövő heti menüt”, „Könnyebb edzéshéten
 ne fogyjak”, „A valódi égetésemmel számoljon”, „Ajánljon kísérletet, ha valami újat kezdek” —, alattuk a kiválasztott receptek
@@ -90,7 +92,7 @@ Nincs külön beállítása; a szabályokat lásd [Az évad](06-terv-csomag.md) 
 | `weight_log` | A súlygörbe mérései |
 
 ## Mi jön még
-- 3. szakasz: Menü és Lista fül; 4. szakasz: Hatás fül.
+- 4. szakasz: Hatás fül (a Menü és a Lista fül a 3. szakasszal élesedett).
 - Korábbi évadok oldal, és a mostani súlyod az Új évad első lépésében.
 
 ## Mi marad ki
