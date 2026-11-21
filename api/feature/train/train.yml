@@ -2839,9 +2839,13 @@ components:
             pattern: '^(Hét|Kedd|Sze|Csü|Pén|Szo|Vas)$'
         weeks:
           type: integer
-          minimum: 4
+          minimum: 1
           maximum: 8
-          description: Total length incl. the terminal deload week
+          description: Total length incl. the terminal deload week (4–8; 1–3 only with consolidation)
+        consolidation:
+          type: boolean
+          nullable: true
+          description: A short year-plan consolidation block (1–3 weeks, every muscle at Tartás, flat curve, no deload); absent = false
         priorities:
           type: object
           nullable: true
@@ -3207,9 +3211,13 @@ components:
             pattern: '^(Hét|Kedd|Sze|Csü|Pén|Szo|Vas)$'
         weeks:
           type: integer
-          minimum: 4
+          minimum: 1
           maximum: 8
-          description: Total length incl. the terminal deload week
+          description: Total length incl. the terminal deload week (4–8; 1–3 only with consolidation)
+        consolidation:
+          type: boolean
+          nullable: true
+          description: A short year-plan consolidation block (1–3 weeks, every muscle at Tartás, flat curve, no deload); absent = false
         priorities:
           type: object
           nullable: true

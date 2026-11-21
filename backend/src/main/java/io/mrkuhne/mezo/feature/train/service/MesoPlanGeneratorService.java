@@ -55,6 +55,7 @@ public class MesoPlanGeneratorService {
      *  slow-tier LLM round-trip below must never hold a DB connection open for its duration. The
      *  repository reads ({@link #catalogue}, the evaluator's) are transactional on their own. */
     public MesoPlanGenerateResponse generate(UUID user, MesoPlanGenerateRequest req) {
+        MesoWeeksGuard.check(req.getWeeks(), consolidation(req));
         // the Hangsúly cap 400 wins over an unknown split 400 (checked again inside draft, harmlessly)
         PriorityGuard.checkEmphasizeCap(PriorityTier.normalize(req.getPriorities()), volumeProperties.bands().emphasizeMax());
         MesoPlanProperties.Split split = resolveSplit(req);
@@ -149,11 +150,23 @@ public class MesoPlanGeneratorService {
                          List<MesoPlanFiller.Candidate> candidates, List<MesoPlanFiller.FilledDay> days) {}
 
     private Draft draft(MesoPlanGenerateRequest req, MesoPlanProperties.Split split, Catalogue catalogue) {
-        Map<String, String> priorities = PriorityTier.normalize(req.getPriorities());
+        Map<String, String> priorities = consolidation(req) ? allMaintain()
+            : PriorityTier.normalize(req.getPriorities());
         PriorityGuard.checkEmphasizeCap(priorities, volumeProperties.bands().emphasizeMax());
         MesoPlanSkeleton.Skeleton skeleton = buildSkeleton(req, priorities, split);
         List<MesoPlanFiller.Candidate> candidates = catalogue.candidates();
         return new Draft(priorities, skeleton, candidates, MesoPlanFiller.fill(skeleton, candidates, props));
+    }
+
+    static boolean consolidation(MesoPlanGenerateRequest req) {
+        return Boolean.TRUE.equals(req.getConsolidation());
+    }
+
+    /** Consolidation: every baseline group at Tartás, whatever the request said. */
+    private Map<String, String> allMaintain() {
+        Map<String, String> out = new LinkedHashMap<>();
+        volumeProperties.baselines().keySet().forEach(g -> out.put(g, "maintain"));
+        return out;
     }
 
     /** Null when no split is chosen; else the catalogued split of the clamped day count (400 when unknown). */
@@ -173,12 +186,16 @@ public class MesoPlanGeneratorService {
     private MesoPlanSkeleton.Skeleton buildSkeleton(MesoPlanGenerateRequest req, Map<String, String> priorities,
                                                     MesoPlanProperties.Split split) {
         List<String> days = List.copyOf(req.getDaysOfWeek());
-        if (split == null) {
-            return MesoPlanSkeleton.build(days, req.getWeeks(), priorities, volumeProperties.baselines(),
-                volumeProperties.bands());
+        MesoPlanSkeleton.Skeleton s = split == null
+            ? MesoPlanSkeleton.build(days, req.getWeeks(), priorities, volumeProperties.baselines(),
+                volumeProperties.bands())
+            : MesoPlanSkeleton.build(days, req.getWeeks(), priorities, volumeProperties.baselines(),
+                volumeProperties.bands(), split.types(), split.label());
+        if (!consolidation(req)) {
+            return s;
         }
-        return MesoPlanSkeleton.build(days, req.getWeeks(), priorities, volumeProperties.baselines(),
-            volumeProperties.bands(), split.types(), split.label());
+        return new MesoPlanSkeleton.Skeleton(s.splitLabel(), s.days(), s.weekOneSets(),
+            MesoPlanSkeleton.flatCurve(req.getWeeks()));
     }
 
     private static MesoPlanLlm.Request toRequest(MesoPlanSkeleton.Skeleton s, List<MesoPlanFiller.Candidate> candidates,
@@ -215,11 +232,12 @@ public class MesoPlanGeneratorService {
         if (style != null) {
             dayInputs = stamp(dayInputs, style, catalogue.stability());
         }
-        String title = "Hypertrophy · " + season(LocalDate.now());
+        boolean consolidation = consolidation(req);
+        String title = consolidation ? "Lezárás" : "Hypertrophy · " + season(LocalDate.now());
         return MesoTemplateUpsertRequest.builder()
-            .title(title).shortTitle("Hypertrophy").goal("Izomtömeg építés").goalPreset(GOAL_PRESET)
+            .title(title).shortTitle(consolidation ? "Lezárás" : "Hypertrophy").goal("Izomtömeg építés").goalPreset(GOAL_PRESET)
             .musclePriorities(priorities.isEmpty() ? null : priorities)
-            .weeks(req.getWeeks()).split(s.splitLabel()).style("RP · " + req.getWeeks() + " hét")
+            .weeks(req.getWeeks()).split(s.splitLabel()).style((consolidation ? "Lezárás" : "RP") + " · " + req.getWeeks() + " hét")
             .phaseCurve(s.phaseCurve().stream().map(MesoTemplateUpsertRequest.PhaseCurveEnum::fromValue).toList())
             .notes(req.getGoalText() == null || req.getGoalText().isBlank() ? null : req.getGoalText().strip())
             .volumePerMuscle(null) // volume engine v2: landmarks are never stored in a template

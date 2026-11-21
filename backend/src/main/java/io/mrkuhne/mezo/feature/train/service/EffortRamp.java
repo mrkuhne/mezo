@@ -21,6 +21,9 @@ public final class EffortRamp {
         if (phaseCurve == null || week < 1 || week > phaseCurve.size()) {
             return Math.max(base, floor);
         }
+        if (isFlatMev(phaseCurve)) {
+            return Math.max(base, floor);
+        }
         int result;
         if (isDeload(phaseCurve.get(week - 1))) {
             result = base + cfg.deloadDelta();
@@ -41,6 +44,11 @@ public final class EffortRamp {
             }
         }
         return Math.max(Math.max(result, 0), floor);
+    }
+
+    /** A consolidation curve (no deload, every week MEV) never ramps. */
+    private static boolean isFlatMev(List<String> curve) {
+        return curve.stream().allMatch(p -> p != null && p.equalsIgnoreCase("MEV"));
     }
 
     private static boolean isDeload(String phase) {
