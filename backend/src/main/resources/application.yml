@@ -742,6 +742,11 @@ mezo:
         # csapatfal Act III Task 7 (mezo-a9bo7.22): the team chat voice call — over the
         # monthly-usd-cap ceiling every line falls back to the honest template (voiced=false).
         - team_chat
+        # Boop Levél (mezo-r36n9.38): the morning post's three model calls — a throttled account falls back to the
+        # rules-only grouping (the page says so). The daily mail cap (mezo.mail.daily-usd-cap) is a separate guard.
+        - mail_classify
+        - mail_score
+        - mail_screen
       # Never capped: the owner's admin dry-run replay bills the INSPECTED user but has to stay
       # usable on exactly the accounts that hit their ceiling (LlmCallContext.FEATURE_ADMIN_REPLAY),
       # and the boot smoke call is how we find out the provider works at all.

@@ -661,6 +661,51 @@ public class FakeCompanionLlm implements CompanionLlm {
     private final java.util.concurrent.atomic.AtomicInteger penzDigestCalls = new java.util.concurrent.atomic.AtomicInteger();
     public int penzDigestCallCount() { return penzDigestCalls.get(); }
 
+    /** Mirrors of the mail prompts' MARKERs (Boop Levél, mezo-r36n9.38) — LITERAL, like the Pénz mirrors. */
+    public static final String MAIL_CLASSIFY_MARKER_MIRROR = "BOOP_MAIL_CLASSIFY_V1";
+    public static final String MAIL_SCORE_MARKER_MIRROR = "BOOP_MAIL_SCORE_V1";
+    public static final String MAIL_SCREEN_MARKER_MIRROR = "BOOP_MAIL_SCREEN_V1";
+    /** Scripts a mail answer: {@code [fake-mail:<base64 of the answer>]} anywhere in the user message. */
+    private static final Pattern MAIL_SCRIPT = Pattern.compile("\\[fake-mail:([A-Za-z0-9+/=]+)]");
+    /** Mirrors ScorePrompt's candidate fence header {@code <<<MAIL id=<uuid>}. */
+    private static final Pattern MAIL_CANDIDATE = Pattern.compile("(?m)^<<<MAIL id=([0-9a-fA-F-]{36})$");
+    /** The unscripted classification: valid and validator-clean (rest group, no date, no amount). */
+    public static final String MAIL_CLASSIFY_CANNED_ANSWER = """
+            {"group":"rest","category":"hírlevél","title":"Teszt levél","summary":"Ez a teszt-modell összefoglalója.",\
+            "dueAt":null,"validUntil":null,"amount":null,"currency":null,"carrier":null,"parcelState":null}""";
+    public static final String MAIL_SCREEN_CANNED_ANSWER = "{\"flagged\":false,\"reason\":\"\"}";
+    private final java.util.concurrent.atomic.AtomicInteger mailClassifyCalls = new java.util.concurrent.atomic.AtomicInteger();
+    private final java.util.concurrent.atomic.AtomicInteger mailScoreCalls = new java.util.concurrent.atomic.AtomicInteger();
+    private final java.util.concurrent.atomic.AtomicInteger mailScreenCalls = new java.util.concurrent.atomic.AtomicInteger();
+    public int mailClassifyCallCount() { return mailClassifyCalls.get(); }
+    public int mailScoreCallCount() { return mailScoreCalls.get(); }
+    public int mailScreenCallCount() { return mailScreenCalls.get(); }
+
+    private static String mailAnswer(String userMessage, String canned) {
+        Matcher scripted = MAIL_SCRIPT.matcher(userMessage);
+        if (scripted.find()) {
+            return new String(Base64.getDecoder().decode(scripted.group(1)), StandardCharsets.UTF_8);
+        }
+        return canned;
+    }
+
+    /** The unscripted score: every candidate id of the prompt, score 5, a fixed Hungarian line. */
+    private static String mailScoreAnswer(String userMessage) {
+        Matcher scripted = MAIL_SCRIPT.matcher(userMessage);
+        if (scripted.find()) {
+            return new String(Base64.getDecoder().decode(scripted.group(1)), StandardCharsets.UTF_8);
+        }
+        StringBuilder sb = new StringBuilder("[");
+        Matcher c = MAIL_CANDIDATE.matcher(userMessage);
+        while (c.find()) {
+            if (sb.length() > 1) {
+                sb.append(',');
+            }
+            sb.append("{\"id\":\"").append(c.group(1)).append("\",\"score\":5,\"why\":\"Teszt indoklás.\"}");
+        }
+        return sb.append(']').toString();
+    }
+
     /** Mirror of penz ProposalPrompt.MARKER (Boop Pénz L7, mezo-r36n9.105) — LITERAL, like the digest mirror. */
     public static final String PENZ_PROPOSAL_MARKER_MIRROR = "BOOP_PENZ_PROPOSAL_V1";
     /** The unscripted proposal narration: valid, validator-clean (no number, no product name, no boundary word). */
@@ -994,6 +1039,18 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (systemPrompt.startsWith(PENZ_SMS_MARKER_MIRROR)) {
             penzSmsCalls.incrementAndGet();
             return penzSmsAnswer(userMessage);
+        }
+        if (systemPrompt.startsWith(MAIL_CLASSIFY_MARKER_MIRROR)) {
+            mailClassifyCalls.incrementAndGet();
+            return mailAnswer(userMessage, MAIL_CLASSIFY_CANNED_ANSWER);
+        }
+        if (systemPrompt.startsWith(MAIL_SCORE_MARKER_MIRROR)) {
+            mailScoreCalls.incrementAndGet();
+            return mailScoreAnswer(userMessage);
+        }
+        if (systemPrompt.startsWith(MAIL_SCREEN_MARKER_MIRROR)) {
+            mailScreenCalls.incrementAndGet();
+            return mailAnswer(userMessage, MAIL_SCREEN_CANNED_ANSWER);
         }
         if (systemPrompt.startsWith(PENZ_DIGEST_MARKER_MIRROR)) {
             penzDigestCalls.incrementAndGet();

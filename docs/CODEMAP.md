@@ -382,23 +382,23 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `HighlightCitationSource`, `IgnoredNudgeRule`, `InsightsTools`, `JointOveruseRule`, `KnowledgeBackfillRunner`,
     `LateEatingRule`, `LifeGoalGraphSource`, `LifeGoalProposeLlmAdapter`, `LifeGoalProposePort`, `LifeGoalSource`,
     `LifeGoalText`, `LifeGoalTools`, `LlmModelRouter`, `LlmRoundUsage`, `LlmRoundUsageAdvisor`, `LlmUsageExtractor`,
-    `LoadFuelMismatchRule`, `LoggingGapRule`, `MealCoachLlmAdapter`, `MealDraftLlmAdapter`, `MealRhythmDriftRule`,
-    `MedicationTools`, `MemoryCandidate`, `MemoryContext`, `MemoryContextItem`, `MemoryEmbeddingWriter`,
-    `MemoryProvenanceEnvelope`, `MemoryRequest`, `MemoryTools`, `MesoPlanLlmAdapter`, `MissedWorkoutsRule`,
-    `MomentumAtRiskRule`, `MotivationSlumpRule`, `NarrativeNoteSource`, `NoteEmbeddingCatchUp`, `NoteMentionCatchUp`,
-    `OpenAiCompanionLlm`, `OpenAiEmbeddingAdapter`, `OpenAiUsageExtractor`, `OutputLanguageDirective`,
-    `PantryEstimateLlmAdapter`, `PantryPhotoLlmAdapter`, `PantryScrapeLlmAdapter`, `PatternCritiqueEnvelope`,
-    `PatternEventPayloadEnvelope`, `PatternEvidenceEnvelope`, `PenzDigestLlmAdapter`, `PenzProposalLlmAdapter`,
-    `PenzSmsLlmAdapter`, `PersistentPainRule`, `PersonalRecordTools`, `PoorRestednessRule`, `PracticeTools`,
-    `PreparedMemoryQuery`, `ProfileMetaEnvelope`, `ProtocolLapseRule`, `QueryMode`, `RapidWeightLossRule`,
-    `RecalledMemoriesEnvelope`, `RecipeBreakdownLlmAdapter`, `RecipeCookedLlmAdapter`, `RecipeImportLlmAdapter`,
-    `RecipeWorkshopLlmAdapter`, `RecordingToolCallback`, `RecoveryNeededRule`, `RefsEnvelope`, `RetrievalInput`,
-    `RetrievalServingMode`, `ScoreBreakdown`, `ScoreBreakdownEnvelope`, `SeasonContextPort`, `SeasonTools`,
-    `SessionTimeOverrideSource`, `SleepDebtRule`, `SleepDeficitCalculator`, `SleepShotLlmAdapter`,
-    `SlotPlanLlmAdapter`, `SpringAiCompanionLlm`, `StackPlacementLlmAdapter`, `SustainedStressRule`,
-    `TechniqueLlmAdapter`, `TestPlanEnvelope`, `TextSignalProvenanceEnvelope`, `ToolCallAudit`, `ToolCallsEnvelope`,
-    `ToolContexts`, `ToolOutcomesEnvelope`, `ToolText`, `TrainTools`, `TrainingNoteMentionSweep`, `TurnVerdictCheck`,
-    `WeekReviewSource`
+    `LoadFuelMismatchRule`, `LoggingGapRule`, `MailClassifierLlmAdapter`, `MealCoachLlmAdapter`, `MealDraftLlmAdapter`,
+    `MealRhythmDriftRule`, `MedicationTools`, `MemoryCandidate`, `MemoryContext`, `MemoryContextItem`,
+    `MemoryEmbeddingWriter`, `MemoryProvenanceEnvelope`, `MemoryRequest`, `MemoryTools`, `MesoPlanLlmAdapter`,
+    `MissedWorkoutsRule`, `MomentumAtRiskRule`, `MotivationSlumpRule`, `NarrativeNoteSource`, `NoteEmbeddingCatchUp`,
+    `NoteMentionCatchUp`, `OpenAiCompanionLlm`, `OpenAiEmbeddingAdapter`, `OpenAiUsageExtractor`,
+    `OutputLanguageDirective`, `PantryEstimateLlmAdapter`, `PantryPhotoLlmAdapter`, `PantryScrapeLlmAdapter`,
+    `PatternCritiqueEnvelope`, `PatternEventPayloadEnvelope`, `PatternEvidenceEnvelope`, `PenzDigestLlmAdapter`,
+    `PenzProposalLlmAdapter`, `PenzSmsLlmAdapter`, `PersistentPainRule`, `PersonalRecordTools`, `PoorRestednessRule`,
+    `PracticeTools`, `PreparedMemoryQuery`, `ProfileMetaEnvelope`, `ProtocolLapseRule`, `QueryMode`,
+    `RapidWeightLossRule`, `RecalledMemoriesEnvelope`, `RecipeBreakdownLlmAdapter`, `RecipeCookedLlmAdapter`,
+    `RecipeImportLlmAdapter`, `RecipeWorkshopLlmAdapter`, `RecordingToolCallback`, `RecoveryNeededRule`,
+    `RefsEnvelope`, `RetrievalInput`, `RetrievalServingMode`, `ScoreBreakdown`, `ScoreBreakdownEnvelope`,
+    `SeasonContextPort`, `SeasonTools`, `SessionTimeOverrideSource`, `SleepDebtRule`, `SleepDeficitCalculator`,
+    `SleepShotLlmAdapter`, `SlotPlanLlmAdapter`, `SpringAiCompanionLlm`, `StackPlacementLlmAdapter`,
+    `SustainedStressRule`, `TechniqueLlmAdapter`, `TestPlanEnvelope`, `TextSignalProvenanceEnvelope`, `ToolCallAudit`,
+    `ToolCallsEnvelope`, `ToolContexts`, `ToolOutcomesEnvelope`, `ToolText`, `TrainTools`, `TrainingNoteMentionSweep`,
+    `TurnVerdictCheck`, `WeekReviewSource`
 - **Contract** `api/feature/companion-feedback/companion-feedback.yml` — 3 operations
   - **endpoints:** GET /api/companion/feedback · PUT /api/companion/feedback ·
     DELETE /api/companion/feedback/{artifactKind}/{artifactId}
@@ -770,7 +770,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 - **Contract** `api/feature/llm-usage/llm-usage.yml` — 4 operations
   - **endpoints:** GET /api/llm-usage/summary · GET /api/llm-usage/breakdown · GET /api/llm-usage/calls ·
     GET /api/llm-usage/calls/{id}
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/llmlog` — 19 IT + 7 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/llmlog` — 19 IT + 8 unit
   - **ITs:** `AiDraftsApiIT`, `LlmActorPropagationIT`, `LlmBudgetCapIT`, `LlmBudgetLogDisabledIT`,
     `LlmCallContextTaggingIT`, `LlmCallDetailIT`, `LlmCallListIT`, `LlmCallListMidnightIT`, `LlmLogRecorderWiringIT`,
     `LlmLogRepositoryIT`, `LlmLogRetentionJobIT`, `LlmLogRetentionJobSwitchOffIT`,
@@ -789,14 +789,16 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `MailRunEntity`→`mail_run`, `MailSenderRuleEntity`→`mail_sender_rule`
   - **repositories:** `MailFeedbackRepository`, `MailFolderCursorRepository`, `MailItemRepository`,
     `MailMailboxRepository`, `MailMessageRepository`, `MailRunRepository`, `MailSenderRuleRepository`
-  - **services:** `MailCredentialCipher`, `MailHealth`, `MailIntakeService`, `MailIntakeStore`, `MailPurgeService`
+  - **services:** `MailClassifierLlm`, `MailCostCap`, `MailCredentialCipher`, `MailHealth`, `MailIntakeService`,
+    `MailIntakeStore`, `MailPurgeService`
   - **config:** `MailProperties`
-  - **other:** `BulkDetector`, `CarrierRules`, `FetchedMail`, `Group`, `ImapMailReader`, `JsonLdReader`, `MailHeaders`,
-    `MailReader`, `MailRedactor`, `MailRules`, `ParcelState`, `RedactedMail`, `RuleVerdict`, `SenderRule`,
-    `SensitiveSeed`
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/mail` — 3 IT + 6 unit
-  - **ITs:** `ImapMailReaderIT`, `MailIntakeIT`, `MailSchemaIT`
-  - **populators:** `DatabasePopulator`, `MailPopulator`
+  - **other:** `BulkDetector`, `CarrierRules`, `ClassifiedMail`, `ClassifyPrompt`, `FetchedMail`, `Group`,
+    `ImapMailReader`, `JsonLdReader`, `MailFence`, `MailHeaders`, `MailOutputValidator`, `MailReader`, `MailRedactor`,
+    `MailRules`, `ParcelState`, `RedactedMail`, `RuleVerdict`, `ScorePrompt`, `ScoredDeal`, `ScreenPrompt`,
+    `SenderRule`, `SensitiveSeed`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/mail` — 4 IT + 8 unit
+  - **ITs:** `ImapMailReaderIT`, `MailCostCapIT`, `MailIntakeIT`, `MailSchemaIT`
+  - **populators:** `DatabasePopulator`, `LlmLogPopulator`, `MailPopulator`, `UserPopulator`
 
 ### meal
 
