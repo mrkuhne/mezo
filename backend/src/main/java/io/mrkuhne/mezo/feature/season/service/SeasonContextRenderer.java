@@ -173,7 +173,8 @@ public class SeasonContextRenderer {
             lines.add("Az elmúlt 7 nap: még nincs mit értékelni");
         } else {
             lines.add("Az elmúlt 7 nap: étel a kereten belül " + a.getFoodInBand() + "/" + a.getFoodJudged()
-                + " értékelt napon, edzés " + a.getTrainingDone() + "/" + a.getTrainingPlanned()
+                + " értékelt napon"
+                + (a.getTrainingPlanned() > 0 ? ", edzés " + a.getTrainingDone() + "/" + a.getTrainingPlanned() : "")
                 + (a.getSportPlanned() > 0 ? ", sport " + a.getSportDone() + "/" + a.getSportPlanned() : "")
                 + ", elég alvás " + a.getNightsOk() + "/" + a.getNightsJudged() + " éjszakán"
                 + (a.getExcusedDays() > 0 ? ", kímélő nap: " + a.getExcusedDays() : ""));

@@ -212,6 +212,20 @@ class AdherenceServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void skipOfAnUnscheduledKindKeepsTheDaysKind() {
+        UUID owner = fixture.owner("adherence-event-skip@test.local");
+        LocalDate monday = lastBefore(today, 0);
+        // A skipped one-off sport event on a gym-only day: excused, and the day stays an edzésnap.
+        skipPopulator.create(owner, monday, Kind.SPORT, 0, "20:00", null, Reason.ILLNESS);
+
+        AdherenceDay d = adherence.range(owner, monday, monday).days().get(0);
+
+        assertThat(d.dayKind()).isEqualTo("edzesnap");
+        assertThat(d.sessions()).extracting(DaySession::kind, DaySession::excused)
+            .containsExactly(tuple("gym", false), tuple("sport", true));
+    }
+
+    @Test
     void noSeasonStillJudgesFoodAgainstGoal() {
         UUID owner = fixture.owner("adherence-noseason@test.local");
         UUID goal = goalPort.createGoal(owner, SeasonDraftMath.goalFields(SeasonFixture.draft(), new BigDecimal("84.0"),

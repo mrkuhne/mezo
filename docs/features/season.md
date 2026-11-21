@@ -273,7 +273,9 @@ Range: inclusive, `to ≥ from`, **at most 62 days**, else 400 `VALIDATION_INVAL
 **Known limitation:** planned sessions are read from **today's** weekly slots (and the running block's run windows),
 not from what the schedule was on that day — a schedule change re-labels past days. (The former second limitation —
 one flag per day, so a gym + sport day counted once — is fixed by mezo-r36n9.131.) A session of the other kind does
-not stand in: a volleyball game on a gym-only day does not tick the gym session.
+not stand in: a volleyball game on a gym-only day does not tick the gym session. A gym slot and a block run on the same weekday are likewise
+two training sessions. `dayKind` follows the day's plan; a skipped kind that is not in today's schedule (a one-off event)
+is listed as an excused session but does not change the kind.
 
 ### 3.8 Insights — „Amit Boop észrevett" (S2, spec §5.6)
 

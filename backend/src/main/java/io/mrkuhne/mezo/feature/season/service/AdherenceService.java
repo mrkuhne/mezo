@@ -135,8 +135,11 @@ public class AdherenceService {
             }
             List<Boolean> verdicts = sessions.stream().map(DaySession::done).filter(Objects::nonNull).toList();
             Boolean sessionDone = verdicts.isEmpty() ? null : !verdicts.contains(Boolean.FALSE);
-            String dayKind = SeasonDayKind.of(kinds.stream().anyMatch(SessionKind::training),
-                kinds.contains(SessionKind.SPORT)).key();
+            // The day's kind is its plan: a skip of a one-off event (or a slot no longer scheduled) keeps the day's
+            // own kind; only when nothing else is planned does the skipped kind name it.
+            Set<SessionKind> plan = planned.getOrDefault(d, Set.of()).isEmpty() ? kinds : planned.get(d);
+            String dayKind = SeasonDayKind.of(plan.stream().anyMatch(SessionKind::training),
+                plan.contains(SessionKind.SPORT)).key();
             Integer sleepMin = sleep.get(d);
             Boolean sleepOk = !past || sleepMin == null || need == null ? null : sleepMin >= need - SLEEP_GRACE_MIN;
             out.add(new AdherenceDay(d, judged, excused, excuse, f.kcal(), f.targetKcal(), f.proteinG(),
