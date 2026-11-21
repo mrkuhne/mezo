@@ -12,4 +12,7 @@ public interface MailRunRepository extends JpaRepository<MailRunEntity, UUID> {
     /** The latest run of the owner started in {@code [from, to)} that could not use the model (cap hit or failure). */
     Optional<MailRunEntity> findFirstByCreatedByAndRulesOnlyTrueAndStartedAtGreaterThanEqualAndStartedAtLessThanOrderByStartedAtDesc(
         UUID createdBy, Instant from, Instant to);
+
+    /** The owner's most recent run (cooldown anchor fallback, last fetched count). */
+    Optional<MailRunEntity> findFirstByCreatedByOrderByStartedAtDesc(UUID createdBy);
 }

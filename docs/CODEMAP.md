@@ -30,7 +30,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 | [journal](#journal) | ✓ | 1 | [journal](features/journal.md) |
 | [lifegoal](#lifegoal) | ✓ | 1 | [lifegoal](features/lifegoal.md) |
 | [llmlog](#llmlog) | ✓ | 2 | [companion](features/companion.md) |
-| [mail](#mail) | ✓ | · | · |
+| [mail](#mail) | ✓ | 1 | · |
 | [meal](#meal) | ✓ | 3 | [fuel](features/fuel.md) |
 | [medication](#medication) | ✓ | 1 | · |
 | [needs](#needs) | ✓ | 1 | [needs](features/needs.md) |
@@ -781,7 +781,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### mail
 
-*BE* · read next: **none — no HOW doc exists for this feature yet**
+*BE + API* · read next: **none — no HOW doc exists for this feature yet**
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/mail`
   - **entities→tables:** `MailFeedbackEntity`→`mail_feedback`, `MailFolderCursorEntity`→`mail_folder_cursor`,
@@ -790,15 +790,23 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   - **repositories:** `MailFeedbackRepository`, `MailFolderCursorRepository`, `MailItemRepository`,
     `MailMailboxRepository`, `MailMessageRepository`, `MailRunRepository`, `MailSenderRuleRepository`
   - **services:** `MailClassifierLlm`, `MailCostCap`, `MailCredentialCipher`, `MailDigest`, `MailDigestQuery`,
-    `MailDigestService`, `MailHealth`, `MailIntakeService`, `MailIntakeStore`, `MailItemStore`, `MailLearning`,
-    `MailPurgeService`, `Verdict`
-  - **config:** `MailProperties`
+    `MailDigestService`, `MailErrors`, `MailHealth`, `MailIntakeService`, `MailIntakeStore`, `MailItemStore`,
+    `MailJob`, `MailLearning`, `MailMailboxService`, `MailMailboxStore`, `MailPurgeService`, `MailRulesService`,
+    `MailRunner`, `Verdict`
+  - **controllers→contract:** `MailController`→`MailApi`
+  - **mappers:** `MailMapper`
+  - **config:** `MailAsyncConfig`, `MailProperties`
   - **other:** `BulkDetector`, `CarrierRules`, `ClassifiedMail`, `ClassifyPrompt`, `FetchedMail`, `Group`,
     `ImapMailReader`, `JsonLdReader`, `MailFence`, `MailHeaders`, `MailOutputValidator`, `MailReader`, `MailRedactor`,
     `MailRules`, `ParcelState`, `RedactedMail`, `RuleVerdict`, `ScorePrompt`, `ScoredDeal`, `ScreenPrompt`,
     `ScreenVerdict`, `SenderPrior`, `SenderRule`, `SensitiveSeed`
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/mail` — 5 IT + 9 unit
-  - **ITs:** `ImapMailReaderIT`, `MailCostCapIT`, `MailDigestPipelineIT`, `MailIntakeIT`, `MailSchemaIT`
+- **Contract** `api/feature/mail/mail.yml` — 8 operations
+  - **endpoints:** GET /api/mail/mailbox · PUT /api/mail/mailbox · DELETE /api/mail/mailbox ·
+    POST /api/mail/mailbox/run · GET /api/mail/digest · POST /api/mail/items/{id}/feedback · GET /api/mail/rules ·
+    PUT /api/mail/rules
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/mail` — 8 IT + 9 unit
+  - **ITs:** `ImapMailReaderIT`, `MailApiIT`, `MailCostCapIT`, `MailDigestPipelineIT`, `MailIntakeIT`,
+    `MailJobEnabledIT`, `MailJobSwitchIT`, `MailSchemaIT`
   - **populators:** `DatabasePopulator`, `LlmLogPopulator`, `MailPopulator`, `UserPopulator`
 
 ### meal

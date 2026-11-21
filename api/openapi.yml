@@ -350,6 +350,14 @@ tags:
       course, and previews every change without persisting anything. Nothing
       changes until the owner accepts (activate / apply). A value the server
       cannot compute is null — the phone leaves it out, it never invents one.
+  - name: Mail
+    description: >
+      Boop Levél (mezo-r36n9.39) — the morning post: the owner's read-only
+      mirror mailbox (a Gmail app password, verified before it is stored, sealed
+      at rest, never returned), the twice-daily run and its manual twin, the
+      day's digest, the "érdekel / nem érdekel" feedback and the sender rules.
+      Every enum is a plain string on the wire (the phone decodes leniently). A
+      sensitive card carries the sender only — never the subject or body.
 paths:
   /api/auth/login:
     post:
@@ -16588,6 +16596,251 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/mail/mailbox:
+    get:
+      tags:
+        - Mail
+      operationId: getMailMailbox
+      summary: >-
+        The caller's mirror mailbox — state `none` (and a null address) when
+        none is connected yet; never the secret
+      responses:
+        '200':
+          description: The mailbox
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailMailboxResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    put:
+      tags:
+        - Mail
+      operationId: putMailMailbox
+      summary: >-
+        Connect (or replace) the mirror mailbox — the app password is verified
+        against the mail server first
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MailMailboxRequest'
+      responses:
+        '200':
+          description: Connected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailMailboxResponse'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '422':
+          description: >-
+            MAIL_AUTH_FAILED — the server did not accept the password; nothing
+            was stored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '503':
+          description: >-
+            MAIL_UNREACHABLE — the mail server cannot be reached; nothing was
+            stored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - Mail
+      operationId: deleteMailMailbox
+      summary: >-
+        Disconnect — the state becomes `disconnected` and both secret columns
+        are emptied; the row stays
+      responses:
+        '200':
+          description: The disconnected mailbox
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailMailboxResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/mail/mailbox/run:
+    post:
+      tags:
+        - Mail
+      operationId: runMailMailbox
+      summary: >-
+        Run the post now for the caller only (fetch, sort, purge) in the
+        background; one per cooldown
+      responses:
+        '202':
+          description: Accepted — read GET /api/mail/digest again later
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: MAIL_NOT_CONNECTED — no connected mailbox
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '429':
+          description: MAIL_RUN_COOLDOWN — the last run was too recent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/mail/digest:
+    get:
+      tags:
+        - Mail
+      operationId: getMailDigest
+      summary: The day's morning post (default today in Europe/Budapest)
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: The digest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailDigestResponse'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/mail/items/{id}/feedback':
+    post:
+      tags:
+        - Mail
+      operationId: postMailFeedback
+      summary: >-
+        Tap "érdekel" or "nem érdekel" on a card — a second tap on the same card
+        replaces the first
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MailFeedbackRequest'
+      responses:
+        '204':
+          description: Stored
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: MAIL_ITEM_NOT_FOUND — unknown or somebody else's card
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/mail/rules:
+    get:
+      tags:
+        - Mail
+      operationId: getMailRules
+      summary: >-
+        The sender rules (the seeded sensitive senders read-only, `origin` seed)
+        and the silent-sender proposals
+      responses:
+        '200':
+          description: The rules
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailRulesResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    put:
+      tags:
+        - Mail
+      operationId: putMailRules
+      summary: >-
+        Replace the owner's own rules (the seed rows are code and are never
+        changed)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MailRulesRequest'
+      responses:
+        '200':
+          description: The rules after the replacement
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailRulesResponse'
+        '400':
+          description: Validation failure (a pattern is neither an address nor @domain)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
           content:
             application/json:
               schema:
@@ -38579,3 +38832,279 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SeasonUpcoming'
+    MailMailboxRequest:
+      type: object
+      required:
+        - address
+        - appPassword
+      properties:
+        address:
+          type: string
+          maxLength: 254
+          pattern: '^[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,185}\.[A-Za-z]{2,}$'
+        appPassword:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 100
+          description: >-
+            The Gmail app password. Never returned, logged or echoed in an
+            error.
+    MailMailboxResponse:
+      type: object
+      required:
+        - state
+      properties:
+        address:
+          type: string
+          nullable: true
+        state:
+          type: string
+          description: none | connected | silent | auth_failed | disconnected
+        lastRunAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastFetched:
+          type: integer
+          nullable: true
+          description: Mails fetched by the latest run
+    MailDigestResponse:
+      type: object
+      required:
+        - mailboxState
+        - rulesOnly
+        - arrived
+        - worthAMinute
+        - handled
+        - heatSlots
+        - people
+        - sensitive
+        - deadlines
+        - parcels
+        - deals
+        - rest
+      properties:
+        lastRunAt:
+          type: string
+          format: date-time
+          nullable: true
+        mailboxState:
+          type: string
+          description: connected | silent | auth_failed | disconnected
+        rulesOnly:
+          type: boolean
+          description: A run of that day could not use the model
+        rulesOnlyReason:
+          type: string
+          nullable: true
+          description: cap | failure when rulesOnly
+        arrived:
+          type: integer
+        worthAMinute:
+          type: integer
+        handled:
+          type: integer
+        heatSlots:
+          type: array
+          items:
+            type: integer
+          description: Twelve two-hour slots of the day
+        people:
+          type: array
+          items:
+            $ref: '#/components/schemas/MailDigestItem'
+        sensitive:
+          type: array
+          items:
+            $ref: '#/components/schemas/MailDigestItem'
+        deadlines:
+          type: array
+          items:
+            $ref: '#/components/schemas/MailDigestItem'
+        parcels:
+          type: array
+          items:
+            $ref: '#/components/schemas/MailDigestItem'
+        deals:
+          type: array
+          items:
+            $ref: '#/components/schemas/MailDigestItem'
+        rest:
+          type: array
+          items:
+            $ref: '#/components/schemas/MailDigestRestGroup'
+    MailDigestItem:
+      type: object
+      required:
+        - id
+        - group
+        - category
+        - title
+        - summary
+        - why
+        - screen
+        - flagged
+        - notifiable
+      properties:
+        id:
+          type: string
+          format: uuid
+        group:
+          type: string
+          description: person | sensitive | deadline | parcel | deal | rest
+        category:
+          type: string
+        title:
+          type: string
+          description: 'A sensitive card carries the sender here, never a subject'
+        summary:
+          type: string
+        why:
+          type: string
+        score:
+          type: integer
+          nullable: true
+        dueAt:
+          type: string
+          format: date-time
+          nullable: true
+        validUntil:
+          type: string
+          format: date-time
+          nullable: true
+        amountMinor:
+          type: integer
+          format: int64
+          nullable: true
+        currency:
+          type: string
+          nullable: true
+        carrier:
+          type: string
+          nullable: true
+        parcelState:
+          type: string
+          nullable: true
+        stateChangedAt:
+          type: string
+          format: date-time
+          nullable: true
+        screen:
+          type: string
+          description: none | clean | flagged | unknown
+        flagged:
+          type: boolean
+        notifiable:
+          type: boolean
+        fromName:
+          type: string
+          nullable: true
+        fromAddress:
+          type: string
+          nullable: true
+        via:
+          type: string
+          nullable: true
+        receivedAt:
+          type: string
+          format: date-time
+          nullable: true
+        gmailMessageId:
+          type: string
+          nullable: true
+          description: >-
+            X-GM-MSGID as a decimal string; the phone builds the Gmail link from
+            it
+    MailDigestRestGroup:
+      type: object
+      required:
+        - category
+        - count
+      properties:
+        category:
+          type: string
+        count:
+          type: integer
+    MailFeedbackRequest:
+      type: object
+      required:
+        - verdict
+      properties:
+        verdict:
+          type: string
+          pattern: ^(interest|nope)$
+    MailRulesRequest:
+      type: object
+      required:
+        - sensitive
+        - silent
+        - always
+      properties:
+        sensitive:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/MailRulePattern'
+        silent:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/MailRulePattern'
+        always:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/MailRulePattern'
+    MailRulePattern:
+      type: string
+      maxLength: 254
+      pattern: >-
+        ^(@[A-Za-z0-9.-]{1,185}\.[A-Za-z]{2,}|[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,185}\.[A-Za-z]{2,})$
+      description: A full address or @domain (a domain also matches its subdomains)
+    MailRulesResponse:
+      type: object
+      required:
+        - sensitive
+        - silent
+        - always
+        - proposals
+      properties:
+        sensitive:
+          type: array
+          items:
+            $ref: '#/components/schemas/MailRuleRow'
+        silent:
+          type: array
+          items:
+            $ref: '#/components/schemas/MailRuleRow'
+        always:
+          type: array
+          items:
+            $ref: '#/components/schemas/MailRuleRow'
+        proposals:
+          type: array
+          items:
+            $ref: '#/components/schemas/MailRuleProposal'
+    MailRuleRow:
+      type: object
+      required:
+        - pattern
+        - origin
+      properties:
+        pattern:
+          type: string
+        origin:
+          type: string
+          description: 'seed (read-only, in code) | owner'
+    MailRuleProposal:
+      type: object
+      required:
+        - fromAddress
+        - nopes
+      properties:
+        fromAddress:
+          type: string
+        nopes:
+          type: integer
+          description: Consecutive "nem érdekel" taps
