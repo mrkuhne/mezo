@@ -12,8 +12,9 @@ import java.util.Map;
  * a 7-day frame out. Split is derived from the day COUNT only (2–3 Full · 4 Upper/Lower ·
  * 5 Upper/Lower/Push/Pull/Legs · 6 PPL×2), which by construction trains every coarse group
  * ≥2×/week. Week-1 sets per group start inside the group's {@link VolumeBands.Band} (no sport
- * input here, so never sport-adjusted): see {@link #startSets} — the band's low for Építés and
- * Hangsúly, its top for Tartás (owner decision 2026-11-18 "Sáv széle"). The weekly amount is
+ * input here, so never sport-adjusted): see {@link #startSets} — every tier starts at its band's
+ * low (Építés = MEV, Hangsúly = MAV−2, Tartás = ceil(MEV/3); owner decision 2026-11-21 "A sáv
+ * aljáról", superseding the Tartás half of 2026-11-18 "Sáv széle"). The weekly amount is
  * spread over the days that contain the group, remainder on the earliest day. Groups absent from the landmark table (core, traps)
  * are never framed (DA5).
  */
@@ -30,14 +31,14 @@ public final class MesoPlanSkeleton {
     public record Skeleton(String splitLabel, List<DayFrame> days, Map<String, Integer> weekOneSets,
                            List<String> phaseCurve) {}
 
-    private static final Map<Integer, List<String>> SPLIT_DAYS = Map.of(
+    static final Map<Integer, List<String>> SPLIT_DAYS = Map.of(
         2, List.of("Full", "Full"),
         3, List.of("Full", "Full", "Full"),
         4, List.of("Upper", "Lower", "Upper", "Lower"),
         5, List.of("Upper", "Lower", "Push", "Pull", "Legs"),
         6, List.of("Push", "Pull", "Legs", "Push", "Pull", "Legs"));
 
-    private static final Map<Integer, String> SPLIT_LABEL = Map.of(
+    static final Map<Integer, String> SPLIT_LABEL = Map.of(
         2, "Full body", 3, "Full body", 4, "Upper / Lower",
         5, "Upper / Lower / Push / Pull / Legs", 6, "Push / Pull / Legs ×2");
 
@@ -50,17 +51,24 @@ public final class MesoPlanSkeleton {
         "Pull", List.of("back", "biceps"),
         "Legs", List.of("quad", "ham", "glute", "calf"));
 
-    /** Week-1 weekly sets: the band's low for Építés (GROW) and Hangsúly (EMPHASIZE), its top for Tartás. */
+    /** Week-1 weekly sets: the band's low for every tier (Tartás included: about a third of the growth dose maintains size). */
     public static int startSets(VolumeBands.Band band, PriorityTier tier) {
-        return tier == PriorityTier.MAINTAIN ? band.high() : band.low();
+        return band.low();
     }
 
+    /** The day-count default split (types + label), byte-identical to the pre-catalogue behaviour. */
     public static Skeleton build(List<String> daysOfWeek, int weeks, Map<String, String> priorities,
                                  Map<String, VolumeProperties.Baseline> baselines,
                                  VolumeProperties.Bands bands) {
+        int n = Math.max(2, Math.min(6, daysOfWeek.size()));
+        return build(daysOfWeek, weeks, priorities, baselines, bands, SPLIT_DAYS.get(n), SPLIT_LABEL.get(n));
+    }
+
+    /** Same frame for an explicit catalogue split: {@code types} one per training day (week order). */
+    public static Skeleton build(List<String> daysOfWeek, int weeks, Map<String, String> priorities,
+                                 Map<String, VolumeProperties.Baseline> baselines,
+                                 VolumeProperties.Bands bands, List<String> types, String splitLabel) {
         List<String> training = daysOfWeek.stream().sorted((a, b) -> DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b)).toList();
-        int n = Math.max(2, Math.min(6, training.size()));
-        List<String> types = SPLIT_DAYS.get(n);
 
         Map<String, Integer> weekOne = new LinkedHashMap<>();
         baselines.forEach((group, b) -> {
@@ -99,7 +107,7 @@ public final class MesoPlanSkeleton {
             }
             days.add(new DayFrame(day, type, List.copyOf(muscles)));
         }
-        return new Skeleton(SPLIT_LABEL.get(n) + " · " + training.size() + "×/hét",
+        return new Skeleton(splitLabel + " · " + training.size() + "×/hét",
             List.copyOf(days), Map.copyOf(weekOne), phaseCurve(weeks));
     }
 

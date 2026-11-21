@@ -34,6 +34,13 @@ public final class BlockBuilderModel {
     /// The day of today's open workout (started, not finished), as the caller knows it; its card is read-only
     /// (mezo-r36n9.116, spec §6.4). nil when nothing is running.
     public var lockedDay: LockedDay?
+    /// The session-minutes target sent with every evaluation (mezo-r36n9.113); nil = not sent (no capacity, the
+    /// budget bar hidden). A new target re-evaluates.
+    public var minutesTarget: Int? { didSet { if minutesTarget != oldValue, phase == .ready { scheduleEvaluation() } } }
+    /// Set by the caller that opens the builder on a block the new-block intake created a moment ago: the builder
+    /// then offers to throw it away („Mégsem, eldobom").
+    public var justCreated = false
+    public private(set) var discardError: PlanFetchError?
     /// The rows of a weekly proposal still waiting for his approval (from the proposals the load already read — the
     /// check never asks for a proposal to be generated): exercise ids and the weekday labels of their lines.
     private var pendingExerciseIds: Set<String> = []
@@ -149,15 +156,18 @@ public final class BlockBuilderModel {
 
     private static func lineup(_ d: BlockDraft) -> [[String]] { d.days.map { $0.exercises.map { "\($0.id)|\($0.identity)" } } }
 
-    /// The add / swap sheets' suggestions (`mode` `add` with a coarse muscle, `replace` with the outgoing row). The day
-    /// goes as its weekday (0 = Monday) with its current catalogue ids, lower-cased.
-    public func suggest(mode: String, day: Int, outgoing: DraftExercise? = nil, muscle: String? = nil) async throws(PlanFetchError) -> WireSuggestions {
+    /// The add / swap sheets' suggestions (`mode` `add` with the picked fine tokens — none = the week's under-band
+    /// groups — or a coarse muscle; `replace` with the outgoing row). The day goes as its weekday (0 = Monday) with its
+    /// current catalogue ids, lower-cased; the tokens go in body order.
+    public func suggest(mode: String, day: Int, outgoing: DraftExercise? = nil, muscle: String? = nil,
+                        muscles: Set<String>? = nil) async throws(PlanFetchError) -> WireSuggestions {
         guard let draft, draft.days.indices.contains(day) else { throw .server }
         let d = draft.days[day]
         let request = WireSuggestionsRequest(
             mode: mode, dayIndex: d.weekdayIndex ?? day,
             outgoing: outgoing.map { WireSuggestionOutgoing(catalogId: $0.catalogId?.lowercased(), name: $0.name, muscle: $0.muscleKey, type: $0.type) },
-            muscle: muscle, dayCatalogIds: d.exercises.compactMap { $0.catalogId?.lowercased() })
+            muscle: muscle, muscles: muscles.map(SubMuscles.ordered),
+            dayCatalogIds: d.exercises.compactMap { $0.catalogId?.lowercased() })
         return try await client.suggestions(blockId: draft.blockId, request)
     }
 
@@ -209,23 +219,80 @@ public final class BlockBuilderModel {
         }
     }
 
+    /// What the evaluator is asked for the draft on screen: the draft plus the session-minutes target.
+    private func evaluateRequest() -> WireEvaluateRequest? {
+        guard var request = draft?.evaluateRequest() else { return nil }
+        request.sessionMinutesTarget = minutesTarget
+        return request
+    }
+
     public func evaluateNow() async {
-        guard let draft else { return }
-        let request = draft.evaluateRequest()
+        guard let draft, let request = evaluateRequest() else { return }
         do {
             let result = try await client.evaluate(request)
             // A newer edit already asked again; this answer belongs to an older draft.
-            guard self.draft?.evaluateRequest() == request else { return }
+            guard evaluateRequest() == request else { return }
             evaluation = result
             evaluatedLineup = Self.lineup(draft)
             evaluationStale = false
             evaluationError = nil
         } catch {
             // A late failure of an older draft must not mark a newer, good answer as stale.
-            guard self.draft?.evaluateRequest() == request else { return }
+            guard evaluateRequest() == request else { return }
             evaluationError = error
             evaluationStale = evaluation != nil
         }
+    }
+
+    // MARK: the tier budget (mezo-r36n9.113)
+
+    /// May the muscle go one tier up now? Compared against the latest evaluation's budget; without a minutes target
+    /// there is no capacity, so only the Hangsúly cap can block.
+    public func canRaise(_ muscle: String) -> RaiseCheck {
+        guard let draft else { return .ok }
+        return RaiseCheck.raise(muscle: muscle, from: draft.tier(muscle).rawValue,
+                                emphasizeCount: draft.tiers.values.filter { $0 == .emphasize }.count,
+                                budget: evaluation?.budget, minutes: minutesTarget ?? 0,
+                                // The training days — the same count the heti keret line says.
+                                days: draft.days.filter { !$0.exercises.isEmpty }.count)
+    }
+
+    /// The tier switch: lowering jumps straight to the target, a raise moves one tier toward it and only when
+    /// `canRaise` allows (the same one-tier-per-tap rule as the new-block intake). Returns the check that decided.
+    @discardableResult
+    public func setTier(_ muscle: String, _ target: MuscleTier) -> RaiseCheck {
+        guard let current = draft?.tier(muscle) else { return .ok }
+        let from = RaiseCheck.rank(current.rawValue), wanted = RaiseCheck.rank(target.rawValue)
+        guard wanted != from else { return .ok }
+        if wanted < from { draft?.setTier(muscle, target); return .ok }
+        let result = canRaise(muscle)
+        if result == .ok { draft?.setTier(muscle, MuscleTier(wire: RaiseCheck.tierNames[from + 1])) }
+        return result
+    }
+
+    /// „Mégsem, eldobom": throws away the block the intake just created (the server deletes it and its template — no
+    /// report, no AI review) and leaves the builder empty. A failure keeps the block on screen with `discardError`
+    /// set. Returns true when the block is gone.
+    @discardableResult
+    public func discard() async -> Bool {
+        guard let blockId = draft?.blockId ?? original?.blockId else { return false }
+        do {
+            try await client.discardBlock(id: blockId)
+        } catch {
+            discardError = error
+            return false
+        }
+        evaluationTask?.cancel()
+        phase = .noBlock
+        replacing = true
+        draft = nil
+        replacing = false
+        original = nil
+        evaluation = nil
+        evaluationStale = false
+        justCreated = false
+        discardError = nil
+        return true
     }
 
     // MARK: edits the screens call

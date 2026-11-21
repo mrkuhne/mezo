@@ -33,4 +33,12 @@ public interface SeasonMetricsPort {
 
     /** Logged sleep minutes per wake morning ({@code sleep_log.date}) in {@code from..to}; a day without a night is absent. */
     Map<LocalDate, Integer> sleepMinutes(UUID owner, LocalDate from, LocalDate to);
+
+    /**
+     * The experiment signals per day of {@code from..to} (Évad S4), keyed by the contract's
+     * {@code SeasonExperimentSignalKey}: {@code sleep_min} (logged sleep per wake morning), {@code deep_min},
+     * {@code hrv_ms} and {@code resting_hr} (the wearable day), {@code energy}, {@code mood} and {@code morning_feel}
+     * (the day's check-ins averaged; morning feel = rested). Every key is present; a day without data is absent.
+     */
+    Map<String, Map<LocalDate, Double>> experimentSignals(UUID owner, LocalDate from, LocalDate to);
 }

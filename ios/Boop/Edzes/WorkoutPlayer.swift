@@ -941,7 +941,7 @@ struct WorkoutPlayer: View {
                             HStack(spacing: 11) {
                                 NKRemoteThumb(BoopConfig.mediaURL(photo(for: e)), size: 42)
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text(muscleName(e.muscle).uppercased())
+                                    Text(SubMuscles.name(e.muscle).uppercased())
                                         .nkFont(9, .medium, design: .monospaced).tracking(1.1)
                                         .foregroundStyle(hue.glow.opacity(0.85))
                                     Text(e.name).nkFont(15).foregroundStyle(.white).lineLimit(1)

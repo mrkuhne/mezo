@@ -254,9 +254,11 @@ class PenzAllowanceApiIT extends ApiIntegrationTest {
     private record Fixture(UUID owner, PenzAccountEntity account, PenzCategoryEntity category) {
     }
 
+    /** The salary is in CHF, so the account is a CHF account (a rule matches its account's currency). */
     private Fixture fixture(String label) {
         UUID owner = registerUser(label).id();
-        return new Fixture(owner, penz.account(owner, "Fő", true), penz.category(owner, "Bér", "income"));
+        return new Fixture(owner, penz.account(owner, "Fő", "checking", "CHF", true, false),
+            penz.category(owner, "Bér", "income"));
     }
 
     /** The old fixture's salary: 1 000.00 of a foreign currency monthly from 09-10 (CHF here), rate 400 → 400 000 Ft. */

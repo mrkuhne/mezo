@@ -53,7 +53,8 @@ final class FakeCalendar: CalendarReader, @unchecked Sendable {
     var list: [CalendarItem] = []
     func access() async -> CalendarAccess { state }
     func requestAccess() async -> CalendarAccess { state }
-    func items(from: Date, to: Date) async throws -> [CalendarItem] { list }
+    private(set) var toDates: [Date] = []
+    func items(from: Date, to: Date) async throws -> [CalendarItem] { toDates.append(to); return list }
 
 }
 
@@ -179,6 +180,36 @@ struct HealthSyncTests {
         let body = bodies("replaceCalendarDays").last ?? ""             // the backfill's last batch ends with today + tomorrow
         #expect(body.contains("2026-11-09") && body.contains("2026-11-10"))
         #expect(s.phase == .done(.init(nights: 0, days: 0, workouts: 0, events: 1)))
+    }
+
+    @Test func calendarWindowReachesEightDaysAhead() async {
+        okEverything()
+        let s = sync()
+        await s.syncAll()
+        let todayStart = cal.startOfDay(for: now)
+        #expect(calendarReader.toDates.last == cal.date(byAdding: .day, value: 9, to: todayStart))
+        let body = bodies("replaceCalendarDays").last ?? ""
+        #expect(body.contains(dayString(cal.date(byAdding: .day, value: 8, to: todayStart)!, cal)))
+        #expect(!body.contains(dayString(cal.date(byAdding: .day, value: 9, to: todayStart)!, cal)))
+    }
+
+    // K1 final fix: an install that backfilled under the old key re-sends the 60-day window once (the
+    // capacity baseline needs the new event fields), then goes back to yesterday…today+8.
+    @Test func oldBackfillKeyReBackfillsOnce() async {
+        store.set(true, forKey: "boop.calendar.backfilled.\(user)")
+        okEverything()
+        let s = sync()
+        let todayStart = cal.startOfDay(for: now)
+        let sixtyBack = dayString(cal.date(byAdding: .day, value: -60, to: todayStart)!, cal)
+        await s.syncAll()
+        #expect(bodies("replaceCalendarDays").contains { $0.contains(sixtyBack) })
+        #expect(store.bool(forKey: "boop.calendar.backfilled.v2.\(user)"))
+        let sentBefore = bodies("replaceCalendarDays").count
+        okEverything()
+        await s.syncAll()
+        let second = Array(bodies("replaceCalendarDays").dropFirst(sentBefore))
+        #expect(second.count == 1)
+        #expect(!second.contains { $0.contains(sixtyBack) })
     }
 
     @Test func unauthorizedStops() async {
@@ -446,19 +477,19 @@ struct HealthSyncTests {
         let s = sync()
         await s.syncAll()
         let first = bodies("replaceCalendarDays")
-        #expect(first.count == 5)                                         // 60 past days + today + tomorrow = 62 days
+        #expect(first.count == 5)                                         // 60 past days + today + 8 ahead = 69 days
         let dayCounts = first.map { $0.components(separatedBy: #""date":"#).count - 1 }
-        #expect(dayCounts == [14, 14, 14, 14, 6])
+        #expect(dayCounts == [14, 14, 14, 14, 13])
         #expect(first[0].contains(#""date":"2026-09-10""#))
-        #expect(first[4].contains(#""date":"2026-11-10""#))
+        #expect(first[4].contains(#""date":"2026-11-17""#))
         #expect(first.joined().contains(#""externalId":"abc|2026-11-09T08:00:00Z""#))
         #expect(s.lastSummary?.events == 1)
         okEverything()
         await s.syncAll()
         let all = bodies("replaceCalendarDays")
         #expect(all.count == 6)
-        #expect(all[5].components(separatedBy: #""date":"#).count - 1 == 3)
-        #expect(all[5].contains(#""date":"2026-11-08""#) && all[5].contains(#""date":"2026-11-10""#))
+        #expect(all[5].components(separatedBy: #""date":"#).count - 1 == 10)
+        #expect(all[5].contains(#""date":"2026-11-08""#) && all[5].contains(#""date":"2026-11-17""#))
     }
 
     @Test func interruptedCalendarBackfillRunsAgain() async {

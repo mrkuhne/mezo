@@ -456,6 +456,9 @@ private struct MealComposerHost: View {
     let onDone: (String?) -> Void
     @State private var model: MealComposerModel
     @State private var showLibrary = false
+    /// The typed search and the chosen chip of the recipe / shelf list; cleared whenever the list changes.
+    @State private var listQuery = ""
+    @State private var listFilter: String?
     @State private var showCamera = false
     @State private var cardPhoto: UIImage?
     @State private var scan: BarcodeScanModel
@@ -547,7 +550,7 @@ private struct MealComposerHost: View {
             }
         }
         .task { model.profile = try? await food.sensitivity() }
-        .task(id: model.stage) { if model.stage == .recipes || model.stage == .pantry || model.stage == .usuals { await model.loadLists() } }
+        .task(id: model.stage) { listQuery = ""; listFilter = nil; if model.stage == .recipes || model.stage == .pantry || model.stage == .usuals { await model.loadLists() } }
         .interactiveDismissDisabled(model.stage == .working || model.saving)
     }
 
@@ -959,7 +962,8 @@ private struct MealComposerHost: View {
             } else if model.stage == .recipes {
                 if let recipes = model.recipes {
                     if recipes.isEmpty { Text("Még nincs mentett recepted.").nkFont(14).foregroundStyle(.white.opacity(0.7)) }
-                    ForEach(recipes) { r in
+                    else { recipeFinder(recipes) }
+                    ForEach(filterRecipes(recipes, query: listQuery).filter { listFilter == nil || $0.category == listFilter }) { r in
                         row(r.name, "\(huInt(Int((r.macros.kcal / Double(max(r.servings, 1))).rounded()))) kcal · \(Int(r.perServing.p.rounded())) g fehérje adagonként",
                             glyph: "book-sage", points: etelPoints(r.fit)) { model.use(DraftItem(recipe: r)) }
                     }
@@ -975,7 +979,8 @@ private struct MealComposerHost: View {
                 if let shelf = model.shelf {
                     let rows = shelf.filter { $0.kind == "food" && DraftItem(pantry: $0) != nil }
                     if rows.isEmpty { Text("A kamrád még üres, vagy nincs benne étel.").nkFont(14).foregroundStyle(.white.opacity(0.7)) }
-                    ForEach(Array(rows.enumerated()), id: \.offset) { _, p in
+                    else { shelfFinder(rows) }
+                    ForEach(Array(filterShelf(rows, query: listQuery, category: listFilter).enumerated()), id: \.offset) { _, p in
                         row(p.name, "\(huInt(Int((p.kcal ?? 0).rounded()))) kcal / \(Int(p.per ?? 0)) \(p.unit ?? "")",
                             glyph: etelCategoryGlyph(p.category)) { model.use(DraftItem(pantry: p)) }
                     }
@@ -986,6 +991,32 @@ private struct MealComposerHost: View {
                     .background(Capsule().fill(.white.opacity(0.1)))
             }
             .buttonStyle(.plain)
+        }
+    }
+
+    /// The recipe list's search and slot chips — the same as on the Receptek tab — and the line when nothing matches.
+    @ViewBuilder private func recipeFinder(_ recipes: [Recipe]) -> some View {
+        let slots = recipeSlots(recipes)
+        EtelSearchField(query: $listQuery, prompt: "Keresés a receptek között")
+        if slots.count > 1 {
+            EtelFilterChips(chips: [(nil, "Mind · \(recipes.count)")] + slots.map { (Optional($0.key), "\($0.label) · \($0.count)") },
+                            selected: $listFilter)
+        }
+        if filterRecipes(recipes, query: listQuery).filter({ listFilter == nil || $0.category == listFilter }).isEmpty {
+            Text("Ilyen receptet nem találok.").nkFont(14).foregroundStyle(.white.opacity(0.6))
+        }
+    }
+
+    /// The shelf list's search and category chips — the same as on the Kamra tab — and the line when nothing matches.
+    @ViewBuilder private func shelfFinder(_ rows: [PantryRow]) -> some View {
+        let categories = shelfCategories(rows)
+        EtelSearchField(query: $listQuery, prompt: "Keresés a kamrában")
+        if categories.count > 1 {
+            EtelFilterChips(chips: [(nil, "Mind · \(rows.count)")] + categories.map { (Optional($0.key), "\($0.label) · \($0.count)") },
+                            selected: $listFilter)
+        }
+        if filterShelf(rows, query: listQuery, category: listFilter).isEmpty {
+            Text("Ilyet nem találok a kamrádban.").nkFont(14).foregroundStyle(.white.opacity(0.6))
         }
     }
 

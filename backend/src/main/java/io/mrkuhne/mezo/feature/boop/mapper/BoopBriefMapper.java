@@ -2,10 +2,14 @@ package io.mrkuhne.mezo.feature.boop.mapper;
 
 import io.mrkuhne.mezo.api.dto.BoopBrief;
 import io.mrkuhne.mezo.api.dto.BoopBriefLine;
+import io.mrkuhne.mezo.api.dto.BoopCapacity;
+import io.mrkuhne.mezo.api.dto.BoopCapacityDemandItem;
+import io.mrkuhne.mezo.api.dto.BoopCapacityFactor;
 import io.mrkuhne.mezo.api.dto.BoopCheckin;
 import io.mrkuhne.mezo.api.dto.BoopConflict;
 import io.mrkuhne.mezo.api.dto.BoopEnergy;
 import io.mrkuhne.mezo.api.dto.BoopMetric;
+import io.mrkuhne.mezo.feature.boop.port.BoopCapacityPort;
 import io.mrkuhne.mezo.feature.boop.service.BoopDay;
 import io.mrkuhne.mezo.feature.boop.service.BoopScores.Scores;
 import io.mrkuhne.mezo.feature.boop.service.BoopVerdictWriter.BriefLine;
@@ -40,6 +44,15 @@ public interface BoopBriefMapper {
     /** The brief itself; {@code hourly} is the raw model curve (clamped to 0..1 here). */
     default BoopBrief toBrief(BoopDay d, Scores s, Verdicts v, double[] hourly, int stepsGoal, int nightsNeeded,
                               Instant generatedAt) {
+        return toBrief(d, s, v, hourly, hourly, null, stepsGoal, nightsNeeded, generatedAt);
+    }
+
+    /**
+     * With the capacity block (nullable); {@code timingCurve} is the template curve without demand: the dip
+     * hour is read from it, so the demand bends the height of the curve and never its timing.
+     */
+    default BoopBrief toBrief(BoopDay d, Scores s, Verdicts v, double[] hourly, double[] timingCurve,
+                              BoopCapacityPort.View capacity, int stepsGoal, int nightsNeeded, Instant generatedAt) {
         BoopBrief b = new BoopBrief();
         b.setDate(d.date().toString());
         b.setGeneratedAt(generatedAt.atOffset(ZoneOffset.UTC));
@@ -47,7 +60,8 @@ public interface BoopBriefMapper {
         b.setNightsKnown(d.nightsKnown());
         b.setMetrics(metrics(d, s, v, stepsGoal, nightsNeeded));
         b.setBrief(v.brief().stream().map(this::briefLine).toList());
-        b.setEnergy(energy(hourly));
+        b.setEnergy(energy(hourly, timingCurve));
+        b.setCapacity(capacity == null ? null : capacity(capacity, v.capacityReason()));
         b.setTonightTip(v.tonightTip());
         b.setNextMealTip(v.nextMealTip());
         b.setConflict(conflict(v.conflict()));
@@ -86,17 +100,50 @@ public interface BoopBriefMapper {
     }
 
     default BoopEnergy energy(double[] hourly) {
+        return energy(hourly, hourly);
+    }
+
+    default BoopCapacity capacity(BoopCapacityPort.View c, String modelReason) {
+        BoopCapacity out = new BoopCapacity();
+        out.setVerdict(BoopCapacity.VerdictEnum.fromValue(c.verdict()));
+        out.setReason(modelReason != null && !modelReason.isBlank() ? modelReason : c.reasonFacts());
+        out.setRatio(c.ratio());
+        out.setTanulo(c.tanulo());
+        out.setLabelledDays(c.labelledDays());
+        out.setCalendarKnown(c.calendarKnown());
+        out.setDemand(c.demand().stream().map(i -> {
+            BoopCapacityDemandItem item = new BoopCapacityDemandItem();
+            item.setLabel(i.label());
+            item.setStart(i.start().atOffset(ZoneOffset.UTC));
+            item.setKind(i.kind());
+            item.setLevel(BoopCapacityDemandItem.LevelEnum.fromValue(i.level()));
+            item.setEventKey(i.eventKey());
+            item.setEffect(i.effect() == null ? null : BoopCapacityDemandItem.EffectEnum.fromValue(i.effect()));
+            return item;
+        }).toList());
+        out.setFactors(c.factors().stream().map(f -> {
+            BoopCapacityFactor factor = new BoopCapacityFactor();
+            factor.setKey(f.key());
+            factor.setLabel(f.label());
+            factor.setValue(f.value());
+            factor.setEffect(BoopCapacityFactor.EffectEnum.fromValue(f.effect()));
+            return factor;
+        }).toList());
+        return out;
+    }
+
+    default BoopEnergy energy(double[] hourly, double[] timingCurve) {
         BoopEnergy e = new BoopEnergy();
         List<Double> values = new ArrayList<>(hourly.length);
         Integer dipHour = null;
         double dip = Double.MAX_VALUE;
         for (int i = 0; i < hourly.length; i++) {
-            double v = Math.round(Math.max(0, Math.min(1, hourly[i])) * 1000) / 1000.0;
-            values.add(v);
+            values.add(Math.round(Math.max(0, Math.min(1, hourly[i])) * 1000) / 1000.0);
             int hour = 6 + i;
-            // The afternoon dip: the lowest point between noon and 18:00.
-            if (hour >= 12 && hour <= 18 && v < dip) {
-                dip = v;
+            double t = Math.round(Math.max(0, Math.min(1, timingCurve[i])) * 1000) / 1000.0;
+            // The afternoon dip: the lowest point between noon and 18:00 of the demand-free curve.
+            if (hour >= 12 && hour <= 18 && t < dip) {
+                dip = t;
                 dipHour = hour;
             }
         }

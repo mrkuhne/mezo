@@ -81,6 +81,7 @@ public interface TrainMapper {
     @Mapping(target = "mediaEditable", ignore = true)
     @Mapping(target = "authoredByMe", ignore = true)
     @Mapping(target = "authorName", ignore = true)
+    @Mapping(target = "challengeAllowed", ignore = true) // the challenge rule lives in the service layer
     ExerciseCatalogItem toCatalogItem(ExerciseCatalogEntity entity);
 
     @Mapping(target = "duration", source = "durationMin")

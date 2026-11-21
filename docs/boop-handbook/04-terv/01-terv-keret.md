@@ -22,10 +22,12 @@ mentél a sávból”, kevés mérlegelésnél pedig az, hogy még nincs elég a
 1. **Mi mire hat** — négy gömb (Edzés, Étel, Alvás, Súly) és a köztük futó kapcsolatok. Egy gömbre koppintva kiemelődik, és
    kiírja, mire hat (például „Edzés → Étel · edzésnapon +170 kcal”). Ahol még nincs számolt érték, azt mondja, nem talál ki számot.
 2. **Súly** — a súlytrend görbéje a célvonallal, a mostani naptól szaggatottan a terv; súlytartásnál egy sáv (például ±1 kg).
-3. **Az évad terve** — négy sor: edzésblokk és sportnapok · edzésnapi és pihenőnapi kalória + fehérje · alvásigény és lefekvés
-   · cél és céldátum.
+3. **Az évad terve** — négy sor: edzésblokk és sportnapok · edzésnapi és pihenőnapi kalória + fehérje (és ha van olyan nap,
+   amikor edzőterem és sport is van, annak a nagyobb kerete: „edzés + sport napon 2790 kcal”, például) · alvásigény és
+   lefekvés · cél és céldátum.
 4. **Hogy megy** (2026-11-21 óta) — az elmúlt hét, tegnapig, egyszerű számokkal, pontszám nélkül: például „4 / 5 napon
-   belefértél a keretbe”, „3 / 4 edzés megvolt”, „4 / 7 éjjel aludtál eleget”. Amit nincs mivel mérni (például nem volt
+   belefértél a keretbe”, „3 / 4 edzés megvolt”, „1 / 2 sport megvolt”, „4 / 7 éjjel aludtál eleget”. Az edzés és a sport
+   külön számít: ha egy napon edzőterem és röplabda is van, az két alkalom (2026-11-21 óta). Amit nincs mivel mérni (például nem volt
    tervezett edzés), az a sor kimarad — sosem ír „0 / 0”-t. Alatta egy sor megmondja, hány kímélő nap maradt ki („1 kímélő nap nem
    számít bele.”, például). Ha még semmit nem lehet értékelni, a blokk nem jelenik meg.
 5. **Amit Boop észrevett** (2026-11-21 óta) — legfeljebb három észrevétel, mindegyik csak elég adat után:
@@ -39,7 +41,9 @@ mentél a sávból”, kevés mérlegelésnél pedig az, hogy még nincs elég a
 6. **Következik** — a könnyebb edzéshetek és az évad vége.
 7. Gombok: **Módosítás** és **Új évad**.
 
-**Menü, Lista, Hatás:** egyelőre egy „hamarosan” lap mondja el, mi lesz ott.
+**Menü:** a jövő heti menü hét napkártyán, jóváhagyással és cserével — lásd [Heti menü](09-heti-menu.md). **Lista:** a
+jóváhagyott menü bevásárlólistája — lásd [Bevásárlólista](07-bevasarlolista.md). **Hatás:** a kísérletek — egy fut egyszerre, Boop is
+javasolhat, az eredmény őszinte — lásd [Hatás — kísérletek](08-hataskovetes.md).
 
 **Szabályok:** kapcsolók — „Csak kevéssé feldolgozott ételek”, „Vasárnap este kérem a jövő heti menüt”, „Könnyebb edzéshéten
 ne fogyjak”, „A valódi égetésemmel számoljon”, „Ajánljon kísérletet, ha valami újat kezdek” —, alattuk a kiválasztott receptek
@@ -60,9 +64,13 @@ mostani célodból, edzésblokkodból, heti napjaidból és alvásodból. „Ind
    „Indulhat az évad” gombot.
 5. **A „Hogy megy” számai** a háttérrendszer egyetlen napi ítéletéből jönnek. Egy nap étele akkor számít, ha már elmúlt,
    nem kímélő nap, és rögzítettél aznap ételt; akkor „fért bele”, ha legfeljebb 10%-kal tér el az aznapi kerettől (felfelé
-   vagy lefelé). Az edzésnél a heti edzés- és sportnapokat és a blokk futásait nézi; az alvásnál az évad alvásigényét (15 perc
-   türelemmel); a mai éjszakát sosem értékeli. A kímélő nap minden számból kimarad; egy indokkal kihagyott edzés csak az
-   edzések közül marad ki, annak a napnak az étele és az éjszakája számít.
+   vagy lefelé). Az edzésnél minden tervezett alkalmat külön néz: a heti edzőtermi napot, a sportnapot és a blokk futását. Egy
+   nap lehet edzésnap, sportnap, **edzés + sport nap** (két alkalom) vagy pihenőnap. Egy alkalom akkor van meg, ha aznap
+   ugyanabból a fajtából rögzítettél valamit (egy röplabda nem pótolja az edzőtermet). Az alvásnál az évad alvásigényét
+   nézi (15 perc türelemmel); a mai éjszakát sosem értékeli. A kímélő nap minden számból kimarad; egy indokkal kihagyott
+   alkalom csak maga marad ki — a nap másik alkalma, az étele és az éjszakája számít.
+6. **A heti étel-összeg** (a Módosításnál „Heti összesen”) minden napot a saját keretével ad össze: az edzés + sport napot a
+   két alkalom együttes energiájával, ahogy az étkezési napi cél is mindkét rögzített alkalmat beszámolja.
 
 ## Miért így
 - Az Évad az alsó sáv egyik helye, nem egy a gyűrűből nyíló szoba, ezért nincs saját alsó sávja (két sáv egymás fölött zavaró
@@ -84,10 +92,8 @@ Nincs külön beállítása; a szabályokat lásd [Az évad](06-terv-csomag.md) 
 | `weight_log` | A súlygörbe mérései |
 
 ## Mi jön még
-- 3. szakasz: Menü és Lista fül; 4. szakasz: Hatás fül.
 - Korábbi évadok oldal, és a mostani súlyod az Új évad első lépésében.
 
 ## Mi marad ki
 Egy ismert korlát: a „Hogy megy” a tervezett edzésnapokat a **mai** heti beosztásból olvassa, így ha átírod a heti napokat,
-az elmúlt napok is az új beosztás szerint látszanak. Egy napra egy tervezett edzést számol: ha ugyanazon a napon edzőterem
-és sport is van, az egynek számít. A régi Terv oldal pénz-kártyája (a pénz a Pénz oldalon van) és a „mai edzés” kártya (az a Ma oldalon és az Edzés szobában látszik).
+az elmúlt napok is az új beosztás szerint látszanak. A régi Terv oldal pénz-kártyája (a pénz a Pénz oldalon van) és a „mai edzés” kártya (az a Ma oldalon és az Edzés szobában látszik).

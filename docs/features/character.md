@@ -13,7 +13,13 @@ key_files:
 related: [companion, proactive, insights, me, _platform-api-backend]
 ---
 
+> **2026-11-21 — reviewed after Boop B6 Évad S4 (`mezo-r36n9.16`).** The shared changelog folder gained `season_experiment` (the season's experiments); nothing in character changed.
+
+> **2026-11-21 — reviewed after Boop B6 Évad S3 (`mezo-r36n9.16`, no dossier change).** The shared `1.1.0/script` folder gained `202611231000_mezo-r36n9.16_season_menu.sql` (`season_menu_week`, `season_menu_meal`, `shopping_list`, `shopping_item`, `season_staple`); nothing here reads them.
 > **2026-11-21 — reviewed after Boop B6 Évad S2 (`mezo-r36n9.16`, no dossier change).** `ChatToolDomains` maps the new companion tool `get_season` to the `cel` topic (same as `get_goal`), so asking about the season does not read as a topic shift.
+> **2026-11-21 — reviewed after the Boop Pénz weekly review (`mezo-r36n9.120`) and the `.119` review round (no dossier change).** The shared `1.1.0/script` folder gained `202611211600_mezo-r36n9.120_penz_weekly_review.sql` (`penz_weekly_review`), and the unmerged `.119` changeset's index on `penz_invest_txn.transaction_id` became a partial unique index; no character table or behaviour changed.
+
+> **2026-11-21 — reviewed after Boop Pénz investment ↔ money account (`mezo-r36n9.119`, no dossier change).** The shared `1.1.0/script` folder gained `202611211400_mezo-r36n9.119_penz_invest_account_link.sql` (one nullable column on `penz_invest_txn`); no character table or behaviour changed.
 
 > **2026-11-20 — reviewed after Boop Pénz L7 (`mezo-r36n9.105`, no dossier change).** The shared `1.1.0/script` folder gained `202611202000_mezo-r36n9.105_penz_practice.sql` (`penz_paper_trade`) and `202611202010_mezo-r36n9.105_penz_proposals.sql` (`penz_product`, `penz_proposal`) — owned by [`penz.md`](penz.md); no Karakter table, detector or signal reads paper trades, the catalog or proposals.
 > **2026-11-20 — reviewed after Boop B6 Évad S1 (`mezo-r36n9.16`, no dossier change).** The shared `1.1.0/script` folder gained `202611211000_mezo-r36n9.16_season.sql` (`season`, `season_allowed_recipe`, `season_revision`) — season-owned, not read by the character dossier. See [`season.md`](season.md).
@@ -1086,6 +1092,8 @@ built, is expected to render human words — the Minták precedent); the wire DT
 raw `0..1` decimal (`CharacterClaimDto.confidence`) for the FE to translate.
 
 ## 5. Integrations
+
+- No coupling to the B7 K1 capacity tables (`calendar_event_score`, `day_adjustment`, `capacity_*`, added under `1.1.0/script`); the character detectors do not read them yet ([`capacity.md`](capacity.md)).
 
 - **B1 touch-up (2026-11-11):** the `1.1.0/script` directory gained Boop B1 changesets (`health_sample`, `apns_device`, widened wearable/sleep/calendar/weight tables). None touch the character tables; this doc is unchanged in substance (verified).
 

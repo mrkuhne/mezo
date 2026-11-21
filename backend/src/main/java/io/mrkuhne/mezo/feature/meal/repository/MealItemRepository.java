@@ -82,4 +82,19 @@ public interface MealItemRepository extends JpaRepository<MealItemEntity, UUID> 
            and c.saturated_fat_g is not null
         """, nativeQuery = true)
     List<UUID> mealIdsAwaitingSaturatedFatBackfill();
+
+    /** Recipes first ever eaten on or after {@code since} (Boop B6 Évad S4 experiment proposals, mezo-r36n9.16). */
+    @Query("select distinct mi.recipeId from MealItemEntity mi join mi.meal m "
+        + "where m.createdBy = :owner and m.deleted = false and mi.recipeId is not null and m.mealDate >= :since "
+        + "and not exists (select 1 from MealItemEntity o join o.meal om where om.createdBy = :owner "
+        + "and om.deleted = false and o.recipeId = mi.recipeId and om.mealDate < :since)")
+    List<UUID> findRecipesFirstEatenSince(@Param("owner") UUID owner, @Param("since") LocalDate since);
+
+    /** Pantry foods (a pantry line, not a recipe) first ever eaten on or after {@code since} (Évad S4). */
+    @Query("select distinct mi.pantryItemId from MealItemEntity mi join mi.meal m "
+        + "where m.createdBy = :owner and m.deleted = false and mi.source = 'pantry' and mi.pantryItemId is not null "
+        + "and m.mealDate >= :since "
+        + "and not exists (select 1 from MealItemEntity o join o.meal om where om.createdBy = :owner "
+        + "and om.deleted = false and o.source = 'pantry' and o.pantryItemId = mi.pantryItemId and om.mealDate < :since)")
+    List<UUID> findPantryFoodsFirstEatenSince(@Param("owner") UUID owner, @Param("since") LocalDate since);
 }

@@ -247,7 +247,7 @@ private struct WeekRow: View {
 }
 
 extension String {
-    /// „mellkas" → „Mellkas", without touching the rest of the word.
+    /// „hát" → „Hát", without touching the rest of the word.
     var capitalizedFirst: String {
         guard let first else { return self }
         return first.uppercased() + dropFirst()

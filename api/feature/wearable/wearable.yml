@@ -303,6 +303,16 @@ components:
         endAt: { type: string, format: date-time }
         allDay: { type: boolean }
         calendarName: { type: string, maxLength: 80 }
+        attendeeCount: { type: integer, minimum: 0 }
+        attendeeNames:
+          type: array
+          maxItems: 50
+          items: { type: string, maxLength: 120 }
+        organizerIsMe: { type: boolean }
+        location: { type: string, maxLength: 200 }
+        recurring: { type: boolean }
+        availability: { type: string, enum: [busy, free, tentative, unavailable] }
+        notes: { type: string, maxLength: 2000 }
     CalendarDayIn:
       type: object
       required: [date, events]

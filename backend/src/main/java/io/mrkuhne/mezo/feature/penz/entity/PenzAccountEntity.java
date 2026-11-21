@@ -23,6 +23,8 @@ import org.hibernate.annotations.SQLRestriction;
 public class PenzAccountEntity extends OwnedEntity {
 
     public static final String TYPE_SAVINGS = "savings";
+    public static final String TYPE_CHECKING = "checking";
+    public static final String TYPE_CASH = "cash";
 
     @Id
     @GeneratedValue

@@ -27,8 +27,10 @@ enum EvadFixtures {
      "todo":[{"key":"bedtime","title":"Korábbi lefekvés","body":"22:03 körül feküdj le."}],"warnings":[],"fingerprint":"fp-1"}
     """#
 
+    static let foodJSON = #"{"trainDayKcal":2440,"restDayKcal":2270,"proteinG":170,"allowedCount":24,"recipeCount":53,"novaMax":2}"#
+
     static func overviewJSON(status: String = "on_course", trajectory: String = "cut", band: String = "null",
-                             links: String? = nil, blockId: String = #""m1""#) -> String {
+                             links: String? = nil, blockId: String = #""m1""#, food: String = foodJSON) -> String {
         let l = links ?? #"""
         [{"from":"edzes","to":"etel","key":"train_food","value":290},{"from":"edzes","to":"alvas","key":"train_sleep","value":12},
          {"from":"etel","to":"suly","key":"food_weight","value":-0.4},{"from":"alvas","to":"suly","key":"sleep_food","value":null},
@@ -45,7 +47,7 @@ enum EvadFixtures {
                    "trendKg":84.1,"targetKg":82,"band":\#(band),"kgPerWeek":-0.4,"paceVerdict":"feasible"},
          "pillars":{"block":{"title":"V-forma és kar","mesocycleId":\#(blockId),"blockWeeks":6,"fromWeek":4,"toWeek":9,"gymDays":[0,2,4,5],
                              "sport":[{"dayOfWeek":1,"time":"19:00","durationMin":90,"sport":"volleyball"},{"dayOfWeek":3,"time":"19:00","durationMin":90,"sport":"volleyball"}]},
-                    "food":{"trainDayKcal":2440,"restDayKcal":2270,"proteinG":170,"allowedCount":24,"recipeCount":53,"novaMax":2},
+                    "food":\#(food),
                     "sleep":{"needMin":486,"baseMin":450,"bedtime":"22:09","anchor":"WAKE","anchorTime":"06:30","avgMin":null},
                     "weight":{"targetKg":82,"targetDate":"2027-01-01","deltaKg":-2.8,"kgPerWeek":-0.4,"band":\#(band)}},
          "adherence":null,"insights":[],"upcoming":[{"week":10,"kind":"deload","text":"erre a hétre nem fogyunk"}]}
@@ -53,9 +55,10 @@ enum EvadFixtures {
     }
 
     static func overview(status: String = "on_course", trajectory: String = "cut", band: String = "null",
-                         links: String? = nil, blockId: String = #""m1""#) -> EvadOverview {
+                         links: String? = nil, blockId: String = #""m1""#, food: String = foodJSON) -> EvadOverview {
         try! JSONDecoder().decode(EvadOverview.self, from: Data(overviewJSON(status: status, trajectory: trajectory,
-                                                                               band: band, links: links, blockId: blockId).utf8))
+                                                                               band: band, links: links, blockId: blockId,
+                                                                               food: food).utf8))
     }
 }
 

@@ -23,7 +23,7 @@ class PenzNewsRunnerRefreshTest {
         new PenzNewsProperties(false, "0 30 6,13 * * *", "Europe/Budapest", "", 2_097_152, 2_097_152, 2, 40, 30, 15, 4);
 
     private static PenzNewsRunner runner(Executor executor) {
-        return new PenzNewsRunner(null, null, null, null, null, PROPS, executor,
+        return new PenzNewsRunner(null, null, null, null, null, null, PROPS, executor,
             new DefaultListableBeanFactory().getBeanProvider(Clock.class));
     }
 

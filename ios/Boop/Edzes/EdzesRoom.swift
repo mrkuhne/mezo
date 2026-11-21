@@ -32,6 +32,8 @@ enum EdzesPage: String, Identifiable {
     case blockLoad
     /// The block builder and the weekly review (mezo-r36n9.83, `ios/Boop/EdzesTerv/`).
     case builder, review
+    /// The new-block flow (mezo-r36n9.113, `ios/Boop/EdzesTerv/UjBlokk/`).
+    case newBlock
     var id: String { rawValue }
 }
 
@@ -47,6 +49,8 @@ struct EdzesRoom: View {
     @Environment(\.workoutFolder) private var workoutFolder
     @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
     @Environment(MorningStore.self) private var morning: MorningStore?
+    /// The season overview: its training days are the new block's days (mezo-r36n9.113).
+    @Environment(EvadStore.self) private var evad: EvadStore?
     @SceneStorage("edzes.tab") private var selected: String = EdzesTab.ma.rawValue
     @State private var store: EdzesStore?
     @State private var toast: String?
@@ -55,6 +59,8 @@ struct EdzesRoom: View {
     @State private var weekReview: WeekReviewModel?
     /// The builder, loaded in the background when the room opens, so it opens without a spinner (owner, 2026-11-19).
     @State private var builder: BlockBuilderModel?
+    /// The new-block intake on screen.
+    @State private var newBlock: NewBlockModel?
     /// The builder and the review zoom out of the button / card that opened them.
     @Namespace private var planZoom
     /// Which of the workout's own surfaces is up. The session itself lives in the store, so
@@ -121,11 +127,32 @@ struct EdzesRoom: View {
                 if let block { BlockLoadPage(block: block, hue: hue, age: store?.blockAgeText) { page = nil } }
             case .builder:
                 if let plan {
-                    BlockBuilderPage(model: builder ?? BlockBuilderModel(client: plan), lockedDay: openWorkoutDay) {
+                    BlockBuilderPage(model: builder ?? BlockBuilderModel(client: plan), lockedDay: openWorkoutDay,
+                                     onNewBlock: { openNewBlock() }) {
                         page = nil
                         Task { await store?.loadBlock(); await weekReview?.load(); await prepareBuilder(fresh: true) }
                     }
                     .navigationTransition(.zoom(sourceID: PlanZoom.builder, in: planZoom))
+                }
+            case .newBlock:
+                if let newBlock, let plan {
+                    UjBlokkFlow(model: newBlock,
+                                onClose: { page = nil },
+                                onCreated: { minutes in
+                                    // The builder re-reads and picks up the planned block; it may still be thrown away. The
+                                    // same model is re-armed (a cover's content keeps the model it was first built with).
+                                    let model = builder ?? BlockBuilderModel(client: plan)
+                                    builder = model
+                                    model.justCreated = true
+                                    model.minutesTarget = minutes
+                                    page = .builder
+                                    Task { await model.load(); await store?.loadBlock(); await weekReview?.load() }
+                                },
+                                onOpenSeason: { note in
+                                    page = nil
+                                    if let note { toast = note }
+                                    openPlace(.terv)
+                                })
                 }
             case .review:
                 if let weekReview {
@@ -205,6 +232,16 @@ struct EdzesRoom: View {
             await weekReview?.load()
             await preload
             if blockDay == nil { blockDay = block?.days.first(where: \.isCurrent)?.day ?? block?.days.first?.day }
+        }
+    }
+
+    /// Opens the new-block flow on the season's training days (read from the Évad overview, cached when offline).
+    private func openNewBlock() {
+        guard let plan else { return }
+        Task {
+            await evad?.load()
+            newBlock = NewBlockModel(client: plan, seasonGymDays: evad?.overview?.pillars.block.gymDays)
+            page = .newBlock
         }
     }
 
@@ -534,6 +571,15 @@ struct EdzesRoom: View {
         } else {
             NKNotLiveYet(hue: hue, title: "Nincs futó blokkod",
                          line: "Amint elindítasz egy nyolchetes blokkot, itt fog állni, hányadik hetén jársz, mit hoz a hét, és melyik izomcsoport mennyit kap.")
+            if plan != nil {
+                Button { openNewBlock() } label: {
+                    Text("Új blokk").nkFont(16, .semibold).foregroundStyle(NK.ground)
+                        .padding(.horizontal, 28).frame(minHeight: 52).background(Capsule().fill(.white))
+                }
+                .buttonStyle(PressStyle())
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 20)
+            }
             NKAskRow(hue: hue, text: "Kérdezd meg Boopot az edzéstervedről") { openPlace(.boop) }
         }
     }
@@ -641,7 +687,7 @@ private struct ExerciseCard: View {
                 }
             }
             VStack(alignment: .leading, spacing: 3) {
-                Text(muscleName(exercise.muscle).uppercased())
+                Text(SubMuscles.name(exercise.muscle).uppercased())
                     .nkFont(10, .medium, design: .monospaced).tracking(1.2)
                     .foregroundStyle(hue.glow)
                 Text(exercise.name)
@@ -654,7 +700,7 @@ private struct ExerciseCard: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .nkGlass()
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(exercise.name), \(muscleName(exercise.muscle))\(done ? ", megvan" : "")")
+        .accessibilityLabel("\(exercise.name), \(SubMuscles.name(exercise.muscle))\(done ? ", megvan" : "")")
     }
 }
 
@@ -771,23 +817,12 @@ private struct DayCard: View {
 
 // MARK: - Words
 
-/// A muscle group the way he says it, not the way the database spells it.
+/// A muscle group the way he says it, lower-case for running text („hát", „mell", „comb") — the shared
+/// `SubMuscles.groupName` (mezo-r36n9.127); `arms` is „kar", an unknown key stays as it is.
 func muscleName(_ key: String) -> String {
-    switch key.lowercased() {
-    case "chest", "chest-mid", "chest-upper", "chest-lower": "mellkas"
-    case "back", "back-wide", "back-mid", "back-lower", "lats": "hát"
-    case "traps": "csuklyás"
-    case "shoulder", "shoulders", "shoulder-front", "shoulder-side", "shoulder-rear", "rear-delt": "váll"
-    case "biceps", "biceps-long", "biceps-short", "biceps-brachialis": "bicepsz"
-    case "triceps", "triceps-long", "triceps-lateral", "triceps-medial": "tricepsz"
-    case "arms": "kar"
-    case "quad", "quads", "quadriceps": "comb eleje"
-    case "ham", "hams", "hamstring": "comb hátulja"
-    case "glute", "glutes", "gluteal": "fenék"
-    case "calf", "calves": "vádli"
-    case "core", "abs": "törzs"
-    default: key
-    }
+    if key.lowercased() == "arms" { return "kar" }
+    let name = SubMuscles.groupName(key)
+    return name == "Egyéb" ? key : name.lowercased()
 }
 
 /// A weight the way he reads it: „80 kg", „77,5 kg" — a Hungarian decimal comma, and no „.0".

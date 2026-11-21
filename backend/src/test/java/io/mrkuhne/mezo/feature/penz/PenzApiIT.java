@@ -176,6 +176,39 @@ class PenzApiIT extends ApiIntegrationTest {
     }
 
     @Test
+    void anAccountsCurrencyIsLockedOnceItCarriesTransactionsOrRules() {
+        RegisteredUser u = registerUser("penz currency lock");
+        PenzAccountResponse acc = createAccount(u.headers(), "Fő", true);
+        String path = "/api/penz/accounts/" + acc.getId();
+        // no rows yet: the currency may still change, and back
+        assertThat(putForBody(path, new PenzAccountRequest().name("Fő").type("checking").currency("EUR"), u.headers(),
+            HttpStatus.OK, PenzAccountResponse.class).getCurrency()).isEqualTo("EUR");
+        putForBody(path, new PenzAccountRequest().name("Fő").type("checking").currency("HUF"), u.headers(),
+            HttpStatus.OK, PenzAccountResponse.class);
+
+        PenzTransactionResponse t = postForBody("/api/penz/transactions", expense(acc.getId(), 1_000L, "HUF",
+            RATE_DAY), u.headers(), HttpStatus.OK, PenzTransactionResponse.class);
+        assertHasRequestError(putForBody(path, new PenzAccountRequest().name("Fő").type("checking").currency("EUR"),
+            u.headers(), HttpStatus.CONFLICT, String.class), "PENZ_ACCOUNT_CURRENCY_LOCKED");
+        // the same currency with other fields changed is still an ordinary edit
+        assertThat(putForBody(path, new PenzAccountRequest().name("Fő számla").type("checking").currency("HUF")
+            .smsSender("MBH Bank"), u.headers(), HttpStatus.OK, PenzAccountResponse.class).getName())
+            .isEqualTo("Fő számla");
+
+        // a deleted transaction no longer locks it; a live recurring rule does
+        deleteAndExpect("/api/penz/transactions/" + t.getId(), u.headers(), HttpStatus.NO_CONTENT);
+        PenzRecurringRuleResponse rule = postForBody("/api/penz/recurring-rules", new PenzRecurringRuleRequest()
+            .name("Bér").kind("income").amountMinor(100_000L).currency("HUF").accountId(acc.getId())
+            .frequency("monthly").startDate(RATE_DAY.plusYears(5)), u.headers(), HttpStatus.OK,
+            PenzRecurringRuleResponse.class);
+        assertHasRequestError(putForBody(path, new PenzAccountRequest().name("Fő").type("checking").currency("EUR"),
+            u.headers(), HttpStatus.CONFLICT, String.class), "PENZ_ACCOUNT_CURRENCY_LOCKED");
+        deleteAndExpect("/api/penz/recurring-rules/" + rule.getId(), u.headers(), HttpStatus.NO_CONTENT);
+        assertThat(putForBody(path, new PenzAccountRequest().name("Fő").type("checking").currency("EUR"), u.headers(),
+            HttpStatus.OK, PenzAccountResponse.class).getCurrency()).isEqualTo("EUR");
+    }
+
+    @Test
     void requestPatternsRefuseUnknownValues() {
         RegisteredUser u = registerUser("penz patterns");
         String err = postForBody("/api/penz/accounts", new PenzAccountRequest().name("X").type("checking")

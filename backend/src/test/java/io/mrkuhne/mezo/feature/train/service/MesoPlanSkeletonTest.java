@@ -20,7 +20,7 @@ class MesoPlanSkeletonTest {
         "glute", new VolumeProperties.Baseline(8, 12, 18),
         "calf", new VolumeProperties.Baseline(6, 10, 16));
 
-    static final VolumeProperties.Bands BANDS = new VolumeProperties.Bands(3, 2, 5, 8, 1, 2);
+    static final VolumeProperties.Bands BANDS = new VolumeProperties.Bands(3, 2, 5, 8, 1, 2, 2, 4);
 
     @Test
     void build_shouldDeriveUpperLower_whenFourDays() {
@@ -43,16 +43,27 @@ class MesoPlanSkeletonTest {
     void build_shouldStartInsideTheBand_whenPrioritiesGiven() {
         var s = MesoPlanSkeleton.build(List.of("Hét", "Sze", "Pén", "Szo"), 6,
             Map.of("back", "emphasize", "calf", "maintain"), RP, BANDS);
-        // emphasize back = band low mav-2 = 14; grow chest = mev 8; maintain calf (6/10/16) = band 2..5 -> top 5
-        assertThat(s.weekOneSets()).containsEntry("back", 14).containsEntry("chest", 8).containsEntry("calf", 5);
+        // emphasize back = band low mav-2 = 14; grow chest = mev 8; maintain calf (6/10/16) = band 2..5 -> low 2
+        assertThat(s.weekOneSets()).containsEntry("back", 14).containsEntry("chest", 8).containsEntry("calf", 2);
     }
 
     @Test
-    void startSets_shouldBeLowForGrowAndEmphasizeAndHighForMaintain() {
+    void startSets_shouldBeTheBandLowForEveryTier() {
         var band = new VolumeBands.Band(4, 9, 16, false);
         assertThat(MesoPlanSkeleton.startSets(band, PriorityTier.GROW)).isEqualTo(4);
         assertThat(MesoPlanSkeleton.startSets(band, PriorityTier.EMPHASIZE)).isEqualTo(4);
-        assertThat(MesoPlanSkeleton.startSets(band, PriorityTier.MAINTAIN)).isEqualTo(9);
+        assertThat(MesoPlanSkeleton.startSets(band, PriorityTier.MAINTAIN)).isEqualTo(4);
+    }
+
+    @Test
+    void maintainStartsAtBandLow() {
+        var days = List.of("Hét", "Sze", "Pén", "Szo");
+        assertThat(MesoPlanSkeleton.build(days, 6, Map.of("back", "maintain"), RP, BANDS).weekOneSets())
+            .containsEntry("back", 4);   // ceil(10/3)
+        assertThat(MesoPlanSkeleton.build(days, 6, Map.of("back", "grow"), RP, BANDS).weekOneSets())
+            .containsEntry("back", 10);
+        assertThat(MesoPlanSkeleton.build(days, 6, Map.of("back", "emphasize"), RP, BANDS).weekOneSets())
+            .containsEntry("back", 14);
     }
 
     @Test
@@ -82,6 +93,17 @@ class MesoPlanSkeletonTest {
             var s = MesoPlanSkeleton.build(MesoPlanSkeleton.DAY_ORDER.subList(0, n), 6,
                 Map.of("back", "emphasize", "quad", "emphasize"), RP, BANDS);
             s.days().forEach(d -> d.muscles().forEach(m -> assertThat(m.sets()).isBetween(1, 8)));
+        }
+    }
+
+    @Test
+    void fiveArgBuildUnchanged() {
+        for (int n = 2; n <= 6; n++) {
+            var days = MesoPlanSkeleton.DAY_ORDER.subList(0, n);
+            var old = MesoPlanSkeleton.build(days, 6, Map.of("back", "emphasize"), RP, BANDS);
+            var explicit = MesoPlanSkeleton.build(days, 6, Map.of("back", "emphasize"), RP, BANDS,
+                MesoPlanSkeleton.SPLIT_DAYS.get(n), MesoPlanSkeleton.SPLIT_LABEL.get(n));
+            assertThat(old).isEqualTo(explicit);
         }
     }
 

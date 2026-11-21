@@ -29,7 +29,8 @@ struct MaWall: View {
     @AppStorage("wallActed") private var actedRaw = ""
     @AppStorage("wallSettled") private var settledRaw = ""
     @State private var why: WallCandidate?
-    /// The season (B6 Évad): its overview feeds the `evad` source; a tap on its card opens the Évad place.
+    /// The season (B6 Évad): its overview and experiments feed the `evad` source; a tap on its card opens the Évad
+    /// place (an experiment proposal's „Indulhat" starts it instead).
     @Environment(EvadStore.self) private var evad: EvadStore?
     /// Levél's digest feeds the `level` source; a tap on its card opens the Levél room.
     @Environment(LevelStore.self) private var level: LevelStore?
@@ -37,6 +38,7 @@ struct MaWall: View {
     @Environment(\.openPlace) private var openPlace
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
 
     private var today: String { brief.date }
 
@@ -56,8 +58,8 @@ struct MaWall: View {
         r.register(WallSource(id: "brief") { [brief] input in
             briefWallCandidates(brief, now: input.now)
         })
-        r.register(WallSource(id: WallSources.evad) { [overview = evad?.overview] input in
-            evadCandidates(overview, now: input.now)
+        r.register(WallSource(id: WallSources.evad) { [overview = evad?.overview, experiments = evad?.experiments.data] input in
+            evadCandidates(overview, experiments: experiments, now: input.now)
         })
         r.register(WallSource(id: WallSources.level) { [digest = level?.digest] input in
             levelWallCandidates(digest, now: input.now)
@@ -121,12 +123,22 @@ struct MaWall: View {
         .animation(reduceMotion ? nil : .smooth(duration: 0.35), value: wall.cards.map(\.id))
         .sheet(item: $why) { c in whySheet(c) }
         // the season's overview is read once (cached offline) so the wall knows what the Évad page knows
-        .task(id: evad.map(ObjectIdentifier.init)) { await evad?.load() }
+        .task(id: evad.map(ObjectIdentifier.init)) {
+            await evad?.load()
+            // the experiments too (S4): the proposal and a fresh result are wall cards
+            if evad?.overview != nil { await evad?.experiments.load() }
+        }
         .task(id: level.map(ObjectIdentifier.init)) { await level?.refresh() }
         // the wall may ring for what expires: what is on screen now counts as seen, the rest may reach his pocket
         .onAppear { reconcileNotifications(markSeen: true) }
         .onChange(of: allExpiring.map(\.id)) { reconcileNotifications(markSeen: true) }
-        .onChange(of: scenePhase) { _, phase in if phase == .active { reconcileNotifications(markSeen: false) } }
+        // back in the app: the experiments are re-read (a result that finished, a proposal that appeared), and the
+        // wall's notifications are reconciled
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active else { return }
+            if evad?.overview != nil { Task { await evad?.experiments.load(force: true) } }
+            reconcileNotifications(markSeen: false)
+        }
     }
 
     /// Every `.expires` candidate the areas have, shown or not.
@@ -169,10 +181,19 @@ struct MaWall: View {
     // MARK: acting
 
     private func act(_ c: WallCandidate) {
-        if c.id.hasPrefix("etel-window") || c.id == "etel-tip" { onMeal() }
+        if c.id.hasPrefix("etel-window") { onMeal() }
         else if c.id == "etel-supplements" { onEtelRoom() }
         else if c.id == "edzes-keszulj" { onDrill(.mozgas) }
         else if c.area == WallSources.level { onDrill(.level) }
+        else if let id = evadWallProposalID(c.id) {
+            // „Indulhat" starts Boop's experiment proposal right here; the Hatás tab shows it running. Settled only
+            // once the server says it started — on a refusal or without a net the card stays (the store re-reads the
+            // list, so a proposal the server no longer has drops off by itself; Hatás says why)
+            Task {
+                if await evad?.experiments.start(id) == true { settle(id: c.id, line: c.settled) }
+            }
+            return
+        }
         else if c.area == WallSources.evad { evad?.pendingSub = evadWallOpens(c.id); openPlace(.terv) }
         settle(id: c.id, line: c.settled)
     }

@@ -153,7 +153,52 @@ components:
         tonightTip: { type: string }
         nextMealTip: { type: string, nullable: true }
         conflict: { $ref: '#/components/schemas/BoopConflict' }
+        capacity:
+          allOf:
+            - $ref: '#/components/schemas/BoopCapacity'
+          nullable: true
+          description: The day's capacity verdict (B7 K1); null when the capacity feature is off or its read failed.
         day: { $ref: '#/components/schemas/BoopDay' }
+    BoopCapacity:
+      type: object
+      required: [verdict, reason, ratio, tanulo, labelledDays, calendarKnown, demand, factors]
+      properties:
+        verdict: { type: string, enum: [laza, rendben, szoros, tulSok] }
+        reason: { type: string, description: 'One Hungarian line; the model may rephrase it, the rule text is the fallback' }
+        ratio: { type: number, format: double }
+        tanulo: { type: boolean, description: still learning his own base }
+        labelledDays: { type: integer, minimum: 0 }
+        calendarKnown: { type: boolean }
+        demand:
+          type: array
+          items: { $ref: '#/components/schemas/BoopCapacityDemandItem' }
+        factors:
+          type: array
+          items: { $ref: '#/components/schemas/BoopCapacityFactor' }
+    BoopCapacityDemandItem:
+      type: object
+      required: [label, start, kind, level]
+      properties:
+        label: { type: string }
+        start: { type: string, format: date-time }
+        kind: { type: string }
+        level: { type: string, enum: [kicsi, kozepes, nagy, tolt] }
+        eventKey: { type: string, nullable: true }
+        effect:
+          type: string
+          nullable: true
+          enum: [drains, neutral, feeds]
+          description: >-
+            The owner's own label of how this event felt (Merít / Semleges / Feltölt), null when unlabelled or for a
+            training session. The phone shows it on the row and pre-selects it in the label sheet.
+    BoopCapacityFactor:
+      type: object
+      required: [key, label, value, effect]
+      properties:
+        key: { type: string }
+        label: { type: string }
+        value: { type: string }
+        effect: { type: string, enum: [jo, semleges, rossz] }
     BoopMetric:
       type: object
       required: [key, display, headline, sentence]

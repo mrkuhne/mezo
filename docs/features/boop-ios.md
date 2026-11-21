@@ -23,6 +23,26 @@ related: [season, penz, mail, fuel, pantry, recipe, dayclose, intention, journal
 > from a life area** — and the wall's ring (`WallNotifier`) is built for the first time, for every `.expires` source. See
 > **Levél** in §2 and [`mail.md`](mail.md); deploy and the phone install pending at the time of writing.
 
+> **2026-11-21 — Boop B6 Évad S4 (`mezo-r36n9.16`).** The Évad page's **Hatás** tab is live: Boop's one open
+> experiment proposal (*Indulhat* / *Most nem*), the running experiment (day X / L, *Ma megvolt*, overlaps, *Leállítom*),
+> past experiments, *Új kísérlet*, and the result page (Előtte | Közben with day counts, the honest verdict, *Megtartom
+> szokásnak* / *Újra kipróbálom*). Code `BoopCore/Evad/EvadExperiment{Wire,Store,Logic}.swift` (ServerCache
+> `evad/experiments`), `Evad/{EvadEffectTab,EvadExperimentPage,EvadExperimentPreview}.swift`. The `evad` wall source adds
+> the proposal (`.improves`, primary „Indulhat” starts it) and a fresh result (`.happened`) — see [`season.md`](season.md) §3.14.
+
+> **2026-11-21 — Boop B6 Évad S3 (`mezo-r36n9.16`).** The Évad page's **Menü** and **Lista** tabs are live: next week's
+> menu as a carousel of seven day cards (approve, swap a meal, another menu, „Kiválasztott receptek"), and the approved
+> week's shopping list (shelves, „mihez kell", check-off, „Változott", staples on tap, plain-text share, past lists). The
+> Ma wall's `evad` source adds the menu waiting for approval as an `.expires` card on the menu day — see **Évad** in §2
+> and [`season.md`](season.md) §3.11–§3.13.
+
+> **2026-11-21 — Évad: a gym + sport day is two sessions (`mezo-r36n9.131`).** Hogy megy counts training and sport
+> apart („3 / 4 edzés megvolt", „1 / 2 sport megvolt"; an older server's total alone still shows as „edzés"), the food
+> row, the *Mi mire hat* Edzés sentence, the new-season summary (`evadKcalSentence`) and *Ennyi változna* („Edzés +
+> sport napon") show a gym + sport day's own kcal when the season has one, and `EvadAdherenceDay` decodes the server's
+> `dayKind` + `sessions`; `evadDayKindLabel` names the four kinds (edzésnap · sportnap · edzés + sport nap ·
+> pihenőnap). Server side: [`season.md`](season.md) §3.7.
+
 > **2026-11-21 — reviewed after the Évad S2 review round (`mezo-r36n9.16`).** A reasoned skip excuses only the session (food and night still count), today's night is never judged, the season title is made inert before it reaches a prompt, the learned-expenditure wall card is keyed on the ISO week, and the Hét tab no longer waits on the day judgement — all described below.
 
 > **2026-11-21 — Boop B6 Évad S2 (`mezo-r36n9.16`).** The Évad tab's **Hogy megy** and **Amit Boop észrevett** are now
@@ -59,7 +79,7 @@ related: [season, penz, mail, fuel, pantry, recipe, dayclose, intention, journal
 > [`2026-11-10-boop-napkelte-design.md`](../superpowers/specs/2026-11-10-boop-napkelte-design.md); Lágy before), companion named **Boop**, same backend with a new account. Slice **S1** (the frame)
 > is shipped: project, Lágy kit, sign-in / register with invite, onboarding (profile + first weight),
 > the five-domain shell, a one-command weekly install. Slice **S2** (data) adds Apple Health (60-day
-> backfill, then refresh on every open) and today's + tomorrow's calendar into new `wearable` endpoints;
+> backfill, then refresh on every open) and the calendar (since B7 K1: yesterday … today + 8 days, every event field) into new `wearable` endpoints;
 > plan [`2026-11-09-boop-s2-adatok.md`](../superpowers/plans/2026-11-09-boop-s2-adatok.md). Spec:
 > [`2026-11-09-boop-ios-v1-design.md`](../superpowers/specs/2026-11-09-boop-ios-v1-design.md) · plan:
 > [`2026-11-09-boop-ios-v1.md`](../superpowers/plans/2026-11-09-boop-ios-v1.md) · approved look:
@@ -248,7 +268,7 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   it, so no wall card ever rang. It is **scheduled only when the app is opened** (no background refresh, no server
   push until the paid team, `mezo-r36n9.19`), and it serves **every** `.expires` source — Étel and Edzés too.
   **The areas join by registering a `WallSource`** (`WallRegistry`): Étel hands in the closing window, the
-  supplement group, the server's tip and the last meal; the brief hands in today's session and the strongest
+  supplement group and the last meal (the server's „Következik: …” tip card was dropped 2026-11-21, `mezo-r36n9.135`); the brief hands in today's session and the strongest
   observation; since B6 Évad S2 (2026-11-21) the season hands in its learned-expenditure proposal and its ending
   (`WallSources.evad`, see **Évad** below); since 2026-11-21 **Levél is the first life area on the wall**
   (`WallSources.level`: the deadline or deal about to expire, and *Megjött a reggeli posta*). **Pénz never registered
@@ -468,6 +488,37 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     another; both refs live for the sheet so a retry never doubles); `PenzEventSheet` → POST holding-events. Pénzem is
     re-read after each. `PENZ_SYMBOL_UNKNOWN` / `PENZ_SELL_EXCEEDS_POSITION` / `PENZ_FX_UNAVAILABLE` are said in
     Hungarian (`penzErrorText`); `RawJSONClient` maps a 503 that carries a message code to `.conflict(code)`.
+  - **Paid from / into a money account (`mezo-r36n9.119`, 2026-11-21)**: under the date the record sheet offers
+    *MELYIK SZÁMLÁDRÓL* (a sell: *MELYIK SZÁMLÁDRA*) — *Nem adom meg* (default: no `accountId`, the L6 request
+    byte-for-byte) plus his live checking and cash accounts, default first (`penzPayableAccounts`); hidden when he has
+    none. An account in another currency than the holding gets one quiet line (the server converts at the day's
+    official rate; no second amount field). For a buy whose account shares the holding's currency, the sheet asks
+    `GET invest-transactions/sms-candidates` (debounced on account · amount · day, `penzSmsLookupAmount`) and, when
+    any match, shows *EZ VOLT A BANKI TERHELÉS?* (chips "nov. 19. · Spar", *Egyik sem* default) → `linkTransactionId`,
+    so the bank row becomes the buy instead of counting twice. While that lookup is pending (the 450 ms debounce or
+    the request in flight, tracked per lookup key) *Rögzítem* is disabled, so a save never skips a possible bank
+    match (`.119` review). `PenzInvestTxnRequest` gained `accountId` /
+    `accountAmountMinor` / `linkTransactionId` (sent only when set), `PenzInvestTxn` decodes `accountId` /
+    `transactionId`; a save with an account re-reads the whole snapshot (the allowance and Költés moved), not only
+    Pénzem. New refusals in Hungarian: `PENZ_SMS_LINK_MISMATCH` (the sheet looks the bank rows up again) and
+    `PENZ_TRANSACTION_INVEST_LINKED` (editing / deleting a money row that belongs to a recorded investment).
+  - **The weekly long-horizon review (`mezo-r36n9.120`, owner decision #66, 2026-11-21; contract
+    `api/feature/penz/penz-weekly.yml`, server side [`penz.md`](penz.md) §3.14)**: on Pénzem, under *A HÉT, HOSSZÚ
+    TÁVON* (search glyph, the reviewed week "nov. 10–16." at the head's right) right after the three sleeves and their
+    info row — built only from existing parts, no new look, **no push, no action button, Ma unchanged**. One
+    `NKAreaRow` per horizon in short → mid → long order: title = the horizon label, sub = the verdict (wraps to two
+    lines — the kit's new `NKAreaRow.subLines`, default 1), right side a quiet word ("számít" when `matters`, else
+    "nincs teendő"; never `hot`). A tap opens `PenzWeeklyPage` (page `PenzPage.weekly`, `NKAreaSubPage`, crumb "Pénz ·
+    Pénzem", title = the horizon, sentence = the verdict): *Amit Boop gondol róla* (`NKHueText` for `*emphasis*`, plus
+    the long sleeve's coverage sentence when known), *Mennyire biztos* (uncertainty), *Honnan van* (story / source
+    counts, then each story: headline, holding, source capsules that open their http(s) link), `NKNothingToDo` with the
+    per-horizon `noAction`. Fallback and quiet copy is shown as it came. States (`penzWeeklyView`): never loaded or the
+    first read failed → no block (never breaks Pénzem); `pending` → one line „Az első heti áttekintés hétfő reggel
+    készül el."; `quiet` / `failed` with no sections → one honest line; `failed` with sections → the rows. Data:
+    `PenzWeeklyWire.swift` (lenient), `PenzClient.weeklyReview(week:)`, `PenzStore.weekly` read with the full load
+    and cached in `ServerCache` (`penz/weekly` "current"; a failure keeps the last one), pure builders in
+    `PenzWeeklyLogic.swift`, tests `PenzWeeklyTests.swift`. Review: `-penzWeekly ready|pending|quiet|failed|error`,
+    `-penzPage weekly|weekly-short|weekly-mid`.
   - **Data**: `PenzPortfolioWire.swift` (lenient), `PenzPortfolioClient.swift` (portfolio, digest, holdings CRUD,
     invest-transactions, `holdings/{id}/transactions`, holding-events), `PenzStore.portfolio` / `.digest` read beside the
     snapshot, each with its own problem/offline flags, cached in `ServerCache` (`penz/portfolio` "current", `penz/digest`
@@ -541,7 +592,8 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     *Módosítás* (offline: „Ehhez internet kell.") · *Új évad*. *Korábbi évadok* is `mezo-r36n9.123`.
   - **Hogy megy (S2, 2026-11-21)** — `evadAdherenceFacts(adherence, needMin:)` turns the overview's last-week
     summary (server `AdherenceService`, [`season.md`](season.md) §3.7) into an `NKStatRow` of plain counts: „4 / 5
-    napon belefértél a keretbe", „3 / 4 edzés megvolt", „4 / 7 éjjel aludtál eleget". A fact with nothing to count is
+    napon belefértél a keretbe", „3 / 4 edzés megvolt", „1 / 2 sport megvolt" (training and sport apart since
+    mezo-r36n9.131), „4 / 7 éjjel aludtál eleget". A fact with nothing to count is
     left out (never „0 / 0"); `evadExcusedLine` adds „N kímélő nap nem számít bele." before „Ez nem pontszám, csak
     összesítés.". A reasoned skip only takes that day's session out of the count (food and night still count). The
     block is absent when `adherence` is null, or when no fact remains and no kímélő day was left out.
@@ -555,7 +607,18 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     on screen) and the season ending within 7 days as `.happened` („*N nap múlva* véget ér az évad", *Megnézem*).
     `MaWall` loads the Évad overview once (`.task`, cached offline). Nothing here is `.expires`, so it never rings.
   - **Étel Hét reads the server's judgement (S2)** — see the Hét tab paragraph below.
-  - **Menü · Lista · Hatás:** `NKNotLiveYet` cards until S3 (menu, shopping list) and S4 (experiments).
+  - **Hatás (S4):** `EvadEffectTab` over `EvadExperimentStore` (owned by `EvadStore`, ServerCache `evad/experiments`,
+    every write re-reads the list, a refused or failed one too, so a card the server already finished is replaced):
+    the proposal highlight, *Folyamatban* (`NKLevelBar`, `NKTag(warn:)` per overlap, a row of up to seven day chips
+    `EvadDayChip` — the window's days so far, `evadMarkDates` = the last 7 of `[start, min(end, today)]`, weekday over a
+    drawn `check-ink` tick, today ringed, each tap ticks/unticks that date so a missed day can be made up;
+    *Leállítom* confirms first), *Korábbi kísérletek*, *Új kísérlet* (`EvadSub` page-level). **Refresh rule:** the
+    store re-reads when forced, while the list is from the cache, or once the calendar day of the last server answer
+    is not today; the tab forces a read on appear and on returning to the app (scenePhase active), the Ma wall's evad
+    source on returning to the app. The wall's „Indulhat" settles the card only when `start` returns true. Result page
+    `EvadExperimentPage` (`NKCompareColumns` Előtte | Közben, `NKList` „Mit jelent ez?"; a column is lit only under a
+    „clear" verdict). Copy is pure (`EvadExperimentLogic`: labels, units, verdict sentences per signal and direction).
+    DEBUG `-evadOpen kiserlet`.
   - **Módosítás** (`EvadWhatIf`, „Mi változna?"): stepper *Edzések hetente* (the kit's plus glyph and a drawn minus,
     no system symbols; picks gym days that avoid the sport days), sport-day chips, *Heti fogyás / hízás* slider (not
     for maintain). Every change re-previews (debounced, `POST /api/seasons/{id}/preview`) → **Ennyi változna**
@@ -597,6 +660,20 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     number; `-evadEndSoon YES` puts the season in its last week (the wall's season-end card); `getAdherence` answers
     the Étel preview's week (day 4 a kímélő day, today still going). The preview's learned-insight body still carries
     the spike's Monday sentence — the server no longer says it.
+  - **Menü + Lista (S3, 2026-11-21).** `EvadStore.menu` is an `EvadMenuStore` (`BoopCore/Evad/EvadMenuStore.swift`, same
+    client + `ServerCache`, keys `evad/menu` / `evad/list`, offline = last answer with its age). It shows next week's menu
+    when it has meals, else this week's, else next week's empty state; the list is next week's, else this week's (404 =
+    `listMissing`). `EvadMenuTab` (screen 05: `NKHighlight` approve, `NKCarousel` of day cards 372 pt × 0.84, a meal tap →
+    `EvadSwapSheet` presented at page level, *Kérek másikat*, *Kiválasztott receptek*; seeding / none / repeated states),
+    `EvadListTab` (screen 06: `evadShelfGroups`, `EvadTick` drawn tick, „Változott", staple chips, `ShareLink` with
+    `evadShareText`, *Korábbi listák*, *Szokásos tételek*); sub-pages `EvadRecipesPage`, `EvadPastListsPage`,
+    `EvadStaplesPage` (`EvadSub` receptek / listak / tetelek). Check-off is optimistic and outbox-free: one retry, then the
+    tick is put back with a line; a line with a tick still in flight ignores another tap (`inFlight`). The menu and the list
+    keep their own offline state and age (`menuOffline` / `listOffline`). A past day's meal is not tappable (`evadIsPast`);
+    week dates are computed on a Gregorian calendar whatever the phone's calendar setting. Tab badges: Menü dot = next week `proposed` (overview), Lista = lines still to buy.
+    Wall: `evadMenuCandidate` — `.expires` from the menu day until the week starts (`expiresAt` = next Monday), *Átnézem*
+    → `pendingSub = "menu"` → the Menü tab. DEBUG preview `EvadMenuPreview.swift` (`-evadMenu proposed|approved|seeding|none`,
+    `-evadRepeated YES`, `-evadChanged YES`).
 - **The Edzés room (B5 phase 1, `mezo-r36n9.15`)** — the same page, with its own data. Edzés left `AreaRoom`
   for `ios/Boop/Edzes/EdzesRoom.swift`, branched beside `EtelRoom()` in `NapView`, because the morning brief
   cannot carry what the training API knows. **The frame is still the kit's** (`NKAreaPage`, the area's own bar,
@@ -790,7 +867,10 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     keeps a `BlockDraft` and re-POSTs it to `evaluateMesoPlan` 300 ms after the last edit; an answer for an older draft is
     dropped, a failed one keeps the last numbers on screen ("frissül…"). Izmok: body map, a card per banded muscle (tier
     switch, half dial, spread, proposal + *Elfogadom* / *miért?*). Napok: day pills with minutes, steppers 1–8, technique pill
-    cycling the exercise's allowed list (free weights: "szabadsúly · nincs technika"; half reps only when lengthened-friendly),
+    cycling the exercise's allowed list (free weights carry no technique; half reps only when lengthened-friendly; since decision #72 the chip is grey and
+    untappable only when the row can take neither a technique nor the challenge — `DraftExercise.techniqueLockLabel`:
+    *szabadsúlyos alapgyakorlat* for a free-weight compound, else *szabadsúly · nincs technika* — so a free-weight
+    isolation opens the picker with the techniques dimmed and the challenge selectable, `mezo-r36n9.127`),
     one challenge flag a day (it clears the exercise's technique), session-cap warnings with the server's cap. Blokk: style
     four-way choice, the *Technikák* and *A heti javaslatot én hagyom jóvá* switches, week totals + per-muscle path, technique
     weeks (the planner's count when sent, else every loading week while on). **Save** writes only what changed, in order
@@ -810,19 +890,67 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     [`2026-11-20-boop-blokk-szerkeszto-design.md`](../superpowers/specs/2026-11-20-boop-blokk-szerkeszto-design.md) §6,
     look: the spike on `spike/boop-blokk-szerkeszto`)** — `BuilderDayCard` rows are ≡ handle (drag reorders through
     `BlockDraft.move`, no lift scale under reduced motion; VoiceOver *Feljebb/Lejjebb* actions), name, subtitle from the
-    row's own `repMin/repMax/targetRIR`, set stepper (wraps under the name when the card's inner width is under 364 pt),
+    row's own `repMin/repMax/targetRIR` led by the **sub-muscle** of the row's fine token (`DraftExercise.muscleKey` →
+    `SubMuscles.name`, e.g. *Hát · középső*; one line via `ViewThatFits`, else the muscle above the numbers — the day's
+    top chips stay coarse groups, volume still groups by `muscle`), set stepper (wraps under the name when the card's inner width is under 364 pt),
     ⋯ menu (*Csere · Beállítások · Törlés*); delete leaves an undo line; tap → `DayEditSettingsSheet` (rep range,
-    reserve, starting weight, warm-ups, *TE ÁLLÍTOTTAD*, *Visszaállítom az edzésmódra*); ＋ → `DayEditAddSheet` (muscle
-    chips *kevés* first, then the day's, then *Más izom*; ≤5 suggestions from `BlockBuilderModel.suggest`, then the
-    full list); ⋯ *Csere* → `DayEditSwapSheet`. Empty day line; the day of today's open workout
+    reserve, starting weight, warm-ups, *TE ÁLLÍTOTTAD*, *Visszaállítom az edzésmódra*); ＋ → `DayEditAddSheet`
+    (`mezo-r36n9.127`, look: spike `spike/boop-izomreszek`): a compact *Izmok: … ▾* dropdown (`SubMuscles.summary`, a
+    whole group by name, else *Hát · középső +2*, *Minden izom* when empty) opening `DayEditMusclePanel` — group
+    checkbox (all/none/partial, drawn `DayEditCheckbox`), sub-muscle pills, *kevés* once on a group under its band (on the
+    part for the stand-alone leg tokens), *Törlés* / *Kész*, scrolls on small phones, ticks apply live (250 ms settle);
+    ≤5 suggestions from `BlockBuilderModel.suggest(mode: "add", muscles:)` — nothing picked sends `muscles: []` and the
+    server answers for the week's under-band groups (*AJÁNLOM · A HÉT KEVÉS IZMAIRA* + the one-line hint) — then the full
+    list filtered to the picked tokens; ⋯ *Csere* → `DayEditSwapSheet`. Every card and list row in these sheets and the
+    player's `SwapSheet` is the shared `ExercisePickCard` / `ExercisePickRow` (`Edzes/SwapSheet.swift`): the catalogue
+    start still (`imageStartUrl` → `BoopConfig.mediaURL`, 44 pt `NKRemoteThumb`, the glyph tile without one), the
+    catalogue name, *hát · középső · összetett* (`exerciseRoleLine`), the server's reason only. The day card's top chips
+    stay coarse groups with counts but are spelled by `SubMuscles.groupName` (*Mell*, *Comb*, *Combhajlító*, *Far* …) —
+    as is every muscle word in the app now: the Izmok tab, the weekly review deck, cap warnings and the player (`muscleName`
+    is the lower-case group name for running text; an exercise's own line in the player reads `SubMuscles.name`);
+    the quiet full-list labels cover the whole catalogue (the server labels every row in add mode). Empty day line; the day of today's open workout
     (`BlockBuilderModel.lockedDay`, passed by `EdzesRoom`) is read-only; *Mentés* on a structurally changed day that a
     waiting weekly proposal touches (`pendingReviewDays`, from the proposals the load already read) asks *Függő heti
     javaslat* first. Indices of the evaluation (recommendations, cap warnings, proposals) are hidden while the line-up
     differs from the evaluated one (`indicesFresh`); a swapped/new row drops the weekly AI note (`aiNote(_:)`). The main
     button falls back to *Nincs változás* where *Nincs mit menteni* does not fit (`mezo-r36n9.118`). DEBUG (with
     `-previewBlokk YES -previewBlokkOpen epito -previewBlokkTab napok`): `-previewBlokkEdit
-    default|menu|settings|add|swap|undo|empty|locked|confirm`, `-previewBlokkDay N` (day page),
+    default|menu|settings|add|addOpen|addEmpty|swap|undo|empty|locked|confirm` (*add*: two sub-muscles picked,
+    *addOpen*: the dropdown open, *addEmpty*: nothing picked), `-previewBlokkDay N` (day page),
     `-previewBlokkSuggest fail` (suggestions 503 → the full list with its one-line note).
+  - **Új blokk — the new-block flow and the plan recommender (`mezo-r36n9.113`, S1 + S2, 2026-11-21; spec
+    [`2026-11-20-boop-eves-terv-design.md`](../superpowers/specs/2026-11-20-boop-eves-terv-design.md) §5, plan
+    [`2026-11-21-boop-eves-terv-s1-s2.md`](../superpowers/plans/2026-11-21-boop-eves-terv-s1-s2.md))** — the no-block state of
+    Edzés → Blokk has an *Új blokk* button; the flow (`ios/Boop/EdzesTerv/UjBlokk/`, model `BoopCore/Train/NewBlockModel`)
+    is **Alapok · Jelöltek · nem fér · létrehozva**. *Alapok* (step 1/2): the block length, the session minutes
+    (*Meddig tarthat egy edzés*), the training days read from the season's gym slots (changing them is the Évad page's job;
+    no season → the *Előbb egy évad kell* state with a link, no call made; fewer than 2 or more than 6 gym days → the
+    `seasonDaysOutOfRange(n)` state *„Az évadodban n edzésnap van — a tervajánló 2–6 napra tud tervet adni…"* with the Évad
+    link, no call made), one tier switch per landmark muscle (Hangsúly · Építés · Tartás; no Törzs row) and the **heti
+    keret** line from the server's **`intakeBudget`** (week 1 of the lead candidate — *„az első héten"* — consistent with
+    the candidate filter; a failed refresh clears it so the failure notice shows). A raise is checked **one tier per tap**
+    (`RaiseCheck`, no maths of our own): a third Hangsúly is refused (`emphasizeFull`); a raise the server marked
+    `raiseAllowed[m] = false` (raising only that muscle leaves no candidate) is refused (`noRoom`), the reason shown under
+    the row; a missing key, no target, or a tier on screen other than the one the server priced is not a refusal. The
+    minutes pills add the current minutes as its own selected pill when a fix set one outside 45/60/75/90. *Jelöltek*
+    (2/2): 1–3 ranked flawless candidates, the first marked *AJÁNLOTT*, each `splitLabel · ~N perc` (longest day) with the
+    server's reasons and a **„miért?"** sheet; *Mikor kezdjük* (*Jövő hétfőn* default, or today). *nem fér*: when
+    `nothingFits`, the closest candidate (*a legközelebbi, ha mégis kéred*) and the server's fixes as buttons (*EZ MEGOLDANÁ*:
+    more minutes applies, fewer Hangsúly lowers the muscle the server names in the fix — else the heaviest — to Építés, more
+    days sends him to the Évad tab).
+    *Ezzel kezdem* → `generate` (with the candidate's `splitKey` and the session minutes, so the server keeps the AI's picks
+    only while the plan still fits them; a failed generate falls back to the candidate's own
+    template) → `createMesoTemplate` → `startMesoTemplate` (next Monday `planned`, or today `active`; a saved template is
+    reused on retry, keyed by request + minutes) → the ordinary builder opens on the new block with **„Mégsem, eldobom"**
+    (`discardMesocycle`: the server deletes the never-trained block and its template — no report, no AI review). A start failure keeps the candidates on screen with an inline error; `SEASON_REQUIRED` → the
+    needs-season state. The builder itself gains the **heti keret** line (the server's `budget` for the open draft),
+    the minutes row (pills = the session-minutes target) and a **„miért?"** sheet per muscle (the server's `basis` +
+    band). No wording of a number is the phone's own: minutes, bands, costs and fixes all come from the candidates /
+    evaluate answers. DEBUG: `-previewUjBlokk YES` with `-previewUjBlokkScreen alapok|tele|jeloltek|nemfer|letrehozva`,
+    `-previewUjBlokkSeason none`, `-previewUjBlokkScroll Y`, `-previewUjBlokkStart fail`; the builder's own
+    `-previewBlokkMinutes 60` and `-previewBlokkWhy back` (all in `PlanPreview.swift`; `ios/README.md`'s table lists
+    spine flags only). Not in this slice: the year map and following it (S3/S4), experience level (dropped), an AI pass on the
+    chosen candidate.
   - **The identity-aware draft (`BlockDraft`, `BlockBuilderModel`; no wire ids in the editor).** A `DraftExercise.id` is a
     **local key** — the server's row id for a loaded row, `new-<uuid>` for one added in the draft; a swap keeps the row's key,
     technique (when the new exercise may carry it) and his picks; the ids are re-minted by every structural save, so the model
@@ -917,13 +1045,13 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   technique set's steps stay as logged.
 
 - **The Étel room (B4 Étel, shipped 2026-11-13, `mezo-r36n9.14`; spec [`2026-11-13-boop-b4-etel-design.md`](../superpowers/specs/2026-11-13-boop-b4-etel-design.md) — owner decisions 8–21, plan [`2026-11-13-boop-b4-etel.md`](../superpowers/plans/2026-11-13-boop-b4-etel.md)).** The Fuel orb on Ma opens `EtelRoom` (`Etel/EtelRoom.swift`, kit `NKDrillPage` in the fuel hue with a food photo head `NKPhoto.konyha`, four capsule tabs **Ma · Receptek · Kamra · Hét**, last tab kept in `@SceneStorage`). One `EtelStore` (`Etel/EtelRoom.swift`, logic in pure `EtelLogic.swift`) loads day / plan / coach / photos / supplement stash independently, so one failing read never blanks the room. All server calls go through `FoodClient` (`BoopCore/Etel/`); the model types in `FoodModels.swift`. The server owns the rules (day plan, scoring, sensitivities); the phone shows them and never recomputes a verdict.
-  - **Ma tab** (`EtelMa`, `MealCard`, `DimensionSheet`): five numbered sections — **1** the day's budget (kcal headline + three macro bars; a kímélő GUIDANCE day shows "ma nincs kalóriakeret" and a "Kikapcsolom" button instead), **2** the day's plan (logged meals as photo cards with score and macros; the open windows from `GET /api/fuel/plan/{date}` with the MOST badge, the suggested recipe or ingredient tip, *Megeszem* / *Kihagyom* / camera), **3** the next-meal tip (*Megnézem a receptet* switches to Receptek when the window has a recipe; *Most nem* dismisses it locally), **4** víz (+250 / +500 ml, idempotent writes), **5** kiegészítők (one-tap group tick). A meal card opens the eight-dimension sheet (macro, micro, who, fat quality, NOVA, plant diversity, **energy density**, context — "Adag" is a recipe-only dimension; each shows what it measures, the server's own detail and the coach note). The processed-food line appears only as the coach's one quiet sentence when NOVA 3–4 carry more than half the meal's kcal; the phone adds no NOVA badge of its own. The headline wraps to two lines on long numbers (kit 38 pt); under 230 pt content width the dimension grid goes to two columns.
+  - **Ma tab** (`EtelMa`, `MealCard`, `DimensionSheet`): five numbered sections — **1** the day's budget (kcal headline + three macro bars; a kímélő GUIDANCE day shows "ma nincs kalóriakeret" and a "Kikapcsolom" button instead), **2** the day's plan (logged meals as photo cards with score and macros; the open windows from `GET /api/fuel/plan/{date}` with the MOST badge, the suggested recipe or ingredient tip, *Megeszem* / *Kihagyom* / camera), **3** ~~the next-meal tip~~ (removed 2026-11-21, `mezo-r36n9.135`), **4** víz (+250 / +500 ml, idempotent writes), **5** kiegészítők (one-tap group tick). A meal card opens the eight-dimension sheet (macro, micro, who, fat quality, NOVA, plant diversity, **energy density**, context — "Adag" is a recipe-only dimension; each shows what it measures, the server's own detail and the coach note). The processed-food line appears only as the coach's one quiet sentence when NOVA 3–4 carry more than half the meal's kcal; the phone adds no NOVA badge of its own. The headline wraps to two lines on long numbers (kit 38 pt); under 230 pt content width the dimension grid goes to two columns.
   - **Capture is offline-first** (`Etel/Composer.swift`, `PendingMeals.swift`, `PhotoCapture.swift`; `BoopCore/Etel/{MealDraft,FoodOutbox}.swift`). Five entrances — **Fotó · Szöveg · Vonalkód · Recept · Kamra** (plus **Szokásos**, below) — end in ONE editable draft (name, amount, delete per line; totals; sensitivity and "nincs adat" notes) and **nothing is saved without the owner's tap on *Mentem***. The draft is computed by the model through `draftMealFromAi` (a barcode-only capture never calls the model — the scanned product becomes the line). With no network the capture is parked in the **same `Outbox` as B3** (new `OutboxKind.mealDraft`; one queue, one backoff / age / failed machinery, flushed on foreground, net back and background; each meal is its own order group): the photo is stored as `meal-<uuid>.jpg` beside `queue.json` (the payload carries only the id), and when the net returns the draft is computed and parked as a **confirmation card** ("Jóváhagyásra vár" with *Mentem · Átnézem · Elvetem*) — the sender never saves a meal on its own. The capture keeps its own `capturedAt`, sent with the **phone's UTC offset, never `Z`** (`FlexibleISO8601Transcoder` writes the offset for every generated-client date; the server dates the meal by that offset, so a 00:30 Budapest meal sent as `Z` would land on the previous day) and a stable `clientRef`, so a retry after a lost answer creates no duplicate (§4, [`fuel.md`](fuel.md)). A capture older than 7 days is shown as failed with its values and photo kept (**Újra**), a refused save (400) says which shelf/recipe-tied lines may have been deleted and stays editable; a failed photo upload never fails or discards the meal (`hasPhoto` tells). The draft's lookup state is spoken honestly (`draftNotice`): lookup failed ≠ "unknown code" ≠ "no food found". Photos are JPEG downscaled to 1600 px (ImageIO); the camera needs `NSCameraUsageDescription` (`INFOPLIST_KEY_` in the app target, the only `project.pbxproj` change of the slice) and falls back to the photo library when it is absent or the device has no camera.
   - **Barcode** (`Etel/BarcodeScanner.swift`, `ServingConfirm.swift`): VisionKit `DataScannerViewController` (EAN-13 / EAN-8 / UPC-E, first code only, guarded `isSupported && isAvailable`) with a typed-code field that is always visible. The lookup (`lookupPantryItem`, response-level `source` OFF / CATALOG / NONE) shows the product with the owner's sensitivity line (no allergen data reads "nincs allergén-adat", never "free of"); a miss offers a label photo or words and the code rides along. The **serving confirmation is always shown** — 100 g / 1 adag / free grams (grams by default when the serving is missing, a CATALOG hit has no serving) — and scales the per-100 g facts; kcal absent ⇒ the line is marked needs-review, never a fabricated zero. **The live scan, the permission prompt and Fotó opening the camera were verified only in the simulator's typed-code path — they need a hands-on check on the phone** (§9).
   - **Sensitivities everywhere a food appears** (`BoopCore/Etel/SensitivityRules.swift`, mirror of the server's rules): the badge on a draft line, a shelf row, a recipe row or a suggestion is "Tej · Intolerancia: tartalmazza" style; an absent allergen key is **"nincs adat"**, an ALLERGY-level key with traces/unknown is warned, nothing ever reads "mentes". The profile is read once into the store; saving it in *Amit kerülök* reloads the room, so the tip cannot keep suggesting something just excluded.
   - **Photos** (`NKThumb`, `NKCardPhoto`): meal photos live on the server (`PUT/GET/DELETE /api/meal/{id}/photo`, `POST…`; recipe photos on `/api/recipe/{id}/image`), are fetched with revalidation (`ETag`, `no-cache`) and show on the Ma meal card, in the recipe row/detail and in Napló; the stored bytes are deleted with the meal / on replace (see [`fuel.md`](fuel.md), [`recipe.md`](recipe.md)).
   - **Cross-surface** (B4 Task 15, additive): Ma's timeline merges **food rows** in clock order after the B3 rows (`MaPhases.etelStations`: the next open window with a "kb. N kcal" budget sub line, or the first untaken supplement group, or one "Mind bevéve" row; a tap opens the room), `MaBelow` holds its own `EtelStore` loaded with the *light* read (`load(food:now:extras:false)` — day, plan, protocol; no coach, no photos) and re-reads the taken-supplement set from `UserDefaults` on every load so the two stores never disagree. The supplement clock is a daypart guess, shown hedged as "kb. 8:00" in the sub line (the 42 pt time column stays empty for it). **Napló** day detail gets "A NAP ÉTELEI": only meals with `hasPhoto`, photos fetched for those, one quiet line when a photo could not load (said only after the downloads finish), the section absent for a day with no photo meals. DEBUG launch flags for the room: `-etelTab`, `-etelSheet` (`kamra-item|kamra-estimated|kamra-catalog|add-link|add-label|add-manual|add-barcode|usuals|het-day|detail|import|text|workshop|cooked|cooked-filled|cooked-review`), `-etelReview other|added|facts` (with `cooked-review`), `-etelImportRun`, `-etelWorkshopAsk`, `-previewOpen barcode`, `-previewCode`, `-previewServing`, `previewFoodOffline` (see `ios/README.md`).
-  - **The Étel room on the warm blocks (`mezo-r36n9.101`, 2026-11-19).** **Head:** no photo (owner, 2026-11-19 — the painted sky only, also on `DimensionSheet`); the orb's number is the mean score of today's meals (`etelDayPoints`); each tab speaks for itself (`etelTabVerdict`: Ma/Hét the day, Receptek the library, Kamra the shelf); corner actions *Étkezés rögzítése* + *Frissítés*; the area bar's Boop item. **Ma** (`EtelMa`): `NKHighlight` for Boop's tip (or the kímélő card) → four capture tiles (Fotó · Leírom · Vonalkód · Szokásos) → `NKStatRow` *MA EDDIG* (`etelStats`) → *A NAP MENETE* (`etelDayCurve`: hourly 06–22, eaten up to "now", the open windows' budgets after it, drawn dashed via `NKCurve(planAfterNow:)` with a three-entry legend) → macro rows with "még N g" → the day's meals as rows (a logged one opens `MealDetail` in place; the window that is open now shows its suggestion + Megeszem/Kihagyom, a later one is one quiet line until tapped) → water → supplements → `NKAskRow`. **Receptek** (`EtelReceptek`): entrance tiles, *A KÖNYVTÁRAD SZÁMOKBAN* (`recipeStats`), search + slot chips, rows with pills (`EtelPill`) and the recipe's fit as `EtelScoreRing`; the sensitivity flags sit on their own line, so a long name never collides with them. **RecipeDetail**: pills, `EtelMacroTiles` per serving, *BOOP ÉRTÉKELÉSE* (ring, `fitsFor` pills via `recipeFitLabel`, tagline, summary, `DimensionGrid` → `DimensionSheet`, *ÍGY LENNE JOBB* from `improve`; a cancelled load no longer leaves "unavailable", plus an *Újra*), *AMIRE FIGYELSZ* (`EtelAllergenRows`), numbered steps. **Kamra** (`EtelKamra`) and **PantryItemDetail**: category glyphs (`etelCategoryGlyph`), pills, the food's own score ring + breakdown, `EtelNovaScale`. The shared faces live in `Etel/EtelFaces.swift`. **The meal composer** (`Composer.swift`): one page carries time + photo + words at once (`MealTimeRow`: Most / fél órája / 1 / 2 órája / any moment of the last 6 days; the draft's day and window follow it — `MealComposerModel.setTime`); a photo with words goes up as one draft request; the working face is `MealScanView` (scan line + corner marks over the photo, the orb without one, stepped phrases, held ≥ 2.6 s by `minWorking`); the draft is a plate card (photo, time, `EtelMacroTiles`), one tile per line (glyph + name + source pill + kcal / a stepper for the amount / macro chips + *Leveszem*; a doubtful line has the amber border) and *HOZZÁTESZEK MÉG* — photo, recipe, shelf food, barcode or more words join the **same** draft (`addMore`, `addFromBoop`, `adding`). Review hooks: `-etelSheet compose`, `-etelCompose photo|scan|draft`.
+  - **The Étel room on the warm blocks (`mezo-r36n9.101`, 2026-11-19).** **Head:** no photo (owner, 2026-11-19 — the painted sky only, also on `DimensionSheet`); the orb's number is the mean score of today's meals (`etelDayPoints`); each tab speaks for itself (`etelTabVerdict`: Ma/Hét the day, Receptek the library, Kamra the shelf); corner actions *Étkezés rögzítése* + *Frissítés*; the area bar's Boop item. **Ma** (`EtelMa`): `NKHighlight` only for the kímélő card (the server's „Következik: …” tip is no longer shown here or on the Ma wall — owner, 2026-11-21, `mezo-r36n9.135`) → three capture tiles (Fotó · Leírom · Szokásos; the barcode stays in the composer and on Kamra) → `NKStatRow` *MA EDDIG* (`etelStats`) → *A NAP MENETE* (`etelDayCurve`: hourly 06–22, eaten up to "now", the open windows' budgets after it, drawn dashed via `NKCurve(planAfterNow:)` with a three-entry legend) → macro rows with "még N g" → the day's meals as rows (a logged one opens `MealDetail` in place; the window that is open now shows its suggestion + Megeszem/Kihagyom, a later one is one quiet line until tapped) → water → supplements → `NKAskRow`. **Receptek** (`EtelReceptek`): entrance tiles, *A KÖNYVTÁRAD SZÁMOKBAN* (`recipeStats`), search + slot chips, rows with pills (`EtelPill`) and the recipe's fit as `EtelScoreRing`; the sensitivity flags sit on their own line, so a long name never collides with them. **RecipeDetail**: pills, `EtelMacroTiles` per serving, *BOOP ÉRTÉKELÉSE* (ring, `fitsFor` pills via `recipeFitLabel`, tagline, summary, `DimensionGrid` → `DimensionSheet`, *ÍGY LENNE JOBB* from `improve`; a cancelled load no longer leaves "unavailable", plus an *Újra*), *AMIRE FIGYELSZ* (`EtelAllergenRows`), numbered steps. **Kamra** (`EtelKamra`) and **PantryItemDetail**: category glyphs (`etelCategoryGlyph`), pills, the food's own score ring + breakdown, `EtelNovaScale`. The shared faces live in `Etel/EtelFaces.swift`. **The meal composer** (`Composer.swift`): one page carries time + photo + words at once (`MealTimeRow`: Most / fél órája / 1 / 2 órája / any moment of the last 6 days; the draft's day and window follow it — `MealComposerModel.setTime`); a photo with words goes up as one draft request; the working face is `MealScanView` (scan line + corner marks over the photo, the orb without one, stepped phrases, held ≥ 2.6 s by `minWorking`); the draft is a plate card (photo, time, `EtelMacroTiles`), the recipe and shelf pick lists carry the same `EtelSearchField` + `EtelFilterChips` as the Receptek / Kamra tabs (`filterRecipes`/`recipeSlots`, `filterShelf`/`shelfCategories`; cleared when the list changes — `mezo-r36n9.135`); one tile per line (glyph + name + source pill + kcal / a stepper for the amount / macro chips + *Leveszem*; a doubtful line has the amber border) and *HOZZÁTESZEK MÉG* — photo, recipe, shelf food, barcode or more words join the **same** draft (`addMore`, `addFromBoop`, `adding`). Review hooks: `-etelSheet compose`, `-etelCompose photo|scan|draft`.
   - **The Hét tab reads the server's day judgement (B6 Évad S2, 2026-11-21).** `EtelStore.loadWeek(food:evad:now:)`
     fetches `GET /api/seasons/adherence` for the same seven days beside `getFuelWeek` (`EvadClient.adherence`), and
     `hetWeek(…, adherence:)` takes each answered day's **judged** flag and **kímélő** excuse from the server — the one
@@ -956,7 +1084,7 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   count once; a phone synced before totals existed re-reads the 60 days once, `mezo-r36n9.5`) — and one status chip
   (frissítem… · nem sikerült frissíteni · naptár: nincs engedély · frissítve HH:mm); tapping refreshes.
 - **Refresh on open**: every return to the foreground re-syncs (10-minute debounce); a calendar change
-  re-sends today + tomorrow. **B1:** the code also wakes on new Health data in the background (`HKObserverQuery` +
+  re-sends yesterday … today + 8 (B7 K1). **B1:** the code also wakes on new Health data in the background (`HKObserverQuery` +
   background delivery) — present but **unverified on a device** (the free team accepts the entitlement; verification is the paid-team follow-up `mezo-r36n9.19`).
 
 ## 3. Architecture & data flow
@@ -969,7 +1097,7 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   - **Deletions.** Deleted workout/sample uuids from the anchored queries go to `POST /api/wearable/deletions` (soft delete, `WearableDeletionService`).
   - **Weight from Health.** `bodyMass` upserts into `weight_log` (`source` manual|apple_health, `external_id`) through a dedicated path — **one** goal recompute and **one** companion event per batch, only for a new weigh-in from today/yesterday (a 60-day backfill never floods).
   - **Workout reconciliation** (read-time, `WorkoutReconciler` in `wearable`; logged sessions via `LoggedSessionReadPort`, implemented in `train`): a Health workout matching a logged gym session or sport session (overlap ≥ 50 % of the shorter one) is counted once. `BoopDayAssembler`'s *yesterday load* now counts logged gym/sport sessions (matched Health workouts dropped, lending kcal/min) so Forma reflects real training even without Health.
-  - **Calendar history.** `calendar_event.external_id` (EventKit external id + occurrence), unique per `(created_by, external_id, date)`; for each sent day, live rows missing from the payload are soft-deleted (cancelled event); first sync backfills 60 past days; past days are not touched again.
+  - **Calendar history.** `calendar_event.external_id` (EventKit external id + occurrence), unique per `(created_by, external_id, date)`; for each sent day, live rows missing from the payload are soft-deleted (cancelled event); the phone's first sync after B7 K1 backfills 60 past days (key `boop.calendar.backfilled.v2.<user>`; the old key re-runs it once so old events gain the new fields), then sends yesterday … today + 8; the server upserts by `external_id` (soft delete for cancelled events, cap 31 days per request) and finders exclude deleted rows. A replace publishes `CalendarDaysReplacedEvent`, which makes the capacity feature score the coming days in the background ([`capacity.md`](capacity.md)).
   - **APNs registration.** `PushRegistrar` (BoopCore) registers the device token with `PUT /api/devices/apns` (`apns_device`, `notification` feature; a token registered by another account is moved). The environment is **hard-coded to sandbox**; the backend does **not send** pushes yet.
   - **Account merge.** `scripts/ops/boop-b1-merge-accounts.sql` (+ rollback, [README](../../scripts/ops/README-boop-b1-merge.md)) moves the Boop account's Health data into the original account; dry-run unless `-v apply`, rehearsed in `BoopB1MergeScriptIT`. **Run in production on 2026-11-11 with the owner's OK** (12 nights merged, 23 moved, 61 days, 16 workouts, 9 events, 1 brief, 1 weight; backups `b1_backup_*` kept until the owner confirms). The phone now signs in with the original account; the old Boop account stays (it received one post-install sync at 11:04 before the switch — orphaned, harmless).
 
@@ -1025,7 +1153,7 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     `buildNights` — sessions split at > 90 min gaps, 14–18 h wake = nap dropped, per wake day the
     session with most staged minutes wins, 5-min hypnogram letters D/R/L/A ≤ 200 — `mapDays`,
     `mapWorkout`, `HealthSync`) and `Calendar/` (`CalendarReader` + `CalendarKitReader`,
-    `buildCalendarDays` → exactly today + tomorrow); S3: `Morning/` (`Brief`, `MorningClient` + `MorningStore`, `PathBuilder`, `Lens`, `BoopVoice`).
+    `buildCalendarDays` → yesterday … today + 8, each event with attendee count + names, organizer-is-me, location, recurring, availability and notes (≤ 2000), mezo-r36n9.17); S3: `Morning/` (`Brief`, `MorningClient` + `MorningStore`, `PathBuilder`, `Lens`, `BoopVoice`).
   - `HealthSync` (`@MainActor @Observable`): window = 60 days on first run, afterwards from the
     synced-through day − 2; sends nights (30/batch) → days (60) → workouts (100) → calendar; the
     synced-through mark (`boop.health.syncedThrough.<userId>`) moves only after a fully successful run, so
@@ -1071,11 +1199,11 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
 | `ingestSleepNights` | `POST /api/wearable/sleep-nights` → `IngestResult{inserted,updated}` | `sleep_log` upsert by `(created_by, external_id)`, `source = 'apple_health'`, stages + hypnogram |
 | `ingestDailyMetrics` | `POST /api/wearable/daily-metrics` | `daily_metric` upsert by `(created_by, date)` — steps, active kcal, resting/avg/min/max HR |
 | `ingestWorkouts` | `POST /api/wearable/workouts` | `wearable_workout` upsert by `(created_by, external_id)`; date = local start day (Europe/Budapest) |
-| `replaceCalendarDays` | `PUT /api/wearable/calendar-days` → 204 | `calendar_event`: each sent day's rows hard-deleted and replaced |
+| `replaceCalendarDays` | `PUT /api/wearable/calendar-days` → 204 | `calendar_event`: upsert by `external_id`, live rows of a sent day missing from the payload soft-deleted (B7 K1; was hard-delete + replace); carries attendee/location/recurrence/availability/notes fields |
 
 **B1 additions** (same tag, plus `Device`): `ingestHealthSamples` `POST /api/wearable/health-samples` (upsert into `health_sample` by `(created_by, external_id)`), `deleteHealthRecords` `POST /api/wearable/deletions` (soft delete workouts/samples/weights by external id), `SleepNightBatchRequest.windowFrom/windowTo` (window deletion above), widened `DailyMetricIn`/`WorkoutIn` (distance, max HR, source bundle) and `SleepNightIn` (`sourceApp`, `sleepingHr`), calendar days carry an `externalId` per event, `registerApnsDevice` `PUT /api/devices/apns` → 204 and `unregisterApnsDevice` `DELETE /api/devices/apns/{deviceId}` → 204 (contract `api/feature/device/device.yml`).
 
-Caps (`mezo.wearable`): 100 nights, 120 days, 300 workouts, 3 calendar days × 150 events per request →
+Caps (`mezo.wearable`): 100 nights, 120 days, 300 workouts, 31 calendar days × 150 events per request →
 `WEARABLE_BATCH_TOO_LARGE`. Sleep: one `SleepLogSavedEvent` per batch at most — only for the newest night,
 only when newly inserted and dated today or yesterday (a 60-night backfill never floods Boop's messages).
 Wearable workouts are display + AI context only (no calorie-target effect). Changesets
@@ -1097,6 +1225,7 @@ and `day` (sleep + hypnogram stages 0 awake · 1 REM · 2 light · 3 deep, week 
 check-ins, intention, observations, calendar `busySlots[72]` = 06:00–24:00 in 15-minute slots, weight, recovery). Nullable by design:
 session minutes/time/plannedTime, sleep stage minutes, sleep `bedtime`/`wakeup` (a night may be logged without times) and `day.steps` /
 `day.activeKcal` (null without a wearable day, never a fake 0).
+**B7 K1:** the brief also carries a nullable `capacity` block (verdict `laza|rendben|szoros|tulSok`, reason line, ratio, `tanulo`, demand items, capacity factors) and `energy.hourly` is bent by the day's demand; null when `mezo.capacity.enabled=false` or the capacity read fails. **K2 Task 9** draws it: `Brief.capacity` (nil = Ma unchanged), the verdict row in Ma's plan card, the day page blocks (`Nap/DayCapacity.swift`) and the event label through `KapacitasClient` (lenient `RawJSONClient`, `putCapacityEventFeedback`; env `\.kapacitasClient`). Final fix: the row's „te: …" and the sheet's pre-selection come from the item's server `effect` (survives a relaunch); a run of labels reloads the brief once (`KapacitasReloadGate`); the Évad chart draws a lone lived week's recovery as a tick and its footnote uses `evadLoadFootnote` / `hungarianArticle`. See [`capacity.md`](capacity.md) §2, §4.
 
 **B1 tables** (changesets `202611111000…202611111130_mezo-r36n9.11_*.sql` in `1.1.0/script/`): `health_sample` (`created_by`, `external_id`, `metric`, start/end, value, unit, source name/bundle, device, user-entered; unique `(created_by, external_id)`, index `(created_by, metric, start_at)`); `daily_metric`, `wearable_workout` widened; `sleep_log` + `source_app`, `sleeping_hr`, `source` now `varchar(16)` (`manual|screenshot|apple_health`), generic dedup then `uq_sleep_log_owner_date_live`; `calendar_event` + `external_id`; `weight_log` + `source`, `external_id`; `apns_device` (device id, token, environment `sandbox|production`, bundle id, app version, last seen, invalidated at).
 
@@ -1138,14 +1267,14 @@ The builder and the review **do not use the generated client**. The generated co
 technique planner (T3) adds proposal line kinds (`technique`, `rep_range`), reason codes and evaluation fields while these
 screens are live — one unknown value would fail the whole response. So `RawJSONClient` (`BoopCore/Train/PlanTransport.swift`)
 sends JSON over the **same** `ClientTransport`, base URL and bearer token as the generated client (`Session.raw`), and
-`PlanWire.swift` declares hand-written `Decodable` shapes whose enums are plain `String`s. `PlanClient` wraps 9 operations:
+`PlanWire.swift` declares hand-written `Decodable` shapes whose enums are plain `String`s. `PlanClient` wraps 15 operations (the first nine below, then the six of the new-block flow):
 `listMesocycles`, `getExerciseCatalog`, `evaluateMesoPlan`, `listWeekProposals`, `decideWeekProposal`, `replaceDayExercises`,
 `updateMesocycleMusclePriorities`, **`blockSuggestions`** (`mezo-r36n9.116`: `POST /api/train/mesocycles/{id}/exercise-suggestions`
 → `PlanWire.BlockSuggestions*`, each suggestion with an optional style `prescription`; `scripts/check-ios-contract.mjs` now also
 covers these raw-client operations), and **`updateMesocycleSettings`** (`PUT /api/train/mesocycles/{id}/settings`
 `{trainingStyle?, techniquesEnabled?, weeklyReviewMode?}`, absent = keep; the run's own review mode overrides
 `mezo.volume.weekly-review.mode`; `MesocycleResponse.weeklyReviewMode` is the effective mode — `docs/features/train.md` §4).
-**The BoopAPI generator filter is untouched.** Typed failures: `PlanFetchError` (`offline`, `unauthorized`, `notFound`,
+**New-block calls (`mezo-r36n9.113`, same hand-decoded rule — enums are plain strings, so a new fix or reason code never fails the response):** **`candidates`** (`POST /api/train/meso-plans/candidates` → `PlanWire.WireCandidates {candidates[], nothingFits, fixes[]}` with `lead`, each candidate its `splitKey`, `splitLabel`, `template`, `evaluation`, `recommended`, `reasons`), **`generate`** (`POST /api/train/meso-plans/generate` with `split` = the candidate's key → `WireGenerateResponse`), **`createTemplate`** (`createMesoTemplate`, returns the template id), **`startTemplate`** (`startMesoTemplate` `{startDate, status}` → the block) **`closeBlock`** (`closeMesocycle`) and **`discardBlock`** (`discardMesocycle`, the *Mégsem, eldobom* path; 409 `TRAIN_MESO_DISCARD_HAS_LOGS` when a workout is already logged). `WireCandidates` also carries `intakeBudget` (`WireIntakeBudget {usedSets, capacitySets?, emphasizeCount, emphasizeMax, raiseAllowed}`), `WireFix` an optional `muscle`, `WireGenerateRequest` optional `sessionMinutesTarget` + `sportGroups`. The builder's evaluate request always carries each row's `restSec` (minutes model v2 prices every set with its rest). `evaluate` and the builder's `WireEvaluation` carry the new `budget`, `basis` and `consecutiveHeavy` fields. **The BoopAPI generator filter is untouched.** Typed failures: `PlanFetchError` (`offline`, `unauthorized`, `notFound`,
 `rejected(code)` for 400, `conflict(code)` for 409, `server`).
 
 `ServerCache` (`BoopCore/ServerCache.swift`, `mezo-vxjj9`) is the read side's last-known-good cache: one JSON file per endpoint-and-day wrapping the payload and the instant it was fetched, so a screen can say how old what it shows is. It is read-only toward the server — no sender, no retry, no link to the outbox — and past `maxAge` a hit is not a hit (`get` returns nil and the caller says „nincs friss adat"). A corrupt entry is removed and reads as absent, unlike the outbox, which sets bad elements *aside* because those are the owner's unsent words. Its folder is `cache`, a third per-user folder beside `ledger` and `outbox`.
@@ -1247,7 +1376,7 @@ New API call: add the operationId to the generator config, run `sync-openapi.sh`
   `sendRaw`. Run kit/app tests with `-test-timeouts-enabled YES -maximum-test-execution-time-allowance 60`. (2) The app has
   its own `ReviewLine` type; the deck spells `BoopCore.ReviewLine`. (3) The evaluator's `dayIndex`/`exerciseIndex` index the
   **request's** order — the draft sends days and exercises in block order, so proposals apply by index; never sort the
-  draft. (4) `replaceDayExercises` keeps exercise ids when the list is the same exercises in the same order (updated in place, so a pending manual proposal's lines survive a builder save) and re-mints them otherwise: always re-read the block after a save before the next edit. (8) Technique + challenge together and the recommendation (`mezo-r36n9.98`, decisions #54/#55): `setTechnique`/`setChallenge` no longer clear each other (pill „Pihenős drop + kihívás”); the picker opens with a *Boop ajánlása* card from `MesoPlanEvaluation.recommendations` (server `TechniqueRecommender` = the planner's `defaultTechnique`; reason codes `stable_machine`, `isolation_pump`, `lengthened_safe`, `all_out`, `no_safe_technique` → `techniqueReasonText`; only for a block with a style and techniques on) plus the weekly AI's `note` for that exercise (`BlockBuilderModel.aiNotes`, from this week's proposal lines). (7) Technique picker (`mezo-r36n9.94`, 2026-11-19): on Napok each judged exercise has **one** pill (+ technika vagy kihívás / the technique / Kihívás a végén) so the row never changes height; tapping it opens `TechniquePicker` (sheet at page level, full height): the five techniques (unavailable ones dimmed with `DraftExercise.unavailableReason`), the day's challenge as its own row (`setChallenge`, one a day, replaces the technique), an *i* button revealing `SetTechnique.about` under each; a planner/AI pick (`techniqueSource` planner/ai, untouched) wears a **Boop** tag (`pickedByBoop`). The review tile shows T4's `WeekProposalLine.note`. DEBUG `-previewBlokkPicker N`, `-previewBlokkPickerInfo YES`. (6) Owner round after the first install (2026-11-19): the muscle card shows the band and the days as pills plus an always-visible *Miért ez a sáv* box (tier + numbers, sport note); the room **preloads** the builder (block, catalog, first evaluation) so it opens without a spinner, and a mid-preload open joins the in-flight load; the builder and the deck **zoom out of the tapped button / card** (`matchedTransitionSource` + `.navigationTransition(.zoom)`, `PlanZoom`) instead of sliding up — a swipe down zooms back. (5) Review fixes (2026-11-19): Save always wins over *Igazítsd a sávba* when there are edits; edits are carried onto a fresh read as deltas when the server changed the value too; a partial save failure keeps the unsaved edits; proposals apply only against a fresh evaluation.
+  draft. (4) `replaceDayExercises` keeps exercise ids when the list is the same exercises in the same order (updated in place, so a pending manual proposal's lines survive a builder save) and re-mints them otherwise: always re-read the block after a save before the next edit. (8) Technique + challenge together and the recommendation (`mezo-r36n9.98`, decisions #54/#55): `setTechnique`/`setChallenge` no longer clear each other (pill „Pihenős drop + kihívás”); the picker opens with a *Boop ajánlása* card from `MesoPlanEvaluation.recommendations` (server `TechniqueRecommender` = the planner's `defaultTechnique`; reason codes `stable_machine`, `isolation_pump`, `lengthened_safe`, `all_out`, `no_safe_technique` → `techniqueReasonText`; only for a block with a style and techniques on) plus the weekly AI's `note` for that exercise (`BlockBuilderModel.aiNotes`, from this week's proposal lines). **The challenge rule (decision #72, `mezo-r36n9.127`):** `DraftExercise.canTakeChallenge = challengeAllowed && judged`; `challengeAllowed` is the catalogue item's server-computed `challengeAllowed` (every exercise but a free-weight compound), falling back to the same kit rule from `gear` and, against a server without either, the old stable + lengthened-friendly rule (`DraftExercise.challengeAllowed(item:type:gear:)`); the refusal reads „Szabadsúlyos alapgyakorlaton nincs kihívás.” („Saját gyakorlaton nincs kihívás.” without a catalogue row). (7) Technique picker (`mezo-r36n9.94`, 2026-11-19): on Napok each judged exercise has **one** pill (+ technika vagy kihívás / the technique / Kihívás a végén) so the row never changes height; tapping it opens `TechniquePicker` (sheet at page level, full height): the five techniques (unavailable ones dimmed with `DraftExercise.unavailableReason`), the day's challenge as its own row (`setChallenge`, one a day, replaces the technique), an *i* button revealing `SetTechnique.about` under each; a planner/AI pick (`techniqueSource` planner/ai, untouched) wears a **Boop** tag (`pickedByBoop`). The review tile shows T4's `WeekProposalLine.note`. DEBUG `-previewBlokkPicker N`, `-previewBlokkPickerInfo YES`. (6) Owner round after the first install (2026-11-19): the muscle card shows the band and the days as pills plus an always-visible *Miért ez a sáv* box (tier + numbers, sport note); the room **preloads** the builder (block, catalog, first evaluation) so it opens without a spinner, and a mid-preload open joins the in-flight load; the builder and the deck **zoom out of the tapped button / card** (`matchedTransitionSource` + `.navigationTransition(.zoom)`, `PlanZoom`) instead of sliding up — a swipe down zooms back. (5) Review fixes (2026-11-19): Save always wins over *Igazítsd a sávba* when there are edits; edits are carried onto a fresh read as deltas when the server changed the value too; a partial save failure keeps the unsaved edits; proposals apply only against a fresh evaluation.
 - **Dates with fractional seconds (2026-11-11, `mezo-r36n9.25`).** Java `Instant`s reach the app with microseconds (the brief's `generatedAt`). The generated client is built with `FlexibleISO8601Transcoder` (`BoopCore/APIClient.swift`) that reads both forms; the runtime default rejected fractions and every live brief failed ("akadt el"). Test fixtures must include a fractional stamp (`MorningClientTests.loadReadsFractionalSecondTimestamps`).
 - **Napkelte traps (S2.5):** the orb shader needs exactly four colours (`orbPalette` pads — three crashed it);
   a `LivingOrb` inside a tap target swallows the tap (`allowsHitTesting(false)` on the orb, tap on the column);
@@ -1312,7 +1441,7 @@ New API call: add the operationId to the generator config, run `sync-openapi.sh`
   - A SwiftUI `DragGesture` on the observation card swallowed vertical page scrolls — the stack uses a `UIGestureRecognizerRepresentable` horizontal pan.
   - Reading and writing the observable `brief` in one statement is a Swift "Fatal access conflict" — use locals.
   - Native upsert of the session override relies on column defaults (`id`, `created_at`, `is_deleted`); a `PUT` with no body at all is a 500 from the platform handler (not Boop-specific).
-  - Soft delete: derived finders on `daily_metric`/`wearable_workout`/`calendar_event` ignore `is_deleted` (parked minor, S2 tables).
+  - Soft delete: derived finders on `daily_metric`/`wearable_workout` ignore `is_deleted` (parked minor, S2 tables); `calendar_event` finders exclude deleted rows since B7 K1.
 - **B1 known limits / traps:**
   - Free team: no push (the entitlement is only in `Boop-Paid.entitlements`; putting `aps-environment` in `Boop.entitlements` breaks free-team signing). Background delivery is coded but unverified on a device.
   - An **empty sleep window** (the user deleted every night in the 60 days) cannot be sent (contract `minItems 1`), so that deletion is lost.

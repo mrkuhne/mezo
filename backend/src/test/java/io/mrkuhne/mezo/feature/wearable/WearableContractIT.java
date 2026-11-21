@@ -68,6 +68,33 @@ class WearableContractIT extends ApiIntegrationTest {
     }
 
     @Test
+    void calendarEventKeepsNewFields() {
+        HttpHeaders h = ownerAuthHeaders();
+        OffsetDateTime start = OffsetDateTime.parse("2026-11-10T09:00:00+01:00");
+        CalendarEventIn full = new CalendarEventIn().externalId("ek-full").title("Workshop").startAt(start)
+            .endAt(start.plusHours(2)).allDay(false).attendeeCount(3).attendeeNames(List.of("Anna", "Béla"))
+            .organizerIsMe(true).location("Iroda").recurring(true).availability(CalendarEventIn.AvailabilityEnum.TENTATIVE)
+            .notes("Hozz laptopot");
+        putForBody("/api/wearable/calendar-days", new CalendarDaysRequest().days(List.of(new CalendarDayIn().date(D)
+            .events(List.of(full)))), h, HttpStatus.NO_CONTENT, String.class);
+        var row = jdbc.queryForMap("select attendee_count, attendee_names::text as names, organizer_is_me, location, recurring, "
+            + "availability, notes from calendar_event where external_id = 'ek-full'");
+        assertThat(row.get("attendee_count")).isEqualTo(3);
+        assertThat(row.get("names").toString()).contains("Anna").contains("Béla");
+        assertThat(row.get("organizer_is_me")).isEqualTo(true);
+        assertThat(row.get("location")).isEqualTo("Iroda");
+        assertThat(row.get("recurring")).isEqualTo(true);
+        assertThat(row.get("availability")).isEqualTo("tentative");
+        assertThat(row.get("notes")).isEqualTo("Hozz laptopot");
+
+        CalendarEventIn tooLong = new CalendarEventIn().externalId("ek-long").title("Y").startAt(start)
+            .endAt(start.plusHours(1)).allDay(false).notes("x".repeat(2001));
+        var r = exchangeForResponse(HttpMethod.PUT, "/api/wearable/calendar-days",
+            new CalendarDaysRequest().days(List.of(new CalendarDayIn().date(D).events(List.of(tooLong)))), h);
+        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
     void withoutTokenIsUnauthorized() {
         var r = exchangeForResponse(HttpMethod.POST, "/api/wearable/sleep-nights", nights("23:40"), new HttpHeaders());
         assertThat(r.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);

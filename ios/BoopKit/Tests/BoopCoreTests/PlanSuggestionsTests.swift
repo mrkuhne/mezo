@@ -7,7 +7,7 @@ import Testing
 struct PlanSuggestionsTests {
     static let suggestionsJSON = #"""
     {"suggestions":[
-      {"exercise":{"id":"c0000000-0000-4000-8000-000000000001","name":"Chest Supported Row","muscle":"back-mid","type":"compound","stability":"stable","lengthenedFriendly":false,"futureField":1},
+      {"exercise":{"id":"c0000000-0000-4000-8000-000000000001","name":"Chest Supported Row","muscle":"back-mid","type":"compound","stability":"stable","lengthenedFriendly":false,"futureField":1,"imageStartUrl":"/media/exercises/csr-start.jpg"},
        "reasonText":"Ugyanazt a munkát végzi a tervben, ezt már csináltad, így látod, hol tartasz.","signals":["same-role","UNDER_BAND","brand_new_signal"],
        "lastTopSet":{"weightKg":60.5,"reps":8},"prescription":{"workingSets":4,"repMin":6,"repMax":10,"targetRIR":2,"restSec":120}},
       {"exercise":{"id":"c0000000-0000-4000-8000-000000000002","name":"Cable Row","muscle":"back-mid","type":"compound"},
@@ -69,6 +69,32 @@ struct PlanSuggestionsTests {
         let obj = try #require(JSONSerialization.jsonObject(with: Data(body.utf8)) as? [String: Any])
         #expect(obj["muscle"] as? String == "back")
         #expect(obj["outgoing"] == nil)
+    }
+
+    @Test(.timeLimit(.minutes(1))) func decodesThePictureWhenThereIsOne() async throws {
+        let stub = StubTransport()
+        stub.on("getBlockExerciseSuggestions", .json(200, Self.suggestionsJSON))
+        let r = try await PlanFixtures.planClient(stub).suggestions(blockId: "b", request())
+        #expect(r.suggestions[0].exercise.imageStartUrl == "/media/exercises/csr-start.jpg")
+        #expect(r.suggestions[1].exercise.imageStartUrl == nil, "no picture: nil, the card shows the quiet tile")
+    }
+
+    @Test(.timeLimit(.minutes(1))) func addModeSendsTheSubMuscles() async throws {
+        let stub = StubTransport()
+        stub.on("getBlockExerciseSuggestions", .json(200, #"{"suggestions":[],"labels":[]}"#))
+        stub.on("getBlockExerciseSuggestions", .json(200, #"{"suggestions":[],"labels":[]}"#))
+        let add = WireSuggestionsRequest(mode: "add", dayIndex: 0, outgoing: nil, muscle: nil,
+                                         muscles: ["back-mid", "chest-upper"], dayCatalogIds: [])
+        let c = PlanFixtures.planClient(stub)
+        _ = try await c.suggestions(blockId: "b", add)
+        let objBody = try #require(stub.sent[0].body)
+        let obj = try #require(JSONSerialization.jsonObject(with: Data(objBody.utf8)) as? [String: Any])
+        #expect(obj["muscles"] as? [String] == ["back-mid", "chest-upper"])
+        #expect(obj["muscle"] == nil, "no coarse muscle beside the tokens")
+        _ = try await c.suggestions(blockId: "b", request())
+        let replaceBody = try #require(stub.sent[1].body)
+        let replace = try #require(JSONSerialization.jsonObject(with: Data(replaceBody.utf8)) as? [String: Any])
+        #expect(replace["muscles"] == nil, "absent tokens are omitted, not null")
     }
 
     @Test(.timeLimit(.minutes(1))) func mapsFailures() async {

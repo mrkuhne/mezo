@@ -23,4 +23,13 @@ class MesoPlanPropertiesBindingIT extends AbstractIntegrationTest {
         assertThat(props.isolationWarmup()).isEqualTo(1);
         assertThat(props.defaultTrainingStyleOrNull()).isEqualTo("balanced");
     }
+
+    @Test
+    void testBinding_shouldExposeSplitCatalogue_whenYmlLoaded() {
+        assertThat(props.splits().get(4)).extracting(MesoPlanProperties.Split::key).containsExactly("ul2", "full4");
+        assertThat(props.splits().get(5)).extracting(MesoPlanProperties.Split::key)
+            .containsExactly("ulppl", "ulul_f", "pplul");
+        assertThat(props.splits().get(4).get(0).label()).isEqualTo("Felső / Alsó");
+        assertThat(props.splits().keySet()).containsExactlyInAnyOrder(2, 3, 4, 5, 6);
+    }
 }

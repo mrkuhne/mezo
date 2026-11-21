@@ -11,7 +11,8 @@ import BoopCore
 ///
 /// `-evadState full|maintain|empty|offline|error` (default `full`): a cut season in week 7 · his real shape, a maintain
 /// season inside its band · no season yet (screen 13 → Új évad) · no net (the cache is primed five hours old) · the
-/// server failing. `-previewOffline YES` is the same as `offline`. `-evadOpen modositas|szabalyok|uj` opens a sub-page,
+/// server failing. `-previewOffline YES` is the same as `offline`. `-evadOpen modositas|szabalyok|uj|kiserlet|ujkiserlet`
+/// opens a sub-page (`kiserlet` = the newest finished experiment; S4's experiments: `EvadExperimentPreview.swift`),
 /// `-evadLit 0…3` lights a pillar, `-evadSessions 5` / `-evadPace 0.6` pre-set Módosítás, `-evadStale YES` answers the
 /// first accept with 409 SEASON_PREVIEW_STALE. The block runs by default (the gym days are locked in Módosítás);
 /// `-evadNoBlock YES` frees them. S2: the overview carries „Hogy megy" (adherence) and three insights; `-evadQuiet YES`
@@ -34,6 +35,10 @@ enum EvadPreviewFixtures {
         guard let data = try? JSONSerialization.data(withJSONObject: model.overview()),
               let o = try? JSONDecoder().decode(EvadOverview.self, from: data) else { return }
         try? await cache.put(o, endpoint: "evad/overview", date: "-")
+        if let data = try? JSONSerialization.data(withJSONObject: EvadExperimentPreviewModel.shared.list()),
+           let x = try? JSONDecoder().decode(EvadExperiments.self, from: data) {
+            try? await cache.put(x, endpoint: "evad/experiments", date: "-")
+        }
     }
 }
 
@@ -213,8 +218,9 @@ final class EvadPreviewModel: @unchecked Sendable {
                 "weight": ["targetKg": isMaintain ? NSNull() : 82.0 as Any, "targetDate": targetDate,
                            "deltaKg": isMaintain ? -0.2 : -2.8, "kgPerWeek": kgPerWeek, "band": band],
             ],
-            "adherence": quiet ? NSNull() : ["foodInBand": 4, "foodJudged": 5, "sessionsDone": 3, "sessionsPlanned": 4,
-                                              "nightsOk": 4, "nightsJudged": 7, "excusedDays": 1] as Any,
+            "adherence": quiet ? NSNull() : ["foodInBand": 4, "foodJudged": 5, "sessionsDone": 4, "sessionsPlanned": 6,
+                                              "nightsOk": 4, "nightsJudged": 7, "excusedDays": 1, "trainingDone": 3,
+                                              "trainingPlanned": 4, "sportDone": 1, "sportPlanned": 2] as Any,
             "insights": quiet ? [] as [Any] : insights,
             "upcoming": [["week": 10, "kind": "deload", "text": isMaintain ? "a könnyebb héten is tartjuk a súlyt" : "erre a hétre nem fogyunk: napi +350 kcal"],
                          ["week": draft["weeks"]!, "kind": "end", "text": "összefoglalom, mi vált be, és javaslok egy következőt"]],
@@ -292,9 +298,20 @@ struct EvadPreviewTransport: ClientTransport {
             json(["messages": [["code": code, "text": code]]], status)
         }
         return m.lock.withLock {
+            if let (status, object) = EvadMenuPreviewModel.shared.answer(operationID, path: request.path ?? "", sent: sent) {
+                return json(object, status)
+            }
+            if let (status, object) = EvadExperimentPreviewModel.shared.answer(operationID, path: request.path ?? "", sent: sent) {
+                return json(object, status)
+            }
             switch operationID {
+            case "putSeasonRecipes":
+                var d = m.draft; d["allowedRecipeIds"] = sent["recipeIds"]; m.draft = d
+                return json(m.season())
             case "getSeasonOverview":
-                return m.hasSeason ? json(m.overview()) : refuse(404, "NOT_FOUND")
+                guard m.hasSeason else { return refuse(404, "NOT_FOUND") }
+                var o = m.overview(); o["menu"] = EvadMenuPreviewModel.shared.menuStatus()
+                return json(o)
             case "getFirstSeasonDraft":
                 return json(m.draft)
             case "previewSeasonDraft":

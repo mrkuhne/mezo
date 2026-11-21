@@ -13,7 +13,7 @@ import java.util.UUID;
  * A parsed bank SMS → its review transaction, the pure half (Boop Pénz L4, mezo-r36n9.102) — port of the old
  * {@code src/app/smsConversion.ts} {@code pickSmsAccount} / {@code convertMinor} / {@code planSmsTxn}. The old
  * {@code dedupePending} is replaced by the database (one live SMS per owner and text hash, and one transaction
- * per SMS); {@code matchInvestTxnForSms} (adopting a recorded invest buy) is L6.
+ * per SMS); {@code matchInvestTxnForSms} (adopting a recorded invest buy) is {@link InvestSmsMatch}.
  */
 public final class SmsConversion {
 

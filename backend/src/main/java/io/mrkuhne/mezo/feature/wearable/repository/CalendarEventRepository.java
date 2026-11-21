@@ -13,19 +13,27 @@ import org.springframework.data.repository.query.Param;
 
 public interface CalendarEventRepository extends JpaRepository<CalendarEventEntity, UUID> {
 
-    /** Upsert by (owner, external id, date): revives a cancelled row, refreshes the fields (mezo-r36n9.11). */
+    /** Upsert by (owner, external id, date): revives a cancelled row, refreshes the fields (mezo-r36n9.11, .17). */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = """
-        insert into calendar_event (id, created_by, external_id, date, title, start_at, end_at, all_day, calendar_name)
-        values (gen_random_uuid(), :createdBy, :externalId, :date, :title, :startAt, :endAt, :allDay, :calendarName)
+        insert into calendar_event (id, created_by, external_id, date, title, start_at, end_at, all_day, calendar_name,
+            attendee_count, attendee_names, organizer_is_me, location, recurring, availability, notes)
+        values (gen_random_uuid(), :createdBy, :externalId, :date, :title, :startAt, :endAt, :allDay, :calendarName,
+            :attendeeCount, cast(:attendeeNames as jsonb), :organizerIsMe, :location, :recurring, :availability, :notes)
         on conflict (created_by, external_id, date) do update set
             is_deleted = false, title = excluded.title, start_at = excluded.start_at, end_at = excluded.end_at,
-            all_day = excluded.all_day, calendar_name = excluded.calendar_name, updated_at = now()
+            all_day = excluded.all_day, calendar_name = excluded.calendar_name,
+            attendee_count = excluded.attendee_count, attendee_names = excluded.attendee_names,
+            organizer_is_me = excluded.organizer_is_me, location = excluded.location, recurring = excluded.recurring,
+            availability = excluded.availability, notes = excluded.notes, updated_at = now()
         """, nativeQuery = true)
     void upsert(@Param("createdBy") UUID createdBy, @Param("externalId") String externalId,
                 @Param("date") LocalDate date, @Param("title") String title, @Param("startAt") Instant startAt,
                 @Param("endAt") Instant endAt, @Param("allDay") boolean allDay,
-                @Param("calendarName") String calendarName);
+                @Param("calendarName") String calendarName, @Param("attendeeCount") Integer attendeeCount,
+                @Param("attendeeNames") String attendeeNamesJson, @Param("organizerIsMe") Boolean organizerIsMe,
+                @Param("location") String location, @Param("recurring") Boolean recurring,
+                @Param("availability") String availability, @Param("notes") String notes);
 
     /** Soft-deletes the day's live rows whose external id is not in {@code keep} (cancelled events). */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
@@ -47,4 +55,8 @@ public interface CalendarEventRepository extends JpaRepository<CalendarEventEnti
 
     /** Live (not cancelled / soft-deleted) events of the day. */
     List<CalendarEventEntity> findByCreatedByAndDeletedFalseAndDateOrderByStartAt(UUID createdBy, LocalDate date);
+
+    /** Live events of a date range (inclusive), chronological. */
+    List<CalendarEventEntity> findByCreatedByAndDeletedFalseAndDateBetweenOrderByStartAt(
+        UUID createdBy, LocalDate from, LocalDate to);
 }

@@ -94,6 +94,52 @@ enum PlanFixtures {
         """#
     }
 
+    // MARK: the new-block intake (mezo-r36n9.113)
+
+    static let templateId = "7e000000-0000-4000-8000-000000000001"
+    static let newBlockId = "b10c0000-0000-4000-8000-000000000002"
+
+    /// A generated / candidate template, relayed to POST /meso-templates as is (the phone never re-types it).
+    static func templateJSON(title: String = "Felső-alsó") -> String {
+        #"{"title":"\#(title)","weeks":6,"phaseCurve":["MEV","MAV","MAV","MAV","MRV","Deload"],"trainingStyle":"balanced","techniquesEnabled":false,"musclePriorities":{"back":"emphasize"},"futureField":{"nested":[1,2.5,true,null,"x"]},"days":[{"day":"Hét","type":"Upper","muscle":"back","muscleAccent":false,"exercises":[{"name":"Chest Supported Row","muscle":"back-mid","warmupSets":1,"workingSets":4,"repMin":6,"repMax":10,"targetRIR":2,"type":"compound","countsTowardVolume":true}]},{"day":"Csü","type":"Lower","muscle":"quad","muscleAccent":false,"exercises":[]}]}"#
+    }
+
+    /// The evaluation with a tier budget appended (`capacity` nil = no session target).
+    static func evaluationJSON(budget: String?) -> String {
+        guard let budget else { return evaluationJSON }
+        return evaluationJSON.replacingOccurrences(of: #""techniqueWarnings":[]"#, with: #""techniqueWarnings":[],"budget":\#(budget)"#)
+    }
+
+    static func budgetJSON(capacity: Int? = 60, used: Int = 52, emphasizeCount: Int = 1, raiseCost: String = #"{"chest":4,"biceps":12,"quad":6}"#) -> String {
+        #"{"capacitySets":\#(capacity.map(String.init) ?? "null"),"usedSets":\#(used),"emphasizeCount":\#(emphasizeCount),"emphasizeMax":2,"raiseCost":\#(raiseCost)}"#
+    }
+
+    /// The intake's week-1 keret: room 8; raising chest or quad still offers a candidate, biceps does not, calf is unpriced.
+    static func intakeJSON(capacity: Int? = 60, used: Int = 52, raiseAllowed: String = #"{"chest":true,"biceps":false,"quad":true}"#) -> String {
+        #"{"usedSets":\#(used),"capacitySets":\#(capacity.map(String.init) ?? "null"),"emphasizeCount":1,"emphasizeMax":2,"raiseAllowed":\#(raiseAllowed)}"#
+    }
+
+    /// Two offered candidates (the first recommended) with reasons, one of a code this build does not know.
+    static func candidatesJSON(budget: String = budgetJSON(), nothingFits: Bool = false, intake: String = intakeJSON(),
+                               fixes: String? = nil) -> String {
+        #"""
+        {"candidates":[
+          {"splitKey":"ul","splitLabel":"Felső-alsó","template":\#(templateJSON()),"evaluation":\#(evaluationJSON(budget: budget)),
+           "recommended":\#(!nothingFits),"reasons":[{"code":"fits_time","value":58},{"code":"freq_2x"},{"code":"brand_new_reason","value":3}]},
+          {"splitKey":"full","splitLabel":"Egész test","template":\#(templateJSON(title: "Egész test")),"evaluation":\#(evaluationJSON),
+           "recommended":false,"reasons":[{"code":"more_warmups","value":4}]}],
+         "nothingFits":\#(nothingFits),
+         "fixes":\#(fixes ?? (nothingFits ? #"[{"code":"more_minutes","value":75},{"code":"future_fix"}]"# : "[]")),
+         "intakeBudget":\#(intake)}
+        """#
+    }
+
+    static let generateJSON = #"{"draftId":"d7a00000-0000-4000-8000-000000000001","template":\#(templateJSON(title: "Generált")),"rationale":"Felső-alsó, mert így minden izom kétszer kap.","llmUsed":true}"#
+
+    static func startedBlockJSON(status: String = "planned") -> String {
+        #"{"id":"\#(newBlockId)","title":"Felső-alsó","status":"\#(status)","weeks":6,"currentWeek":1,"phaseCurve":["MEV","MAV","MAV","MAV","MRV","Deload"],"days":[]}"#
+    }
+
     static var block: WireBlock { try! JSONDecoder().decode([WireBlock].self, from: Data(blocksJSON().utf8))[0] }
     static var catalog: [WireCatalogItem] { try! JSONDecoder().decode([WireCatalogItem].self, from: Data(catalogJSON.utf8)) }
     static var draft: BlockDraft { BlockDraft(block: block, catalog: catalog) }

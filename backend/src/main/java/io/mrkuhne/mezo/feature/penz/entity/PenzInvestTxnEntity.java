@@ -18,6 +18,7 @@ import org.hibernate.annotations.SQLRestriction;
 /**
  * One buy or sell of a holding (Boop Pénz L6, mezo-r36n9.104). {@code amountMinor} is the total paid / received in
  * the holding's currency; {@code amountHufMinor} its HUF twin booked once at the transaction's date (L4 FX policy).
+ * {@code transactionId} links the money-account row it was paid from / into (mezo-r36n9.119).
  */
 @Getter
 @Setter
@@ -65,6 +66,13 @@ public class PenzInvestTxnEntity extends OwnedEntity {
 
     @Column(name = "client_ref")
     private UUID clientRef;
+
+    /**
+     * The linked money row (mezo-r36n9.119): the {@code penz_transaction} (kind invest_buy / invest_sell, in its
+     * account's currency) that took this buy / sell off / onto a money account; null = not linked.
+     */
+    @Column(name = "transaction_id")
+    private UUID transactionId;
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt = Instant.now();

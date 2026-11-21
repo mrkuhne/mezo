@@ -1,0 +1,104 @@
+openapi: 3.0.3
+info: { title: mezo capacity fragment, version: 1.0.0 }
+tags:
+  - name: Capacity
+    description: >
+      Boop B7 day capacity (mezo-r36n9.17) — how much a day asks of the owner against what his body offers, and
+      rearrangement proposals he accepts or declines. Nothing moves without his accept.
+paths:
+  /api/capacity/event-feedback:
+    put:
+      tags: [Capacity]
+      operationId: putCapacityEventFeedback
+      summary: Label how a calendar event felt (drains / neutral / feeds)
+      description: >
+        Stores or replaces the owner's label for one calendar event (all occurrences of a recurring event share it).
+        The label overrides the event's scored components at read time, so the next day read and the next brief
+        reflect it. No model call. The event key travels in the body, not the path: device calendar ids may carry
+        '/' and ':'.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CapacityEventFeedbackRequest' }
+      responses:
+        '204':
+          description: Stored
+        '400':
+          description: Missing or invalid event key or effect
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/capacity/season:
+    get:
+      tags: [Capacity]
+      operationId: getCapacitySeason
+      summary: Weekly load against recovery across the active season
+      description: >
+        One entry per season week (week 1 = the season's start week, Monday-Sunday in the owner zone). A past or
+        current week carries the summed day load and the recovery the body offered; a planned week carries the
+        training load of the planned sessions only (trainingOnly) and no recovery. Read-only, never calls the
+        scoring model. 404 when there is no active season.
+      responses:
+        '200':
+          description: The season load
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CapacitySeasonLoad' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: No active season
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+components:
+  schemas:
+    CapacityEventFeedbackRequest:
+      type: object
+      required: [eventKey, effect]
+      properties:
+        eventKey:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: The calendar event's external id without the trailing "|occurrence" part
+        effect: { type: string, enum: [drains, neutral, feeds] }
+    CapacitySeasonLoad:
+      type: object
+      required: [weeks, nowWeek, stats]
+      properties:
+        weeks:
+          type: array
+          items: { $ref: '#/components/schemas/CapacitySeasonWeek' }
+        nowWeek: { type: integer, description: 'The 1-based season week containing today (clamped into the season)' }
+        stats: { $ref: '#/components/schemas/CapacitySeasonStats' }
+        headline:
+          type: string
+          nullable: true
+          description: Rule-built Hungarian sentence when the load outgrew recovery three weeks running; else null
+    CapacitySeasonWeek:
+      type: object
+      required: [week, planned, over, trainingOnly]
+      properties:
+        week: { type: integer, description: 1-based }
+        load: { type: number, format: double, nullable: true, description: Summed day units of the week }
+        recovery: { type: number, format: double, nullable: true, description: 'Null for a planned week' }
+        planned: { type: boolean, description: The week starts after today }
+        over: { type: boolean, description: Load exceeds recovery }
+        trainingOnly: { type: boolean, description: Load counts only the planned training sessions }
+    CapacitySeasonStats:
+      type: object
+      required: [overloadedDays4w, moves, movesGood]
+      properties:
+        overloadedDays4w: { type: integer, description: Past days of the last 28 whose verdict was "túl sok" }
+        moves: { type: integer, description: Accepted rearrangement proposals }
+        movesGood: { type: integer, description: Accepted proposals whose recorded outcome was good }

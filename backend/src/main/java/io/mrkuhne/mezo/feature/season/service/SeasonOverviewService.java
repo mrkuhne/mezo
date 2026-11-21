@@ -68,6 +68,7 @@ public class SeasonOverviewService {
     private final SeasonMapper mapper;
     private final AdherenceService adherenceService;
     private final SeasonInsights seasonInsights;
+    private final MenuService menuService;
 
     @Transactional(readOnly = true)
     public SeasonOverview overview(UUID owner) {
@@ -128,7 +129,7 @@ public class SeasonOverviewService {
             .pillars(SeasonPillars.builder()
                 .block(blockPillar(s, draft, block))
                 .food(SeasonFoodPillar.builder()
-                    .trainDayKcal(n.trainDayKcal()).restDayKcal(n.restDayKcal()).proteinG(n.proteinG())
+                    .trainDayKcal(n.trainDayKcal()).trainSportDayKcal(n.trainSportDayKcal()).restDayKcal(n.restDayKcal()).proteinG(n.proteinG())
                     .allowedCount((int) allowedRepository.countBySeasonId(s.getId()))
                     .recipeCount((int) metricsPort.recipeCount(owner))
                     .novaMax(s.getProcessedFoodMaxNova())
@@ -150,6 +151,7 @@ public class SeasonOverviewService {
             .insights(new ArrayList<>(insights.insights().stream().map(i -> SeasonInsight.builder()
                 .key(i.key()).title(i.title()).body(i.body()).build()).toList()))
             .upcoming(upcoming(s, block, week))
+            .menu(menuService.status(owner, s, today))
             .build();
     }
 

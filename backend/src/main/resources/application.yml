@@ -489,6 +489,36 @@ mezo:
     mesocycle-gate:
       enabled: true
       planned-lead-days: 7
+    # Évad S3: the weekly menu is generated at each active season's menu_day/menu_time (checked every minute,
+    # idempotent per week). Needs mezo.techcore.scheduling on (off in the test profile).
+    menu-job:
+      enabled: true
+    # Évad S4: once a day (04:40 in the Boop zone) every active season's due experiment is finished and Boop may
+    # propose one (SeasonExperimentJob). Needs mezo.techcore.scheduling on (off in the test profile).
+    experiment-job:
+      enabled: true
+  # Boop B7 K1 day capacity (mezo-r36n9.17): CapacityProperties.
+  capacity:
+    enabled: true
+    verdict:
+      laza: 0.6
+      rendben: 0.9
+      szoros: 1.0
+    headroom: 1.25
+    sequence-factor: 1.3
+    sequence-block-min: 90
+    gap-credit-min: 15
+    learning:
+      min-days: 14
+      min-labels: 5
+    proposals:
+      max-per-week: 5
+    live:
+      min-interval: PT3H
+    sunday:
+      cron: "0 0 18 * * SUN"
+    notes-max-chars: 2000
+    default-base-units: 6.0
   techcore:
     # Master switch for Spring's scheduling INFRASTRUCTURE (@EnableScheduling) — one level above
     # the per-job mezo.techcore.cron.* switches below. Those decide whether a job BEAN exists;
@@ -619,9 +649,11 @@ mezo:
       prediction-job:
         enabled: true
       # P2 weekly proposal + daily outcome evaluation (schedules: mezo.proactive.experiment.*);
-      # off = the ExperimentJob bean does not exist (the lazy propose on GET still serves)
+      # off = the ExperimentJob bean does not exist (the lazy propose on GET still serves).
+      # OFF since Boop B6 Évad S4 (mezo-r36n9.16, spec §5.12-2): the season's experiments (Hatás tab,
+      # SeasonExperimentJob) replace the proactive weekly proposals; the proactive table stays.
       experiment-job:
-        enabled: true
+        enabled: false
       # Workout challenges midnight pre-generation + daily outcome backstop (schedules:
       # mezo.proactive.challenge.generate-cron / outcome-cron); off = the ChallengeJob bean does not
       # exist (the lazy GET still generates on workout open)
@@ -2953,6 +2985,26 @@ mezo:
     # apply when this is blank (= the unstyled block of before). balanced | volume | heavy | allout (lower-case;
     # allout also forces its working-sets: 2 over the skeleton volume).
     default-training-style: balanced
+    # Split catalogue per training-day count (mezo-r36n9.113): the first entry of each count is the default the
+    # generator has always used; the others are offered as candidates. Types: Full|Upper|Lower|Push|Pull|Legs,
+    # exactly one per training day. Every entry keeps each group >=2x/week and <= session-cap per day (asserted
+    # in SplitCatalogTest).
+    splits:
+      2:
+        - { key: full2, label: "Teljes test ×2", types: [Full, Full] }
+      3:
+        - { key: full3, label: "Teljes test ×3", types: [Full, Full, Full] }
+        - { key: ulf, label: "Felső / Alsó / Teljes test", types: [Upper, Lower, Full] }
+      4:
+        - { key: ul2, label: "Felső / Alsó", types: [Upper, Lower, Upper, Lower] }
+        - { key: full4, label: "Teljes test ×4", types: [Full, Full, Full, Full] }
+      5:
+        - { key: ulppl, label: "Felső / Alsó / Toló / Húzó / Láb", types: [Upper, Lower, Push, Pull, Legs] }
+        - { key: ulul_f, label: "Felső / Alsó ×2 + Teljes test", types: [Upper, Lower, Upper, Lower, Full] }
+        - { key: pplul, label: "Toló / Húzó / Láb / Felső / Alsó", types: [Push, Pull, Legs, Upper, Lower] }
+      6:
+        - { key: ppl2, label: "Toló / Húzó / Láb ×2", types: [Push, Pull, Legs, Push, Pull, Legs] }
+        - { key: ul3, label: "Felső / Alsó ×3", types: [Upper, Lower, Upper, Lower, Upper, Lower] }
   # Volume progression (Plan 2 Phase A) — weekly per-muscle set-volume tuning. Binds VolumeProperties.
   volume:
     deload-fraction: 0.5    # deload target = round(prevSets * this)
@@ -2967,6 +3019,8 @@ mezo:
       session-cap: 8              # working sets per muscle group per day
       sport-low-shift: 1          # sport-loaded group: band low - 1 (min 1)
       sport-high-shift: 2         # sport-loaded group: band high - 2 (min low + 1)
+      emphasize-max: 2            # most muscles that may be Hangsúly (emphasize) at once
+      consecutive-heavy-sets: 4   # counting working sets of one muscle on two consecutive calendar days that flag it (core exempt)
     weekly-review:
       mode: auto                  # auto | manual
     signals:
@@ -2977,6 +3031,8 @@ mezo:
       minutes-per-working-set: 2.4
       minutes-per-warmup-set: 1.0
       session-overhead-minutes: 6
+      set-seconds: 40               # styled plans: work time per set; rest comes from the prescription
+      transition-minutes: 1         # styled plans: per exercise
     sport-groups-by-sport:        # coarse muscle groups a sport already loads
       volleyball: [quad, ham, glute, calf]
     # RP intermediate MEV/MAV/MRV landmarks per coarse muscle group (mezo-xlmp) — seeded onto

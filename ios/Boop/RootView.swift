@@ -21,6 +21,10 @@ struct RootView: View {
     @State private var level: LevelStore?
     /// The Évad page's data (B6, mezo-r36n9.16): the season overview, its cache and the season writes.
     @State private var evad: EvadStore?
+    /// The day capacity's writes (B7, mezo-r36n9.17): his label of how an event felt.
+    @State private var kapacitas: KapacitasClient?
+    /// The season's load-vs-recovery read for the Évad page (B7 K2).
+    @State private var kapacitasStore: KapacitasStore?
 
     var body: some View {
         Group {
@@ -28,7 +32,7 @@ struct RootView: View {
             // Simulator review of the shared area-page kit: every block on one page, no sign-in needed.
             if UserDefaults.standard.bool(forKey: "previewKit") {
                 KitGallery()
-            } else if UserDefaults.standard.bool(forKey: "previewBlokk") {
+            } else if UserDefaults.standard.bool(forKey: "previewBlokk") || UserDefaults.standard.bool(forKey: "previewUjBlokk") {
                 // The block builder and the weekly review on fixtures (mezo-r36n9.83).
                 PlanPreviewRoot()
             } else {
@@ -62,6 +66,8 @@ struct RootView: View {
         .environment(penz)
         .environment(level)
         .environment(evad)
+        .environment(\.kapacitasClient, kapacitas)
+        .environment(kapacitasStore)
         .onChange(of: session.state, initial: true) { _, state in updateLink(state) }
         .background { if let link, case .ready = session.state { SyncTriggers(link: link) } }
         .background { if let ritmus, case .ready = session.state { RitmusTriggers(env: ritmus, morning: morning) } }
@@ -81,7 +87,7 @@ struct RootView: View {
         // the session's client already carries another token, or none).
         guard let me else {
             ritmus?.retire(); link = nil; morning = nil; ritmus = nil; food = nil; train = nil; cache = nil; workoutFolder = nil
-            penz = nil; level = nil; evad = nil
+            penz = nil; level = nil; evad = nil; kapacitas = nil; kapacitasStore = nil
             BackgroundSyncHost.ritmus = nil; return
         }
         if link?.userId != me.id {
@@ -107,6 +113,11 @@ struct RootView: View {
                 Task { await LevelPreview.primeCache(previewCache) }
                 evad = EvadStore(client: EvadPreviewFixtures.client, cache: cache)
                 Task { await EvadPreviewFixtures.primeCache(previewCache) }
+                kapacitas = KapacitasClient(raw: RawJSONClient(transport: PreviewTransport(), baseURL: URL(string: "https://preview.invalid")!,
+                                                               token: { "preview" }))
+                let previewKap = KapacitasStore(client: kapacitas, cache: cache)
+                kapacitasStore = previewKap
+                Task { await previewKap.load() }
                 let previewFolder = RitmusEnvironment.directories(for: me.id).outbox
                 // A review launch starts the day over. The workout in progress is written to the user's own
                 // folder, not to the preview's scratch root, so without this a workout left running on one
@@ -127,6 +138,10 @@ struct RootView: View {
             penz = PenzStore(client: PenzClient(raw: session.raw), cache: cache)
             level = LevelStore(client: LevelClient(raw: session.raw), cache: cache)
             evad = EvadStore(client: EvadClient(raw: session.raw), cache: cache)
+            kapacitas = KapacitasClient(raw: session.raw)
+            let liveKap = KapacitasStore(client: kapacitas, cache: cache)
+            kapacitasStore = liveKap
+            Task { await liveKap.load() }
             workoutFolder = RitmusEnvironment.directories(for: me.id).outbox
             BackgroundSyncHost.ritmus = ritmus
         }

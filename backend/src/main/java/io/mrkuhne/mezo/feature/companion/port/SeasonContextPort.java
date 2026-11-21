@@ -14,4 +14,10 @@ public interface SeasonContextPort {
 
     /** Where the season stands (week, status, last week's adherence, insights) as {@code "[Évad] "} lines; {@code ""} without one. */
     String overview(UUID owner, LocalDate today);
+
+    /**
+     * This and next week's menu of the season (Évad S3) as {@code "[Évad] "} lines — the days, each meal's window, name
+     * and kcal, and whether the week is approved; {@code ""} without a season or a menu.
+     */
+    String menu(UUID owner, LocalDate today);
 }

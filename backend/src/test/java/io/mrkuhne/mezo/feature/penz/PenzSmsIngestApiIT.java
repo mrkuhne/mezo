@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.api.dto.PenzAccountRequest;
 import io.mrkuhne.mezo.api.dto.PenzAccountResponse;
 import io.mrkuhne.mezo.api.dto.PenzCategoryResponse;
+import io.mrkuhne.mezo.api.dto.PenzInvestTxnRequest;
+import io.mrkuhne.mezo.api.dto.PenzInvestTxnResponse;
 import io.mrkuhne.mezo.api.dto.PenzSmsIngestResponse;
 import io.mrkuhne.mezo.api.dto.PenzSmsKeyCreateRequest;
 import io.mrkuhne.mezo.api.dto.PenzSmsKeyCreatedResponse;
@@ -25,6 +27,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +37,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * Boop Pénz L4 (mezo-r36n9.102): the iOS Shortcut's bank-SMS path over HTTP — API-key auth (its own chain: a JWT
@@ -51,6 +56,7 @@ class PenzSmsIngestApiIT extends ApiIntegrationTest {
 
     @Autowired private PenzSmsMessageRepository messages;
     @Autowired private PenzTransactionRepository transactions;
+    @Autowired private PlatformTransactionManager txManager;
     @Autowired private PenzApiKeyRepository apiKeys;
     @Autowired private FakeCompanionLlm fakeLlm;
     @Autowired private io.mrkuhne.mezo.support.populator.PenzPopulator penz;
@@ -416,5 +422,111 @@ class PenzSmsIngestApiIT extends ApiIntegrationTest {
             SmsIngestLogic.dedupeHash("unknown", sms("odd date"))).orElseThrow();
         assertThat(msg.getSender()).isEqualTo("unknown");
         assertThat(msg.getReceivedAt()).isAfter(java.time.Instant.now().minusSeconds(120));
+    }
+
+    // ---- invest-buy adoption (mezo-r36n9.119, the old runConvertSms.test.ts linkSmsToInvestBuy, 3 cases) ----
+
+    private PenzInvestTxnResponse recordBuy(HttpHeaders jwt, UUID holdingId, long amountMinor, LocalDate date,
+                                            UUID accountId, UUID linkTransactionId) {
+        return postForBody("/api/penz/invest-transactions", new PenzInvestTxnRequest().holdingId(holdingId)
+            .side("buy").amountMinor(amountMinor).date(date).accountId(accountId)
+            .linkTransactionId(linkTransactionId), jwt, HttpStatus.CREATED, PenzInvestTxnResponse.class);
+    }
+
+    @Test
+    void aLateSmsLinksToTheRecordedBuyMakingItSmsSourcedWithoutANewTransaction() {
+        RegisteredUser u = registerUser("penz sms invest link");
+        PenzAccountResponse mbh = account(u.headers(), "MBH", true, SENDER);
+        UUID bond = penz.holding(u.id(), "MÁP Plusz", "bond", null, "short", "HUF", null).getId();
+        String key = createKey(u.headers());
+        PenzInvestTxnResponse buy = recordBuy(u.headers(), bond, 1_550_000L, DAY.minusDays(2), mbh.getId(), null);
+
+        String text = sms("invest link");
+        PenzSmsIngestResponse r = ingest(keyHeaders(key), text);
+        assertThat(r.getStatus()).isEqualTo(PenzSmsIngestResponse.StatusEnum.PARSED);
+        assertThat(r.getReason()).isEqualTo("invest_buy_linked");
+        assertThat(r.getTransactionId()).isEqualTo(buy.getTransactionId());
+
+        PenzSmsMessageEntity msg = stored(u.id(), text);
+        assertThat(msg.getStatus()).isEqualTo("converted");
+        assertThat(msg.getTransactionId()).isEqualTo(buy.getTransactionId());
+        assertThat(monthOf(u.headers())).singleElement().satisfies(t -> {
+            assertThat(t.getId()).isEqualTo(buy.getTransactionId());
+            assertThat(t.getKind()).isEqualTo(PenzTransactionResponse.KindEnum.INVEST_BUY);
+            assertThat(t.getSource()).isEqualTo(PenzTransactionResponse.SourceEnum.SMS);
+            assertThat(t.getSmsMessageId()).isEqualTo(msg.getId());
+            assertThat(t.getNeedsReview()).isFalse();
+            assertThat(t.getDate()).isEqualTo(DAY.minusDays(2));
+        });
+    }
+
+    @Test
+    void anSmsWithoutAMatchingBuyIsANormalExpense() {
+        RegisteredUser u = registerUser("penz sms invest nomatch");
+        PenzAccountResponse mbh = account(u.headers(), "MBH", true, SENDER);
+        UUID bond = penz.holding(u.id(), "MÁP Plusz", "bond", null, "short", "HUF", null).getId();
+        String key = createKey(u.headers());
+        PenzInvestTxnResponse buy = recordBuy(u.headers(), bond, 900_000L, DAY, mbh.getId(), null);
+
+        PenzSmsIngestResponse r = ingest(keyHeaders(key), sms("invest nomatch"));
+        assertThat(r.getStatus()).isEqualTo(PenzSmsIngestResponse.StatusEnum.PARSED);
+        assertThat(r.getReason()).isNull();
+        assertThat(r.getTransactionId()).isNotEqualTo(buy.getTransactionId());
+        assertThat(monthOf(u.headers())).hasSize(2)
+            .filteredOn(t -> t.getId().equals(r.getTransactionId())).singleElement()
+            .satisfies(t -> assertThat(t.getKind()).isEqualTo(PenzTransactionResponse.KindEnum.EXPENSE));
+        assertThat(transactions.findById(buy.getTransactionId()).orElseThrow().getSmsMessageId()).isNull();
+    }
+
+    /** Review fix (mezo-r36n9.119): a deleted invest buy's money row is never adopted (nor resurrected) by an SMS. */
+    @Test
+    void aDeletedInvestBuyIsNotAdoptedByALaterSms() {
+        RegisteredUser u = registerUser("penz sms invest deleted");
+        PenzAccountResponse mbh = account(u.headers(), "MBH", true, SENDER);
+        UUID bond = penz.holding(u.id(), "MÁP Plusz", "bond", null, "short", "HUF", null).getId();
+        String key = createKey(u.headers());
+        PenzInvestTxnResponse buy = recordBuy(u.headers(), bond, 1_550_000L, DAY.minusDays(1), mbh.getId(), null);
+        deleteAndExpect("/api/penz/invest-transactions/" + buy.getId(), u.headers(), HttpStatus.NO_CONTENT);
+        Optional<PenzTransactionEntity> locked = new TransactionTemplate(txManager)
+            .execute(tx -> transactions.lockLive(buy.getTransactionId(), u.id()));
+        assertThat(locked).isEmpty(); // the locking read skips a deleted row
+
+        PenzSmsIngestResponse r = ingest(keyHeaders(key), sms("invest deleted"));
+        assertThat(r.getStatus()).isEqualTo(PenzSmsIngestResponse.StatusEnum.PARSED);
+        assertThat(r.getReason()).isNull();
+        assertThat(r.getTransactionId()).isNotEqualTo(buy.getTransactionId());
+        assertThat(transactions.findById(buy.getTransactionId())).isEmpty(); // still deleted
+        assertThat(monthOf(u.headers())).singleElement()
+            .satisfies(t -> assertThat(t.getKind()).isEqualTo(PenzTransactionResponse.KindEnum.EXPENSE));
+    }
+
+    @Test
+    void afterTheBuyIsDeletedTheRevertedExpenseIsOfferedWhenTheBuyIsRecordedAgain() {
+        RegisteredUser u = registerUser("penz sms invest revert");
+        PenzAccountResponse mbh = account(u.headers(), "MBH", true, SENDER);
+        UUID bond = penz.holding(u.id(), "MÁP Plusz", "bond", null, "short", "HUF", null).getId();
+        String key = createKey(u.headers());
+        PenzInvestTxnResponse buy = recordBuy(u.headers(), bond, 1_550_000L, DAY.minusDays(1), mbh.getId(), null);
+        PenzSmsIngestResponse r = ingest(keyHeaders(key), sms("invest revert"));
+        assertThat(r.getTransactionId()).isEqualTo(buy.getTransactionId());
+
+        deleteAndExpect("/api/penz/invest-transactions/" + buy.getId(), u.headers(), HttpStatus.NO_CONTENT);
+        PenzTransactionEntity reverted = transactions.findById(buy.getTransactionId()).orElseThrow();
+        assertThat(reverted.getKind()).isEqualTo("expense"); // the debit really happened: kept, not deleted
+        assertThat(reverted.isNeedsReview()).isTrue();
+        assertThat(reverted.getSmsMessageId()).isNotNull();
+
+        List<PenzTransactionResponse> offered = getForList("/api/penz/invest-transactions/sms-candidates?accountId="
+            + mbh.getId() + "&amountMinor=1550000&date=" + DAY.minusDays(3), u.headers(), HttpStatus.OK,
+            PenzTransactionResponse.class);
+        assertThat(offered).extracting(PenzTransactionResponse::getId).containsExactly(reverted.getId());
+
+        PenzInvestTxnResponse again = recordBuy(u.headers(), bond, 1_550_000L, DAY.minusDays(3), mbh.getId(),
+            reverted.getId());
+        assertThat(again.getTransactionId()).isEqualTo(reverted.getId());
+        // the bank row's date wins — which is the first buy's date, kept when the SMS was adopted
+        assertThat(again.getDate()).isEqualTo(DAY.minusDays(1));
+        assertThat(transactions.findById(reverted.getId()).orElseThrow().getKind()).isEqualTo("invest_buy");
+        assertThat(monthOf(u.headers())).hasSize(1);
     }
 }

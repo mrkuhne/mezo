@@ -32,6 +32,9 @@ public class PenzTransactionEntity extends OwnedEntity {
     public static final String KIND_INCOME = "income";
     public static final String KIND_TRANSFER_OUT = "transfer_out";
     public static final String KIND_TRANSFER_IN = "transfer_in";
+    public static final String KIND_INVEST_BUY = "invest_buy";
+    public static final String KIND_INVEST_SELL = "invest_sell";
+    public static final String SOURCE_SMS = "sms";
     public static final String SOURCE_MANUAL = "manual";
 
     @Id

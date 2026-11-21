@@ -142,7 +142,9 @@ struct DaySheet: View {
         let d = brief.day
         let eyebrow = weekdayName(brief.date).map { "\($0) · a napod" } ?? "A napod"
         let st = state
-        NKSheetFrame(hue: .mozgas, eyebrow: eyebrow, title: st.title(events: d.calendar.count)) {
+        // B7: with a capacity block the headline is the morning verdict (spike screen 06), else the calendar's word
+        let title = brief.capacity.map { verdictLine($0).word } ?? st.title(events: d.calendar.count)
+        NKSheetFrame(hue: .mozgas, eyebrow: eyebrow, title: title) {
             SheetCard(title: "ENERGIA ÉS NAPTÁR") {
                 if brief.energy.hourly.count > 1 {
                     EnergyMagnifier(input: MagnifierInput(brief)).frame(height: 120).padding(.top, 14)
@@ -164,6 +166,11 @@ struct DaySheet: View {
                     Text("Tartsd lenyomva a görbét, és húzd végig").nkFont(12).foregroundStyle(.white.opacity(0.4))
                 }
             }
+            // B7: what the day asks against what he can carry (spike screen 06); absent without a capacity block
+            if let capacity = brief.capacity {
+                DayCapacityBlocks(capacity: capacity) { Task { await store.load(date: ctx.now) } }
+                    .padding(.top, 6)
+            }
             if st.showCard, let c = brief.conflict { conflictCard(c).transition(.opacity.combined(with: .scale(scale: 0.96))) }
             if let dip = brief.energy.dipHour {
                 NKBoopCard(pre: "\(dip):00 körül jön egy mélypont: ", em: "oda tegyél egy rövid sétát",
@@ -173,12 +180,22 @@ struct DaySheet: View {
             }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: st.showCard)
+        .defaultScrollAnchor(previewBottom ? .bottom : nil)
         .onAppear {
             #if DEBUG
             // Simulator review: `-previewKept YES` opens the sheet as if "Marad így" had been tapped.
             if UserDefaults.standard.bool(forKey: "previewKept") { store.keepConflict() }
             #endif
         }
+    }
+
+    /// Simulator review: `-previewDayBottom YES` opens the sheet scrolled to its end (the capacity blocks' tail).
+    private var previewBottom: Bool {
+        #if DEBUG
+        return UserDefaults.standard.bool(forKey: "previewDayBottom")
+        #else
+        return false
+        #endif
     }
 
     private func conflictCard(_ c: Brief.Conflict) -> some View {

@@ -100,6 +100,9 @@ public struct Brief: Sendable, Equatable {
     public let nextMealTip: String?
     public let conflict: Conflict?
     public var day: Day
+    /// The day's capacity verdict (B7, `mezo-r36n9.17`); nil when the server's capacity feature is off or its read
+    /// failed — the Ma page then shows exactly what it showed before B7.
+    public var capacity: Components.Schemas.BoopCapacity? = nil
 
     /// The metric of a key. The server always sends all five; a missing one reads as "no data".
     public func metric(_ key: MetricKey) -> Metric {
@@ -149,7 +152,8 @@ extension Brief {
                 calendar: CalendarDay(count: d.calendar.count, busySlots: d.calendar.busySlots),
                 weight: d.weight.map { Weight(kg: $0.kg, trendKg: $0.trendKg) },
                 recovery: d.recovery.map { Recovery(reason: $0.reason, day: $0.day) }
-            )
+            ),
+            capacity: b.capacity?.value1
         )
     }
 }

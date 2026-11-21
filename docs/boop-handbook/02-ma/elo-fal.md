@@ -33,7 +33,7 @@ nyitva), a **napi energiagörbe**, és este a **nap lezárása**.
 
 ## Hogyan működik
 1. Minden terület **bejelentkezik** a falra azzal, amije van — az Étel a záruló étkezési ablakkal, a kiegészítő
-   csoporttal, a napi tippel és a legutóbb rögzített étkezéssel; a napi összefoglaló a mai edzéssel és a
+   csoporttal és a legutóbb rögzített étkezéssel (a „Következik: …” ételtipp 2026-11-21 óta nem kerül a falra); a napi összefoglaló a mai edzéssel és a
    legerősebb megfigyeléssel; az **Évad** (2026-11-21 óta) két dologgal:
    - ha Boop rájött, hogy a valóságban kevesebbet vagy többet égetsz, mint a terv számolt, egy javaslattal a második
      helyre („Kevesebbet égetsz, mint gondoltuk”, például) — az **„Átnézem”** gomb az Évad Módosítás oldalát nyitja,

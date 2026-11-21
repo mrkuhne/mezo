@@ -305,7 +305,7 @@ Focused gate: `./mvnw clean test -Dmezo.test.use-testcontainers=true -Dtest='Mai
 
 ## 9. Decisions, gotchas & deferred
 
-- **Owner decisions 2026-11-21** (spec §2, handbook `_dontesek.json`, `14-decisions.md` #66–#74): consumer Gmail → IMAP
+- **Owner decisions 2026-11-21** (spec §2, handbook `_dontesek.json`, `14-decisions.md` #85–#93): consumer Gmail → IMAP
   + app password (no OAuth); a **mirror** Gmail fed by Gmail and iCloud; ring for a good deal within decision #35's
   cap; 10 price checks a day for L3; L1 + L2 in one release; the four groups; approach A (server polls twice a day);
   he sets the mirror up himself.

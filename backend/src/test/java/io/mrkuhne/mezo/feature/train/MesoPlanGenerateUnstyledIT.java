@@ -40,7 +40,7 @@ class MesoPlanGenerateUnstyledIT extends ApiIntegrationTest {
             assertThat(e.getTargetRIR()).as(e.getName()).isEqualTo(1);
             assertThat(e.getRepMin()).as(e.getName()).isEqualTo(compound ? 8 : 12);
             assertThat(e.getRepMax()).as(e.getName()).isEqualTo(compound ? 10 : 15);
-            assertThat(e.getWarmupSets()).as(e.getName()).isEqualTo(compound ? 2 : 1);
+            assertThat(e.getWarmupSets()).as(e.getName()).isIn(0, 2); // first-compound-per-group rule (8w)
             assertThat(e.getRestSec()).as(e.getName()).isNull();
             assertThat(e.getTrainingStyle()).as(e.getName()).isNull();
             assertThat(e.getOverrides()).as(e.getName()).isNullOrEmpty();

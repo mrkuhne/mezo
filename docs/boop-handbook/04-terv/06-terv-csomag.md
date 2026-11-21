@@ -16,7 +16,7 @@ Egy **évad** 4–24 hétig tart, és ezeket fogja össze:
 - az **edzésblokkot** (a futó blokkot átveszi, vagy újat indít egy sablonból);
 - a **heti edzés- és sportnapokat** (például heti 4 edzés + kedden és csütörtökön röplabda);
 - az **alvásigényt** és a lefekvés idejét;
-- a **szabályokat** és a **kiválasztott recepteket** (a heti menü a 3. szakaszban épül rájuk).
+- a **szabályokat** és a **kiválasztott recepteket** (ezekből áll össze a heti menü — lásd [Heti menü](09-heti-menu.md)).
 
 Ebből számol: edzésnapi és pihenőnapi kalória, fehérje, szénhidrát edzésnapon, a **heti összes** kalória, alvásigény,
 lefekvés, céldátum és tempó (súlytartásnál a súlysáv).
@@ -104,8 +104,8 @@ rendszer elutasítja, és Boop az Évad oldalra küld. A már futó blokk zavart
 | `sleep_goal` | Az alváscél (aktív évad alatt az évad alvásigénye) |
 
 ## Mi jön még
-- 3. szakasz: heti menü és bevásárlólista (lásd [Bevásárlólista](07-bevasarlolista.md)).
-- 4. szakasz: kísérletek (lásd [Hatáskövetés](08-hataskovetes.md)).
+- 3. szakasz (élesben): [Heti menü](09-heti-menu.md) és [Bevásárlólista](07-bevasarlolista.md).
+- 4. szakasz (élesben): kísérletek (lásd [Hatás — kísérletek](08-hataskovetes.md)).
 - Egy elfogadással a futó blokk napjai is átrendeződnek, ha az edzésnapok változnak.
 - A célsúly, az évad hossza és az ébredési idő állítása a Módosításban; Korábbi évadok oldal.
 

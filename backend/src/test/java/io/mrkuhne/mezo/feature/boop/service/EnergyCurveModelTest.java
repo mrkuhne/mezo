@@ -67,4 +67,45 @@ class EnergyCurveModelTest {
             assertThat(with[i] - none[i]).isCloseTo(expected, EPS);
         }
     }
+
+    @Test
+    void demandLowersHeightNotTiming() {
+        double[] demand = new double[19];
+        demand[2] = 2.0;  // 08:00
+        demand[14] = 1.0; // 20:00
+        double[] plain = EnergyCurveModel.hourly(70, LocalTime.of(18, 0), LocalTime.of(14, 0));
+        double[] bent = EnergyCurveModel.hourly(70, LocalTime.of(18, 0), LocalTime.of(14, 0), demand);
+
+        assertThat(argmax(bent)).isEqualTo(argmax(plain));
+        assertThat(argmin(bent, 6, 12)).isEqualTo(argmin(plain, 6, 12)); // the afternoon dip hour
+        for (int i = 0; i < 19; i++) {
+            boolean loaded = demand[i] > 0 || (i > 0 && demand[i - 1] > 0);
+            if (loaded) assertThat(bent[i]).isLessThan(plain[i]);
+            else assertThat(bent[i]).isEqualTo(plain[i]);
+        }
+        assertThat(bent[2]).isCloseTo(plain[2] * (1 - 0.16), EPS);
+        // the drop is capped at 35 %
+        double[] heavy = new double[19];
+        heavy[4] = 50;
+        assertThat(EnergyCurveModel.hourly(70, null, null, heavy)[4])
+            .isCloseTo(EnergyCurveModel.hourly(70, null, null)[4] * 0.65, EPS);
+    }
+
+    @Test
+    void threeArgOverloadEqualsZeroDemand() {
+        assertThat(EnergyCurveModel.hourly(60, null, null))
+            .containsExactly(EnergyCurveModel.hourly(60, null, null, new double[19]));
+    }
+
+    private static int argmax(double[] c) {
+        int at = 0;
+        for (int i = 1; i < c.length; i++) if (c[i] > c[at]) at = i;
+        return at;
+    }
+
+    private static int argmin(double[] c, int from, int to) {
+        int at = from;
+        for (int i = from + 1; i <= to; i++) if (c[i] < c[at]) at = i;
+        return at;
+    }
 }

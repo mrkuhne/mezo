@@ -24,14 +24,26 @@ public final class PlanEvaluator {
 
     public enum Fit { BELOW, INSIDE, ABOVE }
 
+    /** Why a muscle's band is what it is: the sport lowered it, the Tartás third, or the tier's RP landmarks. */
+    public enum BasisSource { LANDMARKS_RP, MAINTAIN_THIRD, SPORT_ADJUSTED }
+
+    /** Groups never flagged for heavy back-to-back days (they recover fast). */
+    static final Set<String> CONSECUTIVE_EXEMPT = Set.of("core", "mobility");
+
     /**
      * {@code group} is the coarse muscle group (may be null); {@code counts} false = exempt from volume;
      * {@code capExtra} = the extra set-equivalents its technique set weighs against the caps
-     * ({@link TechniqueRules#capExtra}; 0 for a plain row or a block with techniques off).
+     * ({@link TechniqueRules#capExtra}; 0 for a plain row or a block with techniques off);
+     * {@code restSeconds} = the prescribed rest between its sets (null = unknown; only read for styled plans).
      */
-    public record PlanExercise(String group, int workingSets, int warmupSets, boolean counts, int capExtra) {
+    public record PlanExercise(String group, int workingSets, int warmupSets, boolean counts, int capExtra,
+                               Integer restSeconds) {
         public PlanExercise(String group, int workingSets, int warmupSets, boolean counts) {
-            this(group, workingSets, warmupSets, counts, 0);
+            this(group, workingSets, warmupSets, counts, 0, null);
+        }
+
+        public PlanExercise(String group, int workingSets, int warmupSets, boolean counts, int capExtra) {
+            this(group, workingSets, warmupSets, counts, capExtra, null);
         }
 
         /** What the row weighs against the exercise / session caps. */
@@ -50,7 +62,7 @@ public final class PlanEvaluator {
     /** {@code sportWeekdays}: 0=Hét..6=Vas. */
     public record Input(int weeks, List<String> phaseCurve, List<PlanDay> days, Map<String, String> priorities,
                         Set<String> sportGroups, boolean deficit, Integer sessionMinutesTarget,
-                        Set<Integer> sportWeekdays, VolumeProperties props) {}
+                        Set<Integer> sportWeekdays, VolumeProperties props, boolean styled) {}
 
     public record DaySets(int dayIndex, int sets) {}
 
@@ -60,8 +72,12 @@ public final class PlanEvaluator {
 
     public record ExerciseCapWarning(int exerciseIndex, int sets, int cap) {}
 
+    /** A muscle with at least the heavy-set threshold on two consecutive calendar days (Vas wraps to Hét). */
+    public record ConsecutiveHeavy(int dayIndex, int nextDayIndex, int sets, int nextSets) {}
+
     public record MuscleResult(String muscle, PriorityTier tier, Band band, int weeklySets, Fit fit, int diff,
-                               List<DaySets> spread, List<ProposalEdit> proposal, boolean proposalBlocked) {}
+                               List<DaySets> spread, List<ProposalEdit> proposal, boolean proposalBlocked,
+                               BasisSource basis, List<ConsecutiveHeavy> consecutiveHeavy) {}
 
     public record DayResult(int dayIndex, String day, int minutesEstimate, Boolean overTarget,
                             List<CapWarning> sessionCapWarnings, List<ExerciseCapWarning> exerciseCapWarnings,
@@ -69,10 +85,11 @@ public final class PlanEvaluator {
 
     public record Result(List<MuscleResult> muscles, List<DayResult> days, List<VolumePath.Week> path) {}
 
-    /** One counting exercise of a landmark group. */
-    private record Row(String key, String group, int dayIndex, int exerciseIndex, int sets, int capExtra) {}
+    /** One counting exercise of a landmark group; {@code position} = the day's place in the input list. */
+    private record Row(String key, String group, int dayIndex, int exerciseIndex, int sets, int capExtra,
+                       int position) {}
 
-    public static Result evaluate(Input in) {
+    private static List<Row> rows(Input in) {
         VolumeProperties p = in.props();
         List<Row> rows = new ArrayList<>();
         for (int d = 0; d < in.days().size(); d++) {
@@ -80,10 +97,32 @@ public final class PlanEvaluator {
             for (int e = 0; e < list.size(); e++) {
                 PlanExercise x = list.get(e);
                 if (x.counts() && x.group() != null && p.baselines().containsKey(x.group())) {
-                    rows.add(new Row(d + ":" + e, x.group(), reportedIndex(in, d), e, x.workingSets(), x.capExtra()));
+                    rows.add(new Row(d + ":" + e, x.group(), reportedIndex(in, d), e, x.workingSets(), x.capExtra(),
+                        d));
                 }
             }
         }
+        return rows;
+    }
+
+    /** True when the plan has at least one counting exercise of a landmark group. */
+    static boolean hasCountingExercises(Input in) {
+        return !rows(in).isEmpty();
+    }
+
+    /** The block's week-by-week path for the plan's counting exercises under the given judged groups. */
+    static List<VolumePath.Week> project(Input in, Map<String, VolumePath.Group> judged) {
+        VolumeProperties p = in.props();
+        List<VolumePath.Exercise> amounts = rows(in).stream()
+            .map(r -> new VolumePath.Exercise(r.key(), r.group(), r.dayIndex(), r.sets(), r.capExtra())).toList();
+        return VolumePath.project(new VolumePath.Input(in.weeks(), in.phaseCurve(), 1,
+            amounts, Map.of(), judged, in.deficit(), p.stepEmphasize(), p.stepGrow(), p.stepDeficit(),
+            p.deloadFraction(), p.bands().exerciseCap(), p.bands().sessionCap()));
+    }
+
+    public static Result evaluate(Input in) {
+        VolumeProperties p = in.props();
+        List<Row> rows = rows(in);
 
         List<MuscleResult> muscles = new ArrayList<>();
         Map<String, VolumePath.Group> judged = new LinkedHashMap<>();
@@ -107,12 +146,7 @@ public final class PlanEvaluator {
             days.add(day(in, d));
         }
 
-        List<VolumePath.Exercise> amounts = rows.stream()
-            .map(r -> new VolumePath.Exercise(r.key(), r.group(), r.dayIndex(), r.sets(), r.capExtra())).toList();
-        List<VolumePath.Week> path = VolumePath.project(new VolumePath.Input(in.weeks(), in.phaseCurve(), 1,
-            amounts, Map.of(), judged, in.deficit(), p.stepEmphasize(), p.stepGrow(), p.stepDeficit(),
-            p.deloadFraction(), p.bands().exerciseCap(), p.bands().sessionCap()));
-        return new Result(muscles, days, path);
+        return new Result(muscles, days, project(in, judged));
     }
 
     private static MuscleResult muscle(Input in, String name, PriorityTier tier, Band band, List<Row> mine,
@@ -167,7 +201,39 @@ public final class PlanEvaluator {
                 proposal.add(new ProposalEdit(r.dayIndex(), r.exerciseIndex(), sets - r.sets()));
             }
         });
-        return new MuscleResult(name, tier, band, weekly, fit, diff, spread, proposal, blocked);
+        return new MuscleResult(name, tier, band, weekly, fit, diff, spread, proposal, blocked, basis(tier, band),
+            consecutiveHeavy(in, name, mine));
+    }
+
+    static BasisSource basis(PriorityTier tier, Band band) {
+        if (band.sportAdjusted()) return BasisSource.SPORT_ADJUSTED;
+        return tier == PriorityTier.MAINTAIN ? BasisSource.MAINTAIN_THIRD : BasisSource.LANDMARKS_RP;
+    }
+
+    /**
+     * Pairs of plan days on consecutive calendar weekdays (from the day label, Hét..Vas; Vas wraps to Hét) where
+     * this group's counting working sets reach the threshold on both. A day whose label is not a weekday is skipped.
+     */
+    private static List<ConsecutiveHeavy> consecutiveHeavy(Input in, String name, List<Row> mine) {
+        if (CONSECUTIVE_EXEMPT.contains(name)) return List.of();
+        int threshold = in.props().bands().consecutiveHeavySets();
+        Map<Integer, Integer> byPosition = new TreeMap<>();
+        mine.forEach(r -> byPosition.merge(r.position(), r.sets(), Integer::sum));
+        List<int[]> heavy = new ArrayList<>();   // {weekday, position, sets}
+        byPosition.forEach((pos, sets) -> {
+            int weekday = MesoPlanSkeleton.DAY_ORDER.indexOf(in.days().get(pos).day());
+            if (weekday >= 0 && sets >= threshold) heavy.add(new int[] {weekday, pos, sets});
+        });
+        heavy.sort((a, b) -> a[0] != b[0] ? Integer.compare(a[0], b[0]) : Integer.compare(a[1], b[1]));
+        List<ConsecutiveHeavy> out = new ArrayList<>();
+        for (int[] a : heavy) {
+            for (int[] b : heavy) {
+                if (b[0] == (a[0] + 1) % 7) {
+                    out.add(new ConsecutiveHeavy(reportedIndex(in, a[1]), reportedIndex(in, b[1]), a[2], b[2]));
+                }
+            }
+        }
+        return out;
     }
 
     private static List<SetSlots.Slot> slots(Map<UUID, Row> byId, Map<UUID, Integer> current) {
@@ -188,8 +254,27 @@ public final class PlanEvaluator {
         if (!day.exercises().isEmpty()) {
             int working = day.exercises().stream().mapToInt(PlanExercise::workingSets).sum();
             int warmups = day.exercises().stream().mapToInt(PlanExercise::warmupSets).sum();
-            minutes = p.evaluator().minutesPerWorkingSet().multiply(BigDecimal.valueOf(working))
+            BigDecimal workingMinutes;
+            BigDecimal transitions = BigDecimal.ZERO;
+            if (in.styled()) {
+                // v2: each set costs its work time + the prescribed rest; a row without one falls back to the
+                // flat per-set figure; each exercise adds a transition.
+                BigDecimal flatRest = p.evaluator().minutesPerWorkingSet().multiply(BigDecimal.valueOf(60))
+                    .subtract(BigDecimal.valueOf(p.evaluator().setSeconds()));
+                BigDecimal seconds = BigDecimal.ZERO;
+                for (PlanExercise x : day.exercises()) {
+                    BigDecimal rest = x.restSeconds() == null ? flatRest : BigDecimal.valueOf(x.restSeconds());
+                    seconds = seconds.add(BigDecimal.valueOf(x.workingSets())
+                        .multiply(BigDecimal.valueOf(p.evaluator().setSeconds()).add(rest)));
+                }
+                workingMinutes = seconds.divide(BigDecimal.valueOf(60), 10, RoundingMode.HALF_UP);
+                transitions = p.evaluator().transitionMinutes().multiply(BigDecimal.valueOf(day.exercises().size()));
+            } else {
+                workingMinutes = p.evaluator().minutesPerWorkingSet().multiply(BigDecimal.valueOf(working));
+            }
+            minutes = workingMinutes
                 .add(p.evaluator().minutesPerWarmupSet().multiply(BigDecimal.valueOf(warmups)))
+                .add(transitions)
                 .add(BigDecimal.valueOf(p.evaluator().sessionOverheadMinutes()))
                 .setScale(0, RoundingMode.HALF_UP).intValue();
         }

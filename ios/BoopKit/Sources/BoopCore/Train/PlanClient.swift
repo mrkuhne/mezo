@@ -54,4 +54,40 @@ public struct PlanClient: Sendable {
         try await raw.send(.post, "/api/train/mesocycles/\(blockId)/exercise-suggestions",
                            operationID: "getBlockExerciseSuggestions", body: request)
     }
+
+    // MARK: the new-block intake (mezo-r36n9.113)
+
+    /// Ranked, flawless split candidates for the chosen days — read-only, no AI.
+    public func candidates(_ request: WireCandidatesRequest) async throws(PlanFetchError) -> WireCandidates {
+        try await raw.send(.post, "/api/train/meso-plans/candidates", operationID: "getMesoPlanCandidates", body: request)
+    }
+
+    /// The full plan for the chosen split (the AI picks the exercises). Nothing is saved.
+    public func generate(_ request: WireGenerateRequest) async throws(PlanFetchError) -> WireGenerateResponse {
+        try await raw.send(.post, "/api/train/meso-plans/generate", operationID: "generateMesoPlan", body: request)
+    }
+
+    /// Saves a template exactly as the server generated it; returns its id.
+    public func createTemplate(_ template: WireTemplate) async throws(PlanFetchError) -> String {
+        struct Created: Decodable { let id: String }
+        let created: Created = try await raw.send(.post, "/api/train/meso-templates", operationID: "createMesoTemplate", body: template)
+        return created.id
+    }
+
+    /// Starts a block from a template. A 409 `SEASON_REQUIRED` means no season covers the start date.
+    public func startTemplate(id: String, startDate: String, status: String) async throws(PlanFetchError) -> WireBlock {
+        try await raw.send(.post, "/api/train/meso-templates/\(id)/start", operationID: "startMesoTemplate",
+                           body: WireTemplateStart(startDate: startDate, status: status))
+    }
+
+    /// Closes (archives) a block — idempotent on the server.
+    public func closeBlock(id: String) async throws(PlanFetchError) {
+        _ = try await raw.sendRaw(.post, "/api/train/mesocycles/\(id)/close", operationID: "closeMesocycle")
+    }
+
+    /// Throws away a block that was never trained, with the template it came from when nothing else used it — no
+    /// report, no AI review. A 409 `TRAIN_MESO_DISCARD_HAS_LOGS` means a workout was already logged in it.
+    public func discardBlock(id: String) async throws(PlanFetchError) {
+        _ = try await raw.sendRaw(.post, "/api/train/mesocycles/\(id)/discard", operationID: "discardMesocycle")
+    }
 }

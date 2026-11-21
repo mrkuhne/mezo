@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.api.dto.BoopBrief;
 import io.mrkuhne.mezo.feature.boop.config.BoopProperties;
 import io.mrkuhne.mezo.feature.boop.entity.BoopBriefEntity;
 import io.mrkuhne.mezo.feature.boop.mapper.BoopBriefMapper;
+import io.mrkuhne.mezo.feature.boop.port.BoopCapacityPort;
 import io.mrkuhne.mezo.feature.boop.repository.BoopBriefRepository;
 import io.mrkuhne.mezo.feature.boop.service.BoopScores.Scores;
 import io.mrkuhne.mezo.feature.boop.service.BoopVerdictWriter.Verdicts;
@@ -78,6 +79,7 @@ public class BoopBriefService {
     private final BoopDayAssembler assembler;
     private final BoopVerdictWriter verdictWriter;
     private final BoopBriefMapper mapper;
+    private final BoopCapacityPort capacityPort;
     private final BoopBriefRepository briefs;
     private final BoopBriefStore store;
     private final ObjectMapper objectMapper;
@@ -86,11 +88,12 @@ public class BoopBriefService {
     private final ZoneId zone;
 
     public BoopBriefService(BoopDayAssembler assembler, BoopVerdictWriter verdictWriter, BoopBriefMapper mapper,
-                            BoopBriefRepository briefs, BoopBriefStore store, ObjectMapper objectMapper,
+                            BoopCapacityPort capacityPort, BoopBriefRepository briefs, BoopBriefStore store, ObjectMapper objectMapper,
                             BoopProperties props, WearableProperties wearableProperties) {
         this.assembler = assembler;
         this.verdictWriter = verdictWriter;
         this.mapper = mapper;
+        this.capacityPort = capacityPort;
         this.briefs = briefs;
         this.store = store;
         this.objectMapper = objectMapper;
@@ -107,7 +110,8 @@ public class BoopBriefService {
     public BoopBrief get(UUID owner, LocalDate date, Instant now) {
         requireNotFuture(date, now);
         BoopDay day = assembler.assemble(owner, date);
-        String hash = inputHash(day, localNow(date, now));
+        BoopCapacityPort.View capacity = capacity(owner, date);
+        String hash = inputHash(day, localNow(date, now), capacity);
         Optional<BoopBriefEntity> existing = briefs.findByCreatedByAndDate(owner, date);
         if (existing.isPresent() && hash.equals(existing.get().getInputHash())) {
             BoopBriefEntity row = existing.get();
@@ -117,7 +121,7 @@ public class BoopBriefService {
                 return read(row);
             }
         }
-        return generateAndStore(owner, day, hash, now, false);
+        return generateAndStore(owner, day, capacity, hash, now, false);
     }
 
     public BoopBrief regenerate(UUID owner, LocalDate date) {
@@ -132,20 +136,41 @@ public class BoopBriefService {
             throw BoopBriefStore.limitReached();
         }
         BoopDay day = assembler.assemble(owner, date);
-        return generateAndStore(owner, day, inputHash(day, localNow(date, now)), now, true);
+        BoopCapacityPort.View capacity = capacity(owner, date);
+        return generateAndStore(owner, day, capacity, inputHash(day, localNow(date, now), capacity), now, true);
     }
 
-    private BoopBrief generateAndStore(UUID owner, BoopDay day, String hash, Instant now, boolean manual) {
+    /**
+     * The day's capacity, or null when the feature is off or the read failed (a warning, never a failed brief).
+     * The read uses stored or rule event scores only; it never waits for the scoring model.
+     */
+    private BoopCapacityPort.View capacity(UUID owner, LocalDate date) {
+        try {
+            return capacityPort.read(owner, date);
+        } catch (RuntimeException e) {
+            log.warn("Boop brief: capacity unavailable, serving the brief without it: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private BoopBrief generateAndStore(UUID owner, BoopDay day, BoopCapacityPort.View capacity, String hash,
+                                       Instant now, boolean manual) {
         LocalTime localNow = localNow(day.date(), now);
         Scores s = scores.compute(day, localNow);
         LocalTime sessionTime = day.session() == null ? null : day.session().time();
-        double[] hourly = EnergyCurveModel.hourly(s.forma(), sessionTime, lunch(day));
+        double[] timing = EnergyCurveModel.hourly(s.forma(), sessionTime, lunch(day));
+        double[] hourly = capacity == null ? timing
+            : EnergyCurveModel.hourly(s.forma(), sessionTime, lunch(day), capacity.hourly19());
         Verdicts rules = verdictWriter.rules(day, s, localNow);
-        CompletableFuture<Verdicts> words = verdictWriter.ask(day, s, localNow, rules);
+        if (capacity != null) {
+            rules = rules.withCapacityReason(capacity.reasonFacts());
+        }
+        CompletableFuture<Verdicts> words = verdictWriter.ask(day, s, localNow, rules, capacity);
         Verdicts v = verdictWriter.await(words, rules);
         boolean aiWords = v != rules;
         Instant generatedAt = now.truncatedTo(ChronoUnit.MICROS);
-        BoopBrief brief = mapper.toBrief(day, s, v, hourly, props.stepsGoal(), props.nightsNeeded(), generatedAt);
+        BoopBrief brief = mapper.toBrief(day, s, v, hourly, timing, capacity, props.stepsGoal(), props.nightsNeeded(),
+            generatedAt);
         String payload = objectMapper.writeValueAsString(brief);
         BoopBrief answer = brief;
         try {
@@ -165,22 +190,23 @@ public class BoopBriefService {
             }
         }
         if (!aiWords) {
-            keepLateWords(owner, day, s, hourly, hash, generatedAt, words);
+            keepLateWords(owner, day, s, hourly, timing, capacity, hash, generatedAt, words);
         }
         return answer;
     }
 
     /** The model answered after the wait: its words go onto the day's row if the inputs are still the
      *  ones it was asked about and the row has no model words yet (mezo-r36n9.24). Runs on the pool. */
-    private void keepLateWords(UUID owner, BoopDay day, Scores s, double[] hourly, String hash, Instant generatedAt,
+    private void keepLateWords(UUID owner, BoopDay day, Scores s, double[] hourly, double[] timing,
+                               BoopCapacityPort.View capacity, String hash, Instant generatedAt,
                                CompletableFuture<Verdicts> words) {
         words.thenAccept(late -> {
             if (late == null) {
                 return;
             }
             try {
-                BoopBrief brief = mapper.toBrief(day, s, late, hourly, props.stepsGoal(), props.nightsNeeded(),
-                    generatedAt);
+                BoopBrief brief = mapper.toBrief(day, s, late, hourly, timing, capacity, props.stepsGoal(),
+                    props.nightsNeeded(), generatedAt);
                 store.fillWords(owner, day.date(), hash, objectMapper.writeValueAsString(brief), generatedAt);
             } catch (RuntimeException e) {
                 log.warn("Boop brief late words not stored: {}", e.getMessage());
@@ -233,6 +259,14 @@ public class BoopBriefService {
     }
 
     static String inputHash(BoopDay d, LocalTime localNow) {
+        return inputHash(d, localNow, null);
+    }
+
+    /**
+     * Also covers the capacity verdict, demand units (0.1), the load ratio (0.05), the factors (key + effect) and each
+     * demand item's level (so an event label regenerates), so a changed day regenerates.
+     */
+    static String inputHash(BoopDay d, LocalTime localNow, BoopCapacityPort.View capacity) {
         StringBuilder b = new StringBuilder("v2|").append(d.date()).append("|t:").append(timeBucket(localNow));
         BoopDay.Sleep s = d.sleep();
         b.append("|night:");
@@ -272,6 +306,21 @@ public class BoopBriefService {
         b.append("|intention:");
         if (d.intention() != null) {
             b.append(d.intention().creed()).append(',').append(d.intention().foci());
+        }
+        if (capacity != null) {
+            b.append("|capacity:").append(capacity.verdict()).append(',')
+                .append(String.format(java.util.Locale.ROOT, "%.1f", capacity.demandUnits())).append(',')
+                .append(String.format(java.util.Locale.ROOT, "%.2f", Math.round(capacity.ratio() * 20) / 20.0));
+            for (BoopCapacityPort.Factor f : capacity.factors()) {
+                b.append(';').append(f.key()).append('=').append(f.effect());
+            }
+            // an event label (Merít / Semleges / Feltölt) re-scores its item: its level changes the brief even when
+            // the day's units round to the same tenth; the label itself too (the stored brief shows it on the row)
+            b.append("|items:");
+            for (BoopCapacityPort.Item i : capacity.demand()) {
+                b.append(i.eventKey()).append('@').append(i.start()).append('=').append(i.level())
+                    .append('/').append(i.effect()).append(';');
+            }
         }
         return sha256(b.toString());
     }

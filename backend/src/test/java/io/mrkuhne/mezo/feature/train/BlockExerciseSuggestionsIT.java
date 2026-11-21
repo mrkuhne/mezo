@@ -130,6 +130,8 @@ class BlockExerciseSuggestionsIT extends ApiIntegrationTest {
             .allSatisfy(s -> {
                 assertThat(MuscleGroup.of(s.getExercise().getMuscle())).isEqualTo("back");
                 assertThat(s.getReasonText()).endsWith(".");
+                // an add has no outgoing exercise: never the replace role phrase
+                assertThat(s.getReasonText()).doesNotStartWith("Ugyanazt");
             });
         // the whole group, not one token: a day without back work gets rows/pulldowns, not only lower back
         assertThat(res.getSuggestions()).extracting(s -> s.getExercise().getMuscle())
@@ -147,8 +149,63 @@ class BlockExerciseSuggestionsIT extends ApiIntegrationTest {
 
         assertThat(res.getSuggestions()).anySatisfy(s -> {
             assertThat(s.getSignals()).contains("UNDER_BAND");
-            assertThat(s.getReasonText()).contains("ezen a héten kevés jut erre az izomra");
+            assertThat(s.getReasonText()).isEqualTo("Ezen a héten kevés jut erre az izomra.");
         });
+        assertThat(res.getSuggestions()).allSatisfy(s -> assertThat(s.getReasonText()).doesNotStartWith("Ugyanazt"));
+    }
+
+    private BlockExerciseSuggestionsRequest addTokens(List<String> muscles, UUID... dayCatalogIds) {
+        return add(null, dayCatalogIds).muscles(muscles);
+    }
+
+    @Test
+    void testSuggestions_shouldSuggestOnlyThePickedTokens_whenAddingSeveralSubMuscles() {
+        ExerciseSubstitutesResponse res = read(addTokens(List.of("back-mid", "chest-upper"), benchCatalog.getId()));
+
+        assertThat(res.getSuggestions()).isNotEmpty().hasSizeLessThanOrEqualTo(5)
+            .allSatisfy(s -> assertThat(s.getExercise().getMuscle()).isIn("back-mid", "chest-upper"));
+        // two groups' tokens mix: both show up near the top
+        assertThat(res.getSuggestions()).extracting(s -> s.getExercise().getMuscle())
+            .contains("back-mid", "chest-upper");
+    }
+
+    @Test
+    void testSuggestions_shouldSuggestForTheUnderBandGroups_whenNothingIsPicked() {
+        // back trained below its band (one 3-set row) — the only groups ever judged are the trained ones
+        trainPopulator.createExercise(user, day.getId(), "Seated Row", 1, "back-mid", "compound", null);
+
+        ExerciseSubstitutesResponse res = read(addTokens(List.of(), benchCatalog.getId()));
+
+        assertThat(res.getSuggestions()).isNotEmpty().allSatisfy(s -> {
+            assertThat(MuscleGroup.of(s.getExercise().getMuscle())).isIn("back", "chest");
+            assertThat(s.getSignals()).contains("UNDER_BAND");
+        });
+        assertThat(res.getSuggestions()).extracting(s -> MuscleGroup.of(s.getExercise().getMuscle()))
+            .contains("back");
+    }
+
+    @Test
+    void testSuggestions_shouldLabelTheWholeCatalogue_whenNothingIsPicked() {
+        // only back is under its band, yet the full list shows every muscle: its quiet labels must cover them all
+        trainPopulator.createExercise(user, day.getId(), "Seated Row", 1, "back-mid", "compound", null);
+        putForBody("/api/train/gym-profile", new GymProfile().offKinds(List.of("machine")).missingExerciseIds(List.of()),
+            auth, HttpStatus.OK, GymProfile.class);
+
+        ExerciseSubstitutesResponse res = read(addTokens(List.of(), benchCatalog.getId()));
+
+        assertThat(res.getSuggestions()).isNotEmpty()
+            .allSatisfy(s -> assertThat(s.getExercise().getGear()).doesNotContain("machine"));
+        UUID legPress = catalog("Leg Press").getId();
+        assertThat(res.getLabels()).anySatisfy(l -> {
+            assertThat(l.getCatalogId()).isEqualTo(legPress);
+            assertThat(l.getLabel()).isEqualTo(ExerciseSubstituteLabel.LabelEnum.NO_EQUIPMENT);
+        });
+    }
+
+    @Test
+    void testSuggestions_shouldReturn400_whenAMuscleTokenIsUnknown() {
+        postForBody(uri(block), addTokens(List.of("back-mid", "lats-ish")), auth, HttpStatus.BAD_REQUEST,
+            String.class);
     }
 
     @Test

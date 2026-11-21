@@ -55,6 +55,102 @@ public struct EvadClient: Sendable {
     public func putRules(id: String, _ r: EvadRules) async throws(PlanFetchError) -> EvadSeason {
         try await raw.send(.put, "/api/seasons/\(id)/rules", operationID: "putSeasonRules", body: r)
     }
+
+    // MARK: - S3: the weekly menu, the recipe choice, the shopping list
+
+    /// The menu of the week starting `weekStart` (a Monday, `yyyy-MM-dd`). `.notFound` = no active season.
+    public func menu(weekStart: String) async throws(PlanFetchError) -> EvadMenuWeek {
+        try await raw.get("/api/seasons/menu?weekStart=\(weekStart)", operationID: "getMenuWeek")
+    }
+
+    /// Plans (or re-plans — „Kérek másikat") a proposed week. `.conflict("MENU_NOT_PROPOSED")` once it is approved.
+    public func generateMenu(weekStart: String) async throws(PlanFetchError) -> EvadMenuWeek {
+        try await raw.send(.post, "/api/seasons/menu/generate", operationID: "generateMenuWeek",
+                           body: EvadWeekStartBody(weekStart: weekStart))
+    }
+
+    public func approveMenu(id: String) async throws(PlanFetchError) -> EvadMenuWeek {
+        try await raw.get(method: .post, "/api/seasons/menu/\(id)/approve", operationID: "approveMenuWeek")
+    }
+
+    public func alternatives(mealId: String) async throws(PlanFetchError) -> [EvadMenuAlternative] {
+        try await raw.get("/api/seasons/menu/meals/\(mealId)/alternatives", operationID: "listMenuAlternatives")
+    }
+
+    public func swap(mealId: String, recipeId: String) async throws(PlanFetchError) -> EvadMenuWeek {
+        try await raw.send(.put, "/api/seasons/menu/meals/\(mealId)", operationID: "swapMenuMeal",
+                           body: EvadRecipeChoiceBody(recipeId: recipeId))
+    }
+
+    public func recipes() async throws(PlanFetchError) -> [EvadRecipeOption] {
+        try await raw.get("/api/seasons/recipes", operationID: "listSeasonRecipes")
+    }
+
+    public func putRecipes(id: String, recipeIds: [String]) async throws(PlanFetchError) -> EvadSeason {
+        try await raw.send(.put, "/api/seasons/\(id)/recipes", operationID: "putSeasonRecipes",
+                           body: EvadRecipeIdsBody(recipeIds: recipeIds))
+    }
+
+    /// `.notFound` = that week has no list (its menu is not approved).
+    public func shoppingList(weekStart: String) async throws(PlanFetchError) -> EvadShoppingList {
+        try await raw.get("/api/seasons/shopping?weekStart=\(weekStart)", operationID: "getShoppingList")
+    }
+
+    public func shoppingLists() async throws(PlanFetchError) -> [EvadShoppingListSummary] {
+        try await raw.get("/api/seasons/shopping/lists", operationID: "listShoppingLists")
+    }
+
+    public func check(itemId: String, checked: Bool) async throws(PlanFetchError) -> EvadShoppingItem {
+        try await raw.send(.put, "/api/seasons/shopping/items/\(itemId)", operationID: "checkShoppingItem",
+                           body: EvadCheckBody(checked: checked))
+    }
+
+    public func toggleStaple(listId: String, name: String, on: Bool) async throws(PlanFetchError) -> EvadShoppingList {
+        try await raw.send(.post, "/api/seasons/shopping/\(listId)/staples", operationID: "toggleShoppingStaple",
+                           body: EvadStapleToggleBody(name: name, on: on))
+    }
+
+    public func staples() async throws(PlanFetchError) -> EvadStaples {
+        try await raw.get("/api/seasons/staples", operationID: "listStaples")
+    }
+
+    public func putStaples(_ names: [String]) async throws(PlanFetchError) -> EvadStaples {
+        try await raw.send(.put, "/api/seasons/staples", operationID: "putStaples", body: EvadStaples(names: names))
+    }
+
+    // MARK: - S4: experiments (the Hatás tab)
+
+    /// The open proposal, the running experiment and the finished ones. The server finishes a running experiment whose
+    /// window is over and runs its proposal detector first. `.notFound` = no active season.
+    public func experiments() async throws(PlanFetchError) -> EvadExperiments {
+        try await raw.get("/api/seasons/experiments", operationID: "listExperiments")
+    }
+
+    /// „Új kísérlet" / „Újra kipróbálom" — runs from today. `.conflict("EXPERIMENT_ALREADY_RUNNING")` while one runs.
+    public func createExperiment(_ c: EvadExperimentCreate) async throws(PlanFetchError) -> EvadExperiment {
+        try await raw.send(.post, "/api/seasons/experiments", operationID: "createExperiment", body: c)
+    }
+
+    /// „Indulhat" on Boop's proposal — runs from today.
+    public func startExperiment(id: String) async throws(PlanFetchError) -> EvadExperiment {
+        try await raw.get(method: .post, "/api/seasons/experiments/\(id)/start", operationID: "startExperiment")
+    }
+
+    /// Marks (or unmarks) one day of the running experiment (`yyyy-MM-dd`, inside the window, never in the future).
+    public func markExperimentDay(id: String, date: String, done: Bool) async throws(PlanFetchError) -> EvadExperiment {
+        try await raw.send(.put, "/api/seasons/experiments/\(id)/days", operationID: "markExperimentDay",
+                           body: EvadExperimentMarkBody(date: date, done: done))
+    }
+
+    /// „Most nem" on a proposal, „Leállítom" on a running one. Idempotent.
+    public func dismissExperiment(id: String) async throws(PlanFetchError) -> EvadExperiment {
+        try await raw.get(method: .post, "/api/seasons/experiments/\(id)/dismiss", operationID: "dismissExperiment")
+    }
+
+    /// „Megtartom szokásnak" — a finished experiment becomes a season rule line. Idempotent.
+    public func keepExperiment(id: String) async throws(PlanFetchError) -> EvadExperiment {
+        try await raw.get(method: .post, "/api/seasons/experiments/\(id)/keep", operationID: "keepExperiment")
+    }
 }
 
 /// What a failed Évad call says to him, in his words.
@@ -71,6 +167,11 @@ public func evadErrorText(_ error: PlanFetchError) -> String {
         case "SEASON_ACTIVE_EXISTS": "Már fut egy évadod."
         case "SEASON_PROFILE_REQUIRED": "Az évad számaihoz előbb a testadataid kellenek (magasság, születési dátum, nem)."
         case "SEASON_BLOCK_DAYS_LOCKED": "Amíg fut az edzésblokk, az edzésnapok nem változhatnak."
+        case "MENU_NOT_PROPOSED": "Ezt a menüt már jóváhagytad, ezért nem állítom össze újra."
+        case "EXPERIMENT_ALREADY_RUNNING": "Már fut egy kísérlet. Egyszerre csak egy futhat, hogy tiszta legyen az eredmény."
+        case "EXPERIMENT_NOT_PROPOSED": "Ez a javaslat már nem aktuális."
+        case "EXPERIMENT_NOT_RUNNING": "Ez a kísérlet már nem fut."
+        case "EXPERIMENT_NOT_DONE": "Csak egy befejezett kísérletet lehet megtartani."
         default: "A szerver ezt most nem fogadta el."
         }
     // Train's day-save refusal; no Évad call returns it, but the error type is shared.

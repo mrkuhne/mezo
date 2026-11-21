@@ -118,7 +118,7 @@ public class TierChangeProposalService {
         PlanEvaluator.Result evaluation = PlanEvaluator.evaluate(new PlanEvaluator.Input(run.getWeeks(),
             run.getPhaseCurve() == null ? List.of() : run.getPhaseCurve(), days, run.getMusclePriorities(),
             run.getSportGroups() == null ? Set.of() : new HashSet<>(run.getSportGroups()), false, null, Set.of(),
-            props));
+            props, false));
 
         List<WeekProposalLineJson> lines = new ArrayList<>();
         List<WeekProposalGroupJson> groups = new ArrayList<>();

@@ -150,8 +150,7 @@ struct EvadNewSeason: View {
     }
 
     private func summary(_ n: EvadNumbers) -> String {
-        let kcal = n.restDayKcal.map { "Edzésnapon \(evadKcal(n.trainDayKcal)), pihenőnapon \(evadKcal($0)) kcal, \(n.proteinG) g fehérje." }
-            ?? "Edzésnapon \(evadKcal(n.trainDayKcal)) kcal, pihenőnap nincs, \(n.proteinG) g fehérje."
+        let kcal = evadKcalSentence(n)
         if let date = n.targetDate { return kcal + " A célt \(evadShortDate(date)) körül éred el." }
         if let band = n.band { return kcal + " A súlyod a \(evadBandText(band))-os sávban marad." }
         return kcal

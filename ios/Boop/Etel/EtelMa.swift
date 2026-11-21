@@ -12,7 +12,6 @@ struct EtelMa: View {
     let onDimension: (DimensionSelection) -> Void
     let onToast: (String) -> Void
     let onRetry: () -> Void
-    let onTab: (EtelTab) -> Void
     /// Opens the composer at an entrance (nil = the picker).
     let onCapture: (MealStart.Entrance) -> Void
     let onCard: (PendingCardAction, PendingDraft) -> Void
@@ -71,13 +70,12 @@ struct EtelMa: View {
         .accessibilityHidden(true)
     }
 
-    // MARK: - The four ways to record a meal, one tap each
+    // MARK: - The three ways to record a meal, one tap each (the barcode lives in the composer and on Kamra)
 
     private var capture: some View {
         HStack(spacing: 8) {
             captureTile("camera-ink", "Fotó", .photo, primary: true)
             captureTile("pen-sun", "Leírom", .text)
-            captureTile("search-ink", "Vonalkód", .barcode)
             captureTile("star-sun", "Szokásos", .usual)
         }
     }
@@ -125,7 +123,7 @@ struct EtelMa: View {
         return .ready
     }
 
-    // MARK: - The highlight: the next thing worth doing
+    // MARK: - The highlight: only the kímélő day
 
     @ViewBuilder private var highlight: some View {
         if guidance {
@@ -134,21 +132,9 @@ struct EtelMa: View {
                         actions: [NKHighlightAction("Kikapcsolom a kímélő módot", weight: .secondary) {
                             Task { onToast(await store.endKimelo().text) }
                         }])
-        } else if let t = store.plan?.tip, !store.tipDismissed {
-            NKHighlight(hue: hue, label: "AMI MA SZÁMÍT", text: t.text, sub: t.reason, actions: tipActions)
         }
-    }
-
-    private var tipActions: [NKHighlightAction] {
-        var out: [NKHighlightAction] = []
-        if suggestsARecipe { out.append(NKHighlightAction("Megnézem a receptet") { onTab(.receptek) }) }
-        out.append(NKHighlightAction("Most nem", weight: suggestsARecipe ? .link : .secondary) { store.dismissTip() })
-        return out
-    }
-
-    /// The tip points at a recipe when the next open window's suggestion is one.
-    private var suggestsARecipe: Bool {
-        store.plan?.windows.first { $0.state == .now || $0.state == .pending }?.suggestion?.kind == .recipe
+        // The "Következik: …" tip card is gone (owner, 2026-11-21, mezo-r36n9.135): the open-now meal row below already
+        // says what comes next and offers its suggestion.
     }
 
     // MARK: - The macros: what is eaten of each, and what still fits

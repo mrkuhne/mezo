@@ -626,6 +626,12 @@ public class FakeCompanionLlm implements CompanionLlm {
     /** Mirror of BoopPrompts.MARKER (feature/boop) — LITERAL, cycle rule (boop is a leaf feature;
      *  nothing imports it back). Drift is caught by BoopVerdictWriterIT's canned-answer assertions. */
     public static final String BOOP_BRIEF_MARKER_MIRROR = "BOOP_BRIEF_V1";
+    /** Mirror of EventScoringService.MARKER (feature/capacity, B7 K1) — LITERAL, cycle rule. */
+    public static final String CAPACITY_SCORE_MARKER_MIRROR = "CAPACITY_EVENT_SCORE_V1";
+    /** Capacity event scoring: planted in an event title → the answer comes after {@link #CAPACITY_SLOW_MS}
+     *  (the background-scoring ITs prove the day read never waits for the model). */
+    public static final String CAPACITY_SLOW = "[fake-slow]";
+    public static final long CAPACITY_SLOW_MS = 3000;
     /** Boop brief: planted in the day's intention creed → a non-JSON answer (rule fallback path). */
     public static final String BOOP_JUNK = "[fake-boop-junk]";
     /** Boop brief: planted in the creed → a JSON object carrying ONLY {@code alvas} (per-field fallback). */
@@ -660,6 +666,22 @@ public class FakeCompanionLlm implements CompanionLlm {
     private static final Pattern PENZ_DIGEST_EFFECT = Pattern.compile("(?m)^- Hatás: (.+?) \\(");
     private final java.util.concurrent.atomic.AtomicInteger penzDigestCalls = new java.util.concurrent.atomic.AtomicInteger();
     public int penzDigestCallCount() { return penzDigestCalls.get(); }
+
+    /** Mirror of penz WeeklyReviewPrompt.MARKER (mezo-r36n9.120) — LITERAL, like the digest mirror. */
+    public static final String PENZ_WEEKLY_MARKER_MIRROR = "BOOP_PENZ_WEEKLY_V1";
+    /** Scripts the weekly answer: {@code [fake-penz-weekly:<base64 of the JSON answer>]} anywhere in the user message. */
+    private static final Pattern PENZ_WEEKLY_SCRIPT = Pattern.compile("\\[fake-penz-weekly:([A-Za-z0-9+/=]+)]");
+    /** Mirrors WeeklyReviewPrompt.SECTION_PREFIX; a section header is always a line of its own. */
+    private static final Pattern PENZ_WEEKLY_SECTION = Pattern.compile("(?m)^SECTION sleeve=(short|mid|long)$");
+    /** Mirrors WeeklyReviewPrompt.STORY_OPEN: the first story fence after a section header. */
+    private static final Pattern PENZ_WEEKLY_STORY = Pattern.compile("(?m)^<<<STORY id=([A-Za-z0-9_-]+) kind=");
+    private final java.util.concurrent.atomic.AtomicInteger penzWeeklyCalls = new java.util.concurrent.atomic.AtomicInteger();
+    /** An IT scripts the next weekly answers here (null = the clean default or the base64 sentinel). */
+    private final java.util.concurrent.atomic.AtomicReference<String> penzWeeklyScript = new java.util.concurrent.atomic.AtomicReference<>();
+    private volatile String lastPenzWeeklyUserMessage;
+    public int penzWeeklyCallCount() { return penzWeeklyCalls.get(); }
+    public void scriptPenzWeekly(String rawAnswer) { penzWeeklyScript.set(rawAnswer); }
+    public String lastPenzWeeklyUserMessage() { return lastPenzWeeklyUserMessage; }
 
     /** Mirrors of the mail prompts' MARKERs (Boop Levél, mezo-r36n9.38) — LITERAL, like the Pénz mirrors. */
     public static final String MAIL_CLASSIFY_MARKER_MIRROR = "BOOP_MAIL_CLASSIFY_V1";
@@ -877,6 +899,10 @@ public class FakeCompanionLlm implements CompanionLlm {
     private final java.util.concurrent.atomic.AtomicInteger dayCloseLineCalls = new java.util.concurrent.atomic.AtomicInteger();
     public int dayCloseLineCallCount() { return dayCloseLineCalls.get(); }
 
+    /** Capacity event-score calls (B7 K1): ITs assert the score cache (same hash → no new call). */
+    private final java.util.concurrent.atomic.AtomicInteger capacityScoreCalls = new java.util.concurrent.atomic.AtomicInteger();
+    public int capacityScoreCallCount() { return capacityScoreCalls.get(); }
+
     /** Boop brief calls (mezo-r36n9.7): ITs assert the brief cache (same input hash → no new LLM call). */
     private final java.util.concurrent.atomic.AtomicInteger boopBriefCalls = new java.util.concurrent.atomic.AtomicInteger();
     public int boopBriefCallCount() { return boopBriefCalls.get(); }
@@ -1004,6 +1030,35 @@ public class FakeCompanionLlm implements CompanionLlm {
         return "{\"items\":[" + items + "]}";
     }
 
+    /**
+     * The weekly review narration (mezo-r36n9.120): scripted, or one valid, validator-clean entry per SECTION header —
+     * matters:true resting on the section's first story, no number, no holding name, no boundary word — so an IT can
+     * run the whole pipeline and get model-narrated sections.
+     */
+    private static String penzWeeklyAnswer(String userMessage) {
+        Matcher scripted = PENZ_WEEKLY_SCRIPT.matcher(userMessage);
+        if (scripted.find()) {
+            return new String(Base64.getDecoder().decode(scripted.group(1)), StandardCharsets.UTF_8);
+        }
+        StringBuilder sections = new StringBuilder();
+        Matcher section = PENZ_WEEKLY_SECTION.matcher(userMessage);
+        while (section.find()) {
+            Matcher story = PENZ_WEEKLY_STORY.matcher(userMessage);
+            String firstStory = story.find(section.end()) ? story.group(1) : null;
+            if (sections.length() > 0) {
+                sections.append(',');
+            }
+            sections.append("{\"sleeve\":\"").append(section.group(1)).append("\",\"matters\":")
+                .append(firstStory != null).append(",\"storyIds\":[")
+                .append(firstStory == null ? "" : "\"" + jsonEscape(firstStory) + "\"")
+                .append("],\"verdict\":\"A teszt-modell szerint volt a héten egy tartósnak látszó hír ennél a résznél.\",")
+                .append("\"body\":\"Ez a teszt-modell heti összefoglalója.\\n\\nA történeteket a rendszer csoportosította.\",")
+                .append("\"uncertainty\":\"Ez a teszt-modell válasza, a híreket valójában nem olvasta.\",")
+                .append("\"noAction\":\"A teszt-modell szerint ennél a résznél nincs teendőd.\"}");
+        }
+        return "{\"sections\":[" + sections + "]}";
+    }
+
     @Override
     public String complete(String systemPrompt, List<Turn> history, String userMessage,
                            List<ToolCallback> tools, Map<String, Object> toolContext) {
@@ -1033,6 +1088,25 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (userMessage.contains(FAIL_COMPLETE) || systemPrompt.contains(FAIL_COMPLETE)) {
             throw new IllegalStateException("FAKE-LLM forced complete failure");
         }
+        if (systemPrompt.startsWith(CAPACITY_SCORE_MARKER_MIRROR)) {
+            capacityScoreCalls.incrementAndGet();
+            if (userMessage.contains(CAPACITY_SLOW)) {
+                try {
+                    Thread.sleep(CAPACITY_SLOW_MS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new IllegalStateException("FAKE-LLM slow capacity call interrupted", e);
+                }
+            }
+            StringBuilder events = new StringBuilder();
+            Matcher ids = Pattern.compile("id=([0-9a-fA-F-]{36})").matcher(userMessage);
+            while (ids.find()) {
+                if (events.length() > 0) events.append(',');
+                events.append("{\"id\":\"").append(ids.group(1)).append("\",\"mental\":2,\"social\":1,")
+                    .append("\"physical\":0,\"restores\":false,\"kind\":\"meeting\",\"confidence\":0.8}");
+            }
+            return "{\"events\":[" + events + "]}";
+        }
         if (dayLine) {
             return DAY_LINE_CANNED_ANSWER;
         }
@@ -1055,6 +1129,12 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (systemPrompt.startsWith(PENZ_DIGEST_MARKER_MIRROR)) {
             penzDigestCalls.incrementAndGet();
             return penzDigestAnswer(userMessage);
+        }
+        if (systemPrompt.startsWith(PENZ_WEEKLY_MARKER_MIRROR)) {
+            penzWeeklyCalls.incrementAndGet();
+            lastPenzWeeklyUserMessage = userMessage;
+            String scripted = penzWeeklyScript.get();
+            return scripted == null ? penzWeeklyAnswer(userMessage) : scripted;
         }
         if (systemPrompt.startsWith(PENZ_PROPOSAL_MARKER_MIRROR)) {
             penzProposalCalls.incrementAndGet();

@@ -3,12 +3,14 @@ package io.mrkuhne.mezo.feature.season.service;
 import io.mrkuhne.mezo.feature.season.entity.SeasonAllowedRecipeEntity;
 import io.mrkuhne.mezo.feature.season.entity.SeasonDraftJson;
 import io.mrkuhne.mezo.feature.season.entity.SeasonEntity;
+import io.mrkuhne.mezo.feature.season.entity.SeasonExperimentEntity;
 import io.mrkuhne.mezo.feature.season.entity.SeasonNumbersJson;
 import io.mrkuhne.mezo.feature.season.entity.SeasonRevisionEntity;
 import io.mrkuhne.mezo.feature.season.port.SeasonGoalPort;
 import io.mrkuhne.mezo.feature.season.port.SeasonSleepPort;
 import io.mrkuhne.mezo.feature.season.port.SeasonTrainPort;
 import io.mrkuhne.mezo.feature.season.repository.SeasonAllowedRecipeRepository;
+import io.mrkuhne.mezo.feature.season.repository.SeasonExperimentRepository;
 import io.mrkuhne.mezo.feature.season.repository.SeasonRepository;
 import io.mrkuhne.mezo.feature.season.repository.SeasonRevisionRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
@@ -26,12 +28,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
  * The season lifecycle (spec §5.2, §5.3): create (planned, with its planned goal) → activate (goal, slots, sleep
  * need, block — one transaction; the previous active season closes) → apply previewed changes (fingerprint-checked,
  * one transaction, a revision row) → close. Only these and {@link #putRules} write; previews never do.
  */
+@lombok.extern.slf4j.Slf4j
 @Service
 @RequiredArgsConstructor
 public class SeasonService {
@@ -43,6 +48,8 @@ public class SeasonService {
     private final SeasonGoalPort goalPort;
     private final SeasonTrainPort trainPort;
     private final SeasonSleepPort sleepPort;
+    private final MenuService menuService;
+    private final SeasonExperimentRepository experimentRepository;
 
     public List<SeasonEntity> list(UUID owner) {
         return seasonRepository.findByCreatedByAndDeletedFalseOrderByStartDateDesc(owner);
@@ -83,6 +90,7 @@ public class SeasonService {
             prev.setClosedSummary(summary(prev));
             prev.setUpdatedAt(Instant.now());
             seasonRepository.saveAndFlush(prev); // the one-active index must see it closed first
+            releaseExperiments(prev);
         });
         s.setStatus(SeasonEntity.STATUS_ACTIVE);
         s.setSleepBaseMin(sleepBase);
@@ -128,7 +136,59 @@ public class SeasonService {
         seasonRepository.save(s);
         replaceAllowed(owner, s.getId(), draft.allowedOrEmpty());
         revision(owner, s, draft, preview.before(), preview.after());
+        if (SeasonEntity.STATUS_ACTIVE.equals(s.getStatus())) {
+            refitAfterCommit(owner); // spec §5.12-4: the rest of the menu follows the new budgets; past days stay
+        }
         return s;
+    }
+
+    /**
+     * Replaces the recipes the season allows („Kiválasztott receptek", Évad S3) — no kcal effect, so no preview. Ids
+     * that are not his recipes are dropped. The stored draft follows, so a later accept carries the same set.
+     */
+    @Transactional
+    public SeasonEntity putRecipes(UUID owner, UUID id, List<UUID> recipeIds, Set<UUID> his) {
+        SeasonEntity s = previewService.requireEditable(owner, id);
+        List<UUID> kept = new java.util.ArrayList<>(new LinkedHashSet<>(recipeIds == null ? List.of() : recipeIds));
+        kept.removeIf(r -> !his.contains(r));
+        replaceAllowed(owner, s.getId(), kept);
+        SeasonDraftJson d = s.getDraft();
+        if (d != null) {
+            s.setDraft(new SeasonDraftJson(d.title(), d.trajectory(), d.targetWeightKg(), d.ratePctPerWeek(), d.kgPerWeek(),
+                d.startDate(), d.weeks(), d.gymDays(), d.gymTime(), d.sport(), d.sleepAnchor(), List.copyOf(kept),
+                d.block()));
+        }
+        s.setUpdatedAt(Instant.now());
+        SeasonEntity saved = seasonRepository.save(s);
+        if (SeasonEntity.STATUS_ACTIVE.equals(s.getStatus())) {
+            refitAfterCommit(owner); // a recipe he no longer allows leaves the menu from tomorrow
+        }
+        return saved;
+    }
+
+    /**
+     * Re-fits the menu from tomorrow once this transaction has committed, in its own transaction, so a menu problem
+     * never rolls back his change (it is logged; the menu keeps its old meals, and the day plan stops offering a meal
+     * that no longer fits its window or his allowed recipes on its own).
+     */
+    private void refitAfterCommit(UUID owner) {
+        Runnable refit = () -> {
+            try {
+                menuService.refitInOwnTransaction(owner, LocalDate.now().plusDays(1));
+            } catch (RuntimeException e) {
+                log.warn("Menu re-fit after a season change failed for {}", owner, e);
+            }
+        };
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    refit.run();
+                }
+            });
+        } else {
+            refit.run();
+        }
     }
 
     /**
@@ -146,8 +206,25 @@ public class SeasonService {
             s.setStatus(SeasonEntity.STATUS_CLOSED);
             s.setClosedSummary(summary(s));
             s.setUpdatedAt(Instant.now());
+            releaseExperiments(s);
         }
         return s;
+    }
+
+    /**
+     * Évad S4: a season that ends takes its open experiment proposal and its running experiment with it (both
+     * dismissed — a half-run window is not evaluated). The Hatás tab reads per active season, but the one-running /
+     * one-proposed unique indexes are per owner, so leaving them open would block the next season's proposal and
+     * start. Done / kept rows stay with the old season.
+     */
+    private void releaseExperiments(SeasonEntity season) {
+        for (String status : List.of(SeasonExperimentEntity.STATUS_PROPOSED, SeasonExperimentEntity.STATUS_RUNNING)) {
+            for (SeasonExperimentEntity e : experimentRepository.findBySeasonIdAndStatus(season.getId(), status)) {
+                e.setStatus(SeasonExperimentEntity.STATUS_DISMISSED);
+                e.setUpdatedAt(Instant.now());
+                experimentRepository.saveAndFlush(e);
+            }
+        }
     }
 
     /** The season's switches — no kcal effect, so no preview. */
@@ -243,11 +320,28 @@ public class SeasonService {
         revisionRepository.save(r);
     }
 
+    /**
+     * Entity-level replace: rows no longer wanted are removed, new ones inserted, kept ones left alone. (A bulk JPQL
+     * delete followed by {@code save} of the same composite keys would merge into rows still managed in this
+     * persistence context and never re-insert them — the kept recipes would silently vanish.)
+     */
     private void replaceAllowed(UUID owner, UUID seasonId, List<UUID> recipeIds) {
-        allowedRepository.deleteBySeasonId(seasonId);
-        for (UUID recipeId : new LinkedHashSet<>(recipeIds)) {
-            allowedRepository.save(SeasonAllowedRecipeEntity.of(owner, seasonId, recipeId));
+        Set<UUID> wanted = new LinkedHashSet<>(recipeIds);
+        List<SeasonAllowedRecipeEntity> current = allowedRepository.findBySeasonId(seasonId);
+        Set<UUID> have = new HashSet<>();
+        for (SeasonAllowedRecipeEntity e : current) {
+            if (wanted.contains(e.getRecipeId())) {
+                have.add(e.getRecipeId());
+            } else {
+                allowedRepository.delete(e);
+            }
         }
+        for (UUID recipeId : wanted) {
+            if (!have.contains(recipeId)) {
+                allowedRepository.save(SeasonAllowedRecipeEntity.of(owner, seasonId, recipeId));
+            }
+        }
+        allowedRepository.flush();
     }
 
     private static void take(SeasonEntity s, SeasonDraftJson d) {

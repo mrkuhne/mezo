@@ -22,16 +22,23 @@ struct BlockBuilderPage: View {
     @State private var edit = DayEditUI()
     /// Today's open workout's day, from the caller: that day's card is read-only.
     let lockedDay: BlockBuilderModel.LockedDay?
+    /// „Új blokk" on the no-block state (mezo-r36n9.113): the caller presents the new-block flow.
+    let onNewBlock: (() -> Void)?
+    /// The muscle whose „miért?" sheet is up, presented at page level (boop-ios.md §9).
+    @State private var whyMuscle: String?
+    @State private var confirmDiscard = false
+    @State private var discarding = false
     #if DEBUG
     @State private var previewApplied = false
     #endif
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(model: BlockBuilderModel, initialMode: Mode = .izmok, lockedDay: BlockBuilderModel.LockedDay? = nil,
-         onClose: @escaping () -> Void) {
+         onNewBlock: (() -> Void)? = nil, onClose: @escaping () -> Void) {
         _model = State(initialValue: model)
         _mode = State(initialValue: initialMode)
         self.lockedDay = lockedDay
+        self.onNewBlock = onNewBlock
         self.onClose = onClose
         #if DEBUG
         // Simulator review: `-previewBlokkPicker YES` opens the picker on the first day's second exercise.
@@ -39,6 +46,8 @@ struct BlockBuilderPage: View {
         if let v = UserDefaults.standard.string(forKey: "previewBlokkPicker") {
             _picking = State(initialValue: TechniquePick(day: 0, exercise: Int(v) ?? 1))
         }
+        // `-previewBlokkWhy back` opens the „miért?" sheet of that muscle.
+        if let m = UserDefaults.standard.string(forKey: "previewBlokkWhy") { _whyMuscle = State(initialValue: m) }
         #endif
     }
 
@@ -48,8 +57,14 @@ struct BlockBuilderPage: View {
             case .loading:
                 PlanStateView(title: "Betöltöm a blokkot", text: "Egy pillanat, lekérem a terved és az értékelését.", loading: true, onClose: onClose)
             case .noBlock:
-                PlanStateView(title: "Nincs futó blokkod", text: "Az építő a futó blokkodat állítja. Amint elindul egy, itt tudod igazítani.",
-                              mark: .calendar, onClose: onClose)
+                if let onNewBlock {
+                    PlanStateView(title: "Nincs futó blokkod",
+                                  text: "Indíts egy újat: megmondod, hány hétre és mennyi időd van egy edzésre, én pedig hozok két-három lehetőséget, mindegyiknél azzal, hogy miért.",
+                                  mark: .calendar, action: ("Új blokk", onNewBlock), onClose: onClose)
+                } else {
+                    PlanStateView(title: "Nincs futó blokkod", text: "Az építő a futó blokkodat állítja. Amint elindul egy, itt tudod igazítani.",
+                                  mark: .calendar, onClose: onClose)
+                }
             case .failed(let e):
                 PlanStateView(title: "Most nem tudom betölteni", text: planErrorText(e), mark: .shield,
                               action: ("Újra", { Task { await model.load() } }), onClose: onClose)
@@ -67,14 +82,16 @@ struct BlockBuilderPage: View {
             PlanSky(height: 150)
             VStack(spacing: 0) {
                 head
+                if model.justCreated { justCreatedLine }
+                if let data = budgetData { PlanBudgetCard(data: data, compact: true).padding(.horizontal, 20).padding(.bottom, 8) }
                 if model.evaluation == nil {
                     evaluationMissing
                 } else {
                     Group {
                         switch mode {
-                        case .izmok: BuilderMusclesView(model: model, selected: $muscle)
+                        case .izmok: BuilderMusclesView(model: model, selected: $muscle) { whyMuscle = $0 }
                         case .napok: BuilderDaysView(model: model, ui: edit, day: $day) { picking = $0 }
-                        case .blokk: BuilderBlockView(model: model)
+                        case .blokk: BuilderBlockView(model: model) { whyMuscle = $0 }
                         }
                     }
                     // Edits made while a save is on its way would be overwritten by the re-read after it.
@@ -85,8 +102,8 @@ struct BlockBuilderPage: View {
                 Group {
                     switch sheet {
                     case .settings(let id): DayEditSettingsSheet(model: model, rowId: id)
-                    case .add(let d, let muscle):
-                        DayEditAddSheet(model: model, day: d, muscle: muscle) { item, rx in
+                    case .add(let d, let muscles, let open):
+                        DayEditAddSheet(model: model, day: d, muscles: muscles, open: open) { item, rx in
                             guard let c = item.asCatalog else { return }
                             withAnimation(reduceMotion ? nil : .snappy) { model.draft?.add(day: d, catalog: c, prescription: rx) }
                             edit.structuralEdit(day: d)
@@ -117,6 +134,25 @@ struct BlockBuilderPage: View {
                                 onClose: { picking = nil })
             }
         }
+        .sheet(item: Binding(get: { whyMuscle.flatMap { m in model.muscle(m).map { WhyPick(muscle: $0) } } },
+                             set: { whyMuscle = $0?.muscle.muscle })) { pick in
+            MuscleWhySheet(muscle: pick.muscle, tier: model.draft?.tier(pick.muscle.muscle) ?? .grow,
+                           dayName: { model.draft?.days[safe: $0]?.name },
+                           weekday: { model.draft?.days[safe: $0]?.weekdayIndex })
+                .presentationDetents([.large])
+                .presentationBackground(NK.ground)
+                .presentationCornerRadius(34)
+                .presentationDragIndicator(.visible)
+        }
+        .confirmationDialog("Eldobod az új blokkot?", isPresented: $confirmDiscard, titleVisibility: .visible) {
+            Button("Eldobom", role: .destructive) {
+                discarding = true
+                Task { await model.discard(); discarding = false }
+            }
+            Button("Mégsem", role: .cancel) {}
+        } message: {
+            Text("A terv törlődik.")
+        }
         .confirmationDialog("Elveted a változtatásokat?", isPresented: $confirmLeave, titleVisibility: .visible) {
             Button("Elvetem", role: .destructive, action: onClose)
             Button("Maradok", role: .cancel) {}
@@ -134,6 +170,37 @@ struct BlockBuilderPage: View {
         #endif
     }
 
+    /// The heti keret line under the head: only with a session-minutes target and the server's capacity.
+    private var budgetData: PlanBudget? {
+        guard let draft = model.draft else { return nil }
+        return PlanBudget(model.evaluation?.budget, evaluation: model.evaluation, tier: { draft.tier($0) },
+                          minutes: model.minutesTarget, days: draft.days.filter { !$0.exercises.isEmpty }.count,
+                          emphasized: draft.tiers.values.filter { $0 == .emphasize }.count)
+    }
+
+    /// A block the new-block flow created a moment ago: he may still throw it away.
+    private var justCreatedLine: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Button { confirmDiscard = true } label: {
+                Group {
+                    if discarding { ProgressView().tint(.white) } else {
+                        Text("Mégsem, eldobom").nkFont(14, .medium).foregroundStyle(.white.opacity(0.8))
+                    }
+                }
+                .padding(.horizontal, 18).frame(minHeight: 40)
+                .background(Capsule().stroke(.white.opacity(0.28), lineWidth: 1))
+                .contentShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            .disabled(discarding)
+            if let e = model.discardError {
+                Text(planErrorText(e)).nkFont(12.5).foregroundStyle(planWarn).fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 20).padding(.bottom, 10)
+    }
+
     private func save() {
         edit.menuRow = nil
         Task {
@@ -144,7 +211,7 @@ struct BlockBuilderPage: View {
 
     #if DEBUG
     /// Simulator review of the day editor (boop-ios.md, preview flags): `-previewBlokkEdit
-    /// default|menu|settings|add|swap|undo|empty|locked|confirm`, `-previewBlokkDay N` for the day page.
+    /// default|menu|settings|add|addOpen|addEmpty|swap|undo|empty|locked|confirm`, `-previewBlokkDay N` for the day page.
     private func applyPreviewEdit() {
         guard !previewApplied, model.evaluation != nil, let draft = model.draft,
               let state = UserDefaults.standard.string(forKey: "previewBlokkEdit") else { return }
@@ -171,7 +238,9 @@ struct BlockBuilderPage: View {
             try? await Task.sleep(for: .milliseconds(500))
             switch state {
             case "settings": if let id = rows.first?.id { edit.sheet = .settings(id) }
-            case "add": edit.sheet = .add(d, muscle: "back")
+            case "add": edit.sheet = .add(d, muscles: ["back-mid", "chest-upper"])
+            case "addOpen": edit.sheet = .add(d, muscles: ["back-wide", "back-mid", "chest-upper", "chest-mid", "chest-lower"], open: true)
+            case "addEmpty": edit.sheet = .add(d)
             case "swap": if let id = rows.first?.id { edit.sheet = .swap(id) }
             case "confirm": edit.confirm = true
             default: break
@@ -330,11 +399,18 @@ struct BlockBuilderPage: View {
     }
 }
 
+/// The muscle whose „miért?" sheet is up.
+private struct WhyPick: Identifiable {
+    let muscle: WireMuscleEvaluation
+    var id: String { muscle.muscle }
+}
+
 // MARK: - Izmok: the body, and one muscle a card
 
 private struct BuilderMusclesView: View {
     let model: BlockBuilderModel
     @Binding var selected: String?
+    let openWhy: (String) -> Void
 
     var body: some View {
         let muscles = model.bandedMuscles
@@ -355,7 +431,7 @@ private struct BuilderMusclesView: View {
             ScrollView(.horizontal) {
                 LazyHStack(spacing: 14) {
                     ForEach(muscles, id: \.muscle) { m in
-                        BuilderMuscleCard(model: model, muscle: m.muscle)
+                        BuilderMuscleCard(model: model, muscle: m.muscle, openWhy: openWhy)
                             .containerRelativeFrame(.horizontal)
                             .scrollTransition(.interactive, axis: .horizontal) { view, phase in
                                 view.scaleEffect(phase.isIdentity ? 1 : 0.92).opacity(phase.isIdentity ? 1 : 0.55)
@@ -387,7 +463,7 @@ private struct BuilderMusclesView: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(planMuscleName(m.muscle))
+                .accessibilityLabel(SubMuscles.groupName(m.muscle))
             }
         }
         .padding(.vertical, 2)
@@ -398,7 +474,10 @@ private struct BuilderMusclesView: View {
 private struct BuilderMuscleCard: View {
     let model: BlockBuilderModel
     let muscle: String
+    let openWhy: (String) -> Void
     @State private var why = false
+    /// Why the raise he just tried does not fit now (mezo-r36n9.113).
+    @State private var blocked: String?
 
     var body: some View {
         if let m = model.muscle(muscle), let draft = model.draft {
@@ -407,11 +486,22 @@ private struct BuilderMuscleCard: View {
             ScrollView {
                 VStack(spacing: 12) {
                     HStack(alignment: .firstTextBaseline) {
-                        Text(planMuscleName(muscle)).nkFont(26, design: .serif).foregroundStyle(.white)
+                        Text(SubMuscles.groupName(muscle)).nkFont(26, design: .serif).foregroundStyle(.white)
                         Spacer()
                         Text(verdict(m)).nkFont(13, .medium).foregroundStyle(inside ? planGood : planWarn)
                     }
-                    BuilderTierSwitch(tier: tier) { model.draft?.setTier(muscle, $0) }
+                    PlanTierSwitch(tier: tier, disabled: { RaiseCheck.rank($0.rawValue) > RaiseCheck.rank(tier.rawValue) && model.canRaise(muscle) != .ok }) {
+                        let result = model.setTier(muscle, $0)
+                        blocked = planRaiseText(result, emphasizeMax: model.evaluation?.budget?.emphasizeMax ?? 2)
+                    }
+                    if let blocked {
+                        HStack(alignment: .top, spacing: 8) {
+                            PlanMark(.shield, color: planWarn, size: 14).padding(.top, 2)
+                            Text(blocked).nkFont(13).foregroundStyle(planWarn).fixedSize(horizontal: false, vertical: true)
+                            Spacer(minLength: 0)
+                        }
+                        .transition(.opacity)
+                    }
 
                     PlanArcGauge(value: m.weeklySets, band: m.band, inside: inside)
                         .frame(height: 124)
@@ -489,16 +579,26 @@ private struct BuilderMuscleCard: View {
         .accessibilityElement(children: .combine)
     }
 
-    /// Why this muscle has this band — always on the card, in his numbers.
+    /// Why this muscle has this band — always on the card, in his numbers; a tap opens the „miért?" sheet.
     private func bandReason(_ m: WireMuscleEvaluation, tier: MuscleTier, inside: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("MIÉRT EZ A SÁV").nkFont(10, .semibold, design: .monospaced).tracking(1.3).foregroundStyle(planHue.glow)
-            Text(reasonText(m, tier: tier, inside: inside))
-                .nkFont(13).foregroundStyle(.white.opacity(0.75))
-                .fixedSize(horizontal: false, vertical: true)
+        Button { openWhy(m.muscle) } label: {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text("MIÉRT EZ A SÁV").nkFont(10, .semibold, design: .monospaced).tracking(1.3).foregroundStyle(planHue.glow)
+                    Spacer()
+                    Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold)).foregroundStyle(.white.opacity(0.4))
+                }
+                Text(reasonText(m, tier: tier, inside: inside))
+                    .nkFont(13).foregroundStyle(.white.opacity(0.75))
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.white.opacity(0.05)))
+            .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         }
-        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.white.opacity(0.05)))
+        .buttonStyle(.plain)
+        .accessibilityHint("Megmutatja, miért ennyi")
     }
 
     private func reasonText(_ m: WireMuscleEvaluation, tier: MuscleTier, inside: Bool) -> String {
@@ -537,31 +637,6 @@ private struct BuilderMuscleCard: View {
         return "Javaslat: " + parts.joined(separator: " · ")
     }
 
-}
-
-/// Tartás · Építés · Hangsúly as one switch, the chosen one lit in its own colour.
-private struct BuilderTierSwitch: View {
-    let tier: MuscleTier
-    let set: (MuscleTier) -> Void
-    private let all: [MuscleTier] = [.maintain, .grow, .emphasize]
-
-    var body: some View {
-        HStack(spacing: 4) {
-            ForEach(all, id: \.self) { item in
-                Button { withAnimation(.snappy) { set(item) } } label: {
-                    Text(item.hungarian).nkFont(13, .semibold)
-                        .foregroundStyle(item == tier ? NK.ground : .white.opacity(0.7))
-                        .frame(maxWidth: .infinity, minHeight: 36)
-                        .background { if item == tier { Capsule().fill(item == .maintain ? .white : planTierColor(item)) } }
-                        .contentShape(Capsule())
-                }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(item == tier ? .isSelected : [])
-            }
-        }
-        .padding(4)
-        .background(Capsule().fill(.white.opacity(0.08)))
-    }
 }
 
 // MARK: - Napok: one day a page
@@ -668,7 +743,7 @@ private struct BuilderDayCard: View {
                     if locked { lockLine }
                     if !day.exercises.isEmpty { muscleChips(evaluation) }
                     ForEach(Array((evaluation?.sessionCapWarnings ?? []).enumerated()), id: \.offset) { _, w in
-                        Text("\(planMuscleName(w.muscle ?? "")): \(w.sets) sorozat egy edzésen. \(w.cap) fölött már nem ad többet, oszd el két napra.")
+                        Text("\(SubMuscles.groupName(w.muscle ?? "")): \(w.sets) sorozat egy edzésen. \(w.cap) fölött már nem ad többet, oszd el két napra.")
                             .nkFont(13).foregroundStyle(planWarn).fixedSize(horizontal: false, vertical: true)
                     }
                     if !draft.techniquesEnabled, !locked, day.exercises.contains(where: { $0.stable && $0.judged }) {
@@ -740,7 +815,7 @@ private struct BuilderDayCard: View {
                 let sets = model.sets(m.muscle, day: index)
                 let over = evaluation?.sessionCapWarnings.contains { $0.muscle == m.muscle } == true
                 HStack(spacing: 6) {
-                    Text(planMuscleName(m.muscle)).nkFont(12, .medium).foregroundStyle(.white.opacity(0.85))
+                    Text(SubMuscles.groupName(m.muscle)).nkFont(12, .medium).foregroundStyle(.white.opacity(0.85))
                     Text("\(sets)").nkFont(13, .semibold).foregroundStyle(over ? planWarn : planHue.glow)
                         .contentTransition(.numericText())
                 }
@@ -798,8 +873,7 @@ private struct BuilderDayCard: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(exercise.name).nkFont(16, .medium).foregroundStyle(.white.opacity(locked ? 0.7 : 0.95))
                 .lineLimit(2).minimumScaleFactor(0.85).fixedSize(horizontal: false, vertical: true)
-            Text(subtitle(exercise)).nkFont(12).foregroundStyle(capped ? planWarn : .white.opacity(0.5))
-                .fixedSize(horizontal: false, vertical: true)
+            subtitle(exercise).nkFont(12).foregroundStyle(capped ? planWarn : .white.opacity(0.5))
             if exercise.judged, draft.techniquesEnabled, !locked {
                 // One pill, whatever is chosen: the row keeps its height when he picks (owner, 2026-11-19).
                 BuilderTechniqueChip(exercise: exercise) { ui.menuRow = nil; pick(TechniquePick(day: index, exercise: e)) }
@@ -814,11 +888,23 @@ private struct BuilderDayCard: View {
         .accessibilityHint(locked ? "" : "Beállítások")
     }
 
-    /// `<izom> · <min>–<max> ism. · <r> tartalék`, from the row's own numbers (his edits show at once).
-    private func subtitle(_ exercise: DraftExercise) -> String {
-        guard exercise.counts, exercise.type != "plyo" else { return "ugrás · nem számít a sorozatokba" }
-        let reserve = exercise.targetRIR == 0 ? "bukásig" : "\(exercise.targetRIR) tartalék"
-        return "\(planMuscleName(exercise.muscle)) · \(exercise.repMin)–\(exercise.repMax) ism. · \(reserve)"
+    /// `<izomrész> · <min>–<max> ism. · <r> tartalék` from the row's own numbers (his edits show at once) — one line
+    /// when it fits, else the sub-muscle above the numbers, never a break inside „10–12 ism." (mezo-r36n9.127).
+    @ViewBuilder private func subtitle(_ exercise: DraftExercise) -> some View {
+        if exercise.counts, exercise.type != "plyo" {
+            let reserve = exercise.targetRIR == 0 ? "bukásig" : "\(exercise.targetRIR) tartalék"
+            let muscle = SubMuscles.name(exercise.muscleKey)
+            let numbers = "\(exercise.repMin)–\(exercise.repMax) ism. · \(reserve)"
+            ViewThatFits(in: .horizontal) {
+                Text("\(muscle) · \(numbers)").lineLimit(1).fixedSize()
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(muscle).fixedSize(horizontal: false, vertical: true)
+                    Text(numbers).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        } else {
+            Text("ugrás · nem számít a sorozatokba").fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     private func stepper(_ exercise: DraftExercise, _ e: Int, locked: Bool) -> some View {
@@ -950,7 +1036,7 @@ private struct BuilderDayCard: View {
     }
 
     private var addRow: some View {
-        Button { ui.menuRow = nil; ui.sheet = .add(index, muscle: nil) } label: {
+        Button { ui.menuRow = nil; ui.sheet = .add(index) } label: {
             HStack(spacing: 12) {
                 Text("+").nkFont(19, .medium).foregroundStyle(planHue.glow)
                     .frame(width: 34, height: 34)
@@ -972,11 +1058,13 @@ private struct BuilderTechniqueChip: View {
     let open: () -> Void
 
     var body: some View {
-        if !exercise.stable {
+        // A free-weight row takes no technique, but since decision #72 a free-weight isolation may still take the day's
+        // challenge: the chip then opens the picker (techniques dimmed with their reason, the challenge selectable).
+        if let quiet = exercise.techniqueLockLabel {
             // Not `PlanPill`: its fixed width would push the editor row (handle, stepper, ⋯) past the card.
             HStack(spacing: 5) {
                 PlanMark(.shield, color: .white.opacity(0.4), size: 13)
-                Text("szabadsúly · nincs technika").nkFont(12, .medium).foregroundStyle(.white.opacity(0.4))
+                Text(quiet).nkFont(12, .medium).foregroundStyle(.white.opacity(0.4))
                     .lineLimit(1).minimumScaleFactor(0.8)
             }
             .padding(.horizontal, 10).padding(.vertical, 5)
@@ -1030,6 +1118,7 @@ private struct BuilderTechniqueChip: View {
 
 private struct BuilderBlockView: View {
     let model: BlockBuilderModel
+    let openWhy: (String) -> Void
     /// Leaving „Két sorozat bukásig" keeps every exercise at its two sets — he is asked before.
     @State private var leavingAllout: BlockStyle?
 
@@ -1043,6 +1132,7 @@ private struct BuilderBlockView: View {
                     .nkFont(14).foregroundStyle(.white.opacity(0.75)).fixedSize(horizontal: false, vertical: true)
 
                 styleChoice(draft)
+                minutesChoice
                 switches(draft)
 
                 HStack(alignment: .bottom, spacing: 8) {
@@ -1082,9 +1172,10 @@ private struct BuilderBlockView: View {
                         if i > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
                         let values = path.map { $0.muscles[m.muscle] ?? 0 }
                         let top = Double(max(1, values.max() ?? 1))
+                        Button { openWhy(m.muscle) } label: {
                         HStack(spacing: 10) {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(planMuscleName(m.muscle)).nkFont(15, .medium).foregroundStyle(.white.opacity(0.95))
+                                Text(SubMuscles.groupName(m.muscle)).nkFont(15, .medium).foregroundStyle(.white.opacity(0.95))
                                 PlanTierPill(tier: draft?.tier(m.muscle) ?? .grow)
                             }
                             .frame(width: 104, alignment: .leading)
@@ -1101,10 +1192,16 @@ private struct BuilderBlockView: View {
                                 }
                             }
                             .frame(height: 50, alignment: .bottom)
+                            Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold)).foregroundStyle(.white.opacity(0.35))
                         }
                         .padding(.vertical, 10)
+                        .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
                         .accessibilityElement(children: .ignore)
-                        .accessibilityLabel("\(planMuscleName(m.muscle)): \(values.map(String.init).joined(separator: ", ")) sorozat hetente")
+                        .accessibilityLabel("\(SubMuscles.groupName(m.muscle)): \(values.map(String.init).joined(separator: ", ")) sorozat hetente")
+                        .accessibilityHint("Megmutatja, miért ennyi")
+                        .accessibilityAddTraits(.isButton)
                     }
                 }
                 .padding(.horizontal, 18).padding(.vertical, 6).nkGlass(26)
@@ -1156,6 +1253,36 @@ private struct BuilderBlockView: View {
         } message: {
             Text("A „Két sorozat bukásig” módban minden gyakorlat két sorozatos. Váltás után is kettőn maradnak — a Napok fülön vagy az „Igazítsd a sávba” gombbal emelheted vissza őket.")
         }
+    }
+
+    /// How long a session may last (mezo-r36n9.113): the evaluator's capacity, the heti keret line under the head.
+    /// Not saved with the block; „Nincs" hides the keret.
+    private var minutesChoice: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("MEDDIG TARTHAT EGY EDZÉS").nkFont(10, .semibold, design: .monospaced).tracking(1.3).foregroundStyle(planHue.glow)
+            HStack(spacing: 6) {
+                // A target outside the choices (an intake fix's 105) shows as its own, selected pill.
+                ForEach(Array(Set(NewBlockModel.minuteChoices + [model.minutesTarget].compactMap { $0 })).sorted(), id: \.self) { m in
+                    minutesPill("\(m)", sub: "perc", on: model.minutesTarget == m) { model.minutesTarget = m }
+                }
+                minutesPill("Nincs", sub: nil, on: model.minutesTarget == nil) { model.minutesTarget = nil }
+            }
+        }
+        .sensoryFeedback(.selection, trigger: model.minutesTarget)
+    }
+
+    private func minutesPill(_ text: String, sub: String?, on: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 1) {
+                Text(text).nkFont(16, .medium).foregroundStyle(on ? NK.ground : .white).lineLimit(1).minimumScaleFactor(0.7)
+                if let sub { Text(sub).nkFont(10, design: .monospaced).foregroundStyle(on ? NK.ground.opacity(0.7) : .white.opacity(0.5)) }
+            }
+            .frame(maxWidth: .infinity, minHeight: 48)
+            .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(on ? Color.white : .white.opacity(0.09)))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(on ? .isSelected : [])
     }
 
     /// The block's two switches: techniques, and who approves the week.

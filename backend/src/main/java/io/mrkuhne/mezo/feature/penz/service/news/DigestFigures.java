@@ -138,6 +138,11 @@ public record DigestFigures(DigestKind kind, String sleeve, long effectHufMinor,
      * allowed only inside it (security review #3). Null without a sleeve.
      */
     public Pattern horizonPhrase() {
+        return horizonPhrase(sleeve);
+    }
+
+    /** {@link #horizonPhrase()} of any sleeve (short|mid|long); null otherwise. */
+    public static Pattern horizonPhrase(String sleeve) {
         if (sleeve == null) {
             return null;
         }
@@ -204,7 +209,7 @@ public record DigestFigures(DigestKind kind, String sleeve, long effectHufMinor,
         return BigDecimal.valueOf(minor).divide(HUNDRED, 0, RoundingMode.HALF_UP).longValueExact();
     }
 
-    private static String group(long n) {
+    static String group(long n) {
         String s = Long.toString(n);
         StringBuilder sb = new StringBuilder();
         int lead = s.length() % 3;

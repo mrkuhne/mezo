@@ -19,7 +19,8 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 | [appnotification](#appnotification) | ✓ | 1 | [_platform-notifications](features/_platform-notifications.md) |
 | [auth](#auth) | ✓ | 2 | [_platform-auth-security](features/_platform-auth-security.md), [_platform-language](features/_platform-language.md) |
 | [biometrics](#biometrics) | ✓ | 6 | [me](features/me.md) |
-| [boop](#boop) | ✓ | 1 | [boop-ios](features/boop-ios.md) |
+| [boop](#boop) | ✓ | 1 | [boop-ios](features/boop-ios.md), [capacity](features/capacity.md) |
+| [capacity](#capacity) | ✓ | 1 | [capacity](features/capacity.md) |
 | [character](#character) | ✓ | 1 | [character](features/character.md) |
 | [companion](#companion) | ✓ | 5 | [character](features/character.md), [companion](features/companion.md), [dayclose](features/dayclose.md), [journal](features/journal.md), [lifegoal](features/lifegoal.md), [mail](features/mail.md), [me](features/me.md), [penz](features/penz.md), [today](features/today.md), [_platform-language](features/_platform-language.md) |
 | [dayclose](#dayclose) | ✓ | 1 | [boop-ios](features/boop-ios.md), [dayclose](features/dayclose.md) |
@@ -37,14 +38,14 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 | [notification](#notification) | ✓ | 1 | [_platform-notifications](features/_platform-notifications.md) |
 | [nutrition](#nutrition) | ✓ | 2 | [fuel](features/fuel.md) |
 | [pantry](#pantry) | ✓ | 1 | [pantry](features/pantry.md) |
-| [penz](#penz) | ✓ | 5 | [penz](features/penz.md) |
+| [penz](#penz) | ✓ | 6 | [penz](features/penz.md) |
 | [people](#people) | ✓ | 1 | [me](features/me.md) |
 | [proactive](#proactive) | ✓ | 2 | [contextual-feed-evaluation](features/contextual-feed-evaluation.md), [proactive](features/proactive.md) |
 | [recipe](#recipe) | ✓ | 4 | [recipe](features/recipe.md) |
 | [ritual](#ritual) | ✓ | 1 | [ritual](features/ritual.md) |
 | [season](#season) | ✓ | 1 | [season](features/season.md) |
 | [train](#train) | ✓ | 5 | [fuel](features/fuel.md), [goal-engine](features/goal-engine.md), [season](features/season.md), [train](features/train.md) |
-| [wearable](#wearable) | ✓ | 1 | [boop-ios](features/boop-ios.md) |
+| [wearable](#wearable) | ✓ | 1 | [boop-ios](features/boop-ios.md), [capacity](features/capacity.md) |
 
 ## Features
 
@@ -137,7 +138,8 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### boop
 
-*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-21, in-progress)
+*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-21, in-progress) ·
+  [docs/features/capacity.md](features/capacity.md) (updated 2026-11-21, in-progress)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/boop`
   - **sub-features:** `port`
@@ -148,17 +150,48 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   - **controllers→contract:** `BoopController`→`BoopApi`
   - **mappers:** `BoopBriefMapper`
   - **config:** `BoopProperties`
-  - **other:** `SeasonContextPort`
+  - **other:** `BoopCapacityPort`, `SeasonContextPort`
 - **Contract** `api/feature/boop/boop.yml` — 4 operations
   - **endpoints:** GET /api/boop/brief · POST /api/boop/brief/regenerate · PUT /api/boop/session-time ·
     DELETE /api/boop/session-time
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/boop` — 9 IT + 6 unit
-  - **ITs:** `BoopBriefConcurrencyIT`, `BoopBriefLateWordsIT`, `BoopBriefServiceIT`, `BoopContractIT`,
-    `BoopDayAssemblerIT`, `BoopRepositoriesIT`, `BoopSessionDoneIT`, `BoopVerdictWriterIT`, `SessionTimeIT`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/boop` — 11 IT + 8 unit
+  - **ITs:** `BoopBriefCapacityIT`, `BoopBriefCapacityOffIT`, `BoopBriefConcurrencyIT`, `BoopBriefLateWordsIT`,
+    `BoopBriefServiceIT`, `BoopContractIT`, `BoopDayAssemblerIT`, `BoopRepositoriesIT`, `BoopSessionDoneIT`,
+    `BoopVerdictWriterIT`, `SessionTimeIT`
   - **populators:** `BoopBriefPopulator`, `CalendarEventPopulator`, `CheckInPopulator`, `DailyMetricPopulator`,
     `DatabasePopulator`, `IntentionPopulator`, `MealPopulator`, `PatternPopulator`, `RecoveryPeriodPopulator`,
     `SleepGoalPopulator`, `SleepLogPopulator`, `TrainPopulator`, `WearableWorkoutPopulator`, `WeightLogPopulator`,
     `WorkoutTimeOverridePopulator`
+
+### capacity
+
+*BE + API* · read next: [docs/features/capacity.md](features/capacity.md) (updated 2026-11-21, in-progress)
+
+- **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/capacity`
+  - **sub-features:** `port`
+  - **entities→tables:** `CalendarEventScoreEntity`→`calendar_event_score`,
+    `CapacityEventFeedbackEntity`→`capacity_event_feedback`, `CapacityPatternEntity`→`capacity_pattern`,
+    `CapacityProposalEntity`→`capacity_proposal`, `DayAdjustmentEntity`→`day_adjustment`
+  - **repositories:** `CalendarEventScoreRepository`, `CapacityEventFeedbackRepository`, `CapacityPatternRepository`,
+    `CapacityProposalRepository`, `DayAdjustmentRepository`
+  - **services:** `BoopCapacityAdapter`, `CapacityCalculator`, `CapacityCalendarAdapter`, `CapacityCheckinAdapter`,
+    `CapacityContextAdapter`, `CapacityContextRenderer`, `CapacityDay`, `CapacityDayService`, `CapacityMealAdapter`,
+    `CapacityMetricsAdapter`, `CapacityReasonFacts`, `CapacitySeasonAdapter`, `CapacitySleepAdapter`,
+    `CapacityTrainAdapter`, `DemandCalculator`, `EventFeedbackService`, `EventScore`, `EventScoringRunner`,
+    `EventScoringService`, `LearningState`, `RuleEventScore`, `SeasonLoadModel`, `SeasonLoadService`, `Verdicts`
+  - **controllers→contract:** `CapacityController`→`CapacityApi`
+  - **mappers:** `CapacitySeasonMapper`
+  - **config:** `CapacityProperties`
+  - **other:** `AdjustmentKind`, `CapacityCalendarPort`, `CapacityCheckinPort`, `CapacityMealPort`,
+    `CapacityMetricsPort`, `CapacitySeasonPort`, `CapacitySleepPort`, `CapacityTrainPort`, `FeedbackEffect`,
+    `ScoreSource`
+- **Contract** `api/feature/capacity/capacity.yml` — 2 operations
+  - **endpoints:** PUT /api/capacity/event-feedback · GET /api/capacity/season
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/capacity` — 7 IT + 9 unit
+  - **ITs:** `CapacityContextAdapterIT`, `CapacityDayServiceIT`, `CapacityFeedbackIT`, `CapacityRepositoryIT`,
+    `CapacitySeasonIT`, `EventScoringBackgroundIT`, `EventScoringServiceIT`
+  - **populators:** `CalendarEventPopulator`, `DailyMetricPopulator`, `DatabasePopulator`, `RecoveryPeriodPopulator`,
+    `SleepLogPopulator`, `TrainPopulator`
 
 ### character
 
@@ -277,7 +310,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-11-19, in-progress) ·
   [docs/features/mail.md](features/mail.md) (updated 2026-11-21, done) ·
   [docs/features/me.md](features/me.md) (updated 2026-11-20, mixed) ·
-  [docs/features/penz.md](features/penz.md) (updated 2026-11-20, done) ·
+  [docs/features/penz.md](features/penz.md) (updated 2026-11-21, done) ·
   [docs/features/today.md](features/today.md) (updated 2026-11-19, mixed) ·
   [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-11-21, mixed)
 
@@ -372,34 +405,35 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   - **events/listeners:** `DecisionEmbeddingListener`, `GratitudeEmbeddingListener`, `JournalEmbeddingListener`,
     `LifeGoalStatusChangedEvent`, `ReflectionEmbeddingListener`, `TurnEmbeddingListener`
   - **other:** `ActionClaimCheck`, `AcuteBadDayRule`, `AdvisedAnswer`, `AdvisorRetry`, `AdvisorViolation`,
-    `AllHealthyRule`, `BiometricsTools`, `CharacterPromptSource`, `ChatHistory`, `ChatMemoryItem`,
-    `CheckInNoteSourceAdapter`, `ClinicalOutputCheck`, `CompanionAdvisorChain`, `CompanionHelloRunner`, `CompanionLlm`,
-    `CompanionToolRegistry`, `ConsumerPolicy`, `ConversationContextTools`, `CravingStreakRule`, `DayCloseLlmAdapter`,
-    `DayReviewJson`, `DayReviewLlmAdapter`, `DayTools`, `EmbeddingFailure`, `EmbeddingPort`, `EnergyDipMealTimingRule`,
-    `FactMergeJob`, `FactMergeJudge`, `FactMergePlanner`, `FactMergeService`, `FactOwner`, `FakeCompanionLlm`,
-    `FakeEmbeddingAdapter`, `FakeFactMerge`, `FeedContextTools`, `FeedbackRollupStatsEnvelope`, `FlagPayloadEnvelope`,
-    `ForgottenMemoriesEnvelope`, `FuelModeText`, `FuelTools`, `GeminiCompanionLlm`, `GeminiEmbeddingAdapter`,
-    `GoalTools`, `GoogleGenAiUsageExtractor`, `GraphEdgeEvidence`, `GraphProposedEdge`, `HabitSuggestLlmAdapter`,
-    `HighlightCitationSource`, `IgnoredNudgeRule`, `InsightsTools`, `JointOveruseRule`, `KnowledgeBackfillRunner`,
-    `LateEatingRule`, `LifeGoalGraphSource`, `LifeGoalProposeLlmAdapter`, `LifeGoalProposePort`, `LifeGoalSource`,
-    `LifeGoalText`, `LifeGoalTools`, `LlmModelRouter`, `LlmRoundUsage`, `LlmRoundUsageAdvisor`, `LlmUsageExtractor`,
-    `LoadFuelMismatchRule`, `LoggingGapRule`, `MailClassifierLlmAdapter`, `MealCoachLlmAdapter`, `MealDraftLlmAdapter`,
-    `MealRhythmDriftRule`, `MedicationTools`, `MemoryCandidate`, `MemoryContext`, `MemoryContextItem`,
-    `MemoryEmbeddingWriter`, `MemoryProvenanceEnvelope`, `MemoryRequest`, `MemoryTools`, `MesoPlanLlmAdapter`,
-    `MissedWorkoutsRule`, `MomentumAtRiskRule`, `MotivationSlumpRule`, `NarrativeNoteSource`, `NoteEmbeddingCatchUp`,
-    `NoteMentionCatchUp`, `OpenAiCompanionLlm`, `OpenAiEmbeddingAdapter`, `OpenAiUsageExtractor`,
-    `OutputLanguageDirective`, `PantryEstimateLlmAdapter`, `PantryPhotoLlmAdapter`, `PantryScrapeLlmAdapter`,
-    `PatternCritiqueEnvelope`, `PatternEventPayloadEnvelope`, `PatternEvidenceEnvelope`, `PenzDigestLlmAdapter`,
-    `PenzProposalLlmAdapter`, `PenzSmsLlmAdapter`, `PersistentPainRule`, `PersonalRecordTools`, `PoorRestednessRule`,
-    `PracticeTools`, `PreparedMemoryQuery`, `ProfileMetaEnvelope`, `ProtocolLapseRule`, `QueryMode`,
-    `RapidWeightLossRule`, `RecalledMemoriesEnvelope`, `RecipeBreakdownLlmAdapter`, `RecipeCookedLlmAdapter`,
-    `RecipeImportLlmAdapter`, `RecipeWorkshopLlmAdapter`, `RecordingToolCallback`, `RecoveryNeededRule`,
-    `RefsEnvelope`, `RetrievalInput`, `RetrievalServingMode`, `ScoreBreakdown`, `ScoreBreakdownEnvelope`,
-    `SeasonContextPort`, `SeasonTools`, `SessionTimeOverrideSource`, `SleepDebtRule`, `SleepDeficitCalculator`,
-    `SleepShotLlmAdapter`, `SlotPlanLlmAdapter`, `SpringAiCompanionLlm`, `StackPlacementLlmAdapter`,
-    `SustainedStressRule`, `TechniqueLlmAdapter`, `TestPlanEnvelope`, `TextSignalProvenanceEnvelope`, `ToolCallAudit`,
-    `ToolCallsEnvelope`, `ToolContexts`, `ToolOutcomesEnvelope`, `ToolText`, `TrainTools`, `TrainingNoteMentionSweep`,
-    `TurnVerdictCheck`, `WeekReviewSource`
+    `AllHealthyRule`, `BiometricsTools`, `CapacityContextPort`, `CapacityTools`, `CharacterPromptSource`,
+    `ChatHistory`, `ChatMemoryItem`, `CheckInNoteSourceAdapter`, `ClinicalOutputCheck`, `CompanionAdvisorChain`,
+    `CompanionHelloRunner`, `CompanionLlm`, `CompanionToolRegistry`, `ConsumerPolicy`, `ConversationContextTools`,
+    `CravingStreakRule`, `DayCloseLlmAdapter`, `DayReviewJson`, `DayReviewLlmAdapter`, `DayTools`, `EmbeddingFailure`,
+    `EmbeddingPort`, `EnergyDipMealTimingRule`, `FactMergeJob`, `FactMergeJudge`, `FactMergePlanner`,
+    `FactMergeService`, `FactOwner`, `FakeCompanionLlm`, `FakeEmbeddingAdapter`, `FakeFactMerge`, `FeedContextTools`,
+    `FeedbackRollupStatsEnvelope`, `FlagPayloadEnvelope`, `ForgottenMemoriesEnvelope`, `FuelModeText`, `FuelTools`,
+    `GeminiCompanionLlm`, `GeminiEmbeddingAdapter`, `GoalTools`, `GoogleGenAiUsageExtractor`, `GraphEdgeEvidence`,
+    `GraphProposedEdge`, `HabitSuggestLlmAdapter`, `HighlightCitationSource`, `IgnoredNudgeRule`, `InsightsTools`,
+    `JointOveruseRule`, `KnowledgeBackfillRunner`, `LateEatingRule`, `LifeGoalGraphSource`,
+    `LifeGoalProposeLlmAdapter`, `LifeGoalProposePort`, `LifeGoalSource`, `LifeGoalText`, `LifeGoalTools`,
+    `LlmModelRouter`, `LlmRoundUsage`, `LlmRoundUsageAdvisor`, `LlmUsageExtractor`, `LoadFuelMismatchRule`,
+    `LoggingGapRule`, `MailClassifierLlmAdapter`, `MealCoachLlmAdapter`, `MealDraftLlmAdapter`, `MealRhythmDriftRule`,
+    `MedicationTools`, `MemoryCandidate`, `MemoryContext`, `MemoryContextItem`, `MemoryEmbeddingWriter`,
+    `MemoryProvenanceEnvelope`, `MemoryRequest`, `MemoryTools`, `MesoPlanLlmAdapter`, `MissedWorkoutsRule`,
+    `MomentumAtRiskRule`, `MotivationSlumpRule`, `NarrativeNoteSource`, `NoteEmbeddingCatchUp`, `NoteMentionCatchUp`,
+    `OpenAiCompanionLlm`, `OpenAiEmbeddingAdapter`, `OpenAiUsageExtractor`, `OutputLanguageDirective`,
+    `PantryEstimateLlmAdapter`, `PantryPhotoLlmAdapter`, `PantryScrapeLlmAdapter`, `PatternCritiqueEnvelope`,
+    `PatternEventPayloadEnvelope`, `PatternEvidenceEnvelope`, `PenzDigestLlmAdapter`, `PenzProposalLlmAdapter`,
+    `PenzSmsLlmAdapter`, `PenzWeeklyReviewLlmAdapter`, `PersistentPainRule`, `PersonalRecordTools`,
+    `PoorRestednessRule`, `PracticeTools`, `PreparedMemoryQuery`, `ProfileMetaEnvelope`, `ProtocolLapseRule`,
+    `QueryMode`, `RapidWeightLossRule`, `RecalledMemoriesEnvelope`, `RecipeBreakdownLlmAdapter`,
+    `RecipeCookedLlmAdapter`, `RecipeImportLlmAdapter`, `RecipeWorkshopLlmAdapter`, `RecordingToolCallback`,
+    `RecoveryNeededRule`, `RefsEnvelope`, `RetrievalInput`, `RetrievalServingMode`, `ScoreBreakdown`,
+    `ScoreBreakdownEnvelope`, `SeasonContextPort`, `SeasonTools`, `SessionTimeOverrideSource`, `SleepDebtRule`,
+    `SleepDeficitCalculator`, `SleepShotLlmAdapter`, `SlotPlanLlmAdapter`, `SpringAiCompanionLlm`,
+    `StackPlacementLlmAdapter`, `SustainedStressRule`, `TechniqueLlmAdapter`, `TestPlanEnvelope`,
+    `TextSignalProvenanceEnvelope`, `ToolCallAudit`, `ToolCallsEnvelope`, `ToolContexts`, `ToolOutcomesEnvelope`,
+    `ToolText`, `TrainTools`, `TrainingNoteMentionSweep`, `TurnVerdictCheck`, `WeekReviewSource`
 - **Contract** `api/feature/companion-feedback/companion-feedback.yml` — 3 operations
   - **endpoints:** GET /api/companion/feedback · PUT /api/companion/feedback ·
     DELETE /api/companion/feedback/{artifactKind}/{artifactId}
@@ -436,9 +470,9 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 - **Contract** `api/feature/memory-retrieval/memory-retrieval.yml` — 2 operations
   - **endpoints:** GET /api/companion/memory/retrieval-feedback ·
     PUT /api/companion/memory/retrieval/{runId}/result/{resultId}/feedback
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 317 IT + 109 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 318 IT + 110 unit
   - **ITs:** `AboutMeServiceIT`, `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`,
-    `AnchoredConversationIT`, `BoopChannelChatIT`, `BoopDayContextIT`, `ChatExtractionFlowIT`,
+    `AnchoredConversationIT`, `BoopChannelChatIT`, `BoopDayContextIT`, `CapacityToolsIT`, `ChatExtractionFlowIT`,
     `ChatExtractionSwitchOffIT`, `ChatForgetRecallIT`, `ChatForgetServiceIT`, `ChatForgetTurnIT`,
     `ChatMemoryBlocksFailOpenIT`, `ChatMemoryBlocksIT`, `ChatMemoryRolloutIT`, `ChatMemoryShadowRolloutIT`,
     `ChatMentionListenerIT`, `ChatModelQualifierIT`, `ChatReflectionBlockIT`, `ChatSeedReplyFailureIT`,
@@ -827,7 +861,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   - **mappers:** `MealMapper`
   - **config:** `MealAiLogProperties`
   - **other:** `DayPlanService`, `FuelPlanMapper`, `MealItemRecipeOverrideJson`, `MealProvenanceJson`,
-    `MealRescoreRunner`, `MealSaturatedFatBackfillRunner`, `SeasonContextPort`
+    `MealRescoreRunner`, `MealSaturatedFatBackfillRunner`, `SeasonContextPort`, `SeasonMenuPort`
 - **Contract** `api/feature/meal/fuel-plan.yml` — 2 operations
   - **endpoints:** GET /api/fuel/plan/{date} · GET /api/fuel/usuals
 - **Contract** `api/feature/meal/meal-photo.yml` — 4 operations
@@ -964,7 +998,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### penz
 
-*BE + API* · read next: [docs/features/penz.md](features/penz.md) (updated 2026-11-20, done)
+*BE + API* · read next: [docs/features/penz.md](features/penz.md) (updated 2026-11-21, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/penz`
   - **entities→tables:** `PenzAccountEntity`→`penz_account`, `PenzApiKeyEntity`→`penz_api_key`,
@@ -976,47 +1010,52 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `PenzProviderStatusEntity`→`penz_provider_status`, `PenzQuoteEntity`→`penz_quote`,
     `PenzRecurringRuleEntity`→`penz_recurring_rule`, `PenzSavingsGoalEntity`→`penz_savings_goal`,
     `PenzSettingsEntity`→`penz_settings`, `PenzSmsMessageEntity`→`penz_sms_message`,
-    `PenzTransactionEntity`→`penz_transaction`
+    `PenzTransactionEntity`→`penz_transaction`, `PenzWeeklyReviewEntity`→`penz_weekly_review`
   - **repositories:** `PenzAccountRepository`, `PenzApiKeyRepository`, `PenzCategoryRepository`,
     `PenzDigestRepository`, `PenzFxRateRepository`, `PenzHoldingEventRepository`, `PenzHoldingRepository`,
     `PenzInvestTxnRepository`, `PenzMonthCloseRepository`, `PenzNewsArticleRepository`, `PenzPaperTradeRepository`,
     `PenzProductRepository`, `PenzProposalRepository`, `PenzProviderStatusRepository`, `PenzQuoteRepository`,
     `PenzRecurringRuleRepository`, `PenzSavingsGoalRepository`, `PenzSettingsRepository`, `PenzSmsMessageRepository`,
-    `PenzTransactionRepository`
+    `PenzTransactionRepository`, `PenzWeeklyReviewRepository`
   - **services:** `FrankfurterClient`, `PenzAccountService`, `PenzAllowanceService`, `PenzCatalogSeed`,
     `PenzCatalogService`, `PenzCategoryService`, `PenzDigestLlm`, `PenzDigestService`, `PenzDigestStore`,
     `PenzEngineInputs`, `PenzErrors`, `PenzFxService`, `PenzHoldingEventService`, `PenzHoldingService`,
-    `PenzInvestTxnService`, `PenzMonthCloseService`, `PenzMonths`, `PenzNewsClient`, `PenzNewsJob`, `PenzNewsRunner`,
-    `PenzPortfolioService`, `PenzPracticeService`, `PenzProposalLlm`, `PenzProposalService`, `PenzProposalStore`,
-    `PenzProviderHealth`, `PenzQuoteService`, `PenzRecurringMaterializer`, `PenzRecurringRuleService`,
-    `PenzSavingsGoalService`, `PenzSettingsService`, `PenzSmsIngestService`, `PenzSmsKeyService`, `PenzSmsLlm`,
-    `PenzSmsRateLimiter`, `PenzSmsStore`, `PenzStrategyService`, `PenzTransactionService`, `QuoteClient`
+    `PenzInvestLinkService`, `PenzInvestTxnService`, `PenzMonthCloseService`, `PenzMonths`, `PenzNewsClient`,
+    `PenzNewsJob`, `PenzNewsRunner`, `PenzPortfolioService`, `PenzPracticeService`, `PenzProposalLlm`,
+    `PenzProposalService`, `PenzProposalStore`, `PenzProviderHealth`, `PenzQuoteService`, `PenzRecurringMaterializer`,
+    `PenzRecurringRuleService`, `PenzSavingsGoalService`, `PenzSettingsService`, `PenzSmsIngestService`,
+    `PenzSmsKeyService`, `PenzSmsLlm`, `PenzSmsRateLimiter`, `PenzSmsStore`, `PenzStrategyService`,
+    `PenzTransactionService`, `PenzWeeklyReviewLlm`, `PenzWeeklyReviewService`, `PenzWeeklyReviewStore`, `QuoteClient`
   - **controllers→contract:** `PenzController`→`PenzApi`, `PenzNewsController`→`PenzNewsApi`,
     `PenzPortfolioController`→`PenzPortfolioApi`, `PenzPracticeController`→`PenzPracticeApi`,
-    `PenzProposalController`→`PenzProposalApi`, `PenzSmsController`→`PenzSmsApi`
-  - **mappers:** `PenzDigestMapper`, `PenzMapper`, `PenzPortfolioMapper`, `PenzPracticeMapper`, `PenzProposalMapper`
+    `PenzProposalController`→`PenzProposalApi`, `PenzSmsController`→`PenzSmsApi`,
+    `PenzWeeklyController`→`PenzWeeklyApi`
+  - **mappers:** `PenzDigestMapper`, `PenzMapper`, `PenzPortfolioMapper`, `PenzPracticeMapper`, `PenzProposalMapper`,
+    `PenzWeeklyReviewMapper`
   - **config:** `PenzNewsAsyncConfig`, `PenzNewsProperties`, `PenzProperties`, `PenzSmsApiKeyFilter`,
     `PenzSmsSecurityConfig`
   - **other:** `AccountBalance`, `AccountInput`, `AccountRules`, `AllowanceEngine`, `AllowanceLine`,
     `AllowanceLineKey`, `AllowanceSettings`, `ArticleText`, `Balances`, `BookedAmount`, `CatalogProduct`,
     `CategoryBudgets`, `CloseOutcome`, `DigestAssembler`, `DigestFallbackCopy`, `DigestFigures`, `DigestKind`,
     `DigestModelItem`, `DigestPrompt`, `DigestStory`, `DigestValidator`, `DigestViolation`, `EmergencyFund`,
-    `Frequency`, `FxConversion`, `GuardVerdict`, `HoldingSpec`, `HoldingValue`, `HufAmountGuard`, `LotBook`, `LotTxn`,
-    `Lots`, `Money`, `MonthCloseInput`, `MonthCloseRules`, `MonthlyAllowance`, `MonthlyInvestable`, `NewsArticle`,
-    `NewsHolding`, `NewsMatcher`, `NewsSource`, `NewsSources`, `NewsText`, `OpenLot`, `PaperTradeMath`, `PenzDates`,
-    `PenzDigestItemJson`, `PenzHttpFetcher`, `PenzProposalJson`, `PenzSmsKeys`, `PortfolioEngine`, `PortfolioResult`,
-    `PositionInput`, `PositionResult`, `PracticeCap`, `PracticeCopy`, `PracticeTag`, `ProductOptions`,
-    `ProposalFallbackCopy`, `ProposalFigures`, `ProposalNarration`, `ProposalPrompt`, `ProposalSplitter`,
-    `ProposalValidator`, `QuotePoint`, `Recurrence`, `RecurringRuleInput`, `RssItem`, `RssParser`, `RuleKind`, `Side`,
-    `Sleeve`, `SleeveResult`, `SmsAmountCheck`, `SmsConversion`, `SmsIngestLogic`, `SmsPrompt`, `Story`,
-    `StoryClusterer`, `StoryKey`, `TxnInput`, `TxnKind`, `Valuation`, `ValuationKind`, `WeekPortion`,
-    `WeeklyAllowance`, `WeeklyReview`
-- **Contract** `api/feature/penz/penz-portfolio.yml` — 13 operations
+    `Frequency`, `FxConversion`, `GuardVerdict`, `HoldingSpec`, `HoldingValue`, `HufAmountGuard`, `InvestSmsMatch`,
+    `LotBook`, `LotTxn`, `Lots`, `Money`, `MonthCloseInput`, `MonthCloseRules`, `MonthlyAllowance`,
+    `MonthlyInvestable`, `NewsArticle`, `NewsHolding`, `NewsMatcher`, `NewsSource`, `NewsSources`, `NewsText`,
+    `OpenLot`, `PaperTradeMath`, `PenzDates`, `PenzDigestItemJson`, `PenzHttpFetcher`, `PenzProposalJson`,
+    `PenzSmsKeys`, `PenzWeeklySectionJson`, `PortfolioEngine`, `PortfolioResult`, `PositionInput`, `PositionResult`,
+    `PracticeCap`, `PracticeCopy`, `PracticeTag`, `ProductOptions`, `ProposalFallbackCopy`, `ProposalFigures`,
+    `ProposalNarration`, `ProposalPrompt`, `ProposalSplitter`, `ProposalValidator`, `QuotePoint`, `Recurrence`,
+    `RecurringRuleInput`, `RssItem`, `RssParser`, `RuleKind`, `Side`, `Sleeve`, `SleeveResult`, `SmsAmountCheck`,
+    `SmsConversion`, `SmsIngestLogic`, `SmsPrompt`, `Story`, `StoryClusterer`, `StoryKey`, `TxnInput`, `TxnKind`,
+    `Valuation`, `ValuationKind`, `WeekPortion`, `WeeklyAllowance`, `WeeklyFigures`, `WeeklyModelSection`,
+    `WeeklyReview`, `WeeklyReviewAssembler`, `WeeklyReviewFallbackCopy`, `WeeklyReviewPrompt`, `WeeklyReviewSectioner`,
+    `WeeklyReviewValidator`, `WeeklySection`
+- **Contract** `api/feature/penz/penz-portfolio.yml` — 14 operations
   - **endpoints:** GET /api/penz/holdings · POST /api/penz/holdings · PUT /api/penz/holdings/{id} ·
     DELETE /api/penz/holdings/{id} · GET /api/penz/holdings/{id}/transactions · POST /api/penz/invest-transactions ·
-    DELETE /api/penz/invest-transactions/{id} · GET /api/penz/holding-events · POST /api/penz/holding-events ·
-    DELETE /api/penz/holding-events/{id} · GET /api/penz/portfolio · GET /api/penz/digest ·
-    POST /api/penz/digest/refresh
+    GET /api/penz/invest-transactions/sms-candidates · DELETE /api/penz/invest-transactions/{id} ·
+    GET /api/penz/holding-events · POST /api/penz/holding-events · DELETE /api/penz/holding-events/{id} ·
+    GET /api/penz/portfolio · GET /api/penz/digest · POST /api/penz/digest/refresh
 - **Contract** `api/feature/penz/penz-practice.yml` — 9 operations
   - **endpoints:** GET /api/penz/practice · GET /api/penz/practice/trades · POST /api/penz/practice/trades ·
     PUT /api/penz/practice/trades/{id} · DELETE /api/penz/practice/trades/{id} ·
@@ -1031,6 +1070,8 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 - **Contract** `api/feature/penz/penz-sms.yml` — 4 operations
   - **endpoints:** POST /api/penz/sms/ingest · GET /api/penz/sms/keys · POST /api/penz/sms/keys ·
     DELETE /api/penz/sms/keys/{id}
+- **Contract** `api/feature/penz/penz-weekly.yml` — 1 operation
+  - **endpoints:** GET /api/penz/weekly-review
 - **Contract** `api/feature/penz/penz.yml` — 27 operations
   - **endpoints:** GET /api/penz/settings · PUT /api/penz/settings · GET /api/penz/accounts · POST /api/penz/accounts ·
     PUT /api/penz/accounts/{id} · POST /api/penz/accounts/{id}/archive · GET /api/penz/categories ·
@@ -1041,10 +1082,11 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     GET /api/penz/allowance · GET /api/penz/month-closes · GET /api/penz/month-closes/open ·
     POST /api/penz/month-closes/{month} · GET /api/penz/savings-goals · POST /api/penz/savings-goals ·
     PUT /api/penz/savings-goals/{id} · DELETE /api/penz/savings-goals/{id}
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/penz` — 12 IT + 53 unit
-  - **ITs:** `PenzAllowanceApiIT`, `PenzApiIT`, `PenzDigestPipelineIT`, `PenzMonthCloseServiceIT`,
-    `PenzNewsDigestStoreIT`, `PenzNewsProviderAlertIT`, `PenzPortfolioApiIT`, `PenzPracticeApiIT`, `PenzProposalApiIT`,
-    `PenzQuoteServiceIT`, `PenzSavingsGoalApiIT`, `PenzSmsIngestApiIT`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/penz` — 14 IT + 60 unit
+  - **ITs:** `PenzAllowanceApiIT`, `PenzApiIT`, `PenzDigestPipelineIT`, `PenzInvestAccountLinkApiIT`,
+    `PenzMonthCloseServiceIT`, `PenzNewsDigestStoreIT`, `PenzNewsProviderAlertIT`, `PenzPortfolioApiIT`,
+    `PenzPracticeApiIT`, `PenzProposalApiIT`, `PenzQuoteServiceIT`, `PenzSavingsGoalApiIT`, `PenzSmsIngestApiIT`,
+    `PenzWeeklyReviewIT`
   - **populators:** `DatabasePopulator`, `PenzPopulator`
 
 ### people
@@ -1225,36 +1267,52 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/season`
   - **sub-features:** `port`
   - **entities→tables:** `SeasonAllowedRecipeEntity`→`season_allowed_recipe`, `SeasonEntity`→`season`,
-    `SeasonRevisionEntity`→`season_revision`
-  - **repositories:** `SeasonAllowedRecipeRepository`, `SeasonRepository`, `SeasonRevisionRepository`
-  - **services:** `AdherenceService`, `FirstSeasonAssembler`, `SeasonApiService`, `SeasonContextAdapter`,
-    `SeasonContextRenderer`, `SeasonDraftMath`, `SeasonFingerprint`, `SeasonFormat`, `SeasonGateAdapter`,
-    `SeasonGoalAdapter`, `SeasonInsights`, `SeasonMealAdapter`, `SeasonMetricsAdapter`, `SeasonOverviewService`,
-    `SeasonPreviewService`, `SeasonService`, `SeasonSleepAdapter`, `SeasonTodoRules`, `SeasonTrainAdapter`,
-    `SleepNeedRule`
+    `SeasonExperimentEntity`→`season_experiment`, `SeasonMenuMealEntity`→`season_menu_meal`,
+    `SeasonMenuWeekEntity`→`season_menu_week`, `SeasonRevisionEntity`→`season_revision`,
+    `SeasonStapleEntity`→`season_staple`, `ShoppingItemEntity`→`shopping_item`, `ShoppingListEntity`→`shopping_list`
+  - **repositories:** `SeasonAllowedRecipeRepository`, `SeasonExperimentRepository`, `SeasonMenuMealRepository`,
+    `SeasonMenuWeekRepository`, `SeasonRepository`, `SeasonRevisionRepository`, `SeasonStapleRepository`,
+    `ShoppingItemRepository`, `ShoppingListRepository`
+  - **services:** `AdherenceService`, `ExperimentEvaluator`, `ExperimentProposalDetector`, `ExperimentService`,
+    `FirstSeasonAssembler`, `MenuContextRenderer`, `MenuJob`, `MenuPlanner`, `MenuService`, `SeasonApiService`,
+    `SeasonContextAdapter`, `SeasonContextRenderer`, `SeasonDayKind`, `SeasonDraftMath`, `SeasonExperimentJob`,
+    `SeasonExperimentSourceAdapter`, `SeasonFingerprint`, `SeasonFormat`, `SeasonGateAdapter`, `SeasonGoalAdapter`,
+    `SeasonInsights`, `SeasonMealAdapter`, `SeasonMenuAdapter`, `SeasonMenuSourceAdapter`, `SeasonMetricsAdapter`,
+    `SeasonOverviewService`, `SeasonPreviewService`, `SeasonRecipeService`, `SeasonService`, `SeasonSleepAdapter`,
+    `SeasonTodoRules`, `SeasonTrainAdapter`, `ShoppingListBuilder`, `ShoppingListService`, `SleepNeedRule`
   - **controllers→contract:** `SeasonController`→`SeasonApi`
   - **mappers:** `SeasonMapper`
   - **config:** `SeasonProperties`
-  - **other:** `SeasonDraftJson`, `SeasonGoalPort`, `SeasonMealPort`, `SeasonMetricsPort`, `SeasonNumbersJson`,
-    `SeasonSleepPort`, `SeasonTrainPort`
-- **Contract** `api/feature/season/season.yml` — 11 operations
+  - **other:** `SeasonDraftJson`, `SeasonExperimentResultJson`, `SeasonExperimentSourcePort`, `SeasonGoalPort`,
+    `SeasonMealPort`, `SeasonMenuSourcePort`, `SeasonMetricsPort`, `SeasonNumbersJson`, `SeasonSleepPort`,
+    `SeasonTrainPort`
+- **Contract** `api/feature/season/season.yml` — 30 operations
   - **endpoints:** GET /api/seasons · POST /api/seasons · GET /api/seasons/draft · POST /api/seasons/draft/preview ·
     GET /api/seasons/adherence · GET /api/seasons/active/overview · PUT /api/seasons/{id} ·
     POST /api/seasons/{id}/activate · POST /api/seasons/{id}/close · POST /api/seasons/{id}/preview ·
-    PUT /api/seasons/{id}/rules
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/season` — 9 IT + 4 unit
-  - **ITs:** `AdherenceServiceIT`, `MesocycleGateIT`, `SeasonApiIT`, `SeasonInsightsIT`, `SeasonOverviewIT`,
-    `SeasonPortsIT`, `SeasonPreviewIT`, `SeasonRepositoryIT`, `SeasonServiceIT`
-  - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPopulator`, `MealPopulator`,
-    `MesoTemplatePopulator`, `PantryItemPopulator`, `PlannedSkipPopulator`, `RecipePopulator`,
-    `RecoveryPeriodPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`, `TrainPopulator`, `WeightLogPopulator`
+    PUT /api/seasons/{id}/rules · GET /api/seasons/menu · POST /api/seasons/menu/generate ·
+    POST /api/seasons/menu/{id}/approve · PUT /api/seasons/menu/meals/{id} ·
+    GET /api/seasons/menu/meals/{id}/alternatives · GET /api/seasons/recipes · PUT /api/seasons/{id}/recipes ·
+    GET /api/seasons/shopping · GET /api/seasons/shopping/lists · PUT /api/seasons/shopping/items/{id} ·
+    POST /api/seasons/shopping/{id}/staples · GET /api/seasons/staples · PUT /api/seasons/staples ·
+    GET /api/seasons/experiments · POST /api/seasons/experiments · POST /api/seasons/experiments/{id}/start ·
+    PUT /api/seasons/experiments/{id}/days · POST /api/seasons/experiments/{id}/dismiss ·
+    POST /api/seasons/experiments/{id}/keep
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/season` — 13 IT + 9 unit
+  - **ITs:** `AdherenceServiceIT`, `ExperimentApiIT`, `ExperimentServiceIT`, `MenuServiceIT`, `MesocycleGateIT`,
+    `SeasonApiIT`, `SeasonInsightsIT`, `SeasonMenuApiIT`, `SeasonOverviewIT`, `SeasonPortsIT`, `SeasonPreviewIT`,
+    `SeasonRepositoryIT`, `SeasonServiceIT`
+  - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPopulator`, `JournalPopulator`,
+    `MealPopulator`, `MesoTemplatePopulator`, `PantryItemPopulator`, `PlannedSkipPopulator`, `ProtocolPopulator`,
+    `RecipePopulator`, `RecoveryPeriodPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`, `TrainPopulator`,
+    `WeightLogPopulator`
 
 ### train
 
 *BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-21, done) ·
   [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-11-20, done) ·
   [docs/features/season.md](features/season.md) (updated 2026-11-21, in-progress) ·
-  [docs/features/train.md](features/train.md) (updated 2026-11-20, done)
+  [docs/features/train.md](features/train.md) (updated 2026-11-21, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/train`
   - **sub-features:** `port`
@@ -1278,31 +1336,32 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `RunningBlockRepository`, `SportEventRepository`, `SportScheduleSlotRepository`, `SportSessionRepository`,
     `SportSlotSkipRepository`, `WorkoutDayAdjustmentRepository`, `WorkoutSessionRepository`,
     `WorkoutTimingProfileRepository`
-  - **services:** `ActivityEnergyModel`, `AthleteBodyPort`, `BlockSuggestionService`, `CatalogAttributes`,
-    `CatalogMediaResolver`, `ClosingBlockService`, `ComebackRamp`, `DayCheckInPort`, `DiscomfortHistory`, `E1rmSeries`,
-    `EffortRamp`, `EnergyBalancePort`, `EvaluatorTechniques`, `EwmaEstimator`, `ExerciseCatalogService`,
-    `ExerciseClass`, `ExerciseDiscomfortService`, `ExerciseHistoryResolver`, `ExerciseRecordService`, `ExerciseStyler`,
-    `ExerciseSubstituteRanker`, `ExerciseSubstituteService`, `ExerciseTechniqueService`, `GoalRecomputePort`,
-    `GrindRule`, `GymAvailability`, `GymProfileService`, `GymScheduleService`, `LegacySetDistribution`,
-    `LoadLinePreview`, `LoggedSession`, `LoggedSessionReadPort`, `MedalEvaluator`, `MedalService`,
-    `MesoPlanEvaluateService`, `MesoPlanFiller`, `MesoPlanGeneratorService`, `MesoPlanLlm`, `MesoPlanMerger`,
-    `MesoPlanSkeleton`, `MesoTemplateDays`, `MesoTemplateService`, `MesoWeeks`, `MesocycleReportService`,
-    `MuscleGroup`, `MuscleProgressReader`, `MuscleStallDetector`, `OneRepMax`, `PainJointMap`, `PainLevel`,
-    `PainRegionMap`, `PartialsBest`, `PlanEvaluator`, `PlannedSkipLock`, `PlannedSkipPolicy`, `PlannedSkipService`,
-    `Prescription`, `PriorityTier`, `ProgressionDecider`, `ReadinessAssessor`, `ReadinessService`, `RecoveryFuelMode`,
+  - **services:** `ActivityEnergyModel`, `AthleteBodyPort`, `BlockSuggestionService`, `CandidateRanker`,
+    `CatalogAttributes`, `CatalogMediaResolver`, `ClosingBlockService`, `ComebackRamp`, `DayCheckInPort`,
+    `DiscomfortHistory`, `E1rmSeries`, `EffortRamp`, `EnergyBalancePort`, `EvaluatorTechniques`, `EwmaEstimator`,
+    `ExerciseCatalogService`, `ExerciseClass`, `ExerciseDiscomfortService`, `ExerciseHistoryResolver`,
+    `ExerciseRecordService`, `ExerciseStyler`, `ExerciseSubstituteRanker`, `ExerciseSubstituteService`,
+    `ExerciseTechniqueService`, `GoalRecomputePort`, `GrindRule`, `GymAvailability`, `GymProfileService`,
+    `GymScheduleService`, `LegacySetDistribution`, `LoadLinePreview`, `LoggedSession`, `LoggedSessionReadPort`,
+    `MedalEvaluator`, `MedalService`, `MesoPlanCandidatesService`, `MesoPlanEvaluateService`, `MesoPlanFiller`,
+    `MesoPlanGeneratorService`, `MesoPlanLlm`, `MesoPlanMerger`, `MesoPlanSkeleton`, `MesoTemplateDays`,
+    `MesoTemplateService`, `MesoWeeks`, `MesocycleDiscardService`, `MesocycleReportService`, `MuscleGroup`,
+    `MuscleProgressReader`, `MuscleStallDetector`, `OneRepMax`, `PainJointMap`, `PainLevel`, `PainRegionMap`,
+    `PartialsBest`, `PlanEvaluator`, `PlannedSkipLock`, `PlannedSkipPolicy`, `PlannedSkipService`, `Prescription`,
+    `PriorityGuard`, `PriorityTier`, `ProgressionDecider`, `ReadinessAssessor`, `ReadinessService`, `RecoveryFuelMode`,
     `RecoveryPeriodService`, `RecoveryReturnPolicy`, `RecoveryReturnService`, `RunningService`,
     `SessionExerciseAssembler`, `SessionTimingCalculator`, `SetLegService`, `SetRecommendationService`, `SetSlots`,
-    `SetTonnage`, `SportGroups`, `SportService`, `SportSessionLoggedEvent`, `SportSlotSkipService`, `StallOffers`,
-    `StyleContext`, `StyleStamper`, `StyleTable`, `SubstituteReads`, `SubstituteReason`, `Technique`,
+    `SetTonnage`, `SplitCatalog`, `SportGroups`, `SportService`, `SportSessionLoggedEvent`, `SportSlotSkipService`,
+    `StallOffers`, `StyleContext`, `StyleStamper`, `StyleTable`, `SubstituteReads`, `SubstituteReason`, `Technique`,
     `TechniqueAiRefiner`, `TechniqueGuard`, `TechniqueLines`, `TechniqueLlm`, `TechniqueMerger`,
     `TechniquePlanService`, `TechniquePlanner`, `TechniquePrescriber`, `TechniqueRecommender`,
-    `TechniqueRefineRequested`, `TechniqueRules`, `TechniqueWeights`, `TemplatePlan`, `TierChangeProposalService`,
-    `TimingObservation`, `TimingObservationExtractor`, `TimingProfileListener`, `TimingProfileService`, `TrainService`,
-    `TrainingStyle`, `VolumeArcService`, `VolumeBands`, `VolumeDecider`, `VolumeLedger`, `VolumePath`,
-    `VolumeProgressionService`, `WeekProposalDecisionService`, `WeekProposalQueryService`, `WeekProposalService`,
-    `WeeklyPin`, `WeeklyScheduledActivityService`, `WeeklySignalReader`, `WeightGapService`, `WeightSnapper`,
-    `WorkoutAutoCloseService`, `WorkoutExerciseChangeService`, `WorkoutFinishedEvent`, `WorkoutService`,
-    `WorkoutWindowQueryService`
+    `TechniqueRefineRequested`, `TechniqueRules`, `TechniqueWeights`, `TemplatePlan`, `TierBudget`,
+    `TierChangeProposalService`, `TimingObservation`, `TimingObservationExtractor`, `TimingProfileListener`,
+    `TimingProfileService`, `TrainService`, `TrainingStyle`, `VolumeArcService`, `VolumeBands`, `VolumeDecider`,
+    `VolumeLedger`, `VolumePath`, `VolumeProgressionService`, `WarmupRule`, `WeekProposalDecisionService`,
+    `WeekProposalQueryService`, `WeekProposalService`, `WeeklyPin`, `WeeklyScheduledActivityService`,
+    `WeeklySignalReader`, `WeightGapService`, `WeightSnapper`, `WorkoutAutoCloseService`,
+    `WorkoutExerciseChangeService`, `WorkoutFinishedEvent`, `WorkoutService`, `WorkoutWindowQueryService`
   - **controllers→contract:** `PlannedSkipController`→`TrainSkipApi`, `ReadinessController`→`TrainReadinessApi`,
     `RecoveryController`→`TrainRecoveryApi`, `TrainController`→`TrainApi`,
     `WeekProposalController`→`TrainWeekProposalApi`
@@ -1328,26 +1387,26 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 - **Contract** `api/feature/train/train-week-proposal.yml` — 2 operations
   - **endpoints:** GET /api/train/mesocycles/{id}/week-proposals ·
     POST /api/train/mesocycles/{id}/week-proposals/{proposalId}/decisions
-- **Contract** `api/feature/train/train.yml` — 70 operations
+- **Contract** `api/feature/train/train.yml` — 72 operations
   - **endpoints:** GET /api/train/mesocycles · POST /api/train/mesocycles/{id}/activate ·
-    POST /api/train/mesocycles/{id}/close · PUT /api/train/mesocycles/{id}/muscle-priorities ·
-    PUT /api/train/mesocycles/{id}/settings · GET /api/train/mesocycles/{id}/report ·
-    POST /api/train/mesocycles/{id}/report/regenerate · GET /api/train/mesocycles/{id}/volume-arc ·
-    POST /api/train/mesocycles/{id}/exercise-suggestions · GET /api/train/mesocycles/{id}/evaluation ·
-    PUT /api/train/mesocycles/{id}/exercises/{exerciseId}/technique ·
+    POST /api/train/mesocycles/{id}/close · POST /api/train/mesocycles/{id}/discard ·
+    PUT /api/train/mesocycles/{id}/muscle-priorities · PUT /api/train/mesocycles/{id}/settings ·
+    GET /api/train/mesocycles/{id}/report · POST /api/train/mesocycles/{id}/report/regenerate ·
+    GET /api/train/mesocycles/{id}/volume-arc · POST /api/train/mesocycles/{id}/exercise-suggestions ·
+    GET /api/train/mesocycles/{id}/evaluation · PUT /api/train/mesocycles/{id}/exercises/{exerciseId}/technique ·
     PUT /api/train/mesocycles/{id}/days/{dayId}/exercises · POST /api/train/mesocycles/{id}/rerun ·
-    POST /api/train/meso-plans/generate · POST /api/train/meso-plans/evaluate · GET /api/train/meso-templates ·
-    POST /api/train/meso-templates · PUT /api/train/meso-templates/{id} · DELETE /api/train/meso-templates/{id} ·
-    POST /api/train/meso-templates/{id}/start · GET /api/train/custom-workouts · POST /api/train/custom-workouts ·
-    PUT /api/train/custom-workouts/{id} · DELETE /api/train/custom-workouts/{id} · GET /api/train/gym-profile ·
-    PUT /api/train/gym-profile · GET /api/train/exercises · POST /api/train/exercises · PUT /api/train/exercises/{id} ·
-    DELETE /api/train/exercises/{id} · PUT /api/train/exercises/{id}/video · PUT /api/train/exercises/{id}/images ·
-    GET /api/train/exercise-records · GET /api/train/medals · GET /api/train/sport-sessions ·
-    POST /api/train/sport-sessions · GET /api/train/sport-schedule · PUT /api/train/sport-schedule ·
-    GET /api/train/sport-events · POST /api/train/sport-events · DELETE /api/train/sport-events/{id} ·
-    GET /api/train/sport-slot-skips · GET /api/train/gym-schedule · PUT /api/train/gym-schedule ·
-    GET /api/train/workouts/today · GET /api/train/workouts · POST /api/train/workouts · GET /api/train/workouts/{id} ·
-    POST /api/train/workouts/{id}/sets · PUT /api/train/workouts/{id}/sets/{setId} ·
+    POST /api/train/meso-plans/generate · POST /api/train/meso-plans/evaluate · POST /api/train/meso-plans/candidates ·
+    GET /api/train/meso-templates · POST /api/train/meso-templates · PUT /api/train/meso-templates/{id} ·
+    DELETE /api/train/meso-templates/{id} · POST /api/train/meso-templates/{id}/start · GET /api/train/custom-workouts ·
+    POST /api/train/custom-workouts · PUT /api/train/custom-workouts/{id} · DELETE /api/train/custom-workouts/{id} ·
+    GET /api/train/gym-profile · PUT /api/train/gym-profile · GET /api/train/exercises · POST /api/train/exercises ·
+    PUT /api/train/exercises/{id} · DELETE /api/train/exercises/{id} · PUT /api/train/exercises/{id}/video ·
+    PUT /api/train/exercises/{id}/images · GET /api/train/exercise-records · GET /api/train/medals ·
+    GET /api/train/sport-sessions · POST /api/train/sport-sessions · GET /api/train/sport-schedule ·
+    PUT /api/train/sport-schedule · GET /api/train/sport-events · POST /api/train/sport-events ·
+    DELETE /api/train/sport-events/{id} · GET /api/train/sport-slot-skips · GET /api/train/gym-schedule ·
+    PUT /api/train/gym-schedule · GET /api/train/workouts/today · GET /api/train/workouts · POST /api/train/workouts ·
+    GET /api/train/workouts/{id} · POST /api/train/workouts/{id}/sets · PUT /api/train/workouts/{id}/sets/{setId} ·
     DELETE /api/train/workouts/{id}/sets/{setId} · POST /api/train/workouts/{id}/feedback ·
     POST /api/train/workouts/{id}/skip · POST /api/train/workouts/{id}/exercises ·
     POST /api/train/workouts/{id}/exercises/{exerciseId}/discomfort ·
@@ -1358,7 +1417,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     POST /api/train/running-blocks · PUT /api/train/running-blocks/{id} · DELETE /api/train/running-blocks/{id} ·
     POST /api/train/running-blocks/{id}/activate · POST /api/train/running-blocks/{id}/close ·
     GET /api/train/run-sessions · POST /api/train/run-sessions · GET /api/train/timing-profile
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 133 IT + 52 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 136 IT + 56 unit
   - **ITs:** `BlockExerciseSuggestionsIT`, `CatalogMediaResolutionIT`, `CatalogWriteContractIT`, `ClosingBlockIT`,
     `ClosingBlockSwitchOffIT`, `ClosingBlockVolumeFlagIT`, `ComebackTodayIT`, `CrossDayWorkoutIT`, `CustomWorkoutIT`,
     `ExerciseCatalogContractIT`, `ExerciseCatalogLoaderIT`, `ExerciseCatalogPermissionIT`, `ExerciseCatalogSlugRaceIT`,
@@ -1366,10 +1425,11 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `ExerciseRecordContractIT`, `ExerciseRecordServiceIT`, `ExerciseSetLegRepositoryIT`, `ExerciseSubstitutesIT`,
     `ExerciseTechniqueApiIT`, `ExerciseVolumeFlagIT`, `FailingWeeklyEngineIT`, `GoalPresetBackfillSqlIT`,
     `GoalPresetCarryIT`, `GymProfileIT`, `GymScheduleContractIT`, `HypertrophyPropertiesIT`, `MedalApiIT`,
-    `MesoPlanEvaluateContractIT`, `MesoPlanEvaluateTechniqueIT`, `MesoPlanGenerateAiIT`, `MesoPlanGenerateContractIT`,
-    `MesoPlanGenerateUnstyledIT`, `MesoPlanPropertiesBindingIT`, `MesoReviewSwitchOffIT`, `MesoTemplateIT`,
-    `MesoTemplateSportGroupsIT`, `MesoTemplateStyleIT`, `MesoTemplateTechniqueIT`, `MesoTemplateVolumeBackfillSqlIT`,
-    `MesoTemplateVolumeFlagIT`, `MesoWeekProposalRepositoryIT`, `MesocycleCloseReportIT`, `MesocycleSettingsApiIT`,
+    `MesoPlanCandidatesContractIT`, `MesoPlanEvaluateContractIT`, `MesoPlanEvaluateTechniqueIT`,
+    `MesoPlanGenerateAiIT`, `MesoPlanGenerateContractIT`, `MesoPlanGenerateFallbackIT`, `MesoPlanGenerateUnstyledIT`,
+    `MesoPlanPropertiesBindingIT`, `MesoReviewSwitchOffIT`, `MesoTemplateIT`, `MesoTemplateSportGroupsIT`,
+    `MesoTemplateStyleIT`, `MesoTemplateTechniqueIT`, `MesoTemplateVolumeBackfillSqlIT`, `MesoTemplateVolumeFlagIT`,
+    `MesoWeekProposalRepositoryIT`, `MesocycleCloseReportIT`, `MesocycleDiscardIT`, `MesocycleSettingsApiIT`,
     `MusclePrioritiesCarryIT`, `MuscleProgressReaderIT`, `PartialsBestIT`, `PlannedSkipConsumersIT`,
     `PlannedSkipContractIT`, `PlannedSkipPersistenceIT`, `PrescribedSetsFoundationIT`, `ProvenanceRoundTripIT`,
     `ReadinessContractIT`, `ReadinessLightenIT`, `ReadinessServiceIT`, `RecoveryApiIT`, `RecoveryCentralReadIT`,
@@ -1399,16 +1459,17 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### wearable
 
-*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-21, in-progress)
+*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-21, in-progress) ·
+  [docs/features/capacity.md](features/capacity.md) (updated 2026-11-21, in-progress)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/wearable`
   - **entities→tables:** `CalendarEventEntity`→`calendar_event`, `DailyMetricEntity`→`daily_metric`,
     `HealthSampleEntity`→`health_sample`, `WearableWorkoutEntity`→`wearable_workout`
   - **repositories:** `CalendarEventRepository`, `DailyMetricRepository`, `HealthSampleRepository`,
     `WearableWorkoutRepository`
-  - **services:** `CalendarSnapshotService`, `DailyMetricService`, `HealthSampleService`, `WearableBatches`,
-    `WearableCheckInBiomarkerSource`, `WearableDeletionService`, `WearableSleepService`, `WearableWorkoutService`,
-    `WorkoutReconciler`
+  - **services:** `CalendarDaysReplacedEvent`, `CalendarSnapshotService`, `DailyMetricService`, `HealthSampleService`,
+    `WearableBatches`, `WearableCheckInBiomarkerSource`, `WearableDeletionService`, `WearableSleepService`,
+    `WearableWorkoutService`, `WorkoutReconciler`
   - **controllers→contract:** `WearableController`→`WearableApi`
   - **config:** `WearableProperties`
 - **Contract** `api/feature/wearable/wearable.yml` — 6 operations

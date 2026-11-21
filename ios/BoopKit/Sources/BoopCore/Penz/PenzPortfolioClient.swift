@@ -16,6 +16,12 @@ extension PenzClient {
         try await raw.get("/api/penz/digest" + (date.map { "?date=\($0)" } ?? ""), operationID: "getPenzDigest")
     }
 
+    /// The weekly long-horizon review (`mezo-r36n9.120`) of the week `week` (a Monday) falls in; nil = the latest
+    /// stored one (`pending` when none was built yet).
+    public func weeklyReview(week: String? = nil) async throws(PlanFetchError) -> PenzWeeklyReview {
+        try await raw.get("/api/penz/weekly-review" + (week.map { "?week=\($0)" } ?? ""), operationID: "getPenzWeeklyReview")
+    }
+
     public func holdings() async throws(PlanFetchError) -> [PenzHolding] {
         try await raw.get("/api/penz/holdings", operationID: "listPenzHoldings")
     }
@@ -28,6 +34,13 @@ extension PenzClient {
     /// Events from `from` (default today), soonest first.
     public func holdingEvents(from: String? = nil) async throws(PlanFetchError) -> [PenzHoldingEvent] {
         try await raw.get("/api/penz/holding-events" + (from.map { "?from=\($0)" } ?? ""), operationID: "listPenzHoldingEvents")
+    }
+
+    /// Bank-SMS debits on `accountId` with exactly `amountMinor` (the account's currency) within ±3 days of `date` —
+    /// the rows a buy may adopt (`mezo-r36n9.119`). Empty when the account receives no bank SMS. Closest date first.
+    public func smsCandidates(accountId: String, amountMinor: Int64, date: String) async throws(PlanFetchError) -> [PenzTransaction] {
+        try await raw.get("/api/penz/invest-transactions/sms-candidates?accountId=\(accountId)&amountMinor=\(amountMinor)&date=\(date)",
+                          operationID: "listPenzInvestSmsCandidates")
     }
 
     // MARK: - Writes (online)

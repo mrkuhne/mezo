@@ -21,8 +21,8 @@ Egy gyakorlat **utolsó munkasorozatát** le lehet cserélni egy **intenzitás-t
 | **Félismétlések** | Egy sorozat bukásig, majd a nyújtott szakaszban végzett részismétlések bukásig. |
 | **Napi kihívás** | A nap egyik gyakorlatán félismétlések bukásig, és a rendszer megmondja az eddigi legjobbat ugyanazzal a súllyal. |
 
-A technikát **te is megadhatod** a tervben, a rendszer pedig (lásd lent) maga is elhelyezhet. Egy gyakorlatra egyszerre egy technika vagy a kihívás kerülhet;
-ha a kettő ütközik, a **kihívás nyer**. Egy napon legfeljebb **egy kihívás** lehet.
+A technikát **te is megadhatod** a tervben, a rendszer pedig (lásd lent) maga is elhelyezhet. Egy gyakorlaton lehet technika **és** a kihívás is
+(először a technika, a végén a kihívás félismétlései). Egy napon legfeljebb **egy kihívás** lehet.
 
 ## Az automatikus elhelyezés (2026-11-19)
 Ha a blokknak van **edzésstílusa**, és a **technikák be vannak kapcsolva**, a rendszer magától is elhelyezi a technikákat és a napi kihívást.
@@ -39,7 +39,7 @@ Más blokkban (a webesekben és a most futóban) ez nem történik meg.
   félismétlést a rendszer magától nem választ, a rest pause-t sem — azt csak te teheted be (Boop sem javasolja).
 - **A sport által terhelt izomra sportnapon nincs technika.**
 
-**A napi kihívás** az **első héttől** jár: a nap első olyan gyakorlata kapja, amelyik stabil és nyújtott helyzetben is biztonságos; a Hangsúly izom
+**A napi kihívás** az **első héttől** jár: a nap első olyan gyakorlata kapja, amelyiken a kihívás megengedett (lásd lent, *Kinek lehet*); a Hangsúly izom
 előnyben. Ha a nap egyik izma sportnapon a sporttól amúgy is terhelt, azt kihagyja; ha nincs ilyen gyakorlat, aznap nincs kihívás. A kihívást
 sportnapon az edzés nem is mutatja.
 
@@ -71,7 +71,13 @@ Ha egy izom két hete nem fejlődik, a rendszer **egyetlen** javaslatot tesz, eb
 
 ## Kinek lehet
 - Csak **stabil** gyakorlat kaphat technikát (gép, kábel, támasztott hát, ülve — lásd [Edzésstílus](14-edzesstilus.md)): ott biztonságos bukásig menni.
-- A **félismétlés és a kihívás** ráadásul csak olyan gyakorlaton engedett, amely **nyújtott helyzetben is biztonságosan** terheli az izmot.
+- A **félismétlés mint technika** ráadásul csak olyan gyakorlaton engedett, amely **nyújtott helyzetben is biztonságosan** terheli az izmot.
+- **A napi kihívás** (tulajdonosi döntés, 2026-11-21) **minden olyan gyakorlaton** engedett, amely beleszámít a sorozatokba (nem törzs, nem
+  robbanékony ugrás), **kivéve a szabadsúlyos alapgyakorlatokat**: az összetett mozgást rúddal, kézisúlyzóval vagy kettlebellel (például
+  fekvenyomás rúddal vagy kézisúlyzóval, guggolás, felhúzás, serleg-guggolás kettlebellel). Kihívás jöhet tehát például kábeles bicepszre,
+  tricepsz-letolásra, lábnyújtásra, gépi mellnyomásra, lehúzásra, kézisúlyzós bicepszre (ez izolált mozgás) vagy húzódzkodásra (saját testsúly).
+  A katalógusban így kb. 95 gyakorlat kaphat kihívást (korábban csak 22). Ha a gyakorlat nincs a katalógusban (saját gyakorlat), nem tudjuk,
+  milyen eszközzel megy, ezért azon nincs kihívás. A kihívás nem kell, hogy stabil gépes gyakorlat legyen — a technikákhoz viszont továbbra is az kell.
 - A rendszer ezt a szerveren ellenőrzi: ha a kért gyakorlat nem felel meg, a mentés elutasításra kerül, és megmondja, miért. Ha egy gyakorlatot később
   átsorolsz, és a korábban beállított technika már nem érvényes, az **csendben lekerül** róla.
 

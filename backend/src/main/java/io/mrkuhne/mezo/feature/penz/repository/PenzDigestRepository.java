@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.penz.repository;
 
 import io.mrkuhne.mezo.feature.penz.entity.PenzDigestEntity;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -17,6 +18,10 @@ import org.springframework.data.repository.query.Param;
 public interface PenzDigestRepository extends JpaRepository<PenzDigestEntity, UUID> {
 
     Optional<PenzDigestEntity> findByCreatedByAndDigestDateAndDeletedFalse(UUID createdBy, LocalDate digestDate);
+
+    /** The owner's live digests from {@code from} to {@code to} (both inclusive), oldest first — the weekly review's source. */
+    List<PenzDigestEntity> findByCreatedByAndDigestDateBetweenAndDeletedFalseOrderByDigestDateAsc(
+        UUID createdBy, LocalDate from, LocalDate to);
 
     /** Removes the owner's digest rows for {@code digestDate} (live or soft-deleted); returns how many went. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
