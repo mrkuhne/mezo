@@ -262,7 +262,10 @@ public class BoopBriefService {
         return inputHash(d, localNow, null);
     }
 
-    /** Also covers the capacity verdict and demand units (0.1), so a changed day regenerates. */
+    /**
+     * Also covers the capacity verdict, demand units (0.1), the load ratio (0.05) and the factors (key + effect), so a
+     * changed day regenerates.
+     */
     static String inputHash(BoopDay d, LocalTime localNow, BoopCapacityPort.View capacity) {
         StringBuilder b = new StringBuilder("v2|").append(d.date()).append("|t:").append(timeBucket(localNow));
         BoopDay.Sleep s = d.sleep();
@@ -306,7 +309,11 @@ public class BoopBriefService {
         }
         if (capacity != null) {
             b.append("|capacity:").append(capacity.verdict()).append(',')
-                .append(String.format(java.util.Locale.ROOT, "%.1f", capacity.demandUnits()));
+                .append(String.format(java.util.Locale.ROOT, "%.1f", capacity.demandUnits())).append(',')
+                .append(String.format(java.util.Locale.ROOT, "%.2f", Math.round(capacity.ratio() * 20) / 20.0));
+            for (BoopCapacityPort.Factor f : capacity.factors()) {
+                b.append(';').append(f.key()).append('=').append(f.effect());
+            }
         }
         return sha256(b.toString());
     }
