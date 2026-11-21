@@ -75,6 +75,20 @@ public final class MailRedactor {
         return new RedactedMail(masked, new ArrayList<>(hosts), jsonLd);
     }
 
+    /**
+     * Visible text without masking or truncation, for the local rules only (never for model input): the plain
+     * part when present, else the text of the HTML.
+     */
+    public static String plainText(String plain, String html) {
+        if (plain != null && !plain.isBlank()) {
+            return plain;
+        }
+        if (html == null || html.isBlank()) {
+            return "";
+        }
+        return normalizeWhitespace(htmlToText(Jsoup.parse(html), new LinkedHashSet<>()));
+    }
+
     private static String htmlToText(Document doc, Set<String> hosts) {
         doc.select("head, style, script, noscript, img, picture, svg, video, audio, iframe").remove();
         removeComments(doc);

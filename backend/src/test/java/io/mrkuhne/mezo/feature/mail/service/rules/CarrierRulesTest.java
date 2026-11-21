@@ -10,8 +10,8 @@ import org.junit.jupiter.api.Test;
 class CarrierRulesTest {
 
     private static RuleVerdict decide(String from, String subject, String text) {
-        return MailRules.decide(new MailHeaders(from, "", subject, Map.of()),
-                new RedactedMail(text, List.of(), List.of()), List.of());
+        return MailRules.decide(new MailHeaders(from, "", subject, Map.of()), text,
+                new RedactedMail("", List.of(), List.of()), List.of());
     }
 
     @Test
@@ -56,5 +56,17 @@ class CarrierRulesTest {
     void carrierMailWithoutStatusOrTrackingIsNotAParcel() {
         assertThat(decide("info@gls-group.eu", "Nyári akciónk", "Rendelj most!"))
                 .isNotInstanceOf(RuleVerdict.Parcel.class);
+    }
+
+    @Test
+    void glsTrackingNumberOnlyInBodyIsTheKey() {
+        assertThat(decide("noreply@gls-group.eu", "Értesítés a csomagodról", "Csomagszám: 123456789012. Átvehető."))
+                .isEqualTo(new RuleVerdict.Parcel("GLS", "123456789012", ParcelState.PICKUP));
+    }
+
+    @Test
+    void loginCodeIsReadFromRawText() {
+        assertThat(decide("x@shop.example", "Belépés", "Az ellenőrző kód: 482913"))
+                .isEqualTo(new RuleVerdict.Sensitive("2fa"));
     }
 }

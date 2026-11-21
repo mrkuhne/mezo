@@ -19,7 +19,11 @@ public final class MailRules {
 
     private MailRules() {}
 
-    public static RuleVerdict decide(MailHeaders h, RedactedMail body, List<SenderRule> ownerRules) {
+    /**
+     * {@code rawText} is the unmasked body text (see {@code MailRedactor.plainText}); the rules run locally, so
+     * tracking numbers and login codes are read from it. {@code body} supplies only the JSON-LD blocks.
+     */
+    public static RuleVerdict decide(MailHeaders h, String rawText, RedactedMail body, List<SenderRule> ownerRules) {
         for (SenderRule r : ownerRules) {
             if (r.kind() == SenderRule.Kind.SENSITIVE && r.matches(h.from())) {
                 return new RuleVerdict.Sensitive("owner:" + r.pattern());
@@ -29,7 +33,7 @@ public final class MailRules {
         if (seed.isPresent()) {
             return new RuleVerdict.Sensitive("seed:" + seed.get());
         }
-        if (SensitiveSeed.looksLikeLoginCode(h.subject(), body.text())) {
+        if (SensitiveSeed.looksLikeLoginCode(h.subject(), rawText)) {
             return new RuleVerdict.Sensitive("2fa");
         }
         for (SenderRule r : ownerRules) {
@@ -42,7 +46,7 @@ public final class MailRules {
                 return new RuleVerdict.Rest(SILENT_CATEGORY);
             }
         }
-        Optional<RuleVerdict.Parcel> parcel = CarrierRules.match(h, body);
+        Optional<RuleVerdict.Parcel> parcel = CarrierRules.match(h, rawText);
         if (parcel.isPresent()) {
             return parcel.get();
         }

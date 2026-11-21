@@ -7,7 +7,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import io.mrkuhne.mezo.feature.mail.service.redact.RedactedMail;
 
 /**
  * Per-carrier parcel rules: sender domain, tracking pattern, status words. Parcel mail never reaches a model.
@@ -43,14 +42,14 @@ public final class CarrierRules {
 
     private CarrierRules() {}
 
-    public static Optional<RuleVerdict.Parcel> match(MailHeaders h, RedactedMail body) {
+    public static Optional<RuleVerdict.Parcel> match(MailHeaders h, String rawText) {
         String domain = h.fromDomain();
         for (Carrier c : CARRIERS) {
             if (c.domains().stream().noneMatch(d -> SensitiveSeed.domainMatches(domain, d))) {
                 continue;
             }
-            String text = h.subject() + "\n" + body.text();
-            Optional<String> tracking = firstMatch(c.tracking(), h.subject()).or(() -> firstMatch(c.tracking(), body.text()));
+            String text = h.subject() + "\n" + rawText;
+            Optional<String> tracking = firstMatch(c.tracking(), h.subject()).or(() -> firstMatch(c.tracking(), rawText));
             Optional<ParcelState> state = state(text);
             if (tracking.isEmpty() && state.isEmpty()) {
                 return Optional.empty(); // a carrier newsletter, not a status mail

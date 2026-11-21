@@ -69,4 +69,10 @@ class MailRedactorTest {
         assertThat(r.jsonLd()).containsExactly("{\"@type\":\"ParcelDelivery\"}");
         assertThat(r.text()).isEqualTo("Szia").doesNotContain("ParcelDelivery");
     }
+
+    @Test
+    void plainTextKeepsDigitsUnmasked() {
+        assertThat(MailRedactor.plainText(null, "<p>Csomagszám 123456789012</p>")).isEqualTo("Csomagszám 123456789012");
+        assertThat(MailRedactor.plainText("sima 123456789012", "<p>x</p>")).isEqualTo("sima 123456789012");
+    }
 }

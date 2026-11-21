@@ -18,7 +18,7 @@ class MailRulesTest {
     }
 
     private static RuleVerdict decide(MailHeaders h, RedactedMail b, SenderRule... rules) {
-        return MailRules.decide(h, b, List.of(rules));
+        return MailRules.decide(h, b.text(), b, List.of(rules));
     }
 
     @Test
