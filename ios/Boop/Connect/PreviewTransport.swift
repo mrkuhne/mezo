@@ -578,6 +578,17 @@ struct PreviewTransport: ClientTransport {
             let obj = (try? JSONSerialization.jsonObject(with: Data(sent.utf8))) as? [String: String]
             if let key = obj?["eventKey"], let effect = obj?["effect"] { capacityLabels[key] = effect }
             return (HTTPResponse(status: .noContent), nil)
+        case "getCapacitySeason":
+            // Invented, spike-shaped figures (the Évad page, B7 K2); `-capacitySeason none` = no active season (404).
+            if UserDefaults.standard.string(forKey: "capacitySeason") == "none" { return (HTTPResponse(status: .notFound), nil) }
+            let loads = [4.2, 4.6, 5.0, 5.4, 6.0, 6.3, 6.6, 3.6, 3.9, 3.0, 3.8, 3.4]
+            let rests = [5.0, 5.1, 5.0, 5.1, 5.0, 4.7, 4.4]
+            let weeks = (1...12).map { w -> String in
+                let past = w <= 7
+                let rest = past ? "\(rests[w - 1])" : "null"
+                return #"{"week":\#(w),"load":\#(loads[w - 1]),"recovery":\#(rest),"planned":\#(!past),"over":\#(w >= 4 && w <= 7),"trainingOnly":\#(!past)}"#
+            }.joined(separator: ",")
+            return json(#"{"weeks":[\#(weeks)],"nowWeek":7,"stats":{"overloadedDays4w":2,"moves":11,"movesGood":8},"headline":"Az utóbbi három hétben a terhed gyorsabban nőtt, mint ahogy pihensz."}"#)
         case "clearSessionTime":
             movedTime = nil
             return (HTTPResponse(status: .noContent), nil)

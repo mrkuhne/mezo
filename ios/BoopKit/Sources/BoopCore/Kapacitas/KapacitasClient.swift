@@ -21,4 +21,9 @@ public struct KapacitasClient: Sendable {
     public func feedback(eventKey: String, effect: KapacitasEffect) async throws(PlanFetchError) {
         try await feedback(eventKey: eventKey, effect: effect.rawValue)
     }
+
+    /// The season's weekly load against recovery. `.notFound` = no active season (the Évad block is left out).
+    public func season() async throws(PlanFetchError) -> KapacitasSeasonLoad {
+        try await raw.get("/api/capacity/season", operationID: "getCapacitySeason")
+    }
 }

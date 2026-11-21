@@ -52,6 +52,26 @@ struct KitGallery: View {
             }
             .nkStale(NKStale(age: "2 napja", loud: true))
 
+            NKBare("Teher és pihenés", hue: hue, glyph: "chart-deep", trailing: "hetente") {
+                NKSeasonLoadChart(weeks: (1...12).map { w in
+                    let past = w <= 7
+                    return NKLoadWeek(label: "\(w).", load: [4.2, 4.6, 5.0, 5.4, 6.0, 6.3, 6.6, 3.6, 3.9, 3.0, 3.8, 3.4][w - 1],
+                                      recovery: past ? [5.0, 5.1, 5.0, 5.1, 5.0, 4.7, 4.4][w - 1] : nil,
+                                      over: (4...7).contains(w), faint: !past)
+                }, nowIndex: 6, hue: hue)
+            }
+
+            NKBare("A jövő heted", hue: hue, glyph: "clock-ink") {
+                NKWeekLoadStrip(days: [NKLoadDay(weekday: "H", date: "24.", demand: 0.62, capacity: 0.82, word: "rendben"),
+                                       NKLoadDay(weekday: "K", date: "25.", demand: 0.55, capacity: 0.78, word: "laza"),
+                                       NKLoadDay(weekday: "Sz", date: "26.", demand: 0.80, capacity: 0.80, word: "szoros"),
+                                       NKLoadDay(weekday: "Cs", date: "27.", demand: 1.12, capacity: 0.70, word: "túl sok"),
+                                       NKLoadDay(weekday: "P", date: "28.", demand: 0.72, capacity: 0.76, word: "szoros"),
+                                       NKLoadDay(weekday: "Sz", date: "29.", demand: 0.30, capacity: 0.85, word: "laza"),
+                                       NKLoadDay(weekday: "V", date: "30.", demand: 0.48, capacity: 0.84, word: "laza")],
+                                lit: 3, hue: hue)
+            }
+
             NKBare("A nap energiája", hue: hue) {
                 NKCurve(values: [0.3, 0.5, 0.72, 0.64, 0.42, 0.55, 0.8, 0.6, 0.35],
                         labels: ["6", "9", "12", "15", "18", "21"], hue: hue, target: 0.6, nowIndex: 5)

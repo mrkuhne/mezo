@@ -32,6 +32,7 @@ struct EvadOverviewTab: View {
                     .nkFont(13).foregroundStyle(.white.opacity(0.55)).fixedSize(horizontal: false, vertical: true)
             }
         }
+        EvadTeher()
         if !o.insights.isEmpty {
             NKBare("Amit Boop észrevett", hue: evadHue, glyph: "spark-cream") {
                 NKList(o.insights.prefix(3).map { (title: $0.title, body: $0.body) }, hue: evadHue)
