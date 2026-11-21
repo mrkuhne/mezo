@@ -1172,7 +1172,8 @@
     ],
     "szulo": "mezo-r36n9.33",
     "cim": "Pénz: egy számla pénzneme ne változhasson, ha már vannak tételei",
-    "mit_kapsz": "Ha egy számlán már vannak tételek, a pénznemét nem lehet utólag átállítani, így az egyenleg nem tud csendben elcsúszni."
+    "mit_kapsz": "Ha egy számlán már vannak tételek, a pénznemét nem lehet utólag átállítani, így az egyenleg nem tud csendben elcsúszni.",
+    "munkamenet": "boop-penz-followups"
   },
   "mezo-r36n9.111": {
     "cim": "A „nem esik jól” gomb jobban rendezze át az ajánlásokat",
@@ -1270,7 +1271,8 @@
     ],
     "szulo": "mezo-r36n9.33",
     "cim": "Pénz · befektetés a számládról, és a banki üzenetből",
-    "mit_kapsz": "Ha egy befektetést rögzítesz, megadhatod, melyik számládról ment — így a havi keretben is látszik, mennyit tettél félre befektetésre. Ha a bank SMS-ben jelzi a vásárlást, Boop felismeri és összeköti a rögzített befektetéssel."
+    "mit_kapsz": "Ha egy befektetést rögzítesz, megadhatod, melyik számládról ment — így a havi keretben is látszik, mennyit tettél félre befektetésre. Ha a bank SMS-ben jelzi a vásárlást, Boop felismeri és összeköti a rögzített befektetéssel.",
+    "munkamenet": "boop-penz-followups"
   },
   "mezo-r36n9.120": {
     "tipus": "Funkció",
@@ -1280,7 +1282,8 @@
     ],
     "szulo": "mezo-r36n9.33",
     "cim": "Pénz · heti áttekintés: mi számít tényleg hosszú távon",
-    "mit_kapsz": "Hetente egyszer egy rövid összefoglaló rekeszenként arról, mi az, ami a hosszú távú pénzedet tényleg érinti — a napi hírek zajától elkülönítve. Értesítés nélkül, teendő-gomb nélkül."
+    "mit_kapsz": "Hetente egyszer egy rövid összefoglaló rekeszenként arról, mi az, ami a hosszú távú pénzedet tényleg érinti — a napi hírek zajától elkülönítve. Értesítés nélkül, teendő-gomb nélkül.",
+    "munkamenet": "boop-penz-followups"
   },
   "mezo-r36n9.122": {
     "cim": "Évad: az edzésnapok módosítása a futó blokkot is átrendezi",
@@ -1320,7 +1323,8 @@
     ],
     "szulo": "mezo-r36n9.33",
     "cim": "Pénz · javaslatok: ismeretlen termék nevének kiszűrése",
-    "mit_kapsz": "Ha Boop egy javaslat szövegében olyan terméket említene, ami nincs is a termékjegyzékedben, a szöveg akkor is fennakad az ellenőrzésen, és a rögzített, biztonságos szöveg jelenik meg helyette."
+    "mit_kapsz": "Ha Boop egy javaslat szövegében olyan terméket említene, ami nincs is a termékjegyzékedben, a szöveg akkor is fennakad az ellenőrzésen, és a rögzített, biztonságos szöveg jelenik meg helyette.",
+    "munkamenet": "boop-penz-followups"
   },
   "mezo-r36n9.125": {
     "cim": "Edzés: Rest pause technika (20 + 4 × 5, fix menet)",
