@@ -1316,6 +1316,7 @@ Wearable workouts are display + AI context only (no calorie-target effect). Chan
 - An accepted time shift wins over a `workout_time_override` for the same day. Both are read, with no migration.
 - Sets and minutes follow an accepted lighten or shorten.
 - `day.bedtimeTarget` is the night's accepted bedtime (`BoopDayAdjustmentPort`), else the sleep goal's.
+- These session reads all go through train's `EffectivePlanService.plannedSession`, the same helper the chat context uses.
 
 Details: [`capacity.md`](capacity.md) §4.
 

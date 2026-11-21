@@ -564,6 +564,7 @@ Key FE shapes:
 
 **Capacity ledger (Boop B7 K3, `mezo-r36n9.17`).**
 - **Pending kcal follows a moved session.** `pendingMovementKcal` comes from `movementOn`, which honours the ledger. A gym session moved to another day is pending on its new day and no longer on its old day. The target still rises only when a session is logged.
+- **A shifted bedtime moves the day plan's end.** That night's accepted `SHIFT_BEDTIME` replaces the sleep anchor's bed time in `DayPlanService`. The last window's placement and the bedtime gate move with it.
 - **Meal-energy moves change the split, not the total.** `DayPlanService.moveEnergy` (in `plan` and `skeleton`) applies an accepted `MOVE_MEAL_ENERGY` to the day plan's per-slot split. Carbs follow at 4 kcal/g. The day's total kcal never changes.
 
 Details: [`capacity.md`](capacity.md) §4.
