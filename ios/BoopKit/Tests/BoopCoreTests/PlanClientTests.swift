@@ -298,4 +298,27 @@ struct PlanClientTests {
             try await c.discardBlock(id: PlanFixtures.newBlockId)
         }
     }
+
+    @Test func yearPlanCallsUseTheContractPathsAndDecodeLeniently() async throws {
+        let stub = StubTransport()
+        stub.on("getActiveYearPlan", .json(404, PlanFixtures.noYearPlanJSON))
+        stub.on("getActiveYearPlan", .json(200, PlanFixtures.yearPlanJSON(unlinked: #"{"mesocycleId":"\#(PlanFixtures.blockId)","title":"V-forma","startDate":"2026-11-16"}"#)))
+        stub.on("previewYearPlan", .json(200, PlanFixtures.yearPlanJSON(id: false)))
+        stub.on("startMesoTemplate", .json(201, PlanFixtures.startedBlockJSON()))
+        let c = PlanFixtures.planClient(stub)
+        #expect(try await c.activeYearPlan() == nil, "404 = no plan, not a failure")
+        let plan = try #require(try await c.activeYearPlan())
+        #expect(plan.blocks.map(\.kind) == ["upper", "lower", "consolidation"] && plan.bufferWeeks == 1)
+        #expect(plan.unlinkedRunning?.title == "V-forma" && plan.review.unfocused.count == 7)
+        #expect(plan.blocks[1].skipConsequence == ["quad"] && plan.blocks[0].mesocycleId == PlanFixtures.blockId)
+        let preview = try await c.yearPlanPreview(WireYearPlanRequest(startDate: "2026-11-30"))
+        #expect(preview.id == nil)
+        #expect(stub.sent.last?.body == #"{"startDate":"2026-11-30"}"#, "absent optionals are not sent")
+        _ = try await c.startTemplate(id: "t", startDate: "2026-11-30", status: "planned", yearBlockId: PlanFixtures.yearBlock2)
+        #expect(stub.sent.last?.body?.contains(#""yearBlockId":"\#(PlanFixtures.yearBlock2)""#) == true)
+
+        // A plan round-trips through the cache's encoder.
+        let again = try JSONDecoder().decode(WireYearPlan.self, from: JSONEncoder().encode(plan))
+        #expect(again == plan)
+    }
 }

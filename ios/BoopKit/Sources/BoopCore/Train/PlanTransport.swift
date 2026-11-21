@@ -84,6 +84,8 @@ public struct RawJSONClient: Sendable {
         return try decode(try await sendRaw(method, path, operationID: operationID, body: data))
     }
 
+    func decodeBody<T: Decodable>(_ data: Data, as: T.Type = T.self) throws(PlanFetchError) -> T { try decode(data) }
+
     private func decode<T: Decodable>(_ data: Data) throws(PlanFetchError) -> T {
         do { return try PlanJSON.decoder.decode(T.self, from: data) } catch { throw .server }
     }

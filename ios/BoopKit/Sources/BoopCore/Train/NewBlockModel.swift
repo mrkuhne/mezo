@@ -62,7 +62,9 @@ public enum RaiseCheck: Equatable, Sendable {
 
 @MainActor @Observable
 public final class NewBlockModel {
-    public enum StartChoice: Equatable, Sendable { case nextMonday, today }
+    /// `planned(date)`: the year block's own start day (`yyyy-MM-dd`), the default when the intake opens from a year
+    /// block that is still ahead.
+    public enum StartChoice: Equatable, Sendable { case nextMonday, today, planned(String) }
 
     public enum Phase: Equatable {
         /// No season gym days (or the server said no season covers the start): the season-needed state.
@@ -78,6 +80,8 @@ public final class NewBlockModel {
     }
 
     public static let weekRange = 4...8
+    /// A year-plan consolidation's length (no stepper on screen; the year block decides it).
+    public static let consolidationWeekRange = 1...3
     public static let minuteChoices = [45, 60, 75, 90]
     public static let dayRange = 2...6
     /// Season weekday (0 = Monday) → the server's day token.
@@ -89,6 +93,8 @@ public final class NewBlockModel {
     public var weeks: Int {
         get { weeksValue }
         set {
+            // The consolidation's length is the year block's: no stepper, nothing to change.
+            guard !consolidation else { return }
             let clamped = min(max(newValue, Self.weekRange.lowerBound), Self.weekRange.upperBound)
             guard clamped != weeksValue else { return }
             weeksValue = clamped
@@ -111,6 +117,13 @@ public final class NewBlockModel {
     private var pricedTiers: [String: String] = [:]
     /// The training days as the server's tokens, in week order.
     public let days: [String]
+    /// The year block this intake starts (Következik „Indítás"); nil for a free new block.
+    public let prefill: YearBlockPrefill?
+    /// A year-plan consolidation: every muscle stays Tartás, the tiers do not move, the length is fixed.
+    public var tiersLocked: Bool { consolidation }
+    private var consolidation: Bool { prefill?.consolidation ?? false }
+    /// `consolidation: true` on the candidates / generate requests, else not sent.
+    private var consolidationWire: Bool? { consolidation ? true : nil }
 
     private let client: PlanClient
     private let debounce: Duration
@@ -129,13 +142,21 @@ public final class NewBlockModel {
     }
 
     public init(client: PlanClient, seasonGymDays: [Int]?, debounce: Duration = .milliseconds(300),
-                now: @escaping () -> Date = Date.init, calendar: Calendar = .current) {
+                now: @escaping () -> Date = Date.init, calendar: Calendar = .current, prefill: YearBlockPrefill? = nil) {
         self.client = client
         self.debounce = debounce
         self.now = now
         self.calendar = calendar
+        self.prefill = prefill
         days = Array(Set(seasonGymDays ?? [])).sorted().compactMap { Self.dayTokens[$0] }
         phase = days.isEmpty ? .needsSeason : Self.dayRange.contains(days.count) ? .editing : .seasonDaysOutOfRange(days.count)
+        if let prefill {
+            // Stored directly: the observers (and their refresh) do not run in an initializer.
+            tiers = prefill.tiers
+            let range = prefill.consolidation ? Self.consolidationWeekRange : Self.weekRange
+            weeksValue = min(max(prefill.weeks, range.lowerBound), range.upperBound)
+            if let date = prefill.startDate { startChoice = .planned(date) }
+        }
     }
 
     /// The minutes pills: the fixed choices plus the current minutes when a fix set one outside them (e.g. 105).
@@ -150,7 +171,8 @@ public final class NewBlockModel {
     }
 
     private var candidatesRequest: WireCandidatesRequest {
-        WireCandidatesRequest(daysOfWeek: days, weeks: weeks, priorities: prioritiesWire, sessionMinutesTarget: minutes)
+        WireCandidatesRequest(daysOfWeek: days, weeks: weeks, priorities: prioritiesWire, sessionMinutesTarget: minutes,
+                              consolidation: consolidationWire)
     }
 
     private var busy: Bool {
@@ -217,6 +239,7 @@ public final class NewBlockModel {
     /// (Tartás → Hangsúly lands on Építés first) and only when the budget allows. Returns the check that decided.
     @discardableResult
     public func setTier(_ muscle: String, _ target: String) -> RaiseCheck {
+        guard !tiersLocked else { return .ok }
         let from = RaiseCheck.rank(tier(muscle)), wanted = RaiseCheck.rank(target)
         guard wanted != from else { return .ok }
         if wanted < from { tiers[muscle] = target; return .ok }
@@ -284,7 +307,7 @@ public final class NewBlockModel {
         phase = .creating
         // The minutes ride along: the server keeps the AI's picks only while the plan still fits the offered minutes.
         let request = WireGenerateRequest(daysOfWeek: days, weeks: weeks, priorities: prioritiesWire, split: candidate.splitKey,
-                                          sessionMinutesTarget: minutes)
+                                          sessionMinutesTarget: minutes, consolidation: consolidationWire)
         let key = SavedKey(request: request, minutes: minutes)
         do {
             let templateId: String
@@ -303,7 +326,7 @@ public final class NewBlockModel {
             let status = startChoice == .today ? "active" : "planned"
             let block = try await client.startTemplate(id: templateId,
                                                        startDate: Self.startDate(startChoice, now: now(), calendar: calendar),
-                                                       status: status)
+                                                       status: status, yearBlockId: prefill.flatMap { $0.yearBlockId.isEmpty ? nil : $0.yearBlockId })
             phase = .created(blockId: block.id)
         } catch {
             if Self.isSeasonRequired(error) {
@@ -323,8 +346,10 @@ public final class NewBlockModel {
         await refresh()
     }
 
-    /// `today`, or the next Monday strictly after today (today a Monday → a week later), as `yyyy-MM-dd` in his calendar.
+    /// `today`, or the next Monday strictly after today (today a Monday → a week later), as `yyyy-MM-dd` in his calendar;
+    /// `planned(date)` is that date.
     public static func startDate(_ choice: StartChoice, now: Date, calendar: Calendar) -> String {
+        if case .planned(let day) = choice { return day }
         var date = calendar.startOfDay(for: now)
         if choice == .nextMonday {
             let weekday = calendar.component(.weekday, from: date) // 1 = Sunday, 2 = Monday

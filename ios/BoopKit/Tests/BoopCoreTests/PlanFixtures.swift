@@ -145,6 +145,42 @@ enum PlanFixtures {
     static var draft: BlockDraft { BlockDraft(block: block, catalog: catalog) }
     static var proposal: WireProposal { try! JSONDecoder().decode([WireProposal].self, from: Data(proposalJSON().utf8))[0] }
 
+    // MARK: the Éves terv (mezo-r36n9.113) — invented plan, the server's shape
+
+    static let yearPlanId = "9ea40000-0000-4000-8000-000000000001"
+    static let yearBlock1 = "9eb10000-0000-4000-8000-000000000001"
+    static let yearBlock2 = "9eb10000-0000-4000-8000-000000000002"
+    static let yearBlockC = "9eb10000-0000-4000-8000-00000000000c"
+
+    /// Block 1 running (adopted), block 2 planned from 2027-01-11, the consolidation last; `warnings` and `next` as given.
+    static func yearPlanJSON(id: Bool = true, status: String = "active", warnings: String = "[]",
+                             relaxed: String = "[]", block2Status: String = "planned", unlinked: String = "null") -> String {
+        let pid = id ? #""id":"\#(yearPlanId)","# : ""
+        func bid(_ v: String) -> String { id ? #""id":"\#(v)","# : "" }
+        return #"""
+        {\#(pid)"status":"\#(status)","startDate":"2026-11-30","endDate":"2027-11-28","blockWeeks":6,"consolidationWeeks":2,
+         "emphasis":["back"],"currentWeek":1,"loadingBlocks":2,"bufferWeeks":1,"bufferStart":"2027-11-08","overrunWeeks":0,
+         "blocks":[
+           {\#(bid(yearBlock1))"ordinal":1,"kind":"upper","focus":["back","biceps"],"weeks":6,"plannedStart":"2026-11-30",
+            "lastDay":"2027-01-10","status":"running","mesocycleId":"\#(blockId)","currentWeek":1,"adopted":true,
+            "canMoveEarlier":false,"skipConsequence":[]},
+           {\#(bid(yearBlock2))"ordinal":2,"kind":"lower","focus":["quad"],"weeks":6,"plannedStart":"2027-01-11",
+            "lastDay":"2027-02-21","status":"\#(block2Status)","mesocycleId":null,"currentWeek":null,"adopted":false,
+            "canMoveEarlier":false,"skipConsequence":["quad"],"someFutureField":1},
+           {\#(bid(yearBlockC))"ordinal":3,"kind":"consolidation","focus":[],"weeks":2,"plannedStart":"2027-11-15",
+            "lastDay":"2027-11-28","status":"planned","adopted":false,"canMoveEarlier":false,"skipConsequence":[]}],
+         "relaxed":\#(relaxed),"warnings":\#(warnings),
+         "focusCount":{"chest":0,"back":1,"shoulder":0,"biceps":1,"triceps":0,"quad":1,"ham":0,"glute":0,"calf":0},
+         "next":{"blockId":"\#(yearBlock2)","startsOn":"2027-01-11","reason":"last_week"},
+         "unlinkedRunning":\#(unlinked),
+         "review":{"blocksDone":0,"blocksSkipped":0,"focused":["back","biceps"],"unfocused":["chest","shoulder","triceps","quad","ham","glute","calf"]}}
+        """#
+    }
+
+    static let noYearPlanJSON = #"{"messages":[{"code":"TRAIN_YEAR_PLAN_NONE","message":"x"}]}"#
+
+    static var yearPlan: WireYearPlan { try! JSONDecoder().decode(WireYearPlan.self, from: Data(yearPlanJSON().utf8)) }
+
     static func planClient(_ stub: StubTransport) -> PlanClient {
         PlanClient(raw: RawJSONClient(transport: stub, baseURL: URL(string: "https://example.test")!, token: { "tok" }))
     }
