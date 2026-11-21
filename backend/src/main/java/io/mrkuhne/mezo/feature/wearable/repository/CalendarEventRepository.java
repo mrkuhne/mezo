@@ -55,4 +55,8 @@ public interface CalendarEventRepository extends JpaRepository<CalendarEventEnti
 
     /** Live (not cancelled / soft-deleted) events of the day. */
     List<CalendarEventEntity> findByCreatedByAndDeletedFalseAndDateOrderByStartAt(UUID createdBy, LocalDate date);
+
+    /** Live events of a date range (inclusive), chronological. */
+    List<CalendarEventEntity> findByCreatedByAndDeletedFalseAndDateBetweenOrderByStartAt(
+        UUID createdBy, LocalDate from, LocalDate to);
 }

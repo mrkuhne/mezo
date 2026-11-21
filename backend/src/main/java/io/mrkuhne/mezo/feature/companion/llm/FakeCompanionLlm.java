@@ -626,6 +626,8 @@ public class FakeCompanionLlm implements CompanionLlm {
     /** Mirror of BoopPrompts.MARKER (feature/boop) — LITERAL, cycle rule (boop is a leaf feature;
      *  nothing imports it back). Drift is caught by BoopVerdictWriterIT's canned-answer assertions. */
     public static final String BOOP_BRIEF_MARKER_MIRROR = "BOOP_BRIEF_V1";
+    /** Mirror of EventScoringService.MARKER (feature/capacity, B7 K1) — LITERAL, cycle rule. */
+    public static final String CAPACITY_SCORE_MARKER_MIRROR = "CAPACITY_EVENT_SCORE_V1";
     /** Boop brief: planted in the day's intention creed → a non-JSON answer (rule fallback path). */
     public static final String BOOP_JUNK = "[fake-boop-junk]";
     /** Boop brief: planted in the creed → a JSON object carrying ONLY {@code alvas} (per-field fallback). */
@@ -848,6 +850,10 @@ public class FakeCompanionLlm implements CompanionLlm {
     private final java.util.concurrent.atomic.AtomicInteger dayCloseLineCalls = new java.util.concurrent.atomic.AtomicInteger();
     public int dayCloseLineCallCount() { return dayCloseLineCalls.get(); }
 
+    /** Capacity event-score calls (B7 K1): ITs assert the score cache (same hash → no new call). */
+    private final java.util.concurrent.atomic.AtomicInteger capacityScoreCalls = new java.util.concurrent.atomic.AtomicInteger();
+    public int capacityScoreCallCount() { return capacityScoreCalls.get(); }
+
     /** Boop brief calls (mezo-r36n9.7): ITs assert the brief cache (same input hash → no new LLM call). */
     private final java.util.concurrent.atomic.AtomicInteger boopBriefCalls = new java.util.concurrent.atomic.AtomicInteger();
     public int boopBriefCallCount() { return boopBriefCalls.get(); }
@@ -1032,6 +1038,17 @@ public class FakeCompanionLlm implements CompanionLlm {
         }
         if (userMessage.contains(FAIL_COMPLETE) || systemPrompt.contains(FAIL_COMPLETE)) {
             throw new IllegalStateException("FAKE-LLM forced complete failure");
+        }
+        if (systemPrompt.startsWith(CAPACITY_SCORE_MARKER_MIRROR)) {
+            capacityScoreCalls.incrementAndGet();
+            StringBuilder events = new StringBuilder();
+            Matcher ids = Pattern.compile("id=([0-9a-fA-F-]{36})").matcher(userMessage);
+            while (ids.find()) {
+                if (events.length() > 0) events.append(',');
+                events.append("{\"id\":\"").append(ids.group(1)).append("\",\"mental\":2,\"social\":1,")
+                    .append("\"physical\":0,\"restores\":false,\"kind\":\"meeting\",\"confidence\":0.8}");
+            }
+            return "{\"events\":[" + events + "]}";
         }
         if (dayLine) {
             return DAY_LINE_CANNED_ANSWER;
