@@ -2301,7 +2301,7 @@
     "terulet": "Célok és évad",
     "app": "Kész",
     "mit_tud": "Kapcsolók az évadra: csak kevéssé feldolgozott ételek, könnyebb edzéshéten ne fogyj, megtanult égetés, kísérlet-ajánlás, menü időpontja.",
-    "app_megjegyzes": "Az Évad szabályai oldalon állítható; a szabályok Boop beszélgetéseiben a 2. szakaszban jönnek.",
+    "app_megjegyzes": "Az Évad szabályai oldalon állítható; Boop a beszélgetésben, a reggeli összefoglalóban és az étkezések értékelésénél is ezekhez igazodik.",
     "jegyek": [
       "mezo-r36n9.16"
     ],
@@ -2349,6 +2349,34 @@
     ],
     "kezikonyv": [
       "04-terv/00-attekintes"
+    ],
+    "csomag": "season"
+  },
+  "season-heti-menu": {
+    "cim": "Heti menü",
+    "terulet": "Célok és évad",
+    "app": "Kész",
+    "mit_tud": "A kiválasztott receptekből, a napi keretekhez igazított adagokkal összeállítja a jövő heti menüt (vasárnap este magától is), egy-egy étel lecserélhető, jóváhagyás után ezek a napi terv javaslatai, és egy hét közbeni évadmódosításnál a hátralévő napok igazodnak.",
+    "app_megjegyzes": "Az Évad Menü fülén: hét napkártya, jóváhagyás, csere, másik menü, receptválasztás; jóváhagyásra váró menünél kártya a Ma falon.",
+    "jegyek": [
+      "mezo-r36n9.16"
+    ],
+    "kezikonyv": [
+      "04-terv/09-heti-menu"
+    ],
+    "csomag": "season"
+  },
+  "season-bevasarlolista": {
+    "cim": "Bevásárlólista",
+    "terulet": "Célok és évad",
+    "app": "Kész",
+    "mit_tud": "A jóváhagyott heti menüből összeadja a hozzávalókat polcok szerint, minden tételnél mennyiséggel és azzal, melyik ételhez kell; pipálható, a szokásos tételek csak koppintásra kerülnek fel, a korábbi listák megmaradnak.",
+    "app_megjegyzes": "Az Évad Lista fülén: pipálás, „változott” rész, szokásos tételek, megosztás szövegként, korábbi listák.",
+    "jegyek": [
+      "mezo-r36n9.16"
+    ],
+    "kezikonyv": [
+      "04-terv/07-bevasarlolista"
     ],
     "csomag": "season"
   },
