@@ -39,6 +39,7 @@ public class MailIntakeStore {
     public static final String OUTCOME_OK = "ok";
     public static final String OUTCOME_AUTH_FAILED = "auth_failed";
     public static final String OUTCOME_UNREACHABLE = "unreachable";
+    public static final String OUTCOME_ERROR = "error";
 
     /** Two empty runs in a row and the mailbox is considered silent. */
     static final int SILENT_STREAK = 2;
@@ -134,18 +135,20 @@ public class MailIntakeStore {
 
         MailMailboxEntity m = mailboxes.findById(mailbox.getId()).orElseThrow();
         m.setLastRunAt(run.finishedAt());
+        if (run.stored() > 0) {
+            m.setZeroRunStreak(0); // mail arrived, even if a later folder failed
+        }
         switch (run.outcome()) {
             case OUTCOME_AUTH_FAILED -> m.setState(STATE_AUTH_FAILED);
             case OUTCOME_OK -> {
                 if (run.stored() > 0) {
-                    m.setZeroRunStreak(0);
                     m.setState(STATE_CONNECTED);
                 } else {
                     m.setZeroRunStreak(m.getZeroRunStreak() + 1);
                     m.setState(m.getZeroRunStreak() >= SILENT_STREAK ? STATE_SILENT : STATE_CONNECTED);
                 }
             }
-            default -> { /* unreachable: the state stays as it was */ }
+            default -> { /* unreachable / error: the state stays as it was */ }
         }
         mailboxes.saveAndFlush(m);
         return runId;

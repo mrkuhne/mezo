@@ -36,11 +36,11 @@ public interface MailMessageRepository extends JpaRepository<MailMessageEntity, 
                        @Param("subject") String subject, @Param("bodyRedacted") String bodyRedacted,
                        @Param("sensitive") boolean sensitive);
 
-    /** Raw bodies received before the cutoff are dropped; the row itself (and any item) stays. */
+    /** Raw bodies received before the cutoff are dropped, soft-deleted rows included; the row itself (and any item) stays. */
     @Modifying(flushAutomatically = true)
     @Query(value = """
         update mail_message set body_redacted = null, body_purged = true
-        where is_deleted = false and body_purged = false and body_redacted is not null and received_at < :cutoff
+        where body_purged = false and body_redacted is not null and received_at < :cutoff
         """, nativeQuery = true)
     int purgeBodiesBefore(@Param("cutoff") Instant cutoff);
 }

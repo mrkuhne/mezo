@@ -13,6 +13,8 @@ import io.mrkuhne.mezo.feature.mail.service.MailIntakeService.IntakeResult;
 import io.mrkuhne.mezo.feature.mail.service.imap.GreenMailReaders;
 import io.mrkuhne.mezo.feature.mail.service.imap.MailReader;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
+import io.mrkuhne.mezo.techcore.exception.SystemMessage;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.MailPopulator;
 import jakarta.mail.Folder;
@@ -67,8 +69,66 @@ class MailIntakeIT extends AbstractIntegrationTest {
         @Bean
         @Primary
         MailReader greenMailReader(MailProperties props) {
-            return GreenMailReaders.trusting(props);
+            return new ControllableReader(GreenMailReaders.trusting(props));
         }
+    }
+
+    /** Delegates to the real reader; a test can make it fail, add a malformed mail, or block mid-run. */
+    static final class ControllableReader implements MailReader {
+        static volatile String failFolder;
+        static volatile RuntimeException failWith;
+        static volatile boolean addMalformed;
+        static volatile java.util.concurrent.CountDownLatch entered;
+        static volatile java.util.concurrent.CountDownLatch release;
+
+        private final MailReader delegate;
+
+        ControllableReader(MailReader delegate) {
+            this.delegate = delegate;
+        }
+
+        static void reset() {
+            failFolder = null;
+            failWith = null;
+            addMalformed = false;
+            entered = null;
+            release = null;
+        }
+
+        @Override
+        public void verify(String address, String password) {
+            delegate.verify(address, password);
+        }
+
+        @Override
+        public FolderBatch fetch(String address, String password, String folder, FolderState since, int max) {
+            if (entered != null) {
+                entered.countDown();
+                try {
+                    release.await(10, java.util.concurrent.TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            if (failWith != null && (failFolder == null || failFolder.equals(folder))) {
+                throw failWith;
+            }
+            FolderBatch batch = delegate.fetch(address, password, folder, since, max);
+            if (addMalformed && "INBOX".equals(folder)) {
+                java.util.List<io.mrkuhne.mezo.feature.mail.service.imap.FetchedMail> mails =
+                    new java.util.ArrayList<>(batch.mails());
+                long uid = batch.mails().stream().mapToLong(m -> m.uid()).max().orElse(0) + 1;
+                mails.add(0, new io.mrkuhne.mezo.feature.mail.service.imap.FetchedMail(folder, uid,
+                    batch.uidValidity(), null, "<bad@example.test>", Instant.now(), null, "x", null));
+                return new FolderBatch(batch.uidValidity(), mails);
+            }
+            return batch;
+        }
+    }
+
+    private static SystemRuntimeErrorException unreachable() {
+        return new SystemRuntimeErrorException(SystemMessage.error("MAIL_UNREACHABLE").build(),
+            org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE);
     }
 
     @Autowired private DatabasePopulator db;
@@ -79,6 +139,12 @@ class MailIntakeIT extends AbstractIntegrationTest {
     @Autowired private MailMailboxRepository mailboxes;
     @Autowired private JdbcTemplate jdbc;
     @Autowired private MeterRegistry registry;
+    @Autowired private MailHealth health;
+
+    @org.junit.jupiter.api.AfterEach
+    void resetReader() {
+        ControllableReader.reset();
+    }
 
     private UUID owner;
     private String address;
@@ -276,6 +342,93 @@ class MailIntakeIT extends AbstractIntegrationTest {
             Boolean.class, old.getId())).isTrue();
         assertThat(jdbc.queryForObject("select body_redacted is not null and not body_purged from mail_message "
             + "where id = ?", Boolean.class, fresh.getId())).isTrue();
+    }
+
+    @Test
+    void unexpectedExceptionStillWritesAnErrorRun() {
+        ControllableReader.failWith = new RuntimeException("boom");
+
+        IntakeResult result = intake.intake(owner, "cron");
+
+        assertThat(result.failed()).isTrue();
+        assertThat(result.runId()).isNotNull();
+        assertThat(jdbc.queryForObject("select outcome || ':' || error_code from mail_run where id = ?",
+            String.class, result.runId())).isEqualTo("error:MAIL_INTAKE_ERROR");
+        assertThat(state()).isEqualTo("connected");
+    }
+
+    @Test
+    void malformedMailIsSkippedAndTheRestStored() throws Exception {
+        append("INBOX", message("<m1@example.test>", "Levél", "Kitalált tartalom.", "shop@example.test"));
+        ControllableReader.addMalformed = true;
+
+        IntakeResult result = intake.intake(owner, "cron");
+
+        assertThat(result.failed()).isFalse();
+        assertThat(result.mails()).hasSize(1);
+        assertThat(count("select count(*) from mail_message where mailbox_id = ?", mailbox.getId())).isEqualTo(1);
+        assertThat(count("select last_uid from mail_folder_cursor where mailbox_id = ? and folder = 'INBOX'",
+            mailbox.getId())).isEqualTo(2); // advanced past the bad one
+    }
+
+    @Test
+    void inboxOkSpamUnreachableKeepsInboxMailAndResetsStreak() throws Exception {
+        jdbc.update("update mail_mailbox set zero_run_streak = 1 where id = ?", mailbox.getId());
+        append("INBOX", message("<p1@example.test>", "Levél", "Kitalált tartalom.", "shop@example.test"));
+        ControllableReader.failFolder = "[Gmail]/Spam";
+        ControllableReader.failWith = unreachable();
+
+        IntakeResult result = intake.intake(owner, "cron");
+
+        assertThat(result.failed()).isTrue();
+        assertThat(result.mails()).hasSize(1);
+        assertThat(streak()).isZero();
+        assertThat(state()).isEqualTo("connected");
+        assertThat(jdbc.queryForObject("select outcome from mail_run where id = ?", String.class, result.runId()))
+            .isEqualTo("unreachable");
+    }
+
+    @Test
+    void disconnectedMailboxDoesNotRaiseTheGauges() {
+        jdbc.update("update mail_mailbox set state = 'disconnected', zero_run_streak = 5 where id = ?",
+            mailbox.getId());
+        health.refresh();
+
+        assertThat(gauge("mezo.mail.zero.run.streak")).isZero();
+    }
+
+    @Test
+    void concurrentRunForTheSameMailboxIsSkipped() throws Exception {
+        ControllableReader.entered = new java.util.concurrent.CountDownLatch(1);
+        ControllableReader.release = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.ExecutorService pool = java.util.concurrent.Executors.newSingleThreadExecutor();
+        try {
+            java.util.concurrent.Future<IntakeResult> first = pool.submit(() -> intake.intake(owner, "cron"));
+            assertThat(ControllableReader.entered.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+
+            IntakeResult second = intake.intake(owner, "manual");
+
+            assertThat(second.runId()).isNull();
+            assertThat(second.failed()).isFalse();
+            ControllableReader.release.countDown();
+            assertThat(first.get(20, java.util.concurrent.TimeUnit.SECONDS).runId()).isNotNull();
+            assertThat(count("select count(*) from mail_run where mailbox_id = ?", mailbox.getId())).isEqualTo(1);
+        } finally {
+            ControllableReader.release.countDown();
+            pool.shutdownNow();
+        }
+    }
+
+    @Test
+    void purgeAlsoDropsBodiesOfSoftDeletedRows() {
+        MailMessageEntity gone = mail.message(owner, mailbox.getId(), null);
+        Instant now = Instant.parse("2026-11-21T08:00:00Z");
+        jdbc.update("update mail_message set body_redacted = 'kitalált törzs', is_deleted = true, received_at = ? "
+            + "where id = ?", java.sql.Timestamp.from(now.minus(java.time.Duration.ofDays(31))), gone.getId());
+
+        assertThat(purge.purge(now)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select body_redacted is null from mail_message where id = ?",
+            Boolean.class, gone.getId())).isTrue();
     }
 
     private int streak() {

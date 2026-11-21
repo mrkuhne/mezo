@@ -24,6 +24,9 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
@@ -47,6 +50,8 @@ public class MailIntakeService {
     static final List<String> FOLDERS = List.of("INBOX", "[Gmail]/Spam");
     static final int BATCH_MAX = 200;
 
+    private static final String ERROR_CODE = "MAIL_INTAKE_ERROR";
+    private static final Map<UUID, ReentrantLock> LOCKS = new ConcurrentHashMap<>();
     private static final Logger LOG = LoggerFactory.getLogger(MailIntakeService.class);
 
     /** A mail stored by this run, with what the classifier needs in memory only. */
@@ -86,6 +91,18 @@ public class MailIntakeService {
             return new IntakeResult(null, List.of(), false);
         }
         MailMailboxEntity mailbox = found.get();
+        ReentrantLock lock = LOCKS.computeIfAbsent(mailbox.getId(), id -> new ReentrantLock());
+        if (!lock.tryLock()) {
+            return new IntakeResult(null, List.of(), false); // single flight: a run for this mailbox is in progress
+        }
+        try {
+            return run(userId, trigger, mailbox);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    private IntakeResult run(UUID userId, String trigger, MailMailboxEntity mailbox) {
         Instant started = now();
         List<IntakedMail> stored = new ArrayList<>();
         int fetched = 0;
@@ -103,6 +120,10 @@ public class MailIntakeService {
             outcome = ImapMailReader.UNREACHABLE.equals(errorCode) ? MailIntakeStore.OUTCOME_UNREACHABLE
                 : MailIntakeStore.OUTCOME_AUTH_FAILED; // an unreadable stored secret needs re-entering, like a refused one
             LOG.warn("mail intake run failed: {}", errorCode);
+        } catch (RuntimeException e) {
+            errorCode = ERROR_CODE;
+            outcome = MailIntakeStore.OUTCOME_ERROR;
+            LOG.warn("mail intake run failed unexpectedly: {}", e.getClass().getSimpleName());
         }
         UUID runId = store.recordRun(userId, mailbox, new RunOutcome(trigger, started, now(), fetched, stored.size(),
             outcome, errorCode));
@@ -121,8 +142,12 @@ public class MailIntakeService {
         List<Prepared> prepared = new ArrayList<>();
         long highest = 0;
         for (FetchedMail mail : batch.mails()) {
-            prepared.add(prepare(mail, rules));
-            highest = Math.max(highest, mail.uid());
+            highest = Math.max(highest, mail.uid()); // the cursor moves past a mail even when it is skipped
+            try {
+                prepared.add(prepare(mail, rules));
+            } catch (RuntimeException e) {
+                LOG.warn("mail uid {} in {} skipped: {}", mail.uid(), folder, e.getClass().getSimpleName());
+            }
         }
         List<Optional<UUID>> ids = store.storeBatch(userId, mailbox.getId(), folder, batch.uidValidity(), highest,
             prepared.stream().map(Prepared::row).toList());

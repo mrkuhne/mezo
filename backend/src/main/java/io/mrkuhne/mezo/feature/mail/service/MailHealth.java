@@ -47,7 +47,8 @@ public class MailHealth {
 
     /** Recomputes both gauges from the table. */
     public void refresh() {
-        List<MailMailboxEntity> live = mailboxes.findAll();
+        List<MailMailboxEntity> live = mailboxes.findAll().stream()
+            .filter(m -> !MailIntakeStore.STATE_DISCONNECTED.equals(m.getState())).toList();
         zeroRunStreak.set(live.stream().mapToInt(MailMailboxEntity::getZeroRunStreak).max().orElse(0));
         authFailed.set(live.stream().anyMatch(m -> MailIntakeStore.STATE_AUTH_FAILED.equals(m.getState())) ? 1 : 0);
     }
