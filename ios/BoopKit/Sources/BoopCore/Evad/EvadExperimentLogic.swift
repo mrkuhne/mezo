@@ -62,7 +62,8 @@ public func evadSignalDelta(_ key: String, before: Double, after: Double) -> Str
 public struct EvadSignalRow: Equatable, Sendable {
     public let key: String
     public let label: String, before: String, after: String
-    /// 1 the after column is the better (a clear good change), -1 the before (a clear bad one), 0 neither.
+    /// 1 the after column is the better (a clear good change), -1 the before (a clear bad one), 0 neither — always 0
+    /// unless the result's verdict is „clear".
     public let favours: Int
 }
 
@@ -70,7 +71,9 @@ public struct EvadSignalRow: Equatable, Sendable {
 public func evadSignalRows(_ r: EvadExperimentResult) -> [EvadSignalRow] {
     evadOrdered(r.signals).compactMap { s in
         guard let b = s.before, let a = s.after else { return nil }
-        let favours = s.clear ? (s.better == false ? -1 : 1) : 0
+        // only a clear verdict lights a column: a signal flagged clear under an insufficient (or none) verdict is not
+        // evidence of anything
+        let favours = r.verdict == "clear" && s.clear ? (s.better == false ? -1 : 1) : 0
         return EvadSignalRow(key: s.key, label: evadSignalLabel(s.key), before: evadSignalValue(s.key, b),
                              after: evadSignalValue(s.key, a), favours: favours)
     }
@@ -324,6 +327,32 @@ public func evadProposalText(_ e: EvadExperiment) -> String {
     let q = "Megnézzük \(evadWindowText(e.lengthDays)) alatt, hat-e rád?"
     guard let reason = e.reason?.trimmingCharacters(in: .whitespaces), !reason.isEmpty else { return e.title + ": " + q.prefix(1).lowercased() + q.dropFirst() }
     return reason + " " + q
+}
+
+/// The running card's day chips: the window's days so far — from the start date to today (or to the end date once the
+/// window is over), the last `limit` of them. Empty before the start or without dates. The server accepts a tick on any
+/// of these (`[start, min(end, today)]`).
+public func evadMarkDates(_ e: EvadExperiment, today: String, limit: Int = 7) -> [String] {
+    guard let start = e.startDate, let end = e.endDate else { return [] }
+    let last = min(end, today)   // ISO dates compare as strings
+    guard let span = evadDaysBetween(start, last), span >= 0 else { return [] }
+    let from = max(0, span - (limit - 1))
+    return (from ... span).map { evadAddDays(start, $0) }
+}
+
+/// The chip's weekday: „H", „K", „Sze", „Cs", „P", „Szo", „V".
+public func evadWeekdayLetter(_ iso: String) -> String {
+    let letters = ["H", "K", "Sze", "Cs", "P", "Szo", "V"]
+    let names = ["Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek", "Szombat", "Vasárnap"]
+    guard let i = names.firstIndex(of: evadDayName(iso)) else { return "" }
+    return letters[i]
+}
+
+/// The chip's spoken label: „Ma, péntek, nov. 20., kipipálva" / „Szerda, nov. 18., nincs kipipálva".
+public func evadMarkDayLabel(_ iso: String, marked: Bool, today: String) -> String {
+    let day = evadDayName(iso)
+    let name = iso == today ? "Ma, " + day.lowercased() : day
+    return "\(name), \(evadShortDate(iso)), " + (marked ? "kipipálva" : "nincs kipipálva")
 }
 
 /// Whether today (`yyyy-MM-dd`) is ticked on the running experiment.

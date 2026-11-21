@@ -112,7 +112,7 @@ public class SeasonContextRenderer {
             for (SeasonExperimentEntity e : experimentRepository.findBySeasonIdAndKeptTrueOrderByCreatedAtAsc(s.getId())) {
                 out.add("Szokás (kísérletből megtartva): " + title(e.getTitle()));
             }
-            experimentRepository.findByCreatedByAndStatus(owner, SeasonExperimentEntity.STATUS_RUNNING).stream()
+            experimentRepository.findBySeasonIdAndStatus(s.getId(), SeasonExperimentEntity.STATUS_RUNNING).stream()
                 .filter(e -> e.getStartDate() != null)
                 .findFirst()
                 .ifPresent(e -> out.add("Kísérlet fut: " + title(e.getTitle()) + " (" + ExperimentService.dayIndex(e, today)

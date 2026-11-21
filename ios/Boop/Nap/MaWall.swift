@@ -34,6 +34,7 @@ struct MaWall: View {
     @Environment(EvadStore.self) private var evad: EvadStore?
     @Environment(\.openPlace) private var openPlace
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
 
     private var today: String { brief.date }
 
@@ -120,6 +121,10 @@ struct MaWall: View {
             // the experiments too (S4): the proposal and a fresh result are wall cards
             if evad?.overview != nil { await evad?.experiments.load() }
         }
+        // back in the app: the experiments are re-read (a result that finished, a proposal that appeared)
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active, evad?.overview != nil { Task { await evad?.experiments.load(force: true) } }
+        }
     }
 
     @State private var settledOpen = false
@@ -153,8 +158,13 @@ struct MaWall: View {
         else if c.id == "etel-supplements" { onEtelRoom() }
         else if c.id == "edzes-keszulj" { onDrill(.mozgas) }
         else if let id = evadWallProposalID(c.id) {
-            // „Indulhat" starts Boop's experiment proposal right here; the Hatás tab shows it running
-            Task { await evad?.experiments.start(id) }
+            // „Indulhat" starts Boop's experiment proposal right here; the Hatás tab shows it running. Settled only
+            // once the server says it started — on a refusal or without a net the card stays (the store re-reads the
+            // list, so a proposal the server no longer has drops off by itself; Hatás says why)
+            Task {
+                if await evad?.experiments.start(id) == true { settle(id: c.id, line: c.settled) }
+            }
+            return
         }
         else if c.area == WallSources.evad { evad?.pendingSub = evadWallOpens(c.id); openPlace(.terv) }
         settle(id: c.id, line: c.settled)

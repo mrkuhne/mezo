@@ -15,8 +15,8 @@ import java.util.Set;
  *
  * <p>A signal is {@code clear} with at least {@link #MIN_DAYS} days on each side and |δ| ≥ {@link #CLEAR_DELTA};
  * {@code better} only when clear (resting HR lower, everything else higher). The verdict is {@code insufficient}
- * below {@code ceil(0.7 × lengthDays)} marked days — the signals are still returned so the phone can show the table
- * — else {@code clear} when any signal is clear, else {@code none}.
+ * below {@code ceil(0.7 × lengthDays)} marked days — the signals are still returned so the phone can show the table,
+ * but none of them {@code clear} and every {@code better} null, so no client can highlight a column — else {@code clear} when any signal is clear, else {@code none}.
  */
 public final class ExperimentEvaluator {
 
@@ -64,6 +64,11 @@ public final class ExperimentEvaluator {
         int need = needDays(lengthDays);
         String verdict = markedDays < need ? VERDICT_INSUFFICIENT
             : signals.stream().anyMatch(Signal::clear) ? VERDICT_CLEAR : VERDICT_NONE;
+        if (VERDICT_INSUFFICIENT.equals(verdict)) {
+            // too few marked days: no signal may read as a finding (means, n and δ stay for the table)
+            signals.replaceAll(x -> new Signal(x.key(), x.before(), x.after(), x.nBefore(), x.nAfter(), x.cliffsDelta(),
+                false, null));
+        }
         return new Result(verdict, List.copyOf(signals), markedDays, need, overlaps == null ? List.of() : List.copyOf(overlaps));
     }
 

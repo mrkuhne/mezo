@@ -17,6 +17,13 @@ related: [boop-ios, goal-engine, train, fuel, companion, _platform-api-backend]
 
 # Évad — the season (Boop B6) — Feature Documentation
 
+> **2026-11-21 — Évad S4 (`mezo-r36n9.16`): experiments.** `season_experiment`, the pure `ExperimentEvaluator`
+> (baseline = the equally long window before the start; < ceil(0.7 × length) marked days → insufficient; a signal is
+> clear only at |Cliff's δ| ≥ 0.33 with ≥ 5 days a side), seven signals on `SeasonMetricsPort`, `ExperimentService`
+> (one running, `EXPERIMENT_*` codes), `ExperimentProposalDetector`, `SeasonExperimentJob` (04:40), kept experiments as
+> `[Évad]` rule lines, the proactive `ExperimentJob` switched off, and the iPhone Hatás tab + result page + two wall
+> cards — §3.14. All four slices are shipped.
+
 > **2026-11-21 — Évad S3 (`mezo-r36n9.16`): the weekly menu and the shopping list.** Menu tables, the allowed-recipe
 > filter at the day plan's candidate choke point, the pure `MenuPlanner` and `ShoppingListBuilder`, generation at the
 > season's menu day/time (`MenuJob`), swap / approve, approved meals as the Étel day plan's suggestions, the mid-week
@@ -24,14 +31,14 @@ related: [boop-ios, goal-engine, train, fuel, companion, _platform-api-backend]
 
 > **2026-11-21 — reviewed after the Évad S2 review round (`mezo-r36n9.16`).** A reasoned skip excuses only the session (food and night still count), today's night is never judged, the season title is made inert before it reaches a prompt, the learned-expenditure wall card is keyed on the ISO week, and the Hét tab no longer waits on the day judgement — all described below.
 
-> Boop's **Évad** place (the spine's second place, was Terv) and its backend feature `season`. **S3 of 4 shipped
-> (2026-11-21, `mezo-r36n9.16`)**. S1 (2026-11-20): the season aggregate, the no-persist live preview with a
+> Boop's **Évad** place (the spine's second place, was Terv) and its backend feature `season`. **All four slices shipped
+> (S4 2026-11-21, `mezo-r36n9.16`)**. S1 (2026-11-20): the season aggregate, the no-persist live preview with a
 > fingerprinted accept, the lifecycle, the mesocycle gate, the overview read model and the iPhone page (Évad tab,
 > Módosítás, Szabályok, Új évad, empty state). S2 (2026-11-21): **adherence as the single server source**
 > (`getAdherence`, read by the Évad tab *and* the Étel Hét tab), gated **insights**, the `sleep_food` link number, the
 > season's rules as **`[Évad]` lines in every AI context** (chat snapshot, morning brief, meal coach) + the
 > **`get_season`** tool, and the **`evad` wall source** on Ma. S3 (2026-11-21): the **weekly menu** and the **shopping
-> list** (§3.11–§3.13). 🟣 S4 experiments. Backend ✅ (S1–S3) · iOS ✅ (S1–S3) · web: none (retired, #52).
+> list** (§3.11–§3.13). S4 (2026-11-21): **experiments** (§3.14). Backend ✅ (S1–S4) · iOS ✅ (S1–S4) · web: none (retired, #52).
 
 ## 1. Summary
 
@@ -76,7 +83,12 @@ The phone side lives in [`boop-ios.md`](boop-ios.md) §2 *Évad*; in short:
 - **Lista** (S3) — the approved week's list grouped into five shelves, amount + „mihez kell" per line, check-off, a
   „Változott" section after a re-fit or a swap, *Szokásos tételek* chips (on the list only on his tap), *Megosztás*
   (plain text), *Korábbi listák*, the staples editor.
-- **Hatás** shows the "not live yet" card until S4.
+- **Hatás** (S4) — *Boop ötlete* (the one open proposal: *Indulhat* / *Most nem*), *Folyamatban* (the running
+  experiment: day X / L, level bar, what is watched, marked vs needed days, overlap tags, *Ma megvolt* toggle,
+  *Leállítom* with a confirm), *Korábbi kísérletek* (day count · verdict, „Bekerült az évadba" chip when kept,
+  insufficient rows dimmed), *Új kísérlet* (title + 7/14/21/28 days; refused while one runs). The **result page**:
+  verdict sentence, *Előtte és utána* (Előtte | Közben, day counts), *Mit jelent ez?* (what changed, what did not,
+  „Ez a te napjaidból látszik, de nem bizonyíték." + the overlaps), *Megtartom szokásnak* / *Újra kipróbálom*.
 - **Módosítás** — sessions per week, sport days, weekly pace → *Ennyi változna* (Most | Utána: Edzésnapon,
   *Edzés + sport napon* (only when either side has such a day), Pihenőnapon or „nincs pihenőnap", Szénhidrát edzésnapon, **Heti összesen**, Alvásigény, Lefekvés, Célba érsz / A
   tempó or A sáv), red guard lines, *Ehhez ezt kell tenned*, *Elfogadom* / *Mégsem*. **While the season's block runs
@@ -334,7 +346,7 @@ number lines are **left out** (never guessed) and the overview says only the wee
 | Meal coach | `MealCoachContextReader.PersonContext.seasonRules` → `MealCoachPrompt` („AZ ÉVAD SZABÁLYAI …" block; absent without a season, never a „nincs adat" line) | `render` |
 | `get_season` tool | companion `SeasonTools` — `scope=overview` (default) → `overview`, `scope=rules` → `render`; „Évad: nincs aktív évad" without one | both |
 
-`get_season` scopes `menu` / `experiment` arrive with S3 / S4. **Cost:** while a season is active, every chat turn,
+`get_season` keeps `overview` / `rules`; the running and kept experiments reach the AI through `render` (§3.14). **Cost:** while a season is active, every chat turn,
 morning brief and meal-coach call runs one read-only season computation (the engine's preview for the season as it
 stands); no LLM call is added, and without a season the cost is one indexed lookup.
 
@@ -432,6 +444,48 @@ recipe names with „×n" when used n times. `amountText`: g / ml rounded **up**
 
 `get_season scope=menu` (`MenuContextRenderer`) — this and next week's menu as `[Évad]` lines (never throws).
 
+### 3.14 Experiments (S4, spec §5.9)
+
+- **One at a time.** `season_experiment` rows are `proposed → running → done`, or `dismissed` (*Most nem* on a
+  proposal, *Leállítom* on a running one). Partial unique indexes: one `running` and one `proposed` live row per owner;
+  `ExperimentService` answers 409 `EXPERIMENT_ALREADY_RUNNING` before the index would (and translates a lost race on
+  the index into the same 409). Every operation needs the active season (404 like the menu).
+- **Season scope.** The proposal, the running one, `past` and the kept rules are all read per active season. Because
+  the indexes are per owner, `SeasonService` dismisses the old season's proposed / running rows when it closes or
+  another season activates (a half-run window is not evaluated), so the new season starts clean. His own (`createExperiment`, *Újra kipróbálom*) and a started proposal run from today.
+- **Marking.** `markExperimentDay` toggles one date in `marked_days`; only inside `[start, min(end, today)]`
+  (400 `EXPERIMENT_DAY_OUTSIDE`), only while running (409 `EXPERIMENT_NOT_RUNNING`).
+- **Finishing** is lazy (the list call) and daily (`SeasonExperimentJob`, 04:40 Boop zone, switch
+  `mezo.season.experiment-job.enabled`, per owner): when `end < today`, the window `[start, end]` is
+  compared with the baseline `[start − length, start − 1]`. Signals (`SeasonMetricsPort.experimentSignals`, a day
+  without data is absent): `sleep_min` / `deep_min` (`sleep_log`), `hrv_ms` / `resting_hr` (`daily_metric`), `energy` /
+  `mood` / `morning_feel` (check-in `energy` / `mood` / `rested`, day average). HRV and sleep come only from the Apple
+  Watch through Health.
+- **The verdict** (`ExperimentEvaluator`, pure): `needDays = ceil(0.7 × length)`; below it `insufficient` (signals still
+  stored for the table, but every `clear=false` / `better=null`); a signal is `clear` with ≥ 5 days on each side and |Cliff's δ| ≥ 0.33 (pairwise wins − losses,
+  the maths of `EffectLinkCalculator`, copied); `better` only when clear (resting HR lower, the rest higher); `clear`
+  when any signal is clear, else `none`. Never a single percentage; the phone always shows day counts.
+- **Overlaps** (`SeasonTrainPort.trainEvents` + `season_revision`): a block started, a deload week, kímélő days, a season
+  change (the first revision — the activation — is skipped) inside the window (a deload week counts when
+  `[week, week+6]` touches it, dated `max(week, from)`), each with a Hungarian line; shown live on
+  the running card and stored on the result.
+- **Proposals** (`ExperimentProposalDetector`, through `SeasonExperimentSourcePort`): only with the season's
+  `propose_experiments` on, no open proposal and nothing running; at most one per run; candidates of the last 3 days,
+  newest first, skipping any subject this season already had: a supplement newly in the stack (`protocol_item`; a row
+  removed earlier still counts as "already in the stack"), a recipe or food eaten for the first time and again within 7
+  days (`meal_item`), a journal line with „elkezdtem|mostantól" at a word start. The reason is one Hungarian sentence, no
+  health value. **Isolated:** the list call and the daily pass are not one transaction — finishing commits first, the
+  detector runs in its own `REQUIRES_NEW` transaction inside a catch (a failure is logged, the call goes on), then the
+  listing is read.
+- **Keep-as-habit.** `keepExperiment` (done only, else 409 `EXPERIMENT_NOT_DONE`) sets `kept`; `SeasonContextRenderer`
+  then adds `[Évad] Szokás (kísérletből megtartva): <title>` to every AI context; while one runs it adds
+  `[Évad] Kísérlet fut: <title> (<n>. nap / <length>)`.
+- **The old job is off** (spec §5.12-2): `mezo.techcore.cron.experiment-job.enabled: false`; the proactive experiment
+  table stays readable, nothing proposes there any more.
+- **The wall** (iOS `evadCandidates(…, experiments:)`): the proposal is an `.improves` card („Indítsunk róla
+  kísérletet?", primary **Indulhat** starts it in place, rank 0.6); an experiment finished within the last three days is
+  a `.happened` card („Kész a kísérlet") that opens Évad → Hatás → its result. No ring of its own.
+
 ## 4. Data model & API
 
 Contract fragment [`api/feature/season/season.yml`](../../api/feature/season/season.yml) (tag **Season** →
@@ -474,6 +528,7 @@ another owner's id is 404.
 | `season_menu_week` (S3) | one per owner + week (`uq_season_menu_week_owner_week`): `status` proposed/approved, `variant`, `repeated`, `approved_at` |
 | `season_menu_meal` (S3) | `meal_date`, `day_kind`, `sport_name`, `slot` + `ordinal` (the day plan's window identity), `at_min`, `label`, `pre_session`, `recipe_id` (null = tip), `name`, `servings`, `kcal`, `budget_kcal`, `protein_g`, `locked`, `changed` |
 | `shopping_list` / `shopping_item` (S3) | one list per approved week; item `item_key`, `catalog_id`, `name`, `amount` + `unit` (base unit), `shelf`, `for_recipes` text[], `checked`, `changed`, `staple` |
+| `season_experiment` (S4) | `season_id`, `subject_kind` supplement/recipe/food/habit/text, `subject_ref`, `title`, `reason`, `start_date`, `length_days` 7–28 (default 14), `status` proposed/running/done/dismissed (partial unique: one running, one proposed live row per owner), `marked_days` date[], `result` jsonb (verdict, signals, overlaps, baseline dates, marked count), `finished_on`, `kept` |
 | `season_staple` (S3) | his always-at-home items (owner-level) |
 
 S3's Liquibase file is `202611231000_mezo-r36n9.16_season_menu.sql`. S2 adds no table: adherence and insights are computed on read. Entities `SeasonEntity`, `SeasonAllowedRecipeEntity`, `SeasonRevisionEntity`; typed jsonb records `SeasonDraftJson`,
@@ -503,7 +558,8 @@ S3's Liquibase file is `202611231000_mezo-r36n9.16_season_menu.sql`. S2 adds no 
 - **→ meal / recipe / pantry / nutrition** (S3, `SeasonMenuSourcePort` → `SeasonMenuSourceAdapter`): the day plan's
   skeleton and recipe candidates, the sensitivity profile, recipe lines with their catalog item.
 - **meal → season** (S3): `meal/port/SeasonMenuPort` ← `SeasonMenuAdapter` (allowed recipes, approved meals).
-- S4 adds: experiments.
+- **→ biometrics / wearable / check-in / fuel / meal / journal** (S4): `SeasonMetricsPort.experimentSignals`,
+  `SeasonExperimentSourcePort` ← `SeasonExperimentSourceAdapter` (stack, meals, journal); `SeasonTrainPort.trainEvents`.
 
 ## 6. How to use it (consume)
 
@@ -527,6 +583,11 @@ a season-owned port with a season-side adapter (§3).
 
 Backend (`./mvnw test -Dtest='Season*IT,Season*Test,MesocycleGateIT,GoalPrescriptionDraftIT,WeeklyScheduledActivityDraftTest,SleepNeedRuleTest,ArchitectureTest' -Dmezo.test.use-testcontainers=true`):
 
+- `ExperimentEvaluatorTest` (S4) — 10 of 14 marked is enough, 9 is insufficient, a small shift is not clear, a clear
+  shift, resting HR down is better, overlaps carried through. `ExperimentServiceIT` — second running 409, at most one
+  open proposal, the propose-off setting silences the detector, a block starting in the window is an overlap, keep adds
+  the rule line, mark outside the window 400, journal / food proposals, signal comparison, no season 404.
+  `ExperimentApiIT` — the HTTP round trip.
 - `SeasonPreviewIT` — same draft equal before/after, 5th session raises sleep need not the training-day target, no
   rest day when all seven days are active, maintain band, aggressive-pace warning, preview persists nothing, draft
   preview from live state with no fingerprint, `weekKcal` rises with a sport day / a 5th gym day / is seven training
@@ -607,7 +668,8 @@ the server's kímélő day and judged flag win, a day the server did not answer 
   menu-only window is a sport day's added pre-session snack.
 - **The re-fit runs only from `apply`** — a new weigh-in that moves the targets does not re-fit an approved week (the
   next week's menu follows the new numbers).
-- Deferred: S4 experiments (Hatás "not live yet"); the guided recipe-seeding chat (#23);
+- **Experiment `finishedOn` is the day after the window**, not the day the pass ran, so the list call and the job agree.
+- Deferred: the guided recipe-seeding chat (#23);
   `mezo-r36n9.123` — the *Korábbi évadok* page and the current weight in Új évad step 1.
 
 ## 10. Key files
@@ -618,7 +680,9 @@ the server's kímélő day and judged flag win, a day the server did not answer 
   `SeasonTodoRules`, `SeasonDraftMath`, `FirstSeasonAssembler`, `Season{Goal,Train,Sleep,Metrics,Gate,Meal}Adapter`;
   S2: `AdherenceService`, `SeasonInsights`, `SeasonContextRenderer`, `SeasonContextAdapter`, `port/SeasonMealPort`;
   S3: `MenuPlanner`, `MenuService`, `MenuJob`, `ShoppingListBuilder`, `ShoppingListService`, `SeasonRecipeService`,
-  `MenuContextRenderer`, `SeasonMenuSourceAdapter`, `SeasonMenuAdapter`, `port/SeasonMenuSourcePort`.
+  `MenuContextRenderer`, `SeasonMenuSourceAdapter`, `SeasonMenuAdapter`, `port/SeasonMenuSourcePort`;
+  S4: `ExperimentEvaluator`, `ExperimentService`, `ExperimentProposalDetector`, `SeasonExperimentJob`,
+  `SeasonExperimentSourceAdapter`, `port/SeasonExperimentSourcePort`, `entity/SeasonExperiment{Entity,ResultJson}`.
 - **Cross-feature:** `feature/train/port/SeasonGatePort.java`, `feature/train/service/TrainService.java`
   (`requireSeason`), `feature/train/service/WeeklyScheduledActivityService.java` (draft EAT),
   `feature/goal/engine/service/{GoalPrescriptionCalculator,GoalProjectionService}.java` (draft overloads);
@@ -633,6 +697,7 @@ the server's kímélő day and judged flag win, a day the server did not answer 
 - **iOS:** `ios/BoopKit/Sources/BoopCore/Evad/{EvadClient,EvadStore,EvadWire,EvadLogic,EvadWall}.swift`,
   `ios/Boop/Etel/{EtelHet,EtelRoom}.swift` (S2: server adherence), `ios/Boop/Nap/MaWall.swift` (S2: the `evad` source),
   `ios/Boop/Evad/{EvadPage,EvadOverviewTab,EvadSystemMap,EvadWhatIf,EvadRules,EvadNewSeason,EvadPreview}.swift`;
+  S4: `BoopCore/Evad/EvadExperiment{Wire,Store,Logic}.swift`, `ios/Boop/Evad/{EvadEffectTab,EvadExperimentPage,EvadExperimentPreview}.swift`;
   S3: `BoopCore/Evad/{EvadMenuWire,EvadMenuStore,EvadMenuLogic}.swift`, `ios/Boop/Evad/{EvadMenuTab,EvadListTab,EvadMenuPreview}.swift`;
   backend `feature/meal/port/SeasonMenuPort.java`, `meal/service/dayplan/DayPlanService.java` (skeleton, allowed filter, menu suggestion).
 - **Docs:** spec `docs/superpowers/specs/2026-11-20-boop-evad-design.md`, plan

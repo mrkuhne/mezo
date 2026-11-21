@@ -4,9 +4,10 @@ import Observation
 /// The Hatás tab's data (Boop B6 Évad S4, `mezo-r36n9.16`), owned by `EvadStore` like the menu store.
 ///
 /// **Offline is an answer** (the Évad rule): the last list is cached per user with its age and shown when the net is
-/// missing; every change (Indulhat, Ma megvolt, Leállítom, Megtartom, Új kísérlet) says it needs the net. A refusal or a
-/// server fault is reported as itself. Every change is sent, then the list is re-read, so what is on screen is always
-/// the server's (the running experiment's day count, the proposal detector's answer).
+/// missing; every change (Indulhat, a day chip, Leállítom, Megtartom, Új kísérlet) says it needs the net. A refusal or a
+/// server fault is reported as itself. Every change is sent, then the list is re-read — after a refusal too — so what is
+/// on screen is always the server's (the running experiment's day count, the proposal detector's answer). The list is
+/// re-read once a calendar day even without a change (the views force it on appear and on returning to the app).
 @MainActor @Observable
 public final class EvadExperimentStore {
     public private(set) var data: EvadExperiments?
@@ -29,6 +30,9 @@ public final class EvadExperimentStore {
     @ObservationIgnored let cache: ServerCache?
     @ObservationIgnored let clock: @MainActor () -> Date
     @ObservationIgnored let calendar: Calendar
+    /// The day (`yyyy-MM-dd`) of the last answer from the server: a list read yesterday is re-read today (the running
+    /// day count, a result that finished overnight).
+    @ObservationIgnored private var loadedDay: String?
 
     public init(client: EvadClient?, cache: ServerCache?, clock: @escaping @MainActor () -> Date = { Date() },
                 calendar: Calendar = .current) {
@@ -46,18 +50,20 @@ public final class EvadExperimentStore {
 
     // MARK: - Reading
 
+    /// Reads the list: always when forced, and otherwise once a day — again while what is on screen came from the cache
+    /// or was read on an earlier calendar day.
     public func load(force: Bool = false) async {
         guard let client else {
             if data == nil { problem = .unauthorized }
             return
         }
-        guard force || data == nil || offline else { return }
+        guard force || data == nil || offline || loadedDay != today else { return }
         guard !loading else { return }
         loading = true
         defer { loading = false }
         do throws(PlanFetchError) {
             let fresh = try await client.experiments()
-            data = fresh; offline = false; age = nil; problem = nil
+            data = fresh; offline = false; age = nil; problem = nil; loadedDay = today
             try? await cache?.put(fresh, endpoint: Self.endpoint, date: Self.key)
         } catch .offline {
             if let hit = await cache?.get(EvadExperiments.self, endpoint: Self.endpoint, date: Self.key, maxAge: Self.maxAge) {
@@ -74,10 +80,11 @@ public final class EvadExperimentStore {
 
     // MARK: - Changes (each only on his tap)
 
-    /// „Indulhat" — on the Hatás tab's highlight or the Ma wall's card.
-    public func start(_ id: String) async {
-        guard let client else { return }
-        await run { _ = try await client.startExperiment(id: id) }
+    /// „Indulhat" — on the Hatás tab's highlight or the Ma wall's card. True when it started.
+    @discardableResult
+    public func start(_ id: String) async -> Bool {
+        guard let client else { return false }
+        return await run { _ = try await client.startExperiment(id: id) }
     }
 
     /// „Most nem" on a proposal, „Leállítom" on a running one.
@@ -92,10 +99,13 @@ public final class EvadExperimentStore {
         await run { _ = try await client.keepExperiment(id: id) }
     }
 
-    /// „Ma megvolt" — ticks today on the running experiment, or unticks it.
-    public func toggleToday() async {
+    /// Ticks today on the running experiment, or unticks it.
+    public func toggleToday() async { await toggleDay(today) }
+
+    /// A day chip — ticks that day (`yyyy-MM-dd`, inside the window and not after today) on the running experiment, or
+    /// unticks it.
+    public func toggleDay(_ day: String) async {
         guard let client, let r = data?.running else { return }
-        let day = today
         let done = !r.markedDays.contains(day)
         await run { _ = try await client.markExperimentDay(id: r.id, date: day, done: done) }
     }
@@ -119,6 +129,9 @@ public final class EvadExperimentStore {
         } catch {
             let e = (error as? PlanFetchError) ?? .server
             actionProblem = e == .offline ? "Ehhez internet kell. Próbáld újra, ha lesz net." : evadErrorText(e)
+            // what is on screen may be stale (the experiment finished or was started elsewhere): re-read, so a card the
+            // server no longer has is replaced (without a net this falls back to the cache); the problem stays said
+            await load(force: true)
             return false
         }
         await load(force: true)

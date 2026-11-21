@@ -249,8 +249,9 @@ public class SeasonTrainAdapter implements SeasonTrainPort {
             List<String> curve = m.getPhaseCurve() == null ? List.of() : m.getPhaseCurve();
             for (int i = 0; i < curve.size(); i++) {
                 LocalDate week = start.plusWeeks(i);
-                if ("deload".equalsIgnoreCase(curve.get(i)) && !week.isBefore(from) && !week.isAfter(to)) {
-                    out.add(new TrainEvent(TrainEventKind.DELOAD, week));
+                // the deload week [week, week+6] touching the window counts, even when it began before it
+                if ("deload".equalsIgnoreCase(curve.get(i)) && !week.plusDays(6).isBefore(from) && !week.isAfter(to)) {
+                    out.add(new TrainEvent(TrainEventKind.DELOAD, week.isBefore(from) ? from : week));
                 }
             }
         }

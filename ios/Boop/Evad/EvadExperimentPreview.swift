@@ -6,7 +6,7 @@ import BoopCore
 /// real-looking content ("például") — a proposal (evening magnesium), a running one in its ninth day with a new training
 /// block overlapping, and three finished ones: a clear result already kept, one with no noticeable change (finished
 /// yesterday, so the Ma wall shows „Kész a kísérlet"), one with too few days. Stateful for the run: Indulhat, Most nem,
-/// Ma megvolt, Leállítom, Megtartom and Új kísérlet all show their effect. `-evadExp empty` = nothing at all (the empty
+/// the day chips, Leállítom, Megtartom and Új kísérlet all show their effect. `-evadExp empty` = nothing at all (the empty
 /// state); `-evadExp noProposal` = no proposal.
 final class EvadExperimentPreviewModel: @unchecked Sendable {
     nonisolated(unsafe) static let shared = EvadExperimentPreviewModel()

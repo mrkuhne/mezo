@@ -52,6 +52,12 @@ class ExperimentEvaluatorTest {
         // the signals are still there so the phone can show the table
         assertThat(signal(r, "sleep_min").nBefore()).isEqualTo(14);
         assertThat(signal(r, "sleep_min").after()).isNotNull();
+        // ... but none may read as a finding: a +50 shift with too few marked days is never clear / better
+        assertThat(r.signals()).allSatisfy(s -> {
+            assertThat(s.clear()).isFalse();
+            assertThat(s.better()).isNull();
+        });
+        assertThat(signal(r, "sleep_min").cliffsDelta()).isNotNull();
     }
 
     @Test

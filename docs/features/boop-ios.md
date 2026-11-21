@@ -18,6 +18,13 @@ related: [season, penz, fuel, pantry, recipe, dayclose, intention, journal, comp
 
 # Boop — native iOS app — Feature Documentation
 
+> **2026-11-21 — Boop B6 Évad S4 (`mezo-r36n9.16`).** The Évad page's **Hatás** tab is live: Boop's one open
+> experiment proposal (*Indulhat* / *Most nem*), the running experiment (day X / L, *Ma megvolt*, overlaps, *Leállítom*),
+> past experiments, *Új kísérlet*, and the result page (Előtte | Közben with day counts, the honest verdict, *Megtartom
+> szokásnak* / *Újra kipróbálom*). Code `BoopCore/Evad/EvadExperiment{Wire,Store,Logic}.swift` (ServerCache
+> `evad/experiments`), `Evad/{EvadEffectTab,EvadExperimentPage,EvadExperimentPreview}.swift`. The `evad` wall source adds
+> the proposal (`.improves`, primary „Indulhat” starts it) and a fresh result (`.happened`) — see [`season.md`](season.md) §3.14.
+
 > **2026-11-21 — Boop B6 Évad S3 (`mezo-r36n9.16`).** The Évad page's **Menü** and **Lista** tabs are live: next week's
 > menu as a carousel of seven day cards (approve, swap a meal, another menu, „Kiválasztott receptek"), and the approved
 > week's shopping list (shelves, „mihez kell", check-off, „Változott", staples on tap, plain-text share, past lists). The
@@ -531,7 +538,18 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     on screen) and the season ending within 7 days as `.happened` („*N nap múlva* véget ér az évad", *Megnézem*).
     `MaWall` loads the Évad overview once (`.task`, cached offline). Nothing here is `.expires`, so it never rings.
   - **Étel Hét reads the server's judgement (S2)** — see the Hét tab paragraph below.
-  - **Menü · Lista · Hatás:** `NKNotLiveYet` cards until S3 (menu, shopping list) and S4 (experiments).
+  - **Hatás (S4):** `EvadEffectTab` over `EvadExperimentStore` (owned by `EvadStore`, ServerCache `evad/experiments`,
+    every write re-reads the list, a refused or failed one too, so a card the server already finished is replaced):
+    the proposal highlight, *Folyamatban* (`NKLevelBar`, `NKTag(warn:)` per overlap, a row of up to seven day chips
+    `EvadDayChip` — the window's days so far, `evadMarkDates` = the last 7 of `[start, min(end, today)]`, weekday over a
+    drawn `check-ink` tick, today ringed, each tap ticks/unticks that date so a missed day can be made up;
+    *Leállítom* confirms first), *Korábbi kísérletek*, *Új kísérlet* (`EvadSub` page-level). **Refresh rule:** the
+    store re-reads when forced, while the list is from the cache, or once the calendar day of the last server answer
+    is not today; the tab forces a read on appear and on returning to the app (scenePhase active), the Ma wall's evad
+    source on returning to the app. The wall's „Indulhat" settles the card only when `start` returns true. Result page
+    `EvadExperimentPage` (`NKCompareColumns` Előtte | Közben, `NKList` „Mit jelent ez?"; a column is lit only under a
+    „clear" verdict). Copy is pure (`EvadExperimentLogic`: labels, units, verdict sentences per signal and direction).
+    DEBUG `-evadOpen kiserlet`.
   - **Módosítás** (`EvadWhatIf`, „Mi változna?"): stepper *Edzések hetente* (the kit's plus glyph and a drawn minus,
     no system symbols; picks gym days that avoid the sport days), sport-day chips, *Heti fogyás / hízás* slider (not
     for maintain). Every change re-previews (debounced, `POST /api/seasons/{id}/preview`) → **Ennyi változna**

@@ -126,6 +126,34 @@ struct EvadExperimentLogicTests {
         #expect(evadCompareSentence(p) == "Az alvásodat, a nyugalmi pulzusodat és a reggeli közérzetedet vetem össze az előző két héttel.")
         #expect(evadProposalText(p).hasPrefix("Hétfő óta szedsz esti magnéziumot. Megnézzük két hét alatt"))
     }
+
+    @Test func insufficientOrUnclearResultsNeverHighlight() {
+        // the clear signals of a result whose verdict is not "clear" are not lit
+        let few = evadSignalRows(F.experiment(F.done(verdict: "insufficient", marked: 6)).result!)
+        #expect(!few.isEmpty && few.allSatisfy { $0.favours == 0 })
+        let none = evadSignalRows(F.experiment(F.done(verdict: "none")).result!)
+        #expect(none.allSatisfy { $0.favours == 0 })
+        #expect(evadSignalRows(F.experiment(F.done()).result!).contains { $0.favours == 1 }, "a clear verdict still lights")
+    }
+
+    @Test func markDatesAreTheWindowsDaysSoFar() {
+        func running(_ start: String, _ end: String) -> EvadExperiment {
+            EvadExperiment(id: "r", title: "x", startDate: start, endDate: end, status: "running")
+        }
+        #expect(evadMarkDates(running("2026-11-17", "2026-11-30"), today: "2026-11-20")
+                == ["2026-11-17", "2026-11-18", "2026-11-19", "2026-11-20"], "started 3 days ago: 4 chips ending today")
+        #expect(evadMarkDates(running("2026-11-05", "2026-11-18"), today: "2026-11-20")
+                == ["2026-11-12", "2026-11-13", "2026-11-14", "2026-11-15", "2026-11-16", "2026-11-17", "2026-11-18"],
+                "the window ended: the last 7 days, ending at the end date")
+        #expect(evadMarkDates(running("2026-11-12", "2026-11-25"), today: "2026-11-20").first == "2026-11-14")
+        #expect(evadMarkDates(running("2026-11-20", "2026-12-03"), today: "2026-11-20") == ["2026-11-20"])
+        #expect(evadMarkDates(running("2026-11-22", "2026-12-05"), today: "2026-11-20").isEmpty, "not started yet")
+        #expect(evadMarkDates(EvadExperiment(id: "p", title: "x", status: "proposed"), today: "2026-11-20").isEmpty)
+        #expect(evadWeekdayLetter("2026-11-20") == "P" && evadWeekdayLetter("2026-11-16") == "H"
+                && evadWeekdayLetter("2026-11-18") == "Sze")
+        #expect(evadMarkDayLabel("2026-11-20", marked: true, today: "2026-11-20") == "Ma, péntek, nov. 20., kipipálva")
+        #expect(evadMarkDayLabel("2026-11-18", marked: false, today: "2026-11-20") == "Szerda, nov. 18., nincs kipipálva")
+    }
 }
 
 @Suite("Évad — experiments: client and store")
@@ -187,6 +215,56 @@ struct EvadExperimentClientTests {
                 "today was not ticked, so the tap ticks it")
         #expect(stub.ops.last == "listExperiments", "the list is re-read after a change")
         #expect(store.actionProblem == nil)
+    }
+
+    @MainActor @Test func startReportsWhetherItStarted() async {
+        let stub = StubTransport()
+        stub.on("listExperiments", .json(200, F.listJSON))
+        stub.on("startExperiment", .json(409, #"{"messages":[{"code":"EXPERIMENT_ALREADY_RUNNING"}]}"#))
+        stub.on("listExperiments", .json(200, F.listJSON))
+        stub.on("startExperiment", .fail(URLError(.notConnectedToInternet)))
+        stub.on("listExperiments", .json(200, F.listJSON))
+        stub.on("startExperiment", .json(200, F.runningJSON))
+        stub.on("listExperiments", .json(200, F.listJSON))
+        let store = EvadExperimentStore(client: EvadClient(raw: EvadClientTests.raw(stub)), cache: nil)
+        await store.load()
+        #expect(await store.start("p1") == false, "a refusal is not a start")
+        #expect(store.actionProblem?.contains("Egyszerre csak egy") == true)
+        #expect(await store.start("p1") == false, "no net is not a start")
+        #expect(store.actionProblem?.contains("internet") == true)
+        #expect(await store.start("p1") == true)
+        #expect(store.actionProblem == nil)
+    }
+
+    @MainActor @Test func aFailedChangeRereadsTheList() async {
+        let stub = StubTransport()
+        stub.on("listExperiments", .json(200, F.listJSON))
+        stub.on("markExperimentDay", .json(409, #"{"messages":[{"code":"EXPERIMENT_NOT_RUNNING"}]}"#))
+        // the server finished it meanwhile: the re-read list has no running experiment
+        stub.on("listExperiments", .json(200, #"{"proposal":null,"running":null,"past":[\#(F.done())],"proposeOn":true}"#))
+        let store = EvadExperimentStore(client: EvadClient(raw: EvadClientTests.raw(stub)), cache: nil)
+        await store.load()
+        await store.toggleDay("2026-11-19")
+        #expect(stub.ops == ["listExperiments", "markExperimentDay", "listExperiments"])
+        #expect(store.data?.running == nil, "the stale running card is replaced")
+        #expect(store.actionProblem != nil, "the refusal is still said")
+    }
+
+    @MainActor @Test func aNewDayRereads() async {
+        let stub = StubTransport()
+        stub.on("listExperiments", .json(200, F.listJSON))
+        stub.on("listExperiments", .json(200, F.listJSON))
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "Europe/Budapest")!
+        final class Box { var now: Date; init(_ d: Date) { now = d } }
+        let box = Box(cal.date(from: DateComponents(year: 2026, month: 11, day: 20, hour: 22))!)
+        let store = EvadExperimentStore(client: EvadClient(raw: EvadClientTests.raw(stub)), cache: nil,
+                                        clock: { box.now }, calendar: cal)
+        await store.load()
+        await store.load()
+        #expect(stub.ops.count == 1, "the same day reads once")
+        box.now = cal.date(from: DateComponents(year: 2026, month: 11, day: 21, hour: 7))!
+        await store.load()
+        #expect(stub.ops.count == 2, "a new day reads again")
     }
 
     @MainActor @Test func offlineWithoutCacheIsAProblemNotAnAnswer() async {

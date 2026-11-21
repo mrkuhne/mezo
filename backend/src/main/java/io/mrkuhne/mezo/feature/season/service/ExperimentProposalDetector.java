@@ -25,7 +25,8 @@ import org.springframework.stereotype.Component;
  * journal line saying he started something („elkezdtem”, „mostantól”). The reason is one Hungarian sentence and never
  * carries a health value.
  *
- * <p>Joins the caller's transaction (the list call or the daily job's per-owner call).
+ * <p>Called by {@link ExperimentService} in its own {@code REQUIRES_NEW} transaction, wrapped in a catch: a failing
+ * detector rolls back only itself and never breaks the list call or the daily pass.
  */
 @Component
 @RequiredArgsConstructor
@@ -33,8 +34,8 @@ public class ExperimentProposalDetector {
 
     static final int LOOKBACK_DAYS = 3;
     static final int TITLE_MAX = 80;
-    private static final Pattern STARTED = Pattern.compile("(elkezdtem|mostantól)",
-        Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+    /** At a word start only (not inside „visszaelkezdtem”); no negation handling. */
+    private static final Pattern STARTED = Pattern.compile("(?iu)(?<![\\p{L}])(elkezdtem|mostantól)");
     private static final List<String> WEEKDAYS = List.of("Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek", "Szombat",
         "Vasárnap");
 
@@ -47,8 +48,8 @@ public class ExperimentProposalDetector {
     /** Creates (and returns) at most one proposal for the season; empty when nothing qualifies. */
     public Optional<SeasonExperimentEntity> detect(UUID owner, SeasonEntity season, LocalDate today) {
         if (!season.isProposeExperiments()
-            || !experiments.findByCreatedByAndStatus(owner, SeasonExperimentEntity.STATUS_PROPOSED).isEmpty()
-            || !experiments.findByCreatedByAndStatus(owner, SeasonExperimentEntity.STATUS_RUNNING).isEmpty()) {
+            || !experiments.findBySeasonIdAndStatus(season.getId(), SeasonExperimentEntity.STATUS_PROPOSED).isEmpty()
+            || !experiments.findBySeasonIdAndStatus(season.getId(), SeasonExperimentEntity.STATUS_RUNNING).isEmpty()) {
             return Optional.empty();
         }
         Set<UUID> seenRefs = new HashSet<>();

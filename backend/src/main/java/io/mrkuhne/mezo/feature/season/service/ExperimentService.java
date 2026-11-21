@@ -23,9 +23,14 @@ import java.util.Optional;
 import java.util.TreeSet;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * The season's experiments (Boop B6 Évad S4, spec §5.9 / §5.11): one runs at a time, he marks the days he did it, and
@@ -33,7 +38,16 @@ import org.springframework.transaction.annotation.Transactional;
  * verdict, the signals and the other changes inside the window are stored once. Boop's proposals come from
  * {@link ExperimentProposalDetector}. Every operation needs the active season (404 without one, like the menu).
  * Finishing is lazy (the list call) and daily ({@link SeasonExperimentJob}).
+ *
+ * <p><b>Season scope.</b> Proposals and the running experiment are read per active season (like {@code past} and the
+ * kept rules); the unique indexes stay per owner, so {@code SeasonService} dismisses the old season's proposed /
+ * running rows when it closes or another one activates — the new season starts with a clean Hatás tab.
+ *
+ * <p><b>Detector isolation.</b> {@link #list} and {@link #daily} are not one transaction: finishing runs in one,
+ * the detector in its own {@code REQUIRES_NEW} one inside a catch (a failure is logged and the call goes on), and the
+ * listing is read afterwards — so a broken proposal source never fails the tab or the job.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ExperimentService {
@@ -50,6 +64,7 @@ public class ExperimentService {
     private final SeasonTrainPort trainPort;
     private final ExperimentProposalDetector detector;
     private final WearableProperties wearableProperties;
+    private final PlatformTransactionManager transactionManager;
 
     /** One experiment as the contract shows it: the row, today's day index (running), the overlaps so far / in all. */
     public record View(SeasonExperimentEntity experiment, Integer dayIndex, int needDays,
@@ -62,31 +77,49 @@ public class ExperimentService {
 
     // --- reads (with the lazy finish + the detector) ---------------------------------------------------------------
 
-    @Transactional
+    /** Not {@code @Transactional} on purpose — see the class comment (detector isolation). */
     public Listing list(UUID owner, LocalDate today) {
         SeasonEntity s = requireActive(owner);
-        finishDue(owner, today);
-        detector.detect(owner, s, today);
-        View proposal = first(owner, SeasonExperimentEntity.STATUS_PROPOSED).map(e -> view(owner, e, today)).orElse(null);
-        View running = first(owner, SeasonExperimentEntity.STATUS_RUNNING).map(e -> view(owner, e, today)).orElse(null);
-        List<View> past = experiments.findBySeasonIdOrderByCreatedAtDesc(s.getId()).stream()
-            .filter(e -> e.is(SeasonExperimentEntity.STATUS_DONE))
-            .sorted(Comparator.comparing(SeasonExperimentEntity::getFinishedOn,
-                Comparator.nullsLast(Comparator.reverseOrder())))
-            .map(e -> view(owner, e, today))
-            .toList();
-        return new Listing(proposal, running, past, s.isProposeExperiments());
+        tx(TransactionDefinition.PROPAGATION_REQUIRED).executeWithoutResult(st -> finishDue(s.getId(), today));
+        detectSafely(owner, s, today);
+        return tx(TransactionDefinition.PROPAGATION_REQUIRED).execute(st -> {
+            View proposal = first(s.getId(), SeasonExperimentEntity.STATUS_PROPOSED)
+                .map(e -> view(owner, e, today)).orElse(null);
+            View running = first(s.getId(), SeasonExperimentEntity.STATUS_RUNNING)
+                .map(e -> view(owner, e, today)).orElse(null);
+            List<View> past = experiments.findBySeasonIdOrderByCreatedAtDesc(s.getId()).stream()
+                .filter(e -> e.is(SeasonExperimentEntity.STATUS_DONE))
+                .sorted(Comparator.comparing(SeasonExperimentEntity::getFinishedOn,
+                    Comparator.nullsLast(Comparator.reverseOrder())))
+                .map(e -> view(owner, e, today))
+                .toList();
+            return new Listing(proposal, running, past, s.isProposeExperiments());
+        });
     }
 
-    /** The daily job's pass for one owner: finish what is due, then let Boop propose. */
-    @Transactional
+    /** The daily job's pass for one owner: finish what is due (one transaction), then let Boop propose (its own). */
     public void daily(UUID owner, LocalDate today) {
         Optional<SeasonEntity> s = seasons.findActive(owner);
         if (s.isEmpty()) {
             return;
         }
-        finishDue(owner, today);
-        detector.detect(owner, s.get(), today);
+        tx(TransactionDefinition.PROPAGATION_REQUIRED).executeWithoutResult(st -> finishDue(s.get().getId(), today));
+        detectSafely(owner, s.get(), today);
+    }
+
+    /** The detector in its own transaction; a failure rolls back only the detector and is logged. */
+    private void detectSafely(UUID owner, SeasonEntity s, LocalDate today) {
+        try {
+            tx(TransactionDefinition.PROPAGATION_REQUIRES_NEW).executeWithoutResult(st -> detector.detect(owner, s, today));
+        } catch (RuntimeException e) {
+            log.warn("Experiment proposal detector failed for season {}", s.getId(), e);
+        }
+    }
+
+    private TransactionTemplate tx(int propagation) {
+        TransactionTemplate t = new TransactionTemplate(transactionManager);
+        t.setPropagationBehavior(propagation);
+        return t;
     }
 
     // --- writes ----------------------------------------------------------------------------------------------------
@@ -95,8 +128,8 @@ public class ExperimentService {
     @Transactional
     public View create(UUID owner, String title, String subjectKind, UUID subjectRef, Integer lengthDays, LocalDate today) {
         SeasonEntity s = requireActive(owner);
-        finishDue(owner, today);
-        requireNoneRunning(owner);
+        finishDue(s.getId(), today);
+        requireNoneRunning(s.getId());
         String t = ExperimentProposalDetector.shorten(title);
         if (t.isEmpty()) {
             throw new SystemRuntimeErrorException(SystemMessage.field("VALIDATION_INVALID_VALUE", "title").build(),
@@ -111,23 +144,23 @@ public class ExperimentService {
         e.setLengthDays(lengthDays == null ? SeasonExperimentEntity.DEFAULT_LENGTH : lengthDays);
         e.setStatus(SeasonExperimentEntity.STATUS_RUNNING);
         e.setStartDate(today);
-        return view(owner, experiments.saveAndFlush(e), today);
+        return view(owner, saveRunning(e), today);
     }
 
     /** A proposal starts („Indulhat”) from today. */
     @Transactional
     public View start(UUID owner, UUID id, LocalDate today) {
-        requireActive(owner);
-        finishDue(owner, today);
+        SeasonEntity s = requireActive(owner);
+        finishDue(s.getId(), today);
         SeasonExperimentEntity e = require(owner, id);
         if (!e.is(SeasonExperimentEntity.STATUS_PROPOSED)) {
             throw conflict("EXPERIMENT_NOT_PROPOSED");
         }
-        requireNoneRunning(owner);
+        requireNoneRunning(s.getId());
         e.setStatus(SeasonExperimentEntity.STATUS_RUNNING);
         e.setStartDate(today);
         touch(e);
-        return view(owner, experiments.saveAndFlush(e), today);
+        return view(owner, saveRunning(e), today);
     }
 
     /** Marks (or unmarks) one day of the running experiment — inside the window, never in the future. */
@@ -185,11 +218,11 @@ public class ExperimentService {
 
     // --- finishing -------------------------------------------------------------------------------------------------
 
-    /** Finishes the running experiment whose window ended before today. */
-    void finishDue(UUID owner, LocalDate today) {
-        for (SeasonExperimentEntity e : experiments.findByCreatedByAndStatus(owner, SeasonExperimentEntity.STATUS_RUNNING)) {
+    /** Finishes the season's running experiment whose window ended before today. */
+    void finishDue(UUID seasonId, LocalDate today) {
+        for (SeasonExperimentEntity e : experiments.findBySeasonIdAndStatus(seasonId, SeasonExperimentEntity.STATUS_RUNNING)) {
             if (e.getStartDate() != null && e.endDate().isBefore(today)) {
-                finish(owner, e);
+                finish(e.getCreatedBy(), e);
             }
         }
     }
@@ -271,14 +304,32 @@ public class ExperimentService {
             : e.getMarkedDays().stream().distinct().filter(d -> !d.isBefore(from) && !d.isAfter(to)).count();
     }
 
-    private Optional<SeasonExperimentEntity> first(UUID owner, String status) {
-        return experiments.findByCreatedByAndStatus(owner, status).stream().findFirst();
+    private Optional<SeasonExperimentEntity> first(UUID seasonId, String status) {
+        return experiments.findBySeasonIdAndStatus(seasonId, status).stream().findFirst();
     }
 
-    private void requireNoneRunning(UUID owner) {
-        if (first(owner, SeasonExperimentEntity.STATUS_RUNNING).isPresent()) {
+    private void requireNoneRunning(UUID seasonId) {
+        if (first(seasonId, SeasonExperimentEntity.STATUS_RUNNING).isPresent()) {
             throw conflict("EXPERIMENT_ALREADY_RUNNING");
         }
+    }
+
+    /** Saves (and flushes) a row going running; a concurrent start hitting the one-running index → 409. */
+    private SeasonExperimentEntity saveRunning(SeasonExperimentEntity e) {
+        try {
+            return experiments.saveAndFlush(e);
+        } catch (DataIntegrityViolationException ex) {
+            if (isOneOpenIndex(ex)) {
+                throw conflict("EXPERIMENT_ALREADY_RUNNING");
+            }
+            throw ex;
+        }
+    }
+
+    private static boolean isOneOpenIndex(DataIntegrityViolationException ex) {
+        String msg = ex.getMostSpecificCause().getMessage();
+        return msg != null && (msg.contains("uq_season_experiment_one_running")
+            || msg.contains("uq_season_experiment_one_proposed"));
     }
 
     private SeasonEntity requireActive(UUID owner) {

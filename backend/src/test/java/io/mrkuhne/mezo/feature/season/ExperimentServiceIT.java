@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.feature.season.entity.SeasonEntity;
 import io.mrkuhne.mezo.feature.season.entity.SeasonExperimentEntity;
 import io.mrkuhne.mezo.feature.season.repository.SeasonExperimentRepository;
 import io.mrkuhne.mezo.feature.season.repository.SeasonRepository;
+import io.mrkuhne.mezo.feature.season.port.SeasonTrainPort;
 import io.mrkuhne.mezo.feature.season.service.ExperimentService;
 import io.mrkuhne.mezo.feature.season.service.SeasonContextRenderer;
 import io.mrkuhne.mezo.feature.season.service.SeasonService;
@@ -21,7 +22,6 @@ import io.mrkuhne.mezo.support.populator.ProtocolPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
-import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -30,10 +30,12 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
-import org.springframework.transaction.annotation.Transactional;
 
-/** Boop B6 Évad S4 (mezo-r36n9.16): experiments — one at a time, Boop's one proposal, overlaps, kept habits. */
-@Transactional
+/**
+ * Boop B6 Évad S4 (mezo-r36n9.16): experiments — one at a time, Boop's one proposal, overlaps, kept habits.
+ * Deliberately NOT {@code @Transactional}: the detector runs in its own ({@code REQUIRES_NEW}) transaction, which
+ * cannot see a test transaction's uncommitted rows; {@code ResetDatabase} cleans up between tests instead.
+ */
 @Import(SeasonFixture.class)
 class ExperimentServiceIT extends AbstractIntegrationTest {
 
@@ -52,12 +54,10 @@ class ExperimentServiceIT extends AbstractIntegrationTest {
     @Autowired private JournalPopulator journalPopulator;
     @Autowired private SleepLogPopulator sleepLogPopulator;
     @Autowired private io.mrkuhne.mezo.support.populator.MealPopulator mealPopulator;
-    @Autowired private EntityManager em;
+    @Autowired private SeasonTrainPort trainPort;
 
     private SeasonEntity season(UUID owner) {
-        SeasonEntity s = seasonService.activate(owner, seasonService.create(owner, SeasonFixture.draft()).getId());
-        em.flush();
-        return s;
+        return seasonService.activate(owner, seasonService.create(owner, SeasonFixture.draft()).getId());
     }
 
     /** Moves a running experiment's start back, as if it had started {@code daysAgo} days ago. */
@@ -302,5 +302,76 @@ class ExperimentServiceIT extends AbstractIntegrationTest {
         assertThat(sleep.after()).isEqualTo(450.0);
         assertThat(sleep.cliffsDelta()).isEqualTo(1.0);
         assertThat(sleep.better()).isTrue();
+    }
+    /** A proposal row straight in the table (the detector would not propose next to a running experiment). */
+    private SeasonExperimentEntity proposal(UUID owner, UUID seasonId, String title) {
+        SeasonExperimentEntity e = new SeasonExperimentEntity();
+        e.setCreatedBy(owner);
+        e.setSeasonId(seasonId);
+        e.setSubjectKind("habit");
+        e.setTitle(title);
+        e.setStatus(SeasonExperimentEntity.STATUS_PROPOSED);
+        return experimentRepository.saveAndFlush(e);
+    }
+
+    @Test
+    void anotherSeasonActivatingReleasesTheOldProposalAndRunning() {
+        UUID owner = fixture.owner("exp-switch@test.local");
+        SeasonEntity a = season(owner);
+        UUID running = experimentService.create(owner, "Esti magnézium", "habit", null, 14, TODAY).experiment().getId();
+        UUID proposed = proposal(owner, a.getId(), "Hideg zuhany").getId();
+
+        SeasonEntity b = season(owner); // activating B closes A
+
+        assertThat(experimentRepository.findById(running).orElseThrow().getStatus()).isEqualTo("dismissed");
+        assertThat(experimentRepository.findById(proposed).orElseThrow().getStatus()).isEqualTo("dismissed");
+        ExperimentService.Listing inB = experimentService.list(owner, TODAY);
+        assertThat(inB.proposal()).isNull();
+        assertThat(inB.running()).isNull();
+        assertThat(inB.past()).isEmpty();
+
+        // the detector can propose in B, and a new experiment can start there
+        journalPopulator.createEntry(owner, TODAY, "Mostantól minden reggel sétálok.", "boop");
+        ExperimentService.Listing proposing = experimentService.list(owner, TODAY);
+        assertThat(proposing.proposal()).isNotNull();
+        assertThat(proposing.proposal().experiment().getSeasonId()).isEqualTo(b.getId());
+        ExperimentService.View started = experimentService.start(owner, proposing.proposal().experiment().getId(), TODAY);
+        assertThat(started.experiment().getStatus()).isEqualTo("running");
+        assertThat(experimentService.list(owner, TODAY).running().experiment().getId())
+            .isEqualTo(started.experiment().getId());
+    }
+
+    @Test
+    void closingTheSeasonReleasesItsProposalAndRunning() {
+        UUID owner = fixture.owner("exp-close@test.local");
+        SeasonEntity a = season(owner);
+        UUID running = experimentService.create(owner, "Esti magnézium", "habit", null, 14, TODAY).experiment().getId();
+        UUID proposed = proposal(owner, a.getId(), "Hideg zuhany").getId();
+
+        seasonService.close(owner, a.getId());
+
+        assertThat(experimentRepository.findById(running).orElseThrow().getStatus()).isEqualTo("dismissed");
+        assertThat(experimentRepository.findById(proposed).orElseThrow().getStatus()).isEqualTo("dismissed");
+        season(owner);
+        assertThat(experimentService.create(owner, "Hideg zuhany", "habit", null, 7, TODAY).experiment().getStatus())
+            .isEqualTo("running");
+    }
+
+    @Test
+    void deloadWeekBegunBeforeTheWindowIsAnOverlap() {
+        UUID owner = fixture.owner("exp-deload@test.local");
+        MesocycleEntity m = trainPopulator.createMesocycle(owner, "Erő blokk", "active");
+        m.setStartDate(TODAY.minusDays(10)); // week 2 (the deload) runs today-3 .. today+3
+        m.setEndDate(TODAY.plusWeeks(2));
+        m.setPhaseCurve(List.of("MEV", "Deload", "MAV"));
+        mesocycleRepository.saveAndFlush(m);
+
+        assertThat(trainPort.trainEvents(owner, TODAY.minusDays(2), TODAY))
+            .containsExactly(new SeasonTrainPort.TrainEvent(SeasonTrainPort.TrainEventKind.DELOAD, TODAY.minusDays(2)));
+        // a window after the deload week ended has no overlap
+        assertThat(trainPort.trainEvents(owner, TODAY.plusDays(4), TODAY.plusDays(5))).isEmpty();
+        // a window starting inside the week is dated at the week start when that is later
+        assertThat(trainPort.trainEvents(owner, TODAY.minusDays(5), TODAY.minusDays(3)))
+            .containsExactly(new SeasonTrainPort.TrainEvent(SeasonTrainPort.TrainEventKind.DELOAD, TODAY.minusDays(3)));
     }
 }

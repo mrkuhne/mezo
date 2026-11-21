@@ -4,12 +4,14 @@ import BoopDesign
 
 /// **Hatás** (screen 07, Évad S4, `mezo-r36n9.16`): experiments he starts or Boop proposes, one at a time, with honest
 /// results. Boop's proposal as the highlight (Indulhat / Most nem), the running one with its day count, what is watched,
-/// the overlaps and today's tick („Ma megvolt"), then the finished ones. Every verdict and number is the server's.
+/// the overlaps and a row of day chips (the window's last days so far, each tappable — a missed tick can be made up),
+/// then the finished ones. Every verdict and number is the server's.
 struct EvadEffectTab: View {
     let exp: EvadExperimentStore
     let openResult: @MainActor @Sendable (String) -> Void
     let openNew: @MainActor @Sendable () -> Void
     @State private var confirmStop = false
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         Group {
@@ -23,7 +25,10 @@ struct EvadEffectTab: View {
                 NKBare("Kísérletek", hue: evadHue, glyph: "chart-deep", state: .loading) { EmptyView() }
             }
         }
-        .task { await exp.load() }
+        // the tab re-reads whenever it comes on screen and when he returns to the app (a result may have finished
+        // overnight, the running day count moved on)
+        .task { await exp.load(force: true) }
+        .onChange(of: scenePhase) { _, phase in if phase == .active { Task { await exp.load(force: true) } } }
     }
 
     @ViewBuilder private func content(_ d: EvadExperiments) -> some View {
@@ -47,7 +52,8 @@ struct EvadEffectTab: View {
     }
 
     private func running(_ r: EvadExperiment) -> some View {
-        let done = evadMarkedToday(r, today: exp.today)
+        let today = exp.today
+        let dates = evadMarkDates(r, today: today)
         return NKBare("Folyamatban", hue: evadHue, glyph: "clock-ink", trailing: "egyszerre csak egy") {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .firstTextBaseline) {
@@ -60,30 +66,28 @@ struct EvadEffectTab: View {
                 Text(evadRunningLine(r))
                     .nkFont(13).foregroundStyle(.white.opacity(0.6)).fixedSize(horizontal: false, vertical: true)
                 ForEach(r.overlaps, id: \.self) { o in NKTag(o.text, warn: true) }
-                HStack(spacing: 12) {
-                    Button { Task { await exp.toggleToday() } } label: {
-                        HStack(spacing: 7) {
-                            NKGlyph(done ? "check-ink" : "plus-ink", done ? NK.ground : .white, size: 15)
-                            Text("Ma megvolt").nkFont(14, done ? .semibold : .regular)
+                if !dates.isEmpty {
+                    HStack(spacing: 6) {
+                        ForEach(dates, id: \.self) { d in
+                            EvadDayChip(letter: evadWeekdayLetter(d), done: r.markedDays.contains(d), today: d == today,
+                                        label: evadMarkDayLabel(d, marked: r.markedDays.contains(d), today: today),
+                                        action: { Task { await exp.toggleDay(d) } })
+                                .disabled(exp.busy || exp.offline)
                         }
-                        .foregroundStyle(done ? NK.ground : .white.opacity(0.88))
-                        .padding(.horizontal, 14).padding(.vertical, 9)
-                        .background(Capsule().fill(done ? .white.opacity(0.92) : .white.opacity(0.1)))
-                        .contentShape(Capsule())
+                        // fewer than seven days so far: the chips keep their size, the row stays left-aligned
+                        ForEach(dates.count ..< 7, id: \.self) { _ in Color.clear.frame(maxWidth: .infinity, maxHeight: 1) }
                     }
-                    .buttonStyle(.plain)
-                    .disabled(exp.busy || exp.offline)
-                    .accessibilityAddTraits(done ? .isSelected : [])
-                    .accessibilityHint(done ? "Visszaveszi a mai pipát" : "Kipipálja a mai napot")
+                    .padding(.top, 2)
+                }
+                HStack {
                     Spacer(minLength: 0)
                     Button { confirmStop = true } label: {
                         Text("Leállítom").nkFont(13.5).foregroundStyle(.white.opacity(0.55))
-                            .padding(.vertical, 9).contentShape(Rectangle())
+                            .padding(.vertical, 6).contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .disabled(exp.busy || exp.offline)
                 }
-                .padding(.top, 2)
             }
         }
         .confirmationDialog("Leállítod a kísérletet?", isPresented: $confirmStop, titleVisibility: .visible) {
@@ -103,6 +107,39 @@ struct EvadEffectTab: View {
                          state: verdict == "insufficient" ? .skipped : .normal,
                          chips: e.kept ? ["Bekerült az évadba"] : [],
                          action: { openResult(e.id) })
+    }
+}
+
+/// One day of the running experiment: the weekday over a round tick (the kit's drawn `check-ink` when ticked), today
+/// ringed. A tap ticks or unticks that day.
+struct EvadDayChip: View {
+    let letter: String
+    let done: Bool
+    let today: Bool
+    let label: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 5) {
+                Text(letter).nkFont(11.5, today ? .semibold : .regular)
+                    .foregroundStyle(.white.opacity(today ? 0.95 : 0.6))
+                    .lineLimit(1).minimumScaleFactor(0.8)
+                ZStack {
+                    Circle().fill(done ? .white.opacity(0.92) : .white.opacity(0.1))
+                    if today { Circle().strokeBorder(.white.opacity(done ? 0 : 0.75), lineWidth: 1.5) }
+                    if done { NKGlyph("check-ink", NK.ground, size: 15) }
+                }
+                .frame(width: 34, height: 34)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 4)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
+        .accessibilityAddTraits(done ? .isSelected : [])
+        .accessibilityHint(done ? "Visszaveszi a pipát" : "Kipipálja ezt a napot")
     }
 }
 

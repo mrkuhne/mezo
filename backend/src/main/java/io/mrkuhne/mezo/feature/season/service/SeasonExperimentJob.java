@@ -15,7 +15,8 @@ import org.springframework.stereotype.Component;
  * The season experiments' daily pass (Boop B6 Évad S4, spec §5.9): at 04:40 in the Boop zone every owner with an
  * active season gets his due experiment finished and, when the season allows it, at most one proposal. Not the
  * proactive {@code ExperimentJob} (switched off by spec §5.12-2). One owner's failure never stops the others; each
- * owner is his own transaction ({@link ExperimentService#daily}).
+ * owner's finishing and his detector run in their own transactions ({@link ExperimentService#daily}), and a failing
+ * detector is logged there without undoing the finish.
  */
 @Slf4j
 @Component
