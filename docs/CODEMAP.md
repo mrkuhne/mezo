@@ -30,6 +30,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 | [journal](#journal) | ✓ | 1 | [journal](features/journal.md) |
 | [lifegoal](#lifegoal) | ✓ | 1 | [lifegoal](features/lifegoal.md) |
 | [llmlog](#llmlog) | ✓ | 2 | [companion](features/companion.md) |
+| [mail](#mail) | ✓ | · | · |
 | [meal](#meal) | ✓ | 3 | [fuel](features/fuel.md) |
 | [medication](#medication) | ✓ | 1 | · |
 | [needs](#needs) | ✓ | 1 | [needs](features/needs.md) |
@@ -778,6 +779,22 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   - **populators:** `DailySummaryPopulator`, `DatabasePopulator`, `LlmLogPopulator`, `MealPopulator`,
     `PantryItemPopulator`, `UserPopulator`
 
+### mail
+
+*BE* · read next: **none — no HOW doc exists for this feature yet**
+
+- **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/mail`
+  - **entities→tables:** `MailFeedbackEntity`→`mail_feedback`, `MailFolderCursorEntity`→`mail_folder_cursor`,
+    `MailItemEntity`→`mail_item`, `MailMailboxEntity`→`mail_mailbox`, `MailMessageEntity`→`mail_message`,
+    `MailRunEntity`→`mail_run`, `MailSenderRuleEntity`→`mail_sender_rule`
+  - **repositories:** `MailFeedbackRepository`, `MailFolderCursorRepository`, `MailItemRepository`,
+    `MailMailboxRepository`, `MailMessageRepository`, `MailRunRepository`, `MailSenderRuleRepository`
+  - **services:** `MailCredentialCipher`
+  - **config:** `MailProperties`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/mail` — 1 IT + 1 unit
+  - **ITs:** `MailSchemaIT`
+  - **populators:** `DatabasePopulator`, `MailPopulator`
+
 ### meal
 
 *BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-21, done)
@@ -1413,7 +1430,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   `FeedbackPopulator`, `FlagLogPopulator`, `FuelSettingsPopulator`, `GoalPlanLinkPopulator`, `GoalPopulator`,
   `GoalSuggestionPopulator`, `GraphPopulator`, `HabitPopulator`, `HealthSamplePopulator`, `IntentionPopulator`,
   `JournalPopulator`, `KnowledgeFactPopulator`, `LearnedFactPopulator`, `LifeGoalPopulator`, `LlmLogPopulator`,
-  `MealPopulator`, `MealRhythmFixtureIT`, `MealSlotTemplatePopulator`, `MedicationDosePopulator`,
+  `MailPopulator`, `MealPopulator`, `MealRhythmFixtureIT`, `MealSlotTemplatePopulator`, `MedicationDosePopulator`,
   `MedicationPopulator`, `MemoirPopulator`, `MemoryEmbeddingPopulator`, `MemoryItemPopulator`, `MentionPopulator`,
   `MesoTemplatePopulator`, `NeedsPopulator`, `PantryCatalogPopulator`, `PantryImportPopulator`, `PantryItemPopulator`,
   `PatternEventPopulator`, `PatternPopulator`, `PenzPopulator`, `PeriodSummaryPopulator`, `PersonPopulator`,
@@ -1438,5 +1455,5 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 Sources that could not be bound to a feature block by convention — bind them by adding the missing controller/`key_files` entry, or read them directly.
 
 - **Feature doc** [`docs/features/_platform-api-backend.md`](features/_platform-api-backend.md) — its `key_files` point outside any single feature package
-- **Features with no `docs/features/` doc:** `medication`
+- **Features with no `docs/features/` doc:** `mail`, `medication`
   There is no HOW doc for these — read the code, and write the doc when you touch them (AGENTS.md §Documentation).

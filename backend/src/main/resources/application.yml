@@ -469,6 +469,14 @@ mezo:
     # AI pillar proposal (propose-only): off ⇒ POST /api/life-goals/propose answers from the rule template.
     lifegoal-ai-propose:
       enabled: true
+  # Boop Levél (mezo-r36n9.38): the morning post (MailProperties). Off by default; prod turns it on at deploy.
+  # secret-key is a DEV-ONLY dummy; production supplies MEZO_MAIL_SECRET_KEY (base64, 32 bytes).
+  mail:
+    enabled: false
+    secret-key: ${MEZO_MAIL_SECRET_KEY:Ym9vcC1kZXYtb25seS1tYWlsLWtleS0zMmJ5dGVzISE=}
+    cron: "0 0 8,15 * * *"
+    zone: Europe/Budapest
+    daily-usd-cap: 0.15
   # Boop Pénz L6 news digest (mezo-r36n9.104): the twice-daily quotes + feeds + digest poll (PenzNewsProperties)
   penz:
     news:
@@ -512,6 +520,9 @@ mezo:
       # does not exist (it also needs mezo.penz.news.enabled)
       penz-news-job:
         enabled: true
+      # Boop Levél morning post (mezo-r36n9.38, schedule: mezo.mail.cron); off = the mail job bean does not exist
+      mail-job:
+        enabled: false
       character-conference-job:
         enabled: true
       # Csapatfal Act III team chat expiry sweep (mezo-a9bo7.21, schedule:
