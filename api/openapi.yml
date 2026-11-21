@@ -3474,6 +3474,193 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/train/year-plans/preview:
+    post:
+      tags:
+        - Train
+      operationId: previewYearPlan
+      summary: >-
+        Preview an Éves terv (mezo-r36n9.113) — rotation, re-dated layout and
+        warnings; nothing is persisted
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/YearPlanRequest'
+      responses:
+        '200':
+          description: The proposed year plan (no ids)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/YearPlan'
+        '400':
+          description: Validation error (incl. TRAIN_YEAR_START_NOT_MONDAY)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/train/year-plans:
+    post:
+      tags:
+        - Train
+      operationId: createYearPlan
+      summary: >-
+        Create the active Éves terv; a running mesocycle that reaches into the
+        plan is adopted as block 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/YearPlanRequest'
+      responses:
+        '201':
+          description: The created year plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/YearPlan'
+        '400':
+          description: Validation error (incl. TRAIN_YEAR_START_NOT_MONDAY)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            TRAIN_YEAR_PLAN_ACTIVE_EXISTS — an active plan exists and
+            replaceActive is not true
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/train/year-plans/active:
+    get:
+      tags:
+        - Train
+      operationId: getActiveYearPlan
+      summary: 'The caller''s active Éves terv, re-dated against today'
+      responses:
+        '200':
+          description: The active year plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/YearPlan'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: TRAIN_YEAR_PLAN_NONE — no active plan (the phone's empty state)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/year-plans/blocks/{blockId}':
+    patch:
+      tags:
+        - Train
+      operationId: patchYearBlock
+      summary: >-
+        Edit one block of the active Éves terv; a rule break is accepted and
+        comes back as a warning
+      parameters:
+        - name: blockId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/YearBlockPatch'
+      responses:
+        '200':
+          description: The whole re-dated year plan with its warnings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/YearPlan'
+        '400':
+          description: >-
+            Validation error (impossible edit, e.g. moving earlier without a
+            gap)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No such block of the caller
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            TRAIN_YEAR_BLOCK_LOCKED (running/done block, or the consolidation's
+            order/time/skip) or TRAIN_YEAR_NOTHING_TO_LINK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/year-plans/{id}/archive':
+    post:
+      tags:
+        - Train
+      operationId: archiveYearPlan
+      summary: Close (archive) an Éves terv; afterwards there is no active plan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The archived year plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/YearPlan'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No such plan of the caller
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/train/readiness/today:
     get:
       tags:
@@ -18405,6 +18592,360 @@ components:
             $ref: '#/components/schemas/CheckInPlanItem'
         adaptive:
           $ref: '#/components/schemas/CheckInAdaptiveItem'
+    YearPlanRequest:
+      type: object
+      required:
+        - startDate
+      description: >-
+        An Éves terv request (mezo-r36n9.113); absent optional fields take the
+        mezo.year-plan defaults
+      properties:
+        startDate:
+          type: string
+          format: date
+          description: >-
+            The plan's first day, a Monday (400 TRAIN_YEAR_START_NOT_MONDAY
+            otherwise); an adopted running block moves it to the Monday
+            on/before that block's start
+        emphasis:
+          type: array
+          nullable: true
+          maxItems: 9
+          description: Landmark groups to focus twice this year; absent = none
+          items:
+            type: string
+            pattern: ^(chest|back|shoulder|biceps|triceps|quad|ham|glute|calf)$
+        blockWeeks:
+          type: integer
+          nullable: true
+          minimum: 4
+          maximum: 8
+          description: Loading block length; absent = 6
+        consolidationWeeks:
+          type: integer
+          nullable: true
+          minimum: 1
+          maximum: 2
+          description: Consolidation length; absent = 2
+        replaceActive:
+          type: boolean
+          nullable: true
+          description: >-
+            true archives the active plan first (Jövő évi terv); absent/false =
+            409 when one exists
+    YearBlockPatch:
+      type: object
+      description: >-
+        One edit of a year block; every field optional, applied in the order
+        focus, weeks, ordinal, shiftWeeks, skip
+      properties:
+        focus:
+          type: array
+          nullable: true
+          minItems: 1
+          maxItems: 2
+          description: >-
+            1-2 distinct focus groups (a duplicate is 400); re-derives the block
+            kind (mixed keeps it and warns mixed_focus)
+          items:
+            type: string
+            pattern: ^(chest|back|shoulder|biceps|triceps|quad|ham|glute|calf)$
+        weeks:
+          type: integer
+          nullable: true
+          minimum: 1
+          maximum: 8
+          description: >-
+            Block length; a loading block 4-8, the consolidation 1-2 (sets the
+            plan's consolidation length)
+        ordinal:
+          type: integer
+          nullable: true
+          minimum: 1
+          description: >-
+            New position among the loading blocks (1..loadingBlocks); the rest
+            renumber contiguously
+        shiftWeeks:
+          type: integer
+          nullable: true
+          minimum: -1
+          maximum: 1
+          description: >-
+            +1 adds a week of gap before the block; -1 removes one (400 without
+            a gap, see canMoveEarlier)
+        skip:
+          type: boolean
+          nullable: true
+          description: 'true skips the block, false brings it back to planned'
+        linkRunning:
+          type: boolean
+          nullable: true
+          description: >-
+            true links the unlinked running mesocycle to this planned block (409
+            TRAIN_YEAR_NOTHING_TO_LINK when there is none)
+    YearPlan:
+      type: object
+      required:
+        - status
+        - startDate
+        - endDate
+        - blockWeeks
+        - consolidationWeeks
+        - emphasis
+        - loadingBlocks
+        - bufferWeeks
+        - overrunWeeks
+        - blocks
+        - relaxed
+        - warnings
+        - focusCount
+        - review
+      description: >-
+        An Éves terv with every number and date the phone shows, computed on the
+        server
+      properties:
+        id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Absent on a preview
+        status:
+          type: string
+          enum:
+            - active
+            - archived
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+          description: >-
+            The consolidation's last day (re-dated; after the 52nd week when
+            overrunWeeks > 0)
+        blockWeeks:
+          type: integer
+        consolidationWeeks:
+          type: integer
+          description: >-
+            The planned consolidation length (the consolidation block's weeks
+            show a shortened one)
+        emphasis:
+          type: array
+          items:
+            type: string
+        currentWeek:
+          type: integer
+          nullable: true
+          description: >-
+            Week of today since startDate (1-based, may exceed 52); null before
+            the start
+        loadingBlocks:
+          type: integer
+          description: Number of non-consolidation blocks
+        bufferWeeks:
+          type: integer
+          description: Spare weeks before the consolidation
+        bufferStart:
+          type: string
+          format: date
+          nullable: true
+          description: First buffer day; null when bufferWeeks is 0
+        overrunWeeks:
+          type: integer
+          description: Weeks the year runs past its 52 weeks
+        blocks:
+          type: array
+          description: 'Every block in ordinal order, the consolidation last'
+          items:
+            $ref: '#/components/schemas/YearBlock'
+        relaxed:
+          type: array
+          description: Rotation relaxations of a preview/create (empty on later reads)
+          items:
+            $ref: '#/components/schemas/YearNote'
+        warnings:
+          type: array
+          description: Rule breaks of the current plan (an owner edit is always accepted)
+          items:
+            $ref: '#/components/schemas/YearNote'
+        focusCount:
+          type: object
+          description: Every landmark group -> how many non-skipped loading blocks focus it
+          additionalProperties:
+            type: integer
+        next:
+          allOf:
+            - $ref: '#/components/schemas/YearNext'
+          nullable: true
+        unlinkedRunning:
+          allOf:
+            - $ref: '#/components/schemas/YearUnlinkedRunning'
+          nullable: true
+        review:
+          $ref: '#/components/schemas/YearReview'
+    YearBlock:
+      type: object
+      required:
+        - ordinal
+        - kind
+        - focus
+        - weeks
+        - plannedStart
+        - lastDay
+        - status
+        - adopted
+        - canMoveEarlier
+        - skipConsequence
+      properties:
+        id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Absent on a preview
+        ordinal:
+          type: integer
+        kind:
+          type: string
+          enum:
+            - upper
+            - lower
+            - consolidation
+        focus:
+          type: array
+          items:
+            type: string
+        weeks:
+          type: integer
+          description: The weeks the block takes (actual for a followed mesocycle)
+        plannedStart:
+          type: string
+          format: date
+        lastDay:
+          type: string
+          format: date
+        status:
+          type: string
+          enum:
+            - planned
+            - running
+            - done
+            - skipped
+        mesocycleId:
+          type: string
+          format: uuid
+          nullable: true
+        currentWeek:
+          type: integer
+          nullable: true
+          description: >-
+            Week of today inside this block (1-based); null when today is
+            outside it
+        adopted:
+          type: boolean
+          description: true when the block adopted a mesocycle that was already running
+        canMoveEarlier:
+          type: boolean
+          description: >-
+            true when shiftWeeks -1 is possible (the block has a gap before it
+            and is editable)
+        skipConsequence:
+          type: array
+          description: >-
+            Focus groups no other block focuses — lost for the year if this
+            block is skipped
+          items:
+            type: string
+    YearNote:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          enum:
+            - emphasis_once
+            - no_focus
+            - pair_relaxed
+            - focus_consecutive
+            - no_focus_this_year
+            - pair_unusual
+            - mixed_focus
+        group:
+          type: string
+          nullable: true
+        ordinal:
+          type: integer
+          nullable: true
+        blockId:
+          type: string
+          format: uuid
+          nullable: true
+          description: no_focus_this_year — the suggested block for the group
+        replaces:
+          type: string
+          nullable: true
+          description: >-
+            no_focus_this_year — the group to swap out of blockId; absent = add
+            as a second focus
+        weeks:
+          type: integer
+          nullable: true
+    YearNext:
+      type: object
+      required:
+        - blockId
+        - startsOn
+        - reason
+      properties:
+        blockId:
+          type: string
+          format: uuid
+        startsOn:
+          type: string
+          format: date
+        reason:
+          type: string
+          enum:
+            - last_week
+            - no_block
+    YearUnlinkedRunning:
+      type: object
+      required:
+        - mesocycleId
+        - title
+        - startDate
+      properties:
+        mesocycleId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        startDate:
+          type: string
+          format: date
+    YearReview:
+      type: object
+      required:
+        - blocksDone
+        - blocksSkipped
+        - focused
+        - unfocused
+      properties:
+        blocksDone:
+          type: integer
+        blocksSkipped:
+          type: integer
+        focused:
+          type: array
+          description: 'Groups focused by a done or running block, config order'
+          items:
+            type: string
+        unfocused:
+          type: array
+          description: 'The other landmark groups, config order'
+          items:
+            type: string
     GymProfile:
       type: object
       required:
