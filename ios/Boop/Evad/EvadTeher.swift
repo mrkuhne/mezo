@@ -17,7 +17,7 @@ struct EvadTeher: View {
                         Text(headline).nkFont(13.5).foregroundStyle(.white.opacity(0.85))
                             .fixedSize(horizontal: false, vertical: true)
                     }
-                    Text("A teher az edzés és a naptárad együtt. A pihenés az alvásodból és a pulzusodból jön. A \(s.nowWeek). hét után a terv, halványan.")
+                    Text(evadLoadFootnote(nowWeek: s.nowWeek))
                         .nkFont(12.5).foregroundStyle(.white.opacity(0.55)).fixedSize(horizontal: false, vertical: true)
                 }
                 .nkStale(store?.ageText.map { NKStale(age: $0) })

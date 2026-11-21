@@ -57,15 +57,19 @@ struct MaVerdictRow: View {
 /// asks how it felt), *Amiből gazdálkodsz*, then the learning note. *Mit tennél át?* comes with K3.
 struct DayCapacityBlocks: View {
     let capacity: Components.Schemas.BoopCapacity
-    /// After a label is stored: the page reloads the brief (the server re-scored the event).
-    var onLabelled: () -> Void = {}
+    /// After labels are stored: the page reloads the brief once (the server re-scored the events). Debounced through
+    /// `KapacitasReloadGate`: when the label sheet has stayed closed a moment, or when the page goes away — never once
+    /// per tap, so a run of labels costs one brief regeneration.
+    var onLabelled: @MainActor () -> Void = {}
 
     @Environment(\.kapacitasClient) private var client
-    /// What he said this session, by event key (the row shows it at once; the next brief carries the re-score).
+    /// What he said this session, by event key (the row shows it at once, before the reload brings the server's).
     @State private var labels: [String: KapacitasEffect] = [:]
     @State private var picking: KapPick?
     @State private var sending = false
     @State private var failure: String?
+    /// One brief reload per run of labels (see `KapacitasReloadGate`).
+    @State private var reloadGate = KapacitasReloadGate()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 26) {
@@ -95,12 +99,18 @@ struct DayCapacityBlocks: View {
             // Simulator review: `-previewCapacityPick YES` opens the first event's „Hogy hat rád?" sheet.
             if UserDefaults.standard.bool(forKey: "previewCapacityPick"), picking == nil,
                let r = demandRows(capacity).first(where: { $0.eventKey != nil }), let key = r.eventKey {
-                picking = KapPick(eventKey: key, title: r.title, sub: r.sub)
+                picking = KapPick(eventKey: key, title: r.title, sub: r.sub, current: r.effect)
             }
             #endif
         }
-        .sheet(item: $picking) { p in
-            KapFeedbackSheet(pick: p, current: labels[p.eventKey], sending: sending) { effect in send(effect, for: p) }
+        .onChange(of: picking) { _, p in
+            if p != nil { reloadGate.sheetOpened() } // another label is coming: wait for it
+        }
+        .onDisappear { reloadGate.flush(reload: onLabelled) }
+        .sheet(item: $picking, onDismiss: { reloadGate.sheetClosed(reload: onLabelled) }) { p in
+            KapFeedbackSheet(pick: p, current: labels[p.eventKey] ?? p.current, sending: sending) { effect in
+                send(effect, for: p)
+            }
                 .presentationDetents([.height(300)])
                 .presentationBackground(NK.ground).presentationCornerRadius(34).presentationDragIndicator(.visible)
         }
@@ -115,9 +125,12 @@ struct DayCapacityBlocks: View {
                     .nkFont(13.5).foregroundStyle(.white.opacity(0.7)).fixedSize(horizontal: false, vertical: true)
             } else {
                 NKRowList(rows.enumerated().map { i, r in
-                    let said = r.eventKey.flatMap { labels[$0] }
+                    // this session's tap first (instant), else the label the server stored (survives a relaunch)
+                    let said = r.eventKey.flatMap { labels[$0] } ?? r.effect
+                    let shown = KapacitasRow(title: r.title, sub: r.sub, value: r.value, hot: r.hot, glyph: r.glyph,
+                                             eventKey: r.eventKey, effect: said)
                     return NKAreaRow(id: "d\(i)", glyph: r.glyph, title: r.title, sub: r.sub, value: r.value,
-                                     valueSub: said.map { "te: \($0.label.lowercased())" } ?? "",
+                                     valueSub: shown.labelSub,
                                      hot: r.hot && said == nil,
                                      action: action(for: r))
                 }, hue: kapacitasHue)
@@ -131,7 +144,7 @@ struct DayCapacityBlocks: View {
     /// Only a calendar event can be labelled (a training session carries no key), and only signed in.
     private func action(for r: KapacitasRow) -> (@MainActor @Sendable () -> Void)? {
         guard let key = r.eventKey, client != nil else { return nil }
-        let pick = KapPick(eventKey: key, title: r.title, sub: r.sub)
+        let pick = KapPick(eventKey: key, title: r.title, sub: r.sub, current: labels[key] ?? r.effect)
         return { picking = pick }
     }
 
@@ -144,8 +157,8 @@ struct DayCapacityBlocks: View {
                 try await client.feedback(eventKey: p.eventKey, effect: effect)
                 labels[p.eventKey] = effect
                 failure = nil
-                picking = nil
-                onLabelled()
+                reloadGate.labelStored()
+                picking = nil   // the sheet's dismissal schedules the one reload
             } catch {
                 failure = (error as? PlanFetchError) == .offline ? "Most nincs net, nem tudtam elküldeni. Próbáld újra később."
                     : "Nem sikerült elküldeni. Próbáld újra."
@@ -155,9 +168,10 @@ struct DayCapacityBlocks: View {
     }
 }
 
-/// The event he tapped.
+/// The event he tapped, with the label it carries now (pre-selected in the sheet).
 struct KapPick: Identifiable, Equatable {
     let eventKey: String, title: String, sub: String
+    var current: KapacitasEffect? = nil
     var id: String { eventKey }
 }
 

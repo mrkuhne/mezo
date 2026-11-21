@@ -4,10 +4,10 @@ import Testing
 @testable import BoopCore
 
 private func capacity(verdict: Components.Schemas.BoopCapacity.verdictPayload = .rendben, tanulo: Bool = false,
-                      days: Int = 20, calendarKnown: Bool = true,
+                      days: Int = 20, calendarKnown: Bool = true, reason: String = "Három megbeszélés",
                       demand: [Components.Schemas.BoopCapacityDemandItem] = [],
                       factors: [Components.Schemas.BoopCapacityFactor] = []) -> Components.Schemas.BoopCapacity {
-    .init(verdict: verdict, reason: "Három megbeszélés", ratio: 0.8, tanulo: tanulo, labelledDays: days,
+    .init(verdict: verdict, reason: reason, ratio: 0.8, tanulo: tanulo, labelledDays: days,
           calendarKnown: calendarKnown, demand: demand, factors: factors)
 }
 
@@ -27,6 +27,47 @@ struct KapacitasLogicTests {
     @Test func noCalendarAddsNaptarNelkul() {
         #expect(verdictLine(capacity(calendarKnown: false)).reason == "Három megbeszélés · naptár nélkül")
         #expect(verdictLine(capacity(calendarKnown: true)).reason == "Három megbeszélés")
+    }
+
+    // K2 final fix: no reason of the server's and no calendar → no dangling separator
+    @Test func emptyReasonWithoutCalendarReadsNaptarNelkulAlone() {
+        #expect(verdictLine(capacity(calendarKnown: false, reason: "")).reason == "naptár nélkül")
+        #expect(verdictLine(capacity(calendarKnown: false, reason: "  ")).reason == "naptár nélkül")
+        #expect(verdictLine(capacity(calendarKnown: true, reason: "")).reason == "")
+    }
+
+    // K2 final fix: his label comes back from the server, so the row shows it after a relaunch too
+    @Test func demandRowCarriesHisLabel() {
+        let start = Date(timeIntervalSince1970: 0)
+        let items: [Components.Schemas.BoopCapacityDemandItem] = [
+            .init(label: "Tervezés", start: start, kind: "meeting", level: .kicsi, eventKey: "e1", effect: .neutral),
+            .init(label: "Hívás", start: start, kind: "call", level: .nagy, eventKey: "e2"),
+        ]
+        let rows = demandRows(capacity(demand: items), timeZone: TimeZone(identifier: "UTC")!)
+        #expect(rows[0].effect == .neutral)
+        #expect(rows[0].labelSub == "te: semleges")
+        #expect(rows[1].effect == nil && rows[1].labelSub == "")
+        #expect(KapacitasRow(title: "x", sub: "", value: "", hot: false, glyph: "", effect: .drains).labelSub == "te: merít")
+        #expect(KapacitasRow(title: "x", sub: "", value: "", hot: false, glyph: "", effect: .feeds).labelSub == "te: feltölt")
+    }
+
+    @Test func briefJSONCarriesTheLabel() throws {
+        let block = #""capacity":{"verdict":"rendben","reason":"","ratio":0.7,"tanulo":false,"labelledDays":20,"calendarKnown":true,"demand":[{"label":"Tervezés","start":"2026-11-10T08:00:00Z","kind":"meeting","level":"kicsi","eventKey":"cal-1","effect":"feeds"}],"factors":[]},"#
+        let b = try Brief(json: Data(briefJSON(conflict: block).utf8))
+        #expect(b.capacity?.demand.first?.effect == .feeds)
+    }
+
+    // K2 final fix: „A 4. hét", but „Az 1. hét" / „Az 5. hét" (the spoken numeral starts with a vowel)
+    @Test func hungarianArticleFollowsTheSpokenNumeral() {
+        for n in [1, 5, 50, 52, 59, 500, 1000, 1999, 5000] { #expect(hungarianArticle(n) == "Az", "\(n)") }
+        for n in [2, 3, 4, 6, 9, 10, 11, 15, 19, 20, 49, 60, 100, 199, 2000] { #expect(hungarianArticle(n) == "A", "\(n)") }
+    }
+
+    @Test func seasonFootnoteSaysPlannedWeeksAreTrainingOnly() {
+        #expect(evadLoadFootnote(nowWeek: 4)
+                == "A teher az edzés és a naptárad együtt. A pihenés az alvásodból és a pulzusodból jön. A 4. hét után a terv, halványan: csak az edzés.")
+        #expect(evadLoadFootnote(nowWeek: 1).hasSuffix("Az 1. hét után a terv, halványan: csak az edzés."))
+        #expect(evadLoadFootnote(nowWeek: 5).contains("Az 5. hét után"))
     }
 
     @Test func demandRowsFormatTimeKindAndLevel() {

@@ -45,6 +45,22 @@ public struct NKSeasonLoadChart: View {
         return m > 0 ? m * 1.08 : 1
     }
 
+    /// The runs of consecutive weeks that carry a recovery figure; the line breaks where a week has none. A run of one
+    /// week is drawn as a short tick (a line needs two points).
+    static func recoveryRuns(_ weeks: [NKLoadWeek]) -> [ClosedRange<Int>] {
+        var runs: [ClosedRange<Int>] = []
+        var start: Int?
+        for i in weeks.indices {
+            if weeks[i].recovery != nil {
+                if start == nil { start = i }
+            } else if let s = start {
+                runs.append(s...(i - 1)); start = nil
+            }
+        }
+        if let s = start { runs.append(s...(weeks.count - 1)) }
+        return runs
+    }
+
     private func barFill(_ i: Int) -> Color {
         let w = weeks[i]
         if w.faint { return .white.opacity(0.14) }
@@ -67,11 +83,20 @@ public struct NKSeasonLoadChart: View {
                         }
                     }
                     Path { p in
-                        var pen = false
-                        for i in weeks.indices {
-                            guard let r = weeks[i].recovery else { pen = false; continue }
-                            let pt = CGPoint(x: step * (CGFloat(i) + 0.5), y: h * (1 - CGFloat(r / top)))
-                            if pen { p.addLine(to: pt) } else { p.move(to: pt); pen = true }
+                        for run in Self.recoveryRuns(weeks) {
+                            let y = { (i: Int) in h * (1 - CGFloat((weeks[i].recovery ?? 0) / top)) }
+                            if run.count == 1 {
+                                // a lone week (his first lived one) has no neighbour to join: a short level tick
+                                // across its bar slot, so the recovery still shows
+                                let i = run.lowerBound
+                                p.move(to: CGPoint(x: step * (CGFloat(i) + 0.21), y: y(i)))
+                                p.addLine(to: CGPoint(x: step * (CGFloat(i) + 0.79), y: y(i)))
+                            } else {
+                                for i in run {
+                                    let pt = CGPoint(x: step * (CGFloat(i) + 0.5), y: y(i))
+                                    if i == run.lowerBound { p.move(to: pt) } else { p.addLine(to: pt) }
+                                }
+                            }
                         }
                     }
                     .stroke(hue.glow, style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))

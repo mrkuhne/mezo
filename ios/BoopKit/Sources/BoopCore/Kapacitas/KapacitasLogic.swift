@@ -14,15 +14,22 @@ public struct KapacitasRow: Equatable, Sendable {
     public var hot: Bool
     public var glyph: String
     public var eventKey: String?
+    /// His own label of the event, as the server stored it (nil = unlabelled, or not an event).
+    public var effect: KapacitasEffect?
 
-    public init(title: String, sub: String, value: String, hot: Bool, glyph: String, eventKey: String? = nil) {
+    public init(title: String, sub: String, value: String, hot: Bool, glyph: String, eventKey: String? = nil,
+                effect: KapacitasEffect? = nil) {
         self.title = title
         self.sub = sub
         self.value = value
         self.hot = hot
         self.glyph = glyph
         self.eventKey = eventKey
+        self.effect = effect
     }
+
+    /// The row's value sub when he labelled the event: „te: merít / semleges / feltölt"; empty otherwise.
+    public var labelSub: String { effect.map { "te: \($0.label.lowercased())" } ?? "" }
 }
 
 /// The verdict as the owner reads it: the headline word, the server's reason (plus „naptár nélkül" when the
@@ -35,7 +42,8 @@ public func verdictLine(_ c: Components.Schemas.BoopCapacity) -> (word: String, 
     case .szoros: word = "Szoros, de belefér"
     case .tulSok: word = "Túl sok lenne"
     }
-    let reason = c.calendarKnown ? c.reason : c.reason + " · naptár nélkül"
+    let given = c.reason.trimmingCharacters(in: .whitespacesAndNewlines)
+    let reason = c.calendarKnown ? c.reason : (given.isEmpty ? "naptár nélkül" : c.reason + " · naptár nélkül")
     let learning = c.tanulo ? "Még tanulom, mennyit bírsz: \(c.labelledDays) napnyi adatom van." : nil
     return (word, reason, learning)
 }
@@ -82,7 +90,8 @@ public func demandRows(_ c: Components.Schemas.BoopCapacity, timeZone: TimeZone 
             }
         }
         return KapacitasRow(title: d.label, sub: "\(time) · \(kindWord(d.kind))", value: levelWord(d.level),
-                            hot: d.level == .nagy, glyph: glyph, eventKey: d.eventKey)
+                            hot: d.level == .nagy, glyph: glyph, eventKey: d.eventKey,
+                            effect: d.effect.flatMap { KapacitasEffect(rawValue: $0.rawValue) })
     }
 }
 
@@ -149,4 +158,35 @@ public func kapacitasSeasonStats(_ s: KapacitasSeasonStats) -> [KapacitasSeasonS
         out.append(KapacitasSeasonStat(value: "\(s.movesGood)", target: "\(s.moves)", label: "sült el jól"))
     }
     return out
+}
+
+/// The Hungarian definite article before a numeral, capitalised for a sentence start: „Az" when the spoken numeral
+/// starts with a vowel — egy (1), öt (5), ötven (50–59), ötszáz (500–599), ezer (1000–1999), egymillió … — „A"
+/// otherwise (tíz, tizenegy, száz, kétezer …). Ordinals follow the same sound: „Az 1. hét" (első), „A 10. hét" (tizedik).
+public func hungarianArticle(_ n: Int) -> String {
+    var v = abs(n)
+    while true {
+        if v >= 1_000_000 {
+            let m = v / 1_000_000
+            if m == 1 { return "Az" }   // egymillió
+            v = m
+        } else if v >= 1000 {
+            let t = v / 1000
+            if t == 1 { return "Az" }   // ezer
+            v = t
+        } else if v >= 100 {
+            return v / 100 == 5 ? "Az" : "A"   // ötszáz; száz, kétszáz …
+        } else if v >= 10 {
+            return v / 10 == 5 ? "Az" : "A"    // ötven; tíz, húsz …
+        } else {
+            return v == 1 || v == 5 ? "Az" : "A"
+        }
+    }
+}
+
+/// The footnote under the Évad *Teher és pihenés* chart: what the load and the recovery are made of, and that the
+/// weeks after the current one are the plan, drawn faint, counting only the training.
+public func evadLoadFootnote(nowWeek: Int) -> String {
+    "A teher az edzés és a naptárad együtt. A pihenés az alvásodból és a pulzusodból jön. "
+        + "\(hungarianArticle(nowWeek)) \(nowWeek). hét után a terv, halványan: csak az edzés."
 }

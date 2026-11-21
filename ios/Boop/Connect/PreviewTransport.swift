@@ -11,7 +11,11 @@ struct PreviewTransport: ClientTransport {
     nonisolated(unsafe) private static var movedTime: String?
     nonisolated(unsafe) private static var decided: Set<String> = []
     /// B7: his event labels in the review (event key → drains | neutral | feeds).
-    nonisolated(unsafe) private static var capacityLabels: [String: String] = [:]
+    /// The event labels the preview "server" holds. `-previewCapacityLabelled YES` starts with two already stored (as
+    /// if he labelled them before a relaunch): the rows must show them from the brief, not from this session's taps.
+    nonisolated(unsafe) private static var capacityLabels: [String: String] =
+        UserDefaults.standard.bool(forKey: "previewCapacityLabelled")
+            ? ["prev-cal-1": "drains", "prev-cal-2/x:y": "neutral"] : [:]
     /// Today's Boop conversation in the review (role, text); `-previewOpen chatAnswer` starts with one answered question.
     nonisolated(unsafe) private static var chatTurns: [(String, String)] =
         UserDefaults.standard.string(forKey: "previewOpen") == "chatAnswer" ? [("user", tiredQuestion), ("assistant", answers[tiredQuestion]!)] : []
@@ -581,6 +585,15 @@ struct PreviewTransport: ClientTransport {
         case "getCapacitySeason":
             // Invented, spike-shaped figures (the Évad page, B7 K2); `-capacitySeason none` = no active season (404).
             if UserDefaults.standard.string(forKey: "capacitySeason") == "none" { return (HTTPResponse(status: .notFound), nil) }
+            if UserDefaults.standard.string(forKey: "capacitySeason") == "oneweek" {
+                // `-capacitySeason oneweek`: the season's first week — only week 1 is lived (one recovery figure)
+                let plan = [3.1, 3.6, 3.6, 3.8, 3.4, 3.6, 3.9, 3.0]
+                let weeks = (1...8).map { w -> String in
+                    w == 1 ? #"{"week":1,"load":1.4,"recovery":1.9,"planned":false,"over":false,"trainingOnly":false}"#
+                        : #"{"week":\#(w),"load":\#(plan[w - 1]),"recovery":null,"planned":true,"over":false,"trainingOnly":true}"#
+                }.joined(separator: ",")
+                return json(#"{"weeks":[\#(weeks)],"nowWeek":1,"stats":{"overloadedDays4w":1,"moves":0,"movesGood":0},"headline":null}"#)
+            }
             let loads = [4.2, 4.6, 5.0, 5.4, 6.0, 6.3, 6.6, 3.6, 3.9, 3.0, 3.8, 3.4]
             let rests = [5.0, 5.1, 5.0, 5.1, 5.0, 4.7, 4.4]
             let weeks = (1...12).map { w -> String in
@@ -1191,7 +1204,8 @@ struct PreviewTransport: ClientTransport {
 
     /// B7 `-previewCapacity szoros|tulSok|laza|nocal`: the brief's capacity block on invented figures (absent without
     /// the switch, so every older review looks as it did). `nocal` = no calendar: only the session and the body.
-    /// A label sent from the day page re-scores its row here as the server would (feeds → „tölt").
+    /// A label sent from the day page re-scores its row here as the server would (feeds → „tölt") and rides back on the
+    /// row as `effect`.
     private static func previewCapacity(date: String) -> String {
         guard let mode = UserDefaults.standard.string(forKey: "previewCapacity") else { return "" }
         let verdict = ["tulSok", "laza", "rendben"].contains(mode) ? mode : "szoros"
@@ -1204,15 +1218,16 @@ struct PreviewTransport: ClientTransport {
             default: base
             }
         }
+        func effect(_ key: String) -> String { capacityLabels[key].map { #""\#($0)""# } ?? "null" }
         let calendar = mode != "nocal"
         var demand: [String] = []
         if calendar {
-            demand.append(#"{"label":"Négy megbeszélés egymás után","start":"\#(date)T08:00:00Z","kind":"meeting","level":"\#(level("prev-cal-1", "nagy"))","eventKey":"prev-cal-1"}"#)
-            demand.append(#"{"label":"1:1 Petrával","start":"\#(date)T14:00:00Z","kind":"social","level":"\#(level("prev-cal-2/x:y", "kicsi"))","eventKey":"prev-cal-2/x:y"}"#)
+            demand.append(#"{"label":"Négy megbeszélés egymás után","start":"\#(date)T08:00:00Z","kind":"meeting","level":"\#(level("prev-cal-1", "nagy"))","eventKey":"prev-cal-1","effect":\#(effect("prev-cal-1"))}"#)
+            demand.append(#"{"label":"1:1 Petrával","start":"\#(date)T14:00:00Z","kind":"social","level":"\#(level("prev-cal-2/x:y", "kicsi"))","eventKey":"prev-cal-2/x:y","effect":\#(effect("prev-cal-2/x:y"))}"#)
         }
         demand.append(#"{"label":"Vállak és hát","start":"\#(date)T16:30:00Z","kind":"training","level":"kozepes","eventKey":null}"#)
         if calendar {
-            demand.append(#"{"label":"Vacsora a családdal","start":"\#(date)T18:30:00Z","kind":"social","level":"\#(level("prev-cal-3", "tolt"))","eventKey":"prev-cal-3"}"#)
+            demand.append(#"{"label":"Vacsora a családdal","start":"\#(date)T18:30:00Z","kind":"social","level":"\#(level("prev-cal-3", "tolt"))","eventKey":"prev-cal-3","effect":\#(effect("prev-cal-3"))}"#)
         }
         let factors = [
             #"{"key":"sleep","label":"Alvás","value":"6 ó 05 p · kevesebb a szokásosnál","effect":"rossz"}"#,

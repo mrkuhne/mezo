@@ -61,6 +61,14 @@ struct KitGallery: View {
                 }, nowIndex: 6, hue: hue)
             }
 
+            // the season's first week: only one lived week has recovery — it shows as a short tick, not nothing
+            NKBare("Teher és pihenés · 1 megélt hét", hue: hue, glyph: "chart-deep", trailing: "hetente") {
+                NKSeasonLoadChart(weeks: (1...8).map { w in
+                    NKLoadWeek(label: "\(w).", load: [3.1, 3.6, 3.6, 3.8, 3.4, 3.6, 3.9, 3.0][w - 1],
+                               recovery: w == 1 ? 4.2 : nil, over: false, faint: w > 1)
+                }, nowIndex: 0, hue: hue)
+            }
+
             NKBare("A jövő heted", hue: hue, glyph: "clock-ink") {
                 NKWeekLoadStrip(days: [NKLoadDay(weekday: "H", date: "24.", demand: 0.62, capacity: 0.82, word: "rendben"),
                                        NKLoadDay(weekday: "K", date: "25.", demand: 0.55, capacity: 0.78, word: "laza"),
