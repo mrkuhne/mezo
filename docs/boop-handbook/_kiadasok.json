@@ -746,5 +746,20 @@
       "mezo-r36n9.113"
     ],
     "mi_valtozott": "Az Edzés oldalon most már új blokkot is indíthatsz. Megadod a hetek számát, az edzés hosszát és hogy melyik izom kapjon Hangsúlyt, Építést vagy Tartást; Boop két-három felosztást mutat (például Felső / Alsó vagy Teljes test), mindegyiknél a napi becsült perceket és azt, miért jó. Csak olyan tervet ajánl, ami minden szabálynak megfelel: minden izom hetente legalább kétszer kap kemény sorozatot, minden nap belefér az időbe, és egy izom sem kap két egymást követő napon nagy adagot. Ha semmi nem fér bele, megmondja, min múlik (több idő, egy izommal kevesebb Hangsúly, több nap). A heti keret mutatja, mennyi fér az idődbe, egyszerre legfeljebb 2 izom lehet Hangsúlyon, és a Tartás most valóban a megtartó adag (a növelő adag kb. harmada). A becsült idő a sorozatok közti pihenőt is számolja, bemelegítés csak az izom első nehéz gyakorlata elé kerül, és minden izomnál ott a „miért?”. Egy frissen indított blokk egy gombbal eldobható. Például: 4 nap × 60 percbe egy Hangsúlyos izom és a többi Tartáson belefér."
+  },
+  "260a76cb6": {
+    "cim": "Napi bírás – alap: a naptár minden adata és a programok felcímkézése",
+    "datum": "2026-11-21",
+    "verzio": "v3.30.0",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app",
+      "Háttérrendszer"
+    ],
+    "szakasz": "B7 Napi kapacitás",
+    "jegyek": [
+      "mezo-r36n9.17"
+    ],
+    "mi_valtozott": "A telefon mostantól a naptárad minden adatát elküldi (cím, időpont, résztvevők, helyszín, jegyzet), 8 nappal előre, és egyszer újraküldi az elmúlt 60 napot is. A háttérben az MI minden programot felcímkéz: mennyire fáraszt szellemileg, emberek közt vagy fizikailag, vagy éppen feltölt; ha nem elérhető, egy egyszerű szabály becsli meg. Ebből és az alvásodból, pulzusodból, edzésedből, evésedből és a bejelentkezéseidből a Boop kiszámolja, mennyit bírsz egy nap, és a reggeli összefoglaló már tartalmazza ezt (például: „szoros, de belefér”). A telefonon ezt a következő lépés mutatja meg; most még nem látsz újat, csak a háttér készült el. A reggeli összefoglaló betöltése ettől nem lett lassabb."
   }
 }

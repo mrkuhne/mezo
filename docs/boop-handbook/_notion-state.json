@@ -2684,7 +2684,7 @@
     },
     "kezikonyv:02-ma/napi-kapacitas-atrendezes": {
       "page_id": "41f8968e-752b-81a6-957a-dabdf4fea4e9",
-      "hash": "1e7824946d0d"
+      "hash": "c22312013c85"
     },
     "jegyek:mezo-r36n9.128": {
       "page_id": "41f8968e-752b-81dd-a076-c52a06dfc4c1",
@@ -2805,6 +2805,14 @@
     "kezikonyv:07-edzes/18-uj-blokk-tervjeloltek": {
       "page_id": "41f8968e-752b-81d6-a72c-c6ba650c00ef",
       "hash": "ea9b67903ad4"
+    },
+    "jegyek:mezo-r36n9.133": {
+      "page_id": "41f8968e-752b-81dc-b519-d11a0e55afb6",
+      "hash": "64911058e393"
+    },
+    "kiadasok:260a76cb6": {
+      "page_id": "41f8968e-752b-813c-a679-dbf83444aa20",
+      "hash": "59d7bd5d1a9a"
     }
   }
 }
