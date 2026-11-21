@@ -13,6 +13,7 @@ struct NapSorDemoRoot: View {
     @State private var variant: String = UserDefaults.standard.string(forKey: "previewNapSorVariant") ?? "a"
     @State private var rows = NapSorRow.fixture
     @State private var width: CGFloat = 0
+    private static let label = ["a": "A · Címkesor", "b": "B · Értékoszlopok", "c": "C · Mini táblázat"]
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -20,12 +21,10 @@ struct NapSorDemoRoot: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     HStack(spacing: 8) {
-                        Text("NAP SOR · MINTA").nkFont(11, .semibold, design: .monospaced).tracking(1.4).foregroundStyle(.white.opacity(0.7))
-                            .lineLimit(1).minimumScaleFactor(0.6)
                         Spacer()
-                        ForEach(["a", "b"], id: \.self) { v in
+                        ForEach(["a", "b", "c"], id: \.self) { v in
                             Button { withAnimation(.snappy) { variant = v } } label: {
-                                Text(v == "a" ? "A · Címkesor" : "B · Értékoszlopok").nkFont(12, .semibold).lineLimit(1).fixedSize()
+                                Text(width < 400 && variant != v ? v.uppercased() : Self.label[v] ?? v).nkFont(12, .semibold).lineLimit(1).fixedSize()
                                     .foregroundStyle(variant == v ? NK.ground : .white)
                                     .padding(.horizontal, 10).padding(.vertical, 6)
                                     .background(Capsule().fill(variant == v ? Color.white : .white.opacity(0.12)))
@@ -98,7 +97,11 @@ private struct NapSorDayCard: View {
                 ForEach($rows) { $row in
                     if row.id != rows.first?.id { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
                     Group {
-                        if variant == "b" { NapSorRowB(row: $row, narrow: narrow) } else { NapSorRowA(row: $row, narrow: narrow) }
+                        switch variant {
+                        case "b": NapSorRowB(row: $row, narrow: narrow)
+                        case "c": NapSorRowC(row: $row, narrow: narrow)
+                        default: NapSorRowA(row: $row, narrow: narrow)
+                        }
                     }
                     .padding(.vertical, 12)
                     .contentShape(Rectangle())
@@ -114,7 +117,7 @@ private struct NapSorDayCard: View {
                 .padding(.vertical, 12)
             }
             HStack(spacing: 6) {
-                if variant == "b" {
+                if variant != "a" {
                     Circle().fill(planHue.glow).frame(width: 5, height: 5)
                 } else {
                     Text("TE").nkFont(8, .bold, design: .monospaced).foregroundStyle(NK.ground)
