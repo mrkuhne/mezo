@@ -601,3 +601,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202611261000_mezo-r36n9.113_training_year_plan.sql
+  - changeSet:
+      id: "1.1.0:202611261100_mezo-r36n9.113_year_block_mesocycle_unique"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202611261100_mezo-r36n9.113_year_block_mesocycle_unique.sql

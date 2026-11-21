@@ -30,11 +30,13 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
@@ -69,6 +71,7 @@ public class YearPlanService {
     private final TrainingYearBlockRepository blocks;
     private final MesocycleRepository mesocycles;
     private final WorkoutSessionRepository workoutSessions;
+    private final MesocycleDiscardService discardService;
     private final YearPlanProperties properties;
     private final VolumeProperties volume;
     private final YearPlanAssembler assembler;
@@ -145,6 +148,13 @@ public class YearPlanService {
         if (patch.getWeeks() != null) applyWeeks(plan, target, consolidation, patch.getWeeks());
         if (patch.getOrdinal() != null) move(all, target, patch.getOrdinal());
         if (patch.getShiftWeeks() != null) shift(target, patch.getShiftWeeks());
+        if (Boolean.TRUE.equals(patch.getSkip()) && target.getMesocycleId() != null) {
+            // A skipped block linked to a never-started run: the run is thrown away („Mégsem, eldobom": soft delete,
+            // no report, no event) so the skip sticks — otherwise the reconciler would pull the block back to planned
+            // and the starter would still activate the run on its day. A run with logs is running/done → locked above.
+            discardService.discard(owner, target.getMesocycleId());
+            target.setMesocycleId(null);
+        }
         if (patch.getSkip() != null) target.setStatus(patch.getSkip() ? YearGenerator.SKIPPED : YearGenerator.PLANNED);
         if (toLink != null) {
             if (!target.is(YearGenerator.PLANNED)) throw locked(); // a block skipped in this same edit
@@ -187,7 +197,10 @@ public class YearPlanService {
 
     /** Each block's start in today's layout (loading blocks and the consolidation). */
     Map<UUID, LocalDate> startsNow(UUID owner, Active a) {
-        Layout layout = layout(owner, a.plan(), a.blocks(), today());
+        return starts(layout(owner, a.plan(), a.blocks(), today()));
+    }
+
+    private static Map<UUID, LocalDate> starts(Layout layout) {
         Map<UUID, LocalDate> out = new HashMap<>();
         layout.blocks().forEach(p -> out.put(p.id(), p.start()));
         out.put(layout.consolidation().id(), layout.consolidation().start());
@@ -251,9 +264,7 @@ public class YearPlanService {
      * is later. Otherwise null.
      */
     private YearNext next(UUID owner, List<TrainingYearBlockEntity> all, Layout layout, LocalDate today) {
-        Map<UUID, LocalDate> starts = new HashMap<>();
-        layout.blocks().forEach(p -> starts.put(p.id(), p.start()));
-        starts.put(layout.consolidation().id(), layout.consolidation().start());
+        Map<UUID, LocalDate> starts = starts(layout);
         List<TrainingYearBlockEntity> ordered = all.stream()
             .sorted(Comparator.comparingInt(TrainingYearBlockEntity::getOrdinal)).toList();
 
@@ -292,7 +303,7 @@ public class YearPlanService {
      */
     private Optional<MesocycleEntity> unlinkedRunning(UUID owner, TrainingYearPlanEntity plan,
                                                       List<TrainingYearBlockEntity> all) {
-        java.util.Set<UUID> linked = new java.util.HashSet<>();
+        Set<UUID> linked = new HashSet<>();
         all.forEach(b -> {
             if (b.getMesocycleId() != null) linked.add(b.getMesocycleId());
         });

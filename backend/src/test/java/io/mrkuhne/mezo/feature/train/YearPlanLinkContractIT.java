@@ -236,6 +236,29 @@ class YearPlanLinkContractIT extends ApiIntegrationTest {
     }
 
     @Test
+    void skipLinkedPlannedBlockDiscardsItsRun() {
+        UUID owner = owner();
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID template = template(owner);
+        plan(PLAN_START, auth);
+        MesocycleResponse run = start(template, LocalDate.of(2027, 1, 11), "planned", null, auth);
+        UUID block2 = at(active(auth), 2).getId();
+
+        YearPlan skipped = patchForBody(PLANS + "/blocks/" + block2, Map.of("skip", true), auth, HttpStatus.OK,
+            YearPlan.class);
+
+        assertThat(at(skipped, 2).getStatus()).isEqualTo(YearBlock.StatusEnum.SKIPPED);
+        assertThat(at(skipped, 2).getMesocycleId()).isNull();
+        // the skip sticks: the reconciler has no run to pull it back to planned
+        assertThat(at(active(auth), 2).getStatus()).isEqualTo(YearBlock.StatusEnum.SKIPPED);
+        // the never-started run is discarded (soft delete), so the starter can never activate it
+        assertThat(jdbc.queryForObject("select is_deleted from mesocycle where id = ?", Boolean.class, run.getId()))
+            .isTrue();
+        assertThat(getForList(MESOS, auth, HttpStatus.OK, MesocycleResponse.class))
+            .noneMatch(m -> m.getId().equals(run.getId()));
+    }
+
+    @Test
     void plannedBlockActivatesOnItsDay() {
         UUID owner = owner();
         HttpHeaders auth = ownerAuthHeaders();

@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.feature.train.entity.TrainingYearBlockEntity;
 import io.mrkuhne.mezo.feature.train.repository.TrainingYearBlockRepository;
 import io.mrkuhne.mezo.feature.train.repository.TrainingYearPlanRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
+import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.TrainingYearPlanPopulator;
 import java.time.LocalDate;
 import java.util.List;
@@ -27,6 +28,7 @@ class TrainingYearPlanRepositoryIT extends AbstractIntegrationTest {
     @Autowired OwnerProperties ownerProperties;
     @Autowired TransactionTemplate tx;
     @Autowired io.mrkuhne.mezo.support.DatabasePopulator databasePopulator;
+    @Autowired TrainPopulator trainPopulator;
 
     private UUID owner() {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());
@@ -78,5 +80,19 @@ class TrainingYearPlanRepositoryIT extends AbstractIntegrationTest {
         var after = blocks.findByPlanIdAndDeletedFalseOrderByOrdinalAsc(plan.getId());
         assertThat(after.get(0).getFocus()).containsExactly("chest", "triceps");
         assertThat(after.get(1).getFocus()).containsExactly("back", "biceps");
+    }
+
+    @Test
+    void testSave_shouldFail_whenSecondBlockLinksTheSameMesocycle() {
+        UUID owner = owner();
+        var plan = populator.plan(owner, MONDAY, "back+biceps", "chest+triceps");
+        UUID meso = trainPopulator.createMesocycle(owner, "Közös blokk", "active").getId();
+        List<TrainingYearBlockEntity> list = blocks.findByPlanIdAndDeletedFalseOrderByOrdinalAsc(plan.getId());
+        list.get(0).setMesocycleId(meso);
+        blocks.saveAndFlush(list.get(0));
+
+        list.get(1).setMesocycleId(meso);
+        assertThatThrownBy(() -> blocks.saveAndFlush(list.get(1)))
+            .isInstanceOf(DataIntegrityViolationException.class);
     }
 }
