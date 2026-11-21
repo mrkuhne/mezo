@@ -1,8 +1,10 @@
 package io.mrkuhne.mezo.feature.capacity.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
 
+import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
 import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity.Reason;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
@@ -13,23 +15,43 @@ import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import java.math.BigDecimal;
 import io.mrkuhne.mezo.feature.wearable.entity.CalendarEventEntity;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import org.springframework.http.HttpStatus;
 import io.mrkuhne.mezo.feature.wearable.repository.CalendarEventRepository;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
 /**
  * Boop B7 K1 (mezo-r36n9.17): the capacity day over real data. Fixtures hang off {@link #DAY} (a Monday), never off
- * the clock. The day read never calls the model: a first read sees rule scores.
+ * the clock: the application clock is pinned to {@link #DAY} 07:00 in the owner zone. The day read never calls the
+ * model, so a first read sees rule scores; it may start the background run, which can upgrade an upcoming event to
+ * the fake model's score (mental 2 / social 1, "meeting") before a second read — a test reading twice plants
+ * {@link FakeCompanionLlm#FAIL_COMPLETE} to keep the rule score.
  */
 @ActiveProfiles("companion-fake")
+@Import(CapacityDayServiceIT.PinnedClockConfig.class)
 class CapacityDayServiceIT extends AbstractIntegrationTest {
 
     private static final LocalDate DAY = LocalDate.of(2026, 11, 23);
+    private static final ZoneId BUD = ZoneId.of("Europe/Budapest");
+
+    @TestConfiguration
+    static class PinnedClockConfig {
+        @Bean
+        Clock capacityTestClock() {
+            return Clock.fixed(DAY.atTime(7, 0).atZone(BUD).toInstant(), BUD);
+        }
+    }
 
     @Autowired private CapacityDayService service;
     @Autowired private DatabasePopulator databasePopulator;
@@ -134,5 +156,43 @@ class CapacityDayServiceIT extends AbstractIntegrationTest {
         assertThat(day.tanulo()).isTrue(); // no labels yet
         // history is rule-scored (no attendees: a focus hour, mental 2 -> 2/3 unit a day): base 2/3 x headroom 1.25
         assertThat(day.capacity().units()).isCloseTo(2.0 / 3 * 1.25, within(1e-9));
+    }
+
+    @Test
+    void eventCrossingMidnightCountsOnlyItsOwnHoursOnEachDay() {
+        UUID owner = databasePopulator.populateUser("cap-day6@test.local");
+        Instant start = DAY.atTime(22, 0).atZone(BUD).toInstant();
+        Instant end = DAY.plusDays(1).atTime(2, 0).atZone(BUD).toInstant();
+        // the phone sends an event on every day it touches, with its full span
+        String title = "Éjszakai átállás " + FakeCompanionLlm.FAIL_COMPLETE; // the rule score stays
+        calendarPopulator.createEvent(owner, DAY, title, start, end);
+        calendarPopulator.createEvent(owner, DAY.plusDays(1), title, start, end);
+
+        // 4 h, nobody else: rule mental 3 = 1 unit an hour; each day carries its own 2 h
+        assertThat(service.day(owner, DAY).demand().units()).isCloseTo(2.0, within(1e-9));
+        assertThat(service.day(owner, DAY.plusDays(1)).demand().units()).isCloseTo(2.0, within(1e-9));
+    }
+
+    @Test
+    void weekRejectsADayThatIsNotMonday() {
+        UUID owner = databasePopulator.populateUser("cap-day7@test.local");
+        // the finding asked for IllegalArgumentException; ArchUnit routes app errors through the typed one
+        assertThatThrownBy(() -> service.week(owner, DAY.plusDays(1)))
+            .isInstanceOf(SystemRuntimeErrorException.class)
+            .satisfies(e -> assertThat(((SystemRuntimeErrorException) e).getStatus()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void pastDaysCountLoggedSessionsOnly() {
+        UUID owner = databasePopulator.populateUser("cap-day8@test.local");
+        trainPopulator.createGymSlot(owner, 0, "17:30"); // Mondays
+
+        List<CapacityDay> lastWeek = service.week(owner, DAY.minusDays(7));
+        CapacityDay today = service.day(owner, DAY);
+
+        // last Monday's planned session was never logged: it did not happen
+        assertThat(lastWeek.get(0).demand().items()).extracting(DemandCalculator.DemandItem::kind)
+            .doesNotContain("training");
+        assertThat(today.demand().items()).extracting(DemandCalculator.DemandItem::kind).contains("training");
     }
 }

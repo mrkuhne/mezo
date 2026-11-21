@@ -10,9 +10,12 @@ import java.util.regex.Pattern;
 public final class RuleEventScore {
 
     static final double CONFIDENCE = 0.5;
+    /** Keywords anchored on word starts ("Sportorvos" is a doctor's visit, not sport). */
     private static final Pattern SPORT = Pattern.compile(
-        "edz[ée]s|sport|futás|futas|gym|tréning|trening|training|workout|\\brun\\b|jóga|joga|úszás|uszas|kondi|foci");
-    private static final Pattern REST = Pattern.compile("pihen|masszázs|masszazs|szauna|meditáció|meditacio|sétá|seta\\b");
+        "\\b(?:edz[ée]s|sport(?!orvos)|futás|futas|gym|tréning|trening|training|workout|run\\b|jóga|joga|úszás|uszas"
+            + "|kondi|foci)", Pattern.UNICODE_CHARACTER_CLASS);
+    private static final Pattern REST = Pattern.compile(
+        "\\b(?:pihen|masszázs|masszazs|szauna|meditáció|meditacio|sét[aá]|seta)", Pattern.UNICODE_CHARACTER_CLASS);
 
     private RuleEventScore() {
     }
@@ -30,13 +33,13 @@ public final class RuleEventScore {
         long minutes = Math.max(0, Duration.between(e.start(), e.end()).toMinutes());
         int attendees = e.attendeeCount() == null ? 0 : e.attendeeCount();
 
-        if (REST.matcher(text).find()) {
-            return new EventScore(e.id(), 0, 0, 0, true, "rest", CONFIDENCE, ScoreSource.RULE.value());
-        }
-        if (SPORT.matcher(text).find()) {
+        if (SPORT.matcher(text).find()) { // sport first: "futás, utána pihenés" still loads the body
             int physical = minutes >= 90 ? 3 : 2;
             return new EventScore(e.id(), 0, attendees > 0 ? 1 : 0, cap(physical, free), false, "sport", CONFIDENCE,
                 ScoreSource.RULE.value());
+        }
+        if (REST.matcher(text).find()) {
+            return new EventScore(e.id(), 0, 0, 0, true, "rest", CONFIDENCE, ScoreSource.RULE.value());
         }
         int social = attendees >= 6 ? 3 : attendees >= 3 ? 2 : attendees >= 1 ? 1 : 0;
         int mental = minutes >= 120 ? 3 : minutes >= 45 ? 2 : minutes >= 10 ? 1 : 0;

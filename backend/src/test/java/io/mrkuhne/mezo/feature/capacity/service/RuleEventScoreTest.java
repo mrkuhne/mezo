@@ -40,4 +40,18 @@ class RuleEventScoreTest {
         EventScore s = RuleEventScore.score(event("Névnap", "Család", 1440, true, 0, "free"));
         assertThat(s.mental() + s.social() + s.physical()).isZero();
     }
+
+    @Test
+    void sportsDoctorIsNotSport() {
+        EventScore s = RuleEventScore.score(event("Sportorvos", "Személyes", 60, false, 0, "busy"));
+        assertThat(s.kind()).isNotEqualTo("sport");
+        assertThat(s.physical()).isZero();
+    }
+
+    @Test
+    void sportWinsOverRest() {
+        EventScore s = RuleEventScore.score(event("Futás, utána pihenés", "Személyes", 60, false, 0, "busy"));
+        assertThat(s.kind()).isEqualTo("sport");
+        assertThat(s.restores()).isFalse();
+    }
 }

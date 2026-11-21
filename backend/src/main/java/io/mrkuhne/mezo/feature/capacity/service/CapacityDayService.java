@@ -16,6 +16,10 @@ import io.mrkuhne.mezo.feature.capacity.service.CapacityCalculator.CapacityInput
 import io.mrkuhne.mezo.feature.capacity.service.DemandCalculator.Demand;
 import io.mrkuhne.mezo.feature.capacity.service.DemandCalculator.TimedDemand;
 import io.mrkuhne.mezo.feature.wearable.config.WearableProperties;
+import io.mrkuhne.mezo.techcore.exception.SystemMessage;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import java.time.Clock;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -27,6 +31,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 /**
@@ -36,9 +42,10 @@ import org.springframework.stereotype.Service;
  * ({@link EventScoringRunner}), which this read never waits for.
  *
  * <p>Base of the day units: the 28-day median over days he rated 4 or better in the day close, else over the full
- * days (a sleep record AND a daily-metric row), else the configured default with {@code tanulo}. The requested
- * days are stored-or-rule scored, like the baseline history. A calendar with no rows at all in the
- * two weeks before the day is "unknown": the verdict then comes from the body and the sessions alone.
+ * days (a sleep record AND a daily-metric row), else the configured default with {@code tanulo}. Each day counts only
+ * the hours its events have on that day (an event crossing midnight is split). A past day counts logged sessions
+ * only; from today (his zone) on, the plan counts. A calendar with no rows at all in the two weeks before the day is
+ * "unknown": the verdict then comes from the body and the sessions alone.
  */
 @Service
 public class CapacityDayService {
@@ -50,7 +57,10 @@ public class CapacityDayService {
     static final int GOOD_RATING = 4;
     /** Logged kcal below this share of the day's target counts as under-eating. */
     static final double UNDER_ATE_SHARE = 0.85;
-    private static final Pattern HEAVY_LABEL = Pattern.compile("leg|láb|lab|lower|alsó|also|squat|guggol");
+    /** Whole words (leg, láb, ...) or word-start stems (alsó-, guggol-): "labda" and "legjobb" are not leg days. */
+    private static final Pattern HEAVY_LABEL = Pattern.compile(
+        "\\b(?:leg|legs|láb|lab|lower|squats?)\\b|\\b(?:alsó|also|guggol|lábnap|labnap|lábedz|labedz)",
+        Pattern.UNICODE_CHARACTER_CLASS);
 
     private final CapacityCalendarPort calendar;
     private final EventScoringService scoring;
@@ -62,11 +72,13 @@ public class CapacityDayService {
     private final CapacityCheckinPort checkin;
     private final CapacityProperties props;
     private final WearableProperties wearable;
+    private final ObjectProvider<Clock> clock;
 
     public CapacityDayService(CapacityCalendarPort calendar, EventScoringService scoring,
                               EventScoringRunner scoringRunner, CapacitySleepPort sleep,
                               CapacityMetricsPort metrics, CapacityTrainPort train, CapacityMealPort meal,
-                              CapacityCheckinPort checkin, CapacityProperties props, WearableProperties wearable) {
+                              CapacityCheckinPort checkin, CapacityProperties props, WearableProperties wearable,
+                              ObjectProvider<Clock> clock) {
         this.calendar = calendar;
         this.scoring = scoring;
         this.scoringRunner = scoringRunner;
@@ -77,20 +89,26 @@ public class CapacityDayService {
         this.checkin = checkin;
         this.props = props;
         this.wearable = wearable;
+        this.clock = clock;
     }
 
     public CapacityDay day(UUID owner, LocalDate date) {
         return build(owner, date, date).get(0);
     }
 
-    /** Seven days, {@code monday} first. */
+    /** Seven days, {@code monday} first; a {@code monday} that is not a Monday is rejected (400, field "monday"). */
     public List<CapacityDay> week(UUID owner, LocalDate monday) {
+        if (monday.getDayOfWeek() != DayOfWeek.MONDAY) {
+            throw new SystemRuntimeErrorException(SystemMessage.field("VALIDATION_INVALID_VALUE", "monday").build(),
+                HttpStatus.BAD_REQUEST);
+        }
         return build(owner, monday, monday.plusDays(6));
     }
 
     private List<CapacityDay> build(UUID owner, LocalDate first, LocalDate last) {
         ZoneId zone = ZoneId.of(wearable.zone());
         LocalDate histFrom = first.minusDays(HISTORY_DAYS);
+        LocalDate asOf = LocalDate.now(clock.getIfAvailable(Clock::systemUTC).withZone(zone));
 
         List<CalendarEventView> events = calendar.events(owner, histFrom, last);
         Map<UUID, EventScore> scores = scoring.storedOrRule(owner, histFrom, last);
@@ -108,7 +126,7 @@ public class CapacityDayService {
 
         Map<LocalDate, Demand> demandCache = new HashMap<>();
         java.util.function.Function<LocalDate, Demand> demandOf = d -> demandCache.computeIfAbsent(d,
-            k -> demand(eventsByDate.getOrDefault(k, List.of()), scores, sessions.getOrDefault(k, List.of()), k, first,
+            k -> demand(eventsByDate.getOrDefault(k, List.of()), scores, sessions.getOrDefault(k, List.of()), k, asOf,
                 zone));
 
         List<CapacityDay> out = new ArrayList<>();
@@ -181,11 +199,16 @@ public class CapacityDayService {
             if (!s.done() && date.isBefore(asOf)) {
                 continue;
             }
-            boolean heavy = s.label() != null && HEAVY_LABEL.matcher(s.label().toLowerCase(Locale.ROOT)).find();
+            boolean heavy = heavyLabel(s.label());
             items.add(DemandCalculator.training(date.atTime(s.start()).atZone(zone).toInstant(), s.durationMin(),
                 heavy, null, null, s.label() == null ? s.kind() : s.label()));
         }
-        return DemandCalculator.day(items, props, zone);
+        return DemandCalculator.day(items, props, zone, date);
+    }
+
+    /** Whether a session label names a heavy lower-body day (word matches, never a substring like "labda"). */
+    static boolean heavyLabel(String label) {
+        return label != null && HEAVY_LABEL.matcher(label.toLowerCase(Locale.ROOT)).find();
     }
 
     private Boolean underAte(UUID owner, LocalDate yesterday) {

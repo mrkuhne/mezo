@@ -6,6 +6,8 @@ import static org.assertj.core.api.Assertions.within;
 import io.mrkuhne.mezo.feature.capacity.config.CapacityProperties;
 import io.mrkuhne.mezo.feature.capacity.service.DemandCalculator.TimedDemand;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -70,5 +72,54 @@ class DemandCalculatorTest {
         double meetings = d.items().stream().filter(i -> i.kind().equals("meeting"))
                 .mapToDouble(DemandCalculator.DemandItem::units).sum();
         assertThat(meetings).isCloseTo(2 * 4.0 / 3 * 1.3, within(1e-9));
+    }
+
+    private static final ZoneId BUD = ZoneId.of("Europe/Budapest");
+
+    private static Instant local(LocalDate d, int hour) {
+        return d.atTime(hour, 0).atZone(BUD).toInstant();
+    }
+
+    @Test
+    void eventCrossingMidnightCountsOnlyTheHoursOfTheDay() {
+        LocalDate d = LocalDate.of(2026, 11, 23);
+        TimedDemand late = new TimedDemand(local(d, 22), local(d.plusDays(1), 2), 3, 0, 0, false, "x", "focus");
+
+        var first = DemandCalculator.day(List.of(late), P, BUD, d);
+        var next = DemandCalculator.day(List.of(late), P, BUD, d.plusDays(1));
+
+        assertThat(first.units()).isCloseTo(2.0, within(1e-9));       // 22:00-24:00, mental 3 = 1 unit an hour
+        assertThat(first.hourly19()[16] + first.hourly19()[17]).isCloseTo(2.0, within(1e-9));
+        assertThat(next.units()).isCloseTo(2.0, within(1e-9));        // 00:00-02:00
+        assertThat(java.util.Arrays.stream(next.hourly19()).sum()).isZero(); // before 06:00: no hourly slot
+        assertThat(next.items()).singleElement().satisfies(i -> {
+            assertThat(i.start()).isEqualTo(local(d.plusDays(1), 0));
+            assertThat(i.end()).isEqualTo(local(d.plusDays(1), 2));
+        });
+    }
+
+    @Test
+    void threeDayTimedEventCountsAtMostOneDayOnEachDay() {
+        LocalDate d = LocalDate.of(2026, 11, 23);
+        TimedDemand conf = new TimedDemand(local(d, 9), local(d.plusDays(2), 18), 3, 0, 0, false, "x", "focus");
+
+        assertThat(DemandCalculator.day(List.of(conf), P, BUD, d).units()).isCloseTo(15.0, within(1e-9));
+        assertThat(DemandCalculator.day(List.of(conf), P, BUD, d.plusDays(1)).units()).isCloseTo(24.0, within(1e-9));
+        assertThat(DemandCalculator.day(List.of(conf), P, BUD, d.plusDays(2)).units()).isCloseTo(18.0, within(1e-9));
+        assertThat(DemandCalculator.day(List.of(conf), P, BUD, d.plusDays(3)).items()).isEmpty();
+    }
+
+    @Test
+    void overlappingMeetingsCountTheirUnionForTheRun() {
+        // 09:00-10:00 and 09:15-10:00: 105 summed minutes but 60 of his time — no 90-minute run, no factor
+        var d = DemandCalculator.day(List.of(meeting(0, 60), meeting(15, 45)), P);
+        assertThat(d.units()).isCloseTo((60 + 45) / 60.0 * 4.0 / 3, within(1e-9));
+    }
+
+    @Test
+    void aMeetingInsideALongerOneOpensNoGap() {
+        // A 09:00-10:30, B 09:15-09:30 inside A, C 10:30-11:00: one unbroken 120-minute run, no gap credit
+        var d = DemandCalculator.day(List.of(meeting(0, 90), meeting(15, 15), meeting(90, 30)), P);
+        assertThat(d.units()).isCloseTo((90 + 15 + 30) / 60.0 * 4.0 / 3 * 1.3, within(1e-9));
     }
 }

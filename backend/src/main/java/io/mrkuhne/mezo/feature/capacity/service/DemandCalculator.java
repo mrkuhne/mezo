@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.capacity.service;
 import io.mrkuhne.mezo.feature.capacity.config.CapacityProperties;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -49,6 +50,25 @@ public final class DemandCalculator {
         return day(items, p, ZoneOffset.UTC);
     }
 
+    /**
+     * One calendar day's demand: every item is first clipped to {@code [date 00:00, date+1 00:00)} in {@code zone}, so
+     * an event crossing midnight (or spanning days) counts only the hours it has on this day; nothing left, no item.
+     */
+    public static Demand day(List<TimedDemand> items, CapacityProperties p, ZoneId zone, LocalDate date) {
+        Instant from = date.atStartOfDay(zone).toInstant();
+        Instant to = date.plusDays(1).atStartOfDay(zone).toInstant();
+        List<TimedDemand> clipped = new ArrayList<>();
+        for (TimedDemand t : items) {
+            Instant s = t.start().isBefore(from) ? from : t.start();
+            Instant e = t.end().isAfter(to) ? to : t.end();
+            if (e.isAfter(s)) {
+                clipped.add(new TimedDemand(s, e, t.mental(), t.social(), t.physical(), t.restores(), t.label(),
+                    t.kind()));
+            }
+        }
+        return day(clipped, p, zone);
+    }
+
     public static Demand day(List<TimedDemand> items, CapacityProperties p, ZoneId zone) {
         List<TimedDemand> sorted = items.stream().sorted(Comparator.comparing(TimedDemand::start)).toList();
         double[] factor = new double[sorted.size()];
@@ -82,7 +102,10 @@ public final class DemandCalculator {
         return Math.max(0, Duration.between(t.start(), t.end()).toMinutes());
     }
 
-    /** Fills the sequence factor of meetings in unbroken long runs; returns the summed gap credit. */
+    /**
+     * Fills the sequence factor of meetings in unbroken long runs; returns the summed gap credit. Overlapping meetings
+     * count once: a run's length is the union of its meetings, a gap is measured from the latest end so far.
+     */
     private static double markSequences(List<TimedDemand> sorted, double[] factor, CapacityProperties p) {
         List<Integer> meetings = new ArrayList<>();
         for (int i = 0; i < sorted.size(); i++) {
@@ -92,29 +115,37 @@ public final class DemandCalculator {
         }
         double credit = 0;
         int runStart = 0;
+        Instant runEnd = null;
+        long runMin = 0;
         for (int k = 0; k < meetings.size(); k++) {
+            TimedDemand cur = sorted.get(meetings.get(k));
+            // union length: only the part past the run's latest end adds minutes
+            if (runEnd == null || !cur.start().isBefore(runEnd)) {
+                runMin += minutes(cur);
+                runEnd = cur.end();
+            } else if (cur.end().isAfter(runEnd)) {
+                runMin += Duration.between(runEnd, cur.end()).toMinutes();
+                runEnd = cur.end();
+            }
             boolean last = k == meetings.size() - 1;
             boolean breaks = last;
             if (!last) {
-                TimedDemand cur = sorted.get(meetings.get(k));
                 TimedDemand next = sorted.get(meetings.get(k + 1));
-                long gap = Duration.between(cur.end(), next.start()).toMinutes();
+                long gap = Duration.between(runEnd, next.start()).toMinutes();
                 if (gap >= p.gapCreditMin()) {
                     credit += GAP_CREDIT_UNITS;
                     breaks = true;
                 }
             }
             if (breaks) {
-                long runMin = 0;
-                for (int j = runStart; j <= k; j++) {
-                    runMin += minutes(sorted.get(meetings.get(j)));
-                }
                 if (runMin >= p.sequenceBlockMin()) {
                     for (int j = runStart; j <= k; j++) {
                         factor[meetings.get(j)] = p.sequenceFactor();
                     }
                 }
                 runStart = k + 1;
+                runEnd = null;
+                runMin = 0;
             }
         }
         return credit;
