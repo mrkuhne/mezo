@@ -62,6 +62,16 @@ spec:
           for: 0m
           labels: { severity: warning }
           annotations: { summary: "every Boop Pénz news feed failed 3+ fetches in a row; the daily digest has no news" }
+        - alert: MailMailboxSilent
+          expr: max(mezo_mail_zero_run_streak) >= 2
+          for: 0m
+          labels: { severity: warning }
+          annotations: { summary: "the Boop Levél mirror mailbox delivered no new mail for 2+ runs in a row; the forwarding may have stopped" }
+        - alert: MailMailboxAuthFailed
+          expr: max(mezo_mail_auth_failed) == 1
+          for: 0m
+          labels: { severity: warning }
+          annotations: { summary: "the Boop Levél mirror mailbox refuses its app password; enter it again on the Fiókok screen" }
     - name: mezo.traffic
       interval: 60s
       rules:
