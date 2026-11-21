@@ -36,8 +36,15 @@ public final class CandidateRanker {
         }
     }
 
-    /** A wire fix code ({@code more_minutes|fewer_emphasis|more_days}) with its optional value. */
-    public record Fix(String code, Integer value) {}
+    /**
+     * A wire fix code ({@code more_minutes|fewer_emphasis|more_days}) with its optional value and, for
+     * {@code fewer_emphasis}, the Hangsúly muscle to lower.
+     */
+    public record Fix(String code, Integer value, String muscle) {
+        public Fix(String code, Integer value) {
+            this(code, value, null);
+        }
+    }
 
     /** A wire reason code ({@code fits_time|freq_2x|freq_high|more_warmups}) with its optional value. */
     public record Reason(String code, Integer value) {}

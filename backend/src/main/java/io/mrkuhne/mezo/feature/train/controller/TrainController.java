@@ -64,6 +64,7 @@ import io.mrkuhne.mezo.api.dto.WorkoutSummaryResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
 import io.mrkuhne.mezo.feature.auth.service.CurrentUser;
 import io.mrkuhne.mezo.feature.train.service.EwmaEstimator;
+import io.mrkuhne.mezo.feature.train.service.MesocycleDiscardService;
 import io.mrkuhne.mezo.feature.train.service.ExerciseDiscomfortService;
 import io.mrkuhne.mezo.feature.train.service.ExerciseSubstituteService;
 import io.mrkuhne.mezo.feature.train.service.BlockSuggestionService;
@@ -119,6 +120,7 @@ public class TrainController implements TrainApi {
     private final MedalService medalService;
     private final RunningService runningService;
     private final VolumeArcService volumeArcService;
+    private final MesocycleDiscardService discardService;
     private final CurrentUserId currentUserId;
     private final CurrentUser currentUser;
     private final MesoPlanGeneratorService mesoPlanGeneratorService;
@@ -228,6 +230,11 @@ public class TrainController implements TrainApi {
     @Override
     public MesocycleResponse updateMesocycleSettings(UUID id, MesocycleSettingsUpdateRequest mesocycleSettingsUpdateRequest) {
         return service.updateSettings(currentUserId.get(), id, mesocycleSettingsUpdateRequest);
+    }
+
+    @Override
+    public void discardMesocycle(UUID id) {
+        discardService.discard(currentUserId.get(), id);
     }
 
     @Override

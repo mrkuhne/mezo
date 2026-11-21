@@ -94,6 +94,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/train/mesocycles/{id}/discard:
+    post:
+      tags: [Train]
+      operationId: discardMesocycle
+      summary: Throw away a block that was never trained (mezo-r36n9.113) — soft-deletes the run, its days, exercises and volume rows, and the template it came from when that template has no other runs; no report, no close event, no AI
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Discarded
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Mesocycle not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: TRAIN_MESO_DISCARD_HAS_LOGS when the block has a logged session; TRAIN_RUN_NOT_EDITABLE when it is archived
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/train/mesocycles/{id}/muscle-priorities:
     put:
       tags: [Train]
@@ -2824,6 +2857,18 @@ components:
           nullable: true
           pattern: '^[a-z0-9_]{2,16}$'
           description: Key of a catalogued split for the chosen day count (a candidate's splitKey from POST /meso-plans/candidates); absent = the default split
+        sessionMinutesTarget:
+          type: integer
+          nullable: true
+          minimum: 10
+          maximum: 300
+          description: The session-minutes target the chosen candidate was offered under (mezo-r36n9.113); with split, an LLM-merged plan that no longer passes the candidate filters falls back to the deterministic plan
+        sportGroups:
+          type: array
+          nullable: true
+          description: Coarse muscle groups a sport already loads (as on the candidates request); null = none
+          items:
+            type: string
     MesoPlanEvaluateRequest:
       type: object
       required: [weeks, phaseCurve, days]
@@ -3199,6 +3244,32 @@ components:
           description: What would make a candidate pass; empty when something fits
           items:
             $ref: '#/components/schemas/CandidateFix'
+        intakeBudget:
+          allOf:
+            - $ref: '#/components/schemas/IntakeBudget'
+          nullable: true
+          description: The intake's weekly set budget (week 1 of the lead candidate); absent when no candidate came back
+    IntakeBudget:
+      type: object
+      required: [usedSets, emphasizeCount, emphasizeMax, raiseAllowed]
+      description: The new-block intake's tier budget (mezo-r36n9.113) — week-1 based, consistent with the candidate filter (the builder's TierBudgetView is peak-week based).
+      properties:
+        usedSets:
+          type: integer
+          description: Week-1 total counting working sets of the lead candidate (recommended, else the closest)
+        capacitySets:
+          type: integer
+          nullable: true
+          description: Sum over the lead candidate's training days of the working sets each day fits in the session-minutes target (minutes model v2, that day's real warm-ups); null without a target. An offered candidate always has usedSets <= capacitySets.
+        emphasizeCount:
+          type: integer
+        emphasizeMax:
+          type: integer
+        raiseAllowed:
+          type: object
+          additionalProperties:
+            type: boolean
+          description: Muscle -> true when raising only it one tier (maintain -> grow -> emphasize, within emphasizeMax) still offers at least one candidate; emphasized muscles are absent; empty without a target
     MesoPlanCandidate:
       type: object
       required: [splitKey, splitLabel, template, evaluation, recommended, reasons]
@@ -3241,6 +3312,10 @@ components:
           type: integer
           nullable: true
           description: more_minutes = the session minutes the closest candidate needs (rounded up to 15)
+        muscle:
+          type: string
+          nullable: true
+          description: fewer_emphasis = the Hangsúly muscle to lower to Építés
     MesoTemplateUpsertRequest:
       type: object
       required:

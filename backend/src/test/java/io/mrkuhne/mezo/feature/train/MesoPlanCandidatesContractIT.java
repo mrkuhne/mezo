@@ -8,6 +8,8 @@ import static org.mockito.Mockito.verify;
 
 import io.mrkuhne.mezo.api.dto.CandidateFix;
 import io.mrkuhne.mezo.api.dto.DayEvaluation;
+import io.mrkuhne.mezo.api.dto.GymExerciseInput;
+import io.mrkuhne.mezo.api.dto.IntakeBudget;
 import io.mrkuhne.mezo.api.dto.MesoPlanCandidate;
 import io.mrkuhne.mezo.api.dto.MesoPlanCandidates;
 import io.mrkuhne.mezo.api.dto.MesoPlanCandidatesRequest;
@@ -109,6 +111,70 @@ class MesoPlanCandidatesContractIT extends ApiIntegrationTest {
         assertThat(res.getNothingFits()).isTrue();
         assertThat(res.getFixes()).extracting(CandidateFix::getCode).containsExactly(CandidateFix.CodeEnum.MORE_MINUTES,
             CandidateFix.CodeEnum.FEWER_EMPHASIS, CandidateFix.CodeEnum.MORE_DAYS);
+        // the fix names the muscle it lowers (the Hangsúly with the most sets); the others carry none
+        assertThat(res.getFixes()).extracting(CandidateFix::getMuscle).containsExactly(null, "back", null);
+    }
+
+    /** The intake budget is week-1 based and consistent with the filter: an offered lead always fits its capacity. */
+    @Test
+    void intakeBudgetUsedNeverAboveCapacityForAnOfferedLead() {
+        record Ask(Set<String> days, int minutes) {}
+        List<Ask> asks = List.of(new Ask(Set.of("Hét", "Sze", "Pén"), 75), new Ask(Set.of("Hét", "Kedd", "Csü", "Pén"), 80),
+            new Ask(Set.of("Hét", "Kedd", "Csü", "Pén"), 90), new Ask(Set.of("Hét", "Kedd", "Sze", "Csü", "Pén"), 60));
+        for (Ask ask : asks) {
+            MesoPlanCandidates res = candidates(MesoPlanCandidatesRequest.builder()
+                .daysOfWeek(ask.days()).weeks(6).sessionMinutesTarget(ask.minutes()).build());
+            IntakeBudget b = res.getIntakeBudget();
+            assertThat(b).as(ask.toString()).isNotNull();
+            int week1 = res.getCandidates().get(0).getTemplate().getDays().stream()
+                .flatMap(d -> d.getExercises() == null ? java.util.stream.Stream.<GymExerciseInput>empty()
+                    : d.getExercises().stream())
+                .filter(e -> !Boolean.FALSE.equals(e.getCountsTowardVolume()))
+                .mapToInt(GymExerciseInput::getWorkingSets).sum();
+            assertThat(b.getUsedSets()).as(ask.toString()).isEqualTo(week1);
+            if (Boolean.FALSE.equals(res.getNothingFits())) {
+                assertThat(b.getCapacitySets()).as(ask.toString()).isNotNull()
+                    .isGreaterThanOrEqualTo(b.getUsedSets());
+            }
+            assertThat(b.getEmphasizeCount()).isZero();
+            assertThat(b.getEmphasizeMax()).isEqualTo(2);
+            assertThat(b.getRaiseAllowed()).as(ask.toString()).hasSize(9);
+        }
+    }
+
+    /** raiseAllowed[m] is exactly "the candidates call with only m one tier higher offers a candidate". */
+    @Test
+    void raiseAllowedMatchesARealRaise() {
+        Map<String, String> pr = Map.of("back", "emphasize", "shoulder", "maintain", "biceps", "maintain",
+            "triceps", "maintain", "quad", "maintain", "ham", "maintain", "glute", "maintain", "calf", "maintain");
+        Set<String> days = Set.of("Hét", "Kedd", "Csü", "Pén");
+        MesoPlanCandidates res = candidates(MesoPlanCandidatesRequest.builder()
+            .daysOfWeek(days).weeks(6).sessionMinutesTarget(70).priorities(pr).build());
+        assertThat(res.getNothingFits()).isFalse();
+        Map<String, Boolean> allowed = res.getIntakeBudget().getRaiseAllowed();
+        assertThat(allowed).doesNotContainKey("back").containsKeys("chest", "shoulder", "calf");
+        for (String muscle : List.of("chest", "shoulder", "quad", "calf")) {
+            Map<String, String> raised = new java.util.HashMap<>(pr);
+            raised.put(muscle, "maintain".equals(pr.get(muscle)) ? "grow" : "emphasize");
+            MesoPlanCandidates after = candidates(MesoPlanCandidatesRequest.builder()
+                .daysOfWeek(days).weeks(6).sessionMinutesTarget(70).priorities(raised).build());
+            assertThat(allowed.get(muscle)).as(muscle).isEqualTo(Boolean.FALSE.equals(after.getNothingFits()));
+        }
+    }
+
+    @Test
+    void raiseAllowedRespectsTheHangsulyCapAndNeedsATarget() {
+        MesoPlanCandidates capped = candidates(MesoPlanCandidatesRequest.builder()
+            .daysOfWeek(Set.of("Hét", "Kedd", "Csü", "Pén")).weeks(6).sessionMinutesTarget(120)
+            .priorities(Map.of("back", "emphasize", "chest", "emphasize")).build());
+        IntakeBudget b = capped.getIntakeBudget();
+        assertThat(b.getEmphasizeCount()).isEqualTo(2);
+        assertThat(b.getRaiseAllowed()).doesNotContainKeys("back", "chest").containsEntry("shoulder", false);
+
+        MesoPlanCandidates untimed = candidates(MesoPlanCandidatesRequest.builder()
+            .daysOfWeek(Set.of("Hét", "Kedd", "Csü", "Pén")).weeks(6).build());
+        assertThat(untimed.getIntakeBudget().getCapacitySets()).isNull();
+        assertThat(untimed.getIntakeBudget().getRaiseAllowed()).isEmpty();
     }
 
     @Test

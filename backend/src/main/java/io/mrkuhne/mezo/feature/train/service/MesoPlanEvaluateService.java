@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.api.dto.GymExerciseInput;
 import io.mrkuhne.mezo.api.dto.MesoDayInput;
 import io.mrkuhne.mezo.api.dto.MesoPlanEvaluateRequest;
 import io.mrkuhne.mezo.api.dto.MesoPlanEvaluation;
+import io.mrkuhne.mezo.api.dto.MesoTemplateUpsertRequest;
 import io.mrkuhne.mezo.api.dto.MuscleBasis;
 import io.mrkuhne.mezo.api.dto.MuscleEvaluation;
 import io.mrkuhne.mezo.api.dto.PlanProposalEdit;
@@ -65,8 +66,39 @@ public class MesoPlanEvaluateService {
     private final TrainTechniqueProperties techniqueProps;
     private final TechniquePlanService techniquePlanService;
 
-    /** The evaluation of a draft plus the evaluator result it was mapped from. */
-    public record Measured(PlanEvaluator.Result result, MesoPlanEvaluation evaluation) {}
+    /** The evaluation of a draft plus the evaluator input and result it was mapped from. */
+    public record Measured(PlanEvaluator.Input input, PlanEvaluator.Result result, MesoPlanEvaluation evaluation) {}
+
+    /**
+     * The owner's reads every draft measurement needs — sport slots and the deficit — read once so a caller
+     * measuring many drafts in one request (the candidates endpoint, mezo-r36n9.113) never repeats them.
+     */
+    public record Context(List<SportScheduleSlotEntity> slots, boolean deficit) {}
+
+    /** {@link Context} for {@code userId} now. */
+    public Context context(UUID userId) {
+        return new Context(sportSlotRepository.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId),
+            energyBalance.isInDeficit(userId, LocalDate.now()));
+    }
+
+    /**
+     * A generated template in the evaluate request's shape, so its evaluation is exactly what
+     * {@code POST /meso-plans/evaluate} returns for it.
+     */
+    public static MesoPlanEvaluateRequest requestFor(MesoTemplateUpsertRequest t, List<String> sportGroups,
+                                                     Integer sessionMinutesTarget) {
+        return MesoPlanEvaluateRequest.builder()
+            .weeks(t.getWeeks())
+            .phaseCurve(t.getPhaseCurve().stream()
+                .map(c -> MesoPlanEvaluateRequest.PhaseCurveEnum.fromValue(c.getValue())).toList())
+            .days(t.getDays())
+            .musclePriorities(t.getMusclePriorities())
+            .trainingStyle(t.getTrainingStyle())
+            .techniquesEnabled(t.getTechniquesEnabled())
+            .sportGroups(sportGroups)
+            .sessionMinutesTarget(sessionMinutesTarget)
+            .build();
+    }
 
     @Transactional(readOnly = true)
     public MesoPlanEvaluation evaluate(UUID userId, MesoPlanEvaluateRequest req) {
@@ -78,6 +110,11 @@ public class MesoPlanEvaluateService {
      * it, mezo-r36n9.113). No transaction of its own: the caller's read-only transaction covers its reads.
      */
     public Measured measure(UUID userId, MesoPlanEvaluateRequest req) {
+        return measure(userId, req, context(userId));
+    }
+
+    /** {@link #measure(UUID, MesoPlanEvaluateRequest)} with the owner's reads already done. */
+    public Measured measure(UUID userId, MesoPlanEvaluateRequest req, Context ctx) {
         Map<String, String> priorities = PriorityTier.normalize(req.getMusclePriorities());
         List<String> sportGroups = SportGroups.normalize(req.getSportGroups(), props.baselines().keySet());
 
@@ -102,16 +139,15 @@ public class MesoPlanEvaluateService {
                 SystemMessage.error("TRAIN_MESO_PHASE_CURVE_LENGTH").build(), HttpStatus.BAD_REQUEST);
         }
 
-        List<SportScheduleSlotEntity> slots = sportSlotRepository
-            .findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId);
-        boolean deficit = energyBalance.isInDeficit(userId, LocalDate.now());
+        List<SportScheduleSlotEntity> slots = ctx.slots();
+        boolean deficit = ctx.deficit();
         PlanEvaluator.Input input = new PlanEvaluator.Input(req.getWeeks(), phaseCurve, days,
             priorities, sportGroups == null ? Set.of() : new HashSet<>(sportGroups), deficit,
             req.getSessionMinutesTarget(), sportWeekdays(slots), props, req.getTrainingStyle() != null);
         PlanEvaluator.Result result = PlanEvaluator.evaluate(input);
         EvaluatorTechniques.Shown shown = optsIn
             ? EvaluatorTechniques.ofProjection(techniquePlanService.planDraft(userId, req)) : null;
-        return new Measured(result, toResponse(deficit, result, slots, sportGroups == null, null, null, shown,
+        return new Measured(input, result, toResponse(deficit, result, slots, sportGroups == null, null, null, shown,
             TierBudget.of(input, result)));
     }
 

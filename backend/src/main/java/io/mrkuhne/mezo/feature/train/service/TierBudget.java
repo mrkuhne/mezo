@@ -52,9 +52,11 @@ public final class TierBudget {
     }
 
     /**
-     * Σ over training days of floor((target − overhead − 2 warm-up sets) / (mean set minutes + transition / 3)).
-     * Mean set minutes = mean of (setSeconds + rest) / 60 over the counting exercises (styled; a row without a
-     * rest uses the flat per-set figure), the flat per-set figure for an unstyled plan.
+     * Σ over training days of floor((target − overhead − warm-up minutes) / (mean set minutes + transition / 3)).
+     * A training day carries ≥ 1 counting row of a landmark group; the warm-up minutes are the real warm-up sets of
+     * those days × the per-warm-up figure, averaged per day. Mean set minutes = mean of (setSeconds + rest) / 60 over
+     * the counting exercises (styled; a row without a rest uses the flat per-set figure); an unstyled plan uses the
+     * flat per-set figure with no transition (as the evaluator's unstyled minutes).
      */
     private static Integer capacity(PlanEvaluator.Input in) {
         if (in.sessionMinutesTarget() == null) {
@@ -62,15 +64,63 @@ public final class TierBudget {
         }
         VolumeProperties.Evaluator ev = in.props().evaluator();
         double flat = ev.minutesPerWorkingSet().doubleValue();
-        List<PlanEvaluator.PlanExercise> counting = in.days().stream().flatMap(d -> d.exercises().stream())
-            .filter(x -> x.counts() && x.group() != null && in.props().baselines().containsKey(x.group())).toList();
-        double avgSet = !in.styled() ? flat : counting.stream()
+        List<PlanEvaluator.PlanDay> training = in.days().stream()
+            .filter(d -> d.exercises().stream().anyMatch(x -> counting(in, x))).toList();
+        if (training.isEmpty()) {
+            return 0;
+        }
+        List<PlanEvaluator.PlanExercise> counting = training.stream().flatMap(d -> d.exercises().stream())
+            .filter(x -> counting(in, x)).toList();
+        // unstyled minutes have no per-exercise transition (the evaluator's v1 model)
+        double perSet = !in.styled() ? flat : counting.stream()
             .mapToDouble(x -> x.restSeconds() == null ? flat : (ev.setSeconds() + x.restSeconds()) / 60.0)
-            .average().orElse(flat);
-        double perSet = avgSet + ev.transitionMinutes().doubleValue() / 3.0;
-        double room = in.sessionMinutesTarget() - ev.sessionOverheadMinutes() - 2 * ev.minutesPerWarmupSet().doubleValue();
+            .average().orElse(flat) + ev.transitionMinutes().doubleValue() / 3.0;
+        double warmupMinutes = training.stream().flatMap(d -> d.exercises().stream())
+            .mapToInt(PlanEvaluator.PlanExercise::warmupSets).sum() * ev.minutesPerWarmupSet().doubleValue()
+            / training.size();
+        double room = in.sessionMinutesTarget() - ev.sessionOverheadMinutes() - warmupMinutes;
         int perDay = Math.max(0, (int) Math.floor(room / perSet + 1e-9));   // guard an exact quotient against float drift
-        long trainingDays = in.days().stream().filter(d -> !d.exercises().isEmpty()).count();
-        return (int) (trainingDays * perDay);
+        return training.size() * perDay;
+    }
+
+    /**
+     * The new-block intake's capacity (mezo-r36n9.113, week-1 based): Σ over the plan's training days (≥ 1 counting
+     * row) of that day's counting working sets + floor((target − the day's minutes estimate) / marginal set minutes),
+     * floored at 0. The day's estimate is the evaluator's own (minutes model v2, the day's real warm-ups), so a day
+     * within the target never gets fewer sets than it has — an offered candidate always has used ≤ capacity — and a
+     * day over it shows the overrun. Marginal set minutes = the set-weighted mean of (setSeconds + rest) / 60 over the
+     * day's counting rows + transition / 3 (styled), the flat per-set figure (unstyled). Null without a target.
+     */
+    public static Integer intakeCapacity(PlanEvaluator.Input in, PlanEvaluator.Result r) {
+        if (in.sessionMinutesTarget() == null) {
+            return null;
+        }
+        VolumeProperties.Evaluator ev = in.props().evaluator();
+        double flat = ev.minutesPerWorkingSet().doubleValue();
+        int total = 0;
+        for (int d = 0; d < in.days().size(); d++) {
+            List<PlanEvaluator.PlanExercise> rows = in.days().get(d).exercises().stream()
+                .filter(x -> counting(in, x)).toList();
+            if (rows.isEmpty()) continue;
+            int sets = rows.stream().mapToInt(PlanEvaluator.PlanExercise::workingSets).sum();
+            double perSet = flat;
+            if (in.styled()) {
+                double weighted = rows.stream().mapToDouble(x -> x.workingSets()
+                    * (x.restSeconds() == null ? flat : (ev.setSeconds() + x.restSeconds()) / 60.0)).sum();
+                perSet = (sets > 0 ? weighted / sets : flat) + ev.transitionMinutes().doubleValue() / 3.0;
+            }
+            int slack = in.sessionMinutesTarget() - r.days().get(d).minutesEstimate();
+            total += Math.max(0, sets + (int) Math.floor(slack / perSet + 1e-9));
+        }
+        return total;
+    }
+
+    /** Week-1 total: the plan's counting working sets of landmark groups. */
+    public static int weekOneSets(PlanEvaluator.Result r) {
+        return r.muscles().stream().mapToInt(PlanEvaluator.MuscleResult::weeklySets).sum();
+    }
+
+    private static boolean counting(PlanEvaluator.Input in, PlanEvaluator.PlanExercise x) {
+        return x.counts() && x.group() != null && in.props().baselines().containsKey(x.group());
     }
 }
