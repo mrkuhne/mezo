@@ -66,6 +66,9 @@ struct NapView: View {
                         } else if hue == .penz {
                             // Pénz's room has its own data (L5): the money API, not the brief.
                             PenzRoom()
+                        } else if hue == .level {
+                            // Levél's room has its own data (mezo-r36n9.39): the mail API, not the brief.
+                            LevelRoom()
                         } else {
                             AreaRoom(hue: hue, brief: morning.brief ?? brief, store: morning, ctx: ctx, desk: desk) { sheet = DetailSheet($0) }
                         }

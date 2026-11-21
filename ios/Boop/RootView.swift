@@ -17,6 +17,8 @@ struct RootView: View {
     @State private var workoutFolder: URL?
     /// The Pénz area's data (L5): the area page and the cash capture read the same store.
     @State private var penz: PenzStore?
+    /// The Levél area's data (mezo-r36n9.39): the morning post, the mailbox, the rules.
+    @State private var level: LevelStore?
     /// The Évad page's data (B6, mezo-r36n9.16): the season overview, its cache and the season writes.
     @State private var evad: EvadStore?
 
@@ -58,6 +60,7 @@ struct RootView: View {
         .environment(\.serverCache, cache)
         .environment(\.workoutFolder, workoutFolder)
         .environment(penz)
+        .environment(level)
         .environment(evad)
         .onChange(of: session.state, initial: true) { _, state in updateLink(state) }
         .background { if let link, case .ready = session.state { SyncTriggers(link: link) } }
@@ -76,7 +79,7 @@ struct RootView: View {
         // the session's client already carries another token, or none).
         guard let me else {
             ritmus?.retire(); link = nil; morning = nil; ritmus = nil; food = nil; train = nil; cache = nil; workoutFolder = nil
-            penz = nil; evad = nil
+            penz = nil; level = nil; evad = nil
             BackgroundSyncHost.ritmus = nil; return
         }
         if link?.userId != me.id {
@@ -98,6 +101,8 @@ struct RootView: View {
                 let previewPenz = PenzStore(client: PenzPreview.client, cache: cache)
                 penz = previewPenz
                 Task { await PenzPreview.primeCache(previewCache) }
+                level = LevelStore(client: LevelPreview.client, cache: cache)
+                Task { await LevelPreview.primeCache(previewCache) }
                 evad = EvadStore(client: EvadPreviewFixtures.client, cache: cache)
                 Task { await EvadPreviewFixtures.primeCache(previewCache) }
                 let previewFolder = RitmusEnvironment.directories(for: me.id).outbox
@@ -118,6 +123,7 @@ struct RootView: View {
             train = liveTrain
             cache = ServerCache(directory: RitmusEnvironment.directories(for: me.id).cache)
             penz = PenzStore(client: PenzClient(raw: session.raw), cache: cache)
+            level = LevelStore(client: LevelClient(raw: session.raw), cache: cache)
             evad = EvadStore(client: EvadClient(raw: session.raw), cache: cache)
             workoutFolder = RitmusEnvironment.directories(for: me.id).outbox
             BackgroundSyncHost.ritmus = ritmus
