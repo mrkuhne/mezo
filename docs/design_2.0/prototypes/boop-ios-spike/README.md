@@ -1,5 +1,13 @@
 # Boop iOS spike
 
+> **Newest round — "Levél" (`mezo-r36n9.38`, plan Task 10, 2026-11-21):** the mail area for owner approval, built on the Élet warm kit
+> (spec `2026-11-21-boop-level-posta-design.md` §4/§10). Ma tab (highlight, stat tiles, 12-slot heat strip, a person and a sensitive sender
+> "A bankod írt", Határidős with ma/holnap marks, Csomagok per parcel, deal cards with 1-10 chip, érdekel / nem érdekel, Megnyitás a Gmailben,
+> one phishing-warning card, folded "A többi"), Figyelt (not live yet), Szabályok (three plain-word lists, a proposal, the ring-limit sentence),
+> Fiókok (six-step guide + form; connected / stalled), and the states. Proposed Levél glyph: envelope with a rising sun.
+> Files `Level*.swift`; launch `-level YES` plus `-levelTab 0–3`, `-levelState normal|empty|loading|failed|rulesOnly|disconnected`,
+> `-levelScroll 0–4` (Ma sections; on Fiókok any value scrolls to the form), `-levelAcct stalled`. Screenshots: `level-*.png`.
+
 > **Newest round — "Étel" (B4, `mezo-r36n9.14`, 2026-11-13):** the full food room, built photo-first on the
 > Képek guideline ([`2026-11-13-boop-kepek-design.md`](../../../superpowers/specs/2026-11-13-boop-kepek-design.md)) —
 > room head with the Fuel mood photo under the hue's sky, meal cards with the owner's own meal photo, recipe and
