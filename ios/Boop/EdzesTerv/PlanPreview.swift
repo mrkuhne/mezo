@@ -25,6 +25,7 @@ import BoopDesign
 //   -previewUjBlokkSeason none             no season days: the needs-season state
 //   -previewUjBlokkScroll Y                the step opens scrolled down by Y points
 //   -previewUjBlokkStart fail              „Ezzel kezdem" fails at the start (503): the inline error under the button
+//   -previewEvesTerv YES                   the Éves terv (mezo-r36n9.113); its states in EvesTerv/EvesTervPreview.swift
 //
 // The evaluator below is a FIXTURE: it imitates the server's answer so the steppers move the numbers on screen. The
 // app itself never computes a band — it asks `POST /api/train/meso-plans/evaluate`.
@@ -164,6 +165,8 @@ final class PlanPreviewTransport: ClientTransport, @unchecked Sendable {
             case "closeMesocycle": return block
             case "discardMesocycle": return [String: Any]()
             case "getBlockExerciseSuggestions": return Self.suggestions(sent ?? [:])
+            case "previewYearPlan", "createYearPlan", "getActiveYearPlan", "patchYearBlock", "archiveYearPlan":
+                return EvesTervPreviewServer.answer(operationID, path: request.path, sent: sent)
             case "listWeekProposals": return state == "empty" ? [] : [proposal()]
             case "decideWeekProposal":
                 if let s = sent {

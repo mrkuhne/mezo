@@ -61,6 +61,9 @@ struct EdzesRoom: View {
     @State private var builder: BlockBuilderModel?
     /// The new-block intake on screen.
     @State private var newBlock: NewBlockModel?
+    /// The Éves terv on screen (mezo-r36n9.113, `ios/Boop/EdzesTerv/EvesTerv/`): its own cover, the model riding on
+    /// the item — a model kept in separate state was read as nil by a cover built in the same update.
+    @State private var yearPlan: YearPlanCover?
     /// The builder and the review zoom out of the button / card that opened them.
     @Namespace private var planZoom
     /// Which of the workout's own surfaces is up. The session itself lives in the store, so
@@ -161,6 +164,9 @@ struct EdzesRoom: View {
                 }
             }
         }
+        .fullScreenCover(item: $yearPlan) { cover in
+            EvesTervPage(model: cover.model) { yearPlan = nil }
+        }
         .fullScreenCover(isPresented: Binding(get: { phase == .briefing && workout != nil },
                                               set: { if !$0 { phase = .hidden } })) {
             if let w = workout {
@@ -243,6 +249,13 @@ struct EdzesRoom: View {
             newBlock = NewBlockModel(client: plan, seasonGymDays: evad?.overview?.pillars.block.gymDays)
             page = .newBlock
         }
+    }
+
+    /// Opens the Éves terv: the map, or the empty state that leads to creating one. A fresh model each time, so the map
+    /// never opens on a stale plan from an earlier visit (the model falls back to the cached copy with its age).
+    private func openYearPlan() {
+        guard let plan else { return }
+        yearPlan = YearPlanCover(model: YearPlanModel(client: plan, cache: cache))
     }
 
     /// Loads the builder's block, catalog and evaluation ahead of the tap. `fresh` starts over after the builder closed
@@ -551,7 +564,8 @@ struct EdzesRoom: View {
             NKMenuItem(glyph: "plus-ink", name: "Egyedi edzés", sub: "Saját összeállítás") { toast = soonToast("Egyedi edzés") },
             NKMenuItem(glyph: "dumbbell-ink", name: "Gyakorlatok", sub: "A saját súlyaiddal") { selected = EdzesTab.gyakorlatok.rawValue },
             NKMenuItem(glyph: "book-sage", name: "Előzmények", sub: "Minden eddigi edzés") { selected = EdzesTab.elozmenyek.rawValue },
-        ], hue: hue)
+        ] + (plan != nil ? [NKMenuItem(glyph: "chart-deep", name: "Éves terv", sub: "Az év blokkjai, előre") { openYearPlan() }] : []),
+        hue: hue)
     }
 
     // MARK: - Blokk
@@ -563,10 +577,12 @@ struct EdzesRoom: View {
                                    openReview: { page = .review }, openBuilder: { page = .builder })
             }
             blockLoadCard(b)
+            yearPlanRow
             weekCarousel(b)
             NKAskRow(hue: hue, text: "Kérdezd meg Boopot az edzéstervedről") { openPlace(.boop) }
         } else if store?.blockProblem != nil {
             NKBare("A BLOKKOD", hue: hue) { NKNoFreshData("A blokkodat most nem érem el") }
+            yearPlanRow
             NKAskRow(hue: hue, text: "Kérdezd meg Boopot az edzéstervedről") { openPlace(.boop) }
         } else {
             NKNotLiveYet(hue: hue, title: "Nincs futó blokkod",
@@ -580,6 +596,7 @@ struct EdzesRoom: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 20)
             }
+            yearPlanRow
             NKAskRow(hue: hue, text: "Kérdezd meg Boopot az edzéstervedről") { openPlace(.boop) }
         }
     }
@@ -604,6 +621,29 @@ struct EdzesRoom: View {
             }
             .buttonStyle(.plain)
             .accessibilityHint("Izomcsoportonkénti bontás")
+        }
+    }
+
+    /// The way into the Éves terv from the Blokk tab: one row under the block's load.
+    @ViewBuilder private var yearPlanRow: some View {
+        if plan != nil {
+            NKBare("AZ ÉVES TERV", hue: hue) {
+                Button { openYearPlan() } label: {
+                    HStack(spacing: 10) {
+                        Text("Melyik blokk mikor jön, és mire figyel")
+                            .nkFont(13).foregroundStyle(.white.opacity(0.7))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.45))
+                    }
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Éves terv")
+                .accessibilityHint("Melyik blokk mikor jön, és mire figyel")
+            }
         }
     }
 
@@ -813,6 +853,12 @@ private struct DayCard: View {
         .nkGlass()
         .accessibilityElement(children: .combine)
     }
+}
+
+/// The Éves terv cover's item: a fresh model per opening.
+struct YearPlanCover: Identifiable {
+    let id = UUID()
+    let model: YearPlanModel
 }
 
 // MARK: - Words
