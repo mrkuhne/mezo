@@ -31,7 +31,11 @@ struct MaWall: View {
     @State private var why: WallCandidate?
     /// The season (B6 Évad): its overview feeds the `evad` source; a tap on its card opens the Évad place.
     @Environment(EvadStore.self) private var evad: EvadStore?
+    /// Levél's digest feeds the `level` source; a tap on its card opens the Levél room.
+    @Environment(LevelStore.self) private var level: LevelStore?
+    @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
     @Environment(\.openPlace) private var openPlace
+    @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var today: String { brief.date }
@@ -54,6 +58,9 @@ struct MaWall: View {
         })
         r.register(WallSource(id: WallSources.evad) { [overview = evad?.overview] input in
             evadCandidates(overview, now: input.now)
+        })
+        r.register(WallSource(id: WallSources.level) { [digest = level?.digest] input in
+            levelWallCandidates(digest, now: input.now)
         })
         return r
     }
@@ -115,6 +122,24 @@ struct MaWall: View {
         .sheet(item: $why) { c in whySheet(c) }
         // the season's overview is read once (cached offline) so the wall knows what the Évad page knows
         .task(id: evad.map(ObjectIdentifier.init)) { await evad?.load() }
+        .task(id: level.map(ObjectIdentifier.init)) { await level?.refresh() }
+        // the wall may ring for what expires: what is on screen now counts as seen, the rest may reach his pocket
+        .onAppear { reconcileNotifications(markSeen: true) }
+        .onChange(of: allExpiring.map(\.id)) { reconcileNotifications(markSeen: true) }
+        .onChange(of: scenePhase) { _, phase in if phase == .active { reconcileNotifications(markSeen: false) } }
+    }
+
+    /// Every `.expires` candidate the areas have, shown or not.
+    private var allExpiring: [WallCandidate] {
+        (Self.forceEmpty ? [] : registry.candidates(WallInput(now: ctx.now, day: ctx.now))).filter(\.notifiable)
+    }
+
+    private func reconcileNotifications(markSeen: Bool) {
+        guard let key = ritmus?.userKey else { return }
+        let notifier = WallNotifier(userKey: key)
+        let now = ctx.now, candidates = allExpiring, acted = acted
+        if markSeen { notifier.markSeen(wall.cards.filter(\.notifiable).map(\.id), now: now) }
+        Task { await notifier.reconcile(candidates, now: now, acted: acted) }
     }
 
     @State private var settledOpen = false
@@ -147,6 +172,7 @@ struct MaWall: View {
         if c.id.hasPrefix("etel-window") || c.id == "etel-tip" { onMeal() }
         else if c.id == "etel-supplements" { onEtelRoom() }
         else if c.id == "edzes-keszulj" { onDrill(.mozgas) }
+        else if c.area == WallSources.level { onDrill(.level) }
         else if c.area == WallSources.evad { evad?.pendingSub = evadWallOpens(c.id); openPlace(.terv) }
         settle(id: c.id, line: c.settled)
     }
@@ -201,6 +227,7 @@ func hue(_ area: String) -> Hue {
     case WallSources.alvas: .alvas
     case WallSources.energia: .pulzus
     case WallSources.evad: evadHue
+    case WallSources.level: .level
     default: .forma
     }
 }

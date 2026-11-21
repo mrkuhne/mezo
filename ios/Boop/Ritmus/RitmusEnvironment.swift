@@ -45,6 +45,8 @@ final class RitmusEnvironment {
     @ObservationIgnored private let goalHistoryFile: URL
     /// The user's own folder (the ledger's parent): the chat keeps its day → conversation file here.
     @ObservationIgnored private let userDirectory: URL
+    /// The signed-in user's folder name — keys anything per-user that lives outside the folder (UserDefaults).
+    var userKey: String { userDirectory.lastPathComponent }
     /// Lets the outbox's delivery listener reach the chat attached after it.
     @ObservationIgnored private let chatRef: ChatRef
     /// The Boop tab's chat (B3 Task 12); nil until `attachChat` (tests without a server leave it out).
