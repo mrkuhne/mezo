@@ -1,6 +1,6 @@
 # Boop B7 — Napi kapacitás + Átrendezés (how much the day can carry, and what to move)
 
-- **Status:** spike approved by the owner 2026-11-21 ("Mehet a terv"); **this spec waits for his OK** · **Date:** 2026-11-21
+- **Status:** **approved by the owner 2026-11-21** (spike "Mehet a terv", spec "Jóváhagyom") · **Date:** 2026-11-21
 - **Issue:** `mezo-r36n9.17` · **Epic:** `mezo-r36n9` · **Session:** `b6-b7-epites-5d50e3`
 - **Spike:** `ios/Boop/KapacitasDemo/KapacitasDemo.swift` on branch `feat/b7-kapacitas-spike` (throwaway, not for main),
   `-previewKapacitas YES [-kapOpen ma|atrendezes|hatas|nap|evad]`; screenshots `docs/superpowers/specs/assets/kapacitas/01–08`.
