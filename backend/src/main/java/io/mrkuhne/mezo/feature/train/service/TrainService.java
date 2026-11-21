@@ -302,8 +302,11 @@ public class TrainService {
             volumeLedger.sync(createdBy, saved.getId());
         }
         yearPlanLinker.linkStarted(createdBy, saved, src.yearBlockId());
-        // Every stamp (mezo-r36n9.113): the season follows the new block AFTER_COMMIT (SeasonBlockLinkListener).
-        eventPublisher.publishEvent(new MesocycleStarted(createdBy, saved.getId(), saved.getStartDate()));
+        // Only a block that actually starts (mezo-r36n9.113: the season always shows the running block): the season
+        // follows it AFTER_COMMIT (SeasonBlockLinkListener). A planned run is followed when activateMesocycle starts it.
+        if (active) {
+            eventPublisher.publishEvent(new MesocycleStarted(createdBy, saved.getId(), saved.getStartDate()));
+        }
         return assembleResponse(createdBy, saved);
     }
 
@@ -336,8 +339,12 @@ public class TrainService {
             // transaction lands.
             eventPublisher.publishEvent(new MesocycleActivated(createdBy, id));
             // A planned block reaching its day (PlannedBlockStarter) is a start too: the season follows it
-            // (a no-op when its stamp already linked it, mezo-r36n9.113).
-            eventPublisher.publishEvent(new MesocycleStarted(createdBy, id, target.getStartDate()));
+            // (mezo-r36n9.113). It starts running today at the earliest — a re-activated old run must not claim the
+            // season's weeks from its long-past start date.
+            LocalDate today = LocalDate.now();
+            LocalDate runsFrom = target.getStartDate() == null || target.getStartDate().isBefore(today)
+                ? today : target.getStartDate();
+            eventPublisher.publishEvent(new MesocycleStarted(createdBy, id, runsFrom));
         }
         // Unconditional (even when already active): the ledger is idempotent, so activate also
         // backfills the volume log of a run that never had rows.

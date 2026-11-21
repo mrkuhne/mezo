@@ -193,10 +193,12 @@ accepted adaptive correction or a concurrent accept between preview and accept t
   allowed; the phone disables the control) (the block's weekdays would no longer match). Sport
   days, pace and gym time stay editable. The full "one accept moves the block too" (spec §5.12-1) waits for the
   in-block day editor — follow-up `mezo-r36n9.122` (depends on `mezo-r36n9.116`).
-- **The season follows a newly started block** (Éves terv, `mezo-r36n9.113`). Every block start publishes train's
-  `MesocycleStarted` — `TrainService.stampRun` on every stamp (template start, re-run, the season's own start, active
-  or planned) and `activateMesocycle` on a real activation (a planned block reaching its day through
-  `PlannedBlockStarter`, or a manual activate). `SeasonBlockLinkListener` (`AFTER_COMMIT`, synchronous) calls
+- **The season follows a newly started block** (Éves terv, `mezo-r36n9.113`). The season always shows the **running** block, so only a
+  block that actually starts publishes train's `MesocycleStarted` — `TrainService.stampRun` for an **active** stamp
+  (template start, re-run, the season's own start) and `activateMesocycle` on a real activation (a planned block
+  reaching its day through `PlannedBlockStarter`, or a manual activate). A planned stamp touches nothing until it
+  starts. The event's start is the day the block runs from: its start date, or today when that lies in the past (a
+  re-activated old run never claims the season's weeks from its long-past start). `SeasonBlockLinkListener` (`AFTER_COMMIT`, synchronous) calls
   `SeasonService.adoptStartedBlock` in its own transaction (`REQUIRES_NEW`): the active season, else the planned season
   whose window contains the block's start, else nothing. A block already linked to that goal (the season's own start)
   is a no-op; otherwise the block becomes the goal's **newest `goal_plan_link`** and the draft's block becomes
@@ -205,7 +207,7 @@ accepted adaptive correction or a concurrent accept between preview and accept t
   the same week or later is removed (the goal allows one mesocycle per week). Links are ordered by start week, then
   age. A failure is logged and **never fails the start** — the block runs, the season keeps its previous block. Every
   season read (overview, `GET /api/seasons`) takes the newest linked block that still exists, so a discarded newest
-  block falls back to the one before it.
+  block falls back to the one before it (its link stays shortened — restoring it is a follow-up).
 - **close** (`POST …/{id}/close`) — status `closed` + a small `closed_summary`; goal and slots stay. **The sleep goal
   gets its base back** (`sleep_base_min`) unless he changed it himself since the season wrote it.
 - **putRules** (`PUT …/{id}/rules`) — the switches; no kcal effect, so no preview.
@@ -614,7 +616,10 @@ Backend (`./mvnw test -Dtest='Season*IT,Season*Test,MesocycleGateIT,GoalPrescrip
 - `SeasonBlockRelinkIT` (`mezo-r36n9.113`, HTTP, committed) — a template start becomes the season's block (goal,
   title, day kcal unchanged; draft `adopt <new>`; the old link kept), the deload week follows the new block, no season
   no link, the season's own template start links once, a discarded newest block falls back to the previous one, a
-  planned block activated on its day by a read becomes the season's block, a failed link never fails the start.
+  planned stamp leaves the running block and its link alone, a planned block activated on its day by a read becomes
+  the season's block (the old link ends the week before), a same-week start replaces the old link, a re-activated old
+  run joins from today, a planned season whose window holds the start follows the block, a failed link never fails
+  the start.
 - `SeasonOverviewIT` — 404 without season, maintain band, null rest-day link, `slower`, `no_data` with three
   weigh-ins, deload listed from the block, projection flat after the target, past-target season computes.
 - `MesocycleGateIT` (gate on) — template start without season 409, planned season in 5 days passes, too far ahead

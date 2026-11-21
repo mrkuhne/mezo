@@ -36,6 +36,12 @@ public record SeasonDraftJson(
     public record Block(String source, UUID mesocycleId, UUID templateId) {
     }
 
+    /** The same draft holding {@code block} instead. */
+    public SeasonDraftJson withBlock(Block block) {
+        return new SeasonDraftJson(title, trajectory, targetWeightKg, ratePctPerWeek, kgPerWeek, startDate, weeks, gymDays,
+            gymTime, sport, sleepAnchor, allowedRecipeIds, block);
+    }
+
     /** {@code startDate + weeks*7 - 1} — the season's last day. */
     public LocalDate endDate() {
         return startDate.plusDays(weeks * 7L - 1);

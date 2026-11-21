@@ -270,9 +270,7 @@ public class SeasonService {
         goalPort.link(owner, s.getGoalId(), mesocycleId, start);
         SeasonDraftJson d = s.getDraft();
         if (d != null) {
-            s.setDraft(new SeasonDraftJson(d.title(), d.trajectory(), d.targetWeightKg(), d.ratePctPerWeek(),
-                d.kgPerWeek(), d.startDate(), d.weeks(), d.gymDays(), d.gymTime(), d.sport(), d.sleepAnchor(),
-                d.allowedRecipeIds(), new SeasonDraftJson.Block("adopt", mesocycleId, null)));
+            s.setDraft(d.withBlock(new SeasonDraftJson.Block("adopt", mesocycleId, null)));
             s.setUpdatedAt(Instant.now());
             seasonRepository.save(s);
         }
@@ -300,9 +298,7 @@ public class SeasonService {
             .ifPresent(m -> goalPort.link(owner, s.getGoalId(), m.id(), m.startDate()));
         // From now on the season holds that block: a later accept compares against "adopt <id>", never re-starts it.
         SeasonDraftJson d = s.getDraft();
-        s.setDraft(new SeasonDraftJson(d.title(), d.trajectory(), d.targetWeightKg(), d.ratePctPerWeek(), d.kgPerWeek(),
-            d.startDate(), d.weeks(), d.gymDays(), d.gymTime(), d.sport(), d.sleepAnchor(), d.allowedRecipeIds(),
-            new SeasonDraftJson.Block("adopt", mesoId, null)));
+        s.setDraft(d.withBlock(new SeasonDraftJson.Block("adopt", mesoId, null)));
     }
 
     /**

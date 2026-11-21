@@ -50,23 +50,43 @@ class SeasonBlockRelinkIT extends ApiIntegrationTest {
 
     /** An active season that started two weeks ago with block A (started with it) as its block. */
     private Setup activeSeasonWithBlockA(String label) {
+        return activeSeasonWithBlockA(label, 2);
+    }
+
+    /** An active season that started {@code weeksAgo} weeks ago with block A (5 weeks, started with it). */
+    private Setup activeSeasonWithBlockA(String label, int weeksAgo) {
         RegisteredUser u = registerUser(label);
         UUID owner = fixture.owner(u.email());
-        MesocycleEntity a = trainPopulator.activeMesoStartedWeeksAgo(owner, 2, 5,
+        MesocycleEntity a = trainPopulator.activeMesoStartedWeeksAgo(owner, weeksAgo, 5,
             List.of("MEV", "MAV", "MRV", "MRV", "Deload"));
         SeasonDraftJson d = SeasonFixture.draft();
         SeasonEntity created = seasonService.create(owner, new SeasonDraftJson(d.title(), d.trajectory(),
-            d.targetWeightKg(), null, null, LocalDate.now().minusWeeks(2), d.weeks(), d.gymDays(), d.gymTime(),
-            d.sport(), d.sleepAnchor(), d.allowedRecipeIds(), new SeasonDraftJson.Block("adopt", a.getId(), null)));
+            d.targetWeightKg(), null, null, LocalDate.now().minusWeeks(weeksAgo), d.weeks(), d.gymDays(), d.gymTime(),
+            d.sport(), d.sleepAnchor(), d.allowedRecipeIds(), null).withBlock(
+                new SeasonDraftJson.Block("adopt", a.getId(), null)));
         SeasonEntity active = seasonService.activate(owner, created.getId());
         return new Setup(u, active, a);
     }
 
     private MesocycleResponse startTemplate(UUID owner, HttpHeaders auth) {
+        return startTemplate(owner, auth, LocalDate.now(), "active");
+    }
+
+    private MesocycleResponse startTemplate(UUID owner, HttpHeaders auth, LocalDate start, String status) {
         UUID template = templatePopulator.template(owner).getId(); // 4 weeks: MEV, MAV, MRV, Deload
         return postForBody(TEMPLATES + template + "/start",
-            Map.of("startDate", LocalDate.now().toString(), "status", "active"), auth, HttpStatus.OK,
-            MesocycleResponse.class);
+            Map.of("startDate", start.toString(), "status", status), auth, HttpStatus.OK, MesocycleResponse.class);
+    }
+
+    /** The live link's end week of that block. */
+    private int endWeek(UUID mesoId) {
+        return jdbc.queryForObject("select end_week from goal_plan_link where plan_id = ? and is_deleted = false",
+            Integer.class, mesoId);
+    }
+
+    private int startWeek(UUID mesoId) {
+        return jdbc.queryForObject("select start_week from goal_plan_link where plan_id = ? and is_deleted = false",
+            Integer.class, mesoId);
     }
 
     private SeasonOverview overview(HttpHeaders auth) {
@@ -130,10 +150,8 @@ class SeasonBlockRelinkIT extends ApiIntegrationTest {
         RegisteredUser u = registerUser("RelinkActivation");
         UUID owner = fixture.owner(u.email());
         UUID template = templatePopulator.template(owner).getId();
-        SeasonDraftJson d = SeasonFixture.draft();
-        SeasonEntity created = seasonService.create(owner, new SeasonDraftJson(d.title(), d.trajectory(),
-            d.targetWeightKg(), null, null, d.startDate(), d.weeks(), d.gymDays(), d.gymTime(), d.sport(),
-            d.sleepAnchor(), d.allowedRecipeIds(), new SeasonDraftJson.Block("template", null, template)));
+        SeasonEntity created = seasonService.create(owner,
+            SeasonFixture.draft().withBlock(new SeasonDraftJson.Block("template", null, template)));
 
         seasonService.activate(owner, created.getId());
 
@@ -159,18 +177,76 @@ class SeasonBlockRelinkIT extends ApiIntegrationTest {
     }
 
     @Test
+    void plannedStampLeavesTheRunningBlockAndItsLinkAlone() {
+        Setup s = activeSeasonWithBlockA("RelinkPlannedStamp");
+        assertThat(endWeek(s.blockA().getId())).isEqualTo(5);
+
+        MesocycleResponse b = startTemplate(s.user().id(), s.user().headers(), LocalDate.now().plusWeeks(1), "planned");
+
+        assertThat(endWeek(s.blockA().getId())).isEqualTo(5);
+        assertThat(links(b.getId())).isZero();
+        assertThat(overview(s.user().headers()).getPillars().getBlock().getMesocycleId()).isEqualTo(s.blockA().getId());
+        assertThat(seasonRepository.findById(s.season().getId()).orElseThrow().getDraft().block())
+            .isEqualTo(new SeasonDraftJson.Block("adopt", s.blockA().getId(), null));
+    }
+
+    @Test
     void plannedBlockStartingOnItsDayBecomesSeasonBlock() {
         Setup s = activeSeasonWithBlockA("RelinkPlanned");
-        // a planned block due today that no stamp linked (written straight to the table, no start event)
-        MesocycleEntity b = trainPopulator.createMesocycle(s.user().id(), "Tervezett B", "planned");
-        b.setStartDate(LocalDate.now());
-        b.setEndDate(LocalDate.now().plusWeeks(6));
-        mesocycleRepository.saveAndFlush(b);
+        MesocycleResponse b = startTemplate(s.user().id(), s.user().headers(), LocalDate.now(), "planned");
+        assertThat(links(b.getId())).isZero();
 
+        // the year-plan read starts the due planned block (PlannedBlockStarter); no year plan → 404, the start stays
         getForBody("/api/train/year-plans/active", s.user().headers(), HttpStatus.NOT_FOUND, String.class);
 
         assertThat(mesocycleRepository.findById(b.getId()).orElseThrow().getStatus()).isEqualTo("active");
+        assertThat(startWeek(b.getId())).isEqualTo(3);
+        assertThat(endWeek(s.blockA().getId())).isEqualTo(2); // B's start week − 1
         assertThat(overview(s.user().headers()).getPillars().getBlock().getMesocycleId()).isEqualTo(b.getId());
+    }
+
+    @Test
+    void blockStartingInTheSameGoalWeekReplacesTheOldLink() {
+        Setup s = activeSeasonWithBlockA("RelinkSameWeek", 0); // A and the season both start today: week 1
+
+        MesocycleResponse b = startTemplate(s.user().id(), s.user().headers());
+
+        assertThat(links(s.blockA().getId())).isZero();
+        assertThat(startWeek(b.getId())).isEqualTo(1);
+        assertThat(overview(s.user().headers()).getPillars().getBlock().getMesocycleId()).isEqualTo(b.getId());
+    }
+
+    @Test
+    void reactivatedOldRunJoinsFromTodayNotFromItsPastStart() {
+        Setup s = activeSeasonWithBlockA("RelinkReactivate");
+        MesocycleResponse b = startTemplate(s.user().id(), s.user().headers()); // A → 1..2, B → 3..6
+        MesocycleEntity old = trainPopulator.createMesocycle(s.user().id(), "Régi blokk", "archived"); // started in May
+
+        postForBody("/api/train/mesocycles/" + old.getId() + "/activate", null, s.user().headers(), HttpStatus.OK,
+            MesocycleResponse.class);
+
+        assertThat(startWeek(old.getId())).isEqualTo(3); // today's week, not clamped to week 1
+        assertThat(endWeek(s.blockA().getId())).isEqualTo(2); // the season's history before today is kept
+        assertThat(links(b.getId())).isZero(); // same week as the re-activated run: superseded
+        assertThat(overview(s.user().headers()).getPillars().getBlock().getMesocycleId()).isEqualTo(old.getId());
+    }
+
+    @Test
+    void plannedSeasonWhoseWindowHoldsTheStartFollowsTheBlock() {
+        RegisteredUser u = registerUser("RelinkPlannedSeason");
+        UUID owner = fixture.owner(u.email());
+        SeasonDraftJson d = SeasonFixture.draft();
+        SeasonEntity planned = fixture.plannedSeason(owner, new SeasonDraftJson(d.title(), d.trajectory(),
+            d.targetWeightKg(), null, null, LocalDate.now().plusDays(3), d.weeks(), d.gymDays(), d.gymTime(), d.sport(),
+            d.sleepAnchor(), d.allowedRecipeIds(), null));
+
+        MesocycleResponse before = startTemplate(owner, u.headers()); // today: before the planned window
+        MesocycleResponse inside = startTemplate(owner, u.headers(), LocalDate.now().plusDays(5), "active");
+
+        assertThat(links(before.getId())).isZero();
+        assertThat(links(inside.getId())).isEqualTo(1);
+        assertThat(seasonRepository.findById(planned.getId()).orElseThrow().getDraft().block())
+            .isEqualTo(new SeasonDraftJson.Block("adopt", inside.getId(), null));
     }
 
     @Test
