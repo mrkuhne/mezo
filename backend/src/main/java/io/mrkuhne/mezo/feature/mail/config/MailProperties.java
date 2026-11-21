@@ -25,6 +25,8 @@ import org.springframework.validation.annotation.Validated;
  * @param bodyMaxChars              body cap before the model (about 1 500 tokens).
  * @param rawRetentionDays          raw bodies older than this are purged.
  * @param manualRunCooldownMinutes  one manual run per this many minutes.
+ * @param imapHost                  the IMAPS server (Gmail); the IT points it at GreenMail.
+ * @param imapPort                  the IMAPS port.
  */
 @Validated
 @ConfigurationProperties(prefix = "mezo.mail")
@@ -41,7 +43,9 @@ public record MailProperties(
         @DefaultValue("8") @Min(0) @Max(50) int fewShotExamples,
         @DefaultValue("6000") @Min(500) @Max(100_000) int bodyMaxChars,
         @DefaultValue("30") @Min(1) @Max(365) int rawRetentionDays,
-        @DefaultValue("10") @Min(0) @Max(1_440) int manualRunCooldownMinutes) {
+        @DefaultValue("10") @Min(0) @Max(1_440) int manualRunCooldownMinutes,
+        @DefaultValue("imap.gmail.com") @NotBlank String imapHost,
+        @DefaultValue("993") @Min(1) @Max(65_535) int imapPort) {
 
     @Override
     public String toString() {

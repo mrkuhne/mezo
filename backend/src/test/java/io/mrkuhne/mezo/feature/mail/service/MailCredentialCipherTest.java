@@ -12,7 +12,8 @@ import org.junit.jupiter.api.Test;
 class MailCredentialCipherTest {
 
     private static MailProperties props(String key) {
-        return new MailProperties(key, "0 0 8,15 * * *", "Europe/Budapest", 0.15, 7, 8, 36, 3, 90, 8, 6000, 30, 10);
+        return new MailProperties(key, "0 0 8,15 * * *", "Europe/Budapest", 0.15, 7, 8, 36, 3, 90, 8, 6000, 30, 10,
+            "imap.gmail.com", 993);
     }
 
     private static String key32() {

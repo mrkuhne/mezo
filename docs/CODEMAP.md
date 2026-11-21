@@ -791,10 +791,11 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `MailMailboxRepository`, `MailMessageRepository`, `MailRunRepository`, `MailSenderRuleRepository`
   - **services:** `MailCredentialCipher`
   - **config:** `MailProperties`
-  - **other:** `BulkDetector`, `CarrierRules`, `Group`, `JsonLdReader`, `MailHeaders`, `MailRedactor`, `MailRules`,
-    `ParcelState`, `RedactedMail`, `RuleVerdict`, `SenderRule`, `SensitiveSeed`
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/mail` — 1 IT + 5 unit
-  - **ITs:** `MailSchemaIT`
+  - **other:** `BulkDetector`, `CarrierRules`, `FetchedMail`, `Group`, `ImapMailReader`, `JsonLdReader`, `MailHeaders`,
+    `MailReader`, `MailRedactor`, `MailRules`, `ParcelState`, `RedactedMail`, `RuleVerdict`, `SenderRule`,
+    `SensitiveSeed`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/mail` — 2 IT + 5 unit
+  - **ITs:** `ImapMailReaderIT`, `MailSchemaIT`
   - **populators:** `DatabasePopulator`, `MailPopulator`
 
 ### meal
