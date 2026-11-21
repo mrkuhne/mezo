@@ -193,6 +193,25 @@ struct HealthSyncTests {
         #expect(!body.contains(dayString(cal.date(byAdding: .day, value: 9, to: todayStart)!, cal)))
     }
 
+    // K1 final fix: an install that backfilled under the old key re-sends the 60-day window once (the
+    // capacity baseline needs the new event fields), then goes back to yesterday…today+8.
+    @Test func oldBackfillKeyReBackfillsOnce() async {
+        store.set(true, forKey: "boop.calendar.backfilled.\(user)")
+        okEverything()
+        let s = sync()
+        let todayStart = cal.startOfDay(for: now)
+        let sixtyBack = dayString(cal.date(byAdding: .day, value: -60, to: todayStart)!, cal)
+        await s.syncAll()
+        #expect(bodies("replaceCalendarDays").contains { $0.contains(sixtyBack) })
+        #expect(store.bool(forKey: "boop.calendar.backfilled.v2.\(user)"))
+        let sentBefore = bodies("replaceCalendarDays").count
+        okEverything()
+        await s.syncAll()
+        let second = Array(bodies("replaceCalendarDays").dropFirst(sentBefore))
+        #expect(second.count == 1)
+        #expect(!second.contains { $0.contains(sixtyBack) })
+    }
+
     @Test func unauthorizedStops() async {
         health.nights = night(9)
         stub.on("ingestSleepNights", .json(401, #"[{"code":"AUTH_UNAUTHORIZED","type":"REQUEST"}]"#))

@@ -30,7 +30,7 @@ public final class CalendarKitReader: CalendarReader, @unchecked Sendable {
                          title: $0.title ?? "", start: $0.startDate, end: $0.endDate,
                          allDay: $0.isAllDay, calendar: $0.calendar?.title ?? "", attendees: $0.attendees?.count ?? 0,
                          attendeeNames: $0.attendees?.compactMap(\.name) ?? [],
-                         organizerIsMe: $0.organizer?.isCurrentUser ?? false,
+                         organizerIsMe: $0.organizer?.isCurrentUser,
                          location: $0.location, recurring: $0.hasRecurrenceRules,
                          availability: Self.availabilityName($0.availability), notes: $0.notes)
         }

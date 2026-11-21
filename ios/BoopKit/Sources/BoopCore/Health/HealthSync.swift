@@ -91,7 +91,9 @@ public final class HealthSync {
     private var idsKey: String { "boop.health.syncedIds.\(userId)" }
     private var v2Key: String { "boop.health.v2.\(userId)" }
     private var hrMarkKey: String { "boop.health.hrThrough.\(userId)" }
-    private var calendarBackfilledKey: String { "boop.calendar.backfilled.\(userId)" }
+    /// Versioned: v2 (day capacity, mezo-r36n9.17) re-sends the 60-day window once, so installs that backfilled
+    /// before the event got its scoring fields (attendees, notes, availability…) refresh their history.
+    private var calendarBackfilledKey: String { "boop.calendar.backfilled.v2.\(userId)" }
     private func anchorKey(_ kind: String) -> String { "boop.health.anchor.\(userId).\(kind)" }
 
     /// Everything synced so far (distinct nights, days, workouts; events = the last calendar snapshot;

@@ -16,15 +16,15 @@ public struct CalendarItem: Sendable, Equatable {
     public let attendees: Int
     /// Attendee display names (the scoring model reads them).
     public let attendeeNames: [String]
-    /// True when the owner organises the event.
-    public let organizerIsMe: Bool
+    /// True when the owner organises the event; nil when the event has no organizer (unknown, not "someone else").
+    public let organizerIsMe: Bool?
     public let location: String?
     public let recurring: Bool
     /// EventKit availability: busy | free | tentative | unavailable.
     public let availability: String
     public let notes: String?
     public init(externalId: String, title: String, start: Date, end: Date, allDay: Bool, calendar: String, attendees: Int = 0,
-                attendeeNames: [String] = [], organizerIsMe: Bool = false, location: String? = nil,
+                attendeeNames: [String] = [], organizerIsMe: Bool? = nil, location: String? = nil,
                 recurring: Bool = false, availability: String = "busy", notes: String? = nil) {
         self.externalId = externalId; self.title = title; self.start = start; self.end = end; self.allDay = allDay; self.calendar = calendar
         self.attendees = attendees; self.attendeeNames = attendeeNames; self.organizerIsMe = organizerIsMe
