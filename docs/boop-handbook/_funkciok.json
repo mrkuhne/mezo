@@ -2405,9 +2405,9 @@
   "proactive-n1-kiserletek": {
     "cim": "Saját kísérletek (régi)",
     "terulet": "Célok és évad",
-    "app": "Tervben",
+    "app": "Nem kell",
     "mit_tud": "A mintáidra épülő egyszemélyes kísérleteket javasol, elfogadásra elindítja őket, és az ablak végén őszintén kiértékeli az eredményt.",
-    "app_megjegyzes": "Az Évad Hatás füle új kísérletekkel váltja ki (Boop is javasolhat); akkor a régi javaslatgyártás leáll.",
+    "app_megjegyzes": "Az Évad Hatás füle kiváltotta (2026-11-21): a régi javaslatgyártás leállt, a régi adatok megmaradnak.",
     "jegyek": [
       "mezo-r36n9.16"
     ],
@@ -2749,7 +2749,7 @@
     "terulet": "Boop és AI",
     "app": "Tervben",
     "mit_tud": "A szerver méri, hogy bizonyos emberek vagy eseménytípusok után hogyan alakul a hangulatod, energiád és feszültséged, és egy-egy témát el lehet némítani.",
-    "app_megjegyzes": "Az appban még nincs; az Évad terv későbbi lépése ételekre és kiegészítőkre is kiterjesztené.",
+    "app_megjegyzes": "Az appban nincs külön; ételekre, kiegészítőkre és szokásokra az Évad Hatás füle (kísérletek) méri a hatást.",
     "jegyek": [
       "mezo-r36n9.16"
     ],
@@ -3771,5 +3771,19 @@
       "11-penz/02-terulet"
     ],
     "csomag": "penz"
+  },
+  "season-kiserletek": {
+    "cim": "Évad kísérletek (Hatás)",
+    "terulet": "Célok és évad",
+    "app": "Kész",
+    "mit_tud": "Egyszerre egy kísérlet: kipipálod a napokat, a végén összeveti az előtte lévő ugyanolyan hosszú időszakkal az alvást, a pulzust és a közérzetet; őszinte eredmény, egyetlen százalék nélkül. Boop is javasolhat (új kiegészítő, kétszer evett új étel, naplóban „elkezdtem”), a megtartott szokás bekerül az évad szabályai közé.",
+    "app_megjegyzes": "Az Évad Hatás fülén és az eredménylapon; a javaslat és a kész eredmény a Ma falon is megjelenik.",
+    "jegyek": [
+      "mezo-r36n9.16"
+    ],
+    "kezikonyv": [
+      "04-terv/08-hataskovetes"
+    ],
+    "csomag": "season"
   }
 }

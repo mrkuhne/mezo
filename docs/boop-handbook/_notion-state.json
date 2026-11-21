@@ -220,7 +220,7 @@
     },
     "jegyek:mezo-r36n9.16": {
       "page_id": "4168968e-752b-81dd-967e-fe6305d85e18",
-      "hash": "3c9d62a62a8e"
+      "hash": "9bc56a91b579"
     },
     "jegyek:mezo-r36n9.17": {
       "page_id": "4168968e-752b-81d9-9448-c7846b8b3377",
@@ -600,11 +600,11 @@
     },
     "kezikonyv:04-terv/00-attekintes": {
       "page_id": "4168968e-752b-81c6-a15f-d115f1a8c6e1",
-      "hash": "124f85e66d3f"
+      "hash": "718e58408aee"
     },
     "kezikonyv:04-terv/01-terv-keret": {
       "page_id": "4168968e-752b-8197-a22b-c72ced5647ab",
-      "hash": "ab977817e6c0"
+      "hash": "8cfc2adc5526"
     },
     "kezikonyv:04-terv/02-sulycel-celmotor": {
       "page_id": "4168968e-752b-817c-a592-ecb076252fc5",
@@ -624,7 +624,7 @@
     },
     "kezikonyv:04-terv/06-terv-csomag": {
       "page_id": "4168968e-752b-81c2-b09d-e11a0ba276cf",
-      "hash": "5afe8f76d5f9"
+      "hash": "5dc05b87fe16"
     },
     "kezikonyv:04-terv/07-bevasarlolista": {
       "page_id": "4168968e-752b-81c4-ab54-c295e5a48d60",
@@ -632,7 +632,7 @@
     },
     "kezikonyv:04-terv/08-hataskovetes": {
       "page_id": "4168968e-752b-81f1-938c-eb8dd448db7c",
-      "hash": "4e356040601f"
+      "hash": "d922721b6a7c"
     },
     "kezikonyv:05-alvas/00-attekintes": {
       "page_id": "4168968e-752b-81a9-98ef-c41118a98d20",
@@ -2240,7 +2240,7 @@
     },
     "funkciok:proactive-n1-kiserletek": {
       "page_id": "41e8968e-752b-81f5-8749-ed04fe92d9c0",
-      "hash": "6745c18a03da"
+      "hash": "04834607d957"
     },
     "funkciok:companion-beszelgetes": {
       "page_id": "41e8968e-752b-81ce-8f0b-caa8e6a5ccfc",
@@ -2348,7 +2348,7 @@
     },
     "funkciok:companion-hataskovetes": {
       "page_id": "41e8968e-752b-8199-91a1-f593e30c200d",
-      "hash": "507409895ff5"
+      "hash": "5f457e6936ed"
     },
     "funkciok:companion-jelzesek": {
       "page_id": "41e8968e-752b-8110-936d-ee1505ba8c8c",
@@ -2821,6 +2821,18 @@
     "kiadasok:07f10a201": {
       "page_id": "41f8968e-752b-8189-9fbb-e51996cb583c",
       "hash": "19289198a90b"
+    },
+    "funkciok:season-kiserletek": {
+      "page_id": "41f8968e-752b-8145-ae7b-ce1a186e6775",
+      "hash": "59dba7223d9c"
+    },
+    "jegyek:mezo-r36n9.136": {
+      "page_id": "41f8968e-752b-81c6-9c06-cfd184736883",
+      "hash": "b394bbc5c897"
+    },
+    "kiadasok:3f844c206": {
+      "page_id": "41f8968e-752b-81a1-b186-c71391ae11ab",
+      "hash": "59a66c77c897"
     }
   }
 }

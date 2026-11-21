@@ -775,5 +775,20 @@
       "mezo-r36n9.135"
     ],
     "mi_valtozott": "Étkezés rögzítésekor a „Melyik receptet?” és a „Mit a kamrából?” listában keresőmező és szűrő van: beírhatod a nevét (ékezet nélkül is megtalálja), a recepteket reggeli / ebéd / vacsora / nassolás szerint, a kamrát kategória szerint szűrheted. Az Étel Ma oldaláról lekerült a vonalkód gomb (vonalkódot a rögzítő lapon és a Kamrában továbbra is olvashatsz), és eltűnt a „Következik: …” kártya az Étel Ma oldalról és a Ma falról is."
+  },
+  "3f844c206": {
+    "cim": "Évad: kísérletek a Hatás fülön",
+    "datum": "2026-11-21",
+    "verzio": "v3.31.0",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app",
+      "Háttérrendszer"
+    ],
+    "szakasz": "B6 A Terv",
+    "jegyek": [
+      "mezo-r36n9.16"
+    ],
+    "mi_valtozott": "Az Évad Hatás fülén kipróbálhatsz valamit (például egy kiegészítőt vagy egy esti szokást): egyszerre egy kísérlet fut, naponta kipipálod, és a végén Boop összeveti az előtte lévő ugyanolyan hosszú időszakkal az alvásod, a pulzusod és a közérzeted. Az eredmény őszinte: „nem hozott érezhető változást” vagy „túl kevés nap, nem lehet megítélni” is lehet, egyetlen százalék nélkül, mindig a napok számával. Boop magától is javasol kísérletet a Ma falon („Indulhat”), a megtartott szokást pedig onnantól mindenhol figyelembe veszi. A régi kísérletjavasló leállt."
   }
 }
