@@ -789,15 +789,16 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `MailRunEntity`→`mail_run`, `MailSenderRuleEntity`→`mail_sender_rule`
   - **repositories:** `MailFeedbackRepository`, `MailFolderCursorRepository`, `MailItemRepository`,
     `MailMailboxRepository`, `MailMessageRepository`, `MailRunRepository`, `MailSenderRuleRepository`
-  - **services:** `MailClassifierLlm`, `MailCostCap`, `MailCredentialCipher`, `MailHealth`, `MailIntakeService`,
-    `MailIntakeStore`, `MailPurgeService`
+  - **services:** `MailClassifierLlm`, `MailCostCap`, `MailCredentialCipher`, `MailDigest`, `MailDigestQuery`,
+    `MailDigestService`, `MailHealth`, `MailIntakeService`, `MailIntakeStore`, `MailItemStore`, `MailLearning`,
+    `MailPurgeService`, `Verdict`
   - **config:** `MailProperties`
   - **other:** `BulkDetector`, `CarrierRules`, `ClassifiedMail`, `ClassifyPrompt`, `FetchedMail`, `Group`,
     `ImapMailReader`, `JsonLdReader`, `MailFence`, `MailHeaders`, `MailOutputValidator`, `MailReader`, `MailRedactor`,
     `MailRules`, `ParcelState`, `RedactedMail`, `RuleVerdict`, `ScorePrompt`, `ScoredDeal`, `ScreenPrompt`,
-    `ScreenVerdict`, `SenderRule`, `SensitiveSeed`
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/mail` — 4 IT + 8 unit
-  - **ITs:** `ImapMailReaderIT`, `MailCostCapIT`, `MailIntakeIT`, `MailSchemaIT`
+    `ScreenVerdict`, `SenderPrior`, `SenderRule`, `SensitiveSeed`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/mail` — 5 IT + 9 unit
+  - **ITs:** `ImapMailReaderIT`, `MailCostCapIT`, `MailDigestPipelineIT`, `MailIntakeIT`, `MailSchemaIT`
   - **populators:** `DatabasePopulator`, `LlmLogPopulator`, `MailPopulator`, `UserPopulator`
 
 ### meal

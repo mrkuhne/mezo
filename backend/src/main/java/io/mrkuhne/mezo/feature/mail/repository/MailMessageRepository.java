@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.mail.repository;
 
 import io.mrkuhne.mezo.feature.mail.entity.MailMessageEntity;
 import java.util.UUID;
+import java.util.List;
 import java.util.Optional;
 import java.time.Instant;
 import org.springframework.data.jpa.repository.Modifying;
@@ -13,6 +14,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface MailMessageRepository extends JpaRepository<MailMessageEntity, UUID> {
 
     Optional<MailMessageEntity> findByMailboxIdAndContentHash(UUID mailboxId, String contentHash);
+
+    /** The owner's messages received in {@code [from, to)}, oldest first — the digest's arrivals and heat strip. */
+    List<MailMessageEntity> findByCreatedByAndReceivedAtGreaterThanEqualAndReceivedAtLessThanOrderByReceivedAtAsc(
+        UUID createdBy, Instant from, Instant to);
+
+    /** Messages received since {@code since} that have no item yet (a crash between intake and processing). */
+    @Query("select m from MailMessageEntity m where m.createdBy = :owner and m.receivedAt >= :since "
+        + "and not exists (select 1 from MailItemEntity i where i.messageId = m.id) order by m.receivedAt asc")
+    List<MailMessageEntity> withoutItem(@Param("owner") UUID owner, @Param("since") Instant since);
 
     /**
      * Stores a message unless the mailbox already has it (same Gmail message id, or same content hash — the two
