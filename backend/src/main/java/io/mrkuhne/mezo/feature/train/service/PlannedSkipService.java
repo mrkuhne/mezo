@@ -62,6 +62,8 @@ public class PlannedSkipService {
     private final GymScheduleSlotRepository gymScheduleSlotRepository;
     private final MesocycleRepository mesocycleRepository;
     private final WorkoutSessionRepository workoutSessionRepository;
+    // Boop B7 K3 (mezo-r36n9.17): an accepted move re-dates a planned gym day (repository-only adapter, no cycle).
+    private final io.mrkuhne.mezo.feature.train.port.TrainDayAdjustmentPort dayAdjustments;
 
     @Transactional
     public PlannedSkipResponse upsert(UUID user, PlannedSkipRequest req) {
@@ -170,7 +172,8 @@ public class PlannedSkipService {
             .map(e -> new SlotIdentity(e.getDate(), e.getDayOfWeek(), e.getTime()))
             .collect(Collectors.toSet());
         Map<LocalDate, RecoveryPeriodEntity> protectedDays = recoveryPeriodService.protectedDays(user, weekFrom, weekTo);
-        Set<Integer> plannedGymDows = protectedDays.isEmpty() ? Set.of() : plannedGymWeekdays(user);
+        java.util.function.Predicate<LocalDate> plannedGym = protectedDays.isEmpty() ? d -> false
+            : plannedGymDay(plannedGymWeekdays(user), dayAdjustments.effectiveSessions(user, weekFrom, weekTo));
         List<Row> rows = new ArrayList<>();
         for (PlannedSkipEntity e : userRows) {
             // A MEAL skip is neutral (Kihagyás S3): never backed by advice or recovery — the policy
@@ -181,7 +184,7 @@ public class PlannedSkipService {
             // A USER skip on a date the recovery period already protects (GYM: a protected planned
             // gym day; SPORT/RUN: any protected date) is excused by the protection — never a pass.
             boolean recoveryBacked = !meal && protectedDays.containsKey(e.getDate())
-                && (e.getKind() != Kind.GYM || plannedGymDows.contains(e.getDate().getDayOfWeek().getValue() - 1));
+                && (e.getKind() != Kind.GYM || plannedGym.test(e.getDate()));
             rows.add(new Row(e.getId(), e.getDate(), e.getKind(), e.getDayOfWeek(), e.getTime(), e.getSessionKey(),
                 e.getReasonCategory(), e.getReasonText(), Source.USER, e.getCreatedAt(), adviceBacked, recoveryBacked,
                 e.getPlannedKcal()));
@@ -207,7 +210,7 @@ public class PlannedSkipService {
             .map(PlannedSkipEntity::getDate)
             .collect(Collectors.toSet());
         protectedDays.forEach((date, period) -> {
-            if (!userGymDates.contains(date) && plannedGymDows.contains(date.getDayOfWeek().getValue() - 1)) {
+            if (!userGymDates.contains(date) && plannedGym.test(date)) {
                 rows.add(new Row(recoveryRowId(user, date), date, Kind.GYM, null, null, null,
                     period.getCategory(), null, Source.RECOVERY, period.getCreatedAt()));
             }
@@ -245,6 +248,21 @@ public class PlannedSkipService {
                     }
                 }));
         return dows;
+    }
+
+    /**
+     * A planned gym day by date (B7 K3): the ledger's moves re-date the weekday rule — a moved-in day is planned (it
+     * gets the virtual RECOVERY skip inside a kímélő period), a moved-away day is not.
+     */
+    private static java.util.function.Predicate<LocalDate> plannedGymDay(Set<Integer> dows,
+            Map<LocalDate, io.mrkuhne.mezo.feature.train.port.TrainDayAdjustmentPort.EffectiveSession> ledger) {
+        return date -> {
+            var m = ledger.get(date);
+            if (m != null && m.movedIn()) {
+                return true;
+            }
+            return (m == null || !m.movedAway()) && dows.contains(date.getDayOfWeek().getValue() - 1);
+        };
     }
 
     /** Stable id of the virtual RECOVERY row for one protected date — deterministic so a verdict

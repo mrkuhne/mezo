@@ -283,8 +283,9 @@ public class DayAdjustmentService {
 
     /**
      * Sweeps the owner's live rows against the plan as it is now. An active move whose target day gained a gym session
-     * (the schedule changed) → {@code expired}; whose session was done on its new day → {@code done}; whose target day
-     * passed without it → {@code expired}. A waiting calendar to-do whose day passed → {@code expired}.
+     * before the day (the schedule changed) → {@code expired}; whose session was done on its new day, or whose target
+     * day passed (trained or not — the re-dating stays in history) → {@code done}. A waiting calendar to-do whose day
+     * passed → {@code expired}.
      *
      * @return the rows whose state changed
      */
@@ -296,9 +297,12 @@ public class DayAdjustmentService {
             AdjustmentPayload p = view(e).payload();
             AdjustmentState next = null;
             if (p instanceof MoveSessionDay m && AdjustmentState.ACTIVE.wire().equals(e.getState())) {
-                if (train.gymDoneOn(owner, m.toDate())) {
+                // Controller ruling (K3 fix round 1): a move whose target day has passed is DONE whether or not he
+                // trained — the re-dating stays in history; only a target that gains a gym session before the day
+                // expires it.
+                if (m.toDate().isBefore(today) || train.gymDoneOn(owner, m.toDate())) {
                     next = AdjustmentState.DONE;
-                } else if (m.toDate().isBefore(today) || train.gymPlanned(owner, m.toDate())) {
+                } else if (train.gymPlanned(owner, m.toDate())) {
                     next = AdjustmentState.EXPIRED;
                 }
             } else if (p instanceof AdjustmentPayload.CalendarTodo

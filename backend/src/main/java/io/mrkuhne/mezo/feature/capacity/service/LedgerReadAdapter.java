@@ -76,6 +76,8 @@ public class LedgerReadAdapter
                 case ShiftSessionTime s -> days.computeIfAbsent(s.date(), d -> new Builder()).time = s.time();
                 case ShortenSession s -> days.computeIfAbsent(s.date(), d -> new Builder()).minutes = s.minutes();
                 case LightenSession l -> days.computeIfAbsent(l.date(), d -> new Builder()).setsFactor = l.setsFactor();
+                // SWAP_SESSION_KIND is deliberately unread: no reader shows a walk / mobility session instead of the gym,
+                // and the proposal generator does not produce it.
                 default -> { } // other kinds are not about the gym session's shape
             }
         }
@@ -125,7 +127,7 @@ public class LedgerReadAdapter
         return out;
     }
 
-    // ── boop ──────────────────────────────────────────────────────────────────
+    // ── boop + meal (the day plan's bedtime gate) ─────────────────────────────
 
     @Override
     public Optional<LocalTime> bedtime(UUID owner, LocalDate night) {

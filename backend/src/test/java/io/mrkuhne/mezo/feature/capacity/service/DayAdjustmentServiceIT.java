@@ -207,7 +207,7 @@ class DayAdjustmentServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void passedMoveIsDoneWhenTheSessionWasDoneElseExpired() {
+    void passedMoveIsDoneWhetherOrNotHeTrained() {
         UUID moved = accept(move(THU, SAT)).get(0).id();
         UUID todo = accept(new AdjustmentPayload.CalendarTodo(WED, "evt-1", "cancel", null, null)).get(0).id();
         assertThat(adjustments.findById(todo).orElseThrow().getState()).isEqualTo("waiting");
@@ -215,10 +215,20 @@ class DayAdjustmentServiceIT extends AbstractIntegrationTest {
         assertThat(service.expireStale(owner, THU)).extracting(DayAdjustmentView::id).containsExactly(todo);
         assertThat(adjustments.findById(todo).orElseThrow().getState()).isEqualTo("expired");
 
-        trainPopulator.createWorkoutInstance(owner, thursday, SAT, "completed");
+        // No workout on Saturday: once Saturday has passed the move is still history — done, not expired.
         assertThat(service.expireStale(owner, SUN)).singleElement()
             .satisfies(v -> assertThat(v.state()).isEqualTo(AdjustmentState.DONE));
         assertThat(service.activeFor(owner, SAT)).extracting(DayAdjustmentView::id).containsExactly(moved);
+    }
+
+    @Test
+    void moveDoneOnItsNewDayIsDoneAtOnce() {
+        UUID moved = accept(move(THU, SAT)).get(0).id();
+        trainPopulator.createWorkoutInstance(owner, thursday, SAT, "completed");
+
+        assertThat(service.expireStale(owner, SAT)).singleElement()
+            .satisfies(v -> assertThat(v.state()).isEqualTo(AdjustmentState.DONE));
+        assertThat(adjustments.findById(moved).orElseThrow().getState()).isEqualTo("done");
     }
 
     @Test

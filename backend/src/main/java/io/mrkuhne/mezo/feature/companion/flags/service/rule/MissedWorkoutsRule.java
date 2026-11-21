@@ -8,8 +8,10 @@ import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict;
 import io.mrkuhne.mezo.feature.companion.flags.service.UnavailableReason;
 import io.mrkuhne.mezo.feature.train.entity.GymScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity.Kind;
+import io.mrkuhne.mezo.feature.train.port.TrainDayAdjustmentPort;
 import io.mrkuhne.mezo.feature.train.repository.GymScheduleSlotRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
+import io.mrkuhne.mezo.feature.train.service.EffectivePlanService;
 import io.mrkuhne.mezo.feature.train.service.PlannedSkipService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
@@ -53,6 +55,8 @@ public class MissedWorkoutsRule implements FlagRule {
     private final WorkoutSessionRepository workoutSessionRepository;
     private final PlannedSkipService plannedSkipService;
     private final FlagProperties properties;
+    /** Boop B7 K3 (mezo-r36n9.17): an accepted move re-dates a planned gym day. */
+    private final TrainDayAdjustmentPort dayAdjustments;
 
     @Override
     public FlagVerdict evaluate(UUID userId, LocalDate today) {
@@ -84,6 +88,9 @@ public class MissedWorkoutsRule implements FlagRule {
 
         Set<LocalDate> trained =
             Set.copyOf(workoutSessionRepository.findDoneInstanceDates(userId, from, to));
+        // The effective planned days (B7 K3): a session moved away leaves its day, a moved-in day is planned.
+        Set<LocalDate> plannedDates = EffectivePlanService.plannedGymDates(plannedDows,
+            dayAdjustments.effectiveSessions(userId, from, to), from, to);
         // Kihagyás S1 (mezo-q4xt2.1): an excused GYM day is not a violation of the schedule —
         // it neither extends nor resets the miss-streak run, so it is skipped over entirely (unless
         // it was trained anyway — then it resets the run like any trained day).
@@ -93,9 +100,7 @@ public class MissedWorkoutsRule implements FlagRule {
         List<String> missedDays = new ArrayList<>();
         int run = 0;
         for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
-            // gym_schedule_slot.day_of_week is 0=Monday..6=Sunday (the entity's own comment)
-            int dow = day.getDayOfWeek().getValue() - 1;
-            if (!plannedDows.contains(dow)) {
+            if (!plannedDates.contains(day)) {
                 continue;
             }
             if (trained.contains(day)) {

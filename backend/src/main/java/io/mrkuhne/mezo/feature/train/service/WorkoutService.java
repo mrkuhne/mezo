@@ -234,6 +234,8 @@ public class WorkoutService {
             .findFirstByCreatedByAndStatusAndTemplateSessionIdIsNotNullOrderByDateDescCreatedAtDesc(
                 createdBy, "active")
             .orElse(null);
+        // Ledger (B7 K3): today's accepted changes, read once.
+        EffectiveSession todayLedger = dayAdjustmentPort.effectiveSession(createdBy, LocalDate.now()).orElse(null);
         WorkoutSessionEntity day;
         if (open != null) {
             day = ownedTemplateOrThrow(createdBy, open.getTemplateSessionId());
@@ -242,7 +244,7 @@ public class WorkoutService {
         } else if (activeMeso != null) {
             List<WorkoutSessionEntity> mesoSessions = workoutSessionRepository
                 .findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(createdBy, List.of(activeMeso.getId()));
-            day = findPlannedTemplateForDate(createdBy, mesoSessions, LocalDate.now()).orElse(null);
+            day = effectiveTemplate(mesoSessions, LocalDate.now(), todayLedger).orElse(null);
         } else {
             day = null;
         }
@@ -254,9 +256,10 @@ public class WorkoutService {
         if (templateRows.isEmpty()) {
             return empty; // rest day
         }
-        // Ledger (B7 K3): today's accepted lighten / shorten of a planned (never a custom) session.
-        EffectiveSession ledger = "custom".equals(day.getOrigin()) ? null
-            : dayAdjustmentPort.effectiveSession(createdBy, LocalDate.now()).orElse(null);
+        // Ledger (B7 K3): today's accepted lighten / shorten apply only to today's effective session — never to a
+        // custom day or to another day's template opened explicitly.
+        EffectiveSession ledger = todayLedger != null && !"custom".equals(day.getOrigin())
+                && isTodaysSession(activeMeso, day, todayLedger) ? todayLedger : null;
         // Mid-workout swap/add (mezo-mobji): the open instance's own rows, placed and filtered by
         // the shared assembler; with no open instance the template passes through unchanged.
         List<SessionExerciseAssembler.Entry> entries = open != null
@@ -588,6 +591,17 @@ public class WorkoutService {
         return effectiveTemplate(mesoSessions, date, dayAdjustmentPort.effectiveSession(createdBy, date).orElse(null));
     }
 
+    /** True when {@code day} is today's effective planned template (the ledger's lighten / shorten target). */
+    private boolean isTodaysSession(MesocycleEntity activeMeso, WorkoutSessionEntity day, EffectiveSession ledger) {
+        if (activeMeso == null) {
+            return false;
+        }
+        List<WorkoutSessionEntity> mesoSessions = workoutSessionRepository
+            .findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(day.getCreatedBy(), List.of(activeMeso.getId()));
+        return effectiveTemplate(mesoSessions, LocalDate.now(), ledger)
+            .map(t -> t.getId().equals(day.getId())).orElse(false);
+    }
+
     /**
      * The date's template with the ledger applied (B7 K3, mezo-r36n9.17): a session moved onto the date wins (it was
      * only allowed onto a day with no gym session), a session moved away leaves the date empty, otherwise the plan's
@@ -639,7 +653,7 @@ public class WorkoutService {
      * (mezo-jcpt.6: {@code WorkoutWindowQueryService}'s ranged {@code windowsFor}) can fetch it ONCE
      * for a whole date span instead of once per date — this list is user-global, not date-scoped.
      * Empty (never null) when there is no active mesocycle, matching {@link
-     * #findPlannedTemplateForDate(List, LocalDate)}'s no-match resolution over an empty list.
+     * #effectiveTemplate}'s no-match resolution over an empty list.
      */
     List<WorkoutSessionEntity> activeMesoSessions(UUID createdBy) {
         MesocycleEntity activeMeso = mesocycleRepository
@@ -650,18 +664,6 @@ public class WorkoutService {
         }
         return workoutSessionRepository
             .findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(createdBy, List.of(activeMeso.getId()));
-    }
-
-    /**
-     * Same resolution as {@link #findPlannedTemplateForDate(UUID, LocalDate)}, reusing a
-     * caller-supplied meso session list — {@code getToday}'s shared-fetch path (mezo-dz9c item 4)
-     * and the ranged {@code windowsFor} path above, avoiding a second query for rows already held.
-     * Package-private (not {@code private}): {@code WorkoutWindowQueryService} (same package)
-     * calls it directly per day over a pre-fetched list (mezo-jcpt.6).
-     */
-    Optional<WorkoutSessionEntity> findPlannedTemplateForDate(
-            List<WorkoutSessionEntity> mesoSessions, LocalDate date) {
-        return effectiveTemplate(mesoSessions, date, null);
     }
 
     /**
@@ -800,7 +802,12 @@ public class WorkoutService {
         instance.setMesocycleId(template.getMesocycleId());
         instance.setOrigin(template.getOrigin());
         instance.setTemplateSessionId(template.getId());
-        instance.setDayLabel(template.getDayLabel());
+        // A session the ledger moved onto today carries today's weekday label (B7 K3), so the logged history and
+        // its prose ("Edzés: Sze …") name the day it was actually done; the template keeps its plan label.
+        boolean movedHere = dayAdjustmentPort.effectiveSession(createdBy, LocalDate.now())
+            .filter(l -> template.getId().equals(l.movedInTemplateId())).isPresent();
+        instance.setDayLabel(movedHere
+            ? HU_DAY_LABELS.get(LocalDate.now().getDayOfWeek().getValue() - 1) : template.getDayLabel());
         instance.setType(template.getType());
         instance.setMuscle(template.getMuscle());
         instance.setMuscleAccent(template.isMuscleAccent());

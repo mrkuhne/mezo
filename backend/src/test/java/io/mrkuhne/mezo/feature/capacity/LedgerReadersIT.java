@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.capacity;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.FuelDayResponse;
+import io.mrkuhne.mezo.api.dto.WorkoutStartRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
 import io.mrkuhne.mezo.feature.biometrics.profile.entity.BiometricProfileEntity;
 import io.mrkuhne.mezo.feature.boop.service.BoopDay;
@@ -10,6 +11,18 @@ import io.mrkuhne.mezo.feature.boop.service.BoopDayAssembler;
 import io.mrkuhne.mezo.feature.capacity.entity.AdjustmentState;
 import io.mrkuhne.mezo.feature.capacity.entity.DayAdjustmentEntity;
 import io.mrkuhne.mezo.feature.capacity.repository.DayAdjustmentRepository;
+import io.mrkuhne.mezo.feature.companion.flags.config.FlagProperties;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagOutcome;
+import io.mrkuhne.mezo.feature.companion.flags.service.rule.MissedWorkoutsRule;
+import io.mrkuhne.mezo.feature.companion.service.BoopDayContext;
+import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity;
+import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
+import io.mrkuhne.mezo.feature.train.service.PlannedSkipService;
+import io.mrkuhne.mezo.support.populator.RecoveryPeriodPopulator;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import io.mrkuhne.mezo.feature.capacity.service.AdjustmentPayload;
 import io.mrkuhne.mezo.feature.capacity.service.AdjustmentPayload.LightenSession;
 import io.mrkuhne.mezo.feature.capacity.service.AdjustmentPayload.MoveMealEnergy;
@@ -82,6 +95,12 @@ class LedgerReadersIT extends AbstractIntegrationTest {
     @Autowired private GoalPopulator goals;
     @Autowired private GoalRepository goalRepository;
     @Autowired private TdeeBootstrapService tdeeBootstrap;
+    @Autowired private BoopDayContext chatContext;
+    @Autowired private MissedWorkoutsRule missedWorkouts;
+    @Autowired private FlagProperties flagProperties;
+    @Autowired private PlannedSkipService plannedSkips;
+    @Autowired private RecoveryPeriodPopulator recoveries;
+    @Autowired private WorkoutSessionRepository workoutSessions;
 
     private final LocalDate today = LocalDate.now(); // getToday and the pending preview key on the real clock
     private UUID owner;
@@ -350,5 +369,122 @@ class LedgerReadersIT extends AbstractIntegrationTest {
         assertThat(briefAfter.session().time()).isEqualTo(LocalTime.of(7, 0));
         assertThat(adherence.range(owner, lastMonday, lastMonday.plusDays(6)).summary())
             .isEqualTo(adherenceBefore.summary());
+    }
+
+    // ── fix round 1 ───────────────────────────────────────────────────────────
+
+    @Test
+    void chatContextSessionFollowsMoveShiftAndShorten() {
+        owner("chat");
+        LocalDate monday = LocalDate.parse("2026-11-30");
+        LocalDate wednesday = monday.plusDays(2);
+        WorkoutSessionEntity session = templateOn(monday);
+        train.createGymSlot(owner, dow(monday), "07:00");
+        active(new MoveSessionDay(session.getId(), monday, wednesday));
+        active(new ShiftSessionTime(wednesday, LocalTime.of(9, 30)));
+        active(new ShortenSession(wednesday, 40));
+        Instant before = monday.minusDays(1).atStartOfDay(ZoneId.of("Europe/Budapest")).toInstant();
+
+        assertThat(chatContext.assemble(owner, monday, before).today()).noneMatch(x -> "Edzés".equals(x.label()));
+        assertThat(chatContext.assemble(owner, wednesday, before).today())
+            .filteredOn(x -> "Edzés".equals(x.label())).singleElement().satisfies(x -> {
+                assertThat(x.time()).isEqualTo(LocalTime.of(9, 30));
+                assertThat(x.minutes()).isEqualTo(40);
+                assertThat(x.detail()).isEqualTo("Sze"); // the day it is done on, not the plan's Monday
+            });
+    }
+
+    @Test
+    void missedWorkoutsFlagFollowsMove() {
+        owner("missed");
+        Instant longAgo = Instant.now().minus(365, ChronoUnit.DAYS);
+        for (int d : new int[] {0, 2, 4}) {
+            train.createGymSlotAt(owner, d, "07:00", longAgo);
+        }
+        WorkoutSessionEntity session = templateOn(today);
+        LocalDate todayLocal = LocalDate.now(ZoneId.of("Europe/Budapest"));
+        int windowDays = flagProperties.missedWorkouts().windowDays();
+        List<LocalDate> planned = new ArrayList<>();
+        for (int i = windowDays; i >= 1; i--) {
+            LocalDate day = todayLocal.minusDays(i);
+            if (dow(day) == 0 || dow(day) == 2 || dow(day) == 4) {
+                planned.add(day);
+            }
+        }
+        for (int i = 0; i < planned.size() - 2; i++) {
+            train.createWorkoutInstance(owner, session, planned.get(i), "completed");
+        }
+        assertThat(missedWorkouts.evaluate(owner, todayLocal).outcome()).isEqualTo(FlagOutcome.RAISED);
+
+        // The first of the two misses was moved to the next day and done there: it is no missed day.
+        LocalDate moved = planned.get(planned.size() - 2);
+        active(new MoveSessionDay(session.getId(), moved, moved.plusDays(1)));
+        train.createWorkoutInstance(owner, session, moved.plusDays(1), "completed");
+
+        assertThat(missedWorkouts.evaluate(owner, todayLocal).outcome()).isEqualTo(FlagOutcome.CLEAR);
+    }
+
+    @Test
+    void movedInDayGetsTheKimeloSkip() {
+        owner("kimelo");
+        LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).minusWeeks(1);
+        LocalDate tuesday = monday.plusDays(1);
+        WorkoutSessionEntity session = templateOn(monday);
+        train.createGymSlot(owner, dow(monday), "17:30");
+        recoveries.ended(owner, PlannedSkipEntity.Reason.ILLNESS, monday, monday.plusDays(3));
+        active(new MoveSessionDay(session.getId(), monday, tuesday));
+
+        List<LocalDate> recoveryGym = plannedSkips.verdictsBetween(owner, monday, monday.plusDays(6)).stream()
+            .filter(v -> v.row().kind() == PlannedSkipEntity.Kind.GYM)
+            .map(v -> v.row().date()).toList();
+        assertThat(recoveryGym).containsExactly(tuesday);
+    }
+
+    @Test
+    void movedSessionLoggedTodayCarriesTodaysLabel() {
+        owner("label");
+        LocalDate yesterday = today.minusDays(1);
+        WorkoutSessionEntity session = templateOn(yesterday);
+        active(new MoveSessionDay(session.getId(), yesterday, today));
+
+        var started = workoutService.startWorkout(owner,
+            WorkoutStartRequest.builder().templateSessionId(session.getId()).build());
+
+        assertThat(workoutSessions.findById(started.getId()).orElseThrow().getDayLabel()).isEqualTo(label(today));
+        assertThat(workoutSessions.findById(session.getId()).orElseThrow().getDayLabel()).isEqualTo(label(yesterday));
+    }
+
+    @Test
+    void todaysLightenIsNotAppliedToAnotherDaysTemplate() {
+        owner("explicit");
+        WorkoutSessionEntity todays = templateOn(today);
+        var meso = workoutSessions.findById(todays.getId()).orElseThrow().getMesocycleId();
+        WorkoutSessionEntity other = train.createWorkoutSession(owner, meso, label(today.plusDays(1)), "Push 1", 1,
+            "active");
+        train.createExercise(owner, other.getId(), "Fekvenyomás", 0);
+        active(new LightenSession(today, 0.5));
+        active(new ShortenSession(today, 35));
+
+        assertThat(workoutService.getToday(owner, null).getExercises()).singleElement()
+            .satisfies(e -> assertThat(e.getWorkingSets()).isEqualTo(2));
+        WorkoutTodayResponse explicit = workoutService.getToday(owner, other.getId());
+        assertThat(explicit.getExercises()).singleElement()
+            .satisfies(e -> assertThat(e.getWorkingSets()).isEqualTo(3));
+        assertThat(explicit.getDurationEst()).isEqualTo(other.getDurationEst()); // the template's own, not 35
+    }
+
+    @Test
+    void dayPlanEndsAtTheNightsShiftedBedtime() {
+        owner("bedgate");
+        body();
+        LocalTime early = LocalTime.of(5, 0);
+        DayPlan before = dayPlans.plan(owner, today, early);
+        LocalTime lastBefore = before.windows().getLast().from();
+
+        active(new ShiftBedtime(today, lastBefore.minusMinutes(90)));
+
+        DayPlan after = dayPlans.plan(owner, today, early);
+        assertThat(after.windows().getLast().from()).isBefore(lastBefore);
+        assertThat(total(after)).isEqualTo(total(before));
     }
 }

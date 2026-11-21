@@ -138,7 +138,7 @@ public class DayPlanService {
         FuelDayResponse day = fuelDays.getDay(userId, date);
         boolean budgeted = day.getFuelMode() != FuelDayResponse.FuelModeEnum.GUIDANCE;
 
-        SleepAnchorPort.SleepAnchor anchor = sleepAnchor.resolve(userId);
+        SleepAnchorPort.SleepAnchor anchor = anchor(userId, date);
         List<TrainingBlock> blocks = blocks(userId, date);
         List<PlannedWindow> placed = placeWindows(userId, anchor, blocks);
         List<Macros4> budgets = moveEnergy(placed, BudgetSplitter.split(dayBudget(day), placed, budgeted),
@@ -190,6 +190,14 @@ public class DayPlanService {
         int wakeMin = minuteOf(anchor.wake());
         int bedMin = minuteOf(anchor.bed());
         return bedMin <= wakeMin ? null : bedMin;
+    }
+
+    /** The owner's wake/bed anchor, with the ledger's accepted bedtime for this night (Boop B7 K3) in place of bed. */
+    private SleepAnchorPort.SleepAnchor anchor(UUID userId, LocalDate date) {
+        SleepAnchorPort.SleepAnchor anchor = sleepAnchor.resolve(userId);
+        return dayAdjustments.bedtime(userId, date)
+            .map(bed -> new SleepAnchorPort.SleepAnchor(anchor.wake(), bed))
+            .orElse(anchor);
     }
 
     /** A window still waiting for the owner — the only kind that carries an offer. */
@@ -305,7 +313,7 @@ public class DayPlanService {
     public Skeleton skeleton(UUID userId, LocalDate date) {
         FuelDayResponse day = fuelDays.getDay(userId, date);
         boolean budgeted = day.getFuelMode() != FuelDayResponse.FuelModeEnum.GUIDANCE;
-        SleepAnchorPort.SleepAnchor anchor = sleepAnchor.resolve(userId);
+        SleepAnchorPort.SleepAnchor anchor = anchor(userId, date);
         List<WorkoutWindowQueryService.Window> sessions = workoutWindows.windowsFor(userId, date).stream()
             .filter(w -> w.start() != null && w.end() != null)
             .sorted(Comparator.comparing(WorkoutWindowQueryService.Window::start))

@@ -1,7 +1,9 @@
 package io.mrkuhne.mezo.feature.meal.port;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -15,4 +17,8 @@ public interface MealDayAdjustmentPort {
      * effect; they sum to zero (the day total never changes). Empty when nothing moved.
      */
     Map<String, Integer> slotSplit(UUID owner, LocalDate date);
+
+    /** The accepted bedtime for the night starting on {@code night}; empty when none. Moves the day plan's last window
+     *  and its bedtime gate for that day. */
+    Optional<LocalTime> bedtime(UUID owner, LocalDate night);
 }
