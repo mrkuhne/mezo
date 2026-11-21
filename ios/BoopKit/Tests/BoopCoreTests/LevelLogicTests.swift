@@ -147,4 +147,46 @@ struct LevelLogicTests {
         #expect(levelErrorText(.rejected("MAIL_AUTH_FAILED")).contains("jelszót"))
         #expect(!levelErrorText(.server).contains("Mezo"))
     }
+
+    // MARK: review round 1
+
+    @Test func parsesJavaInstantFractionsAndOffsets() throws {
+        let base = try #require(levelParseISO("2026-11-21T06:02:11Z"))
+        for (str, frac) in [("2026-11-21T06:02:11.512Z", 0.512), ("2026-11-21T06:02:11.512345Z", 0.512345),
+                            ("2026-11-21T06:02:11.512345678Z", 0.512345678), ("2026-11-21T06:02:11.5Z", 0.5)] {
+            let d = try #require(levelParseISO(str), "\(str)")
+            #expect(abs(d.timeIntervalSince(base) - frac) < 0.001, "\(str)")
+        }
+        let off = try #require(levelParseISO("2026-11-21T07:02:11+01:00"))
+        #expect(off == base)
+        #expect(levelParseISO("2026-11-21T07:02:11.250000+01:00").map { abs($0.timeIntervalSince(base) - 0.25) < 0.001 } == true)
+        #expect(levelParseISO("nonsense") == nil)
+    }
+
+    @Test func oneBadElementDropsOnlyItself() throws {
+        let d = try Self.decode(#"""
+        {"deals":[{"id":"a","group":"deal","title":"A"}, 42, "x", {"id":"b","group":"deal","title":"B"}, {"group":"deal","title":"no id"}],
+         "rest":[{"category":"c","count":2}, null]}
+        """#)
+        #expect(d.deals.map(\.id) == ["a", "b"])
+        #expect(d.rest == [LevelRestGroup(category: "c", count: 2)])
+    }
+
+    @Test func tiesGoToTheEarliestValidUntilThenId() {
+        let now = Self.at(2026, 11, 21, 9)
+        func deal(_ id: String, hours: Int) -> LevelItem {
+            LevelItem(id: id, group: .deal, title: id, score: 8, validUntil: now.addingTimeInterval(Double(hours) * 3600),
+                      screen: .clean, notifiable: true)
+        }
+        let d = LevelDigest(deals: [deal("c", hours: 20), deal("b", hours: 10), deal("a", hours: 10)])
+        #expect(levelHighlight(d, now: now)?.item.id == "a")
+    }
+
+    @Test func headSaysTodayAfterTheAfternoonRun() {
+        let morning = LevelDigest(lastRunAt: Self.at(2026, 11, 21, 8), arrived: 34, worthAMinute: 2, handled: 31)
+        let afternoon = LevelDigest(lastRunAt: Self.at(2026, 11, 21, 15, 2), arrived: 34, worthAMinute: 2, handled: 31)
+        #expect(levelHead(morning).sentence.hasPrefix("34 levél jött reggel óta."))
+        #expect(levelHead(afternoon).sentence == "34 levél jött ma. 31-et elintéztem helyetted, kettő megér egy percet.")
+        #expect(levelHead(LevelDigest(arrived: 3, worthAMinute: 0, handled: 3)).sentence.hasPrefix("3 levél jött reggel óta."))
+    }
 }

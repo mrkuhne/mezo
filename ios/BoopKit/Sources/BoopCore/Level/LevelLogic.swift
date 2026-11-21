@@ -36,11 +36,13 @@ public struct LevelHead: Equatable, Sendable {
 
 /// The head of the page: a verdict in a few words and one sentence of the day in counts.
 ///   0 worth a minute → a quiet good-news line · 1 → "Egy dolgot nézz meg" · N → "Két dolgot nézz meg" …
-public func levelHead(_ d: LevelDigest?) -> LevelHead {
+public func levelHead(_ d: LevelDigest?, calendar: Calendar = levelCalendar) -> LevelHead {
     guard let d, d.arrived > 0 || d.worthAMinute > 0 else {
         return LevelHead(verdict: "Csendes nap", sentence: "Még nem jött levél, nincs mit nézned.")
     }
-    let arrived = d.arrived > 0 ? "\(d.arrived) levél jött reggel óta. " : ""
+    // "reggel óta" is true only before the 15:00 run; after it the count is the whole day's.
+    let afternoon = d.lastRunAt.map { calendar.component(.hour, from: $0) >= 15 } ?? false
+    let arrived = d.arrived > 0 ? "\(d.arrived) levél jött \(afternoon ? "ma" : "reggel óta"). " : ""
     let handled = d.handled > 0 ? "\(d.handled)\(levelAccusativeSuffix(d.handled)) elintéztem helyetted" : ""
     switch d.worthAMinute {
     case 0:
@@ -145,8 +147,13 @@ public struct LevelHighlight: Equatable, Sendable {
 /// best deal at score 7 or more; else nothing. Flagged and unknown-screen items are never picked.
 public func levelHighlight(_ d: LevelDigest?, now: Date, calendar: Calendar = levelCalendar) -> LevelHighlight? {
     guard let d else { return nil }
+    // Equal scores: the one that expires first, then the smaller id — so the pick never flips between reads.
     func best(_ deals: [LevelItem]) -> LevelItem? {
-        deals.max { ($0.score ?? 0) < ($1.score ?? 0) }
+        deals.min { a, b in
+            if (a.score ?? 0) != (b.score ?? 0) { return (a.score ?? 0) > (b.score ?? 0) }
+            let (x, y) = (a.validUntil ?? .distantFuture, b.validUntil ?? .distantFuture)
+            return x != y ? x < y : a.id < b.id
+        }
     }
     let safeDeals = d.deals.filter { $0.isSafeToSurface && $0.screen == .clean }
     if let deal = best(safeDeals.filter(\.notifiable)) {

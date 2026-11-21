@@ -158,4 +158,40 @@ struct LevelClientTests {
         #expect(await s.disconnect() == .done && s.mailbox?.state == .disconnected)
         #expect(await s.saveRules(LevelRulesRequest(silent: ["a@b.hu"])) == .done && s.rules?.silent.count == 1)
     }
+
+    @Test func offlineCachedMailboxIsMarkedStaleAndNewerMemoryIsKept() async throws {
+        let dir = Self.tempDir(), clock = Clock()
+        let cache = ServerCache(directory: dir, clock: { clock.now })
+        let online = StubTransport()
+        online.on("getMailMailbox", .json(200, Self.mailboxJSON))
+        online.on("getMailDigest", .json(200, LevelLogicTests.sampleJSON))
+        await LevelStore(client: Self.client(online), cache: cache, clock: { clock.now }).refresh()
+
+        let offline = StubTransport()
+        offline.on("getMailMailbox", .fail(URLError(.notConnectedToInternet)))
+        offline.on("getMailDigest", .fail(URLError(.notConnectedToInternet)))
+        let s = LevelStore(client: Self.client(offline), cache: cache, clock: { clock.now })
+        await s.refresh()
+        #expect(s.mailbox?.address == "elek@pelda.hu" && s.mailboxIsStale)
+
+        // a newer in-memory digest is never replaced by an older cached day
+        let live = StubTransport()
+        live.on("getMailMailbox", .json(200, Self.mailboxJSON))
+        live.on("getMailDigest", .json(200, #"{"arrived":99}"#))
+        let t = LevelStore(client: Self.client(live), cache: nil, clock: { clock.now })
+        await t.refresh()
+        #expect(t.digest?.arrived == 99 && !t.mailboxIsStale)
+    }
+
+    @Test func aSecondTapOnTheSameItemWhileInFlightIsIgnored() async {
+        let stub = StubTransport()
+        stub.on("postMailFeedback", .slowJson(204, "", ms: 150))
+        let s = LevelStore(client: Self.client(stub), cache: nil)
+        async let first = s.feedback(item: "a", verdict: .interest)
+        try? await Task.sleep(for: .milliseconds(30))
+        let second = await s.feedback(item: "a", verdict: .nope)
+        #expect(second == .ignored)
+        #expect(await first == .done && s.verdicts["a"] == .interest)
+        #expect(stub.ops.filter { $0 == "postMailFeedback" }.count == 1)
+    }
 }

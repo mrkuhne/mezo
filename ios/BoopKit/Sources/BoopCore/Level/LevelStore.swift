@@ -10,6 +10,8 @@ public enum LevelLoadState: Equatable, Sendable {
 /// What a Levél action came to — the screens turn it into a line or a button state.
 public enum LevelOutcome: Equatable, Sendable {
     case done
+    /// A tap on a card whose previous answer is still on its way; nothing was sent.
+    case ignored
     /// The manual run was asked for too soon (`MAIL_RUN_COOLDOWN`, HTTP 429): show "kicsit várj", not an error.
     case cooldown
     case failed(PlanFetchError)
@@ -33,10 +35,14 @@ public final class LevelStore {
     public private(set) var rulesState: LevelLoadState = .idle
     /// The digest on screen came from the cache because the net was missing.
     public private(set) var isStale = false
+    /// The mailbox on screen came from the cache because the net was missing.
+    public private(set) var mailboxIsStale = false
     /// The cached digest's age, while it is stale.
     public private(set) var digestAge: TimeInterval?
     /// His verdicts on cards this session, applied the moment he taps (reverted if the server refuses).
     public private(set) var verdicts: [String: LevelVerdict] = [:]
+
+    @ObservationIgnored private var feedbackInFlight: Set<String> = []
 
     static let digestEndpoint = "level/digest"
     static let mailboxEndpoint = "level/mailbox"
@@ -87,7 +93,7 @@ public final class LevelStore {
     private func applyMailbox(_ r: Result<LevelMailbox, PlanFetchError>) async {
         switch r {
         case .success(let m):
-            mailbox = m; mailboxState = .loaded
+            mailbox = m; mailboxState = .loaded; mailboxIsStale = false
             try? await cache?.put(m, endpoint: Self.mailboxEndpoint, date: Self.mailboxKey)
         case .failure(.offline):
             if mailbox == nil,
@@ -95,6 +101,7 @@ public final class LevelStore {
                 mailbox = hit.value
             }
             mailboxState = mailbox == nil ? .failed(.offline) : .loaded
+            mailboxIsStale = mailbox != nil
         case .failure(let e):
             mailboxState = .failed(e)
         }
@@ -106,10 +113,11 @@ public final class LevelStore {
             digest = d; digestState = .loaded; isStale = false; digestAge = nil
             try? await cache?.put(d, endpoint: Self.digestEndpoint, date: day)
         case .failure(.offline):
-            if let hit = await lastCachedDigest() {
+            if digest != nil {
+                // What is in memory is newer than any cached day: keep it, only say it is old.
+                digestState = .loaded; isStale = true
+            } else if let hit = await lastCachedDigest() {
                 digest = hit.value; digestState = .loaded; isStale = true; digestAge = hit.age
-            } else if let digest {
-                self.digest = digest; digestState = .loaded; isStale = true
             } else {
                 digestState = .failed(.offline)
             }
@@ -138,7 +146,7 @@ public final class LevelStore {
         guard let client else { return .failed(.unauthorized) }
         switch await Self.attempt({ try await client.connect(address: address, appPassword: appPassword) }) {
         case .success(let m):
-            mailbox = m; mailboxState = .loaded
+            mailbox = m; mailboxState = .loaded; mailboxIsStale = false
             try? await cache?.put(m, endpoint: Self.mailboxEndpoint, date: Self.mailboxKey)
             return .done
         case .failure(let e):
@@ -150,7 +158,7 @@ public final class LevelStore {
         guard let client else { return .failed(.unauthorized) }
         switch await Self.attempt({ try await client.disconnect() }) {
         case .success(let m):
-            mailbox = m; mailboxState = .loaded
+            mailbox = m; mailboxState = .loaded; mailboxIsStale = false
             try? await cache?.put(m, endpoint: Self.mailboxEndpoint, date: Self.mailboxKey)
             return .done
         case .failure(let e):
@@ -172,6 +180,8 @@ public final class LevelStore {
     /// "Érdekel" / "nem érdekel" on a card: shown at once, taken back if the server says no.
     public func feedback(item: String, verdict: LevelVerdict) async -> LevelOutcome {
         guard let client else { return .failed(.unauthorized) }
+        guard feedbackInFlight.insert(item).inserted else { return .ignored }
+        defer { feedbackInFlight.remove(item) }
         let previous = verdicts[item]
         verdicts[item] = verdict
         let result: Result<Void, PlanFetchError> = await Self.attempt { try await client.feedback(item: item, verdict: verdict) }

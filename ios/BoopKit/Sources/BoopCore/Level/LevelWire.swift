@@ -25,12 +25,34 @@ private extension KeyedEncodingContainer {
     }
 }
 
+/// One array element that may fail on its own: a bad element is dropped, the rest of the list stays.
+private struct Lossy<T: Decodable>: Decodable {
+    let value: T?
+    init(from decoder: Decoder) throws { value = try? T(from: decoder) }
+}
+
+private extension KeyedDecodingContainer {
+    func lossyList<T: Decodable>(_ key: Key) -> [T] {
+        let all: [Lossy<T>] = ((try? decodeIfPresent([Lossy<T>].self, forKey: key)) ?? nil) ?? []
+        return all.compactMap(\.value)
+    }
+}
+
 func levelParseISO(_ s: String) -> Date? {
+    // Java's Instant / OffsetDateTime print 0, 3, 6 or 9 fractional digits; ISO8601DateFormatter only copes with
+    // some of them, so the fraction is lifted out, the rest parsed, and the fraction added back.
+    var base = s, fraction = 0.0
+    if let dot = s.firstIndex(of: ".") {
+        var end = s.index(after: dot)
+        while end < s.endIndex, s[end].isASCII, s[end].isNumber { end = s.index(after: end) }
+        let digits = s[s.index(after: dot)..<end]
+        guard !digits.isEmpty, let f = Double("0." + digits) else { return nil }
+        fraction = f
+        base = String(s[..<dot]) + String(s[end...])
+    }
     let f = ISO8601DateFormatter()
-    f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-    if let d = f.date(from: s) { return d }
     f.formatOptions = [.withInternetDateTime]
-    return f.date(from: s)
+    return f.date(from: base).map { $0.addingTimeInterval(fraction) }
 }
 
 func levelFormatISO(_ d: Date) -> String {
@@ -285,8 +307,10 @@ public struct LevelDigest: Codable, Equatable, Sendable {
         worthAMinute = c.lenient(.worthAMinute, 0)
         handled = c.lenient(.handled, 0)
         heatSlots = c.lenient(.heatSlots, [])
-        people = c.lenient(.people, []); sensitive = c.lenient(.sensitive, []); deadlines = c.lenient(.deadlines, [])
-        parcels = c.lenient(.parcels, []); deals = c.lenient(.deals, []); rest = c.lenient(.rest, [])
+        // An item without an id cannot take feedback or be told apart, so it is dropped with the broken ones.
+        func items(_ key: CodingKeys) -> [LevelItem] { c.lossyList(key).filter { !$0.id.isEmpty } }
+        people = items(.people); sensitive = items(.sensitive); deadlines = items(.deadlines)
+        parcels = items(.parcels); deals = items(.deals); rest = c.lossyList(.rest)
     }
     public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
