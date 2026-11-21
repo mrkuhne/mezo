@@ -16,6 +16,7 @@ public class SeasonContextAdapter implements io.mrkuhne.mezo.feature.companion.p
     io.mrkuhne.mezo.feature.boop.port.SeasonContextPort, io.mrkuhne.mezo.feature.meal.port.SeasonContextPort {
 
     private final SeasonContextRenderer renderer;
+    private final MenuContextRenderer menuRenderer;
 
     @Override
     public String render(UUID owner, LocalDate today) {
@@ -25,5 +26,10 @@ public class SeasonContextAdapter implements io.mrkuhne.mezo.feature.companion.p
     @Override
     public String overview(UUID owner, LocalDate today) {
         return renderer.overview(owner, today);
+    }
+
+    @Override
+    public String menu(UUID owner, LocalDate today) {
+        return menuRenderer.render(owner, today);
     }
 }

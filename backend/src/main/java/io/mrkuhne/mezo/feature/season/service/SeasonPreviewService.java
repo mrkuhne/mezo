@@ -42,6 +42,7 @@ public class SeasonPreviewService {
     static final BigDecimal BAND_HALF_KG = BigDecimal.ONE;
     static final List<String> DEFAULT_GUARDS = List.of("strength", "muscle");
 
+    private final MenuService menuService;
     private final SeasonRepository seasonRepository;
     private final SeasonGoalPort goalPort;
     private final SeasonTrainPort trainPort;
@@ -66,8 +67,10 @@ public class SeasonPreviewService {
         SeasonDraftJson current = currentDraft(owner, season);
         Computed before = compute(owner, season, current);
         Computed after = compute(owner, season, draft);
+        Integer refitFrom = SeasonEntity.STATUS_ACTIVE.equals(season.getStatus())
+            ? menuService.refitFromDow(owner, java.time.LocalDate.now()) : null;
         return new Preview(before.numbers(), after.numbers(),
-            SeasonTodoRules.todo(before.numbers(), after.numbers(), current, draft, null),
+            SeasonTodoRules.todo(before.numbers(), after.numbers(), current, draft, refitFrom),
             after.warnings(), fingerprint(owner, season));
     }
 

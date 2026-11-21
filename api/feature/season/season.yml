@@ -142,6 +142,160 @@ paths:
         '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/seasons/menu:
+    get:
+      tags: [Season]
+      operationId: getMenuWeek
+      summary: The menu of one week (S3). status none = no menu yet, seeding = the season allows no recipe yet
+      parameters:
+        - { name: weekStart, in: query, required: true, schema: { type: string, format: date }, description: 'The Monday of the week' }
+      responses:
+        '200': { description: Menu week, content: { application/json: { schema: { $ref: '#/components/schemas/SeasonMenuWeek' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: 'No active season', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/seasons/menu/generate:
+    post:
+      tags: [Season]
+      operationId: generateMenuWeek
+      summary: Plan (or re-plan, „Kérek másikat”) a proposed menu week from the allowed recipes and each day's budget. An approved week is not re-planned
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/SeasonMenuGenerate' } } }
+      responses:
+        '200': { description: Menu week, content: { application/json: { schema: { $ref: '#/components/schemas/SeasonMenuWeek' } } } }
+        '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: 'No active season', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '409': { description: 'MENU_NOT_PROPOSED — the week is already approved', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/seasons/menu/{id}/approve:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [Season]
+      operationId: approveMenuWeek
+      summary: Approve a proposed week — its meals become the Étel day plan's suggestions and its shopping list is made. Idempotent
+      responses:
+        '200': { description: Menu week, content: { application/json: { schema: { $ref: '#/components/schemas/SeasonMenuWeek' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/seasons/menu/meals/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    put:
+      tags: [Season]
+      operationId: swapMenuMeal
+      summary: Put another allowed recipe into this meal's window (scaled to it); on an approved week the shopping list follows
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/SeasonMenuChoice' } } }
+      responses:
+        '200': { description: Menu week, content: { application/json: { schema: { $ref: '#/components/schemas/SeasonMenuWeek' } } } }
+        '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/seasons/menu/meals/{id}/alternatives:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [Season]
+      operationId: listMenuAlternatives
+      summary: Allowed recipes that fit this meal's window, fitting ones first
+      responses:
+        '200': { description: Alternatives, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/SeasonMenuAlternative' } } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/seasons/recipes:
+    get:
+      tags: [Season]
+      operationId: listSeasonRecipes
+      summary: Every recipe of his with whether the active season allows it and whether his rules let it into a menu
+      responses:
+        '200': { description: Recipes, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/SeasonRecipeOption' } } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: 'No active season', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/seasons/{id}/recipes:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    put:
+      tags: [Season]
+      operationId: putSeasonRecipes
+      summary: Replace the recipes the season allows (no kcal effect, so no preview)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/SeasonRecipeIds' } } }
+      responses:
+        '200': { description: Saved, content: { application/json: { schema: { $ref: '#/components/schemas/SeasonResponse' } } } }
+        '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '409': { description: 'SEASON_NOT_EDITABLE', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/seasons/shopping:
+    get:
+      tags: [Season]
+      operationId: getShoppingList
+      summary: The shopping list of an approved menu week (404 when that week has none)
+      parameters:
+        - { name: weekStart, in: query, required: true, schema: { type: string, format: date }, description: 'The Monday of the week' }
+      responses:
+        '200': { description: List, content: { application/json: { schema: { $ref: '#/components/schemas/ShoppingListResponse' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: 'No list for that week', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/seasons/shopping/lists:
+    get:
+      tags: [Season]
+      operationId: listShoppingLists
+      summary: His lists, newest week first (past lists stay readable)
+      responses:
+        '200': { description: Lists, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/ShoppingListSummary' } } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/seasons/shopping/items/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    put:
+      tags: [Season]
+      operationId: checkShoppingItem
+      summary: Tick a line off (or back on)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/ShoppingItemCheck' } } }
+      responses:
+        '200': { description: Line, content: { application/json: { schema: { $ref: '#/components/schemas/ShoppingItem' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/seasons/shopping/{id}/staples:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [Season]
+      operationId: toggleShoppingStaple
+      summary: Put one of his staples on this list (on = true) or take it off — staples join a list only on his tap
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/ShoppingStapleToggle' } } }
+      responses:
+        '200': { description: List, content: { application/json: { schema: { $ref: '#/components/schemas/ShoppingListResponse' } } } }
+        '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/seasons/staples:
+    get:
+      tags: [Season]
+      operationId: listStaples
+      summary: His always-at-home items (the default six until he sets his own)
+      responses:
+        '200': { description: Staples, content: { application/json: { schema: { $ref: '#/components/schemas/SeasonStaples' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+    put:
+      tags: [Season]
+      operationId: putStaples
+      summary: Replace his staples
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/SeasonStaples' } } }
+      responses:
+        '200': { description: Staples, content: { application/json: { schema: { $ref: '#/components/schemas/SeasonStaples' } } } }
+        '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
 components:
   schemas:
     SeasonSportSlot:
@@ -436,3 +590,142 @@ components:
         adherence: { allOf: [{ $ref: '#/components/schemas/SeasonAdherence' }], nullable: true, description: 'S2; null in S1' }
         insights: { type: array, items: { $ref: '#/components/schemas/SeasonInsight' }, description: 'S2; empty in S1' }
         upcoming: { type: array, items: { $ref: '#/components/schemas/SeasonUpcoming' } }
+        menu: { allOf: [{ $ref: '#/components/schemas/SeasonMenuStatus' }], nullable: true, description: 'S3 — next week''s menu state (the wall''s approval card); null without a weekly menu (menuDay null)' }
+    SeasonMenuStatus:
+      type: object
+      required: [weekStart, status, menuTime]
+      properties:
+        weekStart: { type: string, format: date, description: 'Next week''s Monday' }
+        weekId: { type: string, format: uuid, nullable: true }
+        status: { type: string, enum: [none, seeding, proposed, approved] }
+        menuDay: { type: integer, nullable: true, description: '0 = hétfő .. 6 = vasárnap' }
+        menuTime: { type: string, example: '18:00' }
+    SeasonMenuGenerate:
+      type: object
+      required: [weekStart]
+      properties:
+        weekStart: { type: string, format: date }
+    SeasonMenuChoice:
+      type: object
+      required: [recipeId]
+      properties:
+        recipeId: { type: string, format: uuid }
+    SeasonMenuWeek:
+      type: object
+      required: [weekStart, status, repeated, allowedCount, recipeCount, days]
+      properties:
+        id: { type: string, format: uuid, nullable: true }
+        weekStart: { type: string, format: date }
+        status: { type: string, enum: [none, seeding, proposed, approved] }
+        repeated: { type: boolean, description: The allowed recipes were too few for the week without repeats }
+        allowedCount: { type: integer }
+        recipeCount: { type: integer }
+        approvedAt: { type: string, format: date-time, nullable: true }
+        days: { type: array, items: { $ref: '#/components/schemas/SeasonMenuDay' } }
+    SeasonMenuDay:
+      type: object
+      required: [date, kind, kcal, meals]
+      properties:
+        date: { type: string, format: date }
+        kind: { type: string, enum: [edzesnap, sport, edzes_sport, pihenonap] }
+        sportName: { type: string, nullable: true }
+        kcal: { type: integer, description: The day's planned meals summed }
+        meals: { type: array, items: { $ref: '#/components/schemas/SeasonMenuMeal' } }
+    SeasonMenuMeal:
+      type: object
+      required: [id, slot, label, name, kcal, preSession, locked, changed]
+      properties:
+        id: { type: string, format: uuid }
+        slot: { type: string, enum: [breakfast, lunch, dinner, snack] }
+        label: { type: string }
+        recipeId: { type: string, format: uuid, nullable: true, description: null = an ingredient tip (name is the tip) }
+        name: { type: string }
+        servings: { type: number, nullable: true }
+        kcal: { type: integer }
+        proteinG: { type: integer, nullable: true }
+        preSession: { type: boolean }
+        locked: { type: boolean, description: He chose it himself }
+        changed: { type: boolean, description: A mid-week re-fit moved it }
+    SeasonMenuAlternative:
+      type: object
+      required: [recipeId, name, kcal, servings, fits]
+      properties:
+        recipeId: { type: string, format: uuid }
+        name: { type: string }
+        kcal: { type: integer }
+        servings: { type: number }
+        proteinG: { type: integer, nullable: true }
+        fits: { type: boolean }
+    SeasonRecipeOption:
+      type: object
+      required: [id, name, category, allowed, usable]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        category: { type: string, nullable: true }
+        kcal: { type: integer, nullable: true, description: Per serving }
+        allowed: { type: boolean }
+        usable: { type: boolean, description: His sensitivity profile and the season's NOVA rule let it into a menu }
+        reason: { type: string, nullable: true, description: Why it cannot go into a menu }
+    SeasonRecipeIds:
+      type: object
+      required: [recipeIds]
+      properties:
+        recipeIds: { type: array, items: { type: string, format: uuid } }
+    ShoppingListResponse:
+      type: object
+      required: [id, weekStart, items, staples, itemCount, checkedCount, changedCount]
+      properties:
+        id: { type: string, format: uuid }
+        weekStart: { type: string, format: date }
+        items: { type: array, items: { $ref: '#/components/schemas/ShoppingItem' } }
+        staples: { type: array, items: { $ref: '#/components/schemas/ShoppingStapleChip' } }
+        itemCount: { type: integer }
+        checkedCount: { type: integer }
+        changedCount: { type: integer }
+    ShoppingItem:
+      type: object
+      required: [id, name, shelf, forRecipes, checked, changed, staple]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        amount: { type: number, nullable: true }
+        unit: { type: string, nullable: true }
+        amountText: { type: string, nullable: true, description: '„1,4 kg” — null for a staple or a line no longer needed' }
+        shelf: { type: string, enum: [zoldseg, hus, tej, kamra, egyeb] }
+        forRecipes: { type: array, items: { type: string } }
+        checked: { type: boolean }
+        changed: { type: boolean, description: A mid-week re-fit moved it }
+        removed: { type: boolean, description: A re-fit made it unnecessary (shown under változott) }
+        staple: { type: boolean }
+    ShoppingStapleChip:
+      type: object
+      required: [name, onList]
+      properties:
+        name: { type: string }
+        onList: { type: boolean }
+    ShoppingListSummary:
+      type: object
+      required: [id, weekStart, itemCount, checkedCount]
+      properties:
+        id: { type: string, format: uuid }
+        weekStart: { type: string, format: date }
+        itemCount: { type: integer }
+        checkedCount: { type: integer }
+    ShoppingItemCheck:
+      type: object
+      required: [checked]
+      properties:
+        checked: { type: boolean }
+    ShoppingStapleToggle:
+      type: object
+      required: [name, on]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 80 }
+        on: { type: boolean }
+    SeasonStaples:
+      type: object
+      required: [names]
+      properties:
+        names: { type: array, maxItems: 40, items: { type: string, minLength: 1, maxLength: 80 } }
+        defaults: { type: boolean, description: True while he has not set his own (the six defaults) }

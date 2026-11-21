@@ -43,6 +43,7 @@ public class SeasonService {
     private final SeasonGoalPort goalPort;
     private final SeasonTrainPort trainPort;
     private final SeasonSleepPort sleepPort;
+    private final MenuService menuService;
 
     public List<SeasonEntity> list(UUID owner) {
         return seasonRepository.findByCreatedByAndDeletedFalseOrderByStartDateDesc(owner);
@@ -128,7 +129,32 @@ public class SeasonService {
         seasonRepository.save(s);
         replaceAllowed(owner, s.getId(), draft.allowedOrEmpty());
         revision(owner, s, draft, preview.before(), preview.after());
+        if (SeasonEntity.STATUS_ACTIVE.equals(s.getStatus())) {
+            seasonRepository.flush();
+            // spec §5.12-4: the rest of an approved menu week follows the new budgets; past days stay
+            menuService.refit(owner, LocalDate.now().plusDays(1));
+        }
         return s;
+    }
+
+    /**
+     * Replaces the recipes the season allows („Kiválasztott receptek", Évad S3) — no kcal effect, so no preview. Ids
+     * that are not his recipes are dropped. The stored draft follows, so a later accept carries the same set.
+     */
+    @Transactional
+    public SeasonEntity putRecipes(UUID owner, UUID id, List<UUID> recipeIds, Set<UUID> his) {
+        SeasonEntity s = previewService.requireEditable(owner, id);
+        List<UUID> kept = new java.util.ArrayList<>(new LinkedHashSet<>(recipeIds == null ? List.of() : recipeIds));
+        kept.removeIf(r -> !his.contains(r));
+        replaceAllowed(owner, s.getId(), kept);
+        SeasonDraftJson d = s.getDraft();
+        if (d != null) {
+            s.setDraft(new SeasonDraftJson(d.title(), d.trajectory(), d.targetWeightKg(), d.ratePctPerWeek(), d.kgPerWeek(),
+                d.startDate(), d.weeks(), d.gymDays(), d.gymTime(), d.sport(), d.sleepAnchor(), List.copyOf(kept),
+                d.block()));
+        }
+        s.setUpdatedAt(Instant.now());
+        return seasonRepository.save(s);
     }
 
     /**
@@ -243,11 +269,28 @@ public class SeasonService {
         revisionRepository.save(r);
     }
 
+    /**
+     * Entity-level replace: rows no longer wanted are removed, new ones inserted, kept ones left alone. (A bulk JPQL
+     * delete followed by {@code save} of the same composite keys would merge into rows still managed in this
+     * persistence context and never re-insert them — the kept recipes would silently vanish.)
+     */
     private void replaceAllowed(UUID owner, UUID seasonId, List<UUID> recipeIds) {
-        allowedRepository.deleteBySeasonId(seasonId);
-        for (UUID recipeId : new LinkedHashSet<>(recipeIds)) {
-            allowedRepository.save(SeasonAllowedRecipeEntity.of(owner, seasonId, recipeId));
+        Set<UUID> wanted = new LinkedHashSet<>(recipeIds);
+        List<SeasonAllowedRecipeEntity> current = allowedRepository.findBySeasonId(seasonId);
+        Set<UUID> have = new HashSet<>();
+        for (SeasonAllowedRecipeEntity e : current) {
+            if (wanted.contains(e.getRecipeId())) {
+                have.add(e.getRecipeId());
+            } else {
+                allowedRepository.delete(e);
+            }
         }
+        for (UUID recipeId : wanted) {
+            if (!have.contains(recipeId)) {
+                allowedRepository.save(SeasonAllowedRecipeEntity.of(owner, seasonId, recipeId));
+            }
+        }
+        allowedRepository.flush();
     }
 
     private static void take(SeasonEntity s, SeasonDraftJson d) {
