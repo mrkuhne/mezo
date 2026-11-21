@@ -51,7 +51,7 @@ public final class JsonLdReader {
             switch (type) {
                 case "ParcelDelivery":
                     return Optional.of(build(Group.PARCEL, n, "trackingNumber", "expectedArrivalFrom",
-                            "expectedArrivalUntil", "carrier", "deliveryAddress"));
+                            "expectedArrivalUntil", "carrier"));
                 case "Invoice":
                     return Optional.of(build(Group.DEADLINE, n, "paymentDueDate", "totalPaymentDue", "provider",
                             "paymentStatus"));

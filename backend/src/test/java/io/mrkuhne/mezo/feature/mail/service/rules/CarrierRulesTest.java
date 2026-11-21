@@ -69,4 +69,22 @@ class CarrierRulesTest {
         assertThat(decide("x@shop.example", "Belépés", "Az ellenőrző kód: 482913"))
                 .isEqualTo(new RuleVerdict.Sensitive("2fa"));
     }
+
+    @Test
+    void pickupCodeIsAParcelNotALogin() {
+        assertThat(decide("info@foxpost.hu", "Csomagod átvehető", "Átvételi kód: 482913"))
+                .isInstanceOf(RuleVerdict.Parcel.class)
+                .extracting(v -> ((RuleVerdict.Parcel) v).state()).isEqualTo(ParcelState.PICKUP);
+    }
+
+    @Test
+    void couponCodesAreNotLogins() {
+        assertThat(decide("deals@shop.example", "Kupon", "Használd a kuponkód 12345 kódot, promo code 2024"))
+                .isNotInstanceOf(RuleVerdict.Sensitive.class);
+    }
+
+    @Test
+    void bareSixDigitCodeStillSensitive() {
+        assertThat(decide("x@shop.example", "Szia", "Kód: 482913")).isEqualTo(new RuleVerdict.Sensitive("2fa"));
+    }
 }

@@ -20,11 +20,15 @@ public final class SensitiveSeed {
             // health
             "eeszt.gov.hu", "medicover.hu", "affidea.hu");
 
+    /** Explicit login / verification wording: decisive on its own. */
     private static final Pattern TWO_FACTOR = Pattern.compile(
             "(?iu)(verification|security|login|sign-?in|one[- ]time|confirmation|authentication)\\s+(code|passcode|pin)"
                     + "|\\b(otp|2fa)\\b"
-                    + "|(ellenőrző|megerősítő|belépési|bejelentkezési|biztonsági|egyszer használatos|sms)\\s*(kód|jelszó)"
-                    + "|(kód|code)\\s*[:=]?\\s*\\d{4,8}\\b");
+                    + "|(ellenőrző|megerősítő|belépési|bejelentkezési|biztonsági|egyszer használatos|sms)\\s*(kód|jelszó)");
+
+    /** A bare "code: 123456"; weaker, so the carrier rules run before it (a pickup code is not a login). */
+    private static final Pattern BARE_CODE = Pattern.compile(
+            "(?iu)(?<!promo )(?<!coupon )(?<![\\p{L}\\d])(kód|code)\\s*[:=]?\\s*\\d{6,8}\\b");
 
     private SensitiveSeed() {}
 
@@ -37,6 +41,11 @@ public final class SensitiveSeed {
     public static boolean looksLikeLoginCode(String subject, String body) {
         return TWO_FACTOR.matcher(subject == null ? "" : subject).find()
                 || TWO_FACTOR.matcher(body == null ? "" : body).find();
+    }
+
+    public static boolean looksLikeBareCode(String subject, String body) {
+        return BARE_CODE.matcher(subject == null ? "" : subject).find()
+                || BARE_CODE.matcher(body == null ? "" : body).find();
     }
 
     /** True when {@code domain} equals {@code base} or is a subdomain of it. */

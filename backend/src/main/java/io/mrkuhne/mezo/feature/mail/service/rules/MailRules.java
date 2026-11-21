@@ -50,6 +50,9 @@ public final class MailRules {
         if (parcel.isPresent()) {
             return parcel.get();
         }
+        if (SensitiveSeed.looksLikeBareCode(h.subject(), rawText)) {
+            return new RuleVerdict.Sensitive("2fa");
+        }
         Optional<RuleVerdict.Structured> structured = JsonLdReader.read(body.jsonLd());
         if (structured.isPresent()) {
             return structured.get();

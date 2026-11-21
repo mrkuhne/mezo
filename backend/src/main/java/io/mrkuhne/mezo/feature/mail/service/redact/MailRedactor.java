@@ -13,7 +13,6 @@ import org.jsoup.nodes.Comment;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
-import org.jsoup.safety.Safelist;
 
 /**
  * Pure redaction core (spec §5.3): turns a raw mail body into text that is safe to send to a model.
@@ -97,15 +96,14 @@ public final class MailRedactor {
             if (host != null) {
                 hosts.add(host);
                 String label = a.text().strip();
-                a.text(label.isEmpty() ? host : label + " (" + host + ")");
+                boolean labelIsUrl = label.matches("(?i)^(https?://|www\\.)\\S*$");
+                a.text(label.isEmpty() || labelIsUrl ? host : label + " (" + host + ")");
             }
         }
         doc.select("br").after("\n");
         doc.select("p, div, tr, li, h1, h2, h3, h4, h5, h6, table, ul, ol, blockquote, hr").append("\n");
         doc.select("td, th").append(" ");
-        String visible = Jsoup.clean(doc.body().wholeText(), "", Safelist.none(),
-                new Document.OutputSettings().prettyPrint(false));
-        return Jsoup.parse(visible).text(visible).wholeText();
+        return replaceBareUrls(doc.body().wholeText(), hosts);
     }
 
     private static void removeComments(Node node) {

@@ -75,4 +75,23 @@ class MailRedactorTest {
         assertThat(MailRedactor.plainText(null, "<p>Csomagszám 123456789012</p>")).isEqualTo("Csomagszám 123456789012");
         assertThat(MailRedactor.plainText("sima 123456789012", "<p>x</p>")).isEqualTo("sima 123456789012");
     }
+
+    @Test
+    void urlAsAnchorLabelLeaksNothing() {
+        RedactedMail r = html("<a href=\"https://track.example/x?tok=abc\">https://track.example/x?tok=abc</a>");
+        assertThat(r.text()).isEqualTo("track.example");
+    }
+
+    @Test
+    void urlInTextNodeLeaksNothing() {
+        RedactedMail r = html("<p>Nézd: https://track.example/x?tok=abc itt</p>");
+        assertThat(r.text()).isEqualTo("Nézd: track.example itt");
+        assertThat(r.hosts()).containsExactly("track.example");
+    }
+
+    @Test
+    void entitiesComeOutLiterally() {
+        RedactedMail r = html("<p>Tom &amp; Jerry, 5 &lt; 6</p>");
+        assertThat(r.text()).isEqualTo("Tom & Jerry, 5 < 6");
+    }
 }
