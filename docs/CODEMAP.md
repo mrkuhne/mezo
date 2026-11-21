@@ -186,9 +186,9 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `ScoreSource`
 - **Contract** `api/feature/capacity/capacity.yml` — 2 operations
   - **endpoints:** PUT /api/capacity/event-feedback · GET /api/capacity/season
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/capacity` — 6 IT + 9 unit
-  - **ITs:** `CapacityDayServiceIT`, `CapacityFeedbackIT`, `CapacityRepositoryIT`, `CapacitySeasonIT`,
-    `EventScoringBackgroundIT`, `EventScoringServiceIT`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/capacity` — 7 IT + 9 unit
+  - **ITs:** `CapacityContextAdapterIT`, `CapacityDayServiceIT`, `CapacityFeedbackIT`, `CapacityRepositoryIT`,
+    `CapacitySeasonIT`, `EventScoringBackgroundIT`, `EventScoringServiceIT`
   - **populators:** `CalendarEventPopulator`, `DailyMetricPopulator`, `DatabasePopulator`, `RecoveryPeriodPopulator`,
     `SleepLogPopulator`, `TrainPopulator`
 

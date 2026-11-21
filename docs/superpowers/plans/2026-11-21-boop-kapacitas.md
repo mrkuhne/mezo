@@ -353,8 +353,8 @@ modify `ios/Boop/Evad/EvadOverviewTab.swift` (block after *Hogy megy*); client o
 **Kész, ha… (K2)**
 - [ ] On the phone: the Ma briefing row shows the verdict + reason; the day page shows the three blocks + the learning
   note; an event's correction sticks after relaunch; the Évad tab shows *Teher és pihenés* (or nothing without a season).
-- [ ] Empty / loading / error / offline: cached brief shows its verdict offline; no capacity → the row falls back to
-  today's shipped text; 375 pt and reduced motion checked by screenshot.
+- [ ] Empty / loading / error / offline: offline / no capacity → the Ma row and day page show exactly what they showed
+  before K2, no crash; 375 pt and reduced motion checked by screenshot.
 - [ ] Parity: every existing control and field of Ma, the day page and Évad still present.
 - [ ] Chat answers "milyen napom lesz ma?" with the verdict (prod LLM log shows the `[Kapacitás]` line).
 - [ ] Gates green; boop-ios.md + capacity.md updated.
