@@ -3426,7 +3426,7 @@
     "terulet": "Pénz",
     "app": "Részben kész",
     "mit_tud": "Számlákat vesz fel és ír át (folyószámla, megtakarítás, készpénz, befektetés), kijelöli az alapszámlát és a megtakarítási számlát, és archiválja a már nem használtat.",
-    "app_megjegyzes": "Az app csak egy „Készpénz” számlát tud létrehozni egy érintéssel; átnevezni, archiválni, alap- vagy megtakarítási számlát jelölni nem lehet; épül egy szerveroldali védelem, hogy egy használt számla pénzneme ne változhasson.",
+    "app_megjegyzes": "Az app csak egy „Készpénz” számlát tud létrehozni egy érintéssel; átnevezni, archiválni, alap- vagy megtakarítási számlát jelölni nem lehet. A szerver már őrzi, hogy egy használt számla pénzneme ne változhasson.",
     "jegyek": [
       "mezo-r36n9.103",
       "mezo-r36n9.108"
@@ -3606,9 +3606,9 @@
   "penz-befektetes-szamlahoz": {
     "cim": "Befektetés összekötése a bankszámlával",
     "terulet": "Pénz",
-    "app": "Épül",
+    "app": "Kész",
     "mit_tud": "Egy rögzített vételt a bankszámlád tételéhez köt, hogy a havi keretben is látsszon, és a banki SMS-ben jött befektetési vásárlást párosítja vele.",
-    "app_megjegyzes": "Ma egy rögzített vétel nem csökkenti a havi keretet; ez a jegy most épül.",
+    "app_megjegyzes": "A Befektetést rögzítek lapon megadhatod, melyik számládról ment (nem kötelező); ha a bank SMS-e már beérkezett, Boop felajánlja, hogy az legyen a vásárlás, így nem kerül be kétszer. A később érkező SMS magától a rögzített vásárláshoz kapcsolódik.",
     "jegyek": [
       "mezo-r36n9.119"
     ],
@@ -3634,9 +3634,9 @@
   "penz-heti-hosszu-tav": {
     "cim": "Heti áttekintés: mi számít hosszú távon",
     "terulet": "Pénz",
-    "app": "Épül",
+    "app": "Kész",
     "mit_tud": "Egy hét híreiből rekeszenként megmondja, mi az, ami a hosszú távú befektetéseidnél tényleg számít — teendő és értesítés nélkül.",
-    "app_megjegyzes": "Még nincs meg; a jegy most épül.",
+    "app_megjegyzes": "A Pénzem oldalon, a három rekesz alatt: rekeszenként egy mondat és egy csendes szó (számít / nincs teendő), koppintásra a teljes magyarázat a hét híreivel. Hétfő reggelente frissül; értesítés és teendő-gomb nincs.",
     "jegyek": [
       "mezo-r36n9.120"
     ],
@@ -3719,9 +3719,9 @@
   "penz-javaslat-idegen-termek": {
     "cim": "Idegen termék kiszűrése Boop javaslataiból",
     "terulet": "Pénz",
-    "app": "Épül",
+    "app": "Kész",
     "mit_tud": "Kiszűri, ha Boop javaslatszövege olyan terméket nevezne meg, ami nincs a jegyzékedben (például egy kriptopénzt vagy egy részvényt).",
-    "app_megjegyzes": "A jegyzékben lévő, de nem felajánlott termékeket már kiszűri; a jegyzéken kívüliek szűrése most épül.",
+    "app_megjegyzes": "Ha a javaslat szövege olyan terméket, céget vagy bankot nevezne meg, ami nincs a jegyzékedben, a rögzített, biztonságos szöveg jelenik meg helyette.",
     "jegyek": [
       "mezo-r36n9.121"
     ],

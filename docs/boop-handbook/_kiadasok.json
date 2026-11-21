@@ -1,4 +1,13 @@
 {
+  "350147934": {
+    "cim": "A napnak saját gömbje lett — a kezdőlap köre nyolc gömbből áll",
+    "datum": "2026-11-16",
+    "szakasz": "Kezdőlap",
+    "jegyek": [
+      "mezo-r36n9.55"
+    ],
+    "mi_valtozott": "A kezdőlap körébe bekerült a nap is, mindjárt a kör tetejére. A gömbjében nincs pontszám — egy napra nincs ilyen —, hanem azt mutatja, mennyire van tele a napod a naptárad szerint, és a nap saját oldalát nyitja. A Ma lapon az „A napod” összecsukott sor megmaradt: a gömb csak még egy út ugyanoda. A nyolc gömb szimmetrikusabban áll a körben, mint a hét; az ára annyi, hogy a gömbök egy hajszállal kisebbek, hogy a nevek a kis telefonon se érjenek össze."
+  },
   "_leiras": "Mi került élesbe és mikor (forrás: docs/milestones/roadmap.md + git merge-ek a main ágra). Új kiadás = új sor; a kulcs a merge commit rövid azonosítója.",
   "d0d823d39": {
     "cim": "S1 Alap — elindult a natív iPhone-app",
@@ -277,15 +286,6 @@
       "mezo-r36n9.45"
     ],
     "mi_valtozott": "A kör közepe mögötti oldalon legfeljebb három dolog van: ami elromlik, ha most nem csinálod, ami a legtöbbet javít a mai napodon, és ami történt. Fölöttük a check-in kérdése, amíg esedékes. Amit megcsinálsz, leül a „Ma történt” közé. Ha nincs semmi, Boop kimondja, és megmondja, mikor szól legközelebb. A napi idővonal egy sorrá csukódott, a pontszám lekerült a kezdőlapról, és a telefonod csak a lejáró dolog miatt csöröghet, naponta legfeljebb kétszer."
-  },
-  "350147934": {
-    "cim": "A napnak saját gömbje lett — a kezdőlap köre nyolc gömbből áll",
-    "datum": "2026-11-16",
-    "szakasz": "Kezdőlap",
-    "jegyek": [
-      "mezo-r36n9.55"
-    ],
-    "mi_valtozott": "A kezdőlap körébe bekerült a nap is, mindjárt a kör tetejére. A gömbjében nincs pontszám — egy napra nincs ilyen —, hanem azt mutatja, mennyire van tele a napod a naptárad szerint, és a nap saját oldalát nyitja. A Ma lapon az „A napod” összecsukott sor megmaradt: a gömb csak még egy út ugyanoda. A nyolc gömb szimmetrikusabban áll a körben, mint a hét; az ára annyi, hogy a gömbök egy hajszállal kisebbek, hogy a nevek a kis telefonon se érjenek össze."
   },
   "f9176be4b": {
     "cim": "A nap oldala egyetlen görgetés lett — és kikerült a felolvasás",
@@ -668,5 +668,23 @@
       "mezo-r36n9.16"
     ],
     "mi_valtozott": "Az Évad lapon megjelent a „Hogy megy”: az elmúlt hét három ténye — hány napon fértél bele a keretbe, hány edzés volt meg a tervezettből, hány éjjel aludtál eleget. A kímélő napok nem számítanak bele; egy indokkal kihagyott edzés csak az edzést menti fel, az étel és az alvás aznap is számít. Az „Amit Boop észrevett” csak akkor mond valamit, ha az adataid már elég erősek hozzá (például ha kevesebbet égetsz, mint a terv számolta, vagy ha rövid éjszaka után többet eszel). A napok megítélése mostantól egy helyen, a szerveren történik, így az Étel heti lapja és az Évad ugyanazt mondja. Boop a beszélgetésben, a reggeli összefoglalóban és az étkezések értékelésénél is az évad szabályaihoz igazodik. A Ma falon megjelenhet egy Évad kártya: hetente legfeljebb egyszer, ha érdemes átnézni a keretet, és az évad utolsó hetében."
+  },
+  "f05d09f94": {
+    "cim": "Pénz: befektetés a számládról, heti hosszú távú áttekintés, szigorúbb javaslat-ellenőrzés",
+    "datum": "2026-11-21",
+    "verzio": "v3.26.0",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app",
+      "Háttérrendszer"
+    ],
+    "szakasz": "Életpanel",
+    "jegyek": [
+      "mezo-r36n9.119",
+      "mezo-r36n9.120",
+      "mezo-r36n9.121",
+      "mezo-r36n9.108"
+    ],
+    "mi_valtozott": "A Befektetést rögzítek lapon megadhatod, melyik számládról ment a vásárlás (nem kötelező) — így a havi keret „befektetve” sorában is látszik. Ha a bank SMS-e már beérkezett róla, Boop felajánlja, hogy az legyen a vásárlás; ha később jön, magától a rögzített vásárláshoz kapcsolódik, nem kerül be kétszer. A Pénzem oldalon a három rekesz alatt megjelent „A hét, hosszú távon”: hétfőnként rekeszenként egy mondat arról, számított-e valami a múlt hét híreiből hosszú távon, koppintásra a teljes magyarázattal — értesítés és teendő-gomb nélkül. Boop javaslataiban nem jelenhet meg olyan termék, cég vagy bank, ami nincs a jegyzékedben, és egy már használt számla pénzneme nem állítható át."
   }
 }
