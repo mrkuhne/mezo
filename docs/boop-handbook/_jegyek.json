@@ -1341,5 +1341,24 @@
     ],
     "mit_kapsz": "Egy új Notion-oldal, ahol területenként (edzés, étel, alvás, napló, célok, Boop, pénz, alapok) fel van sorolva a szerver minden funkciója, és mindegyiknél látod, hol tart az iPhone-appban: kész, részben kész, épül, tervben, nincs még, vagy nem kell.",
     "munkamenet": "notion-feature-tracker"
+  },
+  "mezo-r36n9.128": {
+    "cim": "Edzés: egy csere-teszt néha rossz sorrendet vár",
+    "tipus": "Hiba",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Nincs látható változás: egy belső ellenőrzés megbízhatóan zöld lesz, így a telefonos tesztek újra teljes biztonsággal jelzik, ha valami elromlik."
+  },
+  "mezo-r36n9.129": {
+    "cim": "Pénz: a heti áttekintésben egy szám csak a saját címkéje mellett állhat",
+    "tipus": "Apróságok",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Pénz"
+    ],
+    "mit_kapsz": "A heti pénzügyi áttekintés nem írhat le olyan számot, ami más adatból jön (például egy hírszámot fedezeti hónapként), így minden szám azt jelenti, amit mellette olvasol.",
+    "szulo": "mezo-r36n9.33"
   }
 }

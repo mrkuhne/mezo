@@ -652,5 +652,21 @@
       "mezo-r36n9.125"
     ],
     "mi_valtozott": "A technikaválasztóban a myo set után megjelent a Rest pause: 20 ismétlés, aztán négyszer 10 másodperc pihenő és 5 ismétlés. Fix menet: ha egy kör rövidebb, nem áll le magától, csak az „Elég volt” gombra. Ha ezt választod, az egész gyakorlat (minden sorozata) 20 ismétlésre áll. Csak te teheted be, a rendszer és Boop magától nem javasolja."
+  },
+  "a718f0d63": {
+    "cim": "Évad — hogy megy, mit vett észre Boop, és Boop ismeri az évad szabályait",
+    "datum": "2026-11-21",
+    "verzio": "v3.24.0",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app",
+      "Háttérrendszer",
+      "Telefonra telepítve"
+    ],
+    "szakasz": "B6 A Terv",
+    "jegyek": [
+      "mezo-r36n9.16"
+    ],
+    "mi_valtozott": "Az Évad lapon megjelent a „Hogy megy”: az elmúlt hét három ténye — hány napon fértél bele a keretbe, hány edzés volt meg a tervezettből, hány éjjel aludtál eleget. A kímélő napok nem számítanak bele; egy indokkal kihagyott edzés csak az edzést menti fel, az étel és az alvás aznap is számít. Az „Amit Boop észrevett” csak akkor mond valamit, ha az adataid már elég erősek hozzá (például ha kevesebbet égetsz, mint a terv számolta, vagy ha rövid éjszaka után többet eszel). A napok megítélése mostantól egy helyen, a szerveren történik, így az Étel heti lapja és az Évad ugyanazt mondja. Boop a beszélgetésben, a reggeli összefoglalóban és az étkezések értékelésénél is az évad szabályaihoz igazodik. A Ma falon megjelenhet egy Évad kártya: hetente legfeljebb egyszer, ha érdemes átnézni a keretet, és az évad utolsó hetében."
   }
 }
