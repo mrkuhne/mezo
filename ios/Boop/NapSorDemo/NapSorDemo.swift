@@ -13,7 +13,7 @@ struct NapSorDemoRoot: View {
     @State private var variant: String = UserDefaults.standard.string(forKey: "previewNapSorVariant") ?? "a"
     @State private var rows = NapSorRow.fixture
     @State private var width: CGFloat = 0
-    private static let label = ["a": "A · Címkesor", "b": "B · Értékoszlopok", "c": "C · Mini táblázat"]
+    private static let label = ["a": "A · Címkesor", "b": "B · Értékoszlopok", "c": "C · Mini táblázat", "d": "D"]
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -22,9 +22,9 @@ struct NapSorDemoRoot: View {
                 VStack(alignment: .leading, spacing: 14) {
                     HStack(spacing: 8) {
                         Spacer()
-                        ForEach(["a", "b", "c"], id: \.self) { v in
+                        ForEach(["a", "b", "c", "d"], id: \.self) { v in
                             Button { withAnimation(.snappy) { variant = v } } label: {
-                                Text(width < 400 && variant != v ? v.uppercased() : Self.label[v] ?? v).nkFont(12, .semibold).lineLimit(1).fixedSize()
+                                Text(variant != v ?v.uppercased() : Self.label[v] ?? v).nkFont(12, .semibold).lineLimit(1).fixedSize()
                                     .foregroundStyle(variant == v ? NK.ground : .white)
                                     .padding(.horizontal, 10).padding(.vertical, 6)
                                     .background(Capsule().fill(variant == v ? Color.white : .white.opacity(0.12)))
@@ -51,11 +51,14 @@ struct NapSorRow: Identifiable {
     let name: String
     let muscle: String
     var sets: Int
-    let repMin: Int, repMax: Int
-    let reserve: Int
+    var repMin: Int, repMax: Int
+    var reserve: Int
     let chip: Chip
     /// He set the rep range himself (overrides the plan's default).
     var ownReps = false
+    var ownReserve = false
+    /// The training style's own values, for „Visszaállítom az edzésmódra" (variant D).
+    var planRepMin = 8, planRepMax = 12, planReserve = 2
 
     static let fixture: [NapSorRow] = [
         NapSorRow(id: "1", name: "Barbell Row", muscle: "back-mid", sets: 3, repMin: 6, repMax: 8, reserve: 2,
@@ -69,7 +72,7 @@ struct NapSorRow: Identifiable {
         NapSorRow(id: "5", name: "Incline DB Curl", muscle: "biceps-long", sets: 2, repMin: 8, repMax: 12, reserve: 2,
                   chip: .open),
         NapSorRow(id: "6", name: "Rear-Delt Row", muscle: "shoulder-rear", sets: 2, repMin: 12, repMax: 15, reserve: 0,
-                  chip: .open),
+                  chip: .open, ownReserve: true, planRepMin: 12, planRepMax: 15),
     ]
 }
 
@@ -100,6 +103,7 @@ private struct NapSorDayCard: View {
                         switch variant {
                         case "b": NapSorRowB(row: $row, narrow: narrow)
                         case "c": NapSorRowC(row: $row, narrow: narrow)
+                        case "d": NapSorRowD(row: $row, narrow: narrow)
                         default: NapSorRowA(row: $row, narrow: narrow)
                         }
                     }
