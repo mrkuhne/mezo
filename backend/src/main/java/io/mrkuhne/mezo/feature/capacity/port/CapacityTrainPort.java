@@ -29,4 +29,29 @@ public interface CapacityTrainPort {
     Set<LocalDate> recoveryDays(UUID owner, LocalDate from, LocalDate to);
 
     SlotCounts weeklySlots(UUID owner);
+
+    // ── day-adjustment ledger checks (Boop B7 K3) — read-only, and always the RAW plan: the weekly gym schedule and
+    // the active meso's day labels, never the ledger itself (a reader that honours the ledger would see a moved
+    // session on its new day and the ledger would then expire its own move) ──
+
+    /**
+     * Does the plan put a gym session on {@code date}: a gym schedule slot on that weekday, or an active-meso template
+     * day labelled with it. A skip does not empty the day (undoing it would bring the session back).
+     */
+    boolean gymPlanned(UUID owner, LocalDate date);
+
+    /** A completed gym workout dated {@code date} exists. */
+    boolean gymDoneOn(UUID owner, LocalDate date);
+
+    /** The owner's active-meso template day planned for {@code date}, if any. */
+    java.util.Optional<UUID> plannedTemplate(UUID owner, LocalDate date);
+
+    /** {@code templateSessionId} is a meso template day (not an instance) of the owner. */
+    boolean ownsTemplate(UUID owner, UUID templateSessionId);
+
+    /**
+     * A workout of that template day is running right now — train's own rule for 409
+     * {@code TRAIN_DAY_WORKOUT_RUNNING} (an {@code active} instance of the template).
+     */
+    boolean workoutRunning(UUID owner, UUID templateSessionId);
 }

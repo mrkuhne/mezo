@@ -60,6 +60,64 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/capacity/adjustments:
+    get:
+      tags: [Capacity]
+      operationId: listCapacityAdjustments
+      summary: The accepted day adjustments that change a day of the range
+      description: >
+        Every ledger row (any state) that changes a day of from..to — a moved session counts on both of its days.
+        Read-only. The range is at most 62 days.
+      parameters:
+        - { name: from, in: query, required: true, schema: { type: string, format: date } }
+        - { name: to, in: query, required: true, schema: { type: string, format: date } }
+      responses:
+        '200':
+          description: The rows, by day
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CapacityAdjustment' }
+        '400':
+          description: Inverted or too long range
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/capacity/adjustments/{id}:
+    delete:
+      tags: [Capacity]
+      operationId: undoCapacityAdjustment
+      summary: Take back an accepted change (its whole bundle)
+      description: >
+        Undoes every live step of the bundle the row belongs to (a skipped session comes back) and marks the proposal
+        undone. Allowed while none of the bundle's days has started in the owner's zone (a day starts at midnight, or
+        earlier for today's session once it is running or done).
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204':
+          description: Undone
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: No such adjustment for the caller
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '409':
+          description: Already settled (CAPACITY_ADJUSTMENT_NOT_UNDOABLE) or its day has started (CAPACITY_DAY_STARTED)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
 components:
   schemas:
     CapacityEventFeedbackRequest:
@@ -102,3 +160,25 @@ components:
         overloadedDays4w: { type: integer, description: Past days of the last 28 whose verdict was "túl sok" }
         moves: { type: integer, description: Accepted rearrangement proposals }
         movesGood: { type: integer, description: Accepted proposals whose recorded outcome was good }
+    CapacityAdjustment:
+      type: object
+      required: [id, date, kind, payload, bundleId, state]
+      properties:
+        id: { type: string, format: uuid }
+        date: { type: string, format: date, description: 'The day the row is filed under (a move: its from-day)' }
+        kind:
+          type: string
+          enum: [MOVE_SESSION_DAY, SHIFT_SESSION_TIME, SHORTEN_SESSION, LIGHTEN_SESSION, SWAP_SESSION_KIND, SKIP_SESSION,
+                 SHIFT_BEDTIME, MOVE_MEAL_ENERGY, CALENDAR_TODO]
+        payload:
+          type: object
+          additionalProperties: true
+          description: >
+            Kind-specific: MOVE_SESSION_DAY {templateSessionId, fromDate, toDate}; SHIFT_SESSION_TIME {date, time};
+            SHORTEN_SESSION {date, minutes}; LIGHTEN_SESSION {date, setsFactor}; SWAP_SESSION_KIND {date, to};
+            SKIP_SESSION {date, skipId}; SHIFT_BEDTIME {night, bedtime}; MOVE_MEAL_ENERGY {date, slotKcal (signed
+            deltas summing to 0)}; CALENDAR_TODO {date, eventKey, action, toStart, toEnd}
+        bundleId: { type: string, format: uuid, description: Steps accepted together share it }
+        proposalId: { type: string, format: uuid, nullable: true }
+        state: { type: string, enum: [active, undone, waiting, done, expired] }
+        createdAt: { type: string, format: date-time, nullable: true }

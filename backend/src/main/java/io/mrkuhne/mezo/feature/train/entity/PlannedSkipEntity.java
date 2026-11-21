@@ -38,7 +38,7 @@ public class PlannedSkipEntity extends OwnedEntity {
 
     public enum Kind { GYM, SPORT, RUN, MEAL }
 
-    public enum Reason { ILLNESS, STOMACH, INJURY, TRAVEL, TIRED, NO_TIME, NO_MOOD, NOT_HUNGRY, OTHER, NONE }
+    public enum Reason { ILLNESS, STOMACH, INJURY, TRAVEL, TIRED, NO_TIME, NO_MOOD, NOT_HUNGRY, OTHER, NONE, KAPACITAS }
 
     @Id
     @GeneratedValue

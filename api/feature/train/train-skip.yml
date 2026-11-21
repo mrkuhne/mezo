@@ -70,7 +70,8 @@ components:
     PlannedSkipKind: { type: string, enum: [GYM, SPORT, RUN, MEAL] }
     PlannedSkipReason:
       type: string
-      enum: [ILLNESS, STOMACH, INJURY, TRAVEL, TIRED, NO_TIME, NO_MOOD, NOT_HUNGRY, OTHER, NONE]
+      enum: [ILLNESS, STOMACH, INJURY, TRAVEL, TIRED, NO_TIME, NO_MOOD, NOT_HUNGRY, OTHER, NONE, KAPACITAS]
+      description: KAPACITAS is written only by an accepted Boop rearrangement proposal (excused, never the weekly pass)
     PlannedSkipRequest:
       type: object
       required: [date, kind, reasonCategory]
