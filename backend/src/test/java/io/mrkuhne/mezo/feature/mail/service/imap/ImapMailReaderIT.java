@@ -29,6 +29,9 @@ class ImapMailReaderIT {
     private static final String ADDRESS = "boop-test@example.test";
     private static final String PASSWORD = "app-password-1234";
 
+    private static final java.time.Clock CLOCK =
+        java.time.Clock.fixed(java.time.Instant.parse("2026-11-20T10:00:00Z"), java.time.ZoneOffset.UTC);
+
     private GreenMail greenMail;
     private GreenMailUser user;
     private ImapMailReader reader;
@@ -43,7 +46,7 @@ class ImapMailReaderIT {
         Properties extra = new Properties();
         extra.put("mail.imaps.ssl.trust", "*"); // GreenMail's self-signed certificate; test only
         extra.put("mail.imaps.ssl.checkserveridentity", "false");
-        reader = new ImapMailReader(props, extra);
+        reader = new ImapMailReader(props, extra, CLOCK);
     }
 
     @AfterEach
@@ -118,7 +121,7 @@ class ImapMailReaderIT {
     void unreachableServerIsMailUnreachable() {
         MailProperties props = new MailProperties("k", "0 0 8,15 * * *", "Europe/Budapest", 0.15, 7, 8, 36, 3, 90, 8,
             6000, 30, 10, "127.0.0.1", 1);
-        ImapMailReader dead = new ImapMailReader(props, new Properties());
+        ImapMailReader dead = new ImapMailReader(props, new Properties(), CLOCK);
         assertThatThrownBy(() -> dead.verify(ADDRESS, PASSWORD))
             .isInstanceOfSatisfying(SystemRuntimeErrorException.class,
                 e -> assertThat(e.getMessages().get(0).getCode()).isEqualTo("MAIL_UNREACHABLE"));
@@ -190,5 +193,56 @@ class ImapMailReaderIT {
             new org.eclipse.angus.mail.iap.Response("* 1 FETCH (UID 12 X-GM-MSGID 1278455344230334865)"),
             new org.eclipse.angus.mail.iap.Response("* 2 FETCH (X-GM-MSGID 77 UID 13)")});
         assertThat(map).containsEntry(12L, 1278455344230334865L).containsEntry(13L, 77L);
+    }
+
+    /** A message with a chosen INTERNALDATE, appended over IMAP (GreenMail's deliver() stamps "now"). */
+    private void appendDated(String subject, java.time.Instant received) throws Exception {
+        MimeMessage base = simple(subject, "body");
+        base.saveChanges();
+        MimeMessage dated = new MimeMessage(base) {
+            @Override
+            public java.util.Date getReceivedDate() {
+                return java.util.Date.from(received);
+            }
+        };
+        Properties p = new Properties();
+        p.put("mail.imaps.ssl.trust", "*");
+        p.put("mail.imaps.ssl.checkserveridentity", "false");
+        try (Store store = Session.getInstance(p).getStore("imaps")) {
+            store.connect("127.0.0.1", greenMail.getImaps().getPort(), ADDRESS, PASSWORD);
+            Folder f = store.getFolder("INBOX");
+            f.open(Folder.READ_WRITE);
+            f.appendMessages(new jakarta.mail.Message[] {dated});
+            f.close(false);
+        }
+    }
+
+    @Test
+    void firstRunAndUidValidityChangeReadOnlyTheLastSevenDays() throws Exception {
+        appendDated("old", CLOCK.instant().minus(java.time.Duration.ofDays(8)));
+        appendDated("recent", CLOCK.instant().minus(java.time.Duration.ofDays(1)));
+        FolderBatch first = reader.fetch(ADDRESS, PASSWORD, "INBOX", new FolderState(0, 0), 50);
+        assertThat(first.mails()).extracting(m -> m.headers().subject()).containsExactly("recent");
+        FolderBatch changed = reader.fetch(ADDRESS, PASSWORD, "INBOX",
+            new FolderState(first.uidValidity() + 99, 5), 50);
+        assertThat(changed.mails()).extracting(m -> m.headers().subject()).containsExactly("recent");
+        assertThat(changed.uidValidity()).isEqualTo(first.uidValidity());
+    }
+
+    @Test
+    void oneMalformedMessageDegradesAndDoesNotFailTheBatch() throws Exception {
+        user.deliver(simple("good-one", "fine"));
+        String raw = "From: a@@b@@c\r\nTo: " + ADDRESS + "\r\nSubject: broken\r\nMessage-ID: <bad@example.test>\r\n"
+            + "MIME-Version: 1.0\r\nContent-Type: text/plain; charset=bogus-charset-xyz\r\nContent-Transfer-Encoding: quoted-printable\r\nDate: not a date\r\n\r\nbody =ZZ here\r\n";
+        user.deliver(new MimeMessage(Session.getInstance(new Properties()),
+            new java.io.ByteArrayInputStream(raw.getBytes(java.nio.charset.StandardCharsets.UTF_8))));
+        user.deliver(simple("good-two", "fine"));
+        FolderBatch batch = reader.fetch(ADDRESS, PASSWORD, "INBOX", new FolderState(0, 0), 50);
+        assertThat(batch.mails()).hasSize(3);
+        FetchedMail bad = batch.mails().get(1);
+        assertThat(bad.headers().subject()).isEqualTo("broken");
+        assertThat(bad.headers().from()).isEmpty();
+        assertThat(bad.plain()).contains("body");
+        assertThat(batch.mails().get(2).plain()).isEqualTo("fine");
     }
 }

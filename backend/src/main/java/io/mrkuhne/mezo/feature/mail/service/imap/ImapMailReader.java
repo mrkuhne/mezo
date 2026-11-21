@@ -18,9 +18,13 @@ import jakarta.mail.Store;
 import jakarta.mail.UIDFolder;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.search.ComparisonTerm;
+import jakarta.mail.search.ReceivedDateTerm;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,6 +41,8 @@ import java.util.regex.Pattern;
 import org.eclipse.angus.mail.iap.Response;
 import org.eclipse.angus.mail.imap.IMAPFolder;
 import org.eclipse.angus.mail.imap.IMAPStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
@@ -55,20 +61,24 @@ public class ImapMailReader implements MailReader {
     public static final String UNREACHABLE = "MAIL_UNREACHABLE";
 
     private static final String TIMEOUT_MS = "20000";
+    private static final Duration FIRST_RUN_WINDOW = Duration.ofDays(7);
+    private static final Logger LOG = LoggerFactory.getLogger(ImapMailReader.class);
     private static final int BODY_CHAR_CAP = 500_000;
     private static final Pattern GM_MSGID = Pattern.compile("X-GM-MSGID\\s+(\\d+)", Pattern.CASE_INSENSITIVE);
     private static final Pattern UID_ITEM = Pattern.compile("\\bUID\\s+(\\d+)", Pattern.CASE_INSENSITIVE);
 
     private final MailProperties properties;
     private final Properties extraSession;
+    private final Clock clock;
 
     @Autowired
     public ImapMailReader(MailProperties properties) {
-        this(properties, new Properties());
+        this(properties, new Properties(), Clock.systemUTC());
     }
 
     /** {@code extraSession} lets a test add session properties (e.g. trust of a self-signed certificate). */
-    ImapMailReader(MailProperties properties, Properties extraSession) {
+    ImapMailReader(MailProperties properties, Properties extraSession, Clock clock) {
+        this.clock = clock;
         this.properties = properties;
         this.extraSession = extraSession;
     }
@@ -107,8 +117,18 @@ public class ImapMailReader implements MailReader {
     private FolderBatch read(Store store, IMAPFolder folder, String folderName, FolderState since, int max)
             throws MessagingException {
         long validity = folder.getUIDValidity();
-        long last = since.uidValidity() == validity ? since.lastUid() : 0L;
-        Message[] found = folder.getMessagesByUID(last + 1, UIDFolder.LASTUID);
+        boolean fresh0 = since.uidValidity() != validity || since.lastUid() <= 0;
+        long last = fresh0 ? 0L : since.lastUid();
+        Message[] found;
+        if (fresh0) { // first run or UIDVALIDITY changed: only the last 7 days, never the whole folder
+            Date from = Date.from(clock.instant().minus(FIRST_RUN_WINDOW));
+            found = folder.search(new ReceivedDateTerm(ComparisonTerm.GE, from));
+        } else {
+            found = folder.getMessagesByUID(last + 1, UIDFolder.LASTUID);
+        }
+        FetchProfile uids = new FetchProfile();
+        uids.add(UIDFolder.FetchProfileItem.UID);
+        folder.fetch(found, uids); // one round trip; the sort below then reads cached UIDs
         List<Message> fresh = new ArrayList<>();
         for (Message m : found) {
             if (m != null && folder.getUID(m) > last) { // "n:*" always yields the newest, even below the range
@@ -122,8 +142,12 @@ public class ImapMailReader implements MailReader {
         }
         FetchProfile profile = new FetchProfile();
         profile.add(FetchProfile.Item.ENVELOPE);
-        profile.add(UIDFolder.FetchProfileItem.UID);
-        folder.fetch(batch.toArray(new Message[0]), profile);
+        try {
+            folder.fetch(batch.toArray(new Message[0]), profile);
+        } catch (MessagingException | RuntimeException e) {
+            // a prefetch hiccup (e.g. one unparsable envelope) only costs the prefetch; messages load lazily
+            LOG.debug("envelope prefetch failed ({})", e.getClass().getSimpleName());
+        }
 
         Map<Long, Long> gm = ((IMAPStore) store).hasCapability("X-GM-EXT-1")
             ? gmMsgIds(folder, uidOf(folder, batch.get(0)), uidOf(folder, batch.get(batch.size() - 1)))
@@ -144,35 +168,65 @@ public class ImapMailReader implements MailReader {
         }
     }
 
-    private FetchedMail toMail(String folder, long uid, long validity, Long gmMsgId, MimeMessage m)
-            throws MessagingException {
+    /** One bad message degrades to what could be read; it never fails the batch. */
+    private FetchedMail toMail(String folder, long uid, long validity, Long gmMsgId, MimeMessage m) {
         Map<String, List<String>> raw = new LinkedHashMap<>();
-        Enumeration<Header> all = m.getAllHeaders();
-        while (all.hasMoreElements()) {
-            Header h = all.nextElement();
-            raw.computeIfAbsent(h.getName(), k -> new ArrayList<>()).add(h.getValue());
+        try {
+            Enumeration<Header> all = m.getAllHeaders();
+            while (all.hasMoreElements()) {
+                Header h = all.nextElement();
+                raw.computeIfAbsent(h.getName(), k -> new ArrayList<>()).add(h.getValue());
+            }
+        } catch (MessagingException | RuntimeException e) {
+            LOG.debug("mail uid {}: headers unreadable", uid);
         }
         String from = "";
         String fromName = "";
-        jakarta.mail.Address[] addrs = m.getFrom();
-        if (addrs != null && addrs.length > 0) {
-            if (addrs[0] instanceof InternetAddress ia) {
-                from = ia.getAddress() == null ? "" : ia.getAddress();
-                fromName = ia.getPersonal() == null ? "" : ia.getPersonal();
-            } else {
-                from = addrs[0].toString();
+        try {
+            jakarta.mail.Address[] addrs = m.getFrom();
+            if (addrs != null && addrs.length > 0) {
+                if (addrs[0] instanceof InternetAddress ia) {
+                    from = ia.getAddress() == null ? "" : ia.getAddress();
+                    fromName = ia.getPersonal() == null ? "" : ia.getPersonal();
+                } else {
+                    from = addrs[0].toString();
+                }
+            }
+        } catch (MessagingException | RuntimeException e) {
+            LOG.debug("mail uid {}: From unreadable", uid);
+        }
+        String subject = null; // MailHeaders turns null into ""
+        try {
+            subject = m.getSubject();
+        } catch (MessagingException | RuntimeException e) {
+            LOG.debug("mail uid {}: Subject unreadable", uid);
+        }
+        if (subject == null || subject.isEmpty()) { // envelope unusable: decode the raw header instead
+            List<String> rawSubject = raw.getOrDefault("Subject", List.of());
+            if (!rawSubject.isEmpty() && rawSubject.get(0) != null) {
+                try {
+                    subject = jakarta.mail.internet.MimeUtility.decodeText(rawSubject.get(0).strip());
+                } catch (java.io.UnsupportedEncodingException e) {
+                    subject = rawSubject.get(0).strip();
+                }
             }
         }
-        MailHeaders headers = new MailHeaders(from, fromName, m.getSubject(), raw);
-        String[] ids = m.getHeader("Message-ID");
-        String messageId = ids == null || ids.length == 0 ? "" : ids[0].strip();
-        Date received = m.getReceivedDate() != null ? m.getReceivedDate() : m.getSentDate();
-        Instant at = received == null ? Instant.now() : received.toInstant();
+        MailHeaders headers = new MailHeaders(from, fromName, subject, raw);
+        List<String> ids = headers.values("Message-ID");
+        String messageId = ids.isEmpty() || ids.get(0) == null ? "" : ids.get(0).strip();
+        Date received = null;
+        try {
+            received = m.getReceivedDate() != null ? m.getReceivedDate() : m.getSentDate();
+        } catch (MessagingException | RuntimeException e) {
+            LOG.debug("mail uid {}: date unreadable", uid);
+        }
+        Instant at = received == null ? Instant.now(clock) : received.toInstant();
         String[] bodies = new String[2];
         try {
             collect(m, bodies);
-        } catch (IOException e) {
-            // an unreadable body leaves the mail with its headers only; rules and the digest still work
+        } catch (MessagingException | IOException | RuntimeException e) {
+            // headers-only / partial mail; the exception text is not logged (it could echo content)
+            LOG.debug("mail uid {}: body unreadable ({})", uid, e.getClass().getSimpleName());
         }
         return new FetchedMail(folder, uid, validity, gmMsgId, messageId, at, headers, bodies[0], bodies[1]);
     }

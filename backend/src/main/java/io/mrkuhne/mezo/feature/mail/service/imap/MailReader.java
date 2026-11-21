@@ -15,8 +15,10 @@ public interface MailReader {
     void verify(String address, String password);
 
     /**
-     * Mails of {@code folder} with a UID above {@code since.lastUid()}, at most {@code max}, oldest first. A changed
-     * UIDVALIDITY restarts from the beginning of the folder. A missing folder is an empty batch.
+     * Mails of {@code folder} with a UID above {@code since.lastUid()}, at most {@code max}, oldest first. On a first
+     * run (no cursor) or when UIDVALIDITY changed, only mail received in the last 7 days is read, never the whole
+     * folder; the new UIDVALIDITY is returned. A missing folder is an empty batch. One malformed message is
+     * degraded to its readable parts and never fails the batch.
      */
     FolderBatch fetch(String address, String password, String folder, FolderState since, int max);
 }
