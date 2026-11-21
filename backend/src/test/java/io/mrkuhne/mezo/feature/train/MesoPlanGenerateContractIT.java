@@ -221,4 +221,23 @@ class MesoPlanGenerateContractIT extends ApiIntegrationTest {
             "split", "zzz", "priorities", Map.of("back", "emphasize", "chest", "emphasize", "quad", "emphasize")),
             ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class), "TRAIN_MESO_EMPHASIZE_CAP");
     }
+
+    @Test
+    void generatedDayWarmsUpOnlyFirstExercisePerGroup() {
+        MesoPlanGenerateResponse res = postForBody(GENERATE, MesoPlanGenerateRequest.builder()
+            .daysOfWeek(Set.of("Hét", "Sze", "Pén", "Szo")).weeks(6).build(),
+            ownerAuthHeaders(), HttpStatus.OK, MesoPlanGenerateResponse.class);
+
+        for (MesoDayInput day : res.getTemplate().getDays()) {
+            Set<String> seen = new java.util.HashSet<>();
+            for (GymExerciseInput e : day.getExercises()) {
+                boolean compound = e.getType() == GymExerciseInput.TypeEnum.COMPOUND;
+                if (seen.add(String.valueOf(MuscleGroup.of(e.getMuscle())))) {
+                    assertThat(e.getWarmupSets()).as(day.getDay() + " " + e.getName()).isEqualTo(compound ? 2 : 1);
+                } else {
+                    assertThat(e.getWarmupSets()).as(day.getDay() + " " + e.getName()).isZero();
+                }
+            }
+        }
+    }
 }

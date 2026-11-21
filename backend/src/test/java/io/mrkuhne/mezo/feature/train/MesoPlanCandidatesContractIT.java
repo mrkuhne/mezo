@@ -182,4 +182,18 @@ class MesoPlanCandidatesContractIT extends ApiIntegrationTest {
             ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
         assertHasRequestError(body, "TRAIN_MESO_EMPHASIZE_CAP");
     }
+
+    /** Warm-up rule (2026-11-21): the default generated ul2 days have one exercise per coarse muscle group, so every
+     *  exercise is its group's first of the day and keeps its warm-ups — the upper day stays 77 min (the rule bites
+     *  only where a group repeats within a day; see WarmupRuleTest). */
+    @Test
+    void candidatesMinutesUnchangedWhenEveryExerciseIsItsGroupsFirst() {
+        MesoPlanCandidates res = candidates(MesoPlanCandidatesRequest.builder()
+            .daysOfWeek(Set.of("Hét", "Kedd", "Csü", "Pén")).weeks(6).sessionMinutesTarget(80).build());
+
+        MesoPlanCandidate ul2 = res.getCandidates().get(0);
+        assertThat(ul2.getSplitKey()).isEqualTo("ul2");
+        assertThat(ul2.getEvaluation().getDays()).filteredOn(d -> "Hét".equals(d.getDay()))
+            .extracting(DayEvaluation::getMinutesEstimate).containsExactly(77);
+    }
 }

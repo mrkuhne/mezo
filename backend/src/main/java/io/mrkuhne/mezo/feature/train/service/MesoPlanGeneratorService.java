@@ -175,8 +175,11 @@ public class MesoPlanGeneratorService {
                 continue;
             }
             String accent = frame.muscles().isEmpty() ? "" : frame.muscles().get(0).group();
+            List<GymExerciseInput> exercises = filled.picks().stream().map(this::toExercise).toList();
+            // after the LLM merge (days are the merged ones here): a re-pick cannot reintroduce warm-ups
+            WarmupRule.apply(exercises, props.compoundWarmup(), props.isolationWarmup());
             dayInputs.add(MesoDayInput.builder().day(frame.day()).type(frame.type()).muscle(accent)
-                .exercises(filled.picks().stream().map(this::toExercise).toList()).build());
+                .exercises(exercises).build());
         }
         TrainingStyle style = TrainingStyle.fromWire(props.defaultTrainingStyleOrNull());
         if (style != null) {
