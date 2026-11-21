@@ -16,7 +16,7 @@ A rögzítő egy oldalon mindent egyszerre fogad:
   Az étkezés a megadott időponthoz tartozó napszakhoz kerül.
 - **Fotó** (kamera vagy képtár) **és szöveg együtt:** fotó mellett a szövegmező „Segíts Boopnak a fotóhoz” lesz
   (például „másfél adag, olívaolajjal sütve”). A gomb ilyenkor „Kiszámolom a fotóból és a leírásból”.
-- **Leírás nélkül:** Recept · Kamra · Vonalkód · Szokásos.
+- **Leírás nélkül:** Recept · Kamra · Vonalkód · Szokásos. A recept- és a kamraválasztóban **keresőmező és szűrő** van (2026-11-21): beírhatod a nevét (ékezet nélkül is megtalálja), a recepteket étkezés szerint (reggeli, ebéd, vacsora, nassolás), a kamrát kategória szerint szűrheted — ugyanúgy, mint a Receptek és a Kamra fülön.
 
 Számolás közben a fotón fénycsík megy végig sarokjelekkel, a felirat lépésenként mondja, mit csinál Boop
 (fotó nélkül a gömb lüktet). Utána jön a **vázlat**: fotó, időpont, négy makró-csempe, és a tányér tételei külön

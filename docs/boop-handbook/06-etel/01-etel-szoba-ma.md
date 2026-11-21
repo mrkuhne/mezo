@@ -6,7 +6,7 @@ allapot: Élesben
 hol: [iPhone app, Háttérrendszer]
 szulo: 00-attekintes
 szakasz: [B4]
-osszefoglalo: Egy pillantásra megmutatja, mi számít most, hogyan áll a napod egy görbén, mennyi fér még bele, és egy koppintással rögzíthetsz étkezést.
+osszefoglalo: Egy pillantásra megmutatja, hogyan áll a napod egy görbén, mennyi fér még bele, és egy koppintással rögzíthetsz étkezést.
 ---
 
 ## Mit csinál
@@ -15,8 +15,8 @@ fül fentről lefelé:
 
 - **Fejléc:** a festett zöld táj (fotó nélkül), a gömbben a mai étkezéseid átlagpontszáma, alatta egy mondat:
   „1 980 kalória van még hátra” (például) és hogy melyik makró van a legmesszebb.
-- **Ami ma számít:** Boop egyetlen tippje kiemelve, ha recepthez köthető, „Megnézem a receptet” gombbal.
-- **Rögzítés egy koppintással:** Fotó · Leírom · Vonalkód · Szokásos.
+- **Kímélő nap:** ha kímélő módban vagy, felül egy kártya jelzi, hogy ma nincs kalóriakeret. (A „Következik: …” tippkártya 2026-11-21-én kikerült: az éppen nyitott étkezés sora már megmondja, mi jön, és mit javasol Boop.)
+- **Rögzítés egy koppintással:** Fotó · Leírom · Szokásos. (A vonalkód gomb 2026-11-21-én lekerült innen; vonalkódot a rögzítő lapon és a Kamrában továbbra is olvashatsz.)
 - **Ma eddig:** három szám — kalória (a kereteddel), fehérje (kiemelve), étkezések a tervből.
 - **A nap menete:** egy görbe. Folytonos vonal, amit megettél; szaggatott, ahová a mai terv visz; fölötte a kereted.
 - **Makrók:** mindháromnál mennyi van meg és mennyi fér még bele.

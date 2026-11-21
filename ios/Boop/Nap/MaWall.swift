@@ -144,7 +144,7 @@ struct MaWall: View {
     // MARK: acting
 
     private func act(_ c: WallCandidate) {
-        if c.id.hasPrefix("etel-window") || c.id == "etel-tip" { onMeal() }
+        if c.id.hasPrefix("etel-window") { onMeal() }
         else if c.id == "etel-supplements" { onEtelRoom() }
         else if c.id == "edzes-keszulj" { onDrill(.mozgas) }
         else if c.area == WallSources.evad { evad?.pendingSub = evadWallOpens(c.id); openPlace(.terv) }
