@@ -2684,7 +2684,7 @@
     },
     "kezikonyv:02-ma/napi-kapacitas-atrendezes": {
       "page_id": "41f8968e-752b-81a6-957a-dabdf4fea4e9",
-      "hash": "c22312013c85"
+      "hash": "ad9bb41131e3"
     },
     "jegyek:mezo-r36n9.128": {
       "page_id": "41f8968e-752b-81dd-a076-c52a06dfc4c1",
@@ -2833,6 +2833,14 @@
     "kiadasok:3f844c206": {
       "page_id": "41f8968e-752b-81a1-b186-c71391ae11ab",
       "hash": "59a66c77c897"
+    },
+    "jegyek:mezo-r36n9.137": {
+      "page_id": "41f8968e-752b-819d-a77b-cef5e3838016",
+      "hash": "f6888874eea8"
+    },
+    "kiadasok:4f38867f0": {
+      "page_id": "41f8968e-752b-816b-a323-e054813a925b",
+      "hash": "45adc344b1e7"
     }
   }
 }
