@@ -56,20 +56,16 @@ public final class YearGenerator {
     /** A relaxation: {@code group} set for emphasis_once / no_focus, {@code ordinal} for pair_relaxed. */
     public record Note(String code, String group, Integer ordinal) {}
 
-    /** Without a mav table: second appearances follow the config group order. */
-    public static Result generate(Input in, YearPlanProperties p) {
-        return generate(in, p, Map.of());
-    }
-
     /**
      * @param mav the baseline mav per group ({@code mezo.volume.baselines}); orders second appearances
-     *            (descending, ties in config group order). Missing groups count as 0.
+     *            (descending, ties in config group order). Must cover every configured kind group (400 otherwise).
      */
     public static Result generate(Input in, YearPlanProperties p, Map<String, Integer> mav) {
         List<String> upper = p.kindGroups().getOrDefault(UPPER, List.of());
         List<String> lower = p.kindGroups().getOrDefault(LOWER, List.of());
         List<String> allGroups = new ArrayList<>(upper);
         allGroups.addAll(lower);
+        if (mav == null || !mav.keySet().containsAll(allGroups)) throw invalid();
         if (in.blockWeeks() < 1) throw invalid();
         if (in.consolidationWeeks() < 1) throw invalid();
         List<String> emphasis = new ArrayList<>(new LinkedHashSet<>(in.emphasis() == null ? List.of() : in.emphasis()));
@@ -78,6 +74,7 @@ public final class YearGenerator {
         }
 
         Adopted adopted = in.adopted();
+        if (adopted != null && (adopted.weeks() < 1 || adopted.mesoStart() == null)) throw invalid();
         LocalDate start = adopted == null ? in.start()
             : adopted.mesoStart().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         List<String> adoptedFocus = List.of();
@@ -231,12 +228,21 @@ public final class YearGenerator {
             int openLeft = 0;
             for (int j = i; j < kinds.size(); j++) if (kinds.get(j).equals(kind)) openLeft++;
             for (String g : groups) if (remaining.get(g) > openLeft) return false;
+            // Every open block needs at least one focus group.
+            int kindDemand = groups.stream().mapToInt(remaining::get).sum();
+            if (kindDemand < openLeft) return false;
 
             List<String> live = groups.stream().filter(g -> remaining.get(g) > 0).toList();
+            // Table pairs first, then other pairs (only reachable at level 0), then singles.
             List<List<String>> candidates = new ArrayList<>();
+            List<List<String>> offTable = new ArrayList<>();
             for (int a = 0; a < live.size(); a++) {
-                for (int b = a + 1; b < live.size(); b++) candidates.add(List.of(live.get(a), live.get(b)));
+                for (int b = a + 1; b < live.size(); b++) {
+                    List<String> pair = List.of(live.get(a), live.get(b));
+                    (pairs.contains(Set.copyOf(pair)) ? candidates : offTable).add(pair);
+                }
             }
+            candidates.addAll(offTable);
             if (singles.get(kind) > 0) for (String g : live) candidates.add(List.of(g));
 
             for (List<String> c : candidates) {

@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.feature.train.service.YearGenerator.Note;
 import io.mrkuhne.mezo.feature.train.service.YearGenerator.Result;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -96,6 +97,72 @@ class YearGeneratorTest {
         }
     }
 
+    @Test void noRepeatInAdjacentSameKindBlocks() {
+        for (List<String> emphasis : List.of(List.<String>of(), List.of("shoulder", "calf"))) {
+            List<Block> bs = gen(emphasis, 6).blocks();
+            for (int i = 2; i < bs.size(); i++) {
+                Set<String> twoBack = new HashSet<>(bs.get(i - 2).focus());
+                assertThat(bs.get(i).focus()).as("%s block %d vs %d", emphasis, i + 1, i - 1)
+                    .noneMatch(twoBack::contains);
+            }
+        }
+    }
+
+    @Test void adoptedMixedFocus_neitherGroupInBlockTwo() {
+        Result r = YearGenerator.generate(new Input(LocalDate.of(2026, 11, 16), List.of(), 6, 2,
+            new Adopted(UUID.randomUUID(), LocalDate.of(2026, 11, 16), 6, List.of("chest", "quad"))), P, MAV);
+        assertThat(r.blocks().get(0).kind()).isEqualTo("upper");
+        assertThat(r.blocks().get(1).kind()).isEqualTo("lower");
+        assertThat(r.blocks().get(1).focus()).doesNotContain("chest", "quad").isNotEmpty();
+        // quad still gets a (second) appearance elsewhere among the lower blocks
+        assertThat(r.blocks().subList(2, r.blocks().size())).anyMatch(b -> b.focus().contains("quad"));
+    }
+
+    @Test void pairRelaxed_whenTableCannotCoverTheYear() {
+        YearPlanProperties onlyChestBack = new YearPlanProperties(52, 6, 2, 3, 14, P.kindGroups(),
+            List.of(List.of("chest", "back"), List.of("quad", "glute"), List.of("ham", "glute"),
+                List.of("quad", "calf"), List.of("ham", "calf"), List.of("glute", "calf")));
+        Result r = YearGenerator.generate(new Input(START, List.of(), 6, 2, null), onlyChestBack, MAV);
+        List<Note> relaxed = r.relaxed().stream().filter(n -> n.code().equals("pair_relaxed")).toList();
+        assertThat(relaxed).isNotEmpty().allMatch(n -> n.group() == null && n.ordinal() != null);
+        for (Note n : relaxed) {
+            Block b = r.blocks().get(n.ordinal() - 1);
+            assertThat(b.focus()).hasSize(2);
+            assertThat(Set.copyOf(b.focus())).isNotEqualTo(Set.of("chest", "back"));
+        }
+        for (String g : ALL) assertThat(count(r, g)).as(g).isGreaterThanOrEqualTo(1);
+    }
+
+    @Test void noFocus_whenTooFewSlots() {
+        // 18-week year, 8-week blocks, 2 consolidation → one upper + one lower block, 2 slots each
+        YearPlanProperties shortYear = new YearPlanProperties(18, 8, 2, 3, 14, P.kindGroups(), P.pairs());
+        Result r = YearGenerator.generate(new Input(START, List.of(), 8, 2, null), shortYear, MAV);
+        assertThat(r.blocks()).extracting(Block::kind).containsExactly("upper", "lower", "consolidation");
+        assertThat(r.relaxed()).filteredOn(n -> n.code().equals("no_focus")).extracting(Note::group)
+            .containsExactly("triceps", "biceps", "shoulder", "calf", "glute");
+        assertThat(r.blocks().get(0).focus()).containsExactly("chest", "back");
+        assertThat(r.blocks().get(1).focus()).containsExactly("quad", "ham");
+    }
+
+    @Test void blocksTooShort_isRejected() {
+        assertThatThrownBy(() -> gen(List.of(), 1)).isInstanceOf(SystemRuntimeErrorException.class)
+            .satisfies(e -> assertThat(((SystemRuntimeErrorException) e).getStatus().value()).isEqualTo(400));
+    }
+
+    @Test void mavMissingAGroup_isRejected() {
+        Map<String, Integer> partial = new HashMap<>(MAV);
+        partial.remove("calf");
+        assertThatThrownBy(() -> YearGenerator.generate(new Input(START, List.of(), 6, 2, null), P, partial))
+            .isInstanceOf(SystemRuntimeErrorException.class);
+    }
+
+    @Test void invalidAdopted_isRejected() {
+        assertThatThrownBy(() -> YearGenerator.generate(new Input(START, List.of(), 6, 2,
+            new Adopted(UUID.randomUUID(), START, 0, List.of())), P, MAV)).isInstanceOf(SystemRuntimeErrorException.class);
+        assertThatThrownBy(() -> YearGenerator.generate(new Input(START, List.of(), 6, 2,
+            new Adopted(UUID.randomUUID(), null, 6, List.of())), P, MAV)).isInstanceOf(SystemRuntimeErrorException.class);
+    }
+
     @Test void atMostTwoFocusPerBlock() {
         for (List<String> emphasis : List.of(List.<String>of(), List.of("shoulder", "calf"), List.of("biceps"))) {
             for (int w = 4; w <= 8; w++) {
@@ -133,8 +200,7 @@ class YearGeneratorTest {
 
     @Test void deterministic() {
         assertThat(gen(List.of("shoulder", "calf"), 5)).isEqualTo(gen(List.of("shoulder", "calf"), 5));
-        assertThat(YearGenerator.generate(new Input(START, List.of(), 6, 2, null), P))
-            .isEqualTo(YearGenerator.generate(new Input(START, List.of(), 6, 2, null), P));
+        assertThat(gen(List.of(), 6)).isEqualTo(gen(List.of(), 6));
     }
 
     @Test void adoptedBlockIsBlockOne() {
