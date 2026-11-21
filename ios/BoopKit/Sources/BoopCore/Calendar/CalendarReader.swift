@@ -12,11 +12,23 @@ public struct CalendarItem: Sendable, Equatable {
     public let end: Date
     public let allDay: Bool
     public let calendar: String
-    /// Invited people (EventKit attendees); 0 when none. Stays on the phone (the goal chips read it, the sync does not).
+    /// Invited people (EventKit attendees); 0 when none.
     public let attendees: Int
-    public init(externalId: String, title: String, start: Date, end: Date, allDay: Bool, calendar: String, attendees: Int = 0) {
+    /// Attendee display names (the scoring model reads them).
+    public let attendeeNames: [String]
+    /// True when the owner organises the event.
+    public let organizerIsMe: Bool
+    public let location: String?
+    public let recurring: Bool
+    /// EventKit availability: busy | free | tentative | unavailable.
+    public let availability: String
+    public let notes: String?
+    public init(externalId: String, title: String, start: Date, end: Date, allDay: Bool, calendar: String, attendees: Int = 0,
+                attendeeNames: [String] = [], organizerIsMe: Bool = false, location: String? = nil,
+                recurring: Bool = false, availability: String = "busy", notes: String? = nil) {
         self.externalId = externalId; self.title = title; self.start = start; self.end = end; self.allDay = allDay; self.calendar = calendar
-        self.attendees = attendees
+        self.attendees = attendees; self.attendeeNames = attendeeNames; self.organizerIsMe = organizerIsMe
+        self.location = location; self.recurring = recurring; self.availability = availability; self.notes = notes
     }
 }
 

@@ -17,7 +17,12 @@ public func buildCalendarDays(_ items: [CalendarItem], from: Date, through: Date
             .sorted { $0.start < $1.start }
             .map { Components.Schemas.CalendarEventIn(
                 externalId: $0.externalId, title: contractTitle($0.title), startAt: $0.start, endAt: $0.end,
-                allDay: $0.allDay, calendarName: String($0.calendar.prefix(80))) }
+                allDay: $0.allDay, calendarName: String($0.calendar.prefix(80)),
+                attendeeCount: max($0.attendees, $0.attendeeNames.count),
+                attendeeNames: Array($0.attendeeNames.prefix(50).map { String($0.prefix(120)) }),
+                organizerIsMe: $0.organizerIsMe, location: $0.location.map { String($0.prefix(200)) },
+                recurring: $0.recurring, availability: .init(rawValue: $0.availability) ?? .busy,
+                notes: $0.notes.map { String($0.prefix(2000)) }) }
         return .init(date: dayString(dayStart, calendar), events: events)
     }
 }

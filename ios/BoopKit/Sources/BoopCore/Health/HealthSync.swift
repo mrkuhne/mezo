@@ -30,8 +30,8 @@ import BoopAPI
 /// **Order**: nights → days → workouts (+ deletions) → samples per metric (+ deletions) → HR buckets →
 /// calendar. Batches: nights 30 (a deletion window: one call), days 60, workouts 100, samples 500, deletions 500, calendar 14 days.
 ///
-/// **Calendar**: the first run backfills 60 past days + today + tomorrow (≤ 14 days per call); afterwards
-/// yesterday…tomorrow. Its failure is reported apart and never undoes the Health upload.
+/// **Calendar**: the first run backfills 60 past days + today + 8 days ahead (≤ 14 days per call); afterwards
+/// yesterday…today+8. Its failure is reported apart and never undoes the Health upload.
 ///
 /// **Entry points**: `syncAll()` (UI: phase/progress) and `syncIncremental()` (a background wake: the
 /// same pipeline without progress churn; returns success). Runs never overlap — a call made while one
@@ -82,6 +82,8 @@ public final class HealthSync {
     static let backfillDays = 60
     static let heartRateBackfillDays = 14
     static let calendarBatchDays = 14
+    /// The calendar window reaches this many days past today (day capacity scores the week ahead, mezo-r36n9.17).
+    static let aheadDays = 8
 
     private var markKey: String { "boop.health.syncedThrough.\(userId)" }
     private var summaryKey: String { "boop.health.summary.\(userId)" }
@@ -296,16 +298,17 @@ public final class HealthSync {
         _ = try? await sendCalendar()
     }
 
-    /// Sends the calendar days when access is granted — the first time 60 past days + today + tomorrow
-    /// in ≤ 14-day batches, afterwards yesterday…tomorrow. Returns the number of events of today + tomorrow.
+    /// Sends the calendar days when access is granted — the first time 60 past days + today + 8 ahead
+    /// in ≤ 14-day batches, afterwards yesterday… today+8. Returns the number of events of today + tomorrow.
     private func sendCalendar() async throws -> Int {
         guard await calendarReader.access() == .granted else { return 0 }
         let today = cal.startOfDay(for: now())
         let tomorrow = cal.date(byAdding: .day, value: 1, to: today)!
         let backfilled = store.bool(forKey: calendarBackfilledKey)
         let first = cal.date(byAdding: .day, value: backfilled ? -1 : -Self.backfillDays, to: today)!
-        let items = try await calendarReader.items(from: first, to: cal.date(byAdding: .day, value: 2, to: today)!)
-        let days = buildCalendarDays(items, from: first, through: tomorrow, calendar: cal)
+        let last = cal.date(byAdding: .day, value: Self.aheadDays, to: today)!
+        let items = try await calendarReader.items(from: first, to: cal.date(byAdding: .day, value: Self.aheadDays + 1, to: today)!)
+        let days = buildCalendarDays(items, from: first, through: last, calendar: cal)
         for batch in chunks(days, Self.calendarBatchDays) {
             switch try await client.replaceCalendarDays(body: .json(.init(days: batch))) {
             case .noContent: continue

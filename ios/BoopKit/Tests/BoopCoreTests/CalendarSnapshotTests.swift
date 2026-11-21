@@ -22,6 +22,21 @@ struct CalendarSnapshotTests {
         #expect(days[0].events[0].calendarName == "Munka")
     }
 
+    @Test func sendsAllEventFields() {
+        let a = at(9, 9), b = at(9, 10)
+        let full = CalendarItem(externalId: "full|x", title: "Workshop", start: a, end: b, allDay: false, calendar: "Munka",
+                                attendees: 3, attendeeNames: ["Anna", "Béla"], organizerIsMe: true, location: "Iroda",
+                                recurring: true, availability: "tentative", notes: "Hozz laptopot")
+        let ev = buildCalendarDays([full], today: today, calendar: cal)[0].events[0]
+        #expect(ev.attendeeCount == 3)
+        #expect(ev.attendeeNames == ["Anna", "Béla"])
+        #expect(ev.organizerIsMe == true)
+        #expect(ev.location == "Iroda")
+        #expect(ev.recurring == true)
+        #expect(ev.availability == .tentative)
+        #expect(ev.notes == "Hozz laptopot")
+    }
+
     @Test func eventAcrossMidnightAppearsOnBothDays() {
         let days = buildCalendarDays([item("Éjszakai ügyelet", at(9, 22), at(10, 2))], today: today, calendar: cal)
         #expect(days[0].events.count == 1)

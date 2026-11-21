@@ -11,6 +11,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
 /** Device-calendar history (Boop S2 + B1, mezo-r36n9.2 / .11): each sent day is upserted by the
  *  EventKit id; live rows of that day missing from the payload are soft-deleted (cancelled). Days
@@ -21,6 +22,7 @@ public class CalendarSnapshotService {
 
     private final CalendarEventRepository repository;
     private final WearableProperties properties;
+    private final ObjectMapper objectMapper;
 
     @Transactional
     public void replace(UUID createdBy, List<CalendarDayIn> days) {
@@ -35,7 +37,10 @@ public class CalendarSnapshotService {
             }
             for (CalendarEventIn e : byId.values()) {
                 repository.upsert(createdBy, e.getExternalId(), day.getDate(), e.getTitle(), e.getStartAt().toInstant(),
-                    e.getEndAt().toInstant(), Boolean.TRUE.equals(e.getAllDay()), e.getCalendarName());
+                    e.getEndAt().toInstant(), Boolean.TRUE.equals(e.getAllDay()), e.getCalendarName(), e.getAttendeeCount(),
+                    e.getAttendeeNames() == null ? null : objectMapper.writeValueAsString(e.getAttendeeNames()),
+                    e.getOrganizerIsMe(), e.getLocation(), e.getRecurring(),
+                    e.getAvailability() == null ? null : e.getAvailability().getValue(), e.getNotes());
             }
             if (byId.isEmpty()) {
                 repository.softDeleteDay(createdBy, day.getDate());
