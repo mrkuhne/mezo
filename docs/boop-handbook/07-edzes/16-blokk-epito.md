@@ -81,8 +81,11 @@ Ha a hét már életbe lépett, a kártya azt mutatja: „Indulhat, a hét szám
   - **Beállítások** (a gyakorlat sorának üres részére koppintva is): **ismétléstartomány**, **tartalék**, **kezdősúly**, **bemelegítés**.
     Amit te állítottál át az edzésmódhoz képest, azon **„TE ÁLLÍTOTTAD”** jelzés áll, a **„Visszaállítom az edzésmódra”** gomb
     pedig visszaadja az edzésmód értékeit.
-  - **Zárolt nap:** amíg az adott nap edzése fut, a nap lapja csak olvasható — a három mező csak mutatja a számokat (nincs
-    „−/+”, nincs nyíl, nincs fogó és menü) —, és a szerver sem fogad el rajta szerkezeti változtatást.
+  - **A futó edzés napja (2026-11-23 óta):** amíg az adott nap edzése fut, a napot **továbbra is szerkesztheted** — a sorrend
+    (fogóval), a sorozatszám, az ismétlés, a tartalék és a technika mind menthető, és **a futó edzés azonnal követi** (a már
+    rögzített sorozatok megmaradnak). Amit ilyenkor nem lehet: gyakorlatot **hozzáadni, cserélni vagy törölni** — ezek a menüből
+    eltűnnek, és a szerver is visszautasítja őket, mert új sorokat hoznának, amikhez a rögzített sorozatok nem kötődnének.
+    Korábban (2026-11-20 és 23 között) a nap teljesen zárolt volt.
   - **Függő heti javaslat:** ha a „Mentés” olyan napot érint, amelyiken egy még el nem döntött heti javaslat is változtatna,
     mentés előtt rákérdez, hogy biztosan így akarod-e.
 - **Blokk** — az **edzésmód** négy közül (Kiegyensúlyozott · Sok ismétlés · Nagyobb súly · Két sorozat bukásig), két kapcsoló

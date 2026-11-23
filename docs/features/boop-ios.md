@@ -1006,6 +1006,39 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   `repMin = repMax = SetTechnique.restPauseReps` (20) and marks `repRange` his (the server pins it again on save);
   taking the technique off leaves the range.
 
+- **The owner's ten findings on the player (`mezo-r36n9.147`, 2026-11-23; plan
+  [`2026-11-23-boop-edzes-lejatszo-javitasok.md`](../superpowers/plans/2026-11-23-boop-edzes-lejatszo-javitasok.md),
+  decisions #94–#95)** — one bundle, no visual round: **(1)** weight and reps are set on **`NKScale`**
+  (`BoopDesign/Napkelte/Scale.swift`): a Canvas ruler sliding under a fixed pointer, **0,5 kg / 1 rep** steps, the
+  plan's value as a dot on the ruler, a tap on the number still types, a selection haptic per step **only under the
+  finger**; it replaces `NKStepper` in the lifting pads, the technique legs and the correction sheet (the reserve keeps
+  `NKInlineStepper`). **(2)** `WorkoutSession.prefill(for:)` (pure, `WorkoutPrefillTests`): warm-ups and the first
+  working set from the plan, every later working set from **the previous working set's real weight**, the plan's reps
+  and reserve; the pad's tag says `TERV` / `ELŐZŐ`. **(3)** a persistent `TERV · 60 kg · 8 ismétlés · 2 tartalék` line
+  under the pads, „ehhez még nincs ajánlott súly, az első alkalom után lesz" when the server sent none (his case: no
+  identity has history yet, decision log). **(4)** a warm-up set gets a big `BEMELEGÍTŐ 1/2 · könnyű súllyal, 4
+  ismétlés` line above the pads (the ladder's 4 reps read as a bug behind a 9 pt pill). **(5)** the note sheet has
+  **Mentés** and a keyboard **Kész**, and the note is queued as **`.workoutNote` with `exerciseId`** when the sheet
+  closes (`EdzesRoom.enqueueNote` → `TrainClient.sendNote` → `saveExerciseNote`); before this nothing ever enqueued that
+  kind and the note died with the session. **(6)** the correction sheet gets the reserve. **(7)** the swap is said twice:
+  `Ma mást csinálok helyette` (`.TODAY`) and `Lecserélem a blokkban is` (`.MESO`) — `PlayerSheet.swap(id, whole)`,
+  `SwapSheet.wholeBlock`; the old „Végleg lecserélem" was the today swap mislabelled. **(8) A fresh plan reaches the
+  running workout:** `EdzesStore.load(force:)` runs after a builder close, on „Indítás" and on `edzesTick`, and a fresh
+  answer is merged into the running session by **`WorkoutSession.apply(plan:)`** (`WorkoutApplyPlanTests`: order, set
+  plans, technique and the server's note follow the fresh plan; logged sets stay, even on a dropped row; a phone-typed
+  note wins; the current exercise is kept once he lifted on it; another day's plan is ignored via the new
+  `templateSessionId`). Server side `TrainService.replaceDayExercises` saves a **pure permutation in place**
+  (`matchByIdentity`, ids kept — always, decision #94); add/remove/swap stay 409 `TRAIN_DAY_WORKOUT_RUNNING` while the
+  workout runs; the builder's running day therefore keeps the handle, the cells and the settings and hides only add,
+  Csere and Törlés (`BlockBuilderPage`, `lockLine` reworded). **(9)** the Ma card's done state is
+  **`EdzesStore.doneToday`** (server `completed` dated today, `weekDoneDates`, or `finishedToday`) OR the brief's
+  `done`; `finishWorkout` queues the finish and calls `RitmusEnvironment.sendNow()` **in one task** (no race with the
+  enqueue), then reloads today + the brief; `onSent` bumps `edzesTick` on `.workoutStart`/`.workoutFinish`;
+  `endWorkout` keeps the session as `workout-finished.json` so **„Megnézem a mai eredményt"** reopens
+  `WorkoutCeremony(finishedAt:)` in review (no note row, the stopped clock); the wall's `edzes-megvolt` card carries
+  `Megnézem` → the room, `PathBuilder` passes `s.done`, `SessionMove` says „Megvolt", the room's menu says „Megvolt ·
+  A mai eredmény", and „Indítás" on a done day is refused on the phone before the server's 409. **(10)** progression:
+  no change — the engine already references the heaviest set (train.md §Set recommendation engine).
 - **The reasoned swap sheet (`mezo-r36n9.66`, 2026-11-19; spec
   [`2026-11-17-boop-gyakorlatvalasztas-design.md`](../superpowers/specs/2026-11-17-boop-gyakorlatvalasztas-design.md)
   §6.2, look: the approved spike `spike/boop-gyakorlatcsere`)** — *Végleg lecserélem másikra* opens `Edzes/SwapSheet.swift`

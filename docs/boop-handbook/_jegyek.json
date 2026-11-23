@@ -1532,5 +1532,47 @@
     "szulo": "mezo-r36n9.38",
     "cim": "Levél · apró javítások a háttérben",
     "mit_kapsz": "Kisebb szilárdítások: újracsatlakozáskor tiszta lap, gyorsabb lekérdezések, rövid belépőkódok felismerése, pontosabb hibaüzenetek."
+  },
+  "mezo-r36n9.147": {
+    "cim": "Edzéslejátszó: a tíz hiba javítása (jegyzet, súly-átvitel, skála, ajánlott súly, csere, Ma oldal)",
+    "tipus": "Hiba",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés",
+      "Ma"
+    ],
+    "mit_kapsz": "A jegyzetet el tudod menteni és a billentyűzet eltűnik; a következő sorozat az előző sorozat súlyát hozza; a súlyt és az ismétlést ujjal húzható skálán állítod (fél kilónként); a terv ajánlása végig látszik; a bemelegítő sorozat jól jelölt; a javító lapon a tartalék is állítható; a cserénél külön van a „csak ma” és „a blokkban is”; a blokk módosítása azonnal átmegy az indított edzésbe, futó edzés közben a sorrend is cserélhető; edzés után a Ma oldal „megvolt”-at mutat, és megnézheted a mai eredményt.",
+    "munkamenet": "edzes-player-fixes"
+  },
+  "mezo-r36n9.139": {
+    "cim": "Napi gyakorlatsor mini táblázattal (duplikátum)",
+    "tipus": "Kinézet",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "szulo": "mezo-r36n9.138",
+    "mit_kapsz": "Ugyanaz, mint a „Rendezettebb gyakorlatsorok a blokképítő napjain” jegy — ott készült el, ez lezárva mint duplikátum.",
+    "munkamenet": "mezo-nippard-exercise-selection"
+  },
+  "mezo-r36n9.146": {
+    "cim": "Háttér: a heti menü tesztje néha magától elbukott",
+    "tipus": "Hiba",
+    "szakasz": "B6 Évad",
+    "terulet": [
+      "Terv"
+    ],
+    "mit_kapsz": "Semmi látható: egy szerveroldali teszt (a heti menü napi keretei) véletlenszerű sorrend miatt időnként elbukott; a javítás a tesztet teszi megbízhatóvá.",
+    "munkamenet": "edzes-player-fixes"
+  },
+  "mezo-r36n9.148": {
+    "cim": "Notion-tükör frissítése: az edzéslejátszó-javítások jegye, döntései és kézikönyv-oldalai",
+    "tipus": "Háttér",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "A Boop Notion-tered megkapja a 2026-11-23-i változásokat: a tíz hiba jegyét, a két döntést (sorrendcsere futó edzésnél, húzható skála), a lejátszó és a blokképítő oldalát és a kiadás sorát. A javítást végző munkamenet nem látta a teredet, ezért külön menet teszi fel.",
+    "munkamenet": "edzes-player-fixes"
   }
 }

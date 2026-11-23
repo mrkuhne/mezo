@@ -1268,5 +1268,29 @@
     "miert": "Így pontosan azt építjük meg, amit láttál.",
     "levaltotta": "—",
     "kovetkezmeny": "Az első kiadásban nincs külön fotó a fejlécen (festett ég), és a Figyelt fül marad „hamarosan”."
+  },
+  "d-2026-11-23-futo-edzes-sorrend": {
+    "datum": "2026-11-23",
+    "terulet": [
+      "Edzés"
+    ],
+    "cim": "Futó edzés közben is átrendezheted a nap gyakorlatait",
+    "suly": "Közepes",
+    "valasztas": "A blokképítőben a futó edzés napján is cserélhető a sorrend, a sorozatszám, az ismétlés, a tartalék és a technika; a futó edzés azonnal követi. Gyakorlatot hozzáadni, cserélni vagy törölni továbbra is csak az edzés után lehet.",
+    "miert": "A naplózott sorozatok a gyakorlat sorához kötődnek; a sorrendcsere a sorokat megtartja, ezért biztonságos. A hozzáadás és a törlés új sorokat hozna, ami elvágná a már rögzített sorozatokat.",
+    "levaltotta": "A teljes zár (2026-11-20, napi gyakorlatszerkesztő): futó edzés napján semmi nem volt szerkeszthető.",
+    "kovetkezmeny": "A szerver a sorrendcserét mindig helyben menti (a sorok azonosítója marad), nem csak futó edzésnél."
+  },
+  "d-2026-11-23-huzhato-skala": {
+    "datum": "2026-11-23",
+    "terulet": [
+      "Edzés"
+    ],
+    "cim": "A súlyt és az ismétlést ujjal húzható skálán állítod, fél kilónként",
+    "suly": "Kicsi",
+    "valasztas": "A lejátszóban a + / − gombok helyett egy vízszintes skála van a szám alatt: húzod, és 0,5 kg-onként (ismétlésnél egyesével) ugrik, minden lépésnél egy kis koppanással. A számra koppintva továbbra is beírhatod.",
+    "miert": "A tulajdonos görgetős / tekerős bevitelt kért, és fél kilós lépést a 2,5 helyett.",
+    "levaltotta": "A + / − léptető 2,5 kg-os lépéssel (2026-11-17, 4. kör).",
+    "kovetkezmeny": "A javító lapon is skála van; a tartalék marad a vékony léptető soron."
   }
 }
