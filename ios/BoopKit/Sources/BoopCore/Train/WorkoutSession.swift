@@ -208,6 +208,9 @@ public struct WorkoutSession: Codable, Sendable, Equatable {
     public private(set) var technique: TechniqueRun?
     /// How long the running rest is in all — the plan's own rest on a styled block, else the default.
     public private(set) var restTotal: TimeInterval?
+    /// The template day this session was built from, so a fresh plan of **another** day is never merged into it
+    /// (`apply(plan:)`). Optional so a session saved by an older build still restores.
+    public private(set) var templateSessionId: UUID?
     /// Rest between sets when the plan prescribes none (a block without a training style).
     public static let restSeconds: TimeInterval = 90
 
@@ -238,6 +241,7 @@ public struct WorkoutSession: Codable, Sendable, Equatable {
         self.exercises = map
         self.ref = ref
         self.startedAt = startedAt
+        self.templateSessionId = today.templateSessionId
         self.currentExerciseId = order.first { map[$0]?.isDone == false }
         self.currentSetIndex = currentExerciseId.flatMap { map[$0]?.logged.count } ?? 0
     }
@@ -553,6 +557,91 @@ public struct WorkoutSession: Codable, Sendable, Equatable {
     public mutating func addRest(_ seconds: TimeInterval = 30, now: Date = Date()) {
         restEndsAt = (restEndsAt ?? now).addingTimeInterval(seconds)
         restTotal = (restTotal ?? 0) + seconds
+    }
+
+    // MARK: - What the next set starts from (mezo-r36n9.147)
+
+    /// Where the prefilled weight came from — the pad's small label says it.
+    public enum PrefillSource: Equatable, Sendable { case plan, previous, none }
+
+    /// What the pads show before he touches them.
+    public struct Prefill: Equatable, Sendable {
+        public var kg: Double?
+        public var reps: Int
+        public var rir: Int
+        public var source: PrefillSource
+    }
+
+    /// „Nem viszi át a következő szettre az előző szett súlyát" (owner, 2026-11-23). Warm-ups and the first working
+    /// set start from the plan; every later working set starts from **the weight he actually lifted on the previous
+    /// working set** — the plan's reps and reserve stay, because those are the target, the weight is his. A previous
+    /// set with no weight (a bodyweight row) falls back to the plan, and with no plan weight at all the pad stays
+    /// empty: the app never invents a weight.
+    public static func prefill(for e: SessionExercise) -> Prefill {
+        let index = e.logged.count
+        let plan = e.plan(at: index)
+        let reps = plan?.targetReps ?? 8
+        let rir = plan?.targetRIR ?? 2
+        let kind = plan?.kind ?? .working
+        if kind == .working, let previous = e.logged.last(where: { $0.kind == .working }),
+           let kg = previous.kg, kg > 0 {
+            return Prefill(kg: kg, reps: reps, rir: rir, source: .previous)
+        }
+        if let kg = plan?.targetKg, kg > 0 { return Prefill(kg: kg, reps: reps, rir: rir, source: .plan) }
+        if kind == .working, let best = e.bestKg, best > 0 { return Prefill(kg: best, reps: reps, rir: rir, source: .plan) }
+        return Prefill(kg: nil, reps: reps, rir: rir, source: .none)
+    }
+
+    // MARK: - A fresh plan while the workout runs (mezo-r36n9.147)
+
+    /// A fresh plan for the same day lands while the workout runs — he edited the block, or the start read a stale
+    /// cache (owner, 2026-11-23: „blokkba módosítottam az edzést, de nem módosult az indított edzésben"). The
+    /// **order, the set plans, the technique and the server's note** follow the fresh plan; **what he logged
+    /// stays** — a set he did is a fact, even on a row the plan no longer has. An exercise the fresh plan adds
+    /// joins at its place; one it drops leaves only when nothing was logged on it. A note typed on the phone wins
+    /// over the server's (its own write may still be in the queue). A technique set in progress is not touched,
+    /// and the exercise in front of him stays in front of him once he has lifted on it; before that, the first
+    /// unfinished one of the new order is in front — the order is what he just changed.
+    public mutating func apply(plan today: TodayWorkout) {
+        if let mine = templateSessionId, let theirs = today.templateSessionId, mine != theirs { return }
+        var fresh: [UUID] = []
+        var map = exercises
+        for e in today.exercises {
+            if var existing = map[e.id] {
+                existing.name = e.name
+                existing.muscle = e.muscle
+                existing.planned = e.sets
+                if existing.note?.isEmpty != false { existing.note = e.note }
+                existing.bestKg = e.lastWeek?.weightKg ?? existing.bestKg
+                existing.bestReps = e.lastWeek?.reps ?? existing.bestReps
+                existing.technique = e.technique
+                existing.challenge = e.challenge
+                existing.challengeBest = e.challengeBest
+                map[e.id] = existing
+            } else {
+                map[e.id] = SessionExercise(id: e.id, name: e.name, muscle: e.muscle, planned: e.sets, note: e.note,
+                                            bestKg: e.lastWeek?.weightKg, bestReps: e.lastWeek?.reps,
+                                            technique: e.technique, challenge: e.challenge,
+                                            challengeBest: e.challengeBest)
+            }
+            fresh.append(e.id)
+        }
+        // Rows the fresh plan dropped: kept where they were when he lifted on them, gone otherwise.
+        for (i, id) in order.enumerated() where !fresh.contains(id) {
+            guard let e = map[id], !e.logged.isEmpty || technique?.exerciseId == id else {
+                map.removeValue(forKey: id)
+                continue
+            }
+            fresh.insert(id, at: min(i, fresh.count))
+        }
+        order = fresh
+        exercises = map
+        let keep = currentExerciseId.flatMap { id -> UUID? in
+            guard let e = exercises[id], !e.logged.isEmpty || technique?.exerciseId == id else { return nil }
+            return id
+        }
+        currentExerciseId = keep ?? order.first { exercises[$0]?.isDone == false }
+        currentSetIndex = currentExerciseId.flatMap { exercises[$0]?.logged.count } ?? 0
     }
 
     // MARK: - Private

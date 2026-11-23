@@ -132,7 +132,7 @@ public enum PathBuilder {
             if !s.exercises.isEmpty { parts.append("\(s.exercises.count) gyakorlat") }
             out.append(Item(key: t ?? 18 * 60, step: PathStep(
                 id: "session", time: t.map(fmt) ?? "–", glyph: "dumbbell-ink", title: s.title,
-                sub: parts.joined(separator: " · "), done: false, isNow: false, opens: true)))
+                sub: parts.joined(separator: " · "), done: s.done, isNow: false, opens: true)))
         }
         return out
     }

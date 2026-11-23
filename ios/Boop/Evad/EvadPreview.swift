@@ -261,12 +261,16 @@ extension EvadPreviewModel {
             day = Calendar.current.date(byAdding: .day, value: 1, to: day)!; i += 1
         }
         let judged = days.filter { $0["judged"] as? Bool == true }
-        return ["days": days,
-                "summary": ["foodInBand": judged.filter { $0["foodInBand"] as? Bool == true }.count, "foodJudged": judged.count,
-                            "sessionsDone": 3, "sessionsPlanned": 4,
-                            "nightsOk": days.filter { $0["sleepOk"] as? Bool == true }.count,
-                            "nightsJudged": days.filter { $0["sleepOk"] is Bool }.count,
-                            "excusedDays": days.filter { $0["excused"] as? Bool == true }.count]]
+        // The counts are named first: one literal with every filter inline took Xcode 26.3 past its type-check
+        // budget („unable to type-check this expression in reasonable time"). Same values, same shape.
+        let foodInBand = judged.filter { $0["foodInBand"] as? Bool == true }.count
+        let nightsOk = days.filter { $0["sleepOk"] as? Bool == true }.count
+        let nightsJudged = days.filter { $0["sleepOk"] is Bool }.count
+        let excusedDays = days.filter { $0["excused"] as? Bool == true }.count
+        let summary: [String: Any] = ["foodInBand": foodInBand, "foodJudged": judged.count,
+                                      "sessionsDone": 3, "sessionsPlanned": 4,
+                                      "nightsOk": nightsOk, "nightsJudged": nightsJudged, "excusedDays": excusedDays]
+        return ["days": days, "summary": summary]
     }
 }
 

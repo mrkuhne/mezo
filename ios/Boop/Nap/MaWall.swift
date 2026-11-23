@@ -182,7 +182,7 @@ struct MaWall: View {
     private func act(_ c: WallCandidate) {
         if c.id.hasPrefix("etel-window") { onMeal() }
         else if c.id == "etel-supplements" { onEtelRoom() }
-        else if c.id == "edzes-keszulj" { onDrill(.mozgas) }
+        else if c.id == "edzes-keszulj" || c.id == "edzes-megvolt" { onDrill(.mozgas) }
         else if c.area == WallSources.level { onDrill(.level) }
         else if let id = evadWallProposalID(c.id) {
             // „Indulhat" starts Boop's experiment proposal right here; the Hatás tab shows it running. Settled only
