@@ -201,6 +201,10 @@ class MailApiIT extends ApiIntegrationTest {
         MailMessageEntity news = mail.message(u.id(), box.getId(), 77L);
         news.setFromName("Heti Receptek");
         messages.saveAndFlush(news);
+        // The folded „A többi" follows the fetch (created_at inside the queried day), not the arrival: the
+        // auditing column is now(), so a test written on 2026-11-21 silently went red from the 22nd. Pin it.
+        jdbc.update("update mail_message set created_at = ? where id = ?",
+            java.sql.Timestamp.from(Instant.parse("2026-11-21T06:00:00Z")), news.getId());
         MailItemEntity newsItem = mail.item(u.id(), news.getId(), null, null);
         newsItem.setGrp("rest");
         newsItem.setCategory("hírlevél");

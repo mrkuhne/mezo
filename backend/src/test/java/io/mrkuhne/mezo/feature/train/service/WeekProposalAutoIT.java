@@ -404,13 +404,14 @@ class WeekProposalAutoIT extends AbstractIntegrationTest {
         ExerciseEntity squat = exerciseAt(mon, "Guggolás", "quad", 4, 0);
         ExerciseEntity ext = exerciseAt(mon, "Lábnyújtás", "quad", 3, 1);
         workoutService.getToday(owner, null);
-        // the same two exercises re-saved, swapped, through the real day edit: new rows, halved sets
+        // the same two exercises re-saved, swapped, through the real day edit: since mezo-r36n9.147 a pure
+        // reorder keeps the rows (ids) and re-pins their order — the halved sets ride along in place
         trainService.replaceDayExercises(owner, meso.getId(), mon.getId(), List.of(
             input("Lábnyújtás", sets(ext)), input("Guggolás", sets(squat))));
-        List<ExerciseEntity> reminted = exerciseRepository
+        List<ExerciseEntity> reordered = exerciseRepository
             .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(owner, List.of(mon.getId()));
-        assertThat(reminted).extracting(ExerciseEntity::getId).doesNotContain(squat.getId(), ext.getId());
-        assertThat(reminted).extracting(ExerciseEntity::getWorkingSets).containsExactly(2, 2);
+        assertThat(reordered).extracting(ExerciseEntity::getId).containsExactly(ext.getId(), squat.getId());
+        assertThat(reordered).extracting(ExerciseEntity::getWorkingSets).containsExactly(2, 2);
 
         nextWeek(meso);
         workoutService.getToday(owner, null);
