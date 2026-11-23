@@ -834,5 +834,20 @@
       "mezo-r36n9.138"
     ],
     "mi_valtozott": "A blokképítő napjain minden gyakorlat sora rendezett: fent a neve, alatta három kis cella — sorozat (itt állítod − és + gombbal), ismétlés és tartalék —, legalul az izomrész és a technika vagy a kihívás. Az ismétlés vagy a tartalék cellájára koppintva egy kis szerkesztő nyílik csak arra az értékre; a visszaállítás is csak azt az egy értéket érinti. A sorra koppintva továbbra is a teljes beállítások jönnek."
+  },
+  "9eabffcd5": {
+    "cim": "Edzéslejátszó: a tíz észrevétel javítva",
+    "datum": "2026-11-23",
+    "verzio": "",
+    "tipus": "Javítás",
+    "hova": [
+      "iPhone app",
+      "Háttérrendszer"
+    ],
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.147"
+    ],
+    "mi_valtozott": "A súlyt és az ismétlést ujjal húzható skálán állítod (fél kilónként), a következő sorozat az előző sorozat súlyát hozza, a terv sora végig látszik, a bemelegítő nagyban van jelölve, a jegyzet menthető és a szerverre is felmegy, a javító lapon a tartalék is állítható, a csere külön van „csak ma” és „a blokkban is” módon, a blokk módosítása átmegy a futó edzésbe (futó edzés közben a sorrend is cserélhető), és edzés után a Ma oldal „megvolt”-at mond, a mai eredmény újranyitható."
   }
 }
