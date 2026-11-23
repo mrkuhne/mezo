@@ -1574,5 +1574,15 @@
     ],
     "mit_kapsz": "A Boop Notion-tered megkapja a 2026-11-23-i változásokat: a tíz hiba jegyét, a két döntést (sorrendcsere futó edzésnél, húzható skála), a lejátszó és a blokképítő oldalát és a kiadás sorát. A javítást végző munkamenet nem látta a teredet, ezért külön menet teszi fel.",
     "munkamenet": "edzes-player-fixes"
+  },
+  "mezo-r36n9.149": {
+    "cim": "Háttér: a telefon szerződés-másolata elmaradt a szerverétől",
+    "tipus": "Háttér",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Semmi látható most; a telefonos app szerver-leírás másolatát hozzuk szinkronba a szerverével egy olyan menetben, ahol az app tesztjei is lefutnak. Addig minden működik a mostani másolattal.",
+    "munkamenet": "edzes-player-fixes"
   }
 }
