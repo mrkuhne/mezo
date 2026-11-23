@@ -1595,5 +1595,48 @@
     ],
     "mit_kapsz": "Az új változat felkerül a telefonodra arról a gépről, ahol az Xcode be van állítva, és előtte lefut a telefonos tesztkészlet, ami az új Macen nem tudott. Az átadó leírja a lépéseket és mit ellenőrizz utána a telefonon.",
     "munkamenet": "edzes-player-fixes"
+  },
+  "mezo-r36n9.151": {
+    "cim": "Hiba: a fotós ételnaplózás hibát dob (a kép rossz típussal megy fel)",
+    "tipus": "Hiba",
+    "szakasz": "B4 Étel",
+    "terulet": [
+      "Étel"
+    ],
+    "mit_kapsz": "A fotóból naplózás újra működik: a kép a szerverre képként megy fel, nem névtelen csomagként, így a szerver nem utasítja el; a mentett étkezés mellé a fotó is felkerül.",
+    "munkamenet": "kezdolap-orbok-fotos-naplozas"
+  },
+  "mezo-r36n9.152": {
+    "cim": "Hiba: a kezdőlap orbjaiban nincs szám, amíg a Forma még „tanul”",
+    "tipus": "Hiba",
+    "szakasz": "Kezdőlap",
+    "terulet": [
+      "Ma",
+      "Alapok"
+    ],
+    "mit_kapsz": "A kezdőlap orbjai akkor is mutatják az Alvás, Étel, Edzés és Energia számát, ha a Formához még kevés az éjszaka vagy hiányzik a tegnapi alvás — csak a Forma marad „–” a „még tanulom” felirattal. Nyitott döntés: az Étel orb a szoba számát (az étkezések pontjainak átlagát) mutassa-e.",
+    "munkamenet": "kezdolap-orbok-fotos-naplozas"
+  },
+  "mezo-r36n9.153": {
+    "cim": "Hiba: a Pénz orb a kezdőlapon még szürke, szám nélkül",
+    "tipus": "Hiba",
+    "szakasz": "Kezdőlap",
+    "terulet": [
+      "Pénz",
+      "Ma"
+    ],
+    "mit_kapsz": "A Pénz orb a kezdőlapon élő lesz: a heti keretből megmaradt rész tölti ki, és egy számot is mutat (a javaslat: a heti keret megmaradt része százalékban, mint a többi orb 0–100 skálája). A szám mibenléte a te döntésed.",
+    "munkamenet": "kezdolap-orbok-fotos-naplozas"
+  },
+  "mezo-r36n9.154": {
+    "cim": "Gyors rögzítés teljesen: a webes kilenc ajtó a „+” lapon, és gyors logolás gomb a kezdőlapon",
+    "tipus": "Funkció",
+    "szakasz": "Kezdőlap",
+    "terulet": [
+      "Alapok",
+      "Ma"
+    ],
+    "mit_kapsz": "A „+” lapról minden rögzíthető, ami a webes gyors logolásban volt: étkezés, víz, kiegészítők, edzés indítása, sport, súly, check-in, napló (bármikor, nem csak az esti zárásban), alvás — és a kezdőlapon, az orbok alatt jobbra is lesz egy gyors logolás gomb ugyanerre a lapra. Előbb terv és szimulátoros bemutató, a te jóváhagyásoddal.",
+    "munkamenet": "kezdolap-orbok-fotos-naplozas"
   }
 }
