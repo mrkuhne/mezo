@@ -16,7 +16,7 @@ Keep the operation separate from application startup, seed data, Liquibase, and 
 
 ## Consequences
 
-Recipe energy and macros reflect the selected pantry products, so they can differ substantially from the external plan. Mezo freezes those facts on save; later pantry corrections require the application's normal refresh path. The import is repeatable through its client references. The recipe library remains mixed until the separate deletion review is approved and completed.
+Recipe energy and macros reflect the selected pantry products, so they can differ substantially from the external plan. Mezo freezes those facts on save; later pantry corrections require the application's normal refresh path. The import is repeatable through its client references. After the owner approved the exact removal set, 47 old recipes were soft-deleted through the owner API. The live owner library now consists of 23 imported and 6 retained recipes; historical logged meals remain intact.
 
 ## Alternatives considered
 
