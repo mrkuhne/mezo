@@ -1367,8 +1367,9 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '409':
           description: >-
-            A structural change (reorder/add/remove/swap) while that day's
-            workout is running (TRAIN_DAY_WORKOUT_RUNNING)
+            An add/remove/swap of exercises while that day's workout is running
+            (TRAIN_DAY_WORKOUT_RUNNING); a same-order edit or a pure reorder is
+            saved in place and allowed
           content:
             application/json:
               schema:
