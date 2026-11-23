@@ -63,6 +63,11 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-11-23 — Owner recipe library migrated from ATLAS 4.0 (`mezo-hj7ul`).**
+  Twenty-three recipes now use pantry-linked ingredient quantities and the app's frozen nutrition facts, rather than the
+  HTML's estimated macros. The owner-approved 47 old recipes were soft-deleted; six retained recipes and historical meal
+  logs remain. [ADR 0058](../decisions/0058-owner-recipe-import-from-pantry-facts.md) records the import rule and deletion boundary.
+
 - **2026-11-21 — Boop Levél L1 + L2: the morning post (`mezo-r36n9.38` + `mezo-r36n9.39`) — built, not yet deployed.**
   One release. The server reads a read-only **mirror Gmail** (the owner's Gmail and iCloud forward into it; one app
   password, AES-GCM sealed) at 08:00 and 15:00 Budapest, redacts every mail before any model, sorts it by rules first
