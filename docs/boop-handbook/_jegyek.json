@@ -1584,5 +1584,16 @@
     ],
     "mit_kapsz": "Semmi látható most; a telefonos app szerver-leírás másolatát hozzuk szinkronba a szerverével egy olyan menetben, ahol az app tesztjei is lefutnak. Addig minden működik a mostani másolattal.",
     "munkamenet": "edzes-player-fixes"
+  },
+  "mezo-r36n9.150": {
+    "cim": "A lejátszó-javítások telepítése a telefonra a másik gépről (átadó)",
+    "tipus": "Háttér",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés",
+      "Alapok"
+    ],
+    "mit_kapsz": "Az új változat felkerül a telefonodra arról a gépről, ahol az Xcode be van állítva, és előtte lefut a telefonos tesztkészlet, ami az új Macen nem tudott. Az átadó leírja a lépéseket és mit ellenőrizz utána a telefonon.",
+    "munkamenet": "edzes-player-fixes"
   }
 }
