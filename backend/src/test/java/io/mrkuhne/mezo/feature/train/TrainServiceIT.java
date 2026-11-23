@@ -403,7 +403,7 @@ class TrainServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testReplaceDayExercises_shouldReMintRows_whenReorderedOrAdded() {
+    void testReplaceDayExercises_shouldKeepIdsWhenReordered_andReMintWhenAdded() {
         UUID user = databasePopulator.populateUser("replace-remint@test.local");
         MesocycleEntity meso = trainPopulator.createMesocycle(user, "Újra", "active");
         WorkoutSessionEntity day =
@@ -417,16 +417,18 @@ class TrainServiceIT extends AbstractIntegrationTest {
         GymExerciseInput rowC = GymExerciseInput.builder().name("Face pull").muscle("váll").warmupSets(1)
             .workingSets(2).repMin(12).repMax(15).targetRIR(1).type(GymExerciseInput.TypeEnum.ISOLATION).build();
 
-        // reordered: the soft-delete + re-insert path, new ids in the new order
+        // reordered: a pure permutation of the same exercises is updated IN PLACE since mezo-r36n9.147
+        // (before that it re-minted the ids) — the rows keep their ids, only orderIndex follows the array
         trainService.replaceDayExercises(user, meso.getId(), day.getId(), List.of(rowB, rowA));
         entityManager.flush();
         entityManager.clear();
         List<ExerciseEntity> reordered = exerciseRepository
             .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(user, List.of(day.getId()));
         assertThat(reordered).extracting(ExerciseEntity::getName).containsExactly("Lehúzás", "Evezés");
-        assertThat(reordered).extracting(ExerciseEntity::getId).doesNotContain(a.getId(), b.getId());
+        assertThat(reordered).extracting(ExerciseEntity::getId).containsExactly(b.getId(), a.getId());
+        assertThat(reordered).extracting(ExerciseEntity::getOrderIndex).containsExactly(0, 1);
 
-        // one added: also re-minted
+        // one added: structural, so the whole list is re-minted
         trainService.replaceDayExercises(user, meso.getId(), day.getId(), List.of(rowB, rowA, rowC));
         entityManager.flush();
         entityManager.clear();
