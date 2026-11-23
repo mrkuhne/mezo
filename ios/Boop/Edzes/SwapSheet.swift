@@ -32,6 +32,8 @@ struct SwapSheet: View {
     let actions: SwapActions
     let swapping: Bool
     let problem: String?
+    /// True: the block's remaining days too; false: today only (owner, 2026-11-23 — the two are said apart).
+    var wholeBlock = false
     let onPick: (CatalogExercise) -> Void
     let openGym: () -> Void
 
@@ -54,7 +56,8 @@ struct SwapSheet: View {
     private var failed: Bool { if case .failed = load { true } else { false } }
 
     var body: some View {
-        NKSheetFrame(hue: hue, eyebrow: outgoing?.name ?? "Gyakorlat", title: "Mire cseréljük?") {
+        NKSheetFrame(hue: hue, eyebrow: outgoing?.name ?? "Gyakorlat",
+                     title: wholeBlock ? "Mire cseréljük a blokk végéig?" : "Mit csinálsz ma helyette?") {
             VStack(alignment: .leading, spacing: 12) {
                 // The chips need the outgoing exercise's catalogue row; a custom exercise has none, and then
                 // neither chip has anything true to say.
@@ -68,7 +71,8 @@ struct SwapSheet: View {
                 if let problem { problemBox(problem) }
                 suggestions
                 fullList
-                Text("A csere a mai edzésre szól. A döntés a tiéd — a teljes listából bármit választhatsz.")
+                Text(wholeBlock ? "A csere a blokk végéig szól: a nap minden további alkalmán ez lesz. A döntés a tiéd — a teljes listából bármit választhatsz."
+                                : "A csere csak a mai edzésre szól, a blokkod nem változik. A döntés a tiéd — a teljes listából bármit választhatsz.")
                     .nkFont(12).foregroundStyle(.white.opacity(0.45))
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)

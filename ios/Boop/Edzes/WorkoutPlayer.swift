@@ -49,6 +49,8 @@ struct WorkoutPlayer: View {
     let onLogged: (UUID, SessionSet) -> Void
     /// A set he corrected, once the correction sheet closes — the room queues it for the server.
     let onEdited: (UUID, SessionSet) -> Void
+    /// The exercise's own durable note, once the note sheet closes with a change — the room queues it.
+    let onNote: (UUID, String?) -> Void
     let onExerciseDone: (UUID, ExerciseFeedback) -> Void
     let onSkipped: (UUID) -> Void
     /// The swap, which needs a connection. Returns the sentence to show when it could not be done.
@@ -65,6 +67,12 @@ struct WorkoutPlayer: View {
     @State private var reps: Int = 0
     @State private var rir: Int = 2
     @State private var touched = false
+    /// Where the pads' numbers came from (the plan, the previous set, nowhere) — the small word beside the label.
+    @State private var source: WorkoutSession.PrefillSource = .none
+    /// The note sheet's text and which exercise it is about; committed when the sheet closes, however it closed.
+    @State private var noteDraft = ""
+    @State private var noteOpen: UUID?
+    @FocusState private var noteFocused: Bool
     /// The half reps he has counted so far in the partials moment.
     @State private var partials = 0
     /// Sets corrected while the correction sheet is open; sent once, when it closes, not on every tap.
@@ -122,7 +130,16 @@ struct WorkoutPlayer: View {
             let at = UserDefaults.standard.integer(forKey: "previewEdzesSwapAt")
             if UserDefaults.standard.bool(forKey: "previewEdzesSwap"), sheet == nil,
                session.all.indices.contains(at) {
-                sheet = .swap(session.all[at].id)
+                sheet = .swap(session.all[at].id, false)
+            }
+            // `-previewEdzesSheet note|menu|swapBlock` (mezo-r36n9.147): the review opens that sheet of the first exercise.
+            if let which = UserDefaults.standard.string(forKey: "previewEdzesSheet"), sheet == nil, let first = session.all.first {
+                switch which {
+                case "note": sheet = .note(first.id)
+                case "menu": sheet = .exerciseMenu(first.id)
+                case "swapBlock": sheet = .swap(first.id, true)
+                default: break
+                }
             }
             #endif
         }
@@ -135,7 +152,7 @@ struct WorkoutPlayer: View {
         // Each step of a technique set has its own numbers: the drop's lighter weight, a mini-set's few reps.
         .onChange(of: session.technique?.legs.count) { loadCurrent() }
         .onChange(of: session.technique == nil) { loadCurrent() }
-        .sheet(item: $sheet, onDismiss: sendEdits) { sheet(for: $0) }
+        .sheet(item: $sheet, onDismiss: sheetClosed) { sheet(for: $0) }
     }
 
     // MARK: - The top
@@ -218,7 +235,9 @@ struct WorkoutPlayer: View {
                 TechniqueStepCard(technique: t, lines: card.lines, current: 0, remaining: nil, total: nil, hue: hue)
             }
 
+            stepLine(e)
             numberPads
+            planLine(e)
             setList(e)
 
             primary(liftLabel(e)) { logSet() }
@@ -233,12 +252,6 @@ struct WorkoutPlayer: View {
             VStack(alignment: .leading, spacing: 3) {
                 // The muscle group is gone from here (owner, 2026-11-17): standing in front of the machine
                 // he knows what he is working, and the name is the only thing worth the top of the screen.
-                if e.plan(at: e.logged.count)?.kind == .warmup {
-                    Text("BEMELEGÍTŐ").nkFont(9, .semibold, design: .monospaced).tracking(1)
-                        .foregroundStyle(.white.opacity(0.75))
-                        .padding(.horizontal, 7).padding(.vertical, 2)
-                        .background(Capsule().fill(.white.opacity(0.12)))
-                }
                 Text(e.name).nkFont(26, design: .serif).foregroundStyle(.white)
                     .fixedSize(horizontal: false, vertical: true)
                 // What is special about this exercise today, said up front (owner decision 2026-11-17 #3).
@@ -283,23 +296,21 @@ struct WorkoutPlayer: View {
     /// the picture is looked up by name — which also survives a swap, because the new row brings its own name.
     private func photo(for e: SessionExercise) -> String? { photos[e.name.lowercased()] }
 
-    /// Weight and reps side by side, **the reserve directly under them** — the owner's own layout from round 4.
-    /// All three take typing as well as tapping.
+    /// Weight and reps side by side, **the reserve directly under them** — the owner's own layout from round 4,
+    /// with the stepper swapped for **a scale he drags with a finger** (owner, 2026-11-23: „súly és ismétlés legyen
+    /// görgetős / tekerős", the weight in 0,5 kg steps). Typing stays: a tap on the number opens the keyboard.
     private var numberPads: some View {
-        VStack(spacing: 10) {
+        let plan = session.current.flatMap { $0.plan(at: $0.logged.count) }
+        return VStack(spacing: 10) {
             HStack(spacing: 10) {
-                NKStepper(label: "Súly · kg", value: kgText, planned: !touched, hue: hue,
-                          onSet: { typed in
-                              if let v = Self.decimal(typed) { kg = max(0, v); touched = true }
-                          },
-                          onDown: { kg = max(0, kg - 2.5); touched = true },
-                          onUp: { kg += 2.5; touched = true })
-                NKStepper(label: "Ismétlés", value: "\(reps)", planned: !touched, hue: hue,
-                          onSet: { typed in
-                              if let v = Int(typed.filter(\.isNumber)), v > 0 { reps = v; touched = true }
-                          },
-                          onDown: { reps = max(1, reps - 1); touched = true },
-                          onUp: { reps += 1; touched = true })
+                NKScale(label: "Súly · kg", value: kg, step: 0.5, range: 0...300, hue: hue, tag: tag,
+                        plan: plan?.targetKg, format: { $0 > 0 ? Self.plain($0) : "–" },
+                        onChange: { kg = $0; touched = true },
+                        onSet: { typed in if let v = Self.decimal(typed) { kg = max(0, v); touched = true } })
+                NKScale(label: "Ismétlés", value: Double(reps), step: 1, range: 1...60, hue: hue, tag: tag,
+                        plan: plan?.targetReps.map(Double.init), format: { "\(Int($0))" },
+                        onChange: { reps = max(1, Int($0)); touched = true },
+                        onSet: { typed in if let v = Int(typed.filter(\.isNumber)), v > 0 { reps = v; touched = true } })
             }
             NKInlineStepper(label: "Tartalék · ismétlés", value: rir >= 5 ? "5+" : "\(rir)", hue: hue,
                             onDown: { rir = max(0, rir - 1) },
@@ -307,7 +318,56 @@ struct WorkoutPlayer: View {
         }
     }
 
-    private var kgText: String { kg > 0 ? nkKg(kg).replacingOccurrences(of: " kg", with: "") : "–" }
+    /// The small word beside the pad's label — where its number came from — until he changes it.
+    private var tag: String? {
+        guard !touched else { return nil }
+        switch source {
+        case .plan: return "TERV"
+        case .previous: return "ELŐZŐ"
+        case .none: return nil
+        }
+    }
+
+    /// The set in front of him, when it is a warm-up: said big, with its reps. The ladder's 4 reps read as a
+    /// mistake when the only sign was a tiny pill (owner, 2026-11-23: „ismétlés szám default 4-el kezdődik miért?").
+    @ViewBuilder private func stepLine(_ e: SessionExercise) -> some View {
+        if let plan = e.plan(at: e.logged.count), plan.kind == .warmup {
+            let n = e.logged.count + 1
+            let total = e.planned.filter { $0.kind == .warmup }.count
+            HStack(spacing: 8) {
+                Text(total > 1 ? "BEMELEGÍTŐ \(n)/\(total)" : "BEMELEGÍTŐ")
+                    .nkFont(10, .semibold, design: .monospaced).tracking(1.4).foregroundStyle(NK.ground)
+                    .padding(.horizontal, 8).padding(.vertical, 4)
+                    .background(Capsule().fill(hue.glow))
+                Text("könnyű súllyal, \(plan.targetReps.map { "\($0) ismétlés" } ?? "kevés ismétlés")")
+                    .nkFont(13).foregroundStyle(.white.opacity(0.8))
+                    .lineLimit(1).minimumScaleFactor(0.8)
+                Spacer(minLength: 0)
+            }
+            .accessibilityElement(children: .combine)
+        }
+    }
+
+    /// **The plan's own line, which stays** (owner, 2026-11-23: „nem mutatja, hogy mennyi a recommended súly").
+    /// The pads start from it, but once he changed a number the plan was gone from the screen — now it is here,
+    /// under them, whatever the pads say. With no weight from the server it says so instead of a dash.
+    private func planLine(_ e: SessionExercise) -> some View {
+        let plan = e.plan(at: e.logged.count)
+        let repsText = plan?.targetReps.map { "\($0) ismétlés" }
+        let rirText = plan?.targetRIR.map { "\($0) tartalék" }
+        let known = plan?.targetKg.map { nkKg($0) }
+        let line = [known ?? "ehhez még nincs ajánlott súly, az első alkalom után lesz", repsText, rirText]
+            .compactMap { $0 }.joined(separator: " · ")
+        return HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text("TERV").nkFont(9, .semibold, design: .monospaced).tracking(1.2).foregroundStyle(hue.glow)
+            Text(line).nkFont(13, known == nil ? .regular : .medium)
+                .foregroundStyle(.white.opacity(known == nil ? 0.6 : 0.85))
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 4)
+        .accessibilityElement(children: .combine)
+    }
 
     /// „az 1. szett", „a 2. szett" — Hungarian takes `az` before a vowel sound, and 1 and 5 are the two set
     /// numbers a player ever reaches that begin with one.
@@ -549,14 +609,14 @@ struct WorkoutPlayer: View {
     private func legPads(_ run: TechniqueRun) -> some View {
         VStack(spacing: 6) {
             HStack(spacing: 10) {
-                NKStepper(label: "Súly · kg", value: kgText, planned: !touched, hue: hue,
-                          onSet: { typed in if let v = Self.decimal(typed) { kg = max(0, v); touched = true } },
-                          onDown: { kg = max(0, kg - 2.5); touched = true },
-                          onUp: { kg += 2.5; touched = true })
-                NKStepper(label: "Ismétlés", value: "\(reps)", planned: !touched, hue: hue,
-                          onSet: { typed in if let v = Int(typed.filter(\.isNumber)), v >= 0 { reps = v; touched = true } },
-                          onDown: { reps = max(0, reps - 1); touched = true },
-                          onUp: { reps += 1; touched = true })
+                NKScale(label: "Súly · kg", value: kg, step: 0.5, range: 0...300, hue: hue,
+                        format: { $0 > 0 ? Self.plain($0) : "–" },
+                        onChange: { kg = $0; touched = true },
+                        onSet: { typed in if let v = Self.decimal(typed) { kg = max(0, v); touched = true } })
+                NKScale(label: "Ismétlés", value: Double(reps), step: 1, range: 0...60, hue: hue,
+                        format: { "\(Int($0))" },
+                        onChange: { reps = max(0, Int($0)); touched = true },
+                        onSet: { typed in if let v = Int(typed.filter(\.isNumber)), v >= 0 { reps = v; touched = true } })
             }
             if run.next?.kind == .drop, let main = run.main.kg {
                 Text("\(run.next?.dropPercent ?? 30)%-kal kevesebb, mint \(nkKg(main))")
@@ -716,10 +776,13 @@ struct WorkoutPlayer: View {
             touched = false
             return
         }
-        let plan = e.plan(at: e.logged.count)
-        kg = plan?.targetKg ?? e.bestKg ?? 0
-        reps = plan?.targetReps ?? 8
-        rir = plan?.targetRIR ?? 2
+        // The plan for warm-ups and the first working set, the previous working set's weight after that
+        // (`WorkoutSession.prefill`, owner 2026-11-23).
+        let p = WorkoutSession.prefill(for: e)
+        kg = p.kg ?? 0
+        reps = p.reps
+        rir = p.rir
+        source = p.source
         touched = false
         feedback = e.feedback ?? ExerciseFeedback()
     }
@@ -783,11 +846,12 @@ struct WorkoutPlayer: View {
     // MARK: - Sheets
 
     private enum PlayerSheet: Identifiable {
-        case note(UUID), swap(UUID), exerciseMenu(UUID), editSet(UUID), pick, records(UUID), technique(UUID), gym
+        /// The swap's flag: true = the block's remaining days too, false = today only.
+        case note(UUID), swap(UUID, Bool), exerciseMenu(UUID), editSet(UUID), pick, records(UUID), technique(UUID), gym
         var id: String {
             switch self {
             case .note(let id): "note-\(id)"
-            case .swap(let id): "swap-\(id)"
+            case .swap(let id, let whole): "swap-\(whole ? "block" : "today")-\(id)"
             case .exerciseMenu(let id): "menu-\(id)"
             case .editSet(let id): "set-\(id)"
             case .records(let id): "rec-\(id)"
@@ -807,7 +871,7 @@ struct WorkoutPlayer: View {
             case .note(let id): noteSheet(id)
             case .editSet(let id): editSheet(id)
             case .exerciseMenu(let id): exerciseMenuSheet(id)
-            case .swap(let id): swapSheet(id)
+            case .swap(let id, let whole): swapSheet(id, wholeBlock: whole)
             case .records(let id): recordsSheet(id)
             case .technique(let id): techniqueSheet(id)
             case .pick: pickSheet
@@ -820,47 +884,88 @@ struct WorkoutPlayer: View {
         .presentationDragIndicator(.visible)
     }
 
+    /// The note, with a way out (owner, 2026-11-23: „nem tűnik el a klaviatúra… és nem tudok menteni jegyzetet"):
+    /// a Kész over the keyboard, a Mentés under the field, and the note goes to the server as the exercise's own
+    /// when the sheet closes — however it closed. Before this it was written to the session only, and the session
+    /// is thrown away with the workout.
     private func noteSheet(_ id: UUID) -> some View {
         NKSheetFrame(hue: hue, eyebrow: session.exercises[id]?.name ?? "Gyakorlat", title: "Jegyzet") {
             VStack(alignment: .leading, spacing: 14) {
-                TextField("Például: a váll végig nyugton volt", text: Binding(
-                    get: { session.exercises[id]?.note ?? "" },
-                    set: { session.setNote($0.isEmpty ? nil : $0, for: id) }
-                ), axis: .vertical)
-                .lineLimit(3...6)
-                .nkFont(15).foregroundStyle(.white)
-                .padding(14).nkGlass()
-                Text("A jegyzet a gyakorlatnál marad, és edzés közben végig látod.")
+                TextField("Például: a váll végig nyugton volt", text: $noteDraft, axis: .vertical)
+                    .lineLimit(3...6)
+                    .nkFont(15).foregroundStyle(.white)
+                    .focused($noteFocused)
+                    .padding(14).nkGlass()
+                    .onAppear {
+                        noteOpen = id
+                        noteDraft = session.exercises[id]?.note ?? ""
+                        noteFocused = true
+                    }
+                Text("A jegyzet a gyakorlatnál marad: edzés közben végig látod, és a következő alkalommal is itt lesz.")
                     .nkFont(12).foregroundStyle(.white.opacity(0.5))
+                    .fixedSize(horizontal: false, vertical: true)
+                Button { sheet = nil } label: {
+                    Text("Mentés").nkFont(16, .semibold).foregroundStyle(NK.ground)
+                        .frame(maxWidth: .infinity, minHeight: 52)
+                        .background(Capsule().fill(hue.glow))
+                }
+                .buttonStyle(.plain)
             }
         }
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Kész") { noteFocused = false }
+            }
+        }
+    }
+
+    /// The sheet is gone, whichever way: corrections go out, and the note is kept and queued if it changed.
+    private func sheetClosed() {
+        sendEdits()
+        commitNote()
+    }
+
+    private func commitNote() {
+        guard let id = noteOpen else { return }
+        noteOpen = nil
+        noteFocused = false
+        let text = noteDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        let note: String? = text.isEmpty ? nil : text
+        guard note != session.exercises[id]?.note else { return }
+        session.setNote(note, for: id)
+        onNote(id, note)
     }
 
     private func editSheet(_ setId: UUID) -> some View {
         let found = session.all.compactMap { e in e.logged.first { $0.id == setId }.map { (e, $0) } }.first
         return NKSheetFrame(hue: hue, eyebrow: found?.0.name ?? "Szett", title: "Szett javítása") {
-            if let (_, set) = found {
+            if let (e, set) = found {
+                let plan = e.plan(at: e.logged.firstIndex { $0.id == setId } ?? 0)
                 VStack(spacing: 12) {
                     HStack(spacing: 10) {
-                        NKStepper(label: "Súly · kg",
-                                  value: set.kg.map { nkKg($0).replacingOccurrences(of: " kg", with: "") } ?? "–",
-                                  hue: hue,
-                                  onSet: { typed in
-                                      if let v = Self.decimal(typed) {
-                                          correct(setId, kg: max(0, v), reps: set.reps, rir: set.rir)
-                                      }
-                                  },
-                                  onDown: { correct(setId, kg: max(0, (set.kg ?? 0) - 2.5), reps: set.reps, rir: set.rir) },
-                                  onUp: { correct(setId, kg: (set.kg ?? 0) + 2.5, reps: set.reps, rir: set.rir) })
-                        NKStepper(label: "Ismétlés", value: "\(set.reps)", hue: hue,
-                                  onSet: { typed in
-                                      if let v = Int(typed.filter(\.isNumber)), v > 0 {
-                                          correct(setId, kg: set.kg, reps: v, rir: set.rir)
-                                      }
-                                  },
-                                  onDown: { correct(setId, kg: set.kg, reps: max(1, set.reps - 1), rir: set.rir) },
-                                  onUp: { correct(setId, kg: set.kg, reps: set.reps + 1, rir: set.rir) })
+                        NKScale(label: "Súly · kg", value: set.kg ?? 0, step: 0.5, range: 0...300, hue: hue,
+                                plan: plan?.targetKg, format: { $0 > 0 ? Self.plain($0) : "–" },
+                                onChange: { correct(setId, kg: $0 > 0 ? $0 : nil, reps: set.reps, rir: set.rir) },
+                                onSet: { typed in
+                                    if let v = Self.decimal(typed) {
+                                        correct(setId, kg: v > 0 ? v : nil, reps: set.reps, rir: set.rir)
+                                    }
+                                })
+                        NKScale(label: "Ismétlés", value: Double(set.reps), step: 1, range: 1...60, hue: hue,
+                                plan: plan?.targetReps.map(Double.init), format: { "\(Int($0))" },
+                                onChange: { correct(setId, kg: set.kg, reps: max(1, Int($0)), rir: set.rir) },
+                                onSet: { typed in
+                                    if let v = Int(typed.filter(\.isNumber)), v > 0 {
+                                        correct(setId, kg: set.kg, reps: v, rir: set.rir)
+                                    }
+                                })
                     }
+                    // The reserve too (owner, 2026-11-23: „RIR állítás nincs utólagos szett korrekciónál").
+                    NKInlineStepper(label: "Tartalék · ismétlés",
+                                    value: set.rir.map { $0 >= 5 ? "5+" : "\($0)" } ?? "–", hue: hue,
+                                    onDown: { correct(setId, kg: set.kg, reps: set.reps, rir: max(0, (set.rir ?? 2) - 1)) },
+                                    onUp: { correct(setId, kg: set.kg, reps: set.reps, rir: min(5, (set.rir ?? 2) + 1)) })
                     Text("A javítás azonnal érvényes, és amint van net, a szerverre is felmegy — ugyanazt a sorozatot írja át, nem vesz fel újat.")
                         .nkFont(12).foregroundStyle(.white.opacity(0.5))
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -878,7 +983,10 @@ struct WorkoutPlayer: View {
             VStack(spacing: 0) {
                 menuRow("book-sage", "Jegyzet a gyakorlathoz") { sheet = .note(id) }
                 menuRow("bolt-sun", "Eligazítás — a mai edzés") { sheet = nil; onBriefing() }
-                menuRow("repeat-deep", "Végleg lecserélem másikra") { sheet = .swap(id) }
+                // Two swaps, said apart (owner, 2026-11-23): the old „Végleg lecserélem" was in fact today's swap,
+                // and read as the opposite of what he wanted — a change for today, not just „később".
+                menuRow("repeat-deep", "Ma mást csinálok helyette") { sheet = .swap(id, false) }
+                menuRow("repeat-deep", "Lecserélem a blokkban is") { sheet = .swap(id, true) }
                 menuRow("medal-sun", "Rekordok") { sheet = .records(id) }
                 menuRow("camera-ink", "Technika") { sheet = .technique(id) }
                 menuRow("plus-ink", "Egy szettel több") {
@@ -971,17 +1079,17 @@ struct WorkoutPlayer: View {
     /// The swap (mezo-r36n9.66): the server's reasoned suggestions over the full catalogue, and **the one write
     /// in the player that needs a connection** — the server mints the replacement row's id and every set after it
     /// is addressed by that id. The sheet itself lives in `SwapSheet.swift`.
-    private func swapSheet(_ id: UUID) -> some View {
+    private func swapSheet(_ id: UUID, wholeBlock: Bool) -> some View {
         SwapSheet(exerciseId: id, outgoing: session.exercises[id], catalog: catalog,
                   today: session.all.map(\.name), hue: hue, actions: swap,
-                  swapping: swapping, problem: swapProblem,
-                  onPick: { c in pickSwap(id, c) },
+                  swapping: swapping, problem: swapProblem, wholeBlock: wholeBlock,
+                  onPick: { c in pickSwap(id, c, wholeBlock: wholeBlock) },
                   openGym: {
                       if gymSheet != nil { sheet = .gym } else { sheet = nil; say(soonToast("Mi van a termemben")) }
                   })
     }
 
-    private func pickSwap(_ id: UUID, _ c: CatalogExercise) {
+    private func pickSwap(_ id: UUID, _ c: CatalogExercise, wholeBlock: Bool) {
         guard !swapping else { return }
         swapping = true
         swapProblem = nil
@@ -992,10 +1100,13 @@ struct WorkoutPlayer: View {
             sendNew(since: before)
         }
         Task {
-            let problem = await onSwap(id, c, false)
+            let problem = await onSwap(id, c, wholeBlock)
             swapping = false
             swapProblem = problem
-            if problem == nil { sheet = nil; say("\(c.name) — lecserélve") }
+            if problem == nil {
+                sheet = nil
+                say(wholeBlock ? "\(c.name) — lecserélve, a blokk végéig" : "\(c.name) — ma ezt csinálod helyette")
+            }
         }
     }
 

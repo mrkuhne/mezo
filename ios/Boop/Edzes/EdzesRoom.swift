@@ -75,7 +75,7 @@ struct EdzesRoom: View {
     @State private var showGym = false
 
     /// `hidden` is not „no workout": the session may well be running, minimised.
-    private enum WorkoutPhase { case hidden, briefing, playing, ceremony }
+    private enum WorkoutPhase { case hidden, briefing, playing, ceremony, result }
 
     init(tab: EdzesTab = .ma) {
         #if DEBUG
@@ -130,7 +130,8 @@ struct EdzesRoom: View {
                     BlockBuilderPage(model: builder ?? BlockBuilderModel(client: plan), lockedDay: openWorkoutDay,
                                      onNewBlock: { openNewBlock() }) {
                         page = nil
-                        Task { await store?.loadBlock(); await weekReview?.load(); await prepareBuilder(fresh: true) }
+                        // Today's plan first: a day he just edited must reach the started workout (owner, 2026-11-23).
+                        Task { await store?.load(force: true); await store?.loadBlock(); await weekReview?.load(); await prepareBuilder(fresh: true) }
                     }
                     .navigationTransition(.zoom(sourceID: PlanZoom.builder, in: planZoom))
                 }
@@ -183,6 +184,7 @@ struct EdzesRoom: View {
                               onFinish: { phase = .ceremony },
                               onLogged: { exerciseId, set in enqueueSet(exerciseId, set) },
                               onEdited: { exerciseId, set in enqueueEdit(exerciseId, set) },
+                              onNote: { exerciseId, note in enqueueNote(exerciseId, note) },
                               onExerciseDone: { exerciseId, feedback in enqueueFeedback(exerciseId, feedback) },
                               onSkipped: { exerciseId in enqueueSkip(exerciseId) },
                               onSwap: { id, replacement, wholeBlock in
@@ -209,6 +211,19 @@ struct EdzesRoom: View {
                                 onNote: { toast = soonToast("Edzés jegyzet") })
             }
         }
+        // The day's result, looked at again from the „megvolt" card (mezo-r36n9.147).
+        .fullScreenCover(isPresented: Binding(get: { phase == .result && store?.finishedToday != nil },
+                                              set: { if !$0 { phase = .hidden } })) {
+            if let store, let finished = store.finished, let session = store.finishedToday {
+                WorkoutCeremony(session: session, hue: hue, onDone: { phase = .hidden }, onNote: {},
+                                finishedAt: finished.finishedAt)
+            }
+        }
+        // A workout's start or finish reached the server: today and the brief re-read, so the card says what the
+        // server now knows.
+        .onChange(of: ritmus?.edzesTick) {
+            Task { await store?.load(force: true); await morning?.load(date: Date()) }
+        }
         .task {
             if store == nil { store = EdzesStore(client: train, cache: cache, folder: workoutFolder) }
             await store?.load()
@@ -222,8 +237,9 @@ struct EdzesRoom: View {
             #if DEBUG
             // `-previewEdzesGym YES` (mezo-r36n9.66): straight onto „Mi van a termemben".
             if UserDefaults.standard.bool(forKey: "previewEdzesGym") { showGym = true }
-            // `-previewEdzesSwap YES` (mezo-r36n9.66): straight into the player, which opens the swap sheet.
-            if UserDefaults.standard.bool(forKey: "previewEdzesSwap") {
+            // `-previewEdzesSwap YES` (mezo-r36n9.66): straight into the player, which opens the swap sheet;
+            // `-previewEdzesPlayer YES` (mezo-r36n9.147): straight into the player on its lifting screen.
+            if UserDefaults.standard.bool(forKey: "previewEdzesSwap") || UserDefaults.standard.bool(forKey: "previewEdzesPlayer") {
                 if store?.session != nil { phase = .playing } else if workout != nil { beginWorkout() }
             }
             #endif
@@ -284,17 +300,26 @@ struct EdzesRoom: View {
     /// Today's session in a sentence. The brief's own title and time stay the source — it is
     /// what the rest of the app says about today.
     @ViewBuilder private var highlight: some View {
+        // Done is the brief's word OR the training store's (the server's finished instance, or a workout finished
+        // on this phone whose write is still on its way) — before this the card fell back to „Indítás" the moment
+        // the ceremony closed (owner, 2026-11-23).
+        let doneToday = store?.doneToday ?? false
+        let result: (() -> Void)? = store?.finishedToday == nil ? nil : { phase = .result }
         if let s = brief?.day.session {
-            TodaySessionCard(label: s.done ? "megvolt" : "ma", title: s.title, sub: highlightSub,
-                             hue: hue, done: s.done, progress: runningProgress,
+            let done = s.done || doneToday
+            TodaySessionCard(label: done ? "megvolt" : "ma", title: s.title, sub: highlightSub,
+                             hue: hue, done: done, progress: runningProgress,
                              missions: store?.missions.count ?? 0, released: released.count,
-                             action: (s.done && store?.session == nil) ? nil : { startOrResume() })
+                             action: (done && store?.session == nil) ? nil : { startOrResume() },
+                             onResult: done ? result : nil)
         } else if let w = workout, !w.isRestDay, let title = w.title {
             // The brief has no session but the training plan does (a day started across
             // midnight, or a brief that has not caught up): the plan is the honest thing.
-            TodaySessionCard(label: "ma", title: title, sub: highlightSub, hue: hue, done: false,
-                             progress: runningProgress, missions: store?.missions.count ?? 0,
-                             released: released.count, action: { startOrResume() })
+            TodaySessionCard(label: doneToday ? "megvolt" : "ma", title: title, sub: highlightSub, hue: hue,
+                             done: doneToday, progress: runningProgress, missions: store?.missions.count ?? 0,
+                             released: released.count,
+                             action: (doneToday && store?.session == nil) ? nil : { startOrResume() },
+                             onResult: doneToday ? result : nil)
         } else if let w = workout, w.isRestDay {
             NKHighlight(hue: hue, label: "ma", text: "Ma nincs edzés", sub: "A blokkod szerint ez pihenőnap.")
         } else if let c = brief.map({ maiCopy($0, .mozgas) }) {
@@ -434,6 +459,13 @@ struct EdzesRoom: View {
             toast = "A mai edzéstervet nem érem el, így nem tudom elindítani."
             return
         }
+        if store.doneToday {
+            toast = "A mai edzés már megvolt — a szerver nem indít belőle másodikat."
+            return
+        }
+        // A fresh read of today's plan rides along: the briefing shows it as it lands, and a plan that lands after
+        // the start is merged into the running session (`EdzesStore.load`, mezo-r36n9.147).
+        Task { await store.load(force: true) }
         phase = .briefing
     }
 
@@ -478,12 +510,24 @@ struct EdzesRoom: View {
 
     private func finishWorkout() {
         guard let store, let session = store.session else { return }
-        enqueue(.workoutWrite(.workoutFinish,
-                              payload: TrainPayloadCodec.encode(WorkoutFinishPayload(workoutRef: session.ref)),
-                              workoutRef: session.ref, date: brief?.date ?? "", capturedAt: Date()))
+        let item = OutboxItem.workoutWrite(.workoutFinish,
+                                           payload: TrainPayloadCodec.encode(WorkoutFinishPayload(workoutRef: session.ref)),
+                                           workoutRef: session.ref, date: brief?.date ?? "", capturedAt: Date())
         store.endWorkout()
         phase = .hidden
         toast = "Edzés lezárva"
+        // The finish goes out **now**, not at the next foreground, and the day re-reads itself twice: at once (the
+        // phone's own „megvolt") and again when the server has it (`edzesTick`) — so Ma never falls back to
+        // „Indítás" (owner, 2026-11-23). Queue first, then flush, in one task: the two must not race.
+        let morning = morning
+        Task {
+            if let ritmus {
+                try? await ritmus.outbox.enqueue(item)
+                ritmus.sendNow()
+            }
+            await store.load(force: true)
+            await morning?.load(date: Date())
+        }
     }
 
     private func enqueueSet(_ exerciseId: UUID, _ set: SessionSet) {
@@ -510,6 +554,15 @@ struct EdzesRoom: View {
         let payload = WorkoutSetEditPayload(workoutRef: session.ref, exerciseId: exerciseId, setIndex: index,
                                             weightKg: set.kg ?? 0, reps: set.reps, rir: set.rir)
         enqueue(.workoutWrite(.workoutSetEdit, payload: TrainPayloadCodec.encode(payload),
+                              workoutRef: session.ref, date: brief?.date ?? "", capturedAt: Date()))
+    }
+
+    /// The exercise's own durable note (mezo-r36n9.147). It is addressed by the exercise, not the workout, so it
+    /// needs no server workout id — but it rides in the workout's group so it goes out in order with the rest.
+    private func enqueueNote(_ exerciseId: UUID, _ note: String?) {
+        guard let session = store?.session else { return }
+        let payload = WorkoutNotePayload(workoutRef: session.ref, exerciseId: exerciseId, note: note)
+        enqueue(.workoutWrite(.workoutNote, payload: TrainPayloadCodec.encode(payload),
                               workoutRef: session.ref, date: brief?.date ?? "", capturedAt: Date()))
     }
 
@@ -546,8 +599,10 @@ struct EdzesRoom: View {
     /// 2026-11-17) — and its place went to the one thing that had no way in at all.
     private var menu: some View {
         NKMenuGrid([
-            NKMenuItem(glyph: "bolt-sun", name: running ? "Folytatom" : "Indítás",
-                       sub: running ? "Az edzés fut" : "Sorozatról sorozatra") { startOrResume() },
+            NKMenuItem(glyph: "bolt-sun", name: running ? "Folytatom" : (store?.doneToday == true ? "Megvolt" : "Indítás"),
+                       sub: running ? "Az edzés fut" : (store?.doneToday == true ? "A mai eredmény" : "Sorozatról sorozatra")) {
+                if !running, store?.doneToday == true, store?.finishedToday != nil { phase = .result } else { startOrResume() }
+            },
             NKMenuItem(glyph: "plus-ink", name: "Egyedi edzés", sub: "Saját összeállítás") { toast = soonToast("Egyedi edzés") },
             NKMenuItem(glyph: "dumbbell-ink", name: "Gyakorlatok", sub: "A saját súlyaiddal") { selected = EdzesTab.gyakorlatok.rawValue },
             NKMenuItem(glyph: "book-sage", name: "Előzmények", sub: "Minden eddigi edzés") { selected = EdzesTab.elozmenyek.rawValue },
@@ -717,6 +772,8 @@ private struct TodaySessionCard: View {
     let missions: Int
     let released: Int
     let action: (() -> Void)?
+    /// „Megnézem a mai eredményt" on a done day, when the phone still has the result.
+    var onResult: (() -> Void)? = nil
 
     private var takenMissions: Int { max(0, missions - released) }
 
@@ -763,6 +820,21 @@ private struct TodaySessionCard: View {
                     }
                     .frame(maxWidth: .infinity, minHeight: 52)
                     .background(Capsule().fill(hue.glow))
+                }
+                .buttonStyle(.plain)
+            }
+            if done, let onResult {
+                Button(action: onResult) {
+                    HStack(spacing: 8) {
+                        NKGlyph("medal-sun", NK.gold, size: 16)
+                        Text("Megnézem a mai eredményt").nkFont(15, .medium).foregroundStyle(.white.opacity(0.9))
+                        Spacer(minLength: 0)
+                        Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.35))
+                    }
+                    .padding(.horizontal, 16)
+                    .frame(maxWidth: .infinity, minHeight: 48)
+                    .background(Capsule().fill(.white.opacity(0.1)))
                 }
                 .buttonStyle(.plain)
             }

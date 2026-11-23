@@ -61,6 +61,15 @@ final class EdzesStore {
     /// The workout in progress. It is kept here, not in a view, because it must outlive the
     /// player being closed — „kis méretre" means the workout goes on.
     private(set) var session: WorkoutSession?
+    /// The last workout he finished on this phone, so the day's result can be looked at again after the ceremony
+    /// (owner, 2026-11-23: „megnézzem a mai eredményét"). Kept next to the running one, in the outbox folder.
+    private(set) var finished: FinishedWorkout?
+
+    /// A finished session and when it ended.
+    struct FinishedWorkout: Codable, Equatable {
+        var session: WorkoutSession
+        var finishedAt: Date
+    }
 
     private let client: TrainClient?
     private let cache: ServerCache?
@@ -75,6 +84,7 @@ final class EdzesStore {
          clock: @escaping @MainActor () -> Date = { Date() }) {
         self.client = client; self.cache = cache; self.folder = folder; self.clock = clock
         self.session = Self.readSession(folder)
+        self.finished = Self.readFinished(folder)
     }
 
     /// Point the store at the user's folder, and pick up a workout left running there.
@@ -82,11 +92,30 @@ final class EdzesStore {
         guard let folder, self.folder != folder else { return }
         self.folder = folder
         if session == nil { session = Self.readSession(folder) }
+        if finished == nil { finished = Self.readFinished(folder) }
     }
 
     // MARK: - The workout in progress
 
     private var sessionFile: URL? { folder?.appendingPathComponent("workout.json") }
+    private var finishedFile: URL? { folder?.appendingPathComponent("workout-finished.json") }
+
+    /// Today's finished workout on this phone, if there is one — the result „Megnézem" opens.
+    var finishedToday: WorkoutSession? {
+        guard let finished, Self.ymd(finished.finishedAt) == day else { return nil }
+        return finished.session
+    }
+
+    /// **Is today's session done?** The server's word first (a finished instance dated today, or today among the
+    /// week's done dates), then the phone's own (a workout finished here today whose write may still be queued).
+    /// The brief's `done` is a third voice the room adds; none of the three invents the others.
+    var doneToday: Bool {
+        if let t = today?.value {
+            if let c = t.completed, c.status == .completed, c.date == day { return true }
+            if t.weekDoneDates.contains(day) { return true }
+        }
+        return finishedToday != nil
+    }
 
     /// Start today's session. Returns the outbox item that tells the server it began — the
     /// caller enqueues it, so this type never has to know what an outbox is.
@@ -249,10 +278,30 @@ final class EdzesStore {
         saveSession()
     }
 
-    /// The workout is over: the session leaves the phone's memory and its file.
+    /// The workout is over: the session leaves the phone's memory and its file — and stays, as the day's result,
+    /// in the finished file until the next one replaces it.
     func endWorkout() {
+        if let session {
+            finished = FinishedWorkout(session: session, finishedAt: clock())
+            saveFinished()
+        }
         session = nil
         if let sessionFile { try? FileManager.default.removeItem(at: sessionFile) }
+    }
+
+    private func saveFinished() {
+        guard let finishedFile, let finished else { return }
+        try? FileManager.default.createDirectory(at: finishedFile.deletingLastPathComponent(),
+                                                 withIntermediateDirectories: true)
+        if let data = try? JSONEncoder().encode(finished) {
+            try? data.write(to: finishedFile, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+        }
+    }
+
+    private static func readFinished(_ folder: URL?) -> FinishedWorkout? {
+        guard let url = folder?.appendingPathComponent("workout-finished.json"),
+              let data = try? Data(contentsOf: url) else { return nil }
+        return try? JSONDecoder().decode(FinishedWorkout.self, from: data)
     }
 
     private func saveSession() {
@@ -272,10 +321,12 @@ final class EdzesStore {
     }
 
     /// `yyyy-MM-dd` of the day this store is about, in the device's own calendar.
-    private var day: String {
+    private var day: String { Self.ymd(clock()) }
+
+    private static func ymd(_ date: Date) -> String {
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = .autoupdatingCurrent
-        let c = cal.dateComponents([.year, .month, .day], from: clock())
+        let c = cal.dateComponents([.year, .month, .day], from: date)
         return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
     }
 
@@ -296,6 +347,13 @@ final class EdzesStore {
             today = Cached(value: fresh, fetchedAt: clock(), age: 0)
             problem = nil
             try? await cache?.put(fresh, endpoint: Self.endpoint, date: date)
+            // A workout running on a plan that has since changed (he edited the block, or started from a stale
+            // cache): the fresh order, set counts and technique go into the running session, nothing logged is
+            // lost (`WorkoutSession.apply`, mezo-r36n9.147).
+            if var running = session {
+                running.apply(plan: fresh)
+                if running != session { update(running) }
+            }
         } catch {
             let failure = (error as? TrainFetchError) ?? .server
             // Only the network sends us to the cache. A refusal or a server fault is not "here is an old answer":

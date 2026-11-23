@@ -743,7 +743,7 @@ private struct BuilderDayCard: View {
                             NKFlowRow(spacing: 6, rowSpacing: 6) {
                                 PlanPill("kb. \(evaluation?.minutesEstimate ?? 0) perc", mark: .timer)
                                 if evaluation?.sportSameDay == true { PlanPill("aznap sport is", mark: .spark) }
-                                if techniques > 0 && !locked { PlanPill("\(techniques) technika", color: planHue.glow, mark: .drop) }
+                                if techniques > 0 { PlanPill("\(techniques) technika", color: planHue.glow, mark: .drop) }
                             }
                             .padding(.top, 2)
                         }
@@ -754,7 +754,7 @@ private struct BuilderDayCard: View {
                         Text("\(SubMuscles.groupName(w.muscle ?? "")): \(w.sets) sorozat egy edzésen. \(w.cap) fölött már nem ad többet, oszd el két napra.")
                             .nkFont(13).foregroundStyle(planWarn).fixedSize(horizontal: false, vertical: true)
                     }
-                    if !draft.techniquesEnabled, !locked, day.exercises.contains(where: { $0.stable && $0.judged }) {
+                    if !draft.techniquesEnabled, day.exercises.contains(where: { $0.stable && $0.judged }) {
                         Text("A technikák ki vannak kapcsolva ebben a blokkban. A Blokk fülön bekapcsolhatod.")
                             .nkFont(12).foregroundStyle(.white.opacity(0.5)).fixedSize(horizontal: false, vertical: true)
                     }
@@ -809,7 +809,7 @@ private struct BuilderDayCard: View {
     private var lockLine: some View {
         HStack(alignment: .top, spacing: 10) {
             PlanMark(.timer, color: planHue.glow, size: 18).padding(.top, 1)
-            Text("Ezen a napon most fut az edzésed — utána szerkesztheted.")
+            Text("Ezen a napon most fut az edzésed. A sorrendet, a sorozatokat és a technikát most is átírhatod, a futó edzés követi — gyakorlatot hozzáadni, cserélni vagy törölni utána lehet.")
                 .nkFont(14).foregroundStyle(.white.opacity(0.9)).fixedSize(horizontal: false, vertical: true)
         }
         .padding(12)
@@ -838,18 +838,21 @@ private struct BuilderDayCard: View {
     @ViewBuilder private func row(_ draft: BlockDraft, _ exercise: DraftExercise, _ e: Int, capped: Bool, locked: Bool) -> some View {
         let lifted = ui.dragging == exercise.id
         let menuOpen = ui.menuRow == exercise.id
-        let lead: CGFloat = locked ? 0 : 28
+        // A running day (`locked`) keeps its rows editable — order, sets, reps, reserve, technique all save in
+        // place and reach the running workout (owner, 2026-11-23); only add, swap and delete wait, because those
+        // would change the rows the logged sets point at.
+        let lead: CGFloat = 28
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .center, spacing: 8) {
-                if !locked { handle(exercise) }
-                Text(exercise.name).nkFont(16, .medium).foregroundStyle(.white.opacity(locked ? 0.7 : 0.95))
+                handle(exercise)
+                Text(exercise.name).nkFont(16, .medium).foregroundStyle(.white.opacity(0.95))
                     .lineLimit(2).minimumScaleFactor(0.85).fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, minHeight: locked ? 30 : 44, alignment: .leading)
-                    .accessibilityAddTraits(locked ? [] : .isButton)
-                    .accessibilityHint(locked ? "" : "Beállítások")
-                    .accessibilityAction { if !locked { ui.menuRow = nil; ui.sheet = .settings(exercise.id) } }
-                    .accessibilityAction(named: "Beállítások") { if !locked { ui.menuRow = nil; ui.sheet = .settings(exercise.id) } }
-                if !locked { dots(exercise) }
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityHint("Beállítások")
+                    .accessibilityAction { ui.menuRow = nil; ui.sheet = .settings(exercise.id) }
+                    .accessibilityAction(named: "Beállítások") { ui.menuRow = nil; ui.sheet = .settings(exercise.id) }
+                dots(exercise)
             }
             cells(exercise, e, capped: capped, locked: locked).padding(.leading, lead)
             pills(draft, exercise, e, locked: locked).padding(.leading, lead).padding(.top, 1)
@@ -857,7 +860,7 @@ private struct BuilderDayCard: View {
         .padding(.vertical, 12)
         .contentShape(Rectangle())
         // The row's empty places open its settings; the cells, the chip, ≡ and ⋯ keep their own taps.
-        .onTapGesture { if !locked { ui.menuRow = nil; ui.sheet = .settings(exercise.id) } }
+        .onTapGesture { ui.menuRow = nil; ui.sheet = .settings(exercise.id) }
         .padding(.horizontal, lifted ? 10 : 0)
         .background {
             if lifted {
@@ -873,7 +876,7 @@ private struct BuilderDayCard: View {
         .transaction { if lifted { $0.animation = nil } }
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { heights[exercise.id] = $0 }
         .overlay(alignment: .topTrailing) {
-            if menuOpen { menu(exercise).offset(y: 52).transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .topTrailing))) }
+            if menuOpen { menu(exercise, locked: locked).offset(y: 52).transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .topTrailing))) }
         }
     }
 
@@ -882,15 +885,15 @@ private struct BuilderDayCard: View {
     private func cells(_ exercise: DraftExercise, _ e: Int, capped: Bool, locked: Bool) -> some View {
         HStack(spacing: narrow ? 6 : 8) {
             BuilderSetCell(value: exercise.sets, name: exercise.name, own: exercise.overrides.contains("workingSets"),
-                           warn: capped, narrow: narrow, locked: locked,
+                           warn: capped, narrow: narrow, locked: false,
                            down: { ui.menuRow = nil; model.draft?.step(day: index, exercise: e, by: -1) },
                            up: { ui.menuRow = nil; model.draft?.step(day: index, exercise: e, by: 1) })
             BuilderValueCell(value: "\(exercise.repMin)–\(exercise.repMax)", word: "ismétlés",
                              own: exercise.overrides.contains("repRange"), narrow: narrow,
-                             edit: locked ? nil : { ui.menuRow = nil; ui.sheet = .reps(exercise.id) })
+                             edit: { ui.menuRow = nil; ui.sheet = .reps(exercise.id) })
             BuilderValueCell(value: "\(exercise.targetRIR)", word: "tartalék",
                              own: exercise.overrides.contains("targetRir"), warn: exercise.targetRIR == 0, narrow: narrow,
-                             edit: locked ? nil : { ui.menuRow = nil; ui.sheet = .reserve(exercise.id) })
+                             edit: { ui.menuRow = nil; ui.sheet = .reserve(exercise.id) })
         }
     }
 
@@ -898,7 +901,7 @@ private struct BuilderDayCard: View {
     private func pills(_ draft: BlockDraft, _ exercise: DraftExercise, _ e: Int, locked: Bool) -> some View {
         NKFlowRow(spacing: 6, rowSpacing: 6) {
             if exercise.counts, exercise.type != "plyo" {
-                Text(SubMuscles.name(exercise.muscleKey)).nkFont(12, .medium).foregroundStyle(.white.opacity(locked ? 0.6 : 0.8))
+                Text(SubMuscles.name(exercise.muscleKey)).nkFont(12, .medium).foregroundStyle(.white.opacity(0.8))
                     .lineLimit(1).fixedSize()
                     .padding(.horizontal, 9).padding(.vertical, 4)
                     .overlay(Capsule().strokeBorder(planHue.glow.opacity(0.35), lineWidth: 1))
@@ -907,7 +910,7 @@ private struct BuilderDayCard: View {
                     .lineLimit(1).fixedSize()
                     .padding(.vertical, 4)
             }
-            if exercise.judged, draft.techniquesEnabled, !locked {
+            if exercise.judged, draft.techniquesEnabled {
                 // One pill, whatever is chosen: the row keeps its height when he picks (owner, 2026-11-19).
                 BuilderTechniqueChip(exercise: exercise) { ui.menuRow = nil; pick(TechniquePick(day: index, exercise: e)) }
             }
@@ -980,14 +983,19 @@ private struct BuilderDayCard: View {
         .accessibilityLabel("További lehetőségek")
     }
 
-    private func menu(_ exercise: DraftExercise) -> some View {
+    private func menu(_ exercise: DraftExercise, locked: Bool = false) -> some View {
         VStack(spacing: 0) {
-            menuItem("Csere") { ui.menuRow = nil; ui.sheet = .swap(exercise.id) }
-            Rectangle().fill(.white.opacity(0.08)).frame(height: 0.5)
+            // Swap and delete wait while the day's workout runs (the server refuses them); settings do not.
+            if !locked {
+                menuItem("Csere") { ui.menuRow = nil; ui.sheet = .swap(exercise.id) }
+                Rectangle().fill(.white.opacity(0.08)).frame(height: 0.5)
+            }
             menuItem("Beállítások") { ui.menuRow = nil; ui.sheet = .settings(exercise.id) }
-            Rectangle().fill(.white.opacity(0.08)).frame(height: 0.5)
-            menuItem("Törlés", color: Color(hex: 0xF2A08A)) {
-                withAnimation(reduceMotion ? nil : .snappy) { delete(exercise) }
+            if !locked {
+                Rectangle().fill(.white.opacity(0.08)).frame(height: 0.5)
+                menuItem("Törlés", color: Color(hex: 0xF2A08A)) {
+                    withAnimation(reduceMotion ? nil : .snappy) { delete(exercise) }
+                }
             }
         }
         .frame(width: 200)

@@ -28,6 +28,10 @@ struct WorkoutCeremony: View {
     let hue: Hue
     let onDone: () -> Void
     let onNote: () -> Void
+    /// Looking at the day's result again, after the fact (mezo-r36n9.147): the numbers are the same, the clock is
+    /// the one that stopped when he finished, and the note row is gone — the note's moment was the ceremony.
+    var finishedAt: Date? = nil
+    private var review: Bool { finishedAt != nil }
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var start = Date()
@@ -56,7 +60,7 @@ struct WorkoutCeremony: View {
                         // Nothing logged, nothing worked: an empty body would be a picture of
                         // a workout that did not happen.
                         if !heat.isEmpty { bodySection(p) }
-                        noteRow(p)
+                        if !review { noteRow(p) }
                         doneButton(p)
                     }
                     .padding(.horizontal, 20)
@@ -231,7 +235,7 @@ struct WorkoutCeremony: View {
 
     private func doneButton(_ p: Double) -> some View {
         Button(action: onDone) {
-            Text("Vissza a mai napra")
+            Text(review ? "Vissza" : "Vissza a mai napra")
                 .nkFont(17, .semibold).foregroundStyle(NK.ground)
                 .frame(maxWidth: .infinity, minHeight: 58)
                 .background(Capsule().fill(hue.glow))
@@ -270,8 +274,9 @@ struct WorkoutCeremony: View {
     }
 
     private var eyebrow: String {
-        let minutes = max(1, Int(Date().timeIntervalSince(session.startedAt) / 60))
-        return "Edzés lezárva · \(minutes) perc"
+        let end = finishedAt ?? Date()
+        let minutes = max(1, Int(end.timeIntervalSince(session.startedAt) / 60))
+        return review ? "A mai edzésed · \(minutes) perc" : "Edzés lezárva · \(minutes) perc"
     }
 
     private var subtitle: String {

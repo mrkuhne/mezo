@@ -332,3 +332,152 @@ struct WorkoutSessionLastLoggedTests {
         #expect(s.lastLogged?.set.reps == 12)
     }
 }
+
+// MARK: - What the next set is prefilled with (mezo-r36n9.147, owner 2026-11-23)
+
+/// „Edzés közben nem viszi át a következő szettre az előző szett logolt súlyát." The rule: warm-ups and the
+/// first working set come from the plan; every later working set starts from the weight he actually lifted on
+/// the previous working set. Reps and the reserve stay the plan's.
+struct WorkoutPrefillTests {
+    let press = UUID(uuidString: "d1d2d3d4-0003-4a2b-9c3d-111122223333")!
+    let base = WorkoutSessionTests()
+
+    @Test func theFirstWorkingSetComesFromThePlan() {
+        var s = base.session([base.exercise(press, "Fekvenyomás", warmups: 1, working: 3, kg: 80, reps: 8)])
+        _ = s.log(kg: 48, reps: 8, rir: nil)                      // the warm-up
+        let p = WorkoutSession.prefill(for: s.current!)
+        #expect(p.kg == 80)
+        #expect(p.reps == 8)
+        #expect(p.rir == 2)
+        #expect(p.source == .plan)
+    }
+
+    @Test func aLaterWorkingSetCarriesThePreviousWorkingSetsWeight() {
+        var s = base.session([base.exercise(press, "Fekvenyomás", warmups: 1, working: 3, kg: 80, reps: 8)])
+        _ = s.log(kg: 48, reps: 8, rir: nil)
+        _ = s.log(kg: 82.5, reps: 8, rir: 2)                      // he went heavier than the plan
+        let p = WorkoutSession.prefill(for: s.current!)
+        #expect(p.kg == 82.5)
+        #expect(p.reps == 8)                                       // the plan's reps, not his
+        #expect(p.source == .previous)
+    }
+
+    @Test func aWarmUpNeverCarriesAWorkingWeight() {
+        // Two warm-ups, then the working sets: the second warm-up stays the plan's lighter weight.
+        var s = base.session([base.exercise(press, "Fekvenyomás", warmups: 2, working: 2, kg: 80, reps: 8)])
+        _ = s.log(kg: 40, reps: 8, rir: nil)
+        let p = WorkoutSession.prefill(for: s.current!)
+        #expect(p.kg == 48)                                        // 0.6 × 80, the plan's warm-up
+        #expect(p.source == .plan)
+    }
+
+    @Test func withNoPlanWeightTheFirstWorkingSetIsEmptyAndTheNextOneCarries() {
+        // His case: a brand-new exercise, no history, no anchor — the server gives no weight at all.
+        let bare = PlannedExercise(id: press, name: "Fekvenyomás", muscle: "chest", type: .compound,
+                                   sets: [PrescribedSet(kind: .working, targetReps: 8, targetRIR: 2),
+                                          PrescribedSet(kind: .working, targetReps: 8, targetRIR: 2)],
+                                   warmupCount: 0, workingCount: 2, repMin: 6, repMax: 10, targetRIR: 2)
+        var s = base.session([bare])
+        let first = WorkoutSession.prefill(for: s.current!)
+        #expect(first.kg == nil)
+        #expect(first.source == .none)
+        _ = s.log(kg: 60, reps: 8, rir: 2)
+        let second = WorkoutSession.prefill(for: s.current!)
+        #expect(second.kg == 60)
+        #expect(second.source == .previous)
+    }
+
+    @Test func aPreviousSetWithoutWeightFallsBackToThePlan() {
+        var s = base.session([base.exercise(press, "Fekvenyomás", warmups: 0, working: 2, kg: 80, reps: 8)])
+        _ = s.log(kg: nil, reps: 8, rir: 2)
+        let p = WorkoutSession.prefill(for: s.current!)
+        #expect(p.kg == 80)
+        #expect(p.source == .plan)
+    }
+}
+
+// MARK: - A fresh plan lands while the workout runs (mezo-r36n9.147)
+
+/// He edits the block mid-workout (or just before starting): the order, the set counts and the technique come
+/// from the fresh plan, and nothing he has logged is lost.
+struct WorkoutApplyPlanTests {
+    let press = UUID(uuidString: "d1d2d3d4-0011-4a2b-9c3d-111122223333")!
+    let row = UUID(uuidString: "d1d2d3d4-0012-4a2b-9c3d-111122223333")!
+    let curl = UUID(uuidString: "d1d2d3d4-0013-4a2b-9c3d-111122223333")!
+    let base = WorkoutSessionTests()
+
+    @Test func theOrderFollowsTheFreshPlan() {
+        var s = base.session([base.exercise(press, "Fekvenyomás"), base.exercise(row, "Evezés")])
+        let fresh = TodayWorkout(exercises: [base.exercise(row, "Evezés"), base.exercise(press, "Fekvenyomás")])
+        s.apply(plan: fresh)
+        #expect(s.all.map(\.id) == [row, press])
+        // He had not started anything: the first in the new order is the one in front of him.
+        #expect(s.currentExerciseId == row)
+    }
+
+    @Test func loggedSetsStayAndTheCurrentExerciseIsKept() {
+        var s = base.session([base.exercise(press, "Fekvenyomás", warmups: 0, working: 3), base.exercise(row, "Evezés")])
+        _ = s.log(kg: 80, reps: 8, rir: 2)
+        let fresh = TodayWorkout(exercises: [base.exercise(row, "Evezés"), base.exercise(press, "Fekvenyomás", warmups: 0, working: 4)])
+        s.apply(plan: fresh)
+        #expect(s.currentExerciseId == press)
+        #expect(s.exercises[press]?.logged.count == 1)
+        #expect(s.exercises[press]?.setCount == 4)                  // the set count moved with the plan
+        #expect(s.all.map(\.id) == [row, press])
+    }
+
+    @Test func theTechniqueAndTheNoteComeFromTheFreshPlan() {
+        var s = base.session([base.exercise(press, "Fekvenyomás", warmups: 0, working: 2)])
+        var e = base.exercise(press, "Fekvenyomás", warmups: 0, working: 2)
+        e.sets[1] = PrescribedSet(kind: .working, targetKg: 80, targetReps: 8, targetRIR: 2, technique: .drop,
+                                  legs: [PrescribedLeg(kind: .drop, weightKg: 56, reps: nil, minReps: nil,
+                                                       toFailure: true, restBeforeSec: 0, dropPercent: 30)])
+        e.technique = .drop
+        e.note = "könyök befelé"
+        s.apply(plan: TodayWorkout(exercises: [e]))
+        #expect(s.exercises[press]?.liveTechnique == .drop)
+        #expect(s.exercises[press]?.note == "könyök befelé")
+    }
+
+    @Test func aNoteTypedOnThePhoneOutlivesAStaleServerNote() {
+        var s = base.session([base.exercise(press, "Fekvenyomás")])
+        s.setNote("váll nyugton", for: press)
+        s.apply(plan: TodayWorkout(exercises: [base.exercise(press, "Fekvenyomás")]))   // the server has none yet
+        #expect(s.exercises[press]?.note == "váll nyugton")
+    }
+
+    @Test func anExerciseAddedOnTheServerJoinsAndAnUntouchedRemovedOneLeaves() {
+        var s = base.session([base.exercise(press, "Fekvenyomás"), base.exercise(row, "Evezés")])
+        let fresh = TodayWorkout(exercises: [base.exercise(press, "Fekvenyomás"), base.exercise(curl, "Bicepsz")])
+        s.apply(plan: fresh)
+        #expect(s.all.map(\.id) == [press, curl])
+    }
+
+    @Test func aRemovedExerciseWithLoggedSetsStaysWhereItWas() {
+        var s = base.session([base.exercise(press, "Fekvenyomás", warmups: 0, working: 2), base.exercise(row, "Evezés")])
+        _ = s.log(kg: 80, reps: 8, rir: 2)
+        s.apply(plan: TodayWorkout(exercises: [base.exercise(row, "Evezés")]))
+        #expect(s.all.map(\.id) == [press, row])                    // he did a set of it: it is a fact
+        #expect(s.exercises[press]?.logged.count == 1)
+    }
+
+    @Test func aPlanOfAnotherDayIsIgnored() {
+        let dayA = UUID(uuidString: "d1d2d3d4-00a0-4a2b-9c3d-111122223333")!
+        let dayB = UUID(uuidString: "d1d2d3d4-00b0-4a2b-9c3d-111122223333")!
+        var s = WorkoutSession(TodayWorkout(templateSessionId: dayA, exercises: [base.exercise(press, "Fekvenyomás")]))
+        s.apply(plan: TodayWorkout(templateSessionId: dayB, exercises: [base.exercise(row, "Evezés")]))
+        #expect(s.all.map(\.id) == [press])
+    }
+
+    @Test func aTechniqueSetInProgressIsLeftAlone() {
+        var e = base.exercise(press, "Fekvenyomás", warmups: 0, working: 1)
+        e.sets[0] = PrescribedSet(kind: .working, targetKg: 80, targetReps: 8, targetRIR: 2, technique: .drop,
+                                  legs: [PrescribedLeg(kind: .drop, weightKg: 56, reps: nil, minReps: nil,
+                                                       toFailure: true, restBeforeSec: 0, dropPercent: 30)])
+        var s = base.session([e])
+        _ = s.log(kg: 80, reps: 8, rir: 2)                         // the main part: the drop is next
+        #expect(s.technique != nil)
+        s.apply(plan: TodayWorkout(exercises: [base.exercise(press, "Fekvenyomás", warmups: 0, working: 2)]))
+        #expect(s.technique != nil)                                  // still inside the set he is doing
+    }
+}

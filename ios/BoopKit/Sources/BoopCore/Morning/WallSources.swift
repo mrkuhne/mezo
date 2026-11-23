@@ -118,6 +118,8 @@ public func edzesWallCandidates(_ brief: Brief, now: Date, calendar: Calendar = 
             text: "*\(s.title)* megvolt",
             sub: [s.doneMinutes.map { "\($0) perc" }, s.avgHr.map { "\($0) bpm átlag" }]
                 .compactMap { $0 }.joined(separator: " · "),
+            // The one thing left to do about a done workout is to look at it (owner, 2026-11-23).
+            primary: "Megnézem",
             settled: "Edzés megvolt",
             why: "A mai edzésed le van zárva — ez a nap legnagyobb terhelése, és már a hátad mögött van.")]
     }

@@ -65,7 +65,7 @@ struct EdzesWallSourceTests {
         let c = try! #require(out.first)
         #expect(c.role == .happened)
         #expect(c.kind == .tortent)
-        #expect(c.primary == nil)           // nothing left to do about it
+        #expect(c.primary == "Megnézem")    // the one thing left to do about it: look at the result (mezo-r36n9.147)
         #expect(c.sub.contains("58 perc"))
         #expect(c.expiresAt == nil)
     }

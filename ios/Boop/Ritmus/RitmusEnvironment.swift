@@ -115,6 +115,9 @@ final class RitmusEnvironment {
             if item.kind == .mealDraft { await me.env?.mealDraftsChanged() }
             // A cash expense reached the server: the Pénz area re-reads (its row stops waiting).
             if item.kind == .penzExpense { await me.env?.penzChanged() }
+            // A workout's start or finish landed: Edzés and the brief re-read, so Ma says „megvolt" and not „Indítás"
+            // (mezo-r36n9.147).
+            if item.kind == .workoutFinish || item.kind == .workoutStart { await me.env?.edzesChanged() }
             // The evening's line arrived after its relink went out (a retried recording): link it again.
             if let box = queue.outbox { await Self.relinkIfNeeded(item, ledger: ledger, outbox: box) }
             if await queue.outbox?.isQueued(item.id) == true { return }
@@ -178,6 +181,12 @@ final class RitmusEnvironment {
     /// Bumped when a cash expense is queued or reaches the server: the Pénz area re-reads the outbox (and the server).
     private(set) var penzTick = 0
     func penzChanged() { penzTick += 1 }
+    /// Bumped when a workout's start or finish reached the server: whoever shows today's session re-reads.
+    private(set) var edzesTick = 0
+    func edzesChanged() { edzesTick += 1 }
+
+    /// Send what is queued now, backoff ignored — for a write the owner is waiting on (a workout's finish).
+    func sendNow() { sendSoon() }
 
     /// Queues a cash expense typed on the phone (`OutboxKind.penzExpense`) and sends it at once if the net allows.
     /// Throws when the phone could not keep it — the capture then says so instead of pretending.
