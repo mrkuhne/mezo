@@ -25,6 +25,21 @@ struct CaptureSheetTests {
         #expect(Set(QuickLog.allCases).count == 6)
     }
 
+    /// The home screen's five doors (owner 2026-11-24, `mezo-r36n9.157`): the frequent five, in his order, each one tap.
+    @Test func homeDoorsAreTheFiveFrequentOnes() {
+        #expect(KezdolapView.doors.map(\.label) == ["ÉTKEZÉS", "VÍZ", "SÚLY", "CHECK-IN", "NAPLÓ"])
+        #expect(KezdolapView.doors.map(\.pick) == [.meal(.pick, text: ""), .quick(.water), .quick(.weight), .cover(.checkin), .quick(.journal)])
+        #expect(KezdolapView.doors.map(\.glyph) == ["bowl-cream", "drop-sky", "scale-ink", "spark-cream", "book-sage"])
+    }
+
+    @Test func everyHomeDoorIsAlsoOnTheSheet() {
+        let onSheet = Set(CaptureSheet.doors.map { "\($0.pick)" })
+        for d in KezdolapView.doors {
+            if case .meal = d.pick { continue }   // the meal card itself is on the sheet
+            #expect(onSheet.contains("\(d.pick)"), "\(d.label) is not a sheet door")
+        }
+    }
+
     @Test func quickSheetsSayTheirAmountsInHisUnits() {
         #expect(waterLabel(100) == "1 dl" && waterLabel(750) == "7,5 dl" && WaterSheet.amounts == [100, 200, 300, 500, 750])
         #expect(kgText(81.4) == "81,4 kg")

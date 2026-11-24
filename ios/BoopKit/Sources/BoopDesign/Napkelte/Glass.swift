@@ -64,7 +64,8 @@ public struct Trend: View {
 /// flatten into a blob, so they are drawn as thin outlines on the same 64-unit grid — as are the Napkelte-only glyphs
 /// `mic` (voice) and `offline` (a cloud with a slash, "nincs net"; B3, spike `RMicGlyph` / `ROfflineGlyph`).
 public struct NKGlyph: View {
-    static let outlined: Set<String> = ["check-ink", "clock-ink", "camera-ink", "book-sage", "mic", "offline", "e-penz", "e-level"]
+    static let outlined: Set<String> = ["check-ink", "clock-ink", "camera-ink", "book-sage", "mic", "offline", "e-penz", "e-level",
+                                        "body-cream"]
     let name: String, color: Color, size: CGFloat
     public init(_ name: String, _ color: Color, size: CGFloat = 18) { self.name = name; self.color = color; self.size = size }
 
@@ -82,6 +83,15 @@ public struct NKGlyph: View {
                     case "clock-ink":
                         ctx.stroke(P { $0.addEllipse(in: CGRect(x: 9, y: 9, width: 46, height: 46)) }, with: .color(color), style: st)
                         ctx.stroke(P { $0.move(to: CGPoint(x: 32, y: 20)); $0.addLine(to: CGPoint(x: 32, y: 32)); $0.addLine(to: CGPoint(x: 40, y: 37)) }, with: .color(color), style: st)
+                    case "body-cream":
+                        // A standing figure: the head, and the shoulders narrowing to the waist and out to the hips.
+                        ctx.stroke(P { $0.addEllipse(in: CGRect(x: 24, y: 6, width: 16, height: 16)) }, with: .color(color), style: st)
+                        ctx.stroke(P {
+                            $0.move(to: CGPoint(x: 16, y: 58))
+                            $0.addCurve(to: CGPoint(x: 18, y: 30), control1: CGPoint(x: 20, y: 50), control2: CGPoint(x: 20, y: 40))
+                            $0.addCurve(to: CGPoint(x: 46, y: 30), control1: CGPoint(x: 22, y: 26), control2: CGPoint(x: 42, y: 26))
+                            $0.addCurve(to: CGPoint(x: 48, y: 58), control1: CGPoint(x: 44, y: 40), control2: CGPoint(x: 44, y: 50))
+                        }, with: .color(color), style: st)
                     case "camera-ink":
                         ctx.stroke(P { $0.addRoundedRect(in: CGRect(x: 8, y: 18, width: 48, height: 34), cornerSize: CGSize(width: 10, height: 10)) }, with: .color(color), style: st)
                         ctx.stroke(P { $0.addEllipse(in: CGRect(x: 23, y: 26, width: 18, height: 18)) }, with: .color(color), style: st)

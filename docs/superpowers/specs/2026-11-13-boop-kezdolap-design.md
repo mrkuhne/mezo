@@ -36,13 +36,16 @@ for, and the ring's middle leads to the living wall.**
 
 - **The entrance is the ring.** `Ma` is the bar's first place and the ring is that place's first screen;
   tapping `Ma` in the bar while Ma is already open brings the ring back from anywhere.
-- **The eight areas**, clockwise from the top: **Nap · Alvás · Étel · Edzés · Energia · Forma · Pénz ·
-  Levél** (the life-dashboard vocabulary, decision #6 there, plus the day). Pénz and Levél are not built
-  yet (L4–L6): they sit faint and say *"még nem él"* on tap.
+- **The nine areas**, clockwise from the top: **Nap · Alvás · Étel · Edzés · Energia · Súly · Forma · Pénz ·
+  Levél** (the life-dashboard vocabulary, decision #6 there, plus the day; Súly since 2026-11-24). Pénz and Levél
+  were faint until L4–L6 shipped; every orb is live now.
 - **The day leads** (decision #41, 2026-11-16, overruling the earlier "no eighth orb"): the day is the
   whole day and the other seven are parts of it, so it sits at the top. Its orb carries **no score** —
   nothing scores a day — and fills with **how full the day is** from the calendar (`dayFullness`), opening
   the day's own page. The folded **"A napod" row on Ma stays**: an orb is another way in, not a replacement.
+- **The ring is nine since 2026-11-24** (decision #101, `mezo-r36n9.158`): **Súly** sits between Energia and Forma, and the
+  orbs shrink with the ring's side (56 pt, 52 pt under 400 pt, 46 pt under 360 pt) so every name keeps clear of the next
+  orb. The paragraph below is the eight-orb reasoning it replaced.
 - **The ring is full at eight.** At eight the orbs are already 56 pt and the labels 9 pt apart at 375 pt
   width, so a ninth area is not a matter of adding one more point. If one ever arrives the answer has to be
   designed — a smaller orb with its label inside, two concentric rings, or the ring carrying the areas he

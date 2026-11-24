@@ -24,6 +24,7 @@ Epic: `mezo-r36n9` · tükör jegy: `mezo-r36n9.29`.
 | `10-ai/` | AI és memória — emlékezet, éjszakai konzílium, javaslatok „miért?” |
 | `11-penz/` | Pénz — a heti maradék, a költések, a hónapzárás, később befektetések és gyakorlás |
 | `12-level/` | Levél — a reggeli posta: négy csoport, pontozott ajánlatok, csengetés, a tükörfiók és a szabályok |
+| `13-suly/` | Súly — a súlytrend, az évad ütemének tartása (a kilencedik gömb száma), a mérleg testzsírja és izomtömege, a mérések naplója |
 
 ## Szerverfunkciók (`_funkciok.json`)
 

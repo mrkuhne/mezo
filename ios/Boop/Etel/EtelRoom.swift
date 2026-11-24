@@ -644,6 +644,9 @@ struct EtelRoom: View {
             }
             Color.clear.frame(height: 20)
         }
+        // Pull-to-refresh belongs to the page alone: as the outermost modifier it reached every sheet below through
+        // the environment, so a pull inside a sheet reloaded the room instead of closing the sheet (`mezo-r36n9.156`).
+        .refreshable { await reload() }
         .toolbar(.hidden, for: .navigationBar)
         .background(RoomSwipeBack().frame(width: 0, height: 0).accessibilityHidden(true))
         .nkToast($toast)
@@ -784,7 +787,6 @@ struct EtelRoom: View {
             }
         }
         .task(id: ritmus?.mealDraftsTick) { await store.refreshPending(ritmus?.food) }
-        .refreshable { await reload() }
     }
 
     private func reload() async {

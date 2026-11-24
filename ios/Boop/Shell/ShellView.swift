@@ -78,6 +78,28 @@ struct ShellView: View {
 
     private var tab: ShellTab { ShellTab.restored(tabKey) }
 
+    /// What a pick asks for. From the "+" sheet it waits until that sheet is gone (two presentations never overlap);
+    /// from a page (the home screen's quick doors) it opens at once.
+    private func handle(_ pick: CapturePick, afterSheet: Bool) {
+        if afterSheet {
+            switch pick {
+            case .cover(let cover): coverAfterCapture = cover
+            case .meal: mealAfterCapture = pick.mealStart
+            case .penzExpense: penzAfterCapture = true
+            case .quick(let kind): quickAfterCapture = kind
+            case .area(let hue): areaAfterCapture = hue
+            }
+        } else {
+            switch pick {
+            case .cover(let cover): router.open(cover)
+            case .meal: meal = pick.mealStart
+            case .penzExpense: penzCapture = true
+            case .quick(let kind): quick = kind
+            case .area(let hue): select(.ma); router.openRoom(hue)
+            }
+        }
+    }
+
     /// The cover a sheet made wait opens as soon as that sheet is gone.
     private func openCoverAfterSheet() {
         if let cover = coverAfterCapture { coverAfterCapture = nil; router.open(cover) }
@@ -130,15 +152,10 @@ struct ShellView: View {
         .nkToast($toast)
         .preferredColorScheme(.dark)
         // page-level presentations (boop-ios.md §9)
+        .environment(\.openPick, { handle($0, afterSheet: false) })
         .sheet(isPresented: $capturing, onDismiss: openCoverAfterSheet) {
             CaptureSheet { pick in
-                switch pick {
-                case .cover(let cover): coverAfterCapture = cover
-                case .meal: mealAfterCapture = pick.mealStart
-                case .penzExpense: penzAfterCapture = true
-                case .quick(let kind): quickAfterCapture = kind
-                case .area(let hue): areaAfterCapture = hue
-                }
+                handle(pick, afterSheet: true)
                 capturing = false
             }
                 .presentationDetents([.height(650), .large])

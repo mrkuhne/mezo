@@ -1331,5 +1331,56 @@
     "miert": "A tulajdonos a webes gyors logolás teljességét kérte egy gyors gombról a kezdőlapon; a lapon a súly és az edzés addig csak „hamarosan” volt, a víz, a kiegészítők, a sport és az alvás hiányzott.",
     "kovetkezmeny": "A „Napló” a lapon egy bármikori sor; az esti zárás a saját útján marad. A súly, az alvás, a sport és a naplósor net nélkül is rögzül, és magától elmegy. Az alvás kézi út: az órád éjszakáit nem kell beírni.",
     "levaltotta": "„Csak a lap” változat (a menüsor plusz gombja az egyetlen ajtó) — elvetve."
+  },
+  "d-2026-11-24-lapok-x": {
+    "cim": "A lapok bezárása: kerek X minden lapon, és a frissítés nem ragad a lapokra",
+    "datum": "2026-11-24",
+    "terulet": [
+      "Alapok"
+    ],
+    "suly": "Kicsi",
+    "valasztas": "Minden felcsúszó lap jobb felső sarkába egy kis kerek üveg X kerül, a lehúzás is marad; az Étel szoba „lehúzásra frissít” beállítása csak a szobára vonatkozik, a lapjaira nem.",
+    "miert": "A lapokat nehéz vagy nem lehetett bezárni: bezáró gomb nem volt, és az Étel-lapokon a lehúzás a szobát frissítette. Az iOS 26 lapjai ugyanezt a kerek X-et viselik.",
+    "kovetkezmeny": "A Napkelte-kánon „csak lehúzás” szabálya változik; a teljes képernyős oldalak bal felső vissza nyila marad.",
+    "levaltotta": "„Csak a frissítés javítása” (X nélkül) — elvetve: a hosszú és a félmagas lapok továbbra is nehezen záródtak volna."
+  },
+  "d-2026-11-24-gyorsajtok": {
+    "cim": "Kezdőlap: öt gyorsajtó a Rögzítés kapszula helyett",
+    "datum": "2026-11-24",
+    "terulet": [
+      "Alapok",
+      "Ma"
+    ],
+    "suly": "Közepes",
+    "valasztas": "A „+ Rögzítés” kapszula helyett Boop mondata alatt öt kis üvegajtó: Étkezés · Víz · Súly · Check-in · Napló, mindegyik rögtön a saját lapját nyitja. A menüsor plusz gombján marad mind a kilenc ajtó.",
+    "miert": "A kapszula ugyanazt nyitotta, mint a sáv plusz gombja, és egyedül lebegett („elég béna lett”). Az öt ajtó egy koppintással kevesebb a leggyakoribb rögzítésekhez.",
+    "kovetkezmeny": "A többi négy ajtó (Kiegészítők, Edzés indítása, Sport, Alvás, Kiadás) csak a plusz lapján érhető el.",
+    "levaltotta": "„Egy szép kerek plusz gomb” — elvetve: két ajtó lett volna ugyanarra a lapra. Felülírja a d-2026-11-24-gyors-rogzites-teljes gombját."
+  },
+  "d-2026-11-24-suly-orb-utem": {
+    "cim": "A kilencedik gömb: Súly, aranyban; a száma az évad ütemének tartása",
+    "datum": "2026-11-24",
+    "terulet": [
+      "Súly",
+      "Ma"
+    ],
+    "suly": "Nagy",
+    "valasztas": "A kör kilenc gömbből áll, a Súly az Energia és a Forma között, arany színben (a mérleg sárgaréze). A gömb száma 0–100: mennyire tartja a trended az évad tervezett heti ütemét (pont a terven 100, fele ütemnél 50, állva vagy rossz irányba 0; a gyorsabb fogyás feleannyit von le; tartó évadnál a sávtól mért távolság). Évad vagy trend nélkül „–”. Mögötte a Súly terület a Pénz mintájára: Ma · Test · Napló.",
+    "miert": "A tulajdonos kérése: „teljesen hiányzik egy orb / domain ahol a súlyt tudom nézni… a szám rajta azt mutassa, hogy mennyire jól követjük a súlycélt”; a Pénz oldalt nevezte mintának, más egyedi színben.",
+    "kovetkezmeny": "A kör „nyolcnál tele” szabálya helyett: kilenc gömb, a kisebb telefonokon kisebb gömbökkel. Új szerverfunkció nem kell: az évad, a súlytrend és a súlynapló már megvolt.",
+    "levaltotta": "„A célig megtett út” mint szám — elvetve: hónapokig alig mozdulna, és nem mondaná meg, jól megy-e éppen. Felülírja a kezdőlap-döntés „a kör nyolcnál tele” tételét."
+  },
+  "d-2026-11-24-test-ful": {
+    "cim": "A Test oldal váltja ki a régi „Testösszetétel” tervet",
+    "datum": "2026-11-24",
+    "terulet": [
+      "Súly",
+      "Terv"
+    ],
+    "suly": "Kicsi",
+    "valasztas": "A Feelfit mérleg testzsírja és izomtömege (az Apple Egészségen át) a Súly terület Test oldalán jelenik meg, saját új ikonnal; külön „Test” kártya nem épül a tervbe.",
+    "miert": "A 2026-11-12-i döntés (Feelfit — A változat) egy Test kártyát ígért a tervbe; a Súly terület a jobb helye ugyanannak.",
+    "kovetkezmeny": "A 7. döntés szerverfele (a testzsír a cél energiaszámításába) nyitva marad külön lépésként.",
+    "levaltotta": "A 2026-11-12-i döntés „Test kártya a tervben” része."
   }
 }

@@ -21,6 +21,8 @@ struct RootView: View {
     @State private var level: LevelStore?
     /// The Évad page's data (B6, mezo-r36n9.16): the season overview, its cache and the season writes.
     @State private var evad: EvadStore?
+    /// The Súly area's data (`mezo-r36n9.158`): the season's weight course, the trend, the weigh-ins, the body samples.
+    @State private var suly: SulyStore?
     /// The day capacity's writes (B7, mezo-r36n9.17): his label of how an event felt.
     @State private var kapacitas: KapacitasClient?
     /// The season's load-vs-recovery read for the Évad page (B7 K2).
@@ -66,6 +68,7 @@ struct RootView: View {
         .environment(penz)
         .environment(level)
         .environment(evad)
+        .environment(suly)
         .environment(\.kapacitasClient, kapacitas)
         .environment(kapacitasStore)
         .onChange(of: session.state, initial: true) { _, state in updateLink(state) }
@@ -87,7 +90,7 @@ struct RootView: View {
         // the session's client already carries another token, or none).
         guard let me else {
             ritmus?.retire(); link = nil; morning = nil; ritmus = nil; food = nil; train = nil; cache = nil; workoutFolder = nil
-            penz = nil; level = nil; evad = nil; kapacitas = nil; kapacitasStore = nil
+            penz = nil; level = nil; evad = nil; suly = nil; kapacitas = nil; kapacitasStore = nil
             BackgroundSyncHost.ritmus = nil; return
         }
         if link?.userId != me.id {
@@ -113,6 +116,8 @@ struct RootView: View {
                 Task { await LevelPreview.primeCache(previewCache) }
                 evad = EvadStore(client: EvadPreviewFixtures.client, cache: cache)
                 Task { await EvadPreviewFixtures.primeCache(previewCache) }
+                suly = SulyPreview.store(cache: cache)
+                Task { await SulyPreview.primeCache(previewCache) }
                 kapacitas = KapacitasClient(raw: RawJSONClient(transport: PreviewTransport(), baseURL: URL(string: "https://preview.invalid")!,
                                                                token: { "preview" }))
                 let previewKap = KapacitasStore(client: kapacitas, cache: cache)
@@ -138,6 +143,7 @@ struct RootView: View {
             penz = PenzStore(client: PenzClient(raw: session.raw), cache: cache)
             level = LevelStore(client: LevelClient(raw: session.raw), cache: cache)
             evad = EvadStore(client: EvadClient(raw: session.raw), cache: cache)
+            suly = SulyStore(evad: EvadClient(raw: session.raw), client: SulyClient(raw: session.raw), health: HealthKitReader(), cache: cache)
             kapacitas = KapacitasClient(raw: session.raw)
             let liveKap = KapacitasStore(client: kapacitas, cache: cache)
             kapacitasStore = liveKap

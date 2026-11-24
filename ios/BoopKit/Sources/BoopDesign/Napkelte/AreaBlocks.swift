@@ -240,8 +240,12 @@ public struct NKCurve: View {
             if !labels.isEmpty {
                 HStack(spacing: 0) {
                     ForEach(labels.indices, id: \.self) { i in
+                        // A label keeps its own width even when the curve has more points than the row has room for
+                        // (a daily trend): the first sits on the left edge, the last on the right, never wrapped
+                        // letter by letter into a narrow cell (`mezo-r36n9.158`).
                         Text(labels[i]).nkFont(10, design: .monospaced).foregroundStyle(.white.opacity(0.45))
-                            .frame(maxWidth: .infinity)
+                            .lineLimit(1).fixedSize()
+                            .frame(maxWidth: .infinity, alignment: i == 0 ? .leading : (i == labels.count - 1 ? .trailing : .center))
                     }
                 }
             }

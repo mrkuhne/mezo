@@ -44,6 +44,16 @@ extension EnvironmentValues {
     }
 }
 
+/// Opens one door of the quick log straight from a page (the home screen's quick doors, `mezo-r36n9.157`): the
+/// shell handles the pick exactly as it handles a tap on the "+" sheet, only with no sheet to wait for.
+private struct OpenPickKey: EnvironmentKey { static let defaultValue: @MainActor @Sendable (CapturePick) -> Void = { _ in } }
+extension EnvironmentValues {
+    var openPick: @MainActor @Sendable (CapturePick) -> Void {
+        get { self[OpenPickKey.self] }
+        set { self[OpenPickKey.self] = newValue }
+    }
+}
+
 /// The global "+": everything the web app's quick log could record, on one sheet (owner 2026-11-24, `mezo-r36n9.154`).
 /// The meal chips open the composer (B4); the nine doors below are the web's nine plus the cash expense (Pénz L5):
 /// Check-in opens its cover, "Edzés indítása" opens the Edzés room, the rest are the quick log's own sheets.

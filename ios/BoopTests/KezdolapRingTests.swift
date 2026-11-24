@@ -3,8 +3,8 @@ import Testing
 import BoopCore
 @testable import Boop
 
-/// The home ring's numbers (`mezo-r36n9.152`, `.153`): a learning brief blanks Forma alone, the Étel orb carries the
-/// Étel room's own number, the Pénz orb the week's remaining share, and Pénz is a live orb now.
+/// The home ring's numbers (`mezo-r36n9.152`, `.153`, `.158`): a learning brief blanks Forma alone, the Étel orb carries the
+/// Étel room's own number, the Pénz orb the week's remaining share, the Súly orb the weight-pace score.
 struct KezdolapRingTests {
     private func brief(state: String) throws -> Brief {
         let metrics = [("forma", "null", "x"), ("alvas", "78", "x"), ("mozgas", "40", "x"),
@@ -70,6 +70,23 @@ struct KezdolapRingTests {
         #expect(ringItem(.penz, brief: nil).display == "–")
         #expect(ringItem(.penz, brief: nil, penz: allowance(remaining: 0, budget: 0)).display == "–")
         #expect(ringItem(.penz, brief: nil, penz: allowance(remaining: 0, budget: 7_700_000)).display == "0")
+    }
+
+    /// The ninth orb (owner 2026-11-24, `mezo-r36n9.158`): Súly after Energia, live, its number the pace score.
+    @Test func ringHasNineAreasWithSulyAfterEnergia() {
+        #expect(Area.allCases.map(\.name) == ["Nap", "Alvás", "Étel", "Edzés", "Energia", "Súly", "Forma", "Pénz", "Levél"])
+        #expect(Area.suly.world == .suly && Area.suly.hue == nil)
+    }
+
+    @Test func sulyOrbIsLiveAndShowsThePaceScore() {
+        let item = ringItem(.suly, brief: nil, suly: 84)
+        #expect(item.live && item.display == "84" && item.level == 0.84)
+        #expect(ringItem(.suly, brief: nil, suly: 0).display == "0")
+    }
+
+    @Test func sulyOrbWithoutStoreIsDash() {
+        let item = ringItem(.suly, brief: nil)
+        #expect(item.live && item.display == "–" && item.level == 0.12)
     }
 
     @Test func dayOrbStillFillsWithTheDay() throws {

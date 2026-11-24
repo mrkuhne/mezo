@@ -50,7 +50,7 @@ struct CookedCaptureSheet: View {
     }
 
     var body: some View {
-        NKSheetFrame(hue: .fuel, eyebrow: "EZT FŐZTEM", title: title) {
+        NKSheetFrame(hue: .fuel, eyebrow: "EZT FŐZTEM", title: title, closable: !(capture.stage == .working || review?.saving == true)) {
             switch capture.stage {
             case .input: input
             case .working:

@@ -218,7 +218,7 @@ serif title, one line; glass cards; **Boop speaks last** (small orb + "BOOP" + s
   and suggestion tags, Boop's sentence, "Mentem").
 
 ### 5.4 Detail sheets (behind Boop's tappable phrases)
-Sheet on the dark ground, medium + large detents, 34 pt corners, drag indicator; a 170 pt painted band in the hue with
+Sheet on the dark ground, medium + large detents, 34 pt corners, drag indicator, **and a glass close circle top-right** (a drawn hairline cross, 36 pt — owner 2026-11-24, `mezo-r36n9.156`: a tall sheet's drag competes with its scroll, a medium one only steps down); a 170 pt painted band in the hue with
 mono eyebrow + serif title; glass cards; Boop's sentence last.
 - **Alvás** (blue): tiles *Mély* / *Elalvás* with trend triangles; the hypnogram **with a legend** (colour bar as long as
   the share · stage name · time · percent — *owner* asked for it); 7-day deep-sleep bars with a dashed average line,
