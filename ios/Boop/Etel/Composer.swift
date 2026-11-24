@@ -1074,6 +1074,9 @@ struct MealTimeRow: View {
                             model.setTime(BoopClock.now().addingTimeInterval(-Double(minutes) * 60)); picking = false
                         }
                     }
+                    chip("Tegnap", on: model.chosenAt != nil && Calendar.current.isDateInYesterday(model.capturedAt)) {
+                        model.setTime(Calendar.current.date(byAdding: .day, value: -1, to: BoopClock.now()) ?? BoopClock.now()); picking = true
+                    }
                     chip("Más időpont", on: picking) { picking.toggle(); if picking, model.chosenAt == nil { model.setTime(model.capturedAt) } }
                 }
             }

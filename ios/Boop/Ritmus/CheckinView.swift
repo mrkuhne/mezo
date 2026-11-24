@@ -81,7 +81,9 @@ struct CheckinView: View {
             .accessibilityLabel("\(flow.index + 1). kérdés a \(flow.questions.count)-ból")
             Spacer()
             Group {
-                if flow.canQuickExit {
+                if UserDefaults.standard.bool(forKey: "previewCatchup") {
+                    Text("PÓTLÁS · TEGNAP · DÉL").nkFont(12, design: .monospaced).foregroundStyle(.white.opacity(0.75)).lineLimit(1).minimumScaleFactor(0.8)
+                } else if flow.canQuickExit {
                     Button { Task { await flow.quickExit() } } label: {
                         Text("Most csak ennyi").nkFont(13, .semibold).foregroundStyle(.white).lineLimit(1)
                             .padding(.horizontal, 12).frame(height: 34).glassEffect(.clear.interactive(), in: .capsule)
@@ -100,6 +102,7 @@ struct CheckinView: View {
     private var header: some View {
         VStack(spacing: 10) {
             Text(q.label.uppercased()).nkFont(12, .medium, design: .monospaced).tracking(1.6).foregroundStyle(.white.opacity(0.8))
+            if UserDefaults.standard.bool(forKey: "previewCatchup") { Text("Ahogy akkor voltál.").nkFont(14).foregroundStyle(.white.opacity(0.7)) }
             Text(q.question).nkFont(34, design: .serif).foregroundStyle(.white).multilineTextAlignment(.center)
                 .frame(minHeight: 90)
                 .fixedSize(horizontal: false, vertical: true)

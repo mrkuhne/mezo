@@ -38,7 +38,7 @@ struct SystemReminderCenter: ReminderCenter {
     }
 
     func request() async -> Bool {
-        (try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])) ?? false
+        UserDefaults.standard.string(forKey: "preview") != nil ? false : ((try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])) ?? false)
     }
 
     func schedule(id: String, hour: Int, minute: Int, title: String, body: String) async throws {

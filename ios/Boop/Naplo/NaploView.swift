@@ -29,6 +29,15 @@ struct NaploView: View {
                let y = env.calendar.date(byAdding: .day, value: -1, to: env.clock()) { open = OpenDay(id: env.day(of: y)) }
             #endif
         }
+        .task {
+            #if DEBUG
+            // SPIKE fallback: open yesterday even if the refresh is slow.
+            if UserDefaults.standard.string(forKey: "previewOpen") == "naploDay" {
+                try? await Task.sleep(for: .seconds(2))
+                if open == nil, let env, let y = env.calendar.date(byAdding: .day, value: -1, to: env.clock()) { open = OpenDay(id: env.day(of: y)) }
+            }
+            #endif
+        }
         .sheet(item: $open) { day in
             if let env {
                 NaploDayDetail(env: env, date: day.id)
@@ -44,15 +53,23 @@ struct NaploView: View {
         let range = NaploDays.range(endingOn: env.today)
         let (closes, checkIns) = NaploDays.sources(from: NaploDays.days(from: range.from, to: range.to).map { env.ledger.ledger(for: $0) })
         let rows = NaploDays.rows(closes: closes, checkIns: checkIns, from: range.from, to: range.to)
-        if rows.isEmpty {
-            empty
-        } else {
-            VStack(alignment: .leading, spacing: 12) {
-                NKMono("A NAPOK").padding(.leading, 4)
-                ForEach(rows) { row in
+        let weekFrom = NaploDays.range(endingOn: env.today, count: 7).from
+        let week = Array(NaploDays.days(from: weekFrom, to: env.today).reversed())
+        let older = rows.filter { $0.date < weekFrom }
+        VStack(alignment: .leading, spacing: 12) {
+            NKMono("A NAPOK").padding(.leading, 4)
+            ForEach(week, id: \.self) { date in
+                if let row = rows.first(where: { $0.date == date }) {
                     Button { open = OpenDay(id: row.date) } label: { NaploDayRowView(row: row, today: env.today, calendar: env.calendar) }
                         .buttonStyle(PressStyle())
+                } else {
+                    Button { open = OpenDay(id: date) } label: { SpikeEmptyDayRow(date: date, today: env.today, calendar: env.calendar) }
+                        .buttonStyle(PressStyle())
                 }
+            }
+            ForEach(older) { row in
+                Button { open = OpenDay(id: row.date) } label: { NaploDayRowView(row: row, today: env.today, calendar: env.calendar) }
+                    .buttonStyle(PressStyle())
             }
         }
     }
@@ -168,6 +185,7 @@ struct NaploDayDetail: View {
             VStack(spacing: 12) {
                 Text(NaploDate.label(date, today: env.today, calendar: env.calendar))
                     .nkFont(30, design: .serif).foregroundStyle(.white).multilineTextAlignment(.center).padding(.vertical, 14)
+                if date != env.today { SpikeCatchupBlock() }
                 if let close = day.close {
                     ClosedDayCard(rows: EsteFlow.summaryRows(for: close), quote: EsteFlow.quote(for: close, in: day, voiceFailed: false))
                 }
@@ -282,5 +300,68 @@ private struct NaploMealPhotos: View {
                 }
             }
         }
+    }
+}
+
+// SPIKE (throwaway): an empty week day in the list, and a past day's catch-up block.
+private struct SpikeEmptyDayRow: View {
+    let date: String
+    let today: String
+    let calendar: Calendar
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Text(NaploDate.label(date, today: today, calendar: calendar).uppercased())
+                    .nkFont(12, .medium, design: .monospaced).tracking(1.2).foregroundStyle(.white.opacity(0.65))
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold)).foregroundStyle(.white.opacity(0.4))
+            }
+            Text("Erről a napról még nincs semmi.").nkFont(14).foregroundStyle(.white.opacity(0.55))
+        }
+        .padding(16).frame(maxWidth: .infinity, alignment: .leading).nkGlass(22)
+    }
+}
+
+private struct SpikeCatchupBlock: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            NKMono("PÓTLÁS")
+            HStack(spacing: 8) {
+                moment("reggel", done: true, late: false)
+                moment("dél", done: false, late: false)
+                moment("délután", done: true, late: false)
+            }
+            row("check-ink", "Check-in pótlása: dél")
+            row("bolt-sun", "Edzés pótlása: Pull Day")
+            Text("A nap még nincs lezárva.").nkFont(13).foregroundStyle(.white.opacity(0.55))
+            row("spark-cream", "Lezárom a napot")
+        }
+        .padding(18).frame(maxWidth: .infinity, alignment: .leading).nkGlass(22)
+    }
+
+    private func moment(_ name: String, done: Bool, late: Bool) -> some View {
+        HStack(spacing: 5) {
+            Text(name).nkFont(12.5, .medium).foregroundStyle(done ? .white : .white.opacity(0.55))
+            if done { NKGlyph("check-ink", Hue.forma.glow, size: 12) } else { Text("–").nkFont(12.5).foregroundStyle(.white.opacity(0.4)) }
+            if late {
+                Text("UTÓLAG").nkFont(9, .medium, design: .monospaced).tracking(1).foregroundStyle(.white.opacity(0.5))
+                    .padding(.horizontal, 5).padding(.vertical, 2).background(Capsule().fill(.white.opacity(0.08)))
+            }
+        }
+        .padding(.horizontal, 10).frame(height: 32).background(Capsule().fill(.white.opacity(done ? 0.1 : 0.05)))
+    }
+
+    private func row(_ glyph: String, _ title: String) -> some View {
+        Button {} label: {
+            HStack(spacing: 12) {
+                NKGlyph(glyph, .white, size: 18).frame(width: 36, height: 36).background(Circle().fill(.white.opacity(0.1)))
+                Text(title).nkFont(15.5, .medium).foregroundStyle(.white)
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold)).foregroundStyle(.white.opacity(0.4))
+            }
+            .padding(.vertical, 4)
+        }
+        .buttonStyle(.plain)
     }
 }

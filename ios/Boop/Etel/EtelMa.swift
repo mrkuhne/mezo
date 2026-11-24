@@ -54,6 +54,9 @@ struct EtelMa: View {
             NKBare("MAKRÓK", hue: hue, trailing: "ami még belefér", state: dayState("A mai keretedet most nem látom.")) { macros }
         }
         NKBare("A MAI ÉTKEZÉSEK", hue: hue, state: planState) { windows }
+        if UserDefaults.standard.bool(forKey: "previewDrinks") {
+            NKBare("ITALOK", hue: hue, trailing: "275 kcal") { spikeDrinks }
+        }
         NKBare("VÍZ", hue: hue, state: dayState("A vízbevitelt most nem látom.")) { water }
         NKBare("KIEGÉSZÍTŐK", hue: hue, state: supplementState) { supplements }
         NKAskRow(hue: hue, text: "Kérdezd meg Boopot az étkezésedről") { onAsk() }
@@ -171,6 +174,32 @@ struct EtelMa: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(name): \(Int(eaten.rounded())) gramm a \(Int(target.rounded()))-ból, még \(huInt(left)) gramm")
+    }
+
+    // SPIKE: the day's drinks under the windows — no window, no ring.
+    private var spikeDrinks: some View {
+        VStack(spacing: 0) {
+            spikeDrinkRow("Gombakávé zabtejjel mézzel", "09:40 · 95 kcal · 2 g fehérje")
+            Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5).padding(.leading, 52)
+            spikeDrinkRow("Fehérjeturmix", "16:10 · 180 kcal · 24 g fehérje")
+        }
+    }
+
+    private func spikeDrinkRow(_ title: String, _ sub: String) -> some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle().fill(hue.glow.opacity(0.16)).frame(width: 40, height: 40)
+                NKGlyph("drop-sky", hue.glow, size: 18)
+            }
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title).nkFont(15, .medium).foregroundStyle(.white).lineLimit(1)
+                Text(sub).nkFont(12.5).foregroundStyle(.white.opacity(0.55))
+            }
+            Spacer(minLength: 8)
+            Text("ital").nkFont(11, .medium, design: .monospaced).tracking(1).foregroundStyle(.white.opacity(0.55))
+                .padding(.horizontal, 8).padding(.vertical, 4).background(Capsule().fill(.white.opacity(0.08)))
+        }
+        .padding(.vertical, 10)
     }
 
     // MARK: - The day's meals, as rows

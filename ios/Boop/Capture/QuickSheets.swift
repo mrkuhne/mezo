@@ -6,7 +6,7 @@ import BoopDesign
 // happened. Water and the supplements write straight to the server, as the Étel room does; the weight, the night, the
 // sport and the journal line go through the outbox, so they work on a plane.
 
-private let quickEyebrow = "Gyors rögzítés"
+let quickEyebrow = "Gyors rögzítés"
 
 /// "1 dl", "7,5 dl".
 func waterLabel(_ ml: Int) -> String {
@@ -24,7 +24,7 @@ func sleepHoursText(_ hours: Double) -> String {
 }
 
 /// The one button of a quick sheet, riding above the keyboard, with the sheet's problem line over it.
-private struct QuickFoot: View {
+struct QuickFoot: View {
     let title: String
     var busy = false
     var disabled = false
@@ -45,7 +45,7 @@ private struct QuickFoot: View {
     }
 }
 
-@MainActor private func quickHint(_ text: String) -> some View {
+@MainActor func quickHint(_ text: String) -> some View {
     Text(text).nkFont(12.5).foregroundStyle(.white.opacity(0.5)).frame(maxWidth: .infinity, alignment: .leading)
 }
 
@@ -111,6 +111,8 @@ struct WeightSheet: View {
     @State private var busy = false
     @State private var problem: String?
 
+    @State private var when: Date? = SpikeWhenRow.previewDefault
+
     /// The last weight typed on this phone: a daily reading is a small nudge, not a search from zero.
     static var lastKg: Double {
         let saved = UserDefaults.standard.double(forKey: "quick.weightKg")
@@ -125,7 +127,8 @@ struct WeightSheet: View {
                         onSet: { typed in
                             if let v = Double(typed.replacingOccurrences(of: ",", with: ".")) { kg = min(250, max(30, v)) }
                         })
-                quickHint("Reggel, étkezés előtt a legjobb. A mai napra kerül; egy második mérés ugyanazon a napon felülírja.")
+                SpikeWhenRow(eyebrow: "MELYIK NAP", hue: .forma, chosen: $when)
+                quickHint("Reggel, étkezés előtt a legjobb. Egy napra a legutóbb beírt mérés számít.")
             }
         }
         .safeAreaInset(edge: .bottom) { QuickFoot(title: "Rögzítem", busy: busy, error: problem) { Task { await save() } } }
@@ -154,6 +157,7 @@ struct SleepLogSheet: View {
     @State private var bed = SleepLogSheet.clock(23, 0)
     @State private var wake = SleepLogSheet.clock(7, 0)
     @State private var quality: Int?
+    @State private var when: Date? = SpikeWhenRow.previewDefault
     @State private var busy = false
     @State private var problem: String?
 
@@ -180,7 +184,8 @@ struct SleepLogSheet: View {
                                 onDown: { quality = quality.map { max(1, $0 - 1) } },
                                 onUp: { quality = min(10, (quality ?? 6) + 1) })
                     .padding(14).nkGlass(16)
-                quickHint("Ha az órád mérte az éjszakát, nem kell beírnod — ez a kézi út, például óra nélkül vagy egy délutáni alváshoz. A mai reggelre kerül.")
+                SpikeWhenRow(eyebrow: "MELYIK REGGEL ÉBREDTÉL", hue: .alvas, chosen: $when)
+                quickHint("Ha az órád mérte az éjszakát, nem kell beírnod — ez a kézi út, például óra nélkül vagy egy délutáni alváshoz. Arra a reggelre kerül, amelyiket választod.")
             }
         }
         .safeAreaInset(edge: .bottom) {
@@ -224,6 +229,7 @@ struct SportSheet: View {
     @State private var sport: QuickSport = .volleyball
     @State private var minutes: Double = 60
     @State private var rpe = 6
+    @State private var when: Date? = SpikeWhenRow.previewDefault
     @State private var busy = false
     @State private var problem: String?
 
@@ -251,6 +257,7 @@ struct SportSheet: View {
                 NKInlineStepper(label: "Mennyire volt nehéz (1–10)", value: "\(rpe)", hue: .mozgas,
                                 onDown: { rpe = max(1, rpe - 1) }, onUp: { rpe = min(10, rpe + 1) })
                     .padding(14).nkGlass(16)
+                SpikeWhenRow(eyebrow: "MIKOR SPORTOLTÁL", hue: .mozgas, withTime: true, chosen: $when)
                 quickHint("A terven kívüli mozgás — röpi, bringa, túra. A heti terhelésbe beleszámít.")
             }
         }
@@ -283,6 +290,7 @@ struct JournalSheet: View {
     @State private var busy = false
     @State private var problem: String?
     @FocusState private var focused: Bool
+    @State private var when: Date? = SpikeWhenRow.previewDefault
 
     private var words: String { text.trimmingCharacters(in: .whitespacesAndNewlines) }
 
@@ -295,6 +303,7 @@ struct JournalSheet: View {
                     .nkFont(16).foregroundStyle(.white)
                     .focused($focused)
                     .padding(14).frame(maxWidth: .infinity, alignment: .leading).nkGlass(18)
+                SpikeWhenRow(eyebrow: "MELYIK NAP", hue: .alvas, chosen: $when)
                 quickHint("A Napló oldalon látod a nap sorai között; az esti zárás külön kérdez rá a napra.")
             }
         }
