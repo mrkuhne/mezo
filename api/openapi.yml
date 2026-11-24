@@ -6392,6 +6392,7 @@ paths:
               - lunch
               - dinner
               - snack
+              - drink
       responses:
         '200':
           description: The ranked usual meals (at most 6)
@@ -27026,7 +27027,10 @@ components:
       properties:
         slot:
           type: string
-          pattern: ^(breakfast|lunch|dinner|snack)$
+          pattern: ^(breakfast|lunch|dinner|snack|drink)$
+          description: >-
+            drink = Boop's unscored drink bucket (mezo-r36n9.160): counts in the
+            day, fills no window
         loggedAt:
           type: string
           format: date-time
@@ -27508,6 +27512,7 @@ components:
             - lunch
             - dinner
             - snack
+            - drink
         count:
           type: integer
           description: How many times it was logged in the last 28 days

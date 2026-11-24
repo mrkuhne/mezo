@@ -423,7 +423,7 @@ components:
       type: object
       required: [slot, items]
       properties:
-        slot: { type: string, pattern: '^(breakfast|lunch|dinner|snack)$' }
+        slot: { type: string, pattern: '^(breakfast|lunch|dinner|snack|drink)$', description: 'drink = Boop''s unscored drink bucket (mezo-r36n9.160): counts in the day, fills no window' }
         loggedAt: { type: string, format: date-time, nullable: true }
         window:
           nullable: true
