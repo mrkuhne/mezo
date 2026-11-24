@@ -3850,6 +3850,7 @@ components:
         - editable
         - mediaEditable
         - authoredByMe
+        - allowedTechniques
       properties:
         id:
           type: string
@@ -3907,6 +3908,11 @@ components:
         lengthenedFriendly:
           type: boolean
           description: Whether the exercise loads the muscle well at long length.
+        allowedTechniques:
+          type: array
+          items:
+            $ref: '#/components/schemas/Technique'
+          description: Curated SPE choices for this exercise; empty when none fit. Does not include none.
         challengeAllowed:
           type: boolean
           description: >-
@@ -4525,6 +4531,11 @@ components:
           allOf:
             - $ref: '#/components/schemas/Technique'
           nullable: true
+        topHoldSec:
+          type: integer
+          minimum: 2
+          maximum: 2
+          description: Seconds to hold the top of every rep on a top_pause set; absent otherwise.
         legs:
           type: array
           items:
@@ -4546,7 +4557,7 @@ components:
           description: Rest after this set in seconds; set only on styled blocks.
     Technique:
       type: string
-      enum: [none, rest_drop, drop, myo, partials, rest_pause]
+      enum: [none, rest_drop, drop, myo, partials, rest_pause, top_pause]
       description: Intensity technique applied to the last working set of an exercise.
     TechniqueSource:
       type: string

@@ -4,6 +4,31 @@ import Testing
 
 @Suite("BlockDraft — the builder's editable block")
 struct BlockDraftTests {
+    @Test func reviewedPaletteControlsManualChoices() throws {
+        let json = """
+        [{"id":"\(PlanFixtures.catRow)","name":"Overhead Press","muscle":"shoulder-front","type":"compound","stability":"free","lengthenedFriendly":false,"allowedTechniques":[]},
+         {"id":"\(PlanFixtures.catCurl)","name":"Hammer Curl","muscle":"biceps-brachialis","type":"isolation","stability":"free","lengthenedFriendly":false,"allowedTechniques":["myo","rest_drop","drop"]},
+         {"id":"\(PlanFixtures.catPress)","name":"Hip Thrust","muscle":"glute","type":"compound","stability":"free","lengthenedFriendly":false,"allowedTechniques":["top_pause"]}]
+        """
+        let catalog = try JSONDecoder().decode([WireCatalogItem].self, from: Data(json.utf8))
+        var d = BlockDraft(block: PlanFixtures.block, catalog: catalog)
+        d.techniquesEnabled = true
+        let overhead = d.days[0].exercises[0]
+        let hammer = d.days[0].exercises[1]
+        let hip = d.days[1].exercises[0]
+        #expect(overhead.allowedTechniques == [.none])
+        #expect(hammer.allowedTechniques == [.none, .myo, .restDrop, .drop])
+        #expect(hip.allowedTechniques == [.none, .topPause])
+        d.setTechnique(day: 0, exercise: 1, .myo)
+        #expect(d.days[0].exercises[1].technique == .myo)
+        d.setTechnique(day: 0, exercise: 1, .partials)
+        #expect(d.days[0].exercises[1].technique == .myo)
+        d.setTechnique(day: 1, exercise: 0, .topPause)
+        #expect(d.days[1].exercises[0].technique == .topPause)
+        d.setTechnique(day: 0, exercise: 0, .drop)
+        #expect(d.days[0].exercises[0].technique == .none)
+    }
+
     @Test func buildsFromTheBlockAndCatalog() {
         let d = PlanFixtures.draft
         #expect(d.days.count == 2)
@@ -174,7 +199,7 @@ struct BlockDraftTests {
         d.setTechnique(day: 0, exercise: 0, .partials)
         #expect(d.days[0].exercises[0].technique == .none, "not lengthened: half reps not offered")
         #expect(d.days[0].exercises[0].unavailableReason(.partials) != nil)
-        #expect(d.days[1].exercises[0].unavailableReason(.drop) == "Szabadsúlyos gyakorlaton nincs technika.")
+        #expect(d.days[1].exercises[0].unavailableReason(.drop) == "Ehhez a gyakorlathoz nincs választható technika.")
         #expect(d.days[0].exercises[1].unavailableReason(.partials) == nil)
         for t in SetTechnique.allCases { #expect(!t.about.isEmpty) }
     }
@@ -258,8 +283,8 @@ struct BlockDraftTests {
         #expect(curl.allowedTechniques == [.none] && curl.canTakeChallenge)
         #expect(curl.techniqueLockLabel == nil, "free-weight isolation: the picker opens, the challenge is selectable")
         #expect(curl.challengeUnavailableReason == nil)
-        #expect(curl.unavailableReason(.drop) == "Szabadsúlyos gyakorlaton nincs technika.", "techniques dimmed with the reason")
-        #expect(compound.techniqueLockLabel == "szabadsúlyos alapgyakorlat")
+        #expect(curl.unavailableReason(.drop) == "Ehhez a gyakorlathoz nincs választható technika.", "techniques dimmed with the reason")
+        #expect(compound.techniqueLockLabel == "nincs választható technika")
         #expect(stable.techniqueLockLabel == nil)
     }
 
@@ -271,7 +296,7 @@ struct BlockDraftTests {
         let d = BlockDraft(block: block, catalog: [])
         let custom = try #require(d.days[1].exercises.first { $0.name == "Cable Row" })
         #expect(custom.catalogId == nil && custom.type == "compound")
-        #expect(custom.techniqueLockLabel != "szabadsúlyos alapgyakorlat")
+        #expect(custom.techniqueLockLabel == "nincs választható technika")
     }
 
     @Test func addedAndSwappedRowsReadTheServerFlag() throws {

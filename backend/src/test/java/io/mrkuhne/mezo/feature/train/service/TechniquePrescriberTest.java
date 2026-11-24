@@ -15,7 +15,8 @@ class TechniquePrescriberTest {
     private static final TrainTechniqueProperties CFG = new TrainTechniqueProperties(
         new TrainTechniqueProperties.Drop(0, 30, 30), new TrainTechniqueProperties.Drop(0, 20, 0),
         new TrainTechniqueProperties.Myo(1, 5, 3, 20, 4),
-        new TrainTechniqueProperties.RestPause(20, 0, 5, 10, 4), new TrainTechniqueProperties.Partials(0), 2,
+        new TrainTechniqueProperties.RestPause(20, 0, 5, 10, 4), new TrainTechniqueProperties.Partials(0),
+        new TrainTechniqueProperties.TopPause(2), 2,
         new TrainTechniqueProperties.Planner(3, 2, 1, 2, 15));
     private static final Set<BigDecimal> REAL = Set.of(bd("20"), bd("25"), bd("27.5"), bd("30"), bd("32"), bd("40"));
 
@@ -32,6 +33,30 @@ class TechniquePrescriberTest {
 
     private static Prescription rx(PrescribedSet... sets) {
         return new Prescription(List.of(sets), "r", null);
+    }
+
+    @Test
+    void testTopPause_shouldMarkOnlyLastWorkingSet_withoutChangingTargetsOrAddingLegs() {
+        PrescribedSet first = working("40", 10);
+        PrescribedSet last = working("45", 8);
+        Prescription out = TechniquePrescriber.apply(rx(warmup(), first, last), Technique.TOP_PAUSE,
+            false, false, REAL, CFG);
+
+        assertThat(out.sets()).hasSize(3);
+        assertThat(out.sets().get(1)).isSameAs(first);
+        PrescribedSet marked = out.sets().get(2);
+        assertThat(marked).isNotSameAs(last);
+        assertThat(marked.getTechnique()).isEqualTo(io.mrkuhne.mezo.api.dto.Technique.TOP_PAUSE);
+        assertThat(marked.getTopHoldSec()).isEqualTo(2);
+        assertThat(marked.getTargetWeightKg()).isEqualByComparingTo("45");
+        assertThat(marked.getTargetReps()).isEqualTo(8);
+        assertThat(marked.getTargetRIR()).isEqualTo(2);
+        assertThat(marked.getRestSec()).isEqualTo(120);
+        assertThat(marked.getLegs()).isEmpty();
+        assertThat(last.getTechnique()).isNull();
+        assertThat(last.getTopHoldSec()).isNull();
+        assertThat(TechniquePrescriber.apply(rx(first, last), Technique.TOP_PAUSE, false, true, REAL, CFG)
+            .sets()).containsExactly(first, last);
     }
 
     @Test

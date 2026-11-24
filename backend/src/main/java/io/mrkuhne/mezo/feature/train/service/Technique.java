@@ -4,7 +4,7 @@ import java.util.Locale;
 
 /** A set technique (mezo-r36n9.80). Wire value is the lowercase name (REST_DROP -> rest_drop). Pure. */
 public enum Technique {
-    NONE, REST_DROP, DROP, MYO, PARTIALS, REST_PAUSE;
+    NONE, REST_DROP, DROP, MYO, PARTIALS, REST_PAUSE, TOP_PAUSE;
 
     public String wire() {
         return name().toLowerCase(Locale.ROOT);

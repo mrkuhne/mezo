@@ -134,6 +134,38 @@ class WorkoutTodayTechniqueIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testToday_shouldPrescribeTopPause_onLastHipThrustWorkingSetOnly() {
+        Fixture f = fixture(2, true, "top_pause", false, true);
+        f.bench().setName("Hip Thrust");
+        f.bench().setMuscle("glute");
+        f.bench().setCatalogId(catalog.findBySlug("hip-thrust").orElseThrow().getId());
+        train.save(f.bench());
+
+        TodayExercise marked = workoutService.getToday(f.owner(), null).getExercises().stream()
+            .filter(e -> "Hip Thrust".equals(e.getName())).findFirst().orElseThrow();
+        List<PrescribedSet> sets = working(marked);
+        assertThat(sets).hasSize(3);
+        assertThat(sets.subList(0, 2)).allSatisfy(s -> {
+            assertThat(s.getTechnique()).isNull();
+            assertThat(s.getTopHoldSec()).isNull();
+        });
+        PrescribedSet last = sets.get(2);
+        assertThat(last.getTechnique()).isEqualTo(Technique.TOP_PAUSE);
+        assertThat(last.getTopHoldSec()).isEqualTo(2);
+        assertThat(last.getLegs()).isEmpty();
+
+        f.bench().setTechnique(null);
+        f.bench().setTechniqueSource(null);
+        train.save(f.bench());
+        PrescribedSet plainLast = working(workoutService.getToday(f.owner(), null).getExercises().stream()
+            .filter(e -> "Hip Thrust".equals(e.getName())).findFirst().orElseThrow()).get(2);
+        assertThat(last.getTargetWeightKg()).isEqualByComparingTo(plainLast.getTargetWeightKg());
+        assertThat(last.getTargetReps()).isEqualTo(plainLast.getTargetReps());
+        assertThat(last.getTargetRIR()).isEqualTo(plainLast.getTargetRIR());
+        assertThat(last.getRestSec()).isEqualTo(plainLast.getRestSec());
+    }
+
+    @Test
     void challengeCarriesBestAtWeight() {
         Fixture f = fixture(2, true, null, true, true);
         TodayExercise first = bench(workoutService.getToday(f.owner(), null));
@@ -180,9 +212,7 @@ class WorkoutTodayTechniqueIT extends AbstractIntegrationTest {
     void pickThatTheCatalogNoLongerAllowsIsPlain() {
         Fixture f = fixture(2, true, "rest_drop", false, true);
         UUID catalogId = f.bench().getCatalogId();
-        String before = jdbc.queryForObject("select stability from exercise_catalog where id = ?", String.class,
-            catalogId);
-        jdbc.update("update exercise_catalog set stability = 'free' where id = ?", catalogId);
+        jdbc.update("update exercise_catalog set allowed_techniques = ARRAY[]::varchar(16)[] where id = ?", catalogId);
         try {
             TodayExercise t = bench(workoutService.getToday(f.owner(), null));
 
@@ -192,7 +222,8 @@ class WorkoutTodayTechniqueIT extends AbstractIntegrationTest {
             assertThat(jdbc.queryForObject("select technique from exercise where id = ?", String.class,
                 f.bench().getId())).isEqualTo("rest_drop");
         } finally {
-            jdbc.update("update exercise_catalog set stability = ? where id = ?", before, catalogId);
+            jdbc.update("update exercise_catalog set allowed_techniques = "
+                + "ARRAY['rest_drop','drop','myo','rest_pause','partials']::varchar(16)[] where id = ?", catalogId);
         }
     }
 

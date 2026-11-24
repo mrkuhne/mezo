@@ -35,6 +35,11 @@ cd ios && xcodebuild test -project Boop.xcodeproj -scheme Boop -destination 'pla
 
 Pass them after the bundle id: `xcrun simctl launch <sim> io.mrkuhne.boop -preview shell -previewEvening YES`.
 
+The exercise SPE design spike (`mezo-eiux9`) opens without sign-in or server via
+`-previewSPE YES`. Add `-previewSPEView hammer|hip|press|player|logged` to open the
+three technique selectors or the Hip Thrust player before/after logging. Its
+exercise rows and numbers are invented, and no workout is saved.
+
 | Flag | What it does |
 |---|---|
 | `-previewNotify checkin\|este` | rings the real check-in / close reminder at the next whole minute (background the app; a tap opens the cover) |

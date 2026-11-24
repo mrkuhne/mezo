@@ -37,6 +37,44 @@ struct WorkoutTechniqueTests {
                       legs: [PrescribedLeg(kind: .partials, toFailure: true, restBeforeSec: 0)])
     }
 
+    @Test func topPauseIsOneNormalSetAndSurvivesReopen() throws {
+        let last = PrescribedSet(kind: .working, targetKg: 80, targetReps: 8, targetRIR: 2,
+                                 restSec: 120, technique: .topPause, topHoldSec: 2)
+        var s = session([exercise(pulldown, "Hip Thrust", last: last, technique: .topPause)])
+        #expect(s.exercises[pulldown]?.liveTechnique == .topPause)
+        #expect(!last.isTechnique, "the hold has no extra steps")
+        _ = s.log(kg: 80, reps: 8, rir: 2)
+        s.skipRest()
+        let afterLast = s.log(kg: 80, reps: 8, rir: 2)
+        #expect(afterLast == .debrief(exercise: pulldown))
+        #expect(s.technique == nil)
+        #expect(s.exercises[pulldown]?.logged.count == 2)
+        #expect(s.exercises[pulldown]?.logged.last?.technique == .topPause)
+        #expect(s.exercises[pulldown]?.logged.last?.legs == nil)
+
+        let reopened = try JSONDecoder().decode(WorkoutSession.self, from: JSONEncoder().encode(s))
+        #expect(reopened.exercises[pulldown]?.planned.last?.topHoldSec == 2)
+        #expect(reopened.exercises[pulldown]?.logged.last?.technique == .topPause)
+    }
+
+    @Test func oldCachedSetWithoutHoldSecondsStillDecodes() throws {
+        let data = Data(#"{"kind":"working","targetReps":8,"technique":"top_pause","legs":[]}"#.utf8)
+        let old = try JSONDecoder().decode(PrescribedSet.self, from: data)
+        #expect(old.technique == .topPause)
+        #expect(old.topHoldSec == nil)
+    }
+
+    @Test func addedSetDoesNotInheritTopPause() {
+        let last = PrescribedSet(kind: .working, targetKg: 80, targetReps: 8, targetRIR: 2,
+                                 technique: .topPause, topHoldSec: 2)
+        var s = session([exercise(pulldown, "Hip Thrust", last: last, technique: .topPause)])
+        s.addSet(to: pulldown)
+        _ = s.log(kg: 80, reps: 8, rir: 2); s.skipRest()
+        _ = s.log(kg: 80, reps: 8, rir: 2); s.skipRest()
+        _ = s.log(kg: 80, reps: 8, rir: 2)
+        #expect(s.exercises[pulldown]?.logged.map(\.technique) == [nil, .topPause, nil])
+    }
+
     func session(_ exercises: [PlannedExercise]) -> WorkoutSession {
         WorkoutSession(TodayWorkout(title: "Hát", exercises: exercises))
     }

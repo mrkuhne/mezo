@@ -5,11 +5,29 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.api.dto.SetLegKind;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 class TechniqueRulesTest {
+
+    @Test
+    void testCheck_shouldUseExercisePalette_forFreeWeightMovements() {
+        var hammer = new CatalogAttributes.Attrs(false, false, "dumbbell", true,
+            Set.of(Technique.MYO, Technique.REST_DROP, Technique.DROP));
+        var hip = new CatalogAttributes.Attrs(false, false, "barbell", false, Set.of(Technique.TOP_PAUSE));
+        var overhead = new CatalogAttributes.Attrs(false, false, "barbell", false, Set.of());
+        for (Technique allowed : List.of(Technique.MYO, Technique.REST_DROP, Technique.DROP)) {
+            assertThat(TechniqueRules.check(allowed, false, hammer)).isEmpty();
+        }
+        assertThat(TechniqueRules.check(Technique.REST_PAUSE, false, hammer)).contains("TRAIN_TECHNIQUE_NOT_ALLOWED");
+        assertThat(TechniqueRules.check(Technique.TOP_PAUSE, false, hip)).isEmpty();
+        assertThat(TechniqueRules.check(Technique.DROP, false, hip)).contains("TRAIN_TECHNIQUE_NOT_ALLOWED");
+        assertThat(TechniqueRules.check(Technique.TOP_PAUSE, false, overhead))
+            .contains("TRAIN_TECHNIQUE_NOT_ALLOWED");
+        assertThat(TechniqueRules.check(Technique.NONE, true, hammer)).isEmpty();
+    }
     private static final CatalogAttributes.Attrs STABLE = new CatalogAttributes.Attrs(true, false, "machine", true);
     private static final CatalogAttributes.Attrs LENGTHENED = new CatalogAttributes.Attrs(true, true, "machine", true);
     /** A free-weight compound (barbell bench): the challenge rule refuses it (owner decision #72). */
@@ -28,7 +46,7 @@ class TechniqueRulesTest {
     @Test
     void testCheck_freeExercise_shouldReject() {
         assertThat(TechniqueRules.check(Technique.DROP, false, CatalogAttributes.Attrs.FREE))
-            .contains("TRAIN_TECHNIQUE_NOT_STABLE");
+            .contains("TRAIN_TECHNIQUE_NOT_ALLOWED");
         // no catalogue link: unknown kit, no challenge either (owner decision #72)
         assertThat(TechniqueRules.check(Technique.NONE, true, CatalogAttributes.Attrs.FREE))
             .contains("TRAIN_CHALLENGE_FREE_WEIGHT_COMPOUND");
@@ -49,7 +67,7 @@ class TechniqueRulesTest {
         assertThat(TechniqueRules.check(Technique.NONE, true, FREE_COMPOUND))
             .contains("TRAIN_CHALLENGE_FREE_WEIGHT_COMPOUND");
         // a technique still needs a stable exercise, challenge or not
-        assertThat(TechniqueRules.check(Technique.MYO, true, FREE_ISOLATION)).contains("TRAIN_TECHNIQUE_NOT_STABLE");
+        assertThat(TechniqueRules.check(Technique.MYO, true, FREE_ISOLATION)).contains("TRAIN_TECHNIQUE_NOT_ALLOWED");
     }
 
     @ParameterizedTest(name = "{0}")
@@ -99,7 +117,7 @@ class TechniqueRulesTest {
         assertThat(TechniqueRules.check(Technique.REST_DROP, true, STABLE)).isEmpty();
         assertThat(TechniqueRules.check(Technique.PARTIALS, true, STABLE)).contains("TRAIN_TECHNIQUE_NOT_LENGTHENED");
         assertThat(TechniqueRules.check(Technique.MYO, true, CatalogAttributes.Attrs.FREE))
-            .contains("TRAIN_TECHNIQUE_NOT_STABLE");
+            .contains("TRAIN_TECHNIQUE_NOT_ALLOWED");
     }
 
     @Test
@@ -140,6 +158,7 @@ class TechniqueRulesTest {
         assertThat(TechniqueRules.allowedLegKinds(Technique.MYO)).containsExactly(SetLegKind.MINI);
         assertThat(TechniqueRules.allowedLegKinds(Technique.REST_PAUSE)).containsExactly(SetLegKind.MINI);
         assertThat(TechniqueRules.allowedLegKinds(Technique.PARTIALS)).containsExactly(SetLegKind.PARTIALS);
+        assertThat(TechniqueRules.allowedLegKinds(Technique.TOP_PAUSE)).isEmpty();
         assertThat(TechniqueRules.allowedLegKinds(Technique.NONE)).isEmpty();
     }
 

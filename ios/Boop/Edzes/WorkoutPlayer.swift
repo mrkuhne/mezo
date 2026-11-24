@@ -235,6 +235,21 @@ struct WorkoutPlayer: View {
                 TechniqueStepCard(technique: t, lines: card.lines, current: 0, remaining: nil, total: nil, hue: hue)
             }
 
+            if e.planned.indices.contains(e.logged.count),
+               e.planned[e.logged.count].technique == .topPause,
+               let seconds = e.planned[e.logged.count].topHoldSec {
+                HStack(alignment: .top, spacing: 10) {
+                    PlanMark(.timer, color: hue.glow, size: 20)
+                    Text("Minden ismétlés tetején tartsd meg \(seconds) másodpercig.")
+                        .nkFont(15, .medium).foregroundStyle(.white)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 0)
+                }
+                .padding(14)
+                .nkGlass()
+                .accessibilityLabel("Minden ismétlés tetején tartsd meg \(seconds) másodpercig.")
+            }
+
             stepLine(e)
             numberPads
             planLine(e)

@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,10 @@ class ExerciseCatalogLoaderIT extends AbstractIntegrationTest {
         assertThat(row.getType()).isEqualTo("compound");
         assertThat(row.getStim()).isEqualByComparingTo("0.92");
         assertThat(row.getFatigue()).isEqualByComparingTo("0.55");
+        assertThat(repository.findBySlug("hammer-curl").orElseThrow().getAllowedTechniques())
+            .containsExactly("myo", "rest_drop", "drop");
+        assertThat(repository.findBySlug("hip-thrust").orElseThrow().getAllowedTechniques())
+            .containsExactly("top_pause");
     }
 
     @Test
@@ -67,6 +72,18 @@ class ExerciseCatalogLoaderIT extends AbstractIntegrationTest {
 
         assertThat(repository.findBySlug("box-jump").orElseThrow().getStim())
             .isEqualByComparingTo("0.60");
+    }
+
+    @Test
+    void testRun_shouldHealTechniquePalette_whenMasterRowDrifted() {
+        ExerciseCatalogEntity drifted = repository.findBySlug("hammer-curl").orElseThrow();
+        drifted.setAllowedTechniques(List.of("top_pause"));
+        repository.saveAndFlush(drifted);
+
+        loader.run();
+
+        assertThat(repository.findBySlug("hammer-curl").orElseThrow().getAllowedTechniques())
+            .containsExactly("myo", "rest_drop", "drop");
     }
 
     @Test
@@ -156,6 +173,19 @@ class ExerciseCatalogLoaderIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testLoad_shouldRejectTechniquePalette_whenMissingUnknownOrRepeated() {
+        CatalogJsonItem valid = imageItem(null, null);
+        for (List<String> choices : Arrays.asList(null, List.of("none"), List.of("myo", "myo"), List.of("unknown"))) {
+            CatalogJsonItem bad = new CatalogJsonItem(valid.slug(), valid.name(), valid.muscle(), valid.type(),
+                valid.stim(), valid.fatigue(), valid.videoUrl(), valid.imageStartUrl(), valid.imageEndUrl(),
+                valid.equipment(), valid.stability(), valid.lengthenedFriendly(), valid.gear(), valid.pattern(),
+                valid.secondaryMuscles(), valid.joints(), valid.lengthened(), valid.demand(), choices);
+            assertThatThrownBy(() -> loader.load(List.of(bad)))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining(valid.slug());
+        }
+    }
+
+    @Test
     void testLoader_shouldPreserveUserVideo_whenReRun() {
         var master = repository.findBySlug("box-jump").orElseThrow();
         master.setVideoUrl("https://youtu.be/dQw4w9WgXcQ");
@@ -171,6 +201,7 @@ class ExerciseCatalogLoaderIT extends AbstractIntegrationTest {
         var user = train.createUserCatalogExercise(owner, "My Move", "quad", "plyo");
         loader.run();
         assertThat(repository.findById(user.getId())).isPresent();
+        assertThat(repository.findById(user.getId()).orElseThrow().getAllowedTechniques()).isNull();
     }
 
     @Test
@@ -203,6 +234,6 @@ class ExerciseCatalogLoaderIT extends AbstractIntegrationTest {
             new BigDecimal("0.60"), new BigDecimal("0.35"), null, start, end,
             "other", "free", false,
             List.of("specialty"), "jump", List.of("glute", "calf"), List.of("knee", "hip", "ankle"),
-            false, "medium");
+            false, "medium", List.of());
     }
 }

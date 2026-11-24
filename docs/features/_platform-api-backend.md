@@ -2,7 +2,7 @@
 title: Platform · API Contract & Backend Architecture
 type: feature-platform
 status: done
-updated: 2026-11-21
+updated: 2026-11-24
 tags: [platform, backend, data-layer, frontend, boop, b4-etel, idempotency]
 key_files:
   - api/openapi.yml
@@ -12,6 +12,8 @@ key_files:
   - backend/src/main/resources/messages_hu.properties
 related: [_platform-data-layer, _platform-auth-security, _platform-notifications, train, today, fuel, ritual, companion]
 ---
+
+> **Exercise SPE palettes (`mezo-eiux9`).** The additive Train contract returns `ExerciseCatalogItem.allowedTechniques` and optional `PrescribedSet.topHoldSec`; `top_pause` extends the technique enum. `TRAIN_TECHNIQUE_NOT_ALLOWED` is localized in both message bundles and replaces the old stability refusal for manual picks. See [`train.md`](train.md) §4 *Intensity techniques*.
 
 > **2026-11-21 — Boop B6 Évad S4 (`mezo-r36n9.16`, additive contract).** `season.yml` gains six experiment operations (`listExperiments`, `createExperiment`, `startExperiment`, `markExperimentDay`, `dismissExperiment`, `keepExperiment`) and the `SeasonExperiment*` schemas; `api/openapi.yml` regenerated. Five new codes in both bundles (parity kept): `EXPERIMENT_ALREADY_RUNNING` (409), `EXPERIMENT_NOT_PROPOSED` (409), `EXPERIMENT_NOT_RUNNING` (409), `EXPERIMENT_NOT_DONE` (409), `EXPERIMENT_DAY_OUTSIDE` (400). New table `season_experiment` (added to `ResetDatabase`); new switch `mezo.season.experiment-job.enabled`; the proactive `mezo.techcore.cron.experiment-job.enabled` is now `false`. No techcore mechanism changed. See [`season.md`](season.md) §3.14.
 

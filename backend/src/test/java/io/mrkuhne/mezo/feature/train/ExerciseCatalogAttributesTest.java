@@ -2,6 +2,8 @@ package io.mrkuhne.mezo.feature.train;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.feature.train.entity.ExerciseCatalogEntity;
+import io.mrkuhne.mezo.feature.train.service.CatalogAttributes;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -20,6 +22,20 @@ import tools.jackson.databind.ObjectMapper;
  * allowed sets. Collects every violation so one run lists all bad rows.
  */
 class ExerciseCatalogAttributesTest {
+
+    @Test
+    void testAllowedTechniqueWires_shouldUseLegacyFallback_whenOwnRowHasNoPalette() {
+        ExerciseCatalogEntity own = new ExerciseCatalogEntity();
+        own.setStability("stable");
+        own.setLengthenedFriendly(true);
+        assertThat(CatalogAttributes.allowedTechniqueWires(own))
+            .containsExactly("rest_drop", "drop", "myo", "rest_pause", "partials");
+
+        own.setStability("free");
+        assertThat(CatalogAttributes.allowedTechniqueWires(own)).isEmpty();
+        own.setStability(null);
+        assertThat(CatalogAttributes.allowedTechniqueWires(own)).isEmpty();
+    }
 
     /**
      * The one plyo-typed row that is not a jump: the dead hang is an isometric hang filed under

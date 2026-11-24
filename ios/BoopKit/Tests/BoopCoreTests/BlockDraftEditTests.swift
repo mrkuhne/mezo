@@ -13,6 +13,21 @@ struct BlockDraftEditTests {
                                      name: "Cable Fly", muscle: "chest-mid", type: .isolation, stim: 0.6, fatigue: 0.2)
     static let style = Prescription(workingSets: 2, repMin: 12, repMax: 15, targetRIR: 1, restSec: 90)
 
+    @Test(.timeLimit(.minutes(1))) func addSwapAndCopyKeepTheServerTechniquePalette() throws {
+        let json = """
+        [{"id":"\(PlanFixtures.catCurl)","name":"Hammer Curl","stability":"free","lengthenedFriendly":false,
+          "allowedTechniques":["myo","rest_drop","drop"],"challengeAllowed":true}]
+        """
+        let catalog = try JSONDecoder().decode([WireCatalogItem].self, from: Data(json.utf8))
+        var d = BlockDraft(block: PlanFixtures.block, catalog: catalog)
+        d.add(day: 0, catalog: Self.curl, prescription: nil)
+        #expect(d.days[0].exercises.last?.allowedTechniques == [.none, .myo, .restDrop, .drop])
+        d.replace(day: 1, at: 0, with: Self.curl, prescription: nil)
+        let replaced = d.days[1].exercises[0]
+        #expect(replaced.allowedTechniques == [.none, .myo, .restDrop, .drop])
+        #expect(replaced.withId("server-id").allowedTechniques == replaced.allowedTechniques)
+    }
+
     @Test(.timeLimit(.minutes(1))) func addWithAPrescription() {
         let original = PlanFixtures.draft
         var d = original

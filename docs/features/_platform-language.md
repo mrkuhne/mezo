@@ -13,6 +13,8 @@ key_files:
 related: [_platform-auth-security, _platform-design-system, companion, settings, _platform-api-backend]
 ---
 
+> **Exercise SPE palettes (`mezo-eiux9`).** `TRAIN_TECHNIQUE_NOT_ALLOWED` was added to both message bundles; it includes the exercise name. Boop's selection copy describes the specific movement. No language-layer mechanism changed. See [`train.md`](train.md) §4.
+
 > **2026-11-21 — reviewed after the Levél final review (`mezo-r36n9.39`, no language-layer change).** The dummy mail key moved from `application.yml` to the test properties; no message keys changed.
 
 > **2026-11-21 — reviewed after Boop Levél L1+L2 (`mezo-r36n9.38/.39`, no language-layer change).** Mail error keys (`MAIL_AUTH_FAILED`, `MAIL_UNREACHABLE`, `MAIL_RUN_COOLDOWN`, `MAIL_NOT_CONNECTED`, `MAIL_ITEM_NOT_FOUND`, `MAIL_INTAKE_ERROR`, `MAIL_SECRET_UNREADABLE`) added to both bundles; the phone's Levél copy is Hungarian-only like the rest of Boop.

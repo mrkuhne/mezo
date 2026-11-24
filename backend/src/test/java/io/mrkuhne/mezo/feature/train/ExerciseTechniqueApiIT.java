@@ -45,6 +45,12 @@ class ExerciseTechniqueApiIT extends ApiIntegrationTest {
         return trainPopulator.save(e);
     }
 
+    private ExerciseEntity catalogRow(UUID owner, UUID dayId, String name, String muscle, String slug) {
+        ExerciseEntity e = trainPopulator.createExercise(owner, dayId, name, muscle, "isolation");
+        e.setCatalogId(catalogRepository.findBySlug(slug).orElseThrow().getId());
+        return trainPopulator.save(e);
+    }
+
     private static String url(Run r, ExerciseEntity e) {
         return "/api/train/mesocycles/" + r.mesoId() + "/exercises/" + e.getId() + "/technique";
     }
@@ -95,10 +101,34 @@ class ExerciseTechniqueApiIT extends ApiIntegrationTest {
         Run r = run(owner(), true);
         String res = putForBody(url(r, r.bench()), body(Technique.DROP, false), ownerAuthHeaders(),
             HttpStatus.BAD_REQUEST, String.class);
-        assertHasRequestError(res, "TRAIN_TECHNIQUE_NOT_STABLE");
+        assertHasRequestError(res, "TRAIN_TECHNIQUE_NOT_ALLOWED");
         assertThat(res).contains("Barbell Bench Press");
         assertThat(jdbcTemplate.queryForObject("select technique from exercise where id = ?", String.class,
             r.bench().getId())).isNull();
+    }
+
+    @Test
+    void testUpdate_shouldAllowOnlyReviewedTechniques_onHammerHipAndOverhead() {
+        UUID owner = owner();
+        Run r = run(owner, true);
+        HttpHeaders auth = ownerAuthHeaders();
+        ExerciseEntity hammer = catalogRow(owner, r.dayId(), "Hammer Curl", "biceps-brachialis", "hammer-curl");
+        ExerciseEntity hip = catalogRow(owner, r.dayId(), "Hip Thrust", "glute", "hip-thrust");
+        ExerciseEntity overhead = catalogRow(owner, r.dayId(), "Overhead Press", "shoulder-front", "overhead-press");
+        for (Technique t : java.util.List.of(Technique.MYO, Technique.REST_DROP, Technique.DROP)) {
+            assertThat(putForBody(url(r, hammer), body(t, false), auth, HttpStatus.OK, GymExercise.class)
+                .getTechnique()).isEqualTo(t);
+        }
+        assertThat(putForBody(url(r, hip), body(Technique.TOP_PAUSE, false), auth, HttpStatus.OK,
+            GymExercise.class).getTechnique()).isEqualTo(Technique.TOP_PAUSE);
+        String wrongHip = putForBody(url(r, hip), body(Technique.DROP, false), auth,
+            HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(wrongHip, "TRAIN_TECHNIQUE_NOT_ALLOWED");
+        assertThat(wrongHip).contains("Hip Thrust");
+        String wrongOverhead = putForBody(url(r, overhead), body(Technique.TOP_PAUSE, false), auth,
+            HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(wrongOverhead, "TRAIN_TECHNIQUE_NOT_ALLOWED");
+        assertThat(wrongOverhead).contains("Overhead Press");
     }
 
     @Test

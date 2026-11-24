@@ -131,7 +131,7 @@ class MesocycleSettingsApiIT extends ApiIntegrationTest {
             r.fly().getId());
         jdbcTemplate.update("update exercise set challenge = true, technique_source = 'owner', catalog_id = ? "
             + "where id = ?", catalogRepository.findBySlug("pec-deck").orElseThrow().getId(), r.pinned().getId());
-        jdbcTemplate.update("update exercise_catalog set stability = 'free' where slug = 'cable-fly'");
+        jdbcTemplate.update("update exercise_catalog set allowed_techniques = ARRAY[]::varchar(16)[] where slug = 'cable-fly'");
         try {
             MesocycleResponse out = putForBody(url(r.mesoId()),
                 MesocycleSettingsUpdateRequest.builder().trainingStyle(TrainingStyle.VOLUME).build(),
@@ -147,7 +147,8 @@ class MesocycleSettingsApiIT extends ApiIntegrationTest {
             assertThat(jdbcTemplate.queryForObject("select challenge from exercise where id = ?", Boolean.class,
                 r.pinned().getId())).isTrue();
         } finally {
-            jdbcTemplate.update("update exercise_catalog set stability = 'stable' where slug = 'cable-fly'");
+            jdbcTemplate.update("update exercise_catalog set allowed_techniques = "
+                + "ARRAY['rest_drop','drop','myo','rest_pause','partials']::varchar(16)[] where slug = 'cable-fly'");
         }
     }
 

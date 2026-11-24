@@ -1065,35 +1065,25 @@ private struct BuilderTechniqueChip: View {
     let open: () -> Void
 
     var body: some View {
-        // A free-weight row takes no technique, but since decision #72 a free-weight isolation may still take the day's
-        // challenge: the chip then opens the picker (techniques dimmed with their reason, the challenge selectable).
-        if let quiet = exercise.techniqueLockLabel {
-            // Not `PlanPill`: its fixed width would push the editor row (handle, stepper, ⋯) past the card.
+        Button(action: open) {
             HStack(spacing: 5) {
-                PlanMark(.shield, color: .white.opacity(0.4), size: 13)
-                Text(quiet).nkFont(12, .medium).foregroundStyle(.white.opacity(0.4))
+                PlanMark(exercise.techniqueLockLabel == nil
+                    ? (exercise.challenge ? .flag : Self.mark(exercise.technique)) : .shield,
+                    color: color, size: 13)
+                Text(exercise.techniqueLockLabel ?? label).nkFont(12, .medium).foregroundStyle(color)
                     .lineLimit(1).minimumScaleFactor(0.8)
+                if exercise.pickedByBoop {
+                    Text("Boop").nkFont(9, .semibold, design: .monospaced).tracking(0.8)
+                        .foregroundStyle(NK.ground)
+                        .padding(.horizontal, 5).padding(.vertical, 2)
+                        .background(Capsule().fill(planHue.glow))
+                }
             }
             .padding(.horizontal, 10).padding(.vertical, 5)
             .background(Capsule().fill(.white.opacity(0.09)))
-        } else {
-            Button(action: open) {
-                HStack(spacing: 5) {
-                    PlanMark(exercise.challenge ? .flag : Self.mark(exercise.technique), color: color, size: 13)
-                    Text(label).nkFont(12, .medium).foregroundStyle(color).lineLimit(1).truncationMode(.tail)
-                    if exercise.pickedByBoop {
-                        Text("Boop").nkFont(9, .semibold, design: .monospaced).tracking(0.8)
-                            .foregroundStyle(NK.ground)
-                            .padding(.horizontal, 5).padding(.vertical, 2)
-                            .background(Capsule().fill(planHue.glow))
-                    }
-                }
-                .padding(.horizontal, 10).padding(.vertical, 5)
-                .background(Capsule().fill(.white.opacity(0.09)))
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("\(label)\(exercise.pickedByBoop ? ", Boop javaslata" : ""). Koppints a választáshoz.")
         }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(exercise.techniqueLockLabel ?? label)\(exercise.pickedByBoop ? ", Boop javaslata" : ""). Koppints a részletekhez.")
     }
 
     private var label: String {
@@ -1107,6 +1097,7 @@ private struct BuilderTechniqueChip: View {
 
     private var color: Color {
         if exercise.technique != .none { return planHue.glow }
+        if exercise.techniqueLockLabel != nil { return .white.opacity(0.4) }
         return exercise.challenge ? planWarn : .white.opacity(0.55)
     }
 
@@ -1117,6 +1108,7 @@ private struct BuilderTechniqueChip: View {
         case .drop: .drop
         case .myo, .restPause: .myo
         case .partials: .partials
+        case .topPause: .timer
         }
     }
 }

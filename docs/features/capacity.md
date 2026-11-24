@@ -8,7 +8,7 @@ key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/capacity
   - backend/src/main/java/io/mrkuhne/mezo/feature/boop
   - backend/src/main/java/io/mrkuhne/mezo/feature/wearable
-  - backend/src/main/resources/db/changelog/1.1.0/script
+  - backend/src/main/resources/db/changelog/1.1.0/script/202611211210_mezo-r36n9.17_capacity.sql
   - api/feature/boop/boop.yml
   - api/feature/wearable/wearable.yml
   - api/feature/capacity/capacity.yml
