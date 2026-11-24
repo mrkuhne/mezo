@@ -1,6 +1,6 @@
 # Gyakorlatonkénti SPE-alkalmasság és csúcsponti megtartás
 
-**Dátum:** 2026-11-24 · **Állapot:** tervezet, tulajdonosi jóváhagyásra · **Ügy:** `mezo-eiux9`  
+**Dátum:** 2026-11-24 · **Állapot:** tulajdonos által jóváhagyva; szimulátoros próba véleményezésre · **Ügy:** `mezo-eiux9`
 **Felület:** Boop, edzésterv-szerkesztő és edzéslejátszó; szerveroldali gyakorlatkatalógus és edzésmotor.
 
 ## 1. Miért változik
@@ -71,6 +71,12 @@ visszatérés, kapcsolatvesztés és újranyitás a normál sorozat útját köv
 A szimulátoros próba az edzéstervben a három választást, a letiltott sorok indokát, az
 Overhead Press csendes állapotát, valamint az edzéslejátszó Hip Thrust sorozatának előtte / utána
 állapotát mutatja; kis iPhone-szélességen és csökkentett mozgással is.
+
+**Szimulátoros próba, tulajdonosi áttekintéshez:** [napi terv](assets/mezo-eiux9/plan.png) ·
+[Hammer Curl választó](assets/mezo-eiux9/hammer.png) · [Hip Thrust választó](assets/mezo-eiux9/hip.png) ·
+[Overhead Press választó](assets/mezo-eiux9/press.png) · [edzés közben](assets/mezo-eiux9/player.png) ·
+[rögzítés után](assets/mezo-eiux9/logged.png) · [kisebb iPhone](assets/mezo-eiux9/hip-compact.png).
+Ezek kitalált adatos, kizárólag fejlesztői módban futó képernyők; a végleges működés még nem készült el.
 
 ## 5. Adat és szerverhatár
 
