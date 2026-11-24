@@ -134,6 +134,11 @@ final class MealComposerModel {
     /// Minutes between the stamped time and now, for the quick chips (0 = now).
     var minutesAgo: Int { max(0, Int(clock().timeIntervalSince(capturedAt) / 60)) }
 
+    /// The row's Tegnap chip (`mezo-r36n9.159`): yesterday at this clock time, the picker then moves the hour.
+    func setYesterday() {
+        setTime(calendar.date(byAdding: .day, value: -1, to: clock()) ?? clock())
+    }
+
     // MARK: Adding to an open draft
 
     func addMore(_ stage: Stage) { adding = true; show(stage) }
@@ -1073,6 +1078,9 @@ struct MealTimeRow: View {
                         chip(text, on: model.chosenAt != nil && abs(model.minutesAgo - minutes) <= 1) {
                             model.setTime(BoopClock.now().addingTimeInterval(-Double(minutes) * 60)); picking = false
                         }
+                    }
+                    chip("Tegnap", on: model.chosenAt != nil && Calendar.current.isDateInYesterday(model.capturedAt)) {
+                        model.setYesterday(); picking = true
                     }
                     chip("Más időpont", on: picking) { picking.toggle(); if picking, model.chosenAt == nil { model.setTime(model.capturedAt) } }
                 }
