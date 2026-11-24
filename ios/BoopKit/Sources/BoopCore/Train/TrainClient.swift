@@ -208,6 +208,7 @@ public struct TrainClient: Sendable {
                 PrescribedSet(kind: .init(wire: $0.kind.rawValue), targetKg: $0.targetWeightKg,
                               targetReps: $0.targetReps, targetRIR: $0.targetRIR, restSec: $0.restSec,
                               technique: $0.technique.map { SetTechnique(wire: $0.value1.rawValue) },
+                              topHoldSec: $0.topHoldSec,
                               legs: ($0.legs ?? []).map(map))
             }
         }

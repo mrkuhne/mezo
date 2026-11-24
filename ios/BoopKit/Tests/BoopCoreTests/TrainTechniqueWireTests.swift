@@ -60,6 +60,23 @@ struct TrainTechniqueWireTests {
                                             restBeforeSec: 30, dropPercent: 30)])
     }
 
+    @Test func todayMapsTopPauseSecondsWithoutLegs() async throws {
+        let json = #"""
+        {"templateSessionId":"\#(sessionId)","title":"Glute",
+         "exercises":[{"id":"\#(curlId)","name":"Hip Thrust","muscle":"glute","warmupSets":0,
+           "workingSets":1,"repMin":8,"repMax":10,"targetRIR":2,"type":"compound","planSlot":true,
+           "technique":"top_pause","prescribedSets":[{"kind":"working","targetWeightKg":80,
+           "targetReps":8,"targetRIR":2,"technique":"top_pause","topHoldSec":2,"legs":[]}]}],
+         "weekDoneDates":[]}
+        """#
+        stub.on("getTodayWorkout", .json(200, json))
+        let e = try #require(try await train().todayWorkout().exercises.first)
+        #expect(e.sets.count == 1)
+        #expect(e.sets.first?.technique == .topPause)
+        #expect(e.sets.first?.topHoldSec == 2)
+        #expect(e.sets.first?.legs.isEmpty == true)
+    }
+
     @Test func aLoggedTechniqueSetComesBackWithItsSteps() async throws {
         stub.on("startWorkout", .json(201, instanceJSON()))
         let instance = try await train().startWorkout(templateSessionId: templateDay, ref: UUID())
@@ -103,6 +120,23 @@ struct TrainTechniqueWireTests {
                                             workoutRef: start.id, date: "2026-11-19", capturedAt: Date()))
         let b = try body(op: "logWorkoutSet")
         #expect(b["technique"] == nil)
+        #expect(b["legs"] == nil)
+    }
+
+    @Test func topPauseGoesOutAsOneSetWithoutLegs() async throws {
+        stub.on("startWorkout", .json(201, instanceJSON()))
+        stub.on("logWorkoutSet", .json(201, #"{"id":"c1b2c3d4-0021-4a2b-9c3d-111122223333","exerciseId":"\#(curlId)","setIndex":1}"#))
+        let client = train()
+        let start = OutboxItem.workoutStart(WorkoutStartPayload(templateSessionId: templateDay),
+                                            date: "2026-11-19", capturedAt: Date())
+        _ = await client.send(start)
+        let payload = WorkoutSetPayload(workoutRef: start.id, exerciseId: UUID(uuidString: curlId)!, setIndex: 1,
+                                        weightKg: 80, reps: 8, rir: 2, technique: "top_pause")
+        let result = await client.send(.workoutWrite(.workoutSet, payload: TrainPayloadCodec.encode(payload),
+                                                     workoutRef: start.id, date: "2026-11-19", capturedAt: Date()))
+        guard case .sent = result else { Issue.record("expected sent, got \(result)"); return }
+        let b = try body(op: "logWorkoutSet")
+        #expect(b["technique"] as? String == "top_pause")
         #expect(b["legs"] == nil)
     }
 

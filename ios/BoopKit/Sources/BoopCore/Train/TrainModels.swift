@@ -32,19 +32,23 @@ public struct PrescribedSet: Codable, Equatable, Sendable {
     public var restSec: Int?
     /// The intensity technique on this set (T2) — only ever the last working set; `nil` = straight set.
     public var technique: SetTechnique?
+    /// Seconds at the top of every rep for a `top_pause` set; absent in older caches.
+    public var topHoldSec: Int?
     /// What comes after the main part of a technique set, in order. Empty on a straight set.
     public var legs: [PrescribedLeg]
 
     public init(kind: SetKind, targetKg: Double? = nil, targetReps: Int? = nil, targetRIR: Int? = nil,
-                restSec: Int? = nil, technique: SetTechnique? = nil, legs: [PrescribedLeg] = []) {
+                restSec: Int? = nil, technique: SetTechnique? = nil, topHoldSec: Int? = nil,
+                legs: [PrescribedLeg] = []) {
         self.kind = kind; self.targetKg = targetKg; self.targetReps = targetReps; self.targetRIR = targetRIR
-        self.restSec = restSec; self.technique = technique == SetTechnique.none ? nil : technique; self.legs = legs
+        self.restSec = restSec; self.technique = technique == SetTechnique.none ? nil : technique
+        self.topHoldSec = topHoldSec; self.legs = legs
     }
 
     /// A technique set the player walks through step by step: a technique **and** something after the main part.
     public var isTechnique: Bool { technique != nil && !legs.isEmpty }
 
-    enum CodingKeys: String, CodingKey { case kind, targetKg, targetReps, targetRIR, restSec, technique, legs }
+    enum CodingKeys: String, CodingKey { case kind, targetKg, targetReps, targetRIR, restSec, technique, topHoldSec, legs }
 
     // Written by hand so a cached plan from before T2 (no `legs` key) still reads.
     public init(from decoder: Decoder) throws {
@@ -55,6 +59,7 @@ public struct PrescribedSet: Codable, Equatable, Sendable {
         targetRIR = try c.decodeIfPresent(Int.self, forKey: .targetRIR)
         restSec = try c.decodeIfPresent(Int.self, forKey: .restSec)
         technique = try c.decodeIfPresent(SetTechnique.self, forKey: .technique)
+        topHoldSec = try c.decodeIfPresent(Int.self, forKey: .topHoldSec)
         legs = try c.decodeIfPresent([PrescribedLeg].self, forKey: .legs) ?? []
     }
 }

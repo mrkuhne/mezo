@@ -123,7 +123,9 @@ public struct SessionExercise: Codable, Sendable, Equatable, Identifiable {
 
     /// The technique **today's prescription** carries — not the stored pick the server echoes even when the block's
     /// technique switch is off. This is what the player shows and plays.
-    public var liveTechnique: SetTechnique? { planned.first(where: \.isTechnique)?.technique }
+    public var liveTechnique: SetTechnique? {
+        planned.first { $0.isTechnique || $0.technique == .topPause }?.technique
+    }
 
     /// The challenge is live only when today's prescription carries its half reps.
     /// Live when today's technique set ends in the half reps — on its own (the challenge's technique is partials)
@@ -295,7 +297,7 @@ public struct WorkoutSession: Codable, Sendable, Equatable {
         guard let id = currentExerciseId, let exercise = exercises[id] else { return .finish }
         let index = exercise.logged.count
         let plan = exercise.plan(at: index)
-        let set = SessionSet(kind: plan?.kind ?? .working, kg: kg, reps: reps, rir: rir, at: now,
+        var set = SessionSet(kind: plan?.kind ?? .working, kg: kg, reps: reps, rir: rir, at: now,
                              verdict: Self.verdict(kg: kg, reps: reps, plan: plan, exercise: exercise))
         // **A technique set is not done when its main part is.** Only the planned set itself carries it — a set
         // he added in the gym falls back to the last plan and must not repeat the technique.
@@ -306,6 +308,9 @@ public struct WorkoutSession: Codable, Sendable, Equatable {
             restEndsAt = nil
             restTotal = nil
             return beginNextLeg(now: now)
+        }
+        if exercise.planned.indices.contains(index), plan?.technique == .topPause {
+            set.technique = .topPause
         }
         return append(set, to: id, plan: plan, now: now)
     }
