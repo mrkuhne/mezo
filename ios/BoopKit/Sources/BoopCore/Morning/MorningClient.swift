@@ -72,6 +72,12 @@ public final class MorningStore {
         } catch { if mine == generation { fail(error) } }
     }
 
+    /// One day's brief, fetched and handed back without becoming the store's own (`mezo-r36n9.159`): the Napló's
+    /// close catch-up needs Boop's goals of THAT day.
+    public func brief(for day: String) async throws -> Brief {
+        try await fetch(.get, day)
+    }
+
     public func regenerate() async {
         guard let day = brief?.date else { return }
         generation += 1; let mine = generation

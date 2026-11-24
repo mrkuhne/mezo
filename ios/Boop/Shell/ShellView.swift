@@ -193,7 +193,7 @@ struct ShellView: View {
             switch cover {
             case .checkin:
                 if let ritmus {
-                    CheckinView(env: ritmus) { router.close() }
+                    CheckinView(env: ritmus, catchUp: Self.previewCatchUp(ritmus)) { router.close() }
                 } else {
                     coverFallback(hue: .mozgas)
                 }
@@ -245,6 +245,17 @@ struct ShellView: View {
             try? await Task.sleep(for: .seconds(3)); select(to)
             try? await Task.sleep(for: .seconds(3)); select(.ma)
         }
+        #endif
+    }
+
+    /// Simulator review: `-previewCatchup YES` opens the check-in as yesterday's missed dél (DEBUG only).
+    private static func previewCatchUp(_ ritmus: RitmusEnvironment) -> CheckinFlow.CatchUp? {
+        #if DEBUG
+        guard UserDefaults.standard.bool(forKey: "previewCatchup"),
+              let y = ritmus.calendar.date(byAdding: .day, value: -1, to: ritmus.clock()) else { return nil }
+        return .init(date: ritmus.day(of: y), moment: .delben)
+        #else
+        return nil
         #endif
     }
 

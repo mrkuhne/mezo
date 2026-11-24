@@ -367,6 +367,20 @@ public struct RitmusClient: OutboxSender {
     // MARK: - Fetches
 
     /// The day as the server has it: done check-ins, the day's focus, the close (404 = not closed).
+    /// The day's journal lines on the server, newest first (`mezo-r36n9.159`): the Napló day sheet's A NAP SORAI,
+    /// so a line written for a past day is visible where it was put.
+    public func journalLines(on date: String) async throws -> [JournalLineLite] {
+        switch try await client.listJournalEntries(query: .init(from: date, to: date)) {
+        case .ok(let ok):
+            return try ok.body.json.compactMap { e in
+                guard let id = UUID(uuidString: e.id) else { return nil }
+                return JournalLineLite(id: id, text: e.text, occurredOn: e.occurredOn, createdAt: e.createdAt)
+            }
+        case .unauthorized: throw RitmusFetchError.unauthorized
+        case .undocumented: throw RitmusFetchError.server
+        }
+    }
+
     public func fetchDay(_ date: String) async throws -> ServerDay {
         var day = ServerDay(date: date)
         do {
@@ -531,5 +545,17 @@ public struct RitmusClient: OutboxSender {
         let bytes = Array(SHA256.hash(data: Data(key.utf8)).prefix(16))
         return UUID(uuid: (bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7], bytes[8], bytes[9],
                            bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]))
+    }
+}
+
+/// One journal line of a day as the server keeps it: the day it is about and the moment it was written.
+public struct JournalLineLite: Identifiable, Equatable, Sendable {
+    public let id: UUID
+    public let text: String
+    public let occurredOn: String
+    public let createdAt: Date
+
+    public init(id: UUID, text: String, occurredOn: String, createdAt: Date) {
+        self.id = id; self.text = text; self.occurredOn = occurredOn; self.createdAt = createdAt
     }
 }
