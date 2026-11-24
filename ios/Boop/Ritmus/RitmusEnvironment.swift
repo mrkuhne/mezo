@@ -115,6 +115,8 @@ final class RitmusEnvironment {
             if item.kind == .mealDraft { await me.env?.mealDraftsChanged() }
             // A cash expense reached the server: the Pénz area re-reads (its row stops waiting).
             if item.kind == .penzExpense { await me.env?.penzChanged() }
+            // A weigh-in reached the server: the Súly orb and room re-read (the trend moved) — `mezo-r36n9.158`.
+            if item.kind == .weightLog { await me.env?.weightChanged() }
             // A workout's start or finish landed: Edzés and the brief re-read, so Ma says „megvolt" and not „Indítás"
             // (mezo-r36n9.147).
             if item.kind == .workoutFinish || item.kind == .workoutStart { await me.env?.edzesChanged() }
@@ -184,6 +186,9 @@ final class RitmusEnvironment {
     /// Bumped when a workout's start or finish reached the server: whoever shows today's session re-reads.
     private(set) var edzesTick = 0
     func edzesChanged() { edzesTick += 1 }
+    /// Bumped when a weigh-in is queued or reaches the server: the Súly orb and room re-read (`mezo-r36n9.158`).
+    private(set) var weightTick = 0
+    func weightChanged() { weightTick += 1 }
 
     /// Send what is queued now, backoff ignored — for a write the owner is waiting on (a workout's finish).
     func sendNow() { sendSoon() }
@@ -220,6 +225,7 @@ final class RitmusEnvironment {
         try await outbox.enqueue(OutboxItem(kind: .weightLog, date: day, capturedAt: date,
                                             payload: RitmusPayload.encode(WeightLogPayload(date: day, weightKg: rounded))),
                                  rollbackOnFailure: true)
+        weightTick += 1
         sendSoon()
     }
 
