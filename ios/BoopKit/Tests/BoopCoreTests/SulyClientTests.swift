@@ -47,6 +47,21 @@ struct SulyClientTests {
         #expect(stub.sent.first?.path == "/api/biometrics/weight")
     }
 
+    @Test func profileReadsTheHeight() async throws {
+        let stub = StubTransport()
+        stub.on("getBiometricProfile", .json(200, #"{"sex":"M","heightCm":180,"birthDate":"1990-05-01","bodyFatPct":null}"#))
+        let p = try await SulyClient(raw: Self.raw(stub)).profile()
+        #expect(p.heightCm == 180)
+        #expect(stub.sent.first?.path == "/api/biometrics/profile")
+    }
+
+    @Test func anEmptyProfileHasNoHeight() async throws {
+        let stub = StubTransport()
+        stub.on("getBiometricProfile", .json(200, #"{"sex":null,"heightCm":null,"birthDate":null}"#))
+        let p = try await SulyClient(raw: Self.raw(stub)).profile()
+        #expect(p.heightCm == nil)
+    }
+
     @Test func aServerFaultIsTyped() async {
         let stub = StubTransport()
         stub.on("getWeightTrend", .status(500))

@@ -17,4 +17,9 @@ public struct SulyClient: Sendable {
     public func logs() async throws(PlanFetchError) -> [SulyLog] {
         try await raw.get("/api/biometrics/weight", operationID: "listWeightLogs")
     }
+
+    /// The profile's height (nil while he has none).
+    public func profile() async throws(PlanFetchError) -> SulyProfile {
+        try await raw.get("/api/biometrics/profile", operationID: "getBiometricProfile")
+    }
 }

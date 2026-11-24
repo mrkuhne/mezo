@@ -17,11 +17,13 @@ public struct SulySnapshot: Codable, Equatable, Sendable {
     public let logs: [SulyLog]
     public let fatPct: [SulyBodySample]
     public let leanKg: [SulyBodySample]
+    /// From the biometric profile; nil without one (the BMI then stays „–").
+    public let heightCm: Double?
     public let fetchedAt: Date
     public init(season: EvadOverview?, trend: SulyTrend?, logs: [SulyLog], fatPct: [SulyBodySample],
-                leanKg: [SulyBodySample], fetchedAt: Date) {
+                leanKg: [SulyBodySample], heightCm: Double? = nil, fetchedAt: Date) {
         self.season = season; self.trend = trend; self.logs = logs; self.fatPct = fatPct; self.leanKg = leanKg
-        self.fetchedAt = fetchedAt
+        self.heightCm = heightCm; self.fetchedAt = fetchedAt
     }
 }
 
@@ -79,6 +81,11 @@ public final class SulyStore {
                         hasSeason: season != nil)
     }
 
+    /// The trend weight on the profile's height, one decimal; nil without either.
+    public var bmi: Double? {
+        sulyBmi(kg: snapshot?.trend?.latestTrendKg ?? snapshot?.season?.weight.trendKg, heightCm: snapshot?.heightCm)
+    }
+
     /// "5 órás adat" while a cached snapshot is on screen.
     public var ageText: String? { offline ? penzAgeText(age) : nil }
 
@@ -118,7 +125,10 @@ public final class SulyStore {
         let logs = Task { await Self.attempt { try await client.logs() } }
         let fat = Task { await Self.attempt { try await health?.readSamples(.bodyFatPct, from: since, to: now) ?? [] } }
         let lean = Task { await Self.attempt { try await health?.readSamples(.leanBodyMass, from: since, to: now) ?? [] } }
+        let profile = Task { await Self.attempt { try await client.profile() } }
         let (rs, rt, rl, rf, rln) = await (season.value, trend.value, logs.value, fat.value, lean.value)
+        // The height is a nicety for the BMI: a failed profile read costs the number, never the room.
+        let heightCm: Double? = { if case .success(let p) = $0 { p.heightCm } else { nil } }(await profile.value)
 
         // The season: an answer (fresh or "none"), or a failure to weigh with the others.
         let seasonValue: EvadOverview??
@@ -134,7 +144,7 @@ public final class SulyStore {
         if let seasonValue, case .success(let t) = rt, case .success(let l) = rl {
             let fresh = SulySnapshot(season: seasonValue, trend: t, logs: l,
                                      fatPct: Self.body(rf, percent: true), leanKg: Self.body(rln, percent: false),
-                                     fetchedAt: now)
+                                     heightCm: heightCm, fetchedAt: now)
             snapshot = fresh; age = nil; offline = false; problem = nil
             try? await cache?.put(fresh, endpoint: Self.endpoint, date: Self.key)
             return

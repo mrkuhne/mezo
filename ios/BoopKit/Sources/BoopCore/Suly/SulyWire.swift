@@ -49,3 +49,14 @@ public struct SulyLog: Codable, Equatable, Identifiable, Sendable {
 
     enum CodingKeys: String, CodingKey { case id, date, kg = "value", note }
 }
+
+/// The owner's biometric profile (`GET /api/biometrics/profile`): only the height is read here (for the BMI). The
+/// server never 404s — an empty profile is every field null.
+public struct SulyProfile: Codable, Equatable, Sendable {
+    public let heightCm: Double?
+    public init(heightCm: Double?) { self.heightCm = heightCm }
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        heightCm = try c.decodeIfPresent(Double.self, forKey: .heightCm)
+    }
+}

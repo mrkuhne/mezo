@@ -41,6 +41,7 @@ struct SulyStoreTests {
         stub.on("getSeasonOverview", .json(200, EvadFixtures.overviewJSON()))   // planned −0.4 kg/week, cut
         stub.on("getWeightTrend", .json(200, SulyClientTests.trendJSON))        // last 4 weeks −0.42
         stub.on("listWeightLogs", .json(200, SulyClientTests.logsJSON))
+        stub.on("getBiometricProfile", .json(200, #"{"heightCm":180}"#))
         let s = store(stub)
         await s.load()
         #expect(s.snapshot?.season?.head.trajectory == "cut")
@@ -56,6 +57,7 @@ struct SulyStoreTests {
         stub.on("getSeasonOverview", .json(404, #"{"messages":[{"code":"NOT_FOUND"}]}"#))
         stub.on("getWeightTrend", .json(200, SulyClientTests.trendJSON))
         stub.on("listWeightLogs", .json(200, "[]"))
+        stub.on("getBiometricProfile", .json(200, "{}"))
         let s = store(stub)
         await s.load()
         #expect(s.snapshot?.season == nil && s.snapshot?.trend?.latestTrendKg == 84.6)
@@ -67,6 +69,7 @@ struct SulyStoreTests {
         stub.on("getSeasonOverview", .json(200, EvadFixtures.overviewJSON()))
         stub.on("getWeightTrend", .json(200, #"{"ewmaSeries":[],"latestTrendKg":84.6,"last4wRateKgPerWeek":-0.4,"dataSufficiency":"none"}"#))
         stub.on("listWeightLogs", .json(200, "[]"))
+        stub.on("getBiometricProfile", .json(200, "{}"))
         let s = store(stub)
         await s.load()
         #expect(s.score == nil)
@@ -80,6 +83,7 @@ struct SulyStoreTests {
         online.on("getSeasonOverview", .json(200, EvadFixtures.overviewJSON()))
         online.on("getWeightTrend", .json(200, SulyClientTests.trendJSON))
         online.on("listWeightLogs", .json(200, SulyClientTests.logsJSON))
+        online.on("getBiometricProfile", .json(200, #"{"heightCm":180}"#))
         let first = store(online, cache: cache, clock: clock)
         await first.load()
         #expect(first.score == 98 && !first.offline && first.age == nil)
@@ -89,6 +93,7 @@ struct SulyStoreTests {
         offline.on("getSeasonOverview", .fail(URLError(.notConnectedToInternet)))
         offline.on("getWeightTrend", .fail(URLError(.notConnectedToInternet)))
         offline.on("listWeightLogs", .fail(URLError(.notConnectedToInternet)))
+        offline.on("getBiometricProfile", .fail(URLError(.notConnectedToInternet)))
         let later = store(offline, cache: cache, clock: clock)
         await later.load()
         #expect(later.score == 98 && later.offline && later.problem == nil)
@@ -101,9 +106,33 @@ struct SulyStoreTests {
         stub.on("getSeasonOverview", .fail(URLError(.notConnectedToInternet)))
         stub.on("getWeightTrend", .fail(URLError(.notConnectedToInternet)))
         stub.on("listWeightLogs", .fail(URLError(.notConnectedToInternet)))
+        stub.on("getBiometricProfile", .fail(URLError(.notConnectedToInternet)))
         let s = store(stub)
         await s.load()
         #expect(s.snapshot == nil && s.problem == .offline)
+    }
+
+    @Test func heightComesFromTheProfileAndGivesTheBmi() async throws {
+        let stub = StubTransport()
+        stub.on("getSeasonOverview", .json(200, EvadFixtures.overviewJSON()))
+        stub.on("getWeightTrend", .json(200, SulyClientTests.trendJSON))
+        stub.on("listWeightLogs", .json(200, "[]"))
+        stub.on("getBiometricProfile", .json(200, #"{"heightCm":180}"#))
+        let s = store(stub)
+        await s.load()
+        #expect(s.snapshot?.heightCm == 180)
+        #expect(s.bmi == 26.1)   // 84.6 kg trend, 1.80 m
+    }
+
+    @Test func aFailedProfileIsJustNoHeight() async throws {
+        let stub = StubTransport()
+        stub.on("getSeasonOverview", .json(200, EvadFixtures.overviewJSON()))
+        stub.on("getWeightTrend", .json(200, SulyClientTests.trendJSON))
+        stub.on("listWeightLogs", .json(200, "[]"))
+        stub.on("getBiometricProfile", .status(500))
+        let s = store(stub)
+        await s.load()
+        #expect(s.snapshot != nil && s.problem == nil && s.snapshot?.heightCm == nil && s.bmi == nil)
     }
 
     @Test func bodySamplesAreReadFromHealth() async throws {
@@ -111,6 +140,7 @@ struct SulyStoreTests {
         stub.on("getSeasonOverview", .json(404, "{}"))
         stub.on("getWeightTrend", .json(200, SulyClientTests.trendJSON))
         stub.on("listWeightLogs", .json(200, "[]"))
+        stub.on("getBiometricProfile", .json(200, "{}"))
         let clock = Clock()
         let health = StubHealthReader()
         health.samples[.bodyFatPct] = [Self.sample(.bodyFatPct, 0.221, daysAgo: 20, now: clock.now),
