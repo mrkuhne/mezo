@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -39,6 +40,7 @@ public class ExerciseCatalogLoader implements CommandLineRunner {
     private static final Set<String> EQUIPMENT = Set.of(
         "machine", "cable", "dumbbell", "barbell", "bodyweight", "kettlebell", "other");
     private static final Set<String> STABILITY = Set.of("stable", "free");
+    private static final Set<String> TECHNIQUES = Set.of("rest_drop", "drop", "myo", "rest_pause", "partials", "top_pause");
 
     // Selection attributes (mezo-r36n9.66, spec 2026-11-17-boop-gyakorlatvalasztas-design §6.1).
     // Package-private so the pure content test checks the JSON against the same sets. GEAR is the
@@ -70,7 +72,18 @@ public class ExerciseCatalogLoader implements CommandLineRunner {
         String videoUrl, String imageStartUrl, String imageEndUrl,
         String equipment, String stability, Boolean lengthenedFriendly,
         List<String> gear, String pattern, List<String> secondaryMuscles, List<String> joints,
-        Boolean lengthened, String demand) {}
+        Boolean lengthened, String demand, List<String> allowedTechniques) {
+        /** Compatibility for hand-authored invalid-content tests. A master row still fails validation without a list. */
+        public CatalogJsonItem(String slug, String name, String muscle, String type, BigDecimal stim, BigDecimal fatigue,
+                               String videoUrl, String imageStartUrl, String imageEndUrl,
+                               String equipment, String stability, Boolean lengthenedFriendly,
+                               List<String> gear, String pattern, List<String> secondaryMuscles, List<String> joints,
+                               Boolean lengthened, String demand) {
+            this(slug, name, muscle, type, stim, fatigue, videoUrl, imageStartUrl, imageEndUrl,
+                 equipment, stability, lengthenedFriendly, gear, pattern, secondaryMuscles, joints,
+                 lengthened, demand, null);
+        }
+    }
 
     // Same self-invocation note as TrainSeedData: startup enters via run(String...), the IT
     // calls run() through the proxy — both overloads carry @Transactional.
@@ -144,6 +157,9 @@ public class ExerciseCatalogLoader implements CommandLineRunner {
             && item.equipment() != null && EQUIPMENT.contains(item.equipment())
             && item.stability() != null && STABILITY.contains(item.stability())
             && item.lengthenedFriendly() != null
+            && item.allowedTechniques() != null
+            && TECHNIQUES.containsAll(item.allowedTechniques())
+            && new HashSet<>(item.allowedTechniques()).size() == item.allowedTechniques().size()
             && validAttributes(item);
         if (!valid) {
             throw new IllegalStateException("Invalid exercise-catalog item: " + item.slug());

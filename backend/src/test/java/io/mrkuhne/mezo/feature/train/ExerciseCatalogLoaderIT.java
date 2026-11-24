@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -156,6 +157,19 @@ class ExerciseCatalogLoaderIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testLoad_shouldRejectTechniquePalette_whenMissingUnknownOrRepeated() {
+        CatalogJsonItem valid = imageItem(null, null);
+        for (List<String> choices : Arrays.asList(null, List.of("none"), List.of("myo", "myo"), List.of("unknown"))) {
+            CatalogJsonItem bad = new CatalogJsonItem(valid.slug(), valid.name(), valid.muscle(), valid.type(),
+                valid.stim(), valid.fatigue(), valid.videoUrl(), valid.imageStartUrl(), valid.imageEndUrl(),
+                valid.equipment(), valid.stability(), valid.lengthenedFriendly(), valid.gear(), valid.pattern(),
+                valid.secondaryMuscles(), valid.joints(), valid.lengthened(), valid.demand(), choices);
+            assertThatThrownBy(() -> loader.load(List.of(bad)))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining(valid.slug());
+        }
+    }
+
+    @Test
     void testLoader_shouldPreserveUserVideo_whenReRun() {
         var master = repository.findBySlug("box-jump").orElseThrow();
         master.setVideoUrl("https://youtu.be/dQw4w9WgXcQ");
@@ -203,6 +217,6 @@ class ExerciseCatalogLoaderIT extends AbstractIntegrationTest {
             new BigDecimal("0.60"), new BigDecimal("0.35"), null, start, end,
             "other", "free", false,
             List.of("specialty"), "jump", List.of("glute", "calf"), List.of("knee", "hip", "ankle"),
-            false, "medium");
+            false, "medium", List.of());
     }
 }
