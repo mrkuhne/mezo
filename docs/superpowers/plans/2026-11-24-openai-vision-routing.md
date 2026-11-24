@@ -27,7 +27,7 @@
 
 ## 3. kiadás és éles ellenőrzés
 
-- [ ] Tracker backup: `node scripts/check-beads-backup.mjs --fix`, commit.
-- [ ] Friss `origin/main` után a feature ág `--no-ff` merge-e a leválasztott főági HEAD-re, majd `git push origin HEAD:main` és `bd dolt push`.
-- [ ] A backend telepítése és egészsége ellenőrzött. A képes hívásnapló a következő személyes adat nélküli próbakérésnél OpenAI modellt mutat; az iPhone ételfotó elemzését élőben ellenőrizzük, ha a tulajdonos fotót készít.
-- [ ] `bd close mezo-h38eq`, új tracker backup és push, a branch törlése, rövid átadás.
+- [x] Tracker backup: `node scripts/check-beads-backup.mjs --fix`, commit.
+- [x] Friss `origin/main` után a feature ág `--no-ff` merge-e a leválasztott főági HEAD-re, majd `git push origin HEAD:main` és `bd dolt push`.
+- [x] A backend 3.35.0 telepítése és egészsége ellenőrzött. A kiadás óta nem volt új VISION-hívás a naplóban, ezért a telefonos folyamat még nem megfigyelt; a tulajdonost új próbára kértük, a követést `mezo-ahn8w` rögzíti.
+- [x] A főági CI állapota átadáskor rögzített (integrációs teszt folyamatban); a telefonos bizonyítást `mezo-ahn8w` követi.
