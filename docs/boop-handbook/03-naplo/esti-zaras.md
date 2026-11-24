@@ -55,5 +55,10 @@ Ha a nap már a webes appban le lett zárva, a Boop lezártként mutatja, a „M
 - A régi esti helyek kivezetése — későbbi takarítás.
 - A zárásokból Boop következtetéseket von le — B8.
 
+## Pótlás (2026-11-24)
+Egy korábbi, le nem zárt nap a Napló napjának lapjáról zárható („Lezárom a napot”): ugyanaz a négy lépés, annak a
+napnak a céljával és Boop aznapi céljaival; a zárás aznap este kilencre kerül, a mesélt sor is arra a napra. Egy
+hétre visszamenőleg.
+
 ## Mi marad ki
 A webes app hatlépéses napzárása — nem jön át; a webes app maga továbbra is működik.

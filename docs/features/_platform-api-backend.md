@@ -2,7 +2,7 @@
 title: Platform · API Contract & Backend Architecture
 type: feature-platform
 status: done
-updated: 2026-11-21
+updated: 2026-11-24
 tags: [platform, backend, data-layer, frontend, boop, b4-etel, idempotency]
 key_files:
   - api/openapi.yml
@@ -12,6 +12,8 @@ key_files:
   - backend/src/main/resources/messages_hu.properties
 related: [_platform-data-layer, _platform-auth-security, _platform-notifications, train, today, fuel, ritual, companion]
 ---
+
+> **2026-11-24 — reviewed after Boop's backdated capture, drinks and gym catch-up (`mezo-r36n9.159`–`.161`, additive contract, no platform change).** `meal.yml`/`fuel-plan.yml` widen the meal slot vocabulary with `drink`; `train.yml` gains `completeWorkoutAsPlanned` (+ `TRAIN_AS_PLANNED_DATE_OUT_OF_WINDOW` in both message catalogs). Reminder learned the hard way: `api/openapi.yml` is the merged bundle — run `cd api/generate && npm run generate:api` after a fragment edit, or the backend generator and the phone copy keep the old contract.
 
 > **2026-11-21 — Boop B6 Évad S4 (`mezo-r36n9.16`, additive contract).** `season.yml` gains six experiment operations (`listExperiments`, `createExperiment`, `startExperiment`, `markExperimentDay`, `dismissExperiment`, `keepExperiment`) and the `SeasonExperiment*` schemas; `api/openapi.yml` regenerated. Five new codes in both bundles (parity kept): `EXPERIMENT_ALREADY_RUNNING` (409), `EXPERIMENT_NOT_PROPOSED` (409), `EXPERIMENT_NOT_RUNNING` (409), `EXPERIMENT_NOT_DONE` (409), `EXPERIMENT_DAY_OUTSIDE` (400). New table `season_experiment` (added to `ResetDatabase`); new switch `mezo.season.experiment-job.enabled`; the proactive `mezo.techcore.cron.experiment-job.enabled` is now `false`. No techcore mechanism changed. See [`season.md`](season.md) §3.14.
 

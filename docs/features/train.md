@@ -2,7 +2,7 @@
 title: Train
 type: feature-domain
 status: done
-updated: 2026-11-21
+updated: 2026-11-24
 tags: [train, season, running, sport, frontend, backend, data-layer, progression, hypertrophy]
 key_files:
   - api/feature/train/train.yml
@@ -13,6 +13,8 @@ key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/train
 related: [season, _platform-data-layer, _platform-design-system, today, fuel, me, companion, ../research/concepts/personalized-exercise-selection.md]
 ---
+
+> **2026-11-24 — Book a past template day as planned (Boop gym catch-up, `mezo-r36n9.161`, decision #104).** `POST /api/train/workouts/as-planned` (`completeWorkoutAsPlanned`; body `templateSessionId`, `date`, `startedAt`, `clientRef`, `overrides[{exerciseId, weightKg}]`) → `WorkoutService.completeAsPlanned`: idempotent on `clientRef` (`workout_session.client_ref`, Liquibase `202611241400_mezo-r36n9.161_workout_session_client_ref.sql`, unique per owner); `date` within today−7 … today else 400 `TRAIN_AS_PLANNED_DATE_OUT_OF_WINDOW`; `startedAt` through `CapturedAtWindow`; D6 (a live workout) and D5 (the template day completed in the **given date's** Mon–Sun week — `completedInWeekOf`) answer 409 as `startWorkout` does; the instance is built by the shared `newInstance` dated `date`, status `completed`, `finishedAt = startedAt`, **no derived timing**; the prescription is today's `getToday` — every working set of a prescribed exercise is logged done at `startedAt` (an override's weight where given, RIR = the exercise's target), an exercise with neither a prescription nor an override gets the skip marker (`skipMarker`, shared with `skipExercise`), never a zero weight; `WorkoutFinishedEvent` is published. Test: `WorkoutAsPlannedIT` (8).
 
 > **2026-11-20 — the season gate (Boop B6 Évad S1, `mezo-r36n9.16`).** A new training block needs a season: 409
 > `SEASON_REQUIRED` on the start paths — see §4 *Mesocycles (planning)* → **The season gate**. Running blocks are

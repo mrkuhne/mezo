@@ -14,6 +14,8 @@ key_files:
 related: [boop-ios, ritual, intention, journal, companion, today]
 ---
 
+> **2026-11-24 — Close catch-up from the Napló (Boop, `mezo-r36n9.159`).** No server change: a past day's close is `PUT /api/day-close/{date}` with `capturedAt` = that day 21:00 (the merged 20:00 check-in and `closedAt` follow it), inside the existing window; the day's goal comes from the ledger and Boop's plan goals from that day's brief (`getBoopBrief?date=`).
+
 > **2026-11-24:** `RitmusClient` (the outbox's sender switch this doc lists as a key file) gained the quick log's weight and sleep senders (`mezo-r36n9.154`); nothing about the day close changed — see [`boop-ios.md`](boop-ios.md) §2.
 
 # Day close — the Boop evening close record — Feature Documentation

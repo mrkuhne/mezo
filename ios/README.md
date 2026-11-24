@@ -58,7 +58,11 @@ Pass them after the bundle id: `xcrun simctl launch <sim> io.mrkuhne.boop -previ
 | `-previewHome suly -sulyTab Ma\|Test\|Napló` | the Súly area (`mezo-r36n9.158`) on invented figures from `Suly/SulyPreview.swift` (the Évad preview's season: 84,1 kg → 82, planned −0,4 kg a week, the ring says 84); `-sulyState full\|noseason\|empty\|offline\|error` (no active season · no weigh-ins and no trend · no net, cache primed five hours old · the server failing) |
 | `-previewOpen checkin\|checkinDone` | opens the check-in (its first item / its payoff after every item is answered and saved), the clock reads 16:02 |
 | `-previewOpen este\|esteDone` | opens the evening close (esteDone: already closed), the clock reads 21:32 and the day has its goal |
-| `-previewOpen naploDay` | Napló opens yesterday's day |
+| `-previewOpen naploDay` | Napló opens yesterday's day (its sheet with the PÓTLÁS block, `mezo-r36n9.159`) |
+| `-previewWhen tegnap` | the Súly / Alvás / Sport / Napló quick sheets and the Ital sheet open on yesterday (the Mikor row's Tegnap chip) |
+| `-previewOpen checkin -previewCatchup YES` | the check-in as yesterday's missed dél catch-up (PÓTLÁS · TEGNAP · DÉL) |
+| `-previewOpen drink` | the composer in drink mode (Ital · Mit ittál?, `mezo-r36n9.160`); `-previewHome etel -previewDrinks YES` puts two drinks on the preview day (the ITALOK group) |
+| `-previewOpen megvolt` | the Megvolt sheet for yesterday's preview template day (`mezo-r36n9.161`) |
 | `-previewOpen chatAnswer\|chatAsk\|chatQueued` | the Boop tab: one answered question / one asked at launch whose answer takes 8 s / one question waiting for the net (use with `-previewOffline YES`) |
 | `-previewOffline YES` | no network: captures stay pending on the phone (waiting glyph), the mic keeps a recording for later upload |
 | `-previewColdTap checkin\|este` | simulates a notification tap from a cold launch: the cover is asked for before any view exists |

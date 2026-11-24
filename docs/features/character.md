@@ -2,7 +2,7 @@
 title: Karakter (user character dossier)
 type: feature-domain
 status: shipped
-updated: 2026-11-21
+updated: 2026-11-24
 tags: [character, karakter, ai, llm, backend, frontend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/character
@@ -12,6 +12,8 @@ key_files:
   - backend/src/main/resources/db/changelog/1.1.0/script
 related: [companion, proactive, insights, me, _platform-api-backend]
 ---
+
+> **2026-11-24 — reviewed after `mezo-r36n9.161` (no change).** The day's changeset folder gained `202611241400_mezo-r36n9.161_workout_session_client_ref.sql`; nothing of the character slice is affected.
 
 > **2026-11-21 — reviewed after Boop B6 Évad S4 (`mezo-r36n9.16`).** The shared changelog folder gained `season_experiment` (the season's experiments); nothing in character changed.
 
