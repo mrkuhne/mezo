@@ -304,7 +304,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 ### companion
 
 *BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-11-21, shipped) ·
-  [docs/features/companion.md](features/companion.md) (updated 2026-11-21, mixed) ·
+  [docs/features/companion.md](features/companion.md) (updated 2026-11-24, mixed) ·
   [docs/features/dayclose.md](features/dayclose.md) (updated 2026-11-24, done) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-11-19, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-11-19, in-progress) ·
@@ -593,7 +593,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### fuel
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-21, done)
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-24, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/fuel`
   - **entities→tables:** `FuelSettingsEntity`→`fuel_settings`, `MealSlotTemplateEntity`→`meal_slot_template`,
@@ -783,7 +783,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### llmlog
 
-*BE + API* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-11-21, mixed)
+*BE + API* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-11-24, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog`
   - **sub-features:** `context`
@@ -846,7 +846,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### meal
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-21, done)
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-24, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/meal`
   - **sub-features:** `port`
@@ -934,7 +934,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### nutrition
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-21, done)
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-24, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/nutrition`
   - **entities→tables:** `DietSettingsEntity`→`diet_settings`, `SensitivityProfileEntity`→`sensitivity_profile`
@@ -1309,7 +1309,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### train
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-21, done) ·
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-24, done) ·
   [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-11-20, done) ·
   [docs/features/season.md](features/season.md) (updated 2026-11-21, in-progress) ·
   [docs/features/train.md](features/train.md) (updated 2026-11-21, done)

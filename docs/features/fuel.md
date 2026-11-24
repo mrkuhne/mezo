@@ -2,7 +2,7 @@
 title: Fuel (Nutrition)
 type: feature-domain
 status: done
-updated: 2026-11-21
+updated: 2026-11-24
 tags: [fuel, frontend, data-layer, boop, b4-etel, day-plan, meal-photos, client-ref]
 key_files:
   - api/feature/fuel/fuel.yml
@@ -678,6 +678,7 @@ When Slice C lands, add MSW handlers so real-mode hook tests exercise `fuelApi`,
 
 ## 9. Decisions, gotchas & deferred
 
+- **Photo drafts use OpenAI (2026-11-24, `mezo-h38eq`).** `MealAiDraftService` still sends the ephemeral image through its `MealDraftLlm` port and runs the same deterministic validation and pantry matching. The companion's shared `VISION` route now serves it with `gpt-5.6-luna` in production ([ADR 0059](../decisions/0059-route-vision-to-openai.md)); this also covers recipe and pantry-label extraction. It replaces the exhausted Gemini route, which answered `402` before the draft could be built. The iPhone and meal API did not change.
 - **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history.
 - **Folyadék F5 (`mezo-n4wf5.5`, 2026-10-12) — gotchas paid for in this slice** (lessons F5.1–F5.17 in the [style bible](../design_2.0/2026-10-09-folyadek-style-bible.md) appendix):
   - **Never reorder a hero with CSS `order`.** A graphic between the label and the verdict goes in the kit's `Hero graphic` slot (DOM order = reading order); ten local `.f?-ghero` / `.f?-hero` reorder tricks were folded into it. Some pages still pass `className="f?-ghero"` as a plain styling hook — it must not carry `order`.
