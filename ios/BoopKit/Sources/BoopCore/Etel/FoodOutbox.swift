@@ -42,6 +42,8 @@ public struct MealDraftSender: OutboxSender {
         do {
             var draft = try await drafter.draft(date: item.capturedAt, text: capture.text, photo: photo, barcode: capture.barcode)
             draft.photo = nil
+            // A drink stays a drink (`mezo-r36n9.160`): the slot never falls back to the clock's window.
+            if let slot = capture.kind.fixedSlot { draft.slot = slot }
             let file = ReadyFile(draft: draft, capturedAt: item.capturedAt, photoRef: capture.photoRef, text: capture.text)
             try RitmusFiles.write(try JSONEncoder().encode(file), to: FoodOutbox.readyURL(item.id, in: directory))
             return .sent(nil)

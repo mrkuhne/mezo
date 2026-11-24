@@ -16,13 +16,13 @@ extension MealStart.Entrance {
         case .pantry: .pantry
         case .barcode: .barcode
         case .usual: .usuals
-        case .photo, .text, .serving, .pick: nil
+        case .photo, .text, .serving, .pick, .drink: nil
         }
     }
 }
 
 struct MealStart: Identifiable {
-    enum Entrance: Equatable { case pick, photo, text, recipe, pantry, barcode, usual, serving }
+    enum Entrance: Equatable { case pick, photo, text, recipe, pantry, barcode, usual, serving, drink }
     let id = UUID()
     var entrance: Entrance = .pick
     var text = ""
@@ -88,6 +88,8 @@ final class MealComposerModel {
     private let online: () -> Bool
     private let clock: () -> Date
     private let calendar: Calendar
+    /// A meal or a drink (`mezo-r36n9.160`): a drink's slot is always `drink`, whatever the clock says.
+    let kind: MealKind
     /// Tells the room its cards changed (a draft was parked, a card went).
     var changed: () -> Void = {}
 
@@ -95,17 +97,27 @@ final class MealComposerModel {
          lists: (recipes: @Sendable () async throws -> [Recipe], shelf: @Sendable () async throws -> [PantryRow])? = nil,
          usuals: (@Sendable () async throws -> [UsualMeal])? = nil,
          outbox: FoodOutbox?, online: @escaping () -> Bool = { true }, clock: @escaping () -> Date = { Date() },
-         calendar: Calendar = .current) {
+         calendar: Calendar = .current, kind: MealKind = .meal) {
         self.drafter = drafter; self.saver = saver; self.lists = lists; self.usualsLoader = usuals; self.outbox = outbox; self.online = online
-        self.clock = clock; self.calendar = calendar
+        self.clock = clock; self.calendar = calendar; self.kind = kind
         capturedAt = clock()
     }
 
-    convenience init(food: FoodClient, outbox: FoodOutbox?, online: @escaping () -> Bool, clock: @escaping () -> Date = { BoopClock.now() }) {
+    convenience init(food: FoodClient, outbox: FoodOutbox?, online: @escaping () -> Bool, clock: @escaping () -> Date = { BoopClock.now() },
+                     kind: MealKind = .meal) {
         self.init(drafter: food, saver: { draft, ref, at in try await food.save(draft, clientRef: ref, capturedAt: at) },
                   lists: (recipes: { try await food.recipes() }, shelf: { try await food.pantry() }),
-                  usuals: { try await food.usuals(slot: FoodClient.slot(at: BoopClock.now(), cal: .current)) },
-                  outbox: outbox, online: online, clock: clock)
+                  usuals: { try await food.usuals(slot: FoodClient.slot(at: BoopClock.now(), cal: .current, kind: kind)) },
+                  outbox: outbox, online: online, clock: clock, kind: kind)
+    }
+
+    /// The slot a capture gets at a moment: the clock's window for a meal, always `drink` for a drink.
+    func slot(at date: Date) -> String { FoodClient.slot(at: date, cal: calendar, kind: kind) }
+
+    /// The owner's usual drinks for the chips above the words (drink mode only); a failure leaves the chips empty.
+    func loadUsualDrinks() async {
+        guard kind == .drink, let usualsLoader else { return }
+        usuals = (try? await usualsLoader()) ?? []
     }
 
     var isOnline: Bool { online() }
@@ -127,7 +139,7 @@ final class MealComposerModel {
         redated = false
         if draft != nil {
             draft?.date = dayString(capturedAt)
-            draft?.slot = FoodClient.slot(at: capturedAt, cal: calendar)
+            draft?.slot = slot(at: capturedAt)
         }
     }
 
@@ -217,7 +229,7 @@ final class MealComposerModel {
         capturedAt = stamp()
         // A food chosen from the Kamra has no scanned code: the draft carries none (and no lookup source).
         let scannedCode = !scanned.code.isEmpty
-        draft = MealDraft(date: dayString(capturedAt), slot: FoodClient.slot(at: capturedAt, cal: calendar), title: nil,
+        draft = MealDraft(date: dayString(capturedAt), slot: slot(at: capturedAt), title: nil,
                           items: [line], barcode: scannedCode ? scanned.code : nil, lookupSource: scannedCode ? scanned.source : nil)
         barcode = nil; self.scanned = nil
         stage = .draft
@@ -245,7 +257,9 @@ final class MealComposerModel {
             var d = try await drafter.draft(date: capturedAt, text: words.isEmpty ? nil : words, photo: photo, barcode: barcode)
             await linger(since: started)
             // A meal logged afterwards belongs to the window of the time he gave, not of the moment he typed it.
-            if chosenAt != nil { d.date = dayString(capturedAt); d.slot = FoodClient.slot(at: capturedAt, cal: calendar) }
+            if chosenAt != nil { d.date = dayString(capturedAt) }
+            // A meal keeps the drafter's window unless the owner re-dated it; a drink is always a drink (`mezo-r36n9.160`).
+            if chosenAt != nil || kind == .drink { d.slot = slot(at: capturedAt) }
             draft = d; stage = .draft
             await ensureParked()
             await discardReplaced()
@@ -268,7 +282,7 @@ final class MealComposerModel {
         var ref: UUID?
         do {
             ref = try photo.map { try outbox.storePhoto($0, rescale: false) }
-            try await outbox.enqueueMeal(draft: MealCapture(text: words.isEmpty ? nil : words, barcode: barcode), photoRef: ref, capturedAt: capturedAt)
+            try await outbox.enqueueMeal(draft: MealCapture(text: words.isEmpty ? nil : words, barcode: barcode, kind: kind), photoRef: ref, capturedAt: capturedAt)
             await discardReplaced()
             changed()
             chip = why == .offline ? "Nincs net · a telefonon van, elküldöm, amint lesz"
@@ -341,7 +355,7 @@ final class MealComposerModel {
     func chooseUsual(_ usual: UsualMeal) async {
         if !usual.items.isEmpty {
             capturedAt = stamp()
-            draft = MealDraft(date: dayString(capturedAt), slot: FoodClient.slot(at: capturedAt, cal: calendar), title: usual.title, items: usual.items)
+            draft = MealDraft(date: dayString(capturedAt), slot: slot(at: capturedAt), title: usual.title, items: usual.items)
             usualNote = "Ezek a legutóbbi „\(usual.title)” tételei. A számok mentéskor a kamrád és a receptjeid mostani adataiból frissülhetnek — nézd át, mielőtt mented."
             show(.draft)
             return
@@ -473,7 +487,8 @@ private struct MealComposerHost: View {
 
     init(start: MealStart, food: FoodClient, ritmus: RitmusEnvironment?, onDone: @escaping (String?) -> Void) {
         self.start = start; self.food = food; self.onDone = onDone
-        let m = MealComposerModel(food: food, outbox: ritmus?.food, online: { [weak ritmus] in ritmus?.online ?? true })
+        let m = MealComposerModel(food: food, outbox: ritmus?.food, online: { [weak ritmus] in ritmus?.online ?? true },
+                                  kind: start.entrance == .drink ? .drink : .meal)
         m.text = start.text
         m.minWorking = .milliseconds(2600)
         m.changed = { [weak ritmus] in ritmus?.mealDraftsChanged() }
@@ -497,7 +512,7 @@ private struct MealComposerHost: View {
 
     private var title: String {
         switch model.stage {
-        case .pick: "Mit ettél?"
+        case .pick: model.kind == .drink ? "Mit ittál?" : "Mit ettél?"
         case .working: model.hasPhoto ? "Nézem a tányért" : "Egy pillanat"
         case .draft: model.adopted ? "Nézd át" : "Ezt látom"
         case .queued: "Eltettem"
@@ -510,7 +525,7 @@ private struct MealComposerHost: View {
     }
 
     var body: some View {
-        NKSheetFrame(hue: .fuel, eyebrow: "Rögzítés · \(etelSlotLabel(FoodClient.slot(at: model.capturedAt, cal: .current))) · \(time)", title: title,
+        NKSheetFrame(hue: .fuel, eyebrow: model.kind == .drink ? "Ital · \(time)" : "Rögzítés · \(etelSlotLabel(model.slot(at: model.capturedAt))) · \(time)", title: title,
                      closable: !(model.stage == .working || model.saving)) {
             switch model.stage {
             case .pick: pick
@@ -551,6 +566,7 @@ private struct MealComposerHost: View {
             case .photo: choosePhoto()
             case .text: typing = true
             case .recipe, .pantry, .barcode, .usual: break
+            case .drink: await model.loadUsualDrinks()
             case .serving: if let facts = start.serving { model.showServing(facts, source: .catalog, code: "") }
             case .pick: break
             }
@@ -578,6 +594,7 @@ private struct MealComposerHost: View {
             if !model.isOnline { OfflineChip() }
             if model.redated { Text("Ez a rögzítés több mint egy hete készült, a szerver már nem fogadja el a régi napra — a mai napra kerül.").nkFont(13.5).foregroundStyle(.white.opacity(0.8)).fixedSize(horizontal: false, vertical: true) }
             MealTimeRow(model: model)
+            if model.kind == .drink { usualDrinks }
             photoZone
             words
             if let code = model.barcode {
@@ -588,6 +605,10 @@ private struct MealComposerHost: View {
                     Button("Töröl") { model.clearCode() }.nkFont(12.5).foregroundStyle(.white.opacity(0.65)).buttonStyle(.plain)
                         .frame(minHeight: 28).accessibilityLabel("Vonalkód törlése")
                 }
+            }
+            if model.kind == .drink {
+                Text("Beszámít a napi keretbe és a görbébe, de étkezési ablakot nem foglal, és pontot sem kap.")
+                    .nkFont(12.5).foregroundStyle(.white.opacity(0.5)).fixedSize(horizontal: false, vertical: true)
             }
             if let p = model.problem { problemLine(p) }
             Button { typing = false; Task { await model.submit() } } label: {
@@ -611,6 +632,30 @@ private struct MealComposerHost: View {
                     .nkFont(12).foregroundStyle(.white.opacity(0.5)).fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+
+    /// Drink mode: the owner's usual drinks one tap away, learned from what he logged (`mezo-r36n9.160`).
+    @ViewBuilder private var usualDrinks: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            NKMono("SZOKÁSOS ITALAID")
+            if let usuals = model.usuals, !usuals.isEmpty {
+                NKFlowRow(spacing: 8, rowSpacing: 8) {
+                    ForEach(usuals, id: \.key) { u in
+                        Button { Task { await model.chooseUsual(u) } } label: {
+                            Text(u.kcal.map { "\(u.title) · \($0) kcal" } ?? u.title).nkFont(12.5, .medium).foregroundStyle(.white.opacity(0.85))
+                                .padding(.horizontal, 12).frame(minHeight: 34).background(Capsule().fill(.white.opacity(0.08)))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                Text("Boop abból tanulja, amit rögzítesz; a második alkalomtól pontosan azt hozza.")
+                    .nkFont(12).foregroundStyle(.white.opacity(0.5)).fixedSize(horizontal: false, vertical: true)
+            } else {
+                Text("Az első italodat írd le vagy fotózd — Boop megjegyzi, és legközelebb egy koppintás.")
+                    .nkFont(13).foregroundStyle(.white.opacity(0.6)).fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(14).frame(maxWidth: .infinity, alignment: .leading).nkGlass(16)
     }
 
     private var submitTitle: String {
@@ -1066,9 +1111,9 @@ struct MealTimeRow: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
                 NKGlyph("clock-ink", .white.opacity(0.7), size: 14)
-                NKMono("MIKOR ETTED")
+                NKMono(model.kind == .drink ? "MIKOR ITTAD" : "MIKOR ETTED")
                 Spacer(minLength: 8)
-                Text("\(etelSlotLabel(FoodClient.slot(at: model.capturedAt, cal: .current))) · \(label)")
+                Text("\(etelSlotLabel(model.slot(at: model.capturedAt))) · \(label)")
                     .nkFont(13, .medium).foregroundStyle(Hue.fuel.glow)
             }
             ScrollView(.horizontal, showsIndicators: false) {

@@ -623,6 +623,7 @@ struct EtelRoom: View {
                    headline: v.headline, sentence: v.sentence, glyph: "bowl-cream",
                    tabs: etelTabs(pending: store.pending.count), selectedTab: $selected,
                    actions: [NKAreaAction(glyph: "plus-ink", label: "Étkezés rögzítése") { composer = MealStart(entrance: .pick) },
+                             NKAreaAction(glyph: "cup-cream", label: "Ital rögzítése") { composer = MealStart(entrance: .drink) },
                              NKAreaAction(glyph: "repeat-deep", label: "Frissítés") { Task { await reload() } }],
                    onBack: { if let closeRoom { closeRoom() } else { dismiss() } },
                    onAsk: { openPlace(.boop) }) {
@@ -765,6 +766,7 @@ struct EtelRoom: View {
             case "compose": composer = MealStart(entrance: .pick)
             case "compose-recipe": composer = MealStart(entrance: .recipe)
             case "compose-pantry": composer = MealStart(entrance: .pantry)
+            case "compose-drink": composer = MealStart(entrance: .drink)
             case "sensitivity": etelSheet = .sensitivity
             case "diet": etelSheet = .diet
             case "rhythm": etelSheet = .rhythm

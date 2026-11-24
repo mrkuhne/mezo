@@ -28,6 +28,7 @@ private func rgb(_ c: Color) -> (Int, Int, Int) {
     #expect(NKAreaTabs.glyph("Test") == "body-cream")
     #expect(NKAreaTabs.glyph("Napló") == "book-sage")
     #expect(NKGlyph.outlined.contains("body-cream"))
+    #expect(NKGlyph.outlined.contains("cup-cream"))
 }
 
 @Test func everyHueHasThreeSkiesAndFourOrbColours() {

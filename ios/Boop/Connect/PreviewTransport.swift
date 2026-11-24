@@ -196,6 +196,16 @@ struct PreviewTransport: ClientTransport {
 
     private static func macros(_ k: Double, _ p: Double, _ c: Double, _ f: Double) -> String { #"{"kcal":\#(k),"p":\#(p),"c":\#(c),"f":\#(f)}"# }
 
+    /// `-previewDrinks YES`: two drinks on the day, so the ITALOK group is reviewable (`mezo-r36n9.160`).
+    private static func previewDrinks(date: String) -> [String] {
+        guard UserDefaults.standard.bool(forKey: "previewDrinks") else { return [] }
+        func drink(_ id: String, _ title: String, _ time: String, _ k: Double, _ p: Double, _ c: Double, _ f: Double) -> String {
+            #"{"id":"\#(id)","slot":"drink","loggedAt":"\#(date)T\#(time):00+01:00","mealDate":"\#(date)","title":"\#(title)","macros":\#(macros(k, p, c, f)),"score":{"value":null,"breakdown":null},"items":[],"hasPhoto":false}"#
+        }
+        return [drink("d1d1d1d1-0000-4000-8000-000000000001", "Gombakávé zabtejjel mézzel", "09:40", 95, 2, 14, 3),
+                drink("d1d1d1d1-0000-4000-8000-000000000002", "Fehérjeturmix", "16:10", 180, 24, 9, 4)]
+    }
+
     private static func seedMeal(date: String) -> String {
         #"{"id":"\#(seedMealId)","slot":"breakfast","loggedAt":"\#(date)T08:10:00+01:00","mealDate":"\#(date)","title":"Zabkása gyümölccsel","macros":\#(macros(420, 22, 62, 9)),"score":{"value":0.74,"breakdown":\#(breakdown(0.74, ["macro": 0.86, "micro": 0.64, "who": 0.78, "fat_quality": 0.81, "nova": 0.92, "plant_diversity": 0.55, "energy_density": 0.88, "context": 0.9]))},"items":[{"source":"pantry","pantryItemId":"\#(oatsId)","amount":60,"unit":"g","lineOrder":0,"name":"Zabpehely","nova":1,"contribution":\#(macros(228, 8, 40, 4))},{"source":"pantry","amount":120,"unit":"g","lineOrder":1,"name":"Banán","nova":1,"contribution":\#(macros(106, 1, 27, 0))}],"hasPhoto":true}"#
     }
@@ -254,7 +264,7 @@ struct PreviewTransport: ClientTransport {
         let date = pathDate(request)
         switch op {
         case "getFuelDay":
-            let meals = ([seedMeal(date: date)] + foodMeals).joined(separator: ",")
+            let meals = ([seedMeal(date: date)] + previewDrinks(date: date) + foodMeals).joined(separator: ",")
             let mode = foodKimelo.map { "\"fuelMode\":\"GUIDANCE\",\"recoveryCategory\":\"\($0.category)\",\"recoveryDay\":1," } ?? ""
             return json(#"{"date":"\#(date)","targets":{"kcal":2400,"p":150,"c":260,"f":70,"water":2500},"consumed":{"kcal":420,"p":22,"c":62,"f":9,"water":\#(foodWater)},"meals":[\#(meals)],\#(mode)"skippedKcal":\#(foodSkips.count * 200)}"#)
         case "getFuelPlan": return json(foodPlan(date: date))

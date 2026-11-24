@@ -223,6 +223,7 @@ struct ShellView: View {
             switch UserDefaults.standard.string(forKey: "previewOpen") {
             case "capture": capturing = true
             case "meal": meal = MealStart()
+            case "drink": meal = MealStart(entrance: .drink)
             case "barcode": meal = MealStart(entrance: .barcode)
             case "mealText": meal = MealStart(entrance: .text, text: "csirkemell rizzsel és brokkolival")
             case "account": account = true

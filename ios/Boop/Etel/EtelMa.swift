@@ -54,6 +54,9 @@ struct EtelMa: View {
             NKBare("MAKRÓK", hue: hue, trailing: "ami még belefér", state: dayState("A mai keretedet most nem látom.")) { macros }
         }
         NKBare("A MAI ÉTKEZÉSEK", hue: hue, state: planState) { windows }
+        if let day = store.day, !etelDrinks(day).isEmpty {
+            NKBare("ITALOK", hue: hue, trailing: "\(huInt(etelDrinkKcal(day))) kcal") { drinks(etelDrinks(day)) }
+        }
         NKBare("VÍZ", hue: hue, state: dayState("A vízbevitelt most nem látom.")) { water }
         NKBare("KIEGÉSZÍTŐK", hue: hue, state: supplementState) { supplements }
         NKAskRow(hue: hue, text: "Kérdezd meg Boopot az étkezésedről") { onAsk() }
@@ -171,6 +174,32 @@ struct EtelMa: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(name): \(Int(eaten.rounded())) gramm a \(Int(target.rounded()))-ból, még \(huInt(left)) gramm")
+    }
+
+    // MARK: - The day's drinks (`mezo-r36n9.160`): no window, no ring
+
+    private func drinks(_ list: [BoopCore.Meal]) -> some View {
+        VStack(spacing: 0) {
+            ForEach(Array(list.enumerated()), id: \.element.id) { k, m in
+                if k > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5).padding(.leading, 52) }
+                HStack(spacing: 12) {
+                    ZStack {
+                        Circle().fill(hue.glow.opacity(0.16)).frame(width: 40, height: 40)
+                        NKGlyph("cup-cream", hue.glow, size: 18)
+                    }
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(mealTitle(m, slotLabel: "Ital")).nkFont(15, .medium).foregroundStyle(.white).lineLimit(1)
+                        Text("\(timeText(m.loggedAt)) · \(huInt(Int(m.macros.kcal.rounded()))) kcal · \(Int(m.macros.p.rounded())) g fehérje")
+                            .nkFont(12.5).foregroundStyle(.white.opacity(0.55))
+                    }
+                    Spacer(minLength: 8)
+                    Text("ital").nkFont(11, .medium, design: .monospaced).tracking(1).foregroundStyle(.white.opacity(0.55))
+                        .padding(.horizontal, 8).padding(.vertical, 4).background(Capsule().fill(.white.opacity(0.08)))
+                }
+                .padding(.vertical, 10)
+                .accessibilityElement(children: .combine)
+            }
+        }
     }
 
     // MARK: - The day's meals, as rows
