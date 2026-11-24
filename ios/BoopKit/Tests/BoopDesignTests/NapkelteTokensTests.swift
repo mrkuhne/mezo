@@ -25,8 +25,8 @@ private func rgb(_ c: Color) -> (Int, Int, Int) {
 
 /// The Súly room's Test tab wears its own body mark (owner: „a test kapjon saját új ikont"); a Napló tab reads as a book.
 @Test func testTabWearsTheBodyGlyph() {
-    #expect(NKAreaTabs.glyph("Test") == "body-cream")
-    #expect(NKAreaTabs.glyph("Napló") == "book-sage")
+    #expect(NKAreaBar.glyph("Test") == "body-cream")
+    #expect(NKAreaBar.glyph("Napló") == "book-sage")
     #expect(NKGlyph.outlined.contains("body-cream"))
 }
 
