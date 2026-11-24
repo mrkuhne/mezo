@@ -6,12 +6,13 @@ allapot: Élesben
 hol: [iPhone app]
 szulo: 00-attekintes
 szakasz: [B2, B3, B4, B5, Kezdőlap]
-osszefoglalo: Egy lap, ahonnan bármit rögzíthetsz, ami a webes gyors logolásban volt — étkezés, víz, kiegészítők, edzés indítása, sport, súly, check-in, napló, alvás, kiadás —, a menüsor „+” gombjáról és a kezdőlap „Rögzítés” gombjáról.
+osszefoglalo: Egy lap, ahonnan bármit rögzíthetsz, ami a webes gyors logolásban volt — étkezés, víz, kiegészítők, edzés indítása, sport, súly, check-in, napló, alvás, kiadás —, a menüsor „+” gombjáról; a kezdőlapon öt gyorsajtó a leggyakoribb ötre.
 ---
 
 ## Mit csinál
-A „+” gomb (a menüsor jobb szélén, és a kezdőlapon az orbok alatt jobbra a **Rögzítés** gomb) egy lapot nyit
-„Mit rögzítesz?” címmel. Rajta minden, ami a régi webes gyors logolásban volt (a tulajdonos döntése, 2026-11-24):
+A „+” gomb (a menüsor jobb szélén) egy lapot nyit „Mit rögzítesz?” címmel. A kezdőlapon Boop mondata alatt
+**öt gyorsajtó** áll — **Étkezés · Víz · Súly · Check-in · Napló** —, mindegyik rögtön a saját lapját nyitja, a
+„Mit rögzítesz?” lap nélkül (2026-11-24; a korábbi „Rögzítés” kapszula helyett, amely csak ezt a lapot nyitotta). Rajta minden, ami a régi webes gyors logolásban volt (a tulajdonos döntése, 2026-11-24):
 
 - **Étkezés** — Fotó · Szöveg · Vonalkód · Recept · Kamra: megnyitja az étkezés rögzítését a választott bejárattal;
 - **Víz** — öt gomb (1 · 2 · 3 · 5 · 7,5 dl), egy koppintás, és az Étel szoba vízszámlálója lép;

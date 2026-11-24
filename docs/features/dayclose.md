@@ -2,7 +2,7 @@
 title: Day close — the Boop evening close record
 type: feature-domain
 status: done
-updated: 2026-11-20
+updated: 2026-11-24
 tags: [backend, ios, boop, dayclose, biometrics, data-layer]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/dayclose
@@ -13,6 +13,8 @@ key_files:
   - ios/Boop/Ritmus/EsteFlow.swift
 related: [boop-ios, ritual, intention, journal, companion, today]
 ---
+
+> **2026-11-24:** `RitmusClient` (the outbox's sender switch this doc lists as a key file) gained the quick log's weight and sleep senders (`mezo-r36n9.154`); nothing about the day close changed — see [`boop-ios.md`](boop-ios.md) §2.
 
 # Day close — the Boop evening close record — Feature Documentation
 

@@ -1638,5 +1638,38 @@
     ],
     "mit_kapsz": "A „+” lapról minden rögzíthető, ami a webes gyors logolásban volt: étkezés, víz, kiegészítők, edzés indítása, sport, súly, check-in, napló (bármikor, nem csak az esti zárásban), alvás és kiadás. A kezdőlapon, az orbok alatt jobbra is van egy „Rögzítés” gomb ugyanerre a lapra. A súly, az alvás, a sport és a naplósor net nélkül is rögzül.",
     "munkamenet": "kezdolap-orbok-fotos-naplozas"
+  },
+  "mezo-r36n9.156": {
+    "cim": "Hiba: a lapokon nincs bezáró gomb, és az Étel-lapok lehúzása frissít bezárás helyett",
+    "tipus": "Hiba",
+    "szakasz": "Kezdőlap",
+    "terulet": [
+      "Alapok",
+      "Étel"
+    ],
+    "mit_kapsz": "Minden felcsúszó lap jobb felső sarkában egy kis kerek X zárja be a lapot; a lehúzás is marad. Az Étel szobából nyíló lapokon a lehúzás újra bezár (eddig a szobát frissítette).",
+    "munkamenet": "suly-orb-gyorsajtok"
+  },
+  "mezo-r36n9.157": {
+    "cim": "Kezdőlap: öt gyorsajtó a Rögzítés kapszula helyett",
+    "tipus": "Funkció",
+    "szakasz": "Kezdőlap",
+    "terulet": [
+      "Alapok",
+      "Ma"
+    ],
+    "mit_kapsz": "Boop mondata alatt öt kis üvegajtó — Étkezés · Víz · Súly · Check-in · Napló —, mindegyik rögtön a saját lapját nyitja, egy koppintással kevesebb. A menüsor plusz gombja marad a teljes lappal.",
+    "munkamenet": "suly-orb-gyorsajtok"
+  },
+  "mezo-r36n9.158": {
+    "cim": "Súly terület: a kilencedik gömb a kezdőlapon és a súlyszoba",
+    "tipus": "Funkció",
+    "szakasz": "Kezdőlap",
+    "terulet": [
+      "Súly",
+      "Ma"
+    ],
+    "mit_kapsz": "A kör kilenc gömbből áll: az arany Súly gömb száma azt mondja, mennyire tartod az évad tervezett ütemét. Mögötte a Súly terület a Pénz mintájára: Ma (a mai mérés és a trend, a cél, a súlygörbe a terv vonalával, a hét mérései), Test (a Feelfit testzsírja és izomtömege, BMI), Napló (minden mérés hetenként). Net nélkül az utolsó kép a korával.",
+    "munkamenet": "suly-orb-gyorsajtok"
   }
 }

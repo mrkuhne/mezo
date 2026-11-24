@@ -73,9 +73,31 @@ A kezdőlap és a gyors rögzítés javításai is a főágon vannak; ugyanaz a 
 Az új tesztek a telefonos készletben: `KezdolapRingTests`, `CaptureSheetTests`, `MaiCopyTests` (app) — a mag
 (`BoopCore`) 951 tesztje natívan lefutott az új Macen.
 
+## Harmadik csomag ugyanebben az átadóban (2026-11-24, `mezo-r36n9.156`–`.158`)
+
+A lapok bezárása, a kezdőlap gyorsajtói és a Súly terület is a főágon vannak; ugyanaz a telepítés hozza. A telefonon
+nézd meg:
+
+- **minden felcsúszó lap** jobb felső sarkában a kis kerek **X** zárja a lapot; az **Étel szobából nyíló lapokon** a
+  lehúzás **bezár**, nem frissít (a szoba saját lehúzása továbbra is frissít);
+- a kezdőlapon Boop mondata alatt **öt ajtó**: Étkezés · Víz · Súly · Check-in · Napló — mindegyik rögtön a saját
+  lapját nyitja; a sáv plusz gombja változatlan;
+- a kör **kilenc gömb**: az arany **Súly** az Energia és a Forma között; a száma „–", ha nincs aktív évad vagy még
+  kevés a mérés, különben az ütem-pontszám (0–100);
+- a Súly gömb a **Súly szobát** nyitja: Ma (a mai mérés, a trend, a cél, a görbe a terv vonalával, a hét mérései,
+  a cél sora az Évadba), Test (testzsír, izomtömeg, BMI — a Feelfit az Egészségen át; itt a **saját testikon** a
+  fülön), Napló (minden mérés hetenként); repülő módban az utolsó kép a korával;
+- egy **Súly rögzítése** után (a szoba gombja vagy a gyorsajtó) a gömb és a szoba újraolvas.
+
+Új tesztek a telefonos készletben: `KezdolapRingTests` (kilenc gömb, a Súly száma), `CaptureSheetTests` (az öt ajtó),
+`MaiCopyTests` (a színvilágok száma), `RitmusTickTests` (a mérés jele), `NapkelteTokensTests` (az arany világ, a
+testikon). A mag (`BoopCore`) Súly-tesztjei (41) natívan lefutottak az új Macen.
+
 ## Ami még nyitva van (jegyek)
 
 - `mezo-r36n9.150` — ez az átadó: tesztkapu + telepítés a másik gépen.
+- `mezo-r36n9.28` — a Testösszetétel terv szerverfele (a testzsír a cél energiaszámításába); a telefonos fele a Súly
+  szoba Test oldala lett (`.158`).
 - `mezo-r36n9.148` — a Notion „Boop” tér frissítése (az új Macen a Notion-kapcsolat az Intuitech teret látta);
   ahol a tulajdonos Notion-kapcsolata él: `node scripts/boop-notion-sync.mjs plan` → apply → `check` 0.
 - `mezo-r36n9.149` — a telefon szerződés-másolata (`ios/scripts/sync-openapi.sh --check`) elmaradt a szerverétől;

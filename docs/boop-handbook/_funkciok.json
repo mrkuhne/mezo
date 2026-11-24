@@ -1399,13 +1399,15 @@
     "terulet": "Alvás és egészség",
     "app": "Kész",
     "mit_tud": "Fogadja az egyedi méréseket (például testsúly, testzsír, pulzusminták), és eltárolja, melyik app és eszköz írta őket.",
-    "app_megjegyzes": "A széles adatkör 23 féle adatot küld.",
+    "app_megjegyzes": "A széles adatkör 23 féle adatot küld. A Súly terület Test oldala a Feelfit testzsírját és izomtömegét a telefonon olvassa az Egészségből.",
     "jegyek": [
-      "mezo-r36n9.11"
+      "mezo-r36n9.11",
+      "mezo-r36n9.158"
     ],
     "kezikonyv": [
       "08-adatok/02-szeles-adatkor",
-      "08-adatok/04-forrasok-es-eszkozok"
+      "08-adatok/04-forrasok-es-eszkozok",
+      "13-suly/01-terulet"
     ],
     "csomag": "wearable"
   },
@@ -1442,12 +1444,15 @@
     "terulet": "Alvás és egészség",
     "app": "Kész",
     "mit_tud": "Elmenti és listázza a mérlegeléseidet, és minden új mérésre újraszámolja a célt.",
-    "app_megjegyzes": "A telefon rögzít és listáz.",
+    "app_megjegyzes": "A telefon rögzít (a „+” Súly ajtaja, a kezdőlap gyorsajtója, a Súly szoba gombja — net nélkül is) és a Súly terület Napló oldala hetenként listáz.",
     "jegyek": [
+      "mezo-r36n9.154",
+      "mezo-r36n9.158",
       "mezo-r36n9.16"
     ],
     "kezikonyv": [
-      "04-terv/03-testsuly-trend"
+      "04-terv/03-testsuly-trend",
+      "13-suly/01-terulet"
     ],
     "csomag": "biometrics"
   },
@@ -1468,14 +1473,16 @@
   "biometrics-suly-trend": {
     "cim": "Kisimított súlytrend és heti tempó",
     "terulet": "Alvás és egészség",
-    "app": "Részben kész",
+    "app": "Kész",
     "mit_tud": "A mérésekből kisimított trendet és heti változási tempót számol, a súlycél ebből méri a valódi haladást.",
-    "app_megjegyzes": "Az Évad és a napi összefoglaló használja; külön trend-képernyő nincs.",
+    "app_megjegyzes": "A Súly terület Ma oldala és a kezdőlap Súly gömbje ebből él (az elmúlt négy hét heti üteme az évad tervezett üteméhez mérve); az Évad és a napi összefoglaló is használja.",
     "jegyek": [
+      "mezo-r36n9.158",
       "mezo-r36n9.16"
     ],
     "kezikonyv": [
-      "04-terv/03-testsuly-trend"
+      "04-terv/03-testsuly-trend",
+      "13-suly/01-terulet"
     ],
     "csomag": "biometrics"
   },
@@ -2057,12 +2064,14 @@
     "terulet": "Célok és évad",
     "app": "Kész",
     "mit_tud": "Egy összefoglalóban megmondja, terv szerint halad-e a súlyod, mikor érsz célba, melyik szakaszban jársz és mi jön legközelebb.",
-    "app_megjegyzes": "Az Évad oldal fejében és súlygörbéjén látszik.",
+    "app_megjegyzes": "Az Évad oldal fejében és súlygörbéjén, és a Súly terület fejében látszik; a kezdőlap Súly gömbjének száma ugyanerre épül.",
     "jegyek": [
+      "mezo-r36n9.158",
       "mezo-r36n9.16"
     ],
     "kezikonyv": [
-      "04-terv/01-terv-keret"
+      "04-terv/01-terv-keret",
+      "13-suly/01-terulet"
     ],
     "csomag": "goal"
   },
