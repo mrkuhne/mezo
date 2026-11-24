@@ -2602,6 +2602,69 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/train/workouts/as-planned:
+    post:
+      tags:
+        - Train
+      operationId: completeWorkoutAsPlanned
+      summary: >-
+        Book a past template day as completed with the plan's prescribed sets
+        (Boop catch-up, mezo-r36n9.161)
+      description: >-
+        The gym catch-up: the owner missed a template day and books it
+        afterwards. One completed instance dated `date`, started at `startedAt`,
+        with the prescribed working sets (as of today) marked done at that
+        instant; an override replaces the weight of every set of that exercise;
+        an exercise with neither a prescription nor an override is skipped,
+        never booked at zero. No derived timing. Idempotent on `clientRef`.
+        `date` must be within today−7 … today (owner zone); `startedAt` at most
+        5 minutes ahead of now. Spec
+        docs/superpowers/specs/2026-11-24-boop-visszamenoleg-ital-design.md
+        §3.6, §7.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkoutAsPlannedRequest'
+      responses:
+        '201':
+          description: >-
+            The completed instance (or the one an earlier call with the same
+            clientRef created)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkoutInstanceResponse'
+        '400':
+          description: >-
+            Validation error (date outside the window —
+            TRAIN_AS_PLANNED_DATE_OUT_OF_WINDOW —, startedAt ahead of now)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Template day not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            Another workout is open (TRAIN_WORKOUT_OPEN_ELSEWHERE) or this
+            template day was already completed in the given date's Mon–Sun week
+            (TRAIN_DAY_DONE_THIS_WEEK)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/train/workouts/{id}':
     get:
       tags:
@@ -21976,6 +22039,53 @@ components:
           description: >-
             When the set was completed. Already persisted since mezo-n5q;
             exposed by mezo-1jm8.
+    WorkoutAsPlannedRequest:
+      type: object
+      required:
+        - templateSessionId
+        - date
+        - startedAt
+        - clientRef
+      properties:
+        templateSessionId:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+          description: The day the workout is booked on — today−7 … today in the owner zone
+        startedAt:
+          type: string
+          format: date-time
+          description: >-
+            When it started; the sets are marked done at this instant,
+            finishedAt equals it
+        clientRef:
+          type: string
+          format: uuid
+          description: >-
+            Idempotency key (unique per owner); a retry returns the instance the
+            first call created
+        overrides:
+          type: array
+          description: >-
+            One weight per exercise, replacing the prescription's for every set
+            of that exercise
+          items:
+            $ref: '#/components/schemas/WorkoutAsPlannedOverride'
+    WorkoutAsPlannedOverride:
+      type: object
+      required:
+        - exerciseId
+        - weightKg
+      properties:
+        exerciseId:
+          type: string
+          format: uuid
+        weightKg:
+          type: number
+          minimum: 0.5
+          description: Never zero — a weightless exercise is skipped instead
     WorkoutStartRequest:
       type: object
       required:

@@ -74,6 +74,10 @@ public class WorkoutSessionEntity extends OwnedEntity {
     @Column
     private LocalDate date;
 
+    /** Boop's idempotency key for a day booked as planned (mezo-r36n9.161); null on every live instance. */
+    @Column(name = "client_ref")
+    private UUID clientRef;
+
     @NotNull
     @Column(nullable = false)
     private String status = "planned"; // planned|active|completed|skipped (DB CHECK)
