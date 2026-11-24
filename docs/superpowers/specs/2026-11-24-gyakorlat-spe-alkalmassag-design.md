@@ -1,6 +1,6 @@
 # Gyakorlatonkénti SPE-alkalmasság és csúcsponti megtartás
 
-**Dátum:** 2026-11-24 · **Állapot:** tulajdonos által jóváhagyva; szimulátoros próba véleményezésre · **Ügy:** `mezo-eiux9`
+**Dátum:** 2026-11-24 · **Állapot:** koncepció és szimulátoros próba jóváhagyva · **Ügy:** `mezo-eiux9`
 **Felület:** Boop, edzésterv-szerkesztő és edzéslejátszó; szerveroldali gyakorlatkatalógus és edzésmotor.
 
 ## 1. Miért változik
