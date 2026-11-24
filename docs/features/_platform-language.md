@@ -2,7 +2,7 @@
 title: Language (Hungarian + English)
 type: feature-platform
 status: mixed
-updated: 2026-11-21
+updated: 2026-11-24
 tags: [platform, frontend, backend, auth, ai, boop, b4-etel]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/auth/service/UserLanguage.java
@@ -11,6 +11,8 @@ key_files:
   - backend/src/main/resources
 related: [_platform-auth-security, _platform-design-system, companion, settings, _platform-api-backend]
 ---
+
+> **Exercise SPE palettes (`mezo-eiux9`).** `TRAIN_TECHNIQUE_NOT_ALLOWED` was added to both message bundles; it includes the exercise name. Boop's selection copy describes the specific movement. No language-layer mechanism changed. See [`train.md`](train.md) §4.
 
 > **2026-11-21 — reviewed after the Levél final review (`mezo-r36n9.39`, no language-layer change).** The dummy mail key moved from `application.yml` to the test properties; no message keys changed.
 
