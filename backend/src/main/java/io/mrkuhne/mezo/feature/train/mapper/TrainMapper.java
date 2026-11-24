@@ -82,6 +82,7 @@ public interface TrainMapper {
     @Mapping(target = "authoredByMe", ignore = true)
     @Mapping(target = "authorName", ignore = true)
     @Mapping(target = "challengeAllowed", ignore = true) // the challenge rule lives in the service layer
+    @Mapping(target = "allowedTechniques", ignore = true) // resolved master palette or user-row fallback in service
     ExerciseCatalogItem toCatalogItem(ExerciseCatalogEntity entity);
 
     @Mapping(target = "duration", source = "durationMin")

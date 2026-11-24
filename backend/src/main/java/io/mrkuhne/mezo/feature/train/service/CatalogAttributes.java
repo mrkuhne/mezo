@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.train.service;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseCatalogEntity;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseCatalogRepository;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -22,6 +23,15 @@ import org.springframework.stereotype.Component;
 public class CatalogAttributes {
 
     private final ExerciseCatalogRepository exerciseCatalogRepository;
+
+    /** One source for catalog responses and technique validation. Master rows store the list; own rows fall back. */
+    public static List<String> allowedTechniqueWires(ExerciseCatalogEntity catalog) {
+        if (catalog.getAllowedTechniques() != null) return List.copyOf(catalog.getAllowedTechniques());
+        if (!"stable".equals(catalog.getStability())) return List.of();
+        return Boolean.TRUE.equals(catalog.getLengthenedFriendly())
+            ? List.of("rest_drop", "drop", "myo", "rest_pause", "partials")
+            : List.of("rest_drop", "drop", "myo", "rest_pause");
+    }
 
     /**
      * Attributes of one exercise that gate the set techniques (mezo-r36n9.80) and pick the planner's default

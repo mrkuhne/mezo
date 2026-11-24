@@ -126,6 +126,7 @@ public class ExerciseCatalogLoader implements CommandLineRunner {
             e.setEquipment(item.equipment());
             e.setStability(item.stability());
             e.setLengthenedFriendly(item.lengthenedFriendly());
+            e.setAllowedTechniques(item.allowedTechniques());
             // Selection attributes (mezo-r36n9.66): same content-overwrite rule; user rows are never in the file.
             e.setGear(item.gear());
             e.setPattern(item.pattern());

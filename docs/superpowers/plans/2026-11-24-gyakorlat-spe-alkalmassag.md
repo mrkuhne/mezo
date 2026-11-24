@@ -35,13 +35,13 @@
 
 ## 3. Katalógus-adatbázis és válasz
 
-**Fájlok:** `backend/src/main/resources/db/changelog/1.1.0/script/202611241430_mezo-eiux9_exercise_spe.sql`, `backend/src/main/resources/db/changelog/1.1.0/1.1.0_master.yml`, `backend/src/main/java/io/mrkuhne/mezo/feature/train/entity/ExerciseCatalogEntity.java`, `backend/src/main/java/io/mrkuhne/mezo/feature/train/ExerciseCatalogLoader.java`, `backend/src/main/java/io/mrkuhne/mezo/feature/train/mapper/TrainMapper.java`, `backend/src/main/java/io/mrkuhne/mezo/feature/train/service/ExerciseCatalogService.java`, `backend/src/test/java/io/mrkuhne/mezo/feature/train/ExerciseCatalogLoaderIT.java`, `backend/src/test/java/io/mrkuhne/mezo/feature/train/ExerciseCatalogContractIT.java`.
+**Fájlok:** `backend/src/main/resources/db/changelog/1.1.0/script/202611241449_mezo-eiux9_exercise_spe.sql`, `backend/src/main/resources/db/changelog/1.1.0/1.1.0_master.yml`, `backend/src/main/java/io/mrkuhne/mezo/feature/train/entity/ExerciseCatalogEntity.java`, `backend/src/main/java/io/mrkuhne/mezo/feature/train/ExerciseCatalogLoader.java`, `backend/src/main/java/io/mrkuhne/mezo/feature/train/mapper/TrainMapper.java`, `backend/src/main/java/io/mrkuhne/mezo/feature/train/service/ExerciseCatalogService.java`, `backend/src/test/java/io/mrkuhne/mezo/feature/train/ExerciseCatalogLoaderIT.java`, `backend/src/test/java/io/mrkuhne/mezo/feature/train/ExerciseCatalogContractIT.java`.
 **Határ:** `exercise_catalog.allowed_techniques varchar(16)[] NULL`; `NULL` csak saját/régi sorokon engedett; a szerver API-ja minden sorhoz teljes listát ad. A migráció az `exercise` és `exercise_set` technika CHECK-jeibe is felveszi a `top_pause` értéket. A fájlnév UTC percét az íráskor ellenőrizni kell; ha a tervben jelölt perc már elmúlt, a tényleges percet írd be mind a fájlnévbe, mind a változásazonosítóba.
 
-- [ ] Piros integrációs teszt: az indulási betöltés a 166 listát eltárolja, egy elrontott master lista újraindítva helyreáll, saját soron a régi stabilitási alapértelmezés jelenik meg, a katalógus GET a Hammer/Hip/Overhead listát adja. `cd backend && ./mvnw clean test -Dtest=ExerciseCatalogLoaderIT,ExerciseCatalogContractIT -Dmezo.test.use-testcontainers=true` → FAIL.
-- [ ] Új Liquibase-fájl és bejegyzés a fenti útvonalon; JPA `@JdbcTypeCode(SqlTypes.ARRAY)` + `@Column(name="allowed_techniques", columnDefinition="varchar(16)[]")` lista. A betöltő a master listát minden induláskor upserteli, a saját sort nem írja át. A mapper az új mezőt figyelmen kívül hagyja, `ExerciseCatalogService.toItem` egységes helperből állítja be a generált `Technique` enum listáját.
-- [ ] A saját sor `NULL` palettáját csak itt származtasd a régi `stable`/`lengthenedFriendly` adatokból; `other/free` esetén üres. Ne tedd a palettát a saját gyakorlat létrehozási/írási kéréseibe. A fenti IT-k és `node scripts/lint-liquibase.mjs` legyen zöld.
-- [ ] `git add backend/src/main/resources/db/changelog/1.1.0 backend/src/main/java/io/mrkuhne/mezo/feature/train backend/src/test/java/io/mrkuhne/mezo/feature/train && git commit -m 'feat(train): persist and serve exercise SPE palettes (mezo-eiux9)'`.
+- [x] Piros integrációs teszt: a hiányzó entitásmező fordítási hibája a `/tmp/mezo-eiux9-red-persist.log` naplóban. A betöltés, eltérült paletta gyógyítása, saját sor fallbackje és a három GET-paletta ellenőrzése elkészült.
+- [x] A `202611241449` UTC-percű Liquibase-fájl, JPA-lista, újraindításkori upsert és API-leképezés elkészült.
+- [x] A saját sor `NULL` palettája a régi `stable`/`lengthenedFriendly` szabályt követi; `free/other` üres. 26 célzott teszt, 0 hiba, BUILD SUCCESS; `node scripts/lint-liquibase.mjs` PASS.
+- [x] A katalógus-adatbázis és válasz változásai külön commitban rögzítve.
 
 ## 4. Egységes szerveroldali jogosultság
 

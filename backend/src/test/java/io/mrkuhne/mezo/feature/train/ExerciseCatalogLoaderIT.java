@@ -40,6 +40,10 @@ class ExerciseCatalogLoaderIT extends AbstractIntegrationTest {
         assertThat(row.getType()).isEqualTo("compound");
         assertThat(row.getStim()).isEqualByComparingTo("0.92");
         assertThat(row.getFatigue()).isEqualByComparingTo("0.55");
+        assertThat(repository.findBySlug("hammer-curl").orElseThrow().getAllowedTechniques())
+            .containsExactly("myo", "rest_drop", "drop");
+        assertThat(repository.findBySlug("hip-thrust").orElseThrow().getAllowedTechniques())
+            .containsExactly("top_pause");
     }
 
     @Test
@@ -68,6 +72,18 @@ class ExerciseCatalogLoaderIT extends AbstractIntegrationTest {
 
         assertThat(repository.findBySlug("box-jump").orElseThrow().getStim())
             .isEqualByComparingTo("0.60");
+    }
+
+    @Test
+    void testRun_shouldHealTechniquePalette_whenMasterRowDrifted() {
+        ExerciseCatalogEntity drifted = repository.findBySlug("hammer-curl").orElseThrow();
+        drifted.setAllowedTechniques(List.of("top_pause"));
+        repository.saveAndFlush(drifted);
+
+        loader.run();
+
+        assertThat(repository.findBySlug("hammer-curl").orElseThrow().getAllowedTechniques())
+            .containsExactly("myo", "rest_drop", "drop");
     }
 
     @Test
@@ -185,6 +201,7 @@ class ExerciseCatalogLoaderIT extends AbstractIntegrationTest {
         var user = train.createUserCatalogExercise(owner, "My Move", "quad", "plyo");
         loader.run();
         assertThat(repository.findById(user.getId())).isPresent();
+        assertThat(repository.findById(user.getId()).orElseThrow().getAllowedTechniques()).isNull();
     }
 
     @Test
