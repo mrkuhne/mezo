@@ -151,7 +151,7 @@ class MesoTemplateTechniqueIT extends ApiIntegrationTest {
         String body = postForBody(TEMPLATES, request(true, List.of(bench)), auth, HttpStatus.BAD_REQUEST,
             String.class);
 
-        assertHasRequestError(body, "TRAIN_TECHNIQUE_NOT_STABLE");
+        assertHasRequestError(body, "TRAIN_TECHNIQUE_NOT_ALLOWED");
         assertThat(body).contains("Barbell Bench Press");
     }
 
@@ -162,7 +162,7 @@ class MesoTemplateTechniqueIT extends ApiIntegrationTest {
         String body = postForBody(TEMPLATES, request(true, List.of(
             tech(ex("Saját gép", "chest-mid", null), Technique.MYO))), ownerAuthHeaders(),
             HttpStatus.BAD_REQUEST, String.class);
-        assertHasRequestError(body, "TRAIN_TECHNIQUE_NOT_STABLE");
+        assertHasRequestError(body, "TRAIN_TECHNIQUE_NOT_ALLOWED");
     }
 
     @Test
@@ -324,7 +324,7 @@ class MesoTemplateTechniqueIT extends ApiIntegrationTest {
         assertThatThrownBy(() -> trainService.replaceDayExercises(owner, run.getId(), day.getId(), bad))
             .isInstanceOf(SystemRuntimeErrorException.class)
             .satisfies(ex -> assertThat(((SystemRuntimeErrorException) ex).getMessages().get(0).getCode())
-                .isEqualTo("TRAIN_TECHNIQUE_NOT_STABLE"));
+                .isEqualTo("TRAIN_TECHNIQUE_NOT_ALLOWED"));
         assertThat(jdbcTemplate.queryForObject(
             "select count(*) from exercise where workout_session_id = ? and is_deleted = false",
             Integer.class, day.getId())).isEqualTo(2);
@@ -340,7 +340,7 @@ class MesoTemplateTechniqueIT extends ApiIntegrationTest {
             MesoTemplateResponse.class);
         MesocycleResponse run = postForBody(TEMPLATES + "/" + created.getId() + "/start", start(), auth,
             HttpStatus.OK, MesocycleResponse.class);
-        jdbcTemplate.update("update exercise_catalog set stability = 'free' where slug = 'cable-fly'");
+        jdbcTemplate.update("update exercise_catalog set allowed_techniques = ARRAY[]::varchar(16)[] where slug = 'cable-fly'");
         try {
             // a web resave of an unrelated field: the stale pick is cleared, no 400
             MesoTemplateUpsertRequest web = webRequest(created);
@@ -359,12 +359,13 @@ class MesoTemplateTechniqueIT extends ApiIntegrationTest {
             MesoDay edited = trainService.replaceDayExercises(owner, run.getId(), day.getId(), inputs);
             assertThat(edited.getExercises().get(0).getTechnique()).isNull();
             assertThat(edited.getExercises().get(0).getChallenge()).isFalse();
-            // ...but SENDING a pick on the now-free movement is still refused
+            // ...but SENDING a pick on the now-ineligible movement is still refused
             inputs.get(0).setTechnique(Technique.DROP);
             assertThatThrownBy(() -> trainService.replaceDayExercises(owner, run.getId(), day.getId(), inputs))
                 .isInstanceOf(SystemRuntimeErrorException.class);
         } finally {
-            jdbcTemplate.update("update exercise_catalog set stability = 'stable' where slug = 'cable-fly'");
+            jdbcTemplate.update("update exercise_catalog set allowed_techniques = "
+                + "ARRAY['rest_drop','drop','myo','rest_pause','partials']::varchar(16)[] where slug = 'cable-fly'");
         }
     }
 
@@ -493,7 +494,7 @@ class MesoTemplateTechniqueIT extends ApiIntegrationTest {
         assertThatThrownBy(() -> trainService.replaceDayExercises(owner, run.getId(), day.getId(), inputs))
             .isInstanceOf(SystemRuntimeErrorException.class)
             .satisfies(ex -> assertThat(((SystemRuntimeErrorException) ex).getMessages().get(0).getCode())
-                .isEqualTo("TRAIN_TECHNIQUE_NOT_STABLE"));
+                .isEqualTo("TRAIN_TECHNIQUE_NOT_ALLOWED"));
 
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
             "select id, working_sets, technique from exercise where workout_session_id = ? and is_deleted = false"
