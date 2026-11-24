@@ -95,6 +95,26 @@ final class CheckinFlowTests {
         #expect(flow.saved != nil)
     }
 
+    /// A catch-up (`mezo-r36n9.159`) keeps its day and moment and is stamped at the moment's own time — not at the
+    /// 16:02 the phone shows when the owner fills it in.
+    @Test func aCatchUpKeepsItsDayAndMomentAndStampsTheSlotTime() async throws {
+        let env = environment()
+        let flow = CheckinFlow(env: env, catchUp: .init(date: "2026-11-11", moment: .delben))
+        #expect(flow.isCatchUp)
+        #expect(flow.momentLabel == "PÓTLÁS · TEGNAP · DÉL")
+        await flow.next()
+        await flow.quickExit()
+        let p = try #require(await payloads().first)
+        #expect(p.slot == "10:00")
+        let item = try #require(await sender.sent.first)
+        #expect(item.date == "2026-11-11")
+        #expect(item.capturedAt == Self.budapest.date(from: DateComponents(year: 2026, month: 11, day: 11, hour: 10, minute: 0)))
+        let kept = try #require(env.ledger.ledger(for: "2026-11-11").checkIns.first)
+        #expect(kept.slot == "10:00")
+        #expect(kept.capturedAt == item.capturedAt)
+        #expect(env.ledger.ledger(for: "2026-11-12").checkIns.isEmpty)
+    }
+
     @Test func unchangedItemNeedsNoSwipe() async throws {
         let env = environment()
         try env.ledger.saveCheckIn(LedgerCheckIn(id: UUID(), slot: "10:00", capturedAt: Self.at(12, 40),

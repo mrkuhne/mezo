@@ -114,6 +114,7 @@ func etelSlotLabel(_ slot: String) -> String {
     case "lunch": "Ebéd"
     case "dinner": "Vacsora"
     case "snack": "Nasi"
+    case "drink": "Ital"
     default: slot.prefix(1).uppercased() + slot.dropFirst()
     }
 }
@@ -132,8 +133,19 @@ func etelWindowItems(plan: FuelPlan, day: FoodDay) -> [EtelWindowItem] {
         case .now, .pending, .missed: return meals.isEmpty ? .open(w) : .logged(label: w.label, meals: meals)
         }
     }
-    for m in day.meals where !claimed.contains(m.id) { items.append(.logged(label: etelSlotLabel(m.slot), meals: [m])) }
+    // A drink (`mezo-r36n9.160`) is never a window's and never a window-less meal row: it has its own ITALOK group.
+    for m in day.meals where !claimed.contains(m.id) && m.slot != "drink" { items.append(.logged(label: etelSlotLabel(m.slot), meals: [m])) }
     return items
+}
+
+/// The day's drinks in clock order — the ITALOK group under the windows (`mezo-r36n9.160`).
+func etelDrinks(_ day: FoodDay) -> [BoopCore.Meal] {
+    day.meals.filter { $0.slot == "drink" }.sorted { $0.loggedAt < $1.loggedAt }
+}
+
+/// The day's drinks' energy, for the group's trailing text.
+func etelDrinkKcal(_ day: FoodDay) -> Int {
+    Int(etelDrinks(day).reduce(0) { $0 + $1.macros.kcal }.rounded())
 }
 
 /// The quiet line that stands where an empty list would: nil when there is anything to show.
@@ -450,7 +462,7 @@ func etelStats(day: FoodDay, plan: FuelPlan?) -> [NKStat] {
                label: guidance ? "megvan mára" : "a kereted \(huInt(Int(day.targets.kcal.rounded())))"),
         NKStat(value: "\(Int(day.consumed.p.rounded()))", target: day.targets.p > 0 ? "\(Int(day.targets.p.rounded()))" : nil,
                unit: "g", label: "fehérje", hot: true),
-        NKStat(value: "\(day.meals.count)", target: windows > 0 ? "\(windows)" : nil, unit: "", label: "étkezés a tervből"),
+        NKStat(value: "\(day.meals.filter { $0.slot != "drink" }.count)", target: windows > 0 ? "\(windows)" : nil, unit: "", label: "étkezés a tervből"),
     ]
 }
 

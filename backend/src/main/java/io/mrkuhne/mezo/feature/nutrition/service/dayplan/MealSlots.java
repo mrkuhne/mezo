@@ -27,6 +27,9 @@ public final class MealSlots {
         if (s.contains("snack") || s.contains("uzsonna") || s.contains("tízórai") || s.contains("tizorai")) {
             return SlotKey.SNACK;
         }
+        if (s.equals("drink") || s.contains("ital")) {
+            return SlotKey.DRINK;
+        }
         return null;
     }
 }

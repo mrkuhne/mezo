@@ -30,6 +30,8 @@ final class RitmusEnvironment {
     @ObservationIgnored private let planSource: (@Sendable (String) async throws -> [String: CheckInPlanLite])?
     @ObservationIgnored private let daySource: (@Sendable (String) async throws -> ServerDay)?
     @ObservationIgnored private let naploSource: (@Sendable (_ from: String, _ to: String) async throws -> [ServerDay])?
+    /// The server's journal lines of a day (`mezo-r36n9.159`); nil = never fetched (tests).
+    @ObservationIgnored private let journalSource: (@Sendable (String) async throws -> [JournalLineLite])?
     @ObservationIgnored private var lastNaploRefresh: Date?
     @ObservationIgnored private let goalsSource: (@Sendable ([String]) async throws -> [String: [String]])?
     @ObservationIgnored private let eventsSource: (@Sendable (Date) async -> [CalendarEventLite])?
@@ -79,6 +81,7 @@ final class RitmusEnvironment {
          closeLine: (@Sendable (String) async throws -> String)? = nil,
          transcribe: (@Sendable (URL) async throws -> String)? = nil,
          naplo: (@Sendable (String, String) async throws -> [ServerDay])? = nil,
+         journal: (@Sendable (String) async throws -> [JournalLineLite])? = nil,
          reminderCenter: ReminderCenter = SystemReminderCenter(),
          clock: @escaping @Sendable () -> Date = { Date() }, calendar: Calendar = .current) {
         let ledger = LedgerStore(directory: ledgerDirectory)
@@ -92,7 +95,7 @@ final class RitmusEnvironment {
         reminders = RitmusReminders(center: reminderCenter, calendar: calendar, clock: clock)
         lineSource = line; snapshotSource = snapshot; planSource = plans
         daySource = day; goalsSource = goals; eventsSource = events; closeLineSource = closeLine
-        transcribeSource = transcribe; naploSource = naplo
+        transcribeSource = transcribe; naploSource = naplo; journalSource = journal
         self.outboxDirectory = outboxDirectory
         userDirectory = ledgerDirectory.deletingLastPathComponent()
         goalHistoryFile = userDirectory.appendingPathComponent("goal-history.json")
@@ -243,6 +246,15 @@ final class RitmusEnvironment {
         sendSoon()
     }
 
+    /// A past template day booked as planned (`mezo-r36n9.161`): queued, sent when the net allows; the Edzés room
+    /// re-reads on the tick, so the day shows as done.
+    func captureWorkoutAsPlanned(_ payload: WorkoutAsPlannedPayload) async throws {
+        try await outbox.enqueue(OutboxItem(kind: .workoutAsPlanned, date: payload.date, capturedAt: payload.startedAt,
+                                            payload: TrainPayloadCodec.encode(payload)), rollbackOnFailure: true)
+        edzesChanged()
+        sendSoon()
+    }
+
     /// A journal line at any hour (the evening close keeps its own path): the day's ledger shows it at once, pending
     /// until the server has it; the same write the close's typed line uses.
     func captureJournal(text: String, at date: Date) async throws {
@@ -362,7 +374,8 @@ final class RitmusEnvironment {
             events: { day in await todaysEvents(calendarReader, day: day) },
             closeLine: { date in try await ritmus.line(date) },
             transcribe: { file in try await ritmus.transcribe(file) },
-            naplo: { from, to in try await ritmus.fetchNaplo(from: from, to: to) })
+            naplo: { from, to in try await ritmus.fetchNaplo(from: from, to: to) },
+            journal: { date in try await ritmus.journalLines(on: date) })
         env.attachChat(client: client)
         env.watchNetwork()
         // Records into the outbox folder, where the `voice` sender looks for the files.
@@ -522,6 +535,11 @@ final class RitmusEnvironment {
     /// The last days for the Napló list: the server's closes and check-ins merged into the day files (what is pending on
     /// the phone wins), so the list can be drawn again offline from what was seen. Quietly nothing offline.
     /// Asked again within five minutes of the last good fetch it does nothing, unless `force`.
+    /// The day's journal lines on the server, newest first; empty without a source.
+    func journalLines(on date: String) async throws -> [JournalLineLite] {
+        try await journalSource?(date) ?? []
+    }
+
     func refreshNaplo(force: Bool = false) async {
         guard let naploSource else { return }
         if !force, let last = lastNaploRefresh, clock().timeIntervalSince(last) < 300 { return }

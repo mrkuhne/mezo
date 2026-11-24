@@ -1382,5 +1382,43 @@
     "miert": "A 2026-11-12-i döntés (Feelfit — A változat) egy Test kártyát ígért a tervbe; a Súly terület a jobb helye ugyanannak.",
     "kovetkezmeny": "A 7. döntés szerverfele (a testzsír a cél energiaszámításába) nyitva marad külön lépésként.",
     "levaltotta": "A 2026-11-12-i döntés „Test kártya a tervben” része."
+  },
+  "d-2026-11-24-visszamenoleg-a": {
+    "cim": "Visszamenőleges rögzítés: „Mikor” sor minden lapon, pótlás a Napló napjáról",
+    "datum": "2026-11-24",
+    "terulet": [
+      "Alapok",
+      "Napló"
+    ],
+    "suly": "Közepes",
+    "valasztas": "Minden rögzítő lap kap egy „Mikor” sort (Ma · Tegnap · Más nap, ahol számít, időponttal), egy hétre visszamenőleg; a kimaradt check-in és a nap lezárása a Napló korábbi napjának lapjáról pótolható. (A tulajdonos: „menjen az A szerintem”.)",
+    "miert": "A leggyakoribb eset („tegnap esti vacsora”, „reggeli mérés délben”) azon a lapon marad, ahol épp állsz; a check-in és a zárás egy nap dolga, oda való a nap lapjára.",
+    "kovetkezmeny": "Hét lapot kell megépíteni, mindegyiken egy sorral több; a check-inhez és a záráshoz a Naplóba kell menni. A víz és a kiegészítők nem változnak.",
+    "levaltotta": "„Egy Pótlás ajtó” (előbb napot választasz, aztán minden arra a napra megy) — elvetve: könnyű ottfelejtkezni, és a következő rögzítés rossz napra menne."
+  },
+  "d-2026-11-24-edzes-potlas-b": {
+    "cim": "Edzés pótlása: a kimaradt tervnap „Megvolt” a terv számaival",
+    "datum": "2026-11-24",
+    "terulet": [
+      "Edzés",
+      "Napló"
+    ],
+    "suly": "Közepes",
+    "valasztas": "A Napló korábbi napján „Edzés pótlása”: a terv sorozataival készre könyveli az edzést arra a napra, a szerver is megtanulja a dátumot; utána a javító lapon igazíthatók a súlyok. (A tulajdonos: „mehet a B”.)",
+    "miert": "A listán „edzés” áll; a Sport-kerülőút a terv napját hamisan üresen hagyta volna.",
+    "kovetkezmeny": "A csomag legnagyobb darabja, szerveres változással; a végére kerül, hogy ha nyúlik, külön jöhessen. Sorozatonként pontos számok utólag nem írhatók be, a terv számai mennek be.",
+    "levaltotta": "„Most csak a Sport” — elvetve."
+  },
+  "d-2026-11-24-ital-vodor": {
+    "cim": "Ital: hatodik, pont nélküli vödör, ami a napi keretbe számít, de ablakot nem foglal",
+    "datum": "2026-11-24",
+    "terulet": [
+      "Étel"
+    ],
+    "suly": "Közepes",
+    "valasztas": "Új „Ital” bejárat az étkezés rögzítésében: a szokásos italaid egy koppintásra, szabad szöveg, fotó, és a leírás nélküli bejáratok is (Recept · Kamra · Vonalkód). Az ital beszámít a napi kalóriába, a makrókba és a görbébe, de étkezési ablakot nem foglal és pontot nem kap; az Étel szoba Ma lapján külön ITALOK sor. (A tulajdonos: „italhoz is lehessen használni recept vagy kamra itemeket, ne kelljen mindig nulláról felvenni őket”.)",
+    "miert": "Egy ital eddig étkezésként ment be: az óra adta az ablakát (10:30 → tízórai), és a pontszámba is belehúzott.",
+    "kovetkezmeny": "A szerver megtanul egy „ital” rekeszt; a recepteknek és a kamrának nem kell ital-kategória, bármelyik italként rögzíthető. A vízszámlálóba csak a víz számít.",
+    "levaltotta": "„Külön ital-tábla” és „ablak nélküli idővonal” — elvetve."
   }
 }

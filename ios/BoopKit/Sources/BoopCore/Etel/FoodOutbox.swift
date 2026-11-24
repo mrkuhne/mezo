@@ -42,6 +42,8 @@ public struct MealDraftSender: OutboxSender {
         do {
             var draft = try await drafter.draft(date: item.capturedAt, text: capture.text, photo: photo, barcode: capture.barcode)
             draft.photo = nil
+            // A drink stays a drink (`mezo-r36n9.160`): the slot never falls back to the clock's window.
+            if let slot = capture.kind.fixedSlot { draft.slot = slot }
             let file = ReadyFile(draft: draft, capturedAt: item.capturedAt, photoRef: capture.photoRef, text: capture.text)
             try RitmusFiles.write(try JSONEncoder().encode(file), to: FoodOutbox.readyURL(item.id, in: directory))
             return .sent(nil)
@@ -124,11 +126,12 @@ public struct FoodOutbox: Sendable {
             guard let capture = try? JSONDecoder().decode(MealCapture.self, from: item.payload) else { continue }
             cards[item.id] = PendingDraft(id: item.id, capturedAt: item.capturedAt, date: item.date, text: capture.text,
                                           barcode: capture.barcode, photoRef: capture.photoRef,
-                                          state: item.failure.map { .failed($0) } ?? .waiting)
+                                          state: item.failure.map { .failed($0) } ?? .waiting, kind: capture.kind)
         }
         for (id, ready) in readyFiles() {
             cards[id] = PendingDraft(id: id, capturedAt: ready.capturedAt, date: ready.draft.date, text: ready.text,
-                                     barcode: ready.draft.barcode, photoRef: ready.photoRef, state: .ready(ready.draft))
+                                     barcode: ready.draft.barcode, photoRef: ready.photoRef, state: .ready(ready.draft),
+                                     kind: ready.draft.slot == MealKind.drink.fixedSlot ? .drink : .meal)
         }
         for (id, p) in photoFiles() {
             cards[id] = PendingDraft(id: id, capturedAt: p.capturedAt, date: dayString(p.capturedAt), text: p.text, barcode: nil,

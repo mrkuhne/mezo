@@ -102,7 +102,7 @@ struct CaptureSheet: View {
     static let foodChips: [(glyph: String, title: String, pick: CapturePick)] = [
         ("camera-ink", "Fotó", .meal(.photo, text: "")), ("pen-sun", "Szöveg", .meal(.text, text: "")),
         ("search-ink", "Vonalkód", .meal(.barcode, text: "")), ("book-sage", "Recept", .meal(.recipe, text: "")),
-        ("bowl-sage", "Kamra", .meal(.pantry, text: "")),
+        ("bowl-sage", "Kamra", .meal(.pantry, text: "")), ("cup-cream", "Ital", .meal(.drink, text: "")),
     ]
 
     /// The web app's nine quick-log doors (`docs/features/today.md` §Quick capture, less Étkezés which is the card

@@ -504,6 +504,20 @@
     ],
     "csomag": "train"
   },
+  "train-edzes-potlas": {
+    "cim": "Edzés pótlása a terv számaival",
+    "terulet": "Edzés",
+    "app": "Kész",
+    "mit_tud": "Egy kimaradt tervnapot utólag, a nap dátumára, a terv sorozataival készre könyvel egy hívással; a súly gyakorlatonként felülírható; egy hétre visszamenőleg; kétszer nem könyvel.",
+    "app_megjegyzes": "A Napló korábbi napjának lapjáról a Megvolt lap; net nélkül is rögzül.",
+    "jegyek": [
+      "mezo-r36n9.161"
+    ],
+    "kezikonyv": [
+      "07-edzes/16-edzes-potlasa"
+    ],
+    "csomag": "train"
+  },
   "train-futoblokk": {
     "cim": "Futóblokkok és futás-napló",
     "terulet": "Edzés",
@@ -690,7 +704,7 @@
     "terulet": "Étel",
     "app": "Kész",
     "mit_tud": "A jóváhagyott étkezést elmenti a tételeivel, és a tápértékeket a mentés pillanatában rögzíti, így később sem változnak. Az időpont visszamenőleg is megadható.",
-    "app_megjegyzes": "Az app ment, visszamenőleges időponttal is, és net nélkül is (később küldi fel).",
+    "app_megjegyzes": "Az app ment, visszamenőleges időponttal is (Tegnap gombbal), és net nélkül is (később küldi fel).",
     "jegyek": [
       "mezo-r36n9.14"
     ],
@@ -766,6 +780,20 @@
     ],
     "kezikonyv": [
       "06-etel/02-etkezes-rogzitese"
+    ],
+    "csomag": "meal"
+  },
+  "meal-italok": {
+    "cim": "Italok: hatodik, pont nélküli rekesz",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "Az ital (fehérje, gombakávé zabtejjel) étkezés-rekord a saját „ital” rekeszében: beszámít a nap összegébe, de a napi terv ablakai nem igénylik, pontot nem kap, és a szokásos listában saját vödörként jön vissza.",
+    "app_megjegyzes": "Az Ital bejárat a rögzítőben és a Mit rögzítesz? lapon; az Étel szoba Ma lapján az ITALOK csoport.",
+    "jegyek": [
+      "mezo-r36n9.160"
+    ],
+    "kezikonyv": [
+      "06-etel/11-italok"
     ],
     "csomag": "meal"
   },

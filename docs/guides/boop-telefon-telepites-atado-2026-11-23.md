@@ -93,9 +93,31 @@ nézd meg:
 `MaiCopyTests` (a színvilágok száma), `RitmusTickTests` (a mérés jele), `NapkelteTokensTests` (az arany világ, a
 testikon). A mag (`BoopCore`) Súly-tesztjei (41) natívan lefutottak az új Macen.
 
+## Negyedik csomag ugyanebben az átadóban (2026-11-24, `mezo-r36n9.159`–`.161`)
+
+A visszamenőleges rögzítés, a Napló pótlásai, az edzés pótlása és az italok a főágon vannak; **a szerver is változott**
+(ital-rekesz, edzés-pótlás végpont), ezért előbb a `deploy` legyen zöld. A telefonon nézd meg:
+
+- a **Súly, Alvás, Sport, Napló** lapokon a **„Mikor"** sor (Ma · Tegnap · Más nap; a sportnál időponttal): a választott
+  nap a sor jobb szélén, a mentés rövid üzenete nevezi a napot („… rögzítve · tegnap"); egy hétre visszamenőleg;
+- az **étkezés** „Mikor etted" sorában a **Tegnap** gomb;
+- a **Napló** a mai és az előző hat napot mindig listázza; egy korábbi nap lapján a **PÓTLÁS** blokk: a kimaradt
+  check-in pillanat (a kitöltés a pillanat idejére kerül, az energiavonalon a helyén), **Edzés pótlása** (a terv
+  sorozataival, a súly átírható, „Megvolt"), **Lezárom a napot**; a mai nap lapján csak az elmúlt, kimaradt
+  pillanatok; a nap naplósorai **A NAP SORAI** alatt;
+- az **Ital** bejárat (rögzítő és „Mit rögzítesz?"): szokásos italaid, szöveg/fotó, Recept · Kamra · Vonalkód,
+  „Mikor ittad"; az Étel szoba Ma lapján az **ITALOK** csoport, a Hét naplapján „ital" jel; az Étel gömb száma nem
+  mozdul tőle;
+- net nélkül: minden pótlás és ital a telefonon landol, és net után elmegy.
+
+Új tesztek a telefonos készletben: `QuickSheetsWhenTests`, `MealComposerTests` (+1), `NaploCatchUpModelTests`,
+`CheckinFlowTests` (+1), `EsteFlowTests` (+1), `MealComposerDrinkTests`, `EtelDrinkRowsTests`,
+`WorkoutAsPlannedModelTests`, `NapkelteTokensTests` (+ a pohár-ikon). A mag (`BoopCore`) új tesztjei natívan
+lefutottak ezen a gépen.
+
 ## Ami még nyitva van (jegyek)
 
-- `mezo-r36n9.150` — ez az átadó: tesztkapu + telepítés a másik gépen.
+- `mezo-r36n9.150` — ez az átadó: tesztkapu + telepítés a másik gépen (már négy csomaggal).
 - `mezo-r36n9.28` — a Testösszetétel terv szerverfele (a testzsír a cél energiaszámításába); a telefonos fele a Súly
   szoba Test oldala lett (`.158`).
 - `mezo-r36n9.148` — a Notion „Boop” tér frissítése (az új Macen a Notion-kapcsolat az Intuitech teret látta);

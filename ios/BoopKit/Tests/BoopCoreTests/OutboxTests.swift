@@ -49,6 +49,14 @@ final class OutboxTests {
         return Outbox(directory: dir, sender: sender, clock: { c.now }, calendar: budapest)
     }
 
+    /// A booked workout (`mezo-r36n9.161`) stands alone in the queue: one refused booking never holds another back.
+    @Test func aBookedWorkoutStandsAlone() {
+        let item = OutboxItem(kind: .workoutAsPlanned, date: "2026-11-23", capturedAt: Date(), payload: Data())
+        let group = Outbox.group(of: item)
+        #expect(group.key == "workout|\(item.id.uuidString)")
+        #expect(group.waits == false)
+    }
+
     @Test func survivesRelaunch() async throws {
         let first = outbox(FakeSender())
         let queued = item(text: "energy 6")

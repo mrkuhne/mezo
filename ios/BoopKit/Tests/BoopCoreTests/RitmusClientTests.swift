@@ -466,6 +466,24 @@ final class RitmusClientTests {
         #expect(s.hrBpm == 74 && s.hrvMs == 41 && s.hrvUsualMs == 50 && s.steps == 4_860 && s.sleepMinutes == 432)
         #expect(s.source == "com.apple.health")
     }
+
+    /// The Napló day sheet's A NAP SORAI (`mezo-r36n9.159`): the day's journal lines, newest first, with the day they
+    /// are about and the moment they were written.
+    @Test func journalLinesOfADayDecodeOccurredOnAndCreatedAt() async throws {
+        stub.on("listJournalEntries", .json(200, #"""
+        [{"id":"0b6f3c1e-1111-4a2b-9c3d-222233334444","occurredOn":"2026-11-23","text":"Jó nap volt","source":"boop","createdAt":"2026-11-24T20:31:00Z"},
+         {"id":"0b6f3c1e-1111-4a2b-9c3d-222233335555","occurredOn":"2026-11-23","text":"Reggel futottam","source":"quickinput","createdAt":"2026-11-23T08:00:00Z"}]
+        """#))
+        let lines = try await ritmus.journalLines(on: "2026-11-23")
+        #expect(lines.count == 2)
+        #expect(lines[0].text == "Jó nap volt")
+        #expect(lines[0].occurredOn == "2026-11-23")
+        #expect(lines[0].createdAt == ISO8601DateFormatter().date(from: "2026-11-24T20:31:00Z"))
+        #expect(lines[1].id == UUID(uuidString: "0b6f3c1e-1111-4a2b-9c3d-222233335555"))
+        let sent = stub.sent.filter { $0.op == "listJournalEntries" }
+        #expect(sent.count == 1)
+    }
+
 }
 
 /// The wire carries the phone's own UTC offset (`+01:00`, not `Z`) — the same instant either way.

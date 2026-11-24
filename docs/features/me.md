@@ -2,7 +2,7 @@
 title: Me Area
 type: feature-domain
 status: mixed
-updated: 2026-11-20
+updated: 2026-11-24
 tags: [me, biometrics, progression, frontend, backend, data-layer, notification]
 key_files:
   - api/feature/goal/goal.yml
@@ -15,6 +15,8 @@ related: [dayclose, _platform-data-layer, _platform-design-system, _platform-not
 ---
 
 # Me Area — Feature Documentation
+
+> **2026-11-24 — Check-in catch-up from the Napló (Boop, `mezo-r36n9.159`).** No server change: the phone posts a missed past slot as `{date, slotTime, capturedAt}` with `capturedAt` = the slot's own time on that day (06:30 · 10:00 · 14:00), inside the existing today−7 … today+1 window; `savedAt` therefore sits at the moment, and the energy dot and the Health snapshot belong to that day. Today's already-passed, missing moments can be caught up too.
 
 > **2026-11-20 — reviewed after Boop B6 Évad S1 (`mezo-r36n9.16`, no Me change).** `feature/goal` gained a read-only draft overload of the prescription calculator and the projection (the season's live preview — [`goal-engine.md`](goal-engine.md) §3 *Draft calculation*); the saved-goal path the Cél surface reads is unchanged. On Boop the weight goal is now set and changed through the season ([`season.md`](season.md)).
 

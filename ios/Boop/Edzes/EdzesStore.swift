@@ -97,7 +97,9 @@ final class EdzesStore {
 
     // MARK: - The workout in progress
 
-    private var sessionFile: URL? { folder?.appendingPathComponent("workout.json") }
+    /// The workout in progress, as a file: present while a session is open (the Napló's gym door reads it too).
+    static func sessionFile(in folder: URL) -> URL { folder.appendingPathComponent("workout.json") }
+    private var sessionFile: URL? { folder.map(Self.sessionFile) }
     private var finishedFile: URL? { folder?.appendingPathComponent("workout-finished.json") }
 
     /// Today's finished workout on this phone, if there is one — the result „Megnézem" opens.

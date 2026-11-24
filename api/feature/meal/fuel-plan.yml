@@ -39,7 +39,7 @@ paths:
           in: query
           required: false
           description: The window the caller is in now; its rows rank first. Absent or unknown ranks by recurrence alone.
-          schema: { type: string, enum: [breakfast, lunch, dinner, snack] }
+          schema: { type: string, enum: [breakfast, lunch, dinner, snack, drink] }
       responses:
         '200':
           description: The ranked usual meals (at most 6)
@@ -66,7 +66,7 @@ components:
       properties:
         key: { type: string, description: 'Window and normalised name — stable across reads' }
         title: { type: string, description: 'The latest occurrence''s own name' }
-        slot: { type: string, enum: [breakfast, lunch, dinner, snack] }
+        slot: { type: string, enum: [breakfast, lunch, dinner, snack, drink] }
         count: { type: integer, description: 'How many times it was logged in the last 28 days' }
         lastLoggedAt: { type: string, format: date-time }
         mealId: { type: string, format: uuid, nullable: true, description: 'The latest occurrence this row stands for (the meal the items below were read from)' }

@@ -18,9 +18,9 @@ struct EsteView: View {
 
     private static let hue = Hue.pulzus
 
-    init(env: RitmusEnvironment, brief: Brief?, onClose: @escaping () -> Void) {
+    init(env: RitmusEnvironment, brief: Brief?, date: String? = nil, onClose: @escaping () -> Void) {
         self.env = env; self.brief = brief; self.onClose = onClose
-        _flow = State(initialValue: EsteFlow(env: env, brief: brief))
+        _flow = State(initialValue: EsteFlow(env: env, brief: brief, date: date))
     }
 
     var body: some View {
@@ -78,7 +78,9 @@ struct EsteView: View {
                 }
                 .padding(.horizontal, 16).padding(.top, 58)
                 VStack(spacing: 8) {
-                    Text(flow.showsSummary ? (flow.closedLabel ?? "LEZÁRVA") : "ESTI ZÁRÁS · EGY PERC")
+                    Text(flow.showsSummary ? (flow.closedLabel ?? "LEZÁRVA")
+                         : flow.isCatchUp ? "PÓTLÁS · \(NaploDate.label(flow.date, today: env.today, calendar: env.calendar).uppercased())"
+                         : "ESTI ZÁRÁS · EGY PERC")
                         .nkFont(12, .medium, design: .monospaced).tracking(1.6).foregroundStyle(.white.opacity(0.8))
                     Text(flow.showsSummary ? "Jó éjszakát" : "Zárjuk le a napot").nkFont(38, design: .serif).foregroundStyle(.white)
                         .multilineTextAlignment(.center)

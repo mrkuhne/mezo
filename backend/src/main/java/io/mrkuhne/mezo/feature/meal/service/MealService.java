@@ -21,6 +21,7 @@ import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
 import io.mrkuhne.mezo.feature.nutrition.service.DailyTargets;
 import io.mrkuhne.mezo.feature.nutrition.service.DayContext;
 import io.mrkuhne.mezo.feature.nutrition.service.MealRole;
+import io.mrkuhne.mezo.feature.nutrition.service.dayplan.SlotKey;
 import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService;
 import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService.ScoredLine;
 import io.mrkuhne.mezo.feature.nutrition.service.MealWindow;
@@ -300,6 +301,12 @@ public class MealService {
      * a metódus update-kor és re-score-kor is fut, amikor az étkezés már a napban van.
      */
     private void applyScore(UUID userId, MealEntity meal, OffsetDateTime loggedAt) {
+        // A drink is not judged (Boop, mezo-r36n9.160): it counts in the day, never in the meal score.
+        if (SlotKey.DRINK.wire().equals(meal.getSlot())) {
+            meal.setScore(null);
+            meal.setBreakdown(null);
+            return;
+        }
         List<ScoredLine> lines = scoringLines(userId, meal);
         List<MealScoringService.WorkoutWindow> windows = workoutWindowQueryService
             .windowsFor(userId, meal.getMealDate()).stream()

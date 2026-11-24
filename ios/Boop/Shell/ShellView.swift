@@ -65,11 +65,16 @@ struct ShellView: View {
     /// The quick log's own sheet the "+" sheet asked for (opens once that sheet has gone), and the one on screen.
     @State private var quickAfterCapture: QuickLog?
     @State private var quick: QuickLog?
+    /// Simulator review: `-previewOpen megvolt` opens the Megvolt sheet for yesterday's preview template day (DEBUG).
+    @State private var previewMegvolt = false
+    /// Simulator review: `-previewOpen naploDay` opens yesterday's Napló day sheet from the shell (DEBUG).
+    @State private var previewNaploDay = false
     /// The area the "+" sheet asked to open ("Edzés indítása"): Ma, then the ring opens that room.
     @State private var areaAfterCapture: Hue?
     @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
     /// The day's brief: Boop's own goals and the bedtime target for the close.
     @Environment(MorningStore.self) private var morning: MorningStore?
+    @Environment(\.trainClient) private var train
     @Environment(PenzStore.self) private var penz: PenzStore?
     @State private var toast: String?
     /// A room is open over the page: the bar is hidden.
@@ -181,6 +186,17 @@ struct ShellView: View {
         .sheet(item: $quick) { kind in
             quickSheet(kind).penzSheetStyle([.large])
         }
+        .sheet(isPresented: $previewNaploDay) {
+            if let ritmus, let y = ritmus.calendar.date(byAdding: .day, value: -1, to: ritmus.clock()) {
+                NaploDayDetail(env: ritmus, date: ritmus.day(of: y))
+                    .presentationDetents([.large]).presentationBackground(NK.ground).presentationCornerRadius(34).presentationDragIndicator(.visible)
+            }
+        }
+        .sheet(isPresented: $previewMegvolt) {
+            let y = ritmus.flatMap { env in env.calendar.date(byAdding: .day, value: -1, to: env.clock()).map { env.day(of: $0) } } ?? ""
+            WorkoutAsPlannedSheet(templateSessionId: nil, date: y, title: "Edzés", train: train) { done in previewMegvolt = false; if let done { toast = done } }
+                .penzSheetStyle([.large])
+        }
         .sheet(isPresented: $account, onDismiss: openCoverAfterSheet) {
             AccountSheet(me: me)
                 .presentationDetents([.medium, .large])
@@ -193,7 +209,7 @@ struct ShellView: View {
             switch cover {
             case .checkin:
                 if let ritmus {
-                    CheckinView(env: ritmus) { router.close() }
+                    CheckinView(env: ritmus, catchUp: Self.previewCatchUp(ritmus)) { router.close() }
                 } else {
                     coverFallback(hue: .mozgas)
                 }
@@ -223,6 +239,9 @@ struct ShellView: View {
             switch UserDefaults.standard.string(forKey: "previewOpen") {
             case "capture": capturing = true
             case "meal": meal = MealStart()
+            case "drink": meal = MealStart(entrance: .drink)
+            case "megvolt": previewMegvolt = true
+            case "naploDay": previewNaploDay = true
             case "barcode": meal = MealStart(entrance: .barcode)
             case "mealText": meal = MealStart(entrance: .text, text: "csirkemell rizzsel és brokkolival")
             case "account": account = true
@@ -245,6 +264,17 @@ struct ShellView: View {
             try? await Task.sleep(for: .seconds(3)); select(to)
             try? await Task.sleep(for: .seconds(3)); select(.ma)
         }
+        #endif
+    }
+
+    /// Simulator review: `-previewCatchup YES` opens the check-in as yesterday's missed dél (DEBUG only).
+    private static func previewCatchUp(_ ritmus: RitmusEnvironment) -> CheckinFlow.CatchUp? {
+        #if DEBUG
+        guard UserDefaults.standard.bool(forKey: "previewCatchup"),
+              let y = ritmus.calendar.date(byAdding: .day, value: -1, to: ritmus.clock()) else { return nil }
+        return .init(date: ritmus.day(of: y), moment: .delben)
+        #else
+        return nil
         #endif
     }
 

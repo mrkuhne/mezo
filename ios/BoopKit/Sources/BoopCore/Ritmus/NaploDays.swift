@@ -123,4 +123,42 @@ public enum NaploDays {
         guard let end = date(to), let start = calendar.date(byAdding: .day, value: -(count - 1), to: end) else { return (to, to) }
         return (string(start), to)
     }
+
+    /// The Mon–Sun week a day sits in (`mezo-r36n9.161`): the week the server judges „done this week" in.
+    public static func week(containing day: String) -> (from: String, to: String) {
+        guard let d = date(day) else { return (day, day) }
+        let back = (calendar.component(.weekday, from: d) + 5) % 7 // Sunday = 1 → six back, Monday = 2 → none
+        guard let monday = calendar.date(byAdding: .day, value: -back, to: d),
+              let sunday = calendar.date(byAdding: .day, value: 6, to: monday) else { return (day, day) }
+        return (string(monday), string(sunday))
+    }
 }
+
+/// One row of the Napló's list (`mezo-r36n9.159`, spec §3.4): a day with something in it, or an empty day of the
+/// current week — the week is always there, so a past day's catch-ups have a place to be found.
+public enum NaploListEntry: Equatable, Identifiable, Sendable {
+    case day(NaploDayRow)
+    case empty(date: String)
+
+    public var id: String {
+        switch self {
+        case .day(let row): row.date
+        case .empty(let date): date
+        }
+    }
+}
+
+public extension NaploDays {
+    /// Today and the previous `count − 1` days always, newest first — a day without a row is `.empty` — then the older
+    /// rows as they come (only days with content, as before).
+    static func weekEntries(rows: [NaploDayRow], today: String, count: Int = 7) -> [NaploListEntry] {
+        let from = range(endingOn: today, count: count).from
+        let byDate = Dictionary(rows.map { ($0.date, $0) }, uniquingKeysWith: { a, _ in a })
+        var out: [NaploListEntry] = days(from: from, to: today).reversed().map { date in
+            byDate[date].map { .day($0) } ?? .empty(date: date)
+        }
+        out += rows.filter { $0.date < from }.sorted { $0.date > $1.date }.map { .day($0) }
+        return out
+    }
+}
+

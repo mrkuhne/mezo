@@ -65,7 +65,7 @@ public struct Trend: View {
 /// `mic` (voice) and `offline` (a cloud with a slash, "nincs net"; B3, spike `RMicGlyph` / `ROfflineGlyph`).
 public struct NKGlyph: View {
     static let outlined: Set<String> = ["check-ink", "clock-ink", "camera-ink", "book-sage", "mic", "offline", "e-penz", "e-level",
-                                        "body-cream"]
+                                        "body-cream", "cup-cream"]
     let name: String, color: Color, size: CGFloat
     public init(_ name: String, _ color: Color, size: CGFloat = 18) { self.name = name; self.color = color; self.size = size }
 
@@ -91,6 +91,17 @@ public struct NKGlyph: View {
                             $0.addCurve(to: CGPoint(x: 18, y: 30), control1: CGPoint(x: 20, y: 50), control2: CGPoint(x: 20, y: 40))
                             $0.addCurve(to: CGPoint(x: 46, y: 30), control1: CGPoint(x: 22, y: 26), control2: CGPoint(x: 42, y: 26))
                             $0.addCurve(to: CGPoint(x: 48, y: 58), control1: CGPoint(x: 44, y: 40), control2: CGPoint(x: 44, y: 50))
+                        }, with: .color(color), style: st)
+                    case "cup-cream":
+                        // A mug with its handle and two wisps of steam: the drink door (mezo-r36n9.160).
+                        ctx.stroke(P { $0.addRoundedRect(in: CGRect(x: 12, y: 24, width: 30, height: 30), cornerSize: CGSize(width: 7, height: 7)) }, with: .color(color), style: st)
+                        ctx.stroke(P {
+                            $0.move(to: CGPoint(x: 42, y: 30))
+                            $0.addCurve(to: CGPoint(x: 42, y: 46), control1: CGPoint(x: 56, y: 30), control2: CGPoint(x: 56, y: 46))
+                        }, with: .color(color), style: st)
+                        ctx.stroke(P {
+                            $0.move(to: CGPoint(x: 22, y: 16)); $0.addCurve(to: CGPoint(x: 22, y: 6), control1: CGPoint(x: 18, y: 13), control2: CGPoint(x: 26, y: 9))
+                            $0.move(to: CGPoint(x: 32, y: 16)); $0.addCurve(to: CGPoint(x: 32, y: 6), control1: CGPoint(x: 28, y: 13), control2: CGPoint(x: 36, y: 9))
                         }, with: .color(color), style: st)
                     case "camera-ink":
                         ctx.stroke(P { $0.addRoundedRect(in: CGRect(x: 8, y: 18, width: 48, height: 34), cornerSize: CGSize(width: 10, height: 10)) }, with: .color(color), style: st)

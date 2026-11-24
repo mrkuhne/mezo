@@ -1070,6 +1070,11 @@ public struct FoodClient: Sendable {
     }
 
     /// The meal slot a moment falls in, by the clock (a draft the model did not classify).
+    /// The slot a capture of this kind gets at this moment: a drink is always `drink`, a meal follows the clock.
+    public static func slot(at date: Date, cal: Calendar, kind: MealKind) -> String {
+        kind.fixedSlot ?? slot(at: date, cal: cal)
+    }
+
     public static func slot(at date: Date, cal: Calendar) -> String {
         switch cal.component(.hour, from: date) {
         case 4..<10: return "breakfast"

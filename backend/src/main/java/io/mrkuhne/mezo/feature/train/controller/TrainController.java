@@ -59,6 +59,7 @@ import io.mrkuhne.mezo.api.dto.WorkoutFeedbackInput;
 import io.mrkuhne.mezo.api.dto.WorkoutInstanceResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutNoteRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutSkipRequest;
+import io.mrkuhne.mezo.api.dto.WorkoutAsPlannedRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutStartRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutSummaryResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
@@ -383,6 +384,11 @@ public class TrainController implements TrainApi {
     @Override
     public WorkoutInstanceResponse startWorkout(WorkoutStartRequest workoutStartRequest) {
         return workoutService.startWorkout(currentUserId.get(), workoutStartRequest);
+    }
+
+    @Override
+    public WorkoutInstanceResponse completeWorkoutAsPlanned(WorkoutAsPlannedRequest workoutAsPlannedRequest) {
+        return workoutService.completeAsPlanned(currentUserId.get(), workoutAsPlannedRequest);
     }
 
     @Override

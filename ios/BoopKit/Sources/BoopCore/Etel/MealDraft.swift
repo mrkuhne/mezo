@@ -9,9 +9,31 @@ public struct MealCapture: Codable, Equatable, Sendable {
     public var barcode: String?
     /// The stored photo's id (`FoodOutbox.storePhoto`); the file is `meal-<id>.jpg` next to the queue.
     public var photoRef: UUID?
-    public init(text: String?, barcode: String? = nil, photoRef: UUID? = nil) {
-        self.text = text; self.barcode = barcode; self.photoRef = photoRef
+    /// A meal or a drink (`mezo-r36n9.160`): a drink keeps its own slot whatever the clock says. A queue written
+    /// before drinks existed decodes as a meal.
+    public var kind: MealKind
+    public init(text: String?, barcode: String? = nil, photoRef: UUID? = nil, kind: MealKind = .meal) {
+        self.text = text; self.barcode = barcode; self.photoRef = photoRef; self.kind = kind
     }
+
+    private enum CodingKeys: String, CodingKey { case text, barcode, photoRef, kind }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        text = try c.decodeIfPresent(String.self, forKey: .text)
+        barcode = try c.decodeIfPresent(String.self, forKey: .barcode)
+        photoRef = try c.decodeIfPresent(UUID.self, forKey: .photoRef)
+        kind = try c.decodeIfPresent(MealKind.self, forKey: .kind) ?? .meal
+    }
+}
+
+/// What a capture is (`mezo-r36n9.160`, spec §3.7): a meal takes the window the clock points at; a drink is the sixth,
+/// unscored bucket — it counts in the day, fills no window, and its slot is always `drink`.
+public enum MealKind: String, Codable, Equatable, Sendable {
+    case meal, drink
+
+    /// The slot a kind pins regardless of the clock; nil = the clock decides (`FoodClient.slot(at:cal:)`).
+    public var fixedSlot: String? { self == .drink ? "drink" : nil }
 }
 
 /// Where a captured meal stands (decision 9: nothing is saved without the owner's tap).
@@ -36,11 +58,14 @@ public struct PendingDraft: Identifiable, Equatable, Sendable {
     /// The photo stored beside the queue, if the capture has one.
     public var photoRef: UUID?
     public var state: State
+    /// A meal or a drink (`mezo-r36n9.160`): the card reopens the composer in the same mode it was captured in.
+    public var kind: MealKind
     public var hasPhoto: Bool { photoRef != nil }
 
-    public init(id: UUID, capturedAt: Date, date: String, text: String?, barcode: String?, photoRef: UUID?, state: State) {
+    public init(id: UUID, capturedAt: Date, date: String, text: String?, barcode: String?, photoRef: UUID?, state: State,
+                kind: MealKind = .meal) {
         self.id = id; self.capturedAt = capturedAt; self.date = date; self.text = text; self.barcode = barcode
-        self.photoRef = photoRef; self.state = state
+        self.photoRef = photoRef; self.state = state; self.kind = kind
     }
 
     /// The server refuses a capture dated more than 7 days back (same rule as `Outbox`).

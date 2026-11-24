@@ -14,6 +14,7 @@ related: [_platform-auth-security, _platform-design-system, companion, settings,
 ---
 
 > **Exercise SPE palettes (`mezo-eiux9`).** `TRAIN_TECHNIQUE_NOT_ALLOWED` was added to both message bundles; it includes the exercise name. Boop's selection copy describes the specific movement. No language-layer mechanism changed. See [`train.md`](train.md) §4.
+> **2026-11-24 — reviewed after `mezo-r36n9.161` (no platform change).** One new code in both catalogs: `TRAIN_AS_PLANNED_DATE_OUT_OF_WINDOW` („Egy hétre visszamenőleg tudsz pótolni." / „A catch-up may be dated at most a week back.").
 
 > **2026-11-21 — reviewed after the Levél final review (`mezo-r36n9.39`, no language-layer change).** The dummy mail key moved from `application.yml` to the test properties; no message keys changed.
 

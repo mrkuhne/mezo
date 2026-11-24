@@ -61,10 +61,14 @@ final class EsteFlow {
 
     @ObservationIgnored private let env: RitmusEnvironment
 
-    init(env: RitmusEnvironment, brief: Brief?) {
+    /// A past day closed from the Napló (`mezo-r36n9.159`, spec §3.5): its close is stamped at nine that evening.
+    let isCatchUp: Bool
+
+    init(env: RitmusEnvironment, brief: Brief?, date catchUpDate: String? = nil) {
         self.env = env
-        let day = Self.eveningDay(at: env.clock(), env: env)
+        let day = catchUpDate ?? Self.eveningDay(at: env.clock(), env: env)
         date = day
+        isCatchUp = catchUpDate != nil
         // Ma's goal; a closed day without one on the phone keeps the goal its close was made with.
         goalText = env.goal(on: day)?.text ?? env.ledger.ledger(for: day).close?.goalText
         use(brief)
@@ -205,7 +209,8 @@ final class EsteFlow {
     func closeDay() async {
         guard let rating, !delivering else { return }
         saveProblem = nil
-        let now = env.clock()
+        // A catch-up is stamped at nine that evening (spec §3.5): the merged evening dot sits in the evening.
+        let now = isCatchUp ? (esteCatchUpInstant(on: date, calendar: env.calendar) ?? env.clock()) : env.clock()
         let previous = closed
         // A re-close upserts the same close (same client ref; a queued older version is replaced in place).
         let closeId = previous?.id ?? UUID()

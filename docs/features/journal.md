@@ -2,7 +2,7 @@
 title: Journal — Free-Prose Notes + Narrative Memory Embedding
 type: feature-domain
 status: done
-updated: 2026-11-19
+updated: 2026-11-24
 tags: [me, companion, backend, frontend, data-layer, phase-5]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/journal
@@ -13,6 +13,8 @@ related: [dayclose, boop-ios, me, companion, ritual, _platform-data-layer, _plat
 ---
 
 # Journal — Free-Prose Notes + Narrative Memory Embedding
+
+> **2026-11-24 — The phone reads a day's lines (Boop, `mezo-r36n9.159`).** `listJournalEntries(from, to)` joined the iPhone generator filter: the Napló day sheet's **A NAP SORAI** lists the day's entries (merged with the phone's pending ones), so a quick line written for a past day (`occurredOn` = the chosen day) is visible where it was put. No server change.
 
 > **2026-11-12 — Boop B3 Napi ritmus (`mezo-r36n9.13`).** `journal_entry` gained a nullable **`client_ref`** (unique per owner among live rows with a ref) and a third **`source = 'boop'`** (`ck_journal_entry_source` now `quickinput | ritual | boop`): the phone creates the evening entry — a typed line or the transcript of a voice note — through `createJournalEntry` with its outbox item id as `clientRef`, so a retry never duplicates (`JournalService.createIdempotent`; a deleted entry whose ref is replayed is recreated, and a retried ref ignores content differences). The evening close links to it by `journalClientRef` (`JournalService.findByClientRef` / `findText`): the transcript lives **only** in `journal_entry`, never in `day_close` ([`dayclose.md`](dayclose.md)). Migration `202611121110_mezo-r36n9.13_client_refs.sql`; test `JournalClientRefIT`.
 

@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.api.dto.TodayExercise;
 import io.mrkuhne.mezo.api.dto.WorkoutFeedbackInput;
 import io.mrkuhne.mezo.api.dto.WorkoutDetailExercise;
 import io.mrkuhne.mezo.api.dto.WorkoutDetailResponse;
+import io.mrkuhne.mezo.api.dto.WorkoutAsPlannedRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutInstanceResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutStartRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutSummaryResponse;
@@ -36,8 +37,10 @@ import io.mrkuhne.mezo.feature.train.repository.WorkoutDayAdjustmentRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import io.mrkuhne.mezo.techcore.time.CapturedAtWindow;
 import io.mrkuhne.mezo.techcore.persistence.OwnershipGuard;
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -93,6 +96,8 @@ public class WorkoutService {
     private final ExerciseHistoryResolver historyResolver;
     private final WeightGapService weightGapService;
     private final ObjectProvider<HypertrophyDriveGate> hypertrophyGate;
+    /** "Now" for the as-planned window (mezo-r36n9.161): the application Clock when defined, else the system's. */
+    private final ObjectProvider<Clock> clock;
     // Fix zárás (mezo-z2ul): lazy closing-exercise ensure behind its own switch. The gate bean
     // exists ONLY when mezo.feature.closing-block.enabled=true (mirrors hypertrophyGate).
     private final ClosingBlockService closingBlockService;
@@ -536,8 +541,12 @@ public class WorkoutService {
 
     /** The template day's most recent COMPLETED instance of the current Mon–Sun week (D5). */
     private WorkoutSessionEntity completedThisWeek(UUID createdBy, UUID templateId) {
-        LocalDate today = LocalDate.now();
-        LocalDate monday = today.minusDays(today.getDayOfWeek().getValue() - 1L);
+        return completedInWeekOf(createdBy, templateId, LocalDate.now());
+    }
+
+    /** The template day's most recent COMPLETED instance of the Mon–Sun week that holds {@code anchor}. */
+    private WorkoutSessionEntity completedInWeekOf(UUID createdBy, UUID templateId, LocalDate anchor) {
+        LocalDate monday = anchor.minusDays(anchor.getDayOfWeek().getValue() - 1L);
         return workoutSessionRepository
             .findFirstByCreatedByAndTemplateSessionIdAndStatusAndDateBetweenOrderByDateDescCreatedAtDesc(
                 createdBy, templateId, "completed", monday, monday.plusDays(6))
@@ -736,6 +745,14 @@ public class WorkoutService {
             throw new SystemRuntimeErrorException(
                 SystemMessage.error("TRAIN_DAY_DONE_THIS_WEEK").build(), HttpStatus.CONFLICT);
         }
+        // The wall clock starts here and only here. The resume branch above returns before this
+        // point, so a mid-workout reload or an app restart can never restart the clock.
+        WorkoutSessionEntity instance = newInstance(createdBy, template, LocalDate.now(), Instant.now());
+        return toInstanceResponse(createdBy, workoutSessionRepository.save(instance));
+    }
+
+    /** A fresh instance of a template day, dated and started as given — `startWorkout`'s and the catch-up's one builder. */
+    private static WorkoutSessionEntity newInstance(UUID createdBy, WorkoutSessionEntity template, LocalDate date, Instant startedAt) {
         WorkoutSessionEntity instance = new WorkoutSessionEntity();
         instance.setCreatedBy(createdBy); // server-side ownership — never from the client
         instance.setMesocycleId(template.getMesocycleId());
@@ -747,12 +764,116 @@ public class WorkoutService {
         instance.setMuscleAccent(template.isMuscleAccent());
         instance.setDurationEst(template.getDurationEst());
         instance.setOrderIndex(template.getOrderIndex());
-        instance.setDate(LocalDate.now());
+        instance.setDate(date);
         instance.setStatus("active");
-        // The wall clock starts here and only here. The resume branch above returns before this
-        // point, so a mid-workout reload or an app restart can never restart the clock.
-        instance.setStartedAt(Instant.now());
-        return toInstanceResponse(createdBy, workoutSessionRepository.save(instance));
+        instance.setStartedAt(startedAt);
+        return instance;
+    }
+
+    /**
+     * The gym catch-up (Boop, mezo-r36n9.161): a past template day booked as completed with the plan's prescribed
+     * sets. Dated {@code date}, started at {@code startedAt}, every working set done at that instant, no derived
+     * timing; an override replaces the weight of every set of that exercise; an exercise with neither a
+     * prescription nor an override gets the skip marker, never a zero weight. Idempotent on {@code clientRef}.
+     * Guards: the window (today−7 … today), the live-workout rule (D6) and the once-per-week rule (D5) judged in
+     * the GIVEN date's Mon–Sun week.
+     */
+    @Transactional
+    public WorkoutInstanceResponse completeAsPlanned(UUID createdBy, WorkoutAsPlannedRequest req) {
+        Optional<WorkoutSessionEntity> earlier = workoutSessionRepository.findByCreatedByAndClientRef(createdBy, req.getClientRef());
+        if (earlier.isPresent()) {
+            return toInstanceResponse(createdBy, earlier.get());
+        }
+        WorkoutSessionEntity template = workoutSessionRepository.findById(req.getTemplateSessionId())
+            .filter(s -> createdBy.equals(s.getCreatedBy()) && s.getTemplateSessionId() == null)
+            .orElseThrow(WorkoutService::notFound);
+        if (!"custom".equals(template.getOrigin())) {
+            // A template day of a rotated or ended block is gone for the phone: never a booking onto a stale block.
+            boolean inActiveBlock = template.getMesocycleId() != null && mesocycleRepository
+                .findByCreatedByAndStatusAndDeletedFalse(createdBy, "active").stream()
+                .anyMatch(m -> template.getMesocycleId().equals(m.getId()));
+            if (!inActiveBlock) {
+                throw notFound();
+            }
+        }
+        Clock now = clock();
+        LocalDate today = LocalDate.now(now);
+        LocalDate date = req.getDate();
+        if (date.isBefore(today.minusDays(CapturedAtWindow.MAX_PAST_DAYS)) || date.isAfter(today)) {
+            throw new SystemRuntimeErrorException(
+                SystemMessage.error("TRAIN_AS_PLANNED_DATE_OUT_OF_WINDOW").build(), HttpStatus.BAD_REQUEST);
+        }
+        Instant startedAt = CapturedAtWindow.require(req.getStartedAt(), now.getZone(), now).toInstant();
+        if (workoutSessionRepository
+            .findFirstByCreatedByAndStatusAndTemplateSessionIdIsNotNullOrderByDateDescCreatedAtDesc(
+                createdBy, "active").isPresent()) {
+            throw new SystemRuntimeErrorException(
+                SystemMessage.error("TRAIN_WORKOUT_OPEN_ELSEWHERE").build(), HttpStatus.CONFLICT);
+        }
+        if (!"custom".equals(template.getOrigin()) && completedInWeekOf(createdBy, template.getId(), date) != null) {
+            throw new SystemRuntimeErrorException(
+                SystemMessage.error("TRAIN_DAY_DONE_THIS_WEEK").build(), HttpStatus.CONFLICT);
+        }
+        // The prescription as of today — the numbers the phone's sheet showed (spec §3.6).
+        List<TodayExercise> prescribed = getToday(createdBy, template.getId()).getExercises();
+        Map<UUID, BigDecimal> overrides = new java.util.HashMap<>();
+        if (req.getOverrides() != null) {
+            req.getOverrides().forEach(o -> overrides.put(o.getExerciseId(), o.getWeightKg()));
+        }
+        WorkoutSessionEntity instance = newInstance(createdBy, template, date, startedAt);
+        instance.setClientRef(req.getClientRef());
+        instance.setStatus("completed");
+        instance.setFinishedAt(startedAt); // no derived timing: the duration stays empty rather than invented
+        instance = workoutSessionRepository.save(instance);
+        for (TodayExercise t : prescribed) {
+            ExerciseEntity e = exerciseRepository.findById(t.getId()).orElse(null);
+            if (e == null) {
+                continue;
+            }
+            PrescribedSet first = t.getPrescribedSets() == null ? null : t.getPrescribedSets().stream()
+                .filter(ps -> ps.getKind() == PrescribedSet.KindEnum.WORKING).findFirst().orElse(null);
+            BigDecimal weight = overrides.getOrDefault(e.getId(), first == null ? null : first.getTargetWeightKg());
+            if (weight == null) {
+                exerciseSetRepository.save(skipMarker(createdBy, instance, e.getId(), 0, startedAt));
+                continue;
+            }
+            int count = t.getWorkingSets() != null && t.getWorkingSets() > 0 ? t.getWorkingSets()
+                : (e.getWorkingSets() != null ? e.getWorkingSets() : 3);
+            int reps = first != null && first.getTargetReps() != null ? first.getTargetReps() : e.getRepMin();
+            for (int i = 0; i < count; i++) {
+                ExerciseSetEntity set = new ExerciseSetEntity();
+                set.setCreatedBy(createdBy); // server-side ownership — never from the client
+                set.setExerciseId(e.getId());
+                set.setWorkoutSessionId(instance.getId());
+                set.setSetIndex(i);
+                set.setWeightKg(weight);
+                set.setReps(reps);
+                set.setRir(e.getTargetRir());
+                set.setKind("working");
+                set.setDoneAt(startedAt);
+                set.setTargetWeightKg(first == null ? null : first.getTargetWeightKg());
+                set.setTargetReps(first == null ? null : first.getTargetReps());
+                set.setTargetRepMin(e.getRepMin());
+                set.setTargetRepMax(e.getRepMax());
+                exerciseSetRepository.save(set);
+            }
+        }
+        exerciseSetRepository.flush();
+        WorkoutInstanceResponse base = toInstanceResponse(createdBy, instance);
+        // Medals are derived and decorative (as in finishWorkout): the booking must not roll back on them.
+        try {
+            base.setMedals(medalService.forSession(createdBy, instance.getId()));
+        } catch (RuntimeException ex) {
+            log.warn("Medal derivation failed for booked session {} — booking it anyway", instance.getId(), ex);
+            base.setMedals(List.of());
+        }
+        eventPublisher.publishEvent(new WorkoutFinishedEvent(createdBy, instance.getId()));
+        return base;
+    }
+
+    /** "Now" for the catch-up's window: the application {@link Clock} when one is defined (tests), else the system's. */
+    private Clock clock() {
+        return clock.getIfAvailable(Clock::systemDefaultZone);
     }
 
     @Transactional
@@ -926,14 +1047,20 @@ public class WorkoutService {
         int nextIndex = (int) instanceSets.stream()
             .filter(s -> s.getExerciseId().equals(exerciseId))
             .count();
+        exerciseSetRepository.save(skipMarker(createdBy, instance, exerciseId, nextIndex, Instant.now()));
+    }
+
+    /** A skip marker, not a logged set: the perf fields stay null. */
+    private static ExerciseSetEntity skipMarker(UUID createdBy, WorkoutSessionEntity instance, UUID exerciseId,
+                                                int setIndex, Instant at) {
         ExerciseSetEntity marker = new ExerciseSetEntity();
         marker.setCreatedBy(createdBy); // server-side ownership — never from the client
         marker.setExerciseId(exerciseId);
         marker.setWorkoutSessionId(instance.getId());
-        marker.setSetIndex(nextIndex);
-        marker.setSkipped(true); // marker, not a logged set: perf fields stay null
-        marker.setDoneAt(Instant.now());
-        exerciseSetRepository.save(marker);
+        marker.setSetIndex(setIndex);
+        marker.setSkipped(true);
+        marker.setDoneAt(at);
+        return marker;
     }
 
     @Transactional

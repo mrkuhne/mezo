@@ -6,7 +6,7 @@ allapot: Élesben
 hol: [iPhone app]
 szulo: 00-attekintes
 szakasz: [B2, B3, B4, B5, Kezdőlap]
-osszefoglalo: Egy lap, ahonnan bármit rögzíthetsz, ami a webes gyors logolásban volt — étkezés, víz, kiegészítők, edzés indítása, sport, súly, check-in, napló, alvás, kiadás —, a menüsor „+” gombjáról; a kezdőlapon öt gyorsajtó a leggyakoribb ötre.
+osszefoglalo: Egy lap, ahonnan bármit rögzíthetsz, ami a webes gyors logolásban volt — étkezés, ital, víz, kiegészítők, edzés indítása, sport, súly, check-in, napló, alvás, kiadás —, a menüsor „+” gombjáról; a kezdőlapon öt gyorsajtó a leggyakoribb ötre; a súly, az alvás, a sport és a naplósor egy hétre visszamenőleg is rögzíthető.
 ---
 
 ## Mit csinál
@@ -14,17 +14,21 @@ A „+” gomb (a menüsor jobb szélén) egy lapot nyit „Mit rögzítesz?” 
 **öt gyorsajtó** áll — **Étkezés · Víz · Súly · Check-in · Napló** —, mindegyik rögtön a saját lapját nyitja, a
 „Mit rögzítesz?” lap nélkül (2026-11-24; a korábbi „Rögzítés” kapszula helyett, amely csak ezt a lapot nyitotta). Rajta minden, ami a régi webes gyors logolásban volt (a tulajdonos döntése, 2026-11-24):
 
-- **Étkezés** — Fotó · Szöveg · Vonalkód · Recept · Kamra: megnyitja az étkezés rögzítését a választott bejárattal;
+- **Étkezés** — Fotó · Szöveg · Vonalkód · Recept · Kamra · **Ital**: megnyitja az étkezés rögzítését a választott bejárattal
+  (az Ital a hatodik, pont nélküli rekesz — lásd *Italok*);
 - **Víz** — öt gomb (1 · 2 · 3 · 5 · 7,5 dl), egy koppintás, és az Étel szoba vízszámlálója lép;
 - **Kiegészítők** — a csoportjaid (reggel, napközben, este…) egy-egy „Bevettem” gombbal; még egy koppintás visszavonja;
 - **Edzés indítása** — a Ma helyre visz, és megnyitja az Edzés szobát a mai tervvel;
 - **Sport** — a terven kívüli mozgás: mi volt (röpi, cross, TRX, kerékpár, úszás, foci, kosár, tenisz, túra, egyéb),
-  hány perc (húzható skála), mennyire volt nehéz (1–10);
-- **Súly** — a mérleg száma egy húzható skálán, tized kilónként; onnan indul, ahol legutóbb hagytad;
+  hány perc (húzható skála), mennyire volt nehéz (1–10), és **mikor** (Most · Tegnap · Más időpont);
+- **Súly** — a mérleg száma egy húzható skálán, tized kilónként; onnan indul, ahol legutóbb hagytad; **melyik nap**
+  (Ma · Tegnap · Más nap) — egy napra a legutóbb beírt mérés számít;
 - **Check-in** — „fél perc”: megnyitja a kitöltést;
-- **Napló** — egy sor a napról, bármikor (nem csak az esti zárásban); a Napló oldalon jelenik meg;
-- **Alvás** — egy éjszaka kézzel: lefekvés és ébredés, az app kiszámolja a hosszát, és megkérdezi, milyen volt (1–10).
-  Az órád mérte éjszakáit nem kell beírni, ez a kézi út (óra nélkül, vagy egy délutáni alváshoz);
+- **Napló** — egy sor a napról, bármikor (nem csak az esti zárásban), **melyik napra** (Ma · Tegnap · Más nap); a
+  Napló oldalon a nap lapján jelenik meg;
+- **Alvás** — egy éjszaka kézzel: lefekvés és ébredés, az app kiszámolja a hosszát, és megkérdezi, milyen volt (1–10),
+  és **melyik reggel ébredtél** (Ma · Tegnap · Más nap). Az órád mérte éjszakáit nem kell beírni, ez a kézi út (óra
+  nélkül, vagy egy délutáni alváshoz); ha az órád már mérte azt az éjszakát, csak a minősítésed kerül mellé;
 - **Kiadás** — készpénz pár másodperc alatt (lásd a Pénz területet);
 - alul egy mező: „Mondd vagy írd: ebéd, csirke rizzsel…” — szöveges étkezés.
 
@@ -32,10 +36,13 @@ A „+” gomb (a menüsor jobb szélén) egy lapot nyit „Mit rögzítesz?” 
 - A víz és a kiegészítők azonnal a szerverre mennek (net kell; net nélkül megmondja).
 - A súly, az alvás, a sport és a naplósor **net nélkül is rögzül**: a telefon elteszi, és amint van net, magától
   elküldi — ugyanaz az út, mint a check-innél vagy a készpénzes kiadásnál.
+- A **„Mikor”** sor minden lapon ugyanaz (2026-11-24): a választott nap olvashatóan a sor jobb szélén áll („tegnap”,
+  „nov. 22. · vasárnap”), a „Más nap” a naptárat nyitja, egy hétre visszamenőleg, a jövőbe soha. A rövid üzenet is
+  nevezi a napot, ha nem ma („Súly 81,4 kg rögzítve · tegnap”).
 - Egy lapon egy dolog: a gomb a billentyűzet fölött marad, a hiba a gomb fölött, a beírtak nem vesznek el.
 - Minden rögzítés végén egy rövid üzenet mondja, mi történt („Víz +300 ml”, „Súly 81,4 kg rögzítve”,
   „Alvás 7 ó 35 p rögzítve”, „Naplóba írva”).
-- A súlyból egy napra egy mérés számít: a második ugyanazon a napon felülírja az elsőt.
+- A súlyból egy napra a legutóbb beírt mérés számít (a szerver mellé teszi, a trend az utolsót veszi).
 
 ## Miért így
 A spec szerint egyetlen gyűjtőlap van minden gyors rögzítésre, hogy ne kelljen keresgélni, melyik helyen kell valamit
@@ -52,6 +59,7 @@ sportedzés (Edzés), súly (Testadatok), alvás (Alvás), naplósor és check-i
 ## Mi jön még
 - Hang a naplósorhoz innen is (az esti zárásban már van).
 - „Visszavonom az utolsót” a víznél (a weben volt).
+- „Mikor” sor a víznél és a kiegészítőknél.
 
 ## Mi marad ki
 - Aktivitás és hála külön ajtóként (a web „Mit naplózol?” hármasa): a gamifikáció és az aktivitás a Boopban

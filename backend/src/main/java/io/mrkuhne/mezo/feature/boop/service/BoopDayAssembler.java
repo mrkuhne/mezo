@@ -369,7 +369,8 @@ public class BoopDayAssembler {
     private List<BoopDay.Meal> meals(UUID user, LocalDate date, FuelDayResponse fuel, ZoneId zone) {
         List<BoopDay.Meal> out = new ArrayList<>();
         if (fuel.getMeals() != null) {
-            fuel.getMeals().forEach(m -> out.add(meal(m, zone)));
+            // Boop's meal rules see meals only: a drink (mezo-r36n9.160) is neither the last meal nor an unlogged one.
+            fuel.getMeals().stream().filter(m -> !"drink".equals(m.getSlot())).forEach(m -> out.add(meal(m, zone)));
         }
         for (DayPlanWindow w : dayPlans.plan(user, date).windows()) {
             if (w.state() == WindowState.DONE || w.state() == WindowState.SKIPPED) {

@@ -324,5 +324,12 @@ struct DraftNoticeTests {
         #expect(texts.contains { $0.contains("Tej") && $0.contains("tartalmazza") })
         #expect(texts.contains("Ultra-feldolgozott"))
     }
-}
 
+    /// The Mikor etted row's Tegnap chip (`mezo-r36n9.159`): yesterday at the same clock time, as a chosen moment.
+    @Test func tegnapIsYesterdayAtTheSameClockTime() {
+        let m = model()
+        m.setYesterday()
+        #expect(m.capturedAt == Calendar.current.date(byAdding: .day, value: -1, to: moment))
+        #expect(m.chosenAt != nil)
+    }
+}
