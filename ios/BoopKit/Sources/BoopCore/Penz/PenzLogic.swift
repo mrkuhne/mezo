@@ -308,6 +308,14 @@ public func penzWeek(_ a: PenzAllowance) -> PenzWeekFigures {
                     daysInWeek: penzDaysInclusive(from: a.week.start, to: a.week.end))
 }
 
+/// The home ring's Pénz number (`mezo-r36n9.153`, owner 2026-11-24: a percentage): how much of the week's budget is
+/// still there, 0–100. nil without a budget — the orb then says "–", never 0; overspent reads 0, never a minus.
+public func penzWeekShare(_ a: PenzAllowance) -> Int? {
+    let w = penzWeek(a)
+    guard w.budget > 0 else { return nil }
+    return Int((penzLevel(w.remaining, of: w.budget) * 100).rounded())
+}
+
 /// `part / whole` clamped to 0…1; 0 when there is no whole.
 public func penzLevel(_ part: Int64, of whole: Int64) -> Double {
     guard whole > 0 else { return 0 }

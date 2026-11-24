@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import BoopDesign
 
 /// The daily loop's full-screen moments.
 enum RitmusCover: String, Identifiable, Sendable {
@@ -30,6 +31,16 @@ final class RitmusRouter {
 
     func open(_ cover: RitmusCover) { self.cover = cover }
     func close() { cover = nil }
+
+    /// An area the "+" sheet asks to open (its "Edzés indítása" tile, `mezo-r36n9.154`): the shell lands on Ma and
+    /// the home screen's ring opens that room, from whichever place the bar was on.
+    var room: Hue?
+    func openRoom(_ hue: Hue) { room = hue }
+    /// Takes the room asked for and clears it (the home screen, once it is up).
+    func takeRoom() -> Hue? {
+        defer { room = nil }
+        return room
+    }
 
     /// Takes the cover that is asked for but not shown yet (a notification tap that landed before the shell was up, or
     /// while a sheet was open) and clears it, so the shell can present it once nothing else is in the way.

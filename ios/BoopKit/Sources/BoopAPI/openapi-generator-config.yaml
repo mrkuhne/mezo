@@ -11,6 +11,7 @@ filter:
     - getBiometricProfile
     - upsertBiometricProfile
     - logWeight
+    - logSleep
     - listWeightLogs
     - getWeightTrend
     - ingestSleepNights

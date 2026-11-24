@@ -52,7 +52,9 @@ Pass them after the bundle id: `xcrun simctl launch <sim> io.mrkuhne.boop -previ
 | `-previewEvening YES` | the clock reads 21:10 and the brief is an evening one: dusk sky, *Esti check-in* / *Esti levezetés* pills, evening paths |
 | `-previewRecovery YES` | kímélő mód, day 2 of a cold: calm grey-blue sky, the banner, no session |
 | `-previewScroll 850` | tab pages open scrolled to that offset |
-| `-previewOpen capture\|account` | opens the "+" capture sheet or the account sheet |
+| `-previewOpen capture\|account` | opens the "+" capture sheet (the nine quick-log doors + the meal chips) or the account sheet |
+| `-previewOpen water\|supplements\|sport\|weight\|sleep\|journal` | opens one quick-log sheet of the "+" (víz · kiegészítők · sport · súly · alvás · napló) |
+| `-previewLearning YES` | the brief is "learning" (Forma unknown, 9/14 nights): the ring blanks Forma alone, the other orbs keep their numbers |
 | `-previewOpen checkin\|checkinDone` | opens the check-in (its first item / its payoff after every item is answered and saved), the clock reads 16:02 |
 | `-previewOpen este\|esteDone` | opens the evening close (esteDone: already closed), the clock reads 21:32 and the day has its goal |
 | `-previewOpen naploDay` | Napló opens yesterday's day |

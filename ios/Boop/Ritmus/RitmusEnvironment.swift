@@ -211,6 +211,43 @@ final class RitmusEnvironment {
         sendSoon()
     }
 
+    // MARK: - The quick log (`mezo-r36n9.154`)
+
+    /// A weight off the scale: queued, sent at once if the net allows. Throws when the phone could not keep it.
+    func captureWeight(kg: Double, at date: Date) async throws {
+        let day = self.day(of: date)
+        let rounded = (kg * 10).rounded() / 10
+        try await outbox.enqueue(OutboxItem(kind: .weightLog, date: day, capturedAt: date,
+                                            payload: RitmusPayload.encode(WeightLogPayload(date: day, weightKg: rounded))),
+                                 rollbackOnFailure: true)
+        sendSoon()
+    }
+
+    /// A night typed by hand, filed on the morning it ended.
+    func captureSleep(_ payload: SleepLogPayload) async throws {
+        try await outbox.enqueue(OutboxItem(kind: .sleepLog, date: payload.date, capturedAt: clock(),
+                                            payload: RitmusPayload.encode(payload)), rollbackOnFailure: true)
+        sendSoon()
+    }
+
+    /// A sport session outside the plan (the training client's own write).
+    func captureSport(_ payload: SportSessionPayload) async throws {
+        try await outbox.enqueue(OutboxItem(kind: .sportSession, date: payload.date, capturedAt: clock(),
+                                            payload: TrainPayloadCodec.encode(payload)), rollbackOnFailure: true)
+        sendSoon()
+    }
+
+    /// A journal line at any hour (the evening close keeps its own path): the day's ledger shows it at once, pending
+    /// until the server has it; the same write the close's typed line uses.
+    func captureJournal(text: String, at date: Date) async throws {
+        let day = self.day(of: date)
+        let id = UUID()
+        try await outbox.enqueue(OutboxItem(id: id, kind: .journal, date: day, capturedAt: date,
+                                            payload: RitmusPayload.encode(JournalPayload(text: text))), rollbackOnFailure: true)
+        try? ledger.addJournal(LedgerJournal(id: id, capturedAt: date, text: text, pending: true), date: day)
+        sendSoon()
+    }
+
     // MARK: - What the server refused (spec §7.1: a quiet "nem sikerült elküldeni" row with Újra)
 
     /// The outbox item to retry for a check-in that did not get through: the check-in itself (or its typed note,
