@@ -56,4 +56,36 @@ struct AsPlannedTests {
         #expect(p?.overrides == [WorkoutAsPlannedPayload.Override(exerciseId: face, weightKg: 20)])
         #expect(asPlannedPayload(workout: TodayWorkout(), date: "2026-11-23", startedAt: at("2026-11-23 18:00"), overrides: [:]) == nil)
     }
+
+
+    /// The Napló's gym door reads the queue too (spec §3.6): a booking still waiting counts, one the server refused
+    /// does not, and other kinds of items are not bookings.
+    @Test func queuedBookingsAreReadWithoutTheFailedOnes() {
+        let kept = WorkoutAsPlannedPayload(templateSessionId: template, date: "2026-11-23", startedAt: at("2026-11-23 18:00"), overrides: [])
+        let refused = WorkoutAsPlannedPayload(templateSessionId: template, date: "2026-11-22", startedAt: at("2026-11-22 18:00"), overrides: [])
+        let items = [
+            OutboxItem(kind: .workoutAsPlanned, date: kept.date, capturedAt: kept.startedAt, payload: TrainPayloadCodec.encode(kept)),
+            OutboxItem(kind: .workoutAsPlanned, date: refused.date, capturedAt: refused.startedAt,
+                       payload: TrainPayloadCodec.encode(refused), failure: "Ezt az edzésnapot ezen a héten már teljesítetted."),
+            OutboxItem(kind: .journal, date: "2026-11-23", capturedAt: at("2026-11-23 18:00"), payload: Data()),
+        ]
+        #expect(asPlannedBookings(in: items) == [kept])
+    }
+
+    /// The gym door stays away when the booking could not land (spec §3.4, §3.6): the template day done on any day of
+    /// the date's Mon–Sun week (the server's once-a-week rule), or a booking for it still in the queue.
+    @Test func theGymDayIsDoneFromTheWeeksHistoryOrAQueuedBooking() {
+        let week = (from: "2026-11-23", to: "2026-11-29")
+        let other = UUID()
+        func day(_ date: String, _ id: UUID?, _ status: WorkoutStatus = .completed) -> WorkoutHistoryDay {
+            WorkoutHistoryDay(id: UUID(), templateSessionId: id, date: date, status: status, origin: .meso, title: "Pull Day")
+        }
+        #expect(gymDone(templateSessionId: template, week: week, history: [day("2026-11-25", template)], queued: []))
+        #expect(!gymDone(templateSessionId: template, week: week,
+                         history: [day("2026-11-25", other), day("2026-11-22", template), day("2026-11-24", template, .active)], queued: []))
+        let booked = WorkoutAsPlannedPayload(templateSessionId: template, date: "2026-11-24", startedAt: at("2026-11-24 18:00"), overrides: [])
+        let lastWeek = WorkoutAsPlannedPayload(templateSessionId: template, date: "2026-11-20", startedAt: at("2026-11-20 18:00"), overrides: [])
+        #expect(gymDone(templateSessionId: template, week: week, history: [], queued: [booked]))
+        #expect(!gymDone(templateSessionId: template, week: week, history: [], queued: [lastWeek]))
+    }
 }

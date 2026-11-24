@@ -13,6 +13,7 @@ import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
+import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -47,6 +49,7 @@ class WorkoutAsPlannedIT extends AbstractIntegrationTest {
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private WorkoutSessionRepository workoutSessions;
     @Autowired private ExerciseSetRepository exerciseSets;
+    @Autowired private MesocycleRepository mesocycles;
 
     private static LocalDate monday() {
         return TODAY.minusDays(TODAY.getDayOfWeek().getValue() - 1L);
@@ -210,5 +213,18 @@ class WorkoutAsPlannedIT extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> workoutService.completeAsPlanned(f.user(), req))
             .isInstanceOf(SystemRuntimeErrorException.class);
+    }
+
+    /** Review Focus 4: a template day of a block that is no longer active (rotated, ended) is not bookable — 404. */
+    @Test
+    void aTemplateDayOfAnArchivedBlockIsNotFound() {
+        Fixture f = fixture();
+        MesocycleEntity meso = mesocycles.findByCreatedByAndStatusAndDeletedFalse(f.user(), "active").get(0);
+        meso.setStatus("archived");
+        mesocycles.save(meso);
+
+        assertThatThrownBy(() -> workoutService.completeAsPlanned(f.user(), request(f, bookDate(), List.of())))
+            .isInstanceOf(SystemRuntimeErrorException.class)
+            .extracting("status").isEqualTo(HttpStatus.NOT_FOUND);
     }
 }

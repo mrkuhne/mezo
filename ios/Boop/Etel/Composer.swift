@@ -29,6 +29,9 @@ struct MealStart: Identifiable {
     var card: PendingDraft?
     /// A shelf or catalog food the owner chose to eat (the Kamra): it opens the serving confirmation, in grams.
     var serving: LookupItem?
+
+    /// The composer's mode: the Ital door, or a drink card reopened from the room (`mezo-r36n9.160`).
+    var kind: MealKind { entrance == .drink || card?.kind == .drink ? .drink : .meal }
 }
 
 /// The composer's state and its decisions, apart from any view.
@@ -67,6 +70,8 @@ final class MealComposerModel {
     private(set) var shelf: [PantryRow]?
     /// The owner's usual meals, ranked by the server (the fifth entrance).
     private(set) var usuals: [UsualMeal]?
+    /// The chips above the words in drink mode: the drink bucket only, kept apart from the Szokásos page's full list.
+    private(set) var usualDrinks: [UsualMeal] = []
     /// What the draft says about where a chosen usual meal came from: its own lines, or only its name (re-estimated).
     private(set) var usualNote: String?
     private(set) var listProblem: String?
@@ -118,7 +123,7 @@ final class MealComposerModel {
     func loadUsualDrinks() async {
         guard kind == .drink, let usualsLoader else { return }
         // The server ranks the drink bucket first and the meals after it; the chips show drinks only.
-        usuals = ((try? await usualsLoader()) ?? []).filter { $0.slot == "drink" }
+        usualDrinks = ((try? await usualsLoader()) ?? []).filter { $0.slot == MealKind.drink.fixedSlot }
     }
 
     var isOnline: Bool { online() }
@@ -346,7 +351,7 @@ final class MealComposerModel {
             return
         }
         capturedAt = stamp()
-        draft = MealDraft(date: dayString(capturedAt), slot: FoodClient.slot(at: capturedAt, cal: calendar), title: nil, items: [item])
+        draft = MealDraft(date: dayString(capturedAt), slot: slot(at: capturedAt), title: nil, items: [item])
         stage = .draft
     }
 
@@ -489,7 +494,7 @@ private struct MealComposerHost: View {
     init(start: MealStart, food: FoodClient, ritmus: RitmusEnvironment?, onDone: @escaping (String?) -> Void) {
         self.start = start; self.food = food; self.onDone = onDone
         let m = MealComposerModel(food: food, outbox: ritmus?.food, online: { [weak ritmus] in ritmus?.online ?? true },
-                                  kind: start.entrance == .drink ? .drink : .meal)
+                                  kind: start.kind)
         m.text = start.text
         m.minWorking = .milliseconds(2600)
         m.changed = { [weak ritmus] in ritmus?.mealDraftsChanged() }
@@ -639,7 +644,8 @@ private struct MealComposerHost: View {
     @ViewBuilder private var usualDrinks: some View {
         VStack(alignment: .leading, spacing: 10) {
             NKMono("SZOKÁSOS ITALAID")
-            if let usuals = model.usuals, !usuals.isEmpty {
+            let usuals = model.usualDrinks
+            if !usuals.isEmpty {
                 NKFlowRow(spacing: 8, rowSpacing: 8) {
                     ForEach(usuals, id: \.key) { u in
                         Button { Task { await model.chooseUsual(u) } } label: {

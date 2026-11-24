@@ -22,15 +22,19 @@ final class NaploCatchUpModel {
     @ObservationIgnored private let env: RitmusEnvironment
     @ObservationIgnored private let train: TrainClient?
     @ObservationIgnored private let morning: MorningStore?
+    /// The workout in progress on this phone, as the Edzés store keeps it: present while a session is open.
+    @ObservationIgnored private let liveWorkoutFile: URL?
     /// What the training client said about the day (the block's template day and whether it was done that date), kept
     /// so a ledger change (a merge, a catch-up) recomputes the block without another read.
     @ObservationIgnored private var template: (id: UUID, title: String)?
     @ObservationIgnored private var completed = false
     @ObservationIgnored private var serverLines: [JournalLineLite] = []
 
-    init(env: RitmusEnvironment, date: String, train: TrainClient?, morning: MorningStore?) {
-        self.env = env; self.date = date; self.train = train; self.morning = morning
+    init(env: RitmusEnvironment, date: String, train: TrainClient?, morning: MorningStore?, liveWorkoutFile: URL? = nil) {
+        self.env = env; self.date = date; self.train = train; self.morning = morning; self.liveWorkoutFile = liveWorkoutFile
     }
+
+    private var liveWorkoutOpen: Bool { liveWorkoutFile.map { FileManager.default.fileExists(atPath: $0.path) } ?? false }
 
     static let dayLabels = ["Hét", "Kedd", "Sze", "Csü", "Pén", "Szo", "Vas"]
 
@@ -61,15 +65,19 @@ final class NaploCatchUpModel {
         loading = true
         let today = env.today
         template = nil; completed = false
-        if date != today, let train, let noon = Self.noon(date, calendar: env.calendar),
-           let label = Self.weekdayLabel(of: date, calendar: env.calendar) {
+        if date != today, let train, let label = Self.weekdayLabel(of: date, calendar: env.calendar) {
             if let plan = try? await train.blockPlan(), let day = plan.days.first(where: { $0.day == label }), let id = day.id {
                 let title = (try? await train.todayWorkout(templateSessionId: id))?.title ?? day.type
                 template = (id, title.isEmpty ? "edzés" : title)
             }
-            if let history = try? await train.history(from: noon, to: noon) {
-                let id = template?.id
-                completed = history.contains { $0.status == .completed && $0.templateSessionId == id }
+            // The week's history and the queue (spec §3.4, §3.6): the server books a template day once per Mon–Sun
+            // week, and a booking still waiting on the phone already counts — so the door never offers a day the
+            // server would refuse, and never comes back after a Megvolt.
+            let week = NaploDays.week(containing: date)
+            if let id = template?.id, let from = Self.noon(week.from, calendar: env.calendar), let to = Self.noon(week.to, calendar: env.calendar) {
+                let history = (try? await train.history(from: from, to: to)) ?? []
+                let queued = asPlannedBookings(in: await env.outbox.queue)
+                completed = gymDone(templateSessionId: id, week: week, history: history, queued: queued)
             }
         }
         serverLines = (try? await env.journalLines(on: date)) ?? []
@@ -84,8 +92,8 @@ final class NaploCatchUpModel {
         let ledger = env.ledger.ledger(for: date)
         doneSlots = Set(ledger.checkIns.map(\.slot))
         catchUps = NaploCatchUps.compute(date: date, today: env.today, now: env.clock(), checkIns: ledger.checkIns,
-                                         closed: ledger.close != nil, templateDay: template, completedThatDay: completed,
-                                         calendar: env.calendar)
+                                         closed: ledger.close != nil, templateDay: template, completedInWeek: completed,
+                                         liveWorkoutOpen: liveWorkoutOpen, calendar: env.calendar)
         gymTitle = catchUps.gymTitle; gymTemplateId = catchUps.gymTemplateId
         let local = ledger.journal.compactMap { j in
             j.text.flatMap { $0.isEmpty ? nil : JournalLineLite(id: j.id, text: $0, occurredOn: date, createdAt: j.capturedAt) }

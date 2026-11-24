@@ -2,8 +2,9 @@ import Foundation
 
 /// What a day's sheet offers to catch up (`mezo-r36n9.159`, spec §3.4): on today only the check-in moments already
 /// passed and not done (the morning forgotten at eleven); on a past day inside the week every missing moment, the
-/// close when the day has none, and the gym day when the weekday has a template day with no completed instance that
-/// date. Outside the week — or in the future — nothing.
+/// close when the day has none, and the gym day when the weekday has a template day not done in that date's Mon–Sun
+/// week (the server books one per week; a booking still queued counts) and no workout is open on the phone. Outside
+/// the week — or in the future — nothing.
 public struct NaploCatchUps: Equatable, Sendable {
     public let missingMoments: [CheckInMoment]
     public let canClose: Bool
@@ -15,7 +16,7 @@ public struct NaploCatchUps: Equatable, Sendable {
     public var isEmpty: Bool { missingMoments.isEmpty && !canClose && gymTemplateId == nil }
 
     public static func compute(date: String, today: String, now: Date, checkIns: [LedgerCheckIn], closed: Bool,
-                               templateDay: (id: UUID, title: String)?, completedThatDay: Bool,
+                               templateDay: (id: UUID, title: String)?, completedInWeek: Bool, liveWorkoutOpen: Bool,
                                calendar: Calendar) -> NaploCatchUps {
         let earliest = NaploDays.range(endingOn: today, count: 7).from
         guard date >= earliest, date <= today else { return .nothing }
@@ -34,7 +35,8 @@ public struct NaploCatchUps: Equatable, Sendable {
         if date == today {
             return NaploCatchUps(missingMoments: missing, canClose: false, gymTemplateId: nil, gymTitle: nil)
         }
-        let gym = (templateDay != nil && !completedThatDay) ? templateDay : nil
+        // The door only where the booking can land: not done that week (`gymDone`), no live workout on the phone (D6).
+        let gym = (templateDay != nil && !completedInWeek && !liveWorkoutOpen) ? templateDay : nil
         return NaploCatchUps(missingMoments: missing, canClose: !closed, gymTemplateId: gym?.id, gymTitle: gym?.title)
     }
 }

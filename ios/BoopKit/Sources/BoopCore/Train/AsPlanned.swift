@@ -67,3 +67,24 @@ public func asPlannedPayload(workout: TodayWorkout, date: String, startedAt: Dat
     let typed = workout.exercises.compactMap { e in overrides[e.id].map { WorkoutAsPlannedPayload.Override(exerciseId: e.id, weightKg: $0) } }
     return WorkoutAsPlannedPayload(templateSessionId: template, date: date, startedAt: startedAt, overrides: typed)
 }
+
+/// The bookings still in the queue (`mezo-r36n9.161`): the Napló's gym door counts a waiting one as done, a refused
+/// one (final on the phone) not.
+public func asPlannedBookings(in items: [OutboxItem]) -> [WorkoutAsPlannedPayload] {
+    items.compactMap { item in
+        guard item.kind == .workoutAsPlanned, item.failure == nil else { return nil }
+        return TrainPayloadCodec.decode(WorkoutAsPlannedPayload.self, from: item.payload)
+    }
+}
+
+/// Whether a template day is already done for the Napló's gym door (spec §3.4, §3.6): a completed instance of it on
+/// any day of the date's Mon–Sun week — the server's once-a-week rule would refuse a second — or a booking for it in
+/// that week still waiting in the queue.
+public func gymDone(templateSessionId: UUID, week: (from: String, to: String), history: [WorkoutHistoryDay],
+                    queued: [WorkoutAsPlannedPayload]) -> Bool {
+    let inWeek = { (day: String) in day >= week.from && day <= week.to }
+    if history.contains(where: { $0.templateSessionId == templateSessionId && $0.status == .completed && inWeek($0.date) }) {
+        return true
+    }
+    return queued.contains { $0.templateSessionId == templateSessionId && inWeek($0.date) }
+}

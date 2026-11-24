@@ -10,7 +10,8 @@ osszefoglalo: Egy kimaradt konditermi tervnap utólag is könyvelhető a Napló 
 ---
 
 ## Mit csinál
-A Napló egy korábbi napjának lapján, ha arra a hétköznapra van tervnap és nincs kész edzés, ott az **„Edzés pótlása:
+A Napló egy korábbi napjának lapján, ha arra a hétköznapra van tervnap, az azon a héten még nem volt meg (sem készre
+könyvelve, sem a telefonon várakozó pótlásként), és nem fut éppen edzés a telefonon, ott az **„Edzés pótlása:
 Pull Day”** sor (2026-11-24). A Megvolt lapon:
 
 - **A terv sorozatai** gyakorlatonként: „3 × 8 · 60 kg” — a mai terv ajánlása. A sorra koppintva a **súlyt
@@ -25,7 +26,10 @@ nem módosíthatók.
 ## Hogyan működik
 - Egy hétre visszamenőleg lehet pótolni. Ha fut egy élő edzés, előbb azt kell befejezni („Előbb fejezd be a futó
   edzést”); ha az a tervnap azon a héten már megvolt, a szerver nem könyvel másodikat („Ezen a héten már megvolt”).
-- Net nélkül a könyvelés a telefonon vár, és amint van net, elmegy; ugyanaz a sor nem könyvelődik kétszer.
+- Net nélkül a könyvelés a telefonon vár, és amint van net, elmegy; ugyanaz a sor nem könyvelődik kétszer. Amíg vár, a
+  nap lapja már késznek veszi: a sor nem jön vissza.
+- Ha a tervnap már nincs a mostani blokkodban (közben új blokk indult), a pótlás nem megy át, és a sor megmondja:
+  „Ez a tervnap már nincs a mostani blokkodban.”
 
 ## Miért így
 A tulajdonos a visszamenőleges rögzítés listáján az „edzés”-t is kérte; a Sport-kerülőút a terv napját hamisan

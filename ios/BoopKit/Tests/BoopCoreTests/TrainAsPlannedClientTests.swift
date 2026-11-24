@@ -44,4 +44,15 @@ struct TrainAsPlannedClientTests {
         guard case .failed(let why) = result else { Issue.record("a 409 on the booking is final, not a retry: \(result)"); return }
         #expect(why.contains("héten"))
     }
+
+
+    /// A template day the active block no longer has (rotated, ended) is a 404: final, and in the owner's words, never
+    /// the server's code.
+    @Test func aVanishedTemplateDayIsARefusalInTheOwnersWords() async {
+        stub.on("completeWorkoutAsPlanned", .json(404, #"[{"code":"TRAIN_NOT_FOUND","level":"ERROR","message":"Not found","type":"REQUEST"}]"#))
+        let p = WorkoutAsPlannedPayload(templateSessionId: UUID(), date: "2026-11-23", startedAt: six, overrides: [])
+        let result = await train().send(item(p))
+        guard case .failed(let why) = result else { Issue.record("a 404 on the booking is final, not a retry: \(result)"); return }
+        #expect(why == "Ez a tervnap már nincs a mostani blokkodban.")
+    }
 }

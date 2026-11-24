@@ -164,6 +164,7 @@ struct NaploDayDetail: View {
     /// The day's catch-ups (`mezo-r36n9.159`): built once the sheet is up, re-read after each cover closes.
     @Environment(\.trainClient) private var train
     @Environment(MorningStore.self) private var morning: MorningStore?
+    @Environment(\.workoutFolder) private var workoutFolder
     @State private var catchUp: NaploCatchUpModel?
     @State private var cover: NaploCover?
     @State private var gym: NaploGymDoor?
@@ -205,7 +206,8 @@ struct NaploDayDetail: View {
         .preferredColorScheme(.dark)
         .task { if let food { await meals.load(food: food, date: date, calendar: env.calendar) } }
         .task {
-            let model = NaploCatchUpModel(env: env, date: date, train: train, morning: morning)
+            let model = NaploCatchUpModel(env: env, date: date, train: train, morning: morning,
+                                          liveWorkoutFile: workoutFolder.map(EdzesStore.sessionFile))
             catchUp = model
             await model.load()
         }

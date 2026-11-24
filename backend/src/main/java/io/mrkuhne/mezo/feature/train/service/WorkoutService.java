@@ -787,6 +787,15 @@ public class WorkoutService {
         WorkoutSessionEntity template = workoutSessionRepository.findById(req.getTemplateSessionId())
             .filter(s -> createdBy.equals(s.getCreatedBy()) && s.getTemplateSessionId() == null)
             .orElseThrow(WorkoutService::notFound);
+        if (!"custom".equals(template.getOrigin())) {
+            // A template day of a rotated or ended block is gone for the phone: never a booking onto a stale block.
+            boolean inActiveBlock = template.getMesocycleId() != null && mesocycleRepository
+                .findByCreatedByAndStatusAndDeletedFalse(createdBy, "active").stream()
+                .anyMatch(m -> template.getMesocycleId().equals(m.getId()));
+            if (!inActiveBlock) {
+                throw notFound();
+            }
+        }
         Clock now = clock();
         LocalDate today = LocalDate.now(now);
         LocalDate date = req.getDate();

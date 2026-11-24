@@ -123,6 +123,15 @@ public enum NaploDays {
         guard let end = date(to), let start = calendar.date(byAdding: .day, value: -(count - 1), to: end) else { return (to, to) }
         return (string(start), to)
     }
+
+    /// The Mon–Sun week a day sits in (`mezo-r36n9.161`): the week the server judges „done this week" in.
+    public static func week(containing day: String) -> (from: String, to: String) {
+        guard let d = date(day) else { return (day, day) }
+        let back = (calendar.component(.weekday, from: d) + 5) % 7 // Sunday = 1 → six back, Monday = 2 → none
+        guard let monday = calendar.date(byAdding: .day, value: -back, to: d),
+              let sunday = calendar.date(byAdding: .day, value: 6, to: monday) else { return (day, day) }
+        return (string(monday), string(sunday))
+    }
 }
 
 /// One row of the Napló's list (`mezo-r36n9.159`, spec §3.4): a day with something in it, or an empty day of the

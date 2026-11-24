@@ -58,11 +58,14 @@ public struct PendingDraft: Identifiable, Equatable, Sendable {
     /// The photo stored beside the queue, if the capture has one.
     public var photoRef: UUID?
     public var state: State
+    /// A meal or a drink (`mezo-r36n9.160`): the card reopens the composer in the same mode it was captured in.
+    public var kind: MealKind
     public var hasPhoto: Bool { photoRef != nil }
 
-    public init(id: UUID, capturedAt: Date, date: String, text: String?, barcode: String?, photoRef: UUID?, state: State) {
+    public init(id: UUID, capturedAt: Date, date: String, text: String?, barcode: String?, photoRef: UUID?, state: State,
+                kind: MealKind = .meal) {
         self.id = id; self.capturedAt = capturedAt; self.date = date; self.text = text; self.barcode = barcode
-        self.photoRef = photoRef; self.state = state
+        self.photoRef = photoRef; self.state = state; self.kind = kind
     }
 
     /// The server refuses a capture dated more than 7 days back (same rule as `Outbox`).

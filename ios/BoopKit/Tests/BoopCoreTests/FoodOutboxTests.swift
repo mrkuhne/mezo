@@ -279,4 +279,18 @@ final class FoodOutboxTests {
         #expect(card.isTooOld(now: afterMidnight.addingTimeInterval(8 * 86_400), calendar: budapest))
         #expect(!card.isTooOld(now: afterMidnight.addingTimeInterval(3 * 86_400), calendar: budapest))
     }
+
+
+    /// A card from the queue says what it is (`mezo-r36n9.160`): a drink reopened from the Étel room — still waiting
+    /// or ready for a tap — comes back as a drink, never as the clock's meal.
+    @Test func aDrinkCardCarriesItsKind() async throws {
+        let (food, _) = make()
+        _ = try await food.enqueueMeal(draft: MealCapture(text: "fehérjeturmix", kind: .drink), photoRef: nil, capturedAt: afterMidnight)
+        _ = try await food.enqueueMeal(draft: MealCapture(text: "alma"), photoRef: nil, capturedAt: afterMidnight.addingTimeInterval(60))
+        let waiting = await food.pendingDrafts()
+        #expect(waiting.map(\.kind) == [.drink, .meal])
+        await food.flush()
+        let ready = await food.pendingDrafts()
+        #expect(ready.map(\.kind) == [.drink, .meal])
+    }
 }

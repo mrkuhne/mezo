@@ -23,4 +23,12 @@ struct NaploWeekEntriesTests {
         #expect(out.count == 7)
         #expect(out.allSatisfy { if case .empty = $0 { return true } else { return false } })
     }
+
+
+    /// The gym catch-up's week (`mezo-r36n9.161`): the server judges „done this week" in the date's Mon–Sun week.
+    @Test func theWeekOfADayRunsMondayToSunday() {
+        #expect(NaploDays.week(containing: "2026-11-24") == (from: "2026-11-23", to: "2026-11-29"))
+        #expect(NaploDays.week(containing: "2026-11-23") == (from: "2026-11-23", to: "2026-11-29"))
+        #expect(NaploDays.week(containing: "2026-11-29") == (from: "2026-11-23", to: "2026-11-29"))
+    }
 }
