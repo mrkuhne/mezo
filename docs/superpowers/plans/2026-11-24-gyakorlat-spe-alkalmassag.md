@@ -19,9 +19,9 @@
 **Fájlok:** `api/feature/train/train.yml`, `api/openapi.yml`, `ios/BoopKit/Sources/BoopAPI/openapi.yaml`.
 **Határ:** `ExerciseCatalogItem.allowedTechniques: Technique[]` (válaszban kötelező, lehet üres); `Technique` új `top_pause`; `PrescribedSet.topHoldSec?: integer` (csak `top_pause` esetén 2, máskor hiányzik). A meglévő `ExerciseTechniqueUpdateRequest` és naplózási DTO-k az új enumot ugyanazzal a mezővel viszik.
 
-- [ ] A három séma módosítása után `ios/scripts/sync-openapi.sh --check` még jelezzen eltérést; a szerződésváltozás így látható, mielőtt generálnánk.
-- [ ] `cd api/generate && npm ci && npm run generate:api`; majd `ios/scripts/sync-openapi.sh`. Ellenőrzés: `ios/scripts/sync-openapi.sh --check`, `node scripts/check-generator-toolchain.mjs --manifests`.
-- [ ] Nézd át a generált diffet: az új mezők és enum megjelennek, más útvonal vagy mező nem változik. `git add api/feature/train/train.yml api/openapi.yml ios/BoopKit/Sources/BoopAPI/openapi.yaml && git commit -m 'feat(api): describe exercise SPE palettes and top pause (mezo-eiux9)'`.
+- [x] A fragment módosítása és a merge után `ios/scripts/sync-openapi.sh --check` eltérést jelzett (exit 1); a sync előtt a két generált példány már eltért.
+- [x] `cd api/generate && npm ci && npm run generate:api`; majd `ios/scripts/sync-openapi.sh`. Az utóbbi `--check` és `node scripts/check-generator-toolchain.mjs --manifests` zöld.
+- [x] A diffet átnéztem: az új mezők és enum megjelentek. Az iPhone OpenAPI-példánya a korábbi Mail és edzésterv szerződésváltozásokat is behozta, mert a mainen már elmaradt a szinkron; a sync parancs teljes, kanonikus példányát tartjuk meg. `git add api/feature/train/train.yml api/openapi.yml ios/BoopKit/Sources/BoopAPI/openapi.yaml && git commit -m 'feat(api): describe exercise SPE palettes and top pause (mezo-eiux9)'`.
 
 ## 2. A teljes katalógus tételes palettája
 
