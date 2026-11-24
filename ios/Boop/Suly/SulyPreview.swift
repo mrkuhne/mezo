@@ -90,6 +90,8 @@ struct SulyPreviewTransport: ClientTransport {
             return try json(state == "empty" ? ["ewmaSeries": [], "dataSufficiency": "none"] : SulyPreview.trend())
         case "listWeightLogs":
             return try json(state == "empty" ? [] : SulyPreview.logs())
+        case "getBiometricProfile":
+            return try json(["sex": "M", "heightCm": 180, "birthDate": "1990-05-01"])
         default:
             return (HTTPResponse(status: .notFound), nil)
         }
