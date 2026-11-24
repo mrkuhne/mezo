@@ -8,6 +8,16 @@ import BoopDesign
 
 private let quickEyebrow = "Gyors rögzítés"
 
+extension WhenChoice {
+    /// Simulator review: `-previewWhen tegnap` opens the sheets on yesterday (DEBUG only).
+    static var previewDefault: WhenChoice {
+        #if DEBUG
+        if UserDefaults.standard.string(forKey: "previewWhen") == "tegnap" { return .yesterday }
+        #endif
+        return .now
+    }
+}
+
 /// "1 dl", "7,5 dl".
 func waterLabel(_ ml: Int) -> String {
     let dl = Double(ml) / 100
@@ -108,6 +118,7 @@ struct WeightSheet: View {
     let onDone: (String?) -> Void
     @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
     @State private var kg: Double = WeightSheet.lastKg
+    @State private var when: WhenChoice = .previewDefault
     @State private var busy = false
     @State private var problem: String?
 
@@ -125,7 +136,8 @@ struct WeightSheet: View {
                         onSet: { typed in
                             if let v = Double(typed.replacingOccurrences(of: ",", with: ".")) { kg = min(250, max(30, v)) }
                         })
-                quickHint("Reggel, étkezés előtt a legjobb. A mai napra kerül; egy második mérés ugyanazon a napon felülírja.")
+                WhenRow(eyebrow: "MELYIK NAP", hue: .forma, choice: $when)
+                quickHint("Reggel, étkezés előtt a legjobb. Egy napra a legutóbb beírt mérés számít.")
             }
         }
         .safeAreaInset(edge: .bottom) { QuickFoot(title: "Rögzítem", busy: busy, error: problem) { Task { await save() } } }
@@ -135,10 +147,11 @@ struct WeightSheet: View {
         guard let ritmus else { problem = "Most nem tudom eltenni."; return }
         busy = true
         defer { busy = false }
+        let now = BoopClock.now()
         do {
-            try await ritmus.captureWeight(kg: kg, at: Date())
+            try await ritmus.captureWeight(kg: kg, at: whenResolved(when, now: now, calendar: .current))
             UserDefaults.standard.set(kg, forKey: "quick.weightKg")
-            onDone("Súly \(kgText(kg)) rögzítve")
+            onDone(whenToast("Súly \(kgText(kg)) rögzítve", choice: when, now: now, calendar: .current))
         } catch {
             problem = "Nem tudtam eltenni a telefonra — próbáld újra."
         }
@@ -154,6 +167,7 @@ struct SleepLogSheet: View {
     @State private var bed = SleepLogSheet.clock(23, 0)
     @State private var wake = SleepLogSheet.clock(7, 0)
     @State private var quality: Int?
+    @State private var when: WhenChoice = .previewDefault
     @State private var busy = false
     @State private var problem: String?
 
@@ -180,12 +194,19 @@ struct SleepLogSheet: View {
                                 onDown: { quality = quality.map { max(1, $0 - 1) } },
                                 onUp: { quality = min(10, (quality ?? 6) + 1) })
                     .padding(14).nkGlass(16)
-                quickHint("Ha az órád mérte az éjszakát, nem kell beírnod — ez a kézi út, például óra nélkül vagy egy délutáni alváshoz. A mai reggelre kerül.")
+                WhenRow(eyebrow: "MELYIK REGGEL ÉBREDTÉL", hue: .alvas, choice: $when)
+                if let note = whenSleepNote(when) { quickHint(note) }
+                quickHint("Ha az órád mérte az éjszakát, nem kell beírnod — ez a kézi út, például óra nélkül vagy egy délutáni alváshoz. Arra a reggelre kerül, amelyiket választod.")
             }
         }
         .safeAreaInset(edge: .bottom) {
             QuickFoot(title: "Rögzítem", busy: busy, disabled: hours == nil, error: problem) { Task { await save() } }
         }
+    }
+
+    /// The night as the server takes it, filed on the chosen morning.
+    static func payload(bed: String, wake: String, hours: Double, quality: Int?, morning: String) -> SleepLogPayload {
+        SleepLogPayload(date: morning, bedtime: bed, wakeup: wake, durationH: hours, quality: quality)
     }
 
     private func timeBox(_ label: String, _ selection: Binding<Date>) -> some View {
@@ -204,11 +225,12 @@ struct SleepLogSheet: View {
         guard let ritmus, let hours else { problem = "A két időpont egyforma."; return }
         busy = true
         defer { busy = false }
-        let payload = SleepLogPayload(date: ritmus.day(of: Date()), bedtime: bedText, wakeup: wakeText,
-                                      durationH: hours, quality: quality)
+        let now = BoopClock.now()
+        let payload = Self.payload(bed: bedText, wake: wakeText, hours: hours, quality: quality,
+                                   morning: ritmus.day(of: whenResolved(when, now: now, calendar: .current)))
         do {
             try await ritmus.captureSleep(payload)
-            onDone("Alvás \(sleepHoursText(hours)) rögzítve")
+            onDone(whenToast("Alvás \(sleepHoursText(hours)) rögzítve", choice: when, now: now, calendar: .current))
         } catch {
             problem = "Nem tudtam eltenni a telefonra — próbáld újra."
         }
@@ -224,6 +246,7 @@ struct SportSheet: View {
     @State private var sport: QuickSport = .volleyball
     @State private var minutes: Double = 60
     @State private var rpe = 6
+    @State private var when: WhenChoice = .previewDefault
     @State private var busy = false
     @State private var problem: String?
 
@@ -251,22 +274,29 @@ struct SportSheet: View {
                 NKInlineStepper(label: "Mennyire volt nehéz (1–10)", value: "\(rpe)", hue: .mozgas,
                                 onDown: { rpe = max(1, rpe - 1) }, onUp: { rpe = min(10, rpe + 1) })
                     .padding(14).nkGlass(16)
+                WhenRow(eyebrow: "MIKOR SPORTOLTÁL", hue: .mozgas, withTime: true, choice: $when)
                 quickHint("A terven kívüli mozgás — röpi, bringa, túra. A heti terhelésbe beleszámít.")
             }
         }
         .safeAreaInset(edge: .bottom) { QuickFoot(title: "Rögzítem", busy: busy, error: problem) { Task { await save() } } }
     }
 
+    /// The session as the server takes it: the chosen day and the chosen clock time.
+    static func payload(sport: QuickSport, minutes: Double, rpe: Int, day: String, moment: Date) -> SportSessionPayload {
+        SportSessionPayload(sport: sport.rawValue, date: day, time: clockLabel(moment),
+                            durationMinutes: Int(minutes), rpe: Double(rpe))
+    }
+
     private func save() async {
         guard let ritmus else { problem = "Most nem tudom eltenni."; return }
         busy = true
         defer { busy = false }
-        let now = Date()
-        let payload = SportSessionPayload(sport: sport.rawValue, date: ritmus.day(of: now), time: clockLabel(now),
-                                          durationMinutes: Int(minutes), rpe: Double(rpe))
+        let now = BoopClock.now()
+        let moment = whenResolved(when, now: now, calendar: .current)
+        let payload = Self.payload(sport: sport, minutes: minutes, rpe: rpe, day: ritmus.day(of: moment), moment: moment)
         do {
             try await ritmus.captureSport(payload)
-            onDone("\(sport.name) · \(Int(minutes)) perc rögzítve")
+            onDone(whenToast("\(sport.name) · \(Int(minutes)) perc rögzítve", choice: when, now: now, calendar: .current))
         } catch {
             problem = "Nem tudtam eltenni a telefonra — próbáld újra."
         }
@@ -283,6 +313,7 @@ struct JournalSheet: View {
     @State private var busy = false
     @State private var problem: String?
     @FocusState private var focused: Bool
+    @State private var when: WhenChoice = .previewDefault
 
     private var words: String { text.trimmingCharacters(in: .whitespacesAndNewlines) }
 
@@ -295,6 +326,7 @@ struct JournalSheet: View {
                     .nkFont(16).foregroundStyle(.white)
                     .focused($focused)
                     .padding(14).frame(maxWidth: .infinity, alignment: .leading).nkGlass(18)
+                WhenRow(eyebrow: "MELYIK NAP", hue: .alvas, choice: $when)
                 quickHint("A Napló oldalon látod a nap sorai között; az esti zárás külön kérdez rá a napra.")
             }
         }
@@ -314,9 +346,10 @@ struct JournalSheet: View {
         guard let ritmus, !words.isEmpty else { return }
         busy = true
         defer { busy = false }
+        let now = BoopClock.now()
         do {
-            try await ritmus.captureJournal(text: words, at: Date())
-            onDone("Naplóba írva")
+            try await ritmus.captureJournal(text: words, at: whenResolved(when, now: now, calendar: .current))
+            onDone(whenToast("Naplóba írva", choice: when, now: now, calendar: .current))
         } catch {
             problem = "Nem tudtam eltenni a telefonra — próbáld újra."
         }
