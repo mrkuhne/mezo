@@ -59,14 +59,26 @@ final class CheckinFlow {
     @ObservationIgnored private var dragStart: Int?
     private var draft: [String: Int] = [:]
 
-    init(env: RitmusEnvironment) {
+    /// A missed moment of a day, caught up from the Napló (`mezo-r36n9.159`, spec §3.5): the day and the moment are
+    /// fixed, the check-in is stamped at the moment's own time.
+    struct CatchUp: Equatable {
+        let date: String
+        let moment: CheckInMoment
+    }
+
+    @ObservationIgnored private let catchUp: CatchUp?
+    var isCatchUp: Bool { catchUp != nil }
+
+    init(env: RitmusEnvironment, catchUp: CatchUp? = nil) {
         self.env = env
+        self.catchUp = catchUp
         let now = env.clock()
         openedAt = now
-        date = env.day(of: now)
-        let moment = CheckInMoment.moment(at: now, calendar: env.calendar)
+        let dayKey = catchUp?.date ?? env.day(of: now)
+        date = dayKey
+        let moment = catchUp?.moment ?? CheckInMoment.moment(at: now, calendar: env.calendar)
         self.moment = moment
-        let day = env.ledger.ledger(for: env.day(of: now))
+        let day = env.ledger.ledger(for: dayKey)
         questions = CheckInQuestions.questions(plan: day.plans[moment.slotId])
         if let done = day.checkIns.first(where: { $0.slot == moment.slotId }) {
             overwriteNotice = "A \(Self.doneWord(moment)) már kitöltötted \(Self.clock(done.capturedAt, env.calendar))-kor — felülírod?"
@@ -87,7 +99,10 @@ final class CheckinFlow {
     /// The day's last answer to the shown item, for "legutóbb N volt" (nil when there is none yet).
     var previous: Int? { answeredToday.contains(current.key) ? startValues[current.key] : nil }
     /// "Délután · 16:02".
-    var momentLabel: String { "\(Self.momentName(moment)) · \(Self.clock(openedAt, env.calendar))" }
+    var momentLabel: String {
+        if let catchUp { return catchUpLabel(date: catchUp.date, moment: catchUp.moment, today: env.today, calendar: env.calendar) }
+        return "\(Self.momentName(moment)) · \(Self.clock(openedAt, env.calendar))"
+    }
     /// "MENTVE · 16:02" — the capture time.
     var savedTimeLabel: String? { saved.map { "MENTVE · \(Self.clock($0.checkIn.capturedAt, env.calendar))" } }
     func isSelected(_ option: String) -> Bool {
@@ -206,10 +221,17 @@ final class CheckinFlow {
         guard saved == nil, !saving else { return }
         saving = true
         saveProblem = nil
-        let capturedAt = env.clock()
-        // The slot and the day are the capture's (the phone's clock at saving), not the opening's.
-        moment = CheckInMoment.moment(at: capturedAt, calendar: env.calendar)
-        date = env.day(of: capturedAt)
+        let capturedAt: Date
+        if let catchUp {
+            // A catch-up keeps its day and moment and is stamped at the moment's own time (spec §3.5), so the energy
+            // dot and the Health snapshot belong to that day.
+            capturedAt = catchUp.moment.time(on: catchUp.date, calendar: env.calendar) ?? env.clock()
+        } else {
+            capturedAt = env.clock()
+            // The slot and the day are the capture's (the phone's clock at saving), not the opening's.
+            moment = CheckInMoment.moment(at: capturedAt, calendar: env.calendar)
+            date = env.day(of: capturedAt)
+        }
         let shown = Array(questions.prefix(index + 1))
         let asked = shown.map(\.key)
         let painAsked = asked.contains("pain")
