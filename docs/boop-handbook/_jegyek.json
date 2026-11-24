@@ -1614,7 +1614,7 @@
       "Ma",
       "Alapok"
     ],
-    "mit_kapsz": "A kezdőlap orbjai akkor is mutatják az Alvás, Étel, Edzés és Energia számát, ha a Formához még kevés az éjszaka vagy hiányzik a tegnapi alvás — csak a Forma marad „–” a „még tanulom” felirattal. Nyitott döntés: az Étel orb a szoba számát (az étkezések pontjainak átlagát) mutassa-e.",
+    "mit_kapsz": "A kezdőlap orbjai akkor is mutatják az Alvás, Edzés és Energia számát, ha a Formához még kevés az éjszaka vagy hiányzik a tegnapi alvás — csak a Forma marad „–” a „még tanulom” felirattal. Az Étel orb ugyanazt a számot mutatja, mint az Étel szoba (az étkezéseid pontjainak átlaga).",
     "munkamenet": "kezdolap-orbok-fotos-naplozas"
   },
   "mezo-r36n9.153": {
@@ -1625,7 +1625,7 @@
       "Pénz",
       "Ma"
     ],
-    "mit_kapsz": "A Pénz orb a kezdőlapon élő lesz: a heti keretből megmaradt rész tölti ki, és egy számot is mutat (a javaslat: a heti keret megmaradt része százalékban, mint a többi orb 0–100 skálája). A szám mibenléte a te döntésed.",
+    "mit_kapsz": "A Pénz orb a kezdőlapon élő: a heti keretből megmaradt rész tölti ki, és a szám ugyanez százalékban, mint a többi orb 0–100 skálája. Keret nélkül „–”, túlköltésnél 0.",
     "munkamenet": "kezdolap-orbok-fotos-naplozas"
   },
   "mezo-r36n9.154": {
@@ -1636,7 +1636,7 @@
       "Alapok",
       "Ma"
     ],
-    "mit_kapsz": "A „+” lapról minden rögzíthető, ami a webes gyors logolásban volt: étkezés, víz, kiegészítők, edzés indítása, sport, súly, check-in, napló (bármikor, nem csak az esti zárásban), alvás — és a kezdőlapon, az orbok alatt jobbra is lesz egy gyors logolás gomb ugyanerre a lapra. Előbb terv és szimulátoros bemutató, a te jóváhagyásoddal.",
+    "mit_kapsz": "A „+” lapról minden rögzíthető, ami a webes gyors logolásban volt: étkezés, víz, kiegészítők, edzés indítása, sport, súly, check-in, napló (bármikor, nem csak az esti zárásban), alvás és kiadás. A kezdőlapon, az orbok alatt jobbra is van egy „Rögzítés” gomb ugyanerre a lapra. A súly, az alvás, a sport és a naplósor net nélkül is rögzül.",
     "munkamenet": "kezdolap-orbok-fotos-naplozas"
   }
 }

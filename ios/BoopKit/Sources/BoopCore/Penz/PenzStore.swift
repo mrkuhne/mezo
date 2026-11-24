@@ -135,18 +135,21 @@ public final class PenzStore {
 
     private func read(_ client: PenzClient) async {
         let month = penzMonth(clock())
-        async let a = Self.attempt { try await client.allowance() }
-        async let t = Self.attempt { try await client.transactions(month: month) }
-        async let c = Self.attempt { try await client.categories() }
-        async let acc = Self.attempt { try await client.accounts() }
-        async let o = Self.attempt { try await client.openMonths() }
-        async let g = Self.attempt { try await client.goals() }
-        async let s = Self.attempt { try await client.settings() }
-        async let pf = Self.attempt { try await client.portfolio() }
-        async let dg = Self.attempt { try await client.digest() }
-        async let wk = Self.attempt { try await client.weeklyReview() }
-        let (ra, rt, rc, racc, ro, rg, rs) = await (a, t, c, acc, o, g, s)
-        let (rpf, rdg, rwk) = await (pf, dg, wk)
+        // Ten independent reads at once, as unstructured tasks — not `async let`: ten async lets awaited as two
+        // tuples abort the Swift 6.2 / iOS 26.3 concurrency runtime (`swift_task_dealloc` fatal error in
+        // `asyncLet_finish_after_task_completion`) both in the simulator and natively (`mezo-r36n9.153`).
+        let a = Task { await Self.attempt { try await client.allowance() } }
+        let t = Task { await Self.attempt { try await client.transactions(month: month) } }
+        let c = Task { await Self.attempt { try await client.categories() } }
+        let acc = Task { await Self.attempt { try await client.accounts() } }
+        let o = Task { await Self.attempt { try await client.openMonths() } }
+        let g = Task { await Self.attempt { try await client.goals() } }
+        let s = Task { await Self.attempt { try await client.settings() } }
+        let pf = Task { await Self.attempt { try await client.portfolio() } }
+        let dg = Task { await Self.attempt { try await client.digest() } }
+        let wk = Task { await Self.attempt { try await client.weeklyReview() } }
+        let (ra, rt, rc, racc, ro, rg, rs) = await (a.value, t.value, c.value, acc.value, o.value, g.value, s.value)
+        let (rpf, rdg, rwk) = await (pf.value, dg.value, wk.value)
         await applyPortfolio(rpf)
         await applyDigest(rdg)
         await applyWeekly(rwk)

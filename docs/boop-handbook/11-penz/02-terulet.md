@@ -10,8 +10,9 @@ osszefoglalo: Megnyílik a Pénz terület a telefonon — a Ma oldal megmondja, 
 ---
 
 ## Mit csinál
-A gyűrű Pénz gömbje most már egy élő oldalt nyit, saját alsó sávval: **Ma · Pénzem · Költés · Gyakorlás · Boop**.
-A gömb nem mutat számot — annyira telik meg, amennyi a heti pénzedből még megvan.
+A gyűrű Pénz gömbje egy élő oldalt nyit, saját alsó sávval: **Ma · Pénzem · Költés · Gyakorlás · Boop**.
+A terület saját gömbje nem mutat számot — annyira telik meg, amennyi a heti pénzedből még megvan. A kezdőlap
+gömbjében ugyanez áll számként is, százalékban (2026-11-24 óta; lásd a döntést).
 
 - **Ma — „mi a dolgom ma?”** Egy mondat. A legtöbb napon: *„Ma nincs dolgod a pénzeddel.”* Ha mégis van valami,
   akkor csak egy dolog, a gombjával: előbb az ellenőrzésre váró banki üzenetek, aztán egy lezáratlan hónap. Alatta

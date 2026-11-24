@@ -62,6 +62,11 @@ struct ShellView: View {
     /// The cash expense sheet the "+" sheet asked for (opens once that sheet has gone), and whether it is up.
     @State private var penzAfterCapture = false
     @State private var penzCapture = false
+    /// The quick log's own sheet the "+" sheet asked for (opens once that sheet has gone), and the one on screen.
+    @State private var quickAfterCapture: QuickLog?
+    @State private var quick: QuickLog?
+    /// The area the "+" sheet asked to open ("Edzés indítása"): Ma, then the ring opens that room.
+    @State private var areaAfterCapture: Hue?
     @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
     /// The day's brief: Boop's own goals and the bedtime target for the close.
     @Environment(MorningStore.self) private var morning: MorningStore?
@@ -78,6 +83,21 @@ struct ShellView: View {
         if let cover = coverAfterCapture { coverAfterCapture = nil; router.open(cover) }
         if let start = mealAfterCapture { mealAfterCapture = nil; meal = start }
         if penzAfterCapture { penzAfterCapture = false; penzCapture = true }
+        if let q = quickAfterCapture { quickAfterCapture = nil; quick = q }
+        if let hue = areaAfterCapture { areaAfterCapture = nil; select(.ma); router.openRoom(hue) }
+    }
+
+    /// The quick log's own sheets (`mezo-r36n9.154`); each closes itself with the toast to show.
+    @ViewBuilder private func quickSheet(_ kind: QuickLog) -> some View {
+        let done: (String?) -> Void = { text in quick = nil; if let text { toast = text } }
+        switch kind {
+        case .water: WaterSheet(onDone: done)
+        case .supplements: SupplementsSheet(onDone: done)
+        case .sport: SportSheet(onDone: done)
+        case .weight: WeightSheet(onDone: done)
+        case .sleep: SleepLogSheet(onDone: done)
+        case .journal: JournalSheet(onDone: done)
+        }
     }
 
     var body: some View {
@@ -106,6 +126,7 @@ struct ShellView: View {
         .environment(\.openAccount, { account = true })
         .environment(\.openPlace, { select($0) })
         .environment(\.openMeal, { meal = $0 })
+        .environment(\.openCapture, { capturing = true })
         .nkToast($toast)
         .preferredColorScheme(.dark)
         // page-level presentations (boop-ios.md §9)
@@ -113,9 +134,10 @@ struct ShellView: View {
             CaptureSheet { pick in
                 switch pick {
                 case .cover(let cover): coverAfterCapture = cover
-                case .soon(let name): toast = soonToast(name)
                 case .meal: mealAfterCapture = pick.mealStart
                 case .penzExpense: penzAfterCapture = true
+                case .quick(let kind): quickAfterCapture = kind
+                case .area(let hue): areaAfterCapture = hue
                 }
                 capturing = false
             }
@@ -138,6 +160,9 @@ struct ShellView: View {
             PenzCaptureSheet { done in penzCapture = false; if let done { toast = done } }
                 .task { await penz?.load() }
                 .penzSheetStyle([.large])
+        }
+        .sheet(item: $quick) { kind in
+            quickSheet(kind).penzSheetStyle([.large])
         }
         .sheet(isPresented: $account, onDismiss: openCoverAfterSheet) {
             AccountSheet(me: me)
@@ -185,6 +210,8 @@ struct ShellView: View {
             case "mealText": meal = MealStart(entrance: .text, text: "csirkemell rizzsel és brokkolival")
             case "account": account = true
             case "penzCapture": penzCapture = true
+            // `-previewOpen water|supplements|sport|weight|sleep|journal`: one quick-log sheet.
+            case let raw? where QuickLog(rawValue: raw) != nil: quick = QuickLog(rawValue: raw)
             case "checkin", "checkinDone": router.open(.checkin)
             case "este", "esteDone": router.open(.este)
             default: break

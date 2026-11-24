@@ -1150,11 +1150,16 @@ struct PreviewTransport: ClientTransport {
         // mód, day 2 of a cold, no session.
         let evening = UserDefaults.standard.bool(forKey: "previewEvening")
         let recovering = UserDefaults.standard.bool(forKey: "previewRecovery")
-        let forma = recovering
+        // `-previewLearning YES`: Forma unknown (nine nights of fourteen) — the ring must blank Forma alone (mezo-r36n9.152).
+        let learning = UserDefaults.standard.bool(forKey: "previewLearning")
+        let formaKnown = recovering
             ? #"{"key":"forma","score":42,"display":"42","caption":"kímélő","headline":"Ma csak pihenj","sentence":"A pulzusod még öt ütéssel magasabb. Edzés helyett ma víz, alvás és egy rövid séta, ha jólesik."}"#
             : evening
             ? #"{"key":"forma","score":78,"display":"78","caption":"jó formában","headline":"Szép nap volt","sentence":"Megvolt az edzés és 9 200 lépés. Egy esti check-in és 22:30-kor ágy, hogy holnap is így ébredj."}"#
             : #"{"key":"forma","score":74,"display":"74","caption":"jó formában","headline":"Elég jó reggel","sentence":"Az alvásod és a pulzusod rendben, az edzésnapot bírni fogod."}"#
+        let forma = learning
+            ? #"{"key":"forma","score":null,"display":"–","caption":"9/14 éjszaka","headline":"Még tanulom a ritmusod","sentence":"Kilenc éjszakádat ismerem; tizennégy kell, hogy a Formádat megmondjam."}"#
+            : formaKnown
         let alvas = evening && !recovering
             ? #"{"key":"alvas","score":78,"display":"7ó 12p","caption":"mély 1ó 28p","headline":"Hamarosan lassíts","sentence":"22:30-kor ágy: tíz órakor tedd le a telefont, és jöhet a levezetés."}"#
             : #"{"key":"alvas","score":78,"display":"7ó 12p","caption":"mély 1ó 28p","headline":"Nyugodt éjszaka","sentence":"A mély alvásod a heti átlag fölött volt."}"#
@@ -1175,7 +1180,7 @@ struct PreviewTransport: ClientTransport {
         let tonightTip = recovering ? "Ma 22:00-kor feküdj le: a regeneráció alvás közben történik."
             : "Ma 22:30 körül érdemes lefeküdni, hogy a holnapi edzés előtt kipihent legyél."
         return #"""
-        {"date":"\#(date)","generatedAt":"\#(date)T05:40:00Z","state":"okay","nightsKnown":12,
+        {"date":"\#(date)","generatedAt":"\#(date)T05:40:00Z","state":"\#(learning ? "learning" : "okay")","nightsKnown":\#(learning ? 9 : 12),
          "metrics":[
           \#(forma),
           \#(alvas),

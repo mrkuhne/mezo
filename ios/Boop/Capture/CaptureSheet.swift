@@ -1,19 +1,29 @@
 import SwiftUI
 import BoopDesign
 
-/// What a tap on the "+" sheet asks for: one of the daily loop's covers, or a "hamarosan" toast naming the item.
+/// What a tap on the "+" sheet asks for: one of the daily loop's covers, the meal composer at an entrance, the cash
+/// expense, one of the quick log's own sheets, or an area to open.
 enum CapturePick: Equatable {
     case cover(RitmusCover)
-    case soon(String)
     /// The meal composer, at an entrance (the "+" sheet's food chips and its free-text line).
     case meal(MealStart.Entrance, text: String)
     /// Pénz L5: a cash expense, through the outbox.
     case penzExpense
+    /// One of the quick log's own sheets (`mezo-r36n9.154`, `QuickSheets.swift`).
+    case quick(QuickLog)
+    /// An area to open — the "Edzés indítása" tile lands on the Edzés room, where today's workout starts.
+    case area(Hue)
 
-    /// What the shell opens for a pick: the composer's start (nil for the covers and the "hamarosan" items).
+    /// What the shell opens for a pick: the composer's start (nil for everything else).
     var mealStart: MealStart? {
         if case .meal(let entrance, let text) = self { MealStart(entrance: entrance, text: text) } else { nil }
     }
+}
+
+/// The quick log's own sheets: the web app's doors that are neither a cover, nor the composer, nor an area.
+enum QuickLog: String, CaseIterable, Identifiable {
+    case water, supplements, sport, weight, sleep, journal
+    var id: String { rawValue }
 }
 
 /// Opens the meal composer from inside a page (Ma's Fuel quick actions); the sheet itself hangs on the shell.
@@ -25,8 +35,18 @@ extension EnvironmentValues {
     }
 }
 
-/// The global "+": what to record. B3 wires the check-in and the journal line (the evening close's voice-or-type row);
-/// the meal chips open the composer (B4); every other item answers a "hamarosan" toast until its slice (B4 food, B5 training) wires it.
+/// Opens the "+" sheet from inside a page (the home screen's own quick-log button); the sheet hangs on the shell.
+private struct OpenCaptureKey: EnvironmentKey { static let defaultValue: @MainActor @Sendable () -> Void = {} }
+extension EnvironmentValues {
+    var openCapture: @MainActor @Sendable () -> Void {
+        get { self[OpenCaptureKey.self] }
+        set { self[OpenCaptureKey.self] = newValue }
+    }
+}
+
+/// The global "+": everything the web app's quick log could record, on one sheet (owner 2026-11-24, `mezo-r36n9.154`).
+/// The meal chips open the composer (B4); the nine doors below are the web's nine plus the cash expense (Pénz L5):
+/// Check-in opens its cover, "Edzés indítása" opens the Edzés room, the rest are the quick log's own sheets.
 struct CaptureSheet: View {
     let onPick: (CapturePick) -> Void
     @State private var text = ""
@@ -48,12 +68,8 @@ struct CaptureSheet: View {
             }
             .padding(18).frame(maxWidth: .infinity, alignment: .leading).nkGlass()
 
-            LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
-                tile("spark-cream", "Check-in", "fél perc", .cover(.checkin))
-                tile("book-sage", "Napló", "egy sor, szóval is", .cover(.este))
-                tile("scale-ink", "Súly", "mérés felvétele", .soon("Súly"))
-                tile("dumbbell-ink", "Edzés indítása", "a mai terv szerint", .soon("Edzés indítása"))
-                tile("e-penz", "Kiadás", "készpénz, pár másodperc", .penzExpense)
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
+                ForEach(Self.doors, id: \.title) { door($0) }
             }
 
             HStack(spacing: 10) {
@@ -79,6 +95,20 @@ struct CaptureSheet: View {
         ("bowl-sage", "Kamra", .meal(.pantry, text: "")),
     ]
 
+    /// The web app's nine quick-log doors (`docs/features/today.md` §Quick capture, less Étkezés which is the card
+    /// above) plus the cash expense — every one real.
+    static let doors: [(glyph: String, title: String, sub: String, pick: CapturePick)] = [
+        ("drop-sky", "Víz", "egy koppintás", .quick(.water)),
+        ("leaf-sage", "Kiegészítők", "bevettem", .quick(.supplements)),
+        ("dumbbell-ink", "Edzés indítása", "a mai terv szerint", .area(.mozgas)),
+        ("ball-sun", "Sport", "a terven kívül", .quick(.sport)),
+        ("scale-ink", "Súly", "mérés felvétele", .quick(.weight)),
+        ("spark-cream", "Check-in", "fél perc", .cover(.checkin)),
+        ("book-sage", "Napló", "egy sor, bármikor", .quick(.journal)),
+        ("moon-cream", "Alvás", "éjszaka kézzel", .quick(.sleep)),
+        ("e-penz", "Kiadás", "készpénz", .penzExpense),
+    ]
+
     private func chip(_ glyph: String, _ title: String, _ pick: CapturePick) -> some View {
         Button { onPick(pick) } label: {
             VStack(spacing: 6) {
@@ -91,17 +121,18 @@ struct CaptureSheet: View {
         .buttonStyle(.plain)
     }
 
-    private func tile(_ glyph: String, _ title: String, _ sub: String, _ pick: CapturePick) -> some View {
-        Button { onPick(pick) } label: {
-            VStack(alignment: .leading, spacing: 10) {
-                NKGlyph(glyph, .white, size: 22)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title).nkFont(15.5, .semibold).foregroundStyle(.white)
-                    Text(sub).nkFont(12.5).foregroundStyle(.white.opacity(0.55)).lineLimit(1)
+    private func door(_ d: (glyph: String, title: String, sub: String, pick: CapturePick)) -> some View {
+        Button { onPick(d.pick) } label: {
+            VStack(alignment: .leading, spacing: 8) {
+                NKGlyph(d.glyph, .white, size: 20)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(d.title).nkFont(14, .semibold).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
+                    Text(d.sub).nkFont(11.5).foregroundStyle(.white.opacity(0.55)).lineLimit(1).minimumScaleFactor(0.8)
                 }
             }
-            .padding(16).frame(maxWidth: .infinity, alignment: .leading).nkGlass(20)
+            .padding(12).frame(maxWidth: .infinity, alignment: .leading).frame(height: 88).nkGlass(18)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(d.title) · \(d.sub)")
     }
 }

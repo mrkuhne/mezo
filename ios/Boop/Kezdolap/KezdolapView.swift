@@ -25,6 +25,15 @@ enum KezdolapRoute: Equatable {
 /// replaced — it moves one level in. The two areas that are not built yet (Pénz, Levél) sit faint and say so.
 struct KezdolapView: View {
     @Environment(MorningStore.self) private var morning: MorningStore?
+    /// The Étel orb's number is the Étel room's own (the day's meal points), the Pénz orb's the week's remaining share
+    /// (`mezo-r36n9.152`, `.153`): both read their own store, not the brief.
+    @Environment(\.foodClient) private var food
+    @Environment(PenzStore.self) private var penz: PenzStore?
+    @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
+    /// The "+" sheet's "Edzés indítása" asks the ring to open the Edzés room (`mezo-r36n9.154`).
+    @Environment(RitmusRouter.self) private var router: RitmusRouter?
+    @Environment(\.openCapture) private var openCapture
+    @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openAccount) private var openAccount
     @Environment(\.setRoomOpen) private var setRoomOpen
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -40,6 +49,8 @@ struct KezdolapView: View {
     @State private var motion = OrbMotion()
     /// The screen's own rectangle in global coordinates: a tapped orb's point becomes the zoom's anchor in it.
     @State private var screen: CGRect = .zero
+    /// The day's meals, for the Étel orb (a light read: the day alone).
+    @State private var etel = EtelStore()
 
     /// The home's colour world: the cool blue of the mountain photo.
     private static let world = Hue.alvas
@@ -70,6 +81,39 @@ struct KezdolapView: View {
         .background { if let morning { MorningTriggers(store: morning) } }
         // The bottom bar's "Ma" tapped again while a page is open: back to the ring.
         .onChange(of: homeResetTick) { if route != nil { closeRoute() } }
+        // The Étel and Pénz numbers: on arrival, when the app comes back, when a meal or an expense lands.
+        .task { await loadNumbers() }
+        .onChange(of: scenePhase) { _, phase in if phase == .active { Task { await loadNumbers() } } }
+        .onChange(of: ritmus?.mealDraftsTick) { Task { await loadFood() } }
+        .onChange(of: ritmus?.penzTick) { Task { await penz?.load(force: true) } }
+        // The "+" sheet asked for a room (from any place of the bar): the ring opens it once it is up.
+        .onAppear { if let hue = router?.takeRoom() { openArea(hue) } }
+        .onChange(of: router?.room) { _, hue in if let hue { router?.room = nil; openArea(hue) } }
+    }
+
+    /// The ring's own numbers: the day's meals and the week's money. Neither blocks the ring; each shows "–" until it is here.
+    private func loadNumbers() async {
+        // One after the other: an `async let` over the store's optional-chained read tripped the concurrency runtime
+        // (`swift_task_dealloc` abort at launch); two small reads need no parallelism.
+        await loadFood()
+        await penz?.load()
+    }
+
+    private func loadFood() async {
+        guard let food else { return }
+        await etel.loadDay(food: food, now: Date())
+    }
+
+    /// A room asked for from outside the ring: opened from the ring's centre, or — with a page already up — after the
+    /// ring has come back (two moves never overlap).
+    private func openArea(_ hue: Hue) {
+        let centre = CGPoint(x: screen.midX, y: screen.midY)
+        if route == nil {
+            openRoute(.room(hue), from: centre, in: screen)
+        } else {
+            closeRoute()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { openRoute(.room(hue), from: centre, in: screen) }
+        }
     }
 
     // MARK: - Going in and coming back
@@ -103,6 +147,8 @@ struct KezdolapView: View {
         withAnimation(reduceMotion ? .easeInOut(duration: 0.3) : .easeOut(duration: 0.6 * k)) { zoomed = false }
         // The page leaves once it has faded; until then it cross-fades with the ring coming back.
         DispatchQueue.main.asyncAfter(deadline: .now() + (reduceMotion ? 0.3 : 0.34 * k)) { route = nil }
+        // The room may have changed what the orbs say (a meal logged, an expense typed): read the numbers again.
+        Task { await loadNumbers() }
     }
 
     // MARK: - The ring
@@ -131,6 +177,8 @@ struct KezdolapView: View {
                     ringView(side: ring)
                     boopLine
                         .padding(.top, 34)
+                    quickLogButton
+                        .padding(.top, 22).padding(.trailing, 22)
                     Spacer(minLength: 0)
                     Color.clear.frame(height: 112)
                 }
@@ -150,7 +198,8 @@ struct KezdolapView: View {
     }
 
     private func ringView(side: CGFloat) -> some View {
-        NKOrbRing(items: Area.allCases.map { ringItem($0, brief: brief) }, orbSize: 56, live: route == nil) { item, point in
+        NKOrbRing(items: Area.allCases.map { ringItem($0, brief: brief, foodDay: etel.day, penz: penz?.allowance) },
+                  orbSize: 56, live: route == nil) { item, point in
             open(item, at: point)
         } center: {
             boopCenter
@@ -176,6 +225,24 @@ struct KezdolapView: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Boop · \(kezdolapLine(brief)). A napod megnyitása")
         .accessibilityAddTraits(.isButton)
+    }
+
+    /// The quick log's own door on the home screen (owner 2026-11-24, `mezo-r36n9.154`): under the orbs, on the right,
+    /// above the bar — the same "+" sheet the bar's plus opens.
+    private var quickLogButton: some View {
+        HStack {
+            Spacer(minLength: 0)
+            Button(action: openCapture) {
+                HStack(spacing: 8) {
+                    NKGlyph("plus-ink", .white, size: 18)
+                    Text("Rögzítés").nkFont(14.5, .semibold).foregroundStyle(.white)
+                }
+                .padding(.horizontal, 18).frame(height: 48)
+            }
+            .buttonStyle(.plain)
+            .glassEffect(.regular.interactive(), in: .capsule)
+            .accessibilityLabel("Gyors rögzítés")
+        }
     }
 
     /// Boop's line under the ring: the day in a few words, and the second way into the Nap page.

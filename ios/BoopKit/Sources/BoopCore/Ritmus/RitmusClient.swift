@@ -79,6 +79,8 @@ public struct RitmusClient: OutboxSender {
                 return await train.send(item)
             case .penzExpense:
                 return await penz?.send(item) ?? .retryLater
+            case .weightLog: return try await sendWeight(item)
+            case .sleepLog: return try await sendSleep(item)
             }
         } catch {
             // An answer whose body would not decode still carries its status; otherwise (no network, a timeout) the
@@ -202,6 +204,31 @@ public struct RitmusClient: OutboxSender {
         let request = Components.Schemas.CreateJournalEntryRequest(
             text: text, occurredOn: item.date, source: "boop", clientRef: item.id.uuidString)
         switch try await client.createJournalEntry(body: .json(request)) {
+        case .created: return .sent(nil)
+        case .badRequest: return Self.map(400)
+        case .unauthorized: return Self.map(401)
+        case .undocumented(let code, _): return Self.map(code)
+        }
+    }
+
+    /// A weight off the scale (`mezo-r36n9.154`): the server's weight log, keyed by day (a second one the same day
+    /// replaces the first server-side).
+    private func sendWeight(_ item: OutboxItem) async throws -> OutboxSendResult {
+        guard let p = RitmusPayload.decodeWeightLog(item.payload) else { return malformed("weight log") }
+        switch try await client.logWeight(body: .json(.init(date: p.date, weightKg: p.weightKg))) {
+        case .created: return .sent(nil)
+        case .badRequest: return Self.map(400)
+        case .unauthorized: return Self.map(401)
+        case .undocumented(let code, _): return Self.map(code)
+        }
+    }
+
+    /// A night typed by hand (`mezo-r36n9.154`): the server's sleep log for the morning it ended on.
+    private func sendSleep(_ item: OutboxItem) async throws -> OutboxSendResult {
+        guard let p = RitmusPayload.decodeSleepLog(item.payload) else { return malformed("sleep log") }
+        let body = Components.Schemas.LogSleepRequest(date: p.date, bedtime: p.bedtime, wakeup: p.wakeup,
+                                                      durationH: p.durationH, quality: p.quality)
+        switch try await client.logSleep(body: .json(body)) {
         case .created: return .sent(nil)
         case .badRequest: return Self.map(400)
         case .unauthorized: return Self.map(401)

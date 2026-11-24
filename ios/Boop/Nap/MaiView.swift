@@ -43,7 +43,8 @@ struct MaiCopy: Equatable {
 func maiCopy(key: MetricKey, score: Int?, display: String, caption: String?, headline: String, sentence: String,
              learning: Bool) -> MaiCopy {
     let h = hue(for: key)
-    let s = learning ? nil : score
+    // "learning" is about Forma alone (`mezo-r36n9.152`): the other four keep the score the server sent.
+    let s = visibleScore(score, key: key, learning: learning)
     return MaiCopy(
         name: h.name, caps: h.name.uppercased(),
         headline: headline.isEmpty ? (learning ? "Még tanulom a ritmusod" : "Még nincs adat") : headline,

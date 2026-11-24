@@ -116,6 +116,15 @@ final class EtelStore {
         _ = await (words, pics)
     }
 
+    /// The day alone — the home ring's Étel number (`mezo-r36n9.152`): no plan, no coach, no photos.
+    func loadDay(food: FoodClient, now: Date) async {
+        self.food = food; self.now = now
+        switch await Self.attempt({ try await food.day(now) }) {
+        case .success(let v): day = v; dayVersion += 1; dayProblem = nil
+        case .failure(let e): dayProblem = e
+        }
+    }
+
     /// The taken groups of `day` as the phone last saved them (the room and Ma's rows share this key).
     private func syncTaken(day today: String) {
         let saved = UserDefaults.standard.dictionary(forKey: "etel.takenIds.\(today)") as? [String: [String]] ?? [:]

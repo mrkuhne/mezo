@@ -56,3 +56,8 @@ Siri („rögzítsd: ebéd…”) abban a szakaszban, amelyik először igényli
 
 ## Mi marad ki
 Több fotó egy vázlatba egyszerre: a rögzítő egy fotót visz, a többit a „Hozzáteszek még” adja hozzá.
+
+## Javítás 2026-11-24
+A fotóból rögzítés hibát dobott („Most nem sikerült kiszámolnom…”), és a mentett étkezés mellé sem került fel a kép:
+a telefon a fotót név nélküli csomagként küldte, a szerver pedig csak képként fogad el fotót. Mostantól a fotó
+képként megy fel, mindkét helyen (a számoláshoz és a mentett étkezéshez).

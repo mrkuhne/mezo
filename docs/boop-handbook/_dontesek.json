@@ -1292,5 +1292,44 @@
     "miert": "A tulajdonos görgetős / tekerős bevitelt kért, és fél kilós lépést a 2,5 helyett.",
     "levaltotta": "A + / − léptető 2,5 kg-os lépéssel (2026-11-17, 4. kör).",
     "kovetkezmeny": "A javító lapon is skála van; a tartalék marad a vékony léptető soron."
+  },
+  "d-2026-11-24-etel-gomb-egy-szam": {
+    "cim": "A kezdőlap Étel gömbje ugyanazt a számot mutatja, mint az Étel szoba",
+    "datum": "2026-11-24",
+    "terulet": [
+      "Ma",
+      "Étel"
+    ],
+    "suly": "Kicsi",
+    "valasztas": "A kezdőlapon az Étel gömbben a mai étkezéseid pontjainak átlaga áll — ugyanaz, ami az Étel szoba gömbjében. Egy területhez egy szám.",
+    "miert": "A tulajdonos két különböző számot látott ugyanarra: kint a terv-tempót (mennyit ettél az óra szerint várthoz képest), bent az étkezések minőségét. Az „egy szám” a döntés.",
+    "kovetkezmeny": "A terv-tempó szám a reggeli összefoglalóban marad Boop és az AI számára, a képernyőn nem jelenik meg külön. Ugyanekkor derült ki, hogy amíg a Forma még „tanul”, az app minden gömb számát elrejtette — mostantól csak a Formáét.",
+    "levaltotta": "A kezdőlap eredeti szabálya (2026-11-16): minden gömb a reggeli összefoglaló pontszámát mutatja."
+  },
+  "d-2026-11-24-penz-gomb-szazalek": {
+    "cim": "A Pénz gömb a heti keret megmaradt részét mutatja százalékban",
+    "datum": "2026-11-24",
+    "terulet": [
+      "Pénz",
+      "Ma"
+    ],
+    "suly": "Kicsi",
+    "valasztas": "A kezdőlapon a Pénz gömb élő: annyira van tele, amennyi a heti keretedből megvan, és a szám ugyanez százalékban (0–100). Keret nélkül „–”, túlköltésnél 0.",
+    "miert": "A többi gömb is 0–100 skálán mond egy számot; az ezer forint kilógna, és nagy összegnél nem férne ki.",
+    "kovetkezmeny": "A Pénz szoba saját gömbje marad szám nélküli (csak a töltöttség); a forintos összeg ott van.",
+    "levaltotta": "A Pénz gömb „tervezett” állapota a kezdőlapon (halvány, szám nélkül), ami a Pénz terület elkészülte után is ottmaradt."
+  },
+  "d-2026-11-24-gyors-rogzites-teljes": {
+    "cim": "Gyors rögzítés: a webes kilenc ajtó a „+” lapon, és egy gomb a kezdőlapon",
+    "datum": "2026-11-24",
+    "terulet": [
+      "Alapok",
+      "Ma"
+    ],
+    "suly": "Közepes",
+    "valasztas": "A „+” lapról minden rögzíthető, ami a webes gyors logolásban volt: étkezés, víz, kiegészítők, edzés indítása, sport, súly, check-in, napló (bármikor), alvás — és a kiadás. A kezdőlapon az orbok alatt, jobbra, a menüsor fölött is van egy „Rögzítés” gomb ugyanerre a lapra.",
+    "miert": "A tulajdonos a webes gyors logolás teljességét kérte egy gyors gombról a kezdőlapon; a lapon a súly és az edzés addig csak „hamarosan” volt, a víz, a kiegészítők, a sport és az alvás hiányzott.",
+    "kovetkezmeny": "A „Napló” a lapon egy bármikori sor; az esti zárás a saját útján marad. A súly, az alvás, a sport és a naplósor net nélkül is rögzül, és magától elmegy. Az alvás kézi út: az órád éjszakáit nem kell beírni.",
+    "levaltotta": "„Csak a lap” változat (a menüsor plusz gombja az egyetlen ajtó) — elvetve."
   }
 }

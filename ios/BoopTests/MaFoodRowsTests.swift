@@ -75,7 +75,7 @@ struct MaFoodRowsTests {
         #expect(stage(byTitle["Recept"]!) == .recipes)
         #expect(stage(byTitle["Kamra"]!) == .pantry)
         #expect(byTitle["Fotó"]!.mealStart?.entrance == .photo && byTitle["Szöveg"]!.mealStart?.entrance == .text)
-        #expect(CapturePick.soon("Súly").mealStart == nil && CapturePick.cover(.checkin).mealStart == nil)
+        #expect(CapturePick.quick(.weight).mealStart == nil && CapturePick.cover(.checkin).mealStart == nil)
     }
 
     @Test func aGuessedSupplementClockIsHedgedAndAnUnknownDaypartHasNone() {

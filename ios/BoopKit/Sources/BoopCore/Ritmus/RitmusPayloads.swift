@@ -19,6 +19,8 @@ public enum RitmusPayload {
     public static func decodeVoice(_ data: Data) -> VoicePayload? { decode(VoicePayload.self, from: data) }
     public static func decodeClose(_ data: Data) -> DayClosePayload? { decode(DayClosePayload.self, from: data) }
     public static func decodePenzExpense(_ data: Data) -> PenzExpensePayload? { decode(PenzExpensePayload.self, from: data) }
+    public static func decodeWeightLog(_ data: Data) -> WeightLogPayload? { decode(WeightLogPayload.self, from: data) }
+    public static func decodeSleepLog(_ data: Data) -> SleepLogPayload? { decode(SleepLogPayload.self, from: data) }
 }
 
 /// `penzExpense`: a cash expense typed on the phone (Pénz L5). The item id is the transaction's `clientRef`, so a
@@ -179,4 +181,61 @@ public struct ChatReply: Codable, Equatable, Sendable {
 public struct VoiceTranscript: Codable, Equatable, Sendable {
     public var text: String
     public init(text: String) { self.text = text }
+}
+
+// MARK: - The quick log (`mezo-r36n9.154`)
+
+/// `weightLog`: a weight read off the scale, `POST /api/weight/logs` with the day it belongs to.
+public struct WeightLogPayload: Codable, Equatable, Sendable {
+    public var date: String
+    public var weightKg: Double
+    public init(date: String, weightKg: Double) { self.date = date; self.weightKg = weightKg }
+}
+
+/// `sleepLog`: a night typed by hand (no watch, or a nap), `POST /api/sleep/logs`. `date` is the morning the night
+/// ended on, the times are `HH:mm`, the length is what the phone computed from them (`sleepDurationHours`).
+public struct SleepLogPayload: Codable, Equatable, Sendable {
+    public var date: String
+    public var bedtime: String
+    public var wakeup: String
+    public var durationH: Double
+    public var quality: Int?
+    public init(date: String, bedtime: String, wakeup: String, durationH: Double, quality: Int?) {
+        self.date = date; self.bedtime = bedtime; self.wakeup = wakeup; self.durationH = durationH; self.quality = quality
+    }
+}
+
+/// Hours between two clock times, two decimals; a wake-up at or before the bedtime is read as the next day. nil when
+/// the two are the same instant or either is not `HH:mm`.
+public func sleepDurationHours(bedtime: String, wakeup: String) -> Double? {
+    func minutes(_ s: String) -> Int? {
+        let p = s.split(separator: ":")
+        guard p.count == 2, let h = Int(p[0]), let m = Int(p[1]), (0..<24).contains(h), (0..<60).contains(m) else { return nil }
+        return h * 60 + m
+    }
+    guard let bed = minutes(bedtime), let wake = minutes(wakeup) else { return nil }
+    var span = wake - bed
+    if span <= 0 { span += 24 * 60 }
+    guard span > 0, span < 24 * 60 else { return nil }
+    return (Double(span) / 60 * 100).rounded() / 100
+}
+
+/// The sports a session can be logged as (the server's own ten), with their names on the sheet.
+public enum QuickSport: String, CaseIterable, Sendable {
+    case volleyball, cross, trx, bike, swim, football, basketball, tennis, hike, other
+
+    public var name: String {
+        switch self {
+        case .volleyball: "Röplabda"
+        case .cross: "Cross"
+        case .trx: "TRX"
+        case .bike: "Kerékpár"
+        case .swim: "Úszás"
+        case .football: "Foci"
+        case .basketball: "Kosár"
+        case .tennis: "Tenisz"
+        case .hike: "Túra"
+        case .other: "Egyéb"
+        }
+    }
 }

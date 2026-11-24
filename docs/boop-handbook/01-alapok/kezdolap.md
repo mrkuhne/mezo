@@ -6,7 +6,7 @@ allapot: Élesben
 hol: [iPhone app]
 szulo: 00-attekintes
 szakasz: [Kezdőlap]
-osszefoglalo: Az appot megnyitva nyolc élő gömb fogad egy körben, középen Boop gömbjével és a napi mondatával; bármelyik gömb a saját területére visz, a közép a mai napodra.
+osszefoglalo: Az appot megnyitva nyolc élő gömb fogad egy körben, középen Boop gömbjével és a napi mondatával; bármelyik gömb a saját területére visz, a közép a mai napodra, és egy Rögzítés gomb a gyors rögzítésre.
 ---
 
 ## Mit csinál
@@ -21,17 +21,21 @@ fotózott ködös hegygerinc, előtte lassan szálló köd.
 | **Edzés** | Az edzés területe |
 | **Energia** | A közérzeted területe |
 | **Forma** | Az összképed területe |
-| **Pénz** | Még nem él — koppintásra megmondja |
+| **Pénz** | A Pénz területe |
 | **Levél** | A reggeli posta területe |
 
 Minden gömbben a mai száma áll, és annyira van tele, amennyi a szám (például az alvás 78). Ahol nincs mai adat,
-„–” áll, sosem 0. A **Nap gömbje** kivétel: ott nincs pontszám, mert egy napra nincs ilyen — az mutatja, mennyire
-van tele a napod a naptárad szerint. Középen **Boop saját, halvány gömbje** szám nélkül, alatta a napi mondata (például „Elég jó
+„–” áll, sosem 0. Három gömb nem a reggeli összefoglaló pontszámát mondja (2026-11-24): a **Nap gömbje** azt mutatja,
+mennyire van tele a napod a naptárad szerint (egy napra nincs pontszám); az **Étel gömb** ugyanazt a számot, mint az
+Étel szoba — a mai étkezéseid pontjainak átlagát; a **Pénz gömb** a heti keretedből megmaradt részt százalékban
+(keret nélkül „–”, túlköltésnél 0). Amíg Boop a Formát még „tanulja” (kevés az ismert éjszaka, vagy hiányzik a
+tegnapi alvás), csak a **Forma** gömbje áll „–”-on — a többi mutatja a számát. Középen **Boop saját, halvány gömbje** szám nélkül, alatta a napi mondata (például „Elég jó
 reggel”) — erre koppintva nyílik a **mai Nap oldal** a reggeli összefoglalóval és a nap eseményeivel. Az az oldal
 nem tűnt el, csak egy szinttel beljebb került.
 
-Az alsó sáv a megszokott: **Ma · Terv · Napló · Boop** és a plusz. Ha már a Ma helyen vagy és mégis a Ma-ra
-koppintasz, bárhonnan visszahoz a körre.
+Az alsó sáv a megszokott: **Ma · Évad · Napló · Boop** és a plusz. Ha már a Ma helyen vagy és mégis a Ma-ra
+koppintasz, bárhonnan visszahoz a körre. Boop mondata alatt, jobbra egy **Rögzítés** gomb ugyanazt a gyors
+rögzítő lapot nyitja, mint a plusz (lásd: *Gyors rögzítés*).
 
 ## Hogyan működik
 1. Nyitáskor a gömbök **a ködből úsznak elő**, egymás után: először Boop, aztán körbe a nyolc.
@@ -40,7 +44,10 @@ koppintasz, bárhonnan visszahoz a körre.
 3. Visszalépéskor a terület elhalványul, és a kör visszaül a helyére.
 4. Ha a telefonodon be van kapcsolva a **csökkentett mozgás**, mindhárom mozgásnak van álló változata: a képek
    egyszerűen átúsznak egymásba.
-5. A gömbök számai a napi összefoglalóból jönnek, amit a kezdőlap tölt be és tart frissen.
+5. A gömbök számai a napi összefoglalóból jönnek, amit a kezdőlap tölt be és tart frissen; az Étel és a Pénz
+   gömbé a saját területük adatából (a mai étkezések, a heti keret), amit a kezdőlap külön olvas — nyitáskor, az
+   app előtérbe jöttekor, egy terület bezárásakor, és amikor egy étkezés vagy egy kiadás elmegy.
+6. A gyors rögzítő lap „Edzés indítása” gombja bárhonnan ide hoz, és a kör megnyitja az Edzés szobát.
 
 ## Miért így
 Egy képen látszik az egész életed, és egy koppintással bárhova eljutsz. A kör ugyanazt a munkát végzi, amire
@@ -51,5 +58,5 @@ jelentheti, amit a neve mond: a te terved.
 Nincs saját beállítása. A csökkentett mozgást a telefon Kisegítő lehetőségei között kapcsolod.
 
 ## Mi jön még
-- A Levél gömbje megépült (a reggeli posta); a Pénz gömbje a saját területével él.
+- A Levél gömbje megépült (a reggeli posta); a Pénz gömbje a saját területével él, és 2026-11-24 óta számot is mond.
 - A kör **betelt nyolccal**. Ha egyszer jön egy kilencedik terület, azt külön ki kell találni (kisebb gömb a névvel benne, két kör egymásban, vagy a körben csak amit tényleg használsz) — az a te döntésed lesz.

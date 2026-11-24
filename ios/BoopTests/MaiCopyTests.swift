@@ -42,6 +42,17 @@ struct MaiCopyTests {
         #expect(c.orbCaption == "még tanulom")
     }
 
+    /// `mezo-r36n9.152`: "learning" is about Forma alone — the four other areas keep the score the server sent.
+    @Test func learningKeepsTheOtherFourScores() {
+        for key in [MetricKey.alvas, .mozgas, .fuel, .pulzus] {
+            let c = copy(key, learning: true)
+            #expect(c.score == 74)
+            #expect(c.miniValue == "74")
+            #expect(c.orbDisplay == "74")
+            #expect(c.orbCaption == "jó formában")
+        }
+    }
+
     @Test func scoredMetricShowsItsDisplayInTheHeroAndTheScoreInTheMiniOrb() {
         let alvas = copy(.alvas, score: 78, display: "7ó 12p", caption: "mély 1ó 28p")
         #expect(alvas.orbDisplay == "7ó 12p")

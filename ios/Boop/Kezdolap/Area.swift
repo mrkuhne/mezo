@@ -2,9 +2,9 @@ import SwiftUI
 import BoopCore
 import BoopDesign
 
-/// The seven life areas of the home screen's ring, clockwise from the top (owner decision 2026-11-13). Five of them
-/// are the metrics Boop already carries; **Pénz** and **Levél** are planned (life-dashboard slices L4–L6) and have no
-/// room yet — they sit faint in the ring and say so on tap.
+/// The eight life areas of the home screen's ring, clockwise from the top (owner decision 2026-11-13). Five of them
+/// are the metrics Boop carries in the brief; **Pénz** (live since L5, its number from the week's budget —
+/// `mezo-r36n9.153`) and **Levél** have a page and a colour world of their own without a metric.
 enum Area: Int, CaseIterable, Identifiable {
     /// The day itself, at the top of the ring: the owner gave it its own orb on 2026-11-16 (decision #41), so
     /// the ring is eight. It is the whole day, so it leads rather than following the parts of it.
@@ -37,8 +37,9 @@ enum Area: Int, CaseIterable, Identifiable {
         }
     }
 
-    /// The day is live but has no metric room: it opens the day's own page instead of a drill-down.
-    var live: Bool { hue != nil || self == .nap }
+    /// The day is live but has no metric room: it opens the day's own page instead of a drill-down. Pénz is live
+    /// without a metric: its orb reads the Pénz store, not the brief (`mezo-r36n9.153`).
+    var live: Bool { hue != nil || self == .nap || self == .penz }
 
     /// The orb's four colours. The two planned areas borrow the palettes drawn for them in the life-dashboard
     /// design (`2026-11-13-boop-life-dashboard-design.md`): a green coin and an indigo envelope.
@@ -76,21 +77,28 @@ func dayFullness(_ brief: Brief?) -> Int? {
     return Int(round(Double(slots.filter { $0 }.count) / Double(slots.count) * 100))
 }
 
-/// One ring orb from the day's brief: the area's score inside it, the liquid filled to it. An area without data (or
-/// one still to be built) shows "–" and an almost empty orb.
-func ringItem(_ area: Area, brief: Brief?) -> NKRingItem {
+/// One ring orb: the area's number inside it, the liquid filled to it. An area without data shows "–" and an almost
+/// empty orb — never 0. Three orbs do not read the brief's score: the day's (how full the day is), **Étel** (the same
+/// number the Étel room shows — the day's meal points; owner 2026-11-24, "egy szám", `mezo-r36n9.152`) and **Pénz**
+/// (the week's remaining as a share of its budget; owner 2026-11-24, "százalék", `mezo-r36n9.153`).
+func ringItem(_ area: Area, brief: Brief?, foodDay: FoodDay? = nil, penz: PenzAllowance? = nil) -> NKRingItem {
     var display = "–"
     var level = 0.12
-    if area == .nap {
+    func fill(_ n: Int) -> Double { min(1, max(0.08, Double(n) / 100)) }
+    switch area {
+    case .nap:
         // The day's orb fills with how full the day is, not with a score — there is no score for a day.
-        if let full = dayFullness(brief) {
-            display = "\(full)"
-            level = min(1, max(0.08, Double(full) / 100))
+        if let full = dayFullness(brief) { display = "\(full)"; level = fill(full) }
+    case .etel:
+        if let points = etelDayPoints(foodDay) { display = "\(points)"; level = fill(points) }
+    case .penz:
+        if let penz, let share = penzWeekShare(penz) { display = "\(share)"; level = fill(share) }
+    default:
+        if let hue = area.hue, let brief {
+            let copy = maiCopy(brief, metricKey(for: hue))
+            display = copy.miniValue
+            level = copy.score.map(fill) ?? 0.12
         }
-    } else if let hue = area.hue, let brief {
-        let copy = maiCopy(brief, metricKey(for: hue))
-        display = copy.miniValue
-        level = copy.score.map { min(1, max(0.08, Double($0) / 100)) } ?? 0.12
     }
     return NKRingItem(id: "\(area.rawValue)", name: area.name, palette: area.orb, glow: area.glow,
                       display: display, level: level, live: area.live)
