@@ -55,6 +55,24 @@ Edzés › Ma › Indítás › Indulás, majd a lejátszóban:
 - az edzés lezárása után a Ma oldal **„megvolt”**-at mond, és a **„Megnézem a mai eredményt”** újranyitja a lezáró képet;
   a terület menüjében „Megvolt · A mai eredmény”.
 
+## Második csomag ugyanebben az átadóban (2026-11-24, `mezo-r36n9.151`–`.154`, merge `c894ba3e4`)
+
+A kezdőlap és a gyors rögzítés javításai is a főágon vannak; ugyanaz a telepítés hozza. A telefonon nézd meg:
+
+- a **kezdőlap orbjaiban** szám áll (Alvás, Edzés, Energia akkor is, ha a Forma még „–” és „tanul”); az **Étel** orb
+  ugyanazt a számot mutatja, mint az Étel szoba gömbje; a **Pénz** orb élő, és a heti keret megmaradt részét mutatja
+  százalékban;
+- Boop mondata alatt jobbra a **Rögzítés** gomb ugyanazt a lapot nyitja, mint a menüsor plusz gombja;
+- a **„Mit rögzítesz?”** lapon kilenc ajtó: Víz · Kiegészítők · Edzés indítása · Sport · Súly · Check-in · Napló ·
+  Alvás · Kiadás, fölötte az étkezés öt bejárata; mindegyik lapon a gomb a billentyűzet fölött marad;
+- **Étel › + › Fotó**: a fotóból a vázlat megérkezik (eddig „Most nem sikerült kiszámolnom…” jött), és a mentett
+  étkezés mellett a Napló oldalon ott a kép;
+- egy **víz**, egy **súly**, egy **alvás**, egy **sport** és egy **naplósor** rögzítése után a rövid üzenet megjelenik;
+  a súly/alvás/sport/napló repülő módban is „rögzítve” marad, és net után elmegy.
+
+Az új tesztek a telefonos készletben: `KezdolapRingTests`, `CaptureSheetTests`, `MaiCopyTests` (app) — a mag
+(`BoopCore`) 951 tesztje natívan lefutott az új Macen.
+
 ## Ami még nyitva van (jegyek)
 
 - `mezo-r36n9.150` — ez az átadó: tesztkapu + telepítés a másik gépen.
