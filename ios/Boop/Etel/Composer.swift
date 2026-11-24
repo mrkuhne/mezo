@@ -117,7 +117,8 @@ final class MealComposerModel {
     /// The owner's usual drinks for the chips above the words (drink mode only); a failure leaves the chips empty.
     func loadUsualDrinks() async {
         guard kind == .drink, let usualsLoader else { return }
-        usuals = (try? await usualsLoader()) ?? []
+        // The server ranks the drink bucket first and the meals after it; the chips show drinks only.
+        usuals = ((try? await usualsLoader()) ?? []).filter { $0.slot == "drink" }
     }
 
     var isOnline: Bool { online() }
@@ -690,8 +691,8 @@ private struct MealComposerHost: View {
                     NKGlyph("camera-ink", Hue.fuel.glow, size: 26)
                 }
                 VStack(spacing: 4) {
-                    Text("Fotózd le a tányért").nkFont(17, design: .serif).foregroundStyle(.white)
-                    Text("Boop felismeri, mi van rajta és mennyi").nkFont(13).foregroundStyle(.white.opacity(0.6))
+                    Text(model.kind == .drink ? "Fotózd le a poharat" : "Fotózd le a tányért").nkFont(17, design: .serif).foregroundStyle(.white)
+                    Text(model.kind == .drink ? "Boop felismeri, mi van benne és mennyi" : "Boop felismeri, mi van rajta és mennyi").nkFont(13).foregroundStyle(.white.opacity(0.6))
                 }
                 HStack(spacing: 8) {
                     Button { choosePhoto() } label: {
@@ -734,7 +735,7 @@ private struct MealComposerHost: View {
                 NKMono(model.hasPhoto ? "SEGÍTS BOOPNAK A FOTÓHOZ" : "VAGY ÍRD LE")
             }
             TextField("", text: $model.text,
-                      prompt: Text(model.hasPhoto ? "pl. másfél adag, olívaolajjal sütve, a szósz tejszínes" : "pl. vacsora: csirke rizzsel és salátával").foregroundStyle(.white.opacity(0.4)),
+                      prompt: Text(model.hasPhoto ? "pl. másfél adag, olívaolajjal sütve, a szósz tejszínes" : model.kind == .drink ? "pl. gombakávé zabtejjel mézzel" : "pl. vacsora: csirke rizzsel és salátával").foregroundStyle(.white.opacity(0.4)),
                       axis: .vertical)
                 .lineLimit(2...5)
                 .nkFont(15).foregroundStyle(.white).focused($typing)

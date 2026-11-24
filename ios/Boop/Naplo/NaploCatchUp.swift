@@ -22,6 +22,11 @@ final class NaploCatchUpModel {
     @ObservationIgnored private let env: RitmusEnvironment
     @ObservationIgnored private let train: TrainClient?
     @ObservationIgnored private let morning: MorningStore?
+    /// What the training client said about the day (the block's template day and whether it was done that date), kept
+    /// so a ledger change (a merge, a catch-up) recomputes the block without another read.
+    @ObservationIgnored private var template: (id: UUID, title: String)?
+    @ObservationIgnored private var completed = false
+    @ObservationIgnored private var serverLines: [JournalLineLite] = []
 
     init(env: RitmusEnvironment, date: String, train: TrainClient?, morning: MorningStore?) {
         self.env = env; self.date = date; self.train = train; self.morning = morning
@@ -55,10 +60,7 @@ final class NaploCatchUpModel {
     func load() async {
         loading = true
         let today = env.today
-        let ledger = env.ledger.ledger(for: date)
-        doneSlots = Set(ledger.checkIns.map(\.slot))
-        var template: (id: UUID, title: String)?
-        var completed = false
+        template = nil; completed = false
         if date != today, let train, let noon = Self.noon(date, calendar: env.calendar),
            let label = Self.weekdayLabel(of: date, calendar: env.calendar) {
             if let plan = try? await train.blockPlan(), let day = plan.days.first(where: { $0.day == label }), let id = day.id {
@@ -66,20 +68,29 @@ final class NaploCatchUpModel {
                 template = (id, title.isEmpty ? "edzés" : title)
             }
             if let history = try? await train.history(from: noon, to: noon) {
-                completed = history.contains { $0.status == .completed && $0.templateSessionId == template?.id }
+                let id = template?.id
+                completed = history.contains { $0.status == .completed && $0.templateSessionId == id }
             }
         }
-        catchUps = NaploCatchUps.compute(date: date, today: today, now: env.clock(), checkIns: ledger.checkIns,
+        serverLines = (try? await env.journalLines(on: date)) ?? []
+        recompute()
+        if catchUps.canClose, brief == nil { brief = try? await morning?.brief(for: date) }
+        loading = false
+    }
+
+    /// The block and the lines from the ledger as it is now — again whenever the day's ledger changes (the Napló's
+    /// merge landing after the sheet opened, a catch-up just saved).
+    func recompute() {
+        let ledger = env.ledger.ledger(for: date)
+        doneSlots = Set(ledger.checkIns.map(\.slot))
+        catchUps = NaploCatchUps.compute(date: date, today: env.today, now: env.clock(), checkIns: ledger.checkIns,
                                          closed: ledger.close != nil, templateDay: template, completedThatDay: completed,
                                          calendar: env.calendar)
         gymTitle = catchUps.gymTitle; gymTemplateId = catchUps.gymTemplateId
         let local = ledger.journal.compactMap { j in
             j.text.flatMap { $0.isEmpty ? nil : JournalLineLite(id: j.id, text: $0, occurredOn: date, createdAt: j.capturedAt) }
         }
-        let server = (try? await env.journalLines(on: date)) ?? []
-        journalLines = Self.mergedLines(local: local, server: server)
-        if catchUps.canClose, brief == nil { brief = try? await morning?.brief(for: date) }
-        loading = false
+        journalLines = Self.mergedLines(local: local, server: serverLines)
     }
 }
 
@@ -100,7 +111,7 @@ struct NaploCatchUpBlock: View {
                     }
                 }
                 ForEach(model.catchUps.missingMoments, id: \.self) { m in
-                    row("check-ink", "Check-in pótlása: \(CheckinFlow.momentName(m).lowercased())") { onCheckIn(m) }
+                    row("check-ink", "Check-in pótlása: \(m.catchUpName.lowercased(with: Locale(identifier: "hu_HU")))") { onCheckIn(m) }
                 }
                 if let title = model.gymTitle, model.gymTemplateId != nil {
                     row("bolt-sun", "Edzés pótlása: \(title)") { onGym() }
@@ -116,7 +127,7 @@ struct NaploCatchUpBlock: View {
 
     private func moment(_ m: CheckInMoment, done: Bool) -> some View {
         HStack(spacing: 5) {
-            Text(CheckinFlow.momentName(m).lowercased()).nkFont(12.5, .medium).foregroundStyle(done ? .white : .white.opacity(0.55))
+            Text(m.catchUpName.lowercased(with: Locale(identifier: "hu_HU"))).nkFont(12.5, .medium).foregroundStyle(done ? .white : .white.opacity(0.55))
             if done { NKGlyph("check-ink", Hue.forma.glow, size: 12) } else { Text("–").nkFont(12.5).foregroundStyle(.white.opacity(0.4)) }
         }
         .padding(.horizontal, 10).frame(height: 32).background(Capsule().fill(.white.opacity(done ? 0.1 : 0.05)))

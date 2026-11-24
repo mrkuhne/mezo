@@ -67,6 +67,8 @@ struct ShellView: View {
     @State private var quick: QuickLog?
     /// Simulator review: `-previewOpen megvolt` opens the Megvolt sheet for yesterday's preview template day (DEBUG).
     @State private var previewMegvolt = false
+    /// Simulator review: `-previewOpen naploDay` opens yesterday's Napló day sheet from the shell (DEBUG).
+    @State private var previewNaploDay = false
     /// The area the "+" sheet asked to open ("Edzés indítása"): Ma, then the ring opens that room.
     @State private var areaAfterCapture: Hue?
     @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
@@ -184,6 +186,12 @@ struct ShellView: View {
         .sheet(item: $quick) { kind in
             quickSheet(kind).penzSheetStyle([.large])
         }
+        .sheet(isPresented: $previewNaploDay) {
+            if let ritmus, let y = ritmus.calendar.date(byAdding: .day, value: -1, to: ritmus.clock()) {
+                NaploDayDetail(env: ritmus, date: ritmus.day(of: y))
+                    .presentationDetents([.large]).presentationBackground(NK.ground).presentationCornerRadius(34).presentationDragIndicator(.visible)
+            }
+        }
         .sheet(isPresented: $previewMegvolt) {
             let y = ritmus.flatMap { env in env.calendar.date(byAdding: .day, value: -1, to: env.clock()).map { env.day(of: $0) } } ?? ""
             WorkoutAsPlannedSheet(templateSessionId: nil, date: y, title: "Edzés", train: train) { done in previewMegvolt = false; if let done { toast = done } }
@@ -233,6 +241,7 @@ struct ShellView: View {
             case "meal": meal = MealStart()
             case "drink": meal = MealStart(entrance: .drink)
             case "megvolt": previewMegvolt = true
+            case "naploDay": previewNaploDay = true
             case "barcode": meal = MealStart(entrance: .barcode)
             case "mealText": meal = MealStart(entrance: .text, text: "csirkemell rizzsel és brokkolival")
             case "account": account = true

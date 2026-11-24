@@ -209,6 +209,8 @@ struct NaploDayDetail: View {
             catchUp = model
             await model.load()
         }
+        // The Napló's merge may land after the sheet opened, and a catch-up changes the day: the block follows the ledger.
+        .onChange(of: env.ledger.ledger(for: date)) { catchUp?.recompute() }
         // The catch-up covers hang on the sheet itself (a cover over a sheet), and the block re-reads when one closes.
         .fullScreenCover(item: $cover) { c in
             switch c {
