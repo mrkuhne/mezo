@@ -849,5 +849,22 @@
       "mezo-r36n9.147"
     ],
     "mi_valtozott": "A súlyt és az ismétlést ujjal húzható skálán állítod (fél kilónként), a következő sorozat az előző sorozat súlyát hozza, a terv sora végig látszik, a bemelegítő nagyban van jelölve, a jegyzet menthető és a szerverre is felmegy, a javító lapon a tartalék is állítható, a csere külön van „csak ma” és „a blokkban is” módon, a blokk módosítása átmegy a futó edzésbe (futó edzés közben a sorrend is cserélhető), és edzés után a Ma oldal „megvolt”-at mond, a mai eredmény újranyitható."
+  },
+  "c894ba3e4": {
+    "cim": "Kezdőlap: számok az orbokban, élő Pénz orb, fotós naplózás javítva, teljes gyors rögzítés",
+    "datum": "2026-11-24",
+    "verzio": "",
+    "tipus": "Funkció és javítás",
+    "hova": [
+      "iPhone app"
+    ],
+    "szakasz": "Kezdőlap",
+    "jegyek": [
+      "mezo-r36n9.151",
+      "mezo-r36n9.152",
+      "mezo-r36n9.153",
+      "mezo-r36n9.154"
+    ],
+    "mi_valtozott": "A kezdőlap orbjai akkor is mutatják a számukat, ha a Forma még „tanul” (csak a Forma marad „–”); az Étel orb ugyanazt a számot mondja, mint az Étel szoba; a Pénz orb élő, a heti keret megmaradt részét mutatja százalékban. A fotóból ételnaplózás újra működik, és a mentett étkezés mellé a fotó is felkerül. A „+” lap mind a kilenc webes gyors-logolási ajtót tudja (víz, kiegészítők, edzés indítása, sport, súly, check-in, napló, alvás, kiadás), és a kezdőlapon az orbok alatt jobbra is van egy Rögzítés gomb. Közben kiderült és javítva lett egy indítási összeomlás a Pénz adatainak olvasásában."
   }
 }
