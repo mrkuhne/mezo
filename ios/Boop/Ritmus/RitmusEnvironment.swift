@@ -246,6 +246,15 @@ final class RitmusEnvironment {
         sendSoon()
     }
 
+    /// A past template day booked as planned (`mezo-r36n9.161`): queued, sent when the net allows; the Edzés room
+    /// re-reads on the tick, so the day shows as done.
+    func captureWorkoutAsPlanned(_ payload: WorkoutAsPlannedPayload) async throws {
+        try await outbox.enqueue(OutboxItem(kind: .workoutAsPlanned, date: payload.date, capturedAt: payload.startedAt,
+                                            payload: TrainPayloadCodec.encode(payload)), rollbackOnFailure: true)
+        edzesChanged()
+        sendSoon()
+    }
+
     /// A journal line at any hour (the evening close keeps its own path): the day's ledger shows it at once, pending
     /// until the server has it; the same write the close's typed line uses.
     func captureJournal(text: String, at date: Date) async throws {

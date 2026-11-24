@@ -180,16 +180,15 @@ struct NaploEmptyDayRow: View {
     }
 }
 
-/// The gym catch-up door's sheet. Until the Megvolt sheet lands (Task 11) it only says so.
+/// The gym catch-up door's sheet: the Megvolt sheet for that day's template day (`mezo-r36n9.161`).
 struct NaploGymCover: View {
     let templateSessionId: UUID
     let date: String
     let title: String
     let onDone: (String?) -> Void
+    @Environment(\.trainClient) private var train
 
     var body: some View {
-        NKSheetFrame(hue: .mozgas, eyebrow: "Edzés pótlása", title: title) {
-            Text("Hamarosan.").nkFont(15).foregroundStyle(.white.opacity(0.7))
-        }
+        WorkoutAsPlannedSheet(templateSessionId: templateSessionId, date: date, title: title, train: train, onDone: onDone)
     }
 }

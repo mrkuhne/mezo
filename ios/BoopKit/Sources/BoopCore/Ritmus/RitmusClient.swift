@@ -75,7 +75,7 @@ public struct RitmusClient: OutboxSender {
             case .chatQuestion: return try await sendChatQuestion(item)
             case .mealDraft: return await MealDraftSender(drafter: FoodClient(client: client), directory: audioDirectory).send(item)
             case .workoutStart, .workoutSet, .workoutSetEdit, .workoutSkipExercise, .workoutFeedback,
-                 .workoutNote, .workoutFinish, .sportSession:
+                 .workoutNote, .workoutFinish, .sportSession, .workoutAsPlanned:
                 return await train.send(item)
             case .penzExpense:
                 return await penz?.send(item) ?? .retryLater

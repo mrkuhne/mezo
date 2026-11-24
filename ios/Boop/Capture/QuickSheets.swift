@@ -34,7 +34,7 @@ func sleepHoursText(_ hours: Double) -> String {
 }
 
 /// The one button of a quick sheet, riding above the keyboard, with the sheet's problem line over it.
-private struct QuickFoot: View {
+struct QuickFoot: View {
     let title: String
     var busy = false
     var disabled = false
