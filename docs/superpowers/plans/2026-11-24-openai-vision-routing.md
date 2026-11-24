@@ -20,10 +20,10 @@
 
 ## 2. konfiguráció és helyi bizonyítás
 
-- [ ] A `backend/src/main/resources/application.yml` fájlban a `mezo.companion.llm.per-call-kind.VISION` kivétel eltűnik; `TRANSCRIBE: gemini` marad. A kapcsoló szövege az új működést mondja ki.
-- [ ] Az OpenAI `gpt-5.6-luna` képességét a gyártói dokumentáció és egy személyes adat nélküli minta képes hívás igazolja.
-- [ ] Célzott backend kapuk: `OpenAiProviderWiringIT`, `LlmModelRoutingIT`, `MealAiDraftApiIT`, a recept-, kamra- és alváskép API tesztjei. `./mvnw clean test -Dmezo.test.use-testcontainers=true` a helyi kapu, ha a gép készen áll.
-- [ ] A kód és dokumentáció együtt commitolva: `fix(vision): route image analysis to OpenAI (mezo-h38eq)`.
+- [x] A `backend/src/main/resources/application.yml` fájlban a `mezo.companion.llm.per-call-kind.VISION` kivétel eltűnik; `TRANSCRIBE: gemini` marad. A kapcsoló szövege az új működést mondja ki.
+- [x] Az OpenAI `gpt-5.6-luna` képességét a gyártói dokumentáció és személyes adat nélküli minta képes hívások igazolják.
+- [x] Célzott backend kapuk: `OpenAiProviderWiringIT`, `LlmModelRoutingIT`, `MealAiDraftApiIT`, a recept-, kamra- és alváskép API tesztjei, valamint `CompanionPropertiesIT` és a teljes futás egyetlen, átmeneti hibájának külön `ProactiveApiIT` próbája. A teljes 9180 tesztes futás kétszer megtörtént: először a régi Gemini-elvárás bukott (javítva), másodszor egy független HTTP kapcsolatmegszakadás; ezért teljes zöld állítást nem teszünk.
+- [x] A kód és dokumentáció együtt commitolva: `fix(vision): route image analysis to OpenAI (mezo-h38eq)`.
 
 ## 3. kiadás és éles ellenőrzés
 

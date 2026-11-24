@@ -8080,6 +8080,8 @@ execution checklist"). The house recipe, **contract-first**:
 
 ## 8. Testing
 
+**Vision provider changes:** run the real-provider wiring and the four consumer API suites (`MealAiDraftApiIT`, `RecipeImportIT`/`RecipeCookedIT`, `PantryPhotoApiIT`, `SleepShotApiIT`) with the fake LLM for deterministic plumbing; then send synthetic images to the funded provider and inspect the served model and extracted values. A tiny printed label can be misread even when the call succeeds, so the image sample must be legible and the numeric fields checked. Neither the fake nor a direct provider probe proves the whole production request path; inspect the next live call audit after deployment.
+
 **Conversation-first:** `ConversationFirstIT` covers general-topic context, pronoun follow-ups,
 dependent reads, stored evidence, long history and owner isolation through real repositories and
 audited tools. `ConversationEvidenceIT` covers new evidence after a full earlier batch;

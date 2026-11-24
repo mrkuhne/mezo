@@ -833,7 +833,7 @@ mezo:
         # mezo-ozri.4 — per-call model overrides, resolved by LlmModelRouter at CALL time (until it
         # existed the tiers were frozen at boot). Both maps are scoped to THIS provider: a model id
         # only means something to the vendor that serves it, and this block still answers the
-        # audio/vision calls the OpenAI adapter delegates here. Precedence: call-kind-models, then
+        # audio calls the OpenAI adapter delegates here. Precedence: call-kind-models, then
         # feature-models, then the tier defaults above — anything unmatched or blank falls through,
         # so config can never be why a call fails. Keys MUST be bracket-quoted ("[companion_chat]"):
         # the binder splits map keys on dots and relaxed-binds the rest.
@@ -882,12 +882,11 @@ mezo:
         reasoning-effort:
           chat: high
           smart: high
-      # Per-CallKind exceptions to `provider`. Honoured only while provider is openai, and only for
-      # these two kinds: no GPT-5.6 model has an audio endpoint at all, and the vision A/B is not
-      # measured yet (spec §10.3), so both stay on Gemini. An absent key = the active provider.
+      # Per-CallKind exceptions to `provider`. Honoured only while provider is openai.
+      # Audio stays on Gemini because GPT-5.6 has no audio endpoint; vision uses the active
+      # OpenAI provider since ADR 0059. An absent key = the active provider.
       per-call-kind:
         TRANSCRIBE: gemini
-        VISION: gemini
     personal-records:
       # Maximum full-source rows per page; character budget can reduce this.
       page-size: 5

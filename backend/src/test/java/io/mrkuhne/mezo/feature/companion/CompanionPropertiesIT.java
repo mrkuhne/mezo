@@ -30,15 +30,12 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
         assertThat(properties.llm().provider()).isEqualTo(LlmProvider.GEMINI);
     }
 
-    /**
-     * mezo-ozri.2 (spec §A1): no GPT-5.6 model has an audio endpoint at all, and the vision A/B is
-     * unmeasured — so both kinds stay on Gemini even once OpenAI answers the chat turns.
-     */
+    /** ADR 0059: images use the active provider; audio still needs Gemini's endpoint. */
     @Test
-    void testLlmConfig_shouldPinAudioAndVisionToGemini_whenContextStarts() {
+    void testLlmConfig_shouldPinAudioOnlyToGemini_whenContextStarts() {
         assertThat(properties.llm().perCallKind())
             .containsEntry(CallKind.TRANSCRIBE, LlmProvider.GEMINI)
-            .containsEntry(CallKind.VISION, LlmProvider.GEMINI);
+            .doesNotContainKey(CallKind.VISION);
     }
 
     @Test
