@@ -10,7 +10,7 @@ private let dip = "a1b2c3d4-0012-4a2b-9c3d-111122223333"
 private let hack = "a1b2c3d4-0013-4a2b-9c3d-111122223333"
 
 private func item(_ id: String, _ name: String, gear: String?) -> String {
-    #"{"id":"\#(id)","slug":"s-\#(id.suffix(2))","name":"\#(name)","muscle":"chest-mid","type":"compound","stim":0.8,"fatigue":0.5,"editable":false,"mediaEditable":false,"authoredByMe":false\#(gear.map { #","gear":\#($0)"# } ?? "")}"#
+    #"{"id":"\#(id)","allowedTechniques": [],"slug":"s-\#(id.suffix(2))","name":"\#(name)","muscle":"chest-mid","type":"compound","stim":0.8,"fatigue":0.5,"editable":false,"mediaEditable":false,"authoredByMe":false\#(gear.map { #","gear":\#($0)"# } ?? "")}"#
 }
 
 private func substitutesJSON() -> String {
