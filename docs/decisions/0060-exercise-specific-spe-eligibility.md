@@ -1,4 +1,4 @@
-# 0059 — Exercise-specific SPE eligibility
+# 0060 — Exercise-specific SPE eligibility
 
 - **Status:** Accepted
 - **Date:** 2026-11-24
