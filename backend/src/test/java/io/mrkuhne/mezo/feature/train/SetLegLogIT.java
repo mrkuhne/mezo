@@ -107,6 +107,18 @@ class SetLegLogIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testLog_shouldRoundTripTopPause_withoutExtraLeg() {
+        Ctx c = ctx();
+        ExerciseSetResponse logged = log(c, req(c, 0, Technique.TOP_PAUSE, List.of()));
+        assertThat(logged.getTechnique()).isEqualTo(Technique.TOP_PAUSE);
+        assertThat(logged.getLegs()).isEmpty();
+        assertThat(resume(c).getSets()).singleElement().satisfies(s -> {
+            assertThat(s.getTechnique()).isEqualTo(Technique.TOP_PAUSE);
+            assertThat(s.getLegs()).isEmpty();
+        });
+    }
+
+    @Test
     void legsWithoutTechniqueRejected() {
         Ctx c = ctx();
         ResponseEntity<String> res = logRaw(c, req(c, 0, null, List.of(leg(SetLegKind.DROP, "60", 8))));

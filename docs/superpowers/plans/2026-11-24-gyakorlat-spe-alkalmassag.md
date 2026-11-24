@@ -58,9 +58,9 @@
 **Fájlok:** `backend/src/main/resources/application.yml`, `backend/src/main/java/io/mrkuhne/mezo/feature/train/config/TrainTechniqueProperties.java`, `backend/src/main/java/io/mrkuhne/mezo/feature/train/service/{TechniquePrescriber,TechniqueRules}.java`, `backend/src/test/java/io/mrkuhne/mezo/feature/train/service/TechniquePrescriberTest.java`, `backend/src/test/java/io/mrkuhne/mezo/feature/train/{WorkoutTodayTechniqueIT,ExerciseTechniqueApiIT,TrainTechniquePropertiesIT}.java`.
 **Határ:** `TrainTechniqueProperties.TopPause.holdSec=2` (`mezo.train.technique.top-pause.hold-sec`); `TechniquePrescriber.apply` a végső munkasorozat másolatára `technique=top_pause`, `topHoldSec=2`, `legs=[]` értéket ír. Súly, reps, RIR, pihenő és a sorozatok száma marad. `TechniqueRules.allowedLegKinds(TOP_PAUSE)=∅`, naplóban a `technique` token megmarad.
 
-- [ ] Piros `TechniquePrescriberTest` és HTTP-IT: a Hip Thrust `top_pause` előírása pontosan egy normál záró sorozat, változatlan céladatokkal; a log POST/GET `technique=top_pause` és üres lábak, az összefoglaló ugyanazt mutatja. Deload és kímélő állapotban nincs technika; korábbi drop/myo/kihívás működik. `cd backend && ./mvnw clean test -Dtest=TechniquePrescriberTest,WorkoutTodayTechniqueIT,ExerciseTechniqueApiIT -Dmezo.test.use-testcontainers=true` → FAIL.
-- [ ] A 2 mp-et validált konfigurációból olvasd, ne rejtett konstansból. A `TechniquePrescriber.copy` őrizze az opcionális új mezőt; `TOP_PAUSE` ág nem ad lábat és nem állítja át a célszámokat. A szerver naplózó/összefoglaló kódja az új enumot fogadja, de nem írja be a 2 mp-et mért tényként.
-- [ ] A fenti tesztek és `TrainTechniquePropertiesIT` zöld; a teljes pihenőhét/kihívás regresszióját a 8. feladat futtatja. `git add backend && git commit -m 'feat(train): prescribe and log top pause (mezo-eiux9)'`.
+- [x] A piros próba a hiányzó `topPause()` konfiguráció miatt fordításkor elbukott. A Hip Thrust záró sorozata, változatlan céladatai, pihenőhét és láb nélküli POST/GET napló lefedve.
+- [x] A megtartás 2 mp-e validált konfiguráció; a másolat őrzi az opcionális mezőt, az előírás és a napló egyetlen normál sorozatot használ.
+- [x] A 4–5. feladat közös célzott kapuja 138 teszt, 0 hiba, BUILD SUCCESS; a teljes regresszió a 8. feladatban következik.
 
 ## 6. iPhone: a szerver palettája a blokképítőben
 

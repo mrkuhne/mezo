@@ -3096,6 +3096,7 @@ mezo:
       # the owner's fixed rest-pause (mezo-r36n9.125): main-reps also pins the exercise's rep range; no minimum
       rest-pause: { main-reps: 20, main-reserve: 0, mini-reps: 5, mini-rest-sec: 10, minis: 4 }
       partials:  { main-reserve: 0 }
+      top-pause: { hold-sec: 2 }
       cap-weight: 2
       # Default technique planner (mezo-r36n9.81, spec §6.5): techniques from start-week to the last non-deload
       # week; per training day max-per-day (max-per-day-reduced in a deficit or on a sport day), at most

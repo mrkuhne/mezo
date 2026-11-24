@@ -72,6 +72,7 @@ public final class TechniquePrescriber {
                 out.setTargetRIR(cfg.partials().mainReserve());
                 out.setLegs(List.of(partialsLeg(challenge)));
             }
+            case TOP_PAUSE -> out.setTopHoldSec(cfg.topPause().holdSec());
             default -> { return p; }
         }
         if (challenge && eff != Technique.PARTIALS) {
@@ -113,6 +114,6 @@ public final class TechniquePrescriber {
     private static PrescribedSet copy(PrescribedSet s) {
         return new PrescribedSet().kind(s.getKind()).targetWeightKg(s.getTargetWeightKg())
             .targetReps(s.getTargetReps()).targetRIR(s.getTargetRIR()).restSec(s.getRestSec())
-            .technique(s.getTechnique()).legs(new ArrayList<>(s.getLegs()));
+            .technique(s.getTechnique()).topHoldSec(s.getTopHoldSec()).legs(new ArrayList<>(s.getLegs()));
     }
 }
