@@ -7,8 +7,9 @@ import BoopCore
 /// Étel room's own number, the Pénz orb the week's remaining share, and Pénz is a live orb now.
 struct KezdolapRingTests {
     private func brief(state: String) throws -> Brief {
-        let metrics = [("forma", "null"), ("alvas", "78"), ("mozgas", "40"), ("fuel", "64"), ("pulzus", "66")].map {
-            #"{"key":"\#($0.0)","score":\#($0.1),"display":"x","headline":"h","sentence":"s"}"#
+        let metrics = [("forma", "null", "x"), ("alvas", "78", "x"), ("mozgas", "40", "x"),
+                       ("fuel", "64", "x"), ("pulzus", "66", "57")].map {
+            #"{"key":"\#($0.0)","score":\#($0.1),"display":"\#($0.2)","headline":"h","sentence":"s"}"#
         }.joined(separator: ",")
         let json = #"""
         {"date":"2026-11-24","generatedAt":"2026-11-24T05:30:00Z","state":"\#(state)","nightsKnown":9,
@@ -45,7 +46,8 @@ struct KezdolapRingTests {
         #expect(ringItem(.forma, brief: b).display == "–")
         #expect(ringItem(.alvas, brief: b).display == "78")
         #expect(ringItem(.edzes, brief: b).display == "40")
-        #expect(ringItem(.energia, brief: b).display == "66")
+        #expect(ringItem(.energia, brief: b).display == "57")
+        #expect(ringItem(.energia, brief: b).level == 0.66)
         #expect(ringItem(.alvas, brief: b).level == 0.78)
     }
 
