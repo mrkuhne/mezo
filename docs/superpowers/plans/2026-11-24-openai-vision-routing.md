@@ -14,9 +14,9 @@
 
 ## 1. döntés és élő dokumentáció
 
-- [ ] Az ADR-ben rögzítjük a korábbi Gemini-kivétel feloldását, a hang/embedding kivételeket és a visszaállítás módját.
-- [ ] A Companion, Boop, Fuel és telepítési dokumentáció érintett mondatai a jelenlegi képes útvonalat írják le.
-- [ ] `node scripts/lint-docs.mjs` sikeres; commit: `docs(vision): record OpenAI image routing decision (mezo-h38eq)`.
+- [x] Az ADR-ben rögzítjük a korábbi Gemini-kivétel feloldását, a hang/embedding kivételeket és a visszaállítás módját.
+- [x] A Companion, Boop, Fuel és telepítési dokumentáció érintett mondatai a jelenlegi képes útvonalat írják le.
+- [x] `node scripts/lint-docs.mjs` sikeres; commit: `docs(vision): record OpenAI image routing decision (mezo-h38eq)`.
 
 ## 2. konfiguráció és helyi bizonyítás
 
