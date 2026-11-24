@@ -155,10 +155,11 @@ public final class SulyStore {
             snapshot = hit.value; age = hit.age; offline = true; problem = nil
         } else if snapshot == nil {
             problem = worst
-        } else {
-            offline = worst == .offline
-            if !offline { problem = worst }
+        } else if worst == .offline {
+            // The picture on screen is the last one; its age (if it came from the cache) stays what it was.
+            offline = true
         }
+        // A fault with a picture on screen changes nothing: an old answer is never dressed as a fresh one (the Évad rule).
     }
 
     private static func failure<T>(_ r: Result<T, PlanFetchError>) -> PlanFetchError {

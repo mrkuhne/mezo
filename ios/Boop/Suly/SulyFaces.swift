@@ -20,7 +20,7 @@ A szám az orbon azt mondja, **mennyire tartod az évad tervezett ütemét**. A 
 - pont a terv ütemén → **100**
 - fele olyan gyorsan → **50**
 - ha áll a súlyod, vagy rossz irányba megy → **0**
-- ha gyorsabb a tervnél, az feleannyit von le, mint ha lassabb lenne — hogy ne legyen-e túl gyors, azt az évad erő-őre figyeli.
+- ha gyorsabb a tervnél, az feleannyit von le, mint ha lassabb lenne — hogy nem túl gyors-e, azt az évad őrei nézik (az erőd és az izmod).
 
 Tartó évadnál a sáv közepétől mért távolság adja a számot: a sávban 80–100, kívül egyre kevesebb.
 

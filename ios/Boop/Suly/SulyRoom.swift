@@ -11,7 +11,6 @@ struct SulyRoom: View {
     @Environment(\.openPlace) private var openPlace
     @Environment(\.openPick) private var openPick
     @Environment(SulyStore.self) private var store: SulyStore?
-    @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
     @SceneStorage("suly.tab") private var selected: String = "Ma"
     @State private var toast: String?
     @State private var info: SulyInfo?
@@ -54,9 +53,9 @@ struct SulyRoom: View {
         .toolbar(.hidden, for: .navigationBar)
         .background(RoomSwipeBack().frame(width: 0, height: 0).accessibilityHidden(true))
         .nkToast($toast)
-        .task { await store?.load() }
-        // A weigh-in queued or landed: the trend may have moved.
-        .onChange(of: ritmus?.weightTick) { Task { await store?.load(force: true) } }
+        // Opening the room reads again: the scale's morning weigh-in reaches the server through the Health sync, which
+        // bumps no tick. A weigh-in queued on the phone is followed by the ring under this room (`weightTick`).
+        .task { await store?.load(force: true) }
         // page-level presentation (boop-ios.md §9)
         .sheet(item: Binding(get: { [i = info] in i }, set: { info = $0 })) { i in
             NKSheetFrame(hue: sulyHue, eyebrow: "Súly", title: i.title) {

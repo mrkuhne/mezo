@@ -135,6 +135,53 @@ struct SulyStoreTests {
         #expect(s.snapshot != nil && s.problem == nil && s.snapshot?.heightCm == nil && s.bmi == nil)
     }
 
+    /// The scale's morning weigh-in reaches the server through the Health sync, which bumps no tick: the ring and the
+    /// room ask for a fresh read when the app comes forward and when the room opens.
+    @Test func aForcedLoadReadsAgain() async throws {
+        let stub = StubTransport()
+        for _ in 0..<2 {
+            stub.on("getSeasonOverview", .json(200, EvadFixtures.overviewJSON()))
+            stub.on("getWeightTrend", .json(200, SulyClientTests.trendJSON))
+            stub.on("listWeightLogs", .json(200, SulyClientTests.logsJSON))
+            stub.on("getBiometricProfile", .json(200, "{}"))
+        }
+        let s = store(stub)
+        await s.load()
+        await s.load()                 // a plain load after a fresh read does nothing
+        #expect(stub.ops.filter { $0 == "getWeightTrend" }.count == 1)
+        await s.load(force: true)
+        #expect(stub.ops.filter { $0 == "getWeightTrend" }.count == 2)
+    }
+
+    /// Offline with an old picture on screen, then the net is back but the server fails: the picture stays old, and
+    /// says so — a fault never dresses a cached answer as fresh.
+    @Test func aServerFaultAfterOfflineKeepsTheAge() async throws {
+        let dir = Self.tempDir()
+        let clock = Clock()
+        let cache = ServerCache(directory: dir, clock: { clock.now })
+        let online = StubTransport()
+        online.on("getSeasonOverview", .json(200, EvadFixtures.overviewJSON()))
+        online.on("getWeightTrend", .json(200, SulyClientTests.trendJSON))
+        online.on("listWeightLogs", .json(200, SulyClientTests.logsJSON))
+        online.on("getBiometricProfile", .json(200, "{}"))
+        await store(online, cache: cache, clock: clock).load()
+
+        clock.now = clock.now.addingTimeInterval(5 * 3600)
+        let flaky = StubTransport()
+        for op in ["getSeasonOverview", "getWeightTrend", "listWeightLogs", "getBiometricProfile"] {
+            flaky.on(op, .fail(URLError(.notConnectedToInternet)))
+        }
+        flaky.on("getSeasonOverview", .status(500))
+        flaky.on("getWeightTrend", .status(500))
+        flaky.on("listWeightLogs", .status(500))
+        flaky.on("getBiometricProfile", .status(500))
+        let s = store(flaky, cache: cache, clock: clock)
+        await s.load()
+        #expect(s.offline && s.ageText == "5 órás adat")
+        await s.load(force: true)
+        #expect(s.snapshot != nil && s.offline && s.ageText == "5 órás adat" && s.problem == nil)
+    }
+
     @Test func bodySamplesAreReadFromHealth() async throws {
         let stub = StubTransport()
         stub.on("getSeasonOverview", .json(404, "{}"))

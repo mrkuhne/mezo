@@ -75,8 +75,12 @@ struct SulyMa: View {
                 out.append(NKStat(value: sulyKg(target), unit: "kg",
                                   label: sulyDateText(season.pillars.weight.targetDate).map { "a cél · \($0)" } ?? "a cél"))
             }
-            let what = course == .bulk ? "heti hízás" : "heti fogyás"
-            let planned = season.weight.kgPerWeek.map { "terv \(sulyKg(abs($0)))" }
+            // The word follows the trend's own direction; a plan going the other way says where it points.
+            let what = rate.map { $0 > 0 ? "heti hízás" : "heti fogyás" } ?? (course == .bulk ? "heti hízás" : "heti fogyás")
+            let planned = season.weight.kgPerWeek.map { p in
+                let wrongWay = rate.map { ($0 > 0) != (p > 0) } ?? false
+                return "terv \(sulyKg(abs(p)))" + (wrongWay ? (p > 0 ? " felfelé" : " lefelé") : "")
+            }
             out.append(NKStat(value: rate.map { sulyKg(abs($0)) }, unit: "kg",
                               label: [what, planned].compactMap { $0 }.joined(separator: " · ")))
         } else {

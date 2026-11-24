@@ -96,6 +96,15 @@ struct SulyHeadTests {
         #expect(none.headline == "Nincs évad")
         #expect(none.sentence.contains("Évad"))
     }
+    /// The direction is the trend's own, never the course's: a cut whose trend rises says so.
+    @Test func wrongWayIsSaidPlainly() {
+        let h = head("slower", actual: 0.3)
+        #expect(h.sentence.contains("megy felfelé") && !h.sentence.contains("megy lefelé"))
+        #expect(h.sentence.contains("a terv 0,5 lefelé"))
+        let b = head("faster", course: .bulk, actual: 0.4, planned: 0.25)
+        #expect(b.sentence.contains("felfelé") && b.sentence.contains("izom"))
+    }
+
     @Test func unknownStatusFallsBackToTheWord() {
         #expect(head("something_new").headline == "A súlyod")
     }

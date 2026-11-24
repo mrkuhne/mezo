@@ -505,7 +505,8 @@ private struct MealComposerHost: View {
     }
 
     var body: some View {
-        NKSheetFrame(hue: .fuel, eyebrow: "Rögzítés · \(etelSlotLabel(FoodClient.slot(at: model.capturedAt, cal: .current))) · \(time)", title: title) {
+        NKSheetFrame(hue: .fuel, eyebrow: "Rögzítés · \(etelSlotLabel(FoodClient.slot(at: model.capturedAt, cal: .current))) · \(time)", title: title,
+                     closable: !(model.stage == .working || model.saving)) {
             switch model.stage {
             case .pick: pick
             case .working: working

@@ -55,7 +55,7 @@ Pass them after the bundle id: `xcrun simctl launch <sim> io.mrkuhne.boop -previ
 | `-previewOpen capture\|account` | opens the "+" capture sheet (the nine quick-log doors + the meal chips) or the account sheet |
 | `-previewOpen water\|supplements\|sport\|weight\|sleep\|journal` | opens one quick-log sheet of the "+" (víz · kiegészítők · sport · súly · alvás · napló) |
 | `-previewLearning YES` | the brief is "learning" (Forma unknown, 9/14 nights): the ring blanks Forma alone, the other orbs keep their numbers |
-| `-previewHome suly -sulyTab Ma\|Test\|Napló` | the Súly area (`mezo-r36n9.158`) on invented figures from `Suly/SulyPreview.swift` (the Évad preview's season: 84,1 kg → 82, planned −0,4 kg a week, the ring says 84); `-sulyState full\|noseason\|empty\|offline\|error` (no active season · no weigh-ins and no trend · no net, cache primed five hours old · the server failing); `-previewOffline YES` = `offline` |
+| `-previewHome suly -sulyTab Ma\|Test\|Napló` | the Súly area (`mezo-r36n9.158`) on invented figures from `Suly/SulyPreview.swift` (the Évad preview's season: 84,1 kg → 82, planned −0,4 kg a week, the ring says 84); `-sulyState full\|noseason\|empty\|offline\|error` (no active season · no weigh-ins and no trend · no net, cache primed five hours old · the server failing) |
 | `-previewOpen checkin\|checkinDone` | opens the check-in (its first item / its payoff after every item is answered and saved), the clock reads 16:02 |
 | `-previewOpen este\|esteDone` | opens the evening close (esteDone: already closed), the clock reads 21:32 and the day has its goal |
 | `-previewOpen naploDay` | Napló opens yesterday's day |

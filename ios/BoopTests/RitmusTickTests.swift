@@ -24,7 +24,8 @@ struct RitmusTickTests {
         try await env.captureWeight(kg: 84.63, at: Date(timeIntervalSince1970: 1_795_089_600))
         #expect(env.weightTick >= 1)
         let before = env.weightTick
-        try await Task.sleep(for: .milliseconds(600))
+        // The outbox sends "soon": wait for the delivery, up to three seconds, instead of guessing a delay.
+        for _ in 0..<30 where env.weightTick == before { try await Task.sleep(for: .milliseconds(100)) }
         let items = await sender.sent
         #expect(items.map(\.kind) == [.weightLog])
         #expect(env.weightTick > before)

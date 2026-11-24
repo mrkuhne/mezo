@@ -85,7 +85,7 @@ struct KezdolapView: View {
         .onChange(of: homeResetTick) { if route != nil { closeRoute() } }
         // The Étel, Pénz and Súly numbers: on arrival, when the app comes back, when a meal, an expense or a weigh-in lands.
         .task { await loadNumbers() }
-        .onChange(of: scenePhase) { _, phase in if phase == .active { Task { await loadNumbers() } } }
+        .onChange(of: scenePhase) { _, phase in if phase == .active { Task { await loadNumbers(force: true) } } }
         .onChange(of: ritmus?.mealDraftsTick) { Task { await loadFood() } }
         .onChange(of: ritmus?.penzTick) { Task { await penz?.load(force: true) } }
         .onChange(of: ritmus?.weightTick) { Task { await suly?.load(force: true) } }
@@ -95,12 +95,14 @@ struct KezdolapView: View {
     }
 
     /// The ring's own numbers: the day's meals, the week's money, the weight's pace. None blocks the ring; each shows "–" until it is here.
-    private func loadNumbers() async {
+    /// `force` re-reads the Súly store even when it has a picture: the scale's weigh-in arrives through the Health
+    /// sync, which bumps no tick, so coming forward and closing a room ask again.
+    private func loadNumbers(force: Bool = false) async {
         // One after the other: an `async let` over the store's optional-chained read tripped the concurrency runtime
         // (`swift_task_dealloc` abort at launch); two small reads need no parallelism.
         await loadFood()
         await penz?.load()
-        await suly?.load()
+        await suly?.load(force: force)
     }
 
     private func loadFood() async {
@@ -152,7 +154,7 @@ struct KezdolapView: View {
         // The page leaves once it has faded; until then it cross-fades with the ring coming back.
         DispatchQueue.main.asyncAfter(deadline: .now() + (reduceMotion ? 0.3 : 0.34 * k)) { route = nil }
         // The room may have changed what the orbs say (a meal logged, an expense typed): read the numbers again.
-        Task { await loadNumbers() }
+        Task { await loadNumbers(force: true) }
     }
 
     // MARK: - The ring

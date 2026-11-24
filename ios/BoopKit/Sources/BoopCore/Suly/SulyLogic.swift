@@ -72,10 +72,14 @@ public func sulyHead(status: String?, course: SulyCourse, trendKg: Double?, targ
         return SulyHead(headline: "Nincs évad",
                         sentence: "A súlycél az Évadban él: indíts egy évadot, és itt látod, mennyire tartod az ütemét. A méréseid addig is itt vannak.")
     }
-    let way = course == .bulk ? "felfelé" : "lefelé"
+    // The direction is the trend's own, never the course's: a cut whose trend rises must say "felfelé".
+    let plannedWay = course == .bulk ? "felfelé" : "lefelé"
     var pace = ""
     if let actualKgPerWeek, let plannedKgPerWeek {
-        pace = "A trended heti \(sulyKg(abs(actualKgPerWeek))) kg-ot megy \(way), a terv \(sulyKg(abs(plannedKgPerWeek))). "
+        let way = actualKgPerWeek > 0 ? "felfelé" : "lefelé"
+        let wrongWay = (actualKgPerWeek > 0) != (plannedKgPerWeek > 0)
+        pace = "A trended heti \(sulyKg(abs(actualKgPerWeek))) kg-ot megy \(way), a terv \(sulyKg(abs(plannedKgPerWeek)))"
+            + (wrongWay ? " \(plannedWay). " : ". ")
     }
     var target = ""
     if let targetKg {
@@ -85,11 +89,13 @@ public func sulyHead(status: String?, course: SulyCourse, trendKg: Double?, targ
     switch status {
     case "on_course": return SulyHead(headline: "Pályán vagy a súlycélhoz", sentence: pace + target)
     case "slower": return SulyHead(headline: "Lassabb a tervnél", sentence: pace + "Nem baj: a trend számít, nem egy nap. " + target)
-    case "faster": return SulyHead(headline: "Gyorsabb a tervnél", sentence: pace + "Az évad erő-őre figyeli, hogy az izom megmaradjon. " + target)
+    case "faster":
+        let guardLine = course == .bulk ? "Az évad őrei figyelik, hogy izom legyen belőle, ne zsír. " : "Az évad őrei figyelik, hogy az izom megmaradjon. "
+        return SulyHead(headline: "Gyorsabb a tervnél", sentence: pace + guardLine + target)
     case "in_band":
         return SulyHead(headline: "A sávban vagy", sentence: trendKg.map { "A trended \(sulyKg($0)) kg, a tartó sávon belül." } ?? "A trended a tartó sávon belül van.")
     case "out_of_band":
-        return SulyHead(headline: "Kint a sávból", sentence: trendKg.map { "A trended \(sulyKg($0)) kg, a tartó sávon kívül. Pár nap étkezés visszahozza." } ?? "A trended a tartó sávon kívül van.")
+        return SulyHead(headline: "Kint a sávból", sentence: trendKg.map { "A trended \(sulyKg($0)) kg, a tartó sávon kívül. Pár nap a terv szerint visszahozza." } ?? "A trended a tartó sávon kívül van.")
     case "no_data":
         return SulyHead(headline: "Még kevés a mérés", sentence: "Pár reggeli mérés után látom a trendedet, és tudom mondani, tartod-e az ütemet.")
     default:

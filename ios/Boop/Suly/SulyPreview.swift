@@ -10,11 +10,9 @@ import BoopCore
 ///
 /// `-sulyState full|noseason|empty|offline|error` (default `full`): a cut on course · no active season (the head says
 /// so, the trend still draws) · no weigh-ins and no trend yet · no net (the cache is primed five hours old) · the
-/// server failing. `-previewOffline YES` is the same as `offline`.
+/// server failing (`-sulyState offline` alone: the season preview reads `-previewOffline` itself and would cache nothing).
 enum SulyPreview {
-    static var state: String {
-        UserDefaults.standard.bool(forKey: "previewOffline") ? "offline" : (UserDefaults.standard.string(forKey: "sulyState") ?? "full")
-    }
+    static var state: String { UserDefaults.standard.string(forKey: "sulyState") ?? "full" }
     static let raw = RawJSONClient(transport: SulyPreviewTransport(), baseURL: URL(string: "https://preview.invalid")!,
                                    token: { "preview" })
 
