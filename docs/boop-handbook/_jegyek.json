@@ -1671,5 +1671,37 @@
     ],
     "mit_kapsz": "A kör kilenc gömbből áll: az arany Súly gömb száma azt mondja, mennyire tartod az évad tervezett ütemét. Mögötte a Súly terület a Pénz mintájára: Ma (a mai mérés és a trend, a cél, a súlygörbe a terv vonalával, a hét mérései), Test (a Feelfit testzsírja és izomtömege, BMI), Napló (minden mérés hetenként). Net nélkül az utolsó kép a korával.",
     "munkamenet": "suly-orb-gyorsajtok"
+  },
+  "mezo-r36n9.159": {
+    "cim": "Visszamenőleges rögzítés minden gyorslapon, és a Napló pótlásai (check-in, zárás)",
+    "tipus": "Funkció",
+    "szakasz": "Kezdőlap",
+    "terulet": [
+      "Alapok",
+      "Napló"
+    ],
+    "mit_kapsz": "A súly, az alvás, a sport és a naplósor lapján egy „Mikor” sor: Ma · Tegnap · Más nap (a sportnál időponttal), egy hétre visszamenőleg; az étkezésnél Tegnap gomb. A Napló a mai és az előző hat napot mindig mutatja; egy korábbi nap lapján pótolható a kimaradt check-in pillanat és a nap lezárása, és ott nyílik az edzés pótlása is. Ami később íródott, halk „utólag” jelet kap.",
+    "munkamenet": "visszamenoleg-ital"
+  },
+  "mezo-r36n9.160": {
+    "cim": "Italok: külön vödör, ami a napi keretbe számít, de étkezési ablakot nem foglal",
+    "tipus": "Funkció",
+    "szakasz": "Kezdőlap",
+    "terulet": [
+      "Étel"
+    ],
+    "mit_kapsz": "Új „Ital” bejárat az étkezés rögzítésében és a Mit rögzítesz? lapon: a szokásos italaid egy koppintásra (Boop tanulja), szabad szöveg, fotó, Mikor ittad. Az ital beszámít a napi kalóriába, a makrókba és a görbébe, de ablakot nem foglal és étkezés-pontot nem kap; az Étel szoba Ma lapján külön ITALOK sor.",
+    "munkamenet": "visszamenoleg-ital"
+  },
+  "mezo-r36n9.161": {
+    "cim": "Edzés pótlása: egy kimaradt tervnap „Megvolt” a terv számaival",
+    "tipus": "Funkció",
+    "szakasz": "Kezdőlap",
+    "terulet": [
+      "Edzés",
+      "Napló"
+    ],
+    "mit_kapsz": "A Napló egy korábbi napján „Edzés pótlása: <tervnap>”: a terv sorozataival készre könyveli az edzést arra a napra (a szerver is tanulja a dátumot); utána a javító lapon igazíthatod a súlyokat. Net nélkül is rögzül.",
+    "munkamenet": "visszamenoleg-ital"
   }
 }
