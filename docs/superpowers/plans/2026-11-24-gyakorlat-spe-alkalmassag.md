@@ -67,10 +67,10 @@
 **Fájlok:** `ios/BoopKit/Sources/BoopCore/Train/{PlanWire,BlockDraft}.swift`, `ios/Boop/EdzesTerv/{TechniquePicker,BlockBuilderPage,PlanPreview}.swift`, `ios/BoopKit/Tests/BoopCoreTests/{BlockDraftTests,BlockDraftEditTests}.swift`.
 **Határ:** `WireCatalogItem.allowedTechniques: [String]?`; `DraftExercise.catalogAllowedTechniques: [SetTechnique]?`. Ha a mező jelen van, `allowedTechniques` kizárólag ebből + `.none` értékből épül (`judged` kapu mellett). Ha hiányzik, a régi `stable`/`lengthened` szigorú tartalék szabály él. A kiválasztás ugyanazt a wire tokent küldi a szervernek.
 
-- [ ] Piros BoopKit-teszt három új katalogus-válasszal: Hammer Curl csak Myo/pihenős drop/drop, Hip Thrust csak megtartás, Overhead Press semmi; hiányzó szervermezőnél a régi szabály; kihívás/technika egymástól független; rossz választás nem menthető. `cd ios/BoopKit && DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild test -scheme BoopKit-Package -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' -skipPackagePluginValidation -derivedDataPath ../build/kit -only-testing:BoopCoreTests/BlockDraftTests` → FAIL.
-- [ ] A katalógusdekódolás adja át a listát a `BlockDraft` betöltésénél, hozzáadásánál, cseréjénél és `withId` másolásánál. A `SetTechnique` megkapja a `.topPause = "top_pause"` esetet, magyar nevét, rövid leírását. `unavailableReason` csak a konkrét tiltást magyarázza, nem az egész gyakorlatot nevezi tévesen „szabadsúlyosnak”; a kihívás saját üzenete marad.
-- [ ] A technikagomb/Picker a jóváhagyott szimulátoros próbát kövesse. Az Overhead Press csendes chipje is nyissa meg az összes halványított technikát és az indokokat (a sima sorozat aktív). A meglévő kihívás, info és Boop-ajánlás kontrollok maradnak. A `PlanPreview` kitalált katalógusfixture-je is kapja meg a három palettát.
-- [ ] Futtasd a célzott BoopKit-teszteket és a Boop app fordítását. Kisebb iPhone-on a hosszú nevek/indokok nem lógnak ki. `git add ios && git commit -m 'feat(ios): use exercise SPE palettes in builder (mezo-eiux9)'`.
+- [x] A három új katalógusválasztás piros próbája a hiányzó `.topPause` miatt fordításkor bukott. A régi szervermező nélküli tartalék szabály, a kihívás és a rossz választás regressziója megmaradt.
+- [x] A paletta a betöltésen, hozzáadáson, cserén és másoláson átmegy; a megtartás neve és leírása kész. A tiltási szöveg a konkrét gyakorlathoz kötött.
+- [x] A csendes chip is megnyitja a választót, a tiltott sorok indokkal látszanak. A szimulátoros fixture három palettája frissült.
+- [x] A célzott BoopKit-tesztek és a Boop app fordítása zöld. A szűk kijelzős vizuális ellenőrzés a 8. feladatban következik.
 
 ## 7. iPhone: a megtartás a lejátszóban
 

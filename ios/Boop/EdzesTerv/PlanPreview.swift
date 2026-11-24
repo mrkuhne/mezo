@@ -256,17 +256,22 @@ final class PlanPreviewTransport: ClientTransport, @unchecked Sendable {
     static var catalog: [[String: Any]] {
         // `gear` + `challengeAllowed` follow the server's rule (decision #72): every non-plyo exercise but a free-weight
         // compound may take the day's challenge.
-        [["id": "c-stable", "name": "stable", "stability": "stable", "lengthenedFriendly": false, "gear": ["machine"], "challengeAllowed": true],
-         ["id": "c-long", "name": "lengthened", "stability": "stable", "lengthenedFriendly": true, "gear": ["cable"], "challengeAllowed": true],
+        [["id": "c-stable", "name": "stable", "stability": "stable", "lengthenedFriendly": false, "gear": ["machine"], "challengeAllowed": true,
+          "allowedTechniques": ["rest_drop", "drop", "myo", "rest_pause"]],
+         ["id": "c-long", "name": "lengthened", "stability": "stable", "lengthenedFriendly": true, "gear": ["cable"], "challengeAllowed": true,
+          "allowedTechniques": ["rest_drop", "drop", "myo", "rest_pause", "partials"]],
          ["id": "c-free-iso", "name": "free isolation", "type": "isolation", "stability": "free", "lengthenedFriendly": false,
-          "gear": ["dumbbell"], "challengeAllowed": true],
+          "gear": ["dumbbell"], "challengeAllowed": true, "allowedTechniques": ["myo", "rest_drop", "drop"]],
          ["id": "c-free-compound", "name": "free compound", "type": "compound", "stability": "free", "lengthenedFriendly": false,
-          "gear": ["barbell"], "challengeAllowed": false]]
+          "gear": ["barbell"], "challengeAllowed": false, "allowedTechniques": ["top_pause"]]]
         + listed.enumerated().map { n, e in
             ["id": String(format: "c0000000-0000-4000-8000-%012d", 100 + n), "name": e.0, "muscle": e.1, "type": e.2,
              "stability": e.3 ? "stable" : "free", "lengthenedFriendly": false,
              "gear": e.3 ? ["machine"] : [e.2 == "compound" ? "barbell" : "dumbbell"],
              "challengeAllowed": e.2 != "plyo" && !(e.2 == "compound" && !e.3),
+             "allowedTechniques": e.0 == "Hammer Curl" ? ["myo", "rest_drop", "drop"]
+                : e.0 == "Hip Thrust" ? ["top_pause"]
+                : e.3 ? ["rest_drop", "drop", "myo", "rest_pause"] : [],
              "imageStartUrl": pictures[e.0].map { "/exercises/\($0)-a.jpg" } as Any? ?? NSNull()]
         }
     }
