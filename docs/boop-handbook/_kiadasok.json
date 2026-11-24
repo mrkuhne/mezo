@@ -866,5 +866,22 @@
       "mezo-r36n9.154"
     ],
     "mi_valtozott": "A kezdőlap orbjai akkor is mutatják a számukat, ha a Forma még „tanul” (csak a Forma marad „–”); az Étel orb ugyanazt a számot mondja, mint az Étel szoba; a Pénz orb élő, a heti keret megmaradt részét mutatja százalékban. A fotóból ételnaplózás újra működik, és a mentett étkezés mellé a fotó is felkerül. A „+” lap mind a kilenc webes gyors-logolási ajtót tudja (víz, kiegészítők, edzés indítása, sport, súly, check-in, napló, alvás, kiadás), és a kezdőlapon az orbok alatt jobbra is van egy Rögzítés gomb. Közben kiderült és javítva lett egy indítási összeomlás a Pénz adatainak olvasásában."
+  },
+  "a32ba6cdc": {
+    "cim": "Lapok bezárása X-szel, öt gyorsajtó a kezdőlapon, és a kilencedik gömb: a Súly terület",
+    "datum": "2026-11-24",
+    "verzio": "",
+    "tipus": "Funkció és javítás",
+    "hova": [
+      "iPhone app"
+    ],
+    "szakasz": "Kezdőlap",
+    "jegyek": [
+      "mezo-r36n9.156",
+      "mezo-r36n9.157",
+      "mezo-r36n9.158"
+    ],
+    "mi_valtozott": "Minden felcsúszó lap jobb felső sarkában kis kerek X zárja a lapot; az Étel szobából nyíló lapokon a lehúzás újra bezár, nem frissít. A kezdőlapon a „Rögzítés” kapszula helyett öt üvegajtó áll Boop mondata alatt (Étkezés · Víz · Súly · Check-in · Napló), mindegyik rögtön a saját lapját nyitja. A kör kilenc gömb lett: az arany Súly gömb száma azt mondja, mennyire tartod az évad tervezett ütemét (évad vagy trend nélkül „–”). Mögötte a Súly terület a Pénz mintájára: Ma (a mai mérés és a trend, a cél, a súlygörbe a terv vonalával, a hét mérései, a cél sora az Évadba), Test (a Feelfit mérleg testzsírja és izomtömege az Egészségből, BMI, saját testikonnal), Napló (minden mérés hetenként). Net nélkül az utolsó kép a korával; egy mérés után a gömb és a szoba újraolvas. Szerverváltozás nem kellett.",
+    "ellenorzes": "A mag 995 tesztje natívan lefutott az új Macen; az app lefordult és a szimulátorban minden képernyő látszik; a telefonos tesztkészlet és a telepítés a másik, Xcode-os gépen (mezo-r36n9.150)."
   }
 }
