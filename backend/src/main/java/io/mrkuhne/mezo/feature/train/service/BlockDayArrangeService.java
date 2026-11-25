@@ -47,7 +47,6 @@ public class BlockDayArrangeService {
     private final MesocycleRepository mesocycleRepository;
     private final WorkoutSessionRepository workoutSessionRepository;
     private final ExerciseRepository exerciseRepository;
-    private final VolumeArcService volumeArcService;
     private final VolumeProperties volumeProperties;
     private final TrainTechniqueProperties techniqueProps;
     private final TrainService trainService;
@@ -58,24 +57,38 @@ public class BlockDayArrangeService {
     private record Read(MesocycleEntity run, List<WorkoutSessionEntity> days, Map<UUID, List<ExerciseEntity>> rows) {
     }
 
-    /** The re-arranged week for {@code gymWeekdays} (0 = hétfő), judged against {@code sportWeekdays}. No write. */
+    /**
+     * The re-arranged week for {@code gymWeekdays} (0 = hétfő). No write. {@code deficit} = the season draft's
+     * trajectory is a cut — passed in, never read from the live goal, so the preview and the accept (which writes the
+     * goal before it re-arranges) judge the week the same way. {@code sportWeekdays} go to the evaluator as the
+     * draft's sport days (they shape its per-day view; the score reads the muscles only).
+     */
     @Transactional(readOnly = true)
-    public BlockDayArrangement.Plan plan(UUID owner, UUID mesoId, List<Integer> gymWeekdays, Set<Integer> sportWeekdays) {
-        return plan(read(owner, mesoId), gymWeekdays, sportWeekdays, owner);
+    public BlockDayArrangement.Plan plan(UUID owner, UUID mesoId, List<Integer> gymWeekdays, Set<Integer> sportWeekdays,
+                                         boolean deficit) {
+        return plan(read(owner, mesoId), gymWeekdays, sportWeekdays, deficit);
     }
 
     /**
-     * Everything {@link #plan} depends on, as text (the season fingerprint covers it): each template day's id,
-     * weekday label and place, and each of its exercises' id, muscle and working sets.
+     * Everything {@link #plan} depends on, as text (the season fingerprint covers it): the run's evaluator inputs
+     * (weeks, phase curve, tiers, sport groups, techniques, style), each template day's id, weekday label and place, and
+     * each of its exercises' scored fields.
      */
     @Transactional(readOnly = true)
     public String state(UUID owner, UUID mesoId) {
         Read r = read(owner, mesoId);
-        StringBuilder b = new StringBuilder(r.run().getId().toString()).append('|').append(r.run().getStatus());
+        MesocycleEntity run = r.run();
+        StringBuilder b = new StringBuilder(run.getId().toString()).append('|').append(run.getStatus()).append('|')
+            .append(run.getWeeks()).append('|').append(run.getPhaseCurve()).append('|')
+            .append(run.getMusclePriorities() == null ? null : new java.util.TreeMap<>(run.getMusclePriorities()))
+            .append('|').append(run.getSportGroups()).append('|').append(run.isTechniquesEnabled()).append('|')
+            .append(run.getTrainingStyle());
         for (WorkoutSessionEntity d : r.days()) {
             b.append(";").append(d.getId()).append('|').append(d.getDayLabel()).append('|').append(d.getOrderIndex());
             for (ExerciseEntity e : r.rows().getOrDefault(d.getId(), List.of())) {
-                b.append(',').append(e.getId()).append(':').append(e.getMuscle()).append(':').append(e.getWorkingSets());
+                b.append(',').append(e.getId()).append(':').append(e.getMuscle()).append(':').append(e.getWorkingSets())
+                    .append(':').append(e.getWarmupSets()).append(':').append(e.isCountsTowardVolume()).append(':')
+                    .append(e.getTechnique()).append(':').append(e.isChallenge()).append(':').append(e.getRestSec());
             }
         }
         return b.toString();
@@ -83,9 +96,10 @@ public class BlockDayArrangeService {
 
     /** Writes the plan {@link #plan} shows for the same state; a no-op when nothing moves. */
     @Transactional
-    public BlockDayArrangement.Plan apply(UUID owner, UUID mesoId, List<Integer> gymWeekdays, Set<Integer> sportWeekdays) {
+    public BlockDayArrangement.Plan apply(UUID owner, UUID mesoId, List<Integer> gymWeekdays, Set<Integer> sportWeekdays,
+                                          boolean deficit) {
         Read r = read(owner, mesoId);
-        BlockDayArrangement.Plan plan = plan(r, gymWeekdays, sportWeekdays, owner);
+        BlockDayArrangement.Plan plan = plan(r, gymWeekdays, sportWeekdays, deficit);
         if (!plan.changed()) {
             return plan;
         }
@@ -119,6 +133,8 @@ public class BlockDayArrangeService {
                 copy.setMuscle(source.getMuscle() == null ? "" : source.getMuscle());
                 copy.setMuscleAccent(source.isMuscleAccent());
                 copy.setNote(source.getNote());
+                copy.setClosingNote(source.getClosingNote());
+                copy.setDurationEst(source.getDurationEst());
                 copy.setOrderIndex(i);
                 UUID copyId = workoutSessionRepository.saveAndFlush(copy).getId();
                 List<GymExerciseInput> inputs = r.rows().getOrDefault(source.getId(), List.of()).stream()
@@ -145,7 +161,8 @@ public class BlockDayArrangeService {
         return new Read(run, days, rows);
     }
 
-    private BlockDayArrangement.Plan plan(Read r, List<Integer> gymWeekdays, Set<Integer> sportWeekdays, UUID owner) {
+    private BlockDayArrangement.Plan plan(Read r, List<Integer> gymWeekdays, Set<Integer> sportWeekdays,
+                                          boolean deficit) {
         List<BlockDayArrangement.Day> days = r.days().stream()
             .map(d -> new BlockDayArrangement.Day(d.getId(), MesoPlanSkeleton.DAY_ORDER.indexOf(d.getDayLabel()),
                 d.getType()))
@@ -156,7 +173,6 @@ public class BlockDayArrangeService {
             e.getWorkingSets() == null ? 0 : e.getWorkingSets(), e.getWarmupSets() == null ? 0 : e.getWarmupSets(),
             e.isCountsTowardVolume(), TechniqueRules.capExtra(e, r.run().isTechniquesEnabled(),
                 techniqueProps.capWeight()), e.getRestSec())).toList()));
-        boolean deficit = volumeArcService.deficitFor(owner, r.run());
         MesocycleEntity run = r.run();
         return BlockDayArrangement.arrange(days, gymWeekdays, slots -> {
             List<PlanEvaluator.PlanDay> week = slots.stream()

@@ -139,7 +139,7 @@ public class SeasonService {
             trainPort.replaceSlots(owner, draft);
             // spec §5.12-1: the running block follows the new gym days in the same transaction
             moving.ifPresent(b -> trainPort.rearrangeBlock(owner, b.id(), draft.gymDaysOrEmpty(),
-                SeasonPreviewService.sportDays(draft)));
+                SeasonPreviewService.sportDays(draft), SeasonPreviewService.deficit(draft)));
             writeSleep(owner, draft, preview.after().sleepNeedMin());
             s.setSleepNeedMin(preview.after().sleepNeedMin());
             if (draft.block() != null && !draft.block().equals(heldBlock)) {

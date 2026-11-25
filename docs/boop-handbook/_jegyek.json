@@ -1295,8 +1295,9 @@
     "terulet": [
       "Terv"
     ],
-    "mit_kapsz": "Ha az Évadban másik napokra vagy több edzésre váltasz, egyetlen elfogadással a futó edzésblokk is átrendeződik. Addig, amíg fut a blokk, az edzésnapok zárolva vannak.",
-    "szulo": "mezo-r36n9.16"
+    "mit_kapsz": "Ha az Évadban másik napokra vagy több/kevesebb edzésre váltasz, az előnézet napról napra megmutatja a futó edzésblokk új hetét, és egyetlen „Elfogadom” a blokkot is átrendezi a kalóriával és az alvással együtt. Nincs többé zárolt edzésnap.",
+    "szulo": "mezo-r36n9.16",
+    "munkamenet": "evad-blokk-napok"
   },
   "mezo-r36n9.123": {
     "cim": "Évad: korábbi évadok és a mostani súly az új évad céljánál",

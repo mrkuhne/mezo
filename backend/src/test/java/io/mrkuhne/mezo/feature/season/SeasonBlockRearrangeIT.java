@@ -62,6 +62,8 @@ class SeasonBlockRearrangeIT extends AbstractIntegrationTest {
         for (int i = 0; i < plan.length; i++) {
             WorkoutSessionEntity d = trainPopulator.createWorkoutSession(owner, meso.getId(), plan[i][0], plan[i][1], i,
                 "planned");
+            d.setDurationEst(55 + i);
+            d = sessionRepository.saveAndFlush(d);
             trainPopulator.createExercise(owner, d.getId(), plan[i][1] + " 1", 0, plan[i][2], "compound", null);
             trainPopulator.createExercise(owner, d.getId(), plan[i][1] + " 2", 1, plan[i][2], "isolation", null);
             days.put(plan[i][1], d);
@@ -133,6 +135,7 @@ class SeasonBlockRearrangeIT extends AbstractIntegrationTest {
             .containsExactlyElementsOf(p.block().days().stream().map(SeasonTrainPort.BlockDay::title).toList());
         WorkoutSessionEntity copy = days.get(added.weekday());
         assertThat(exerciseNames(st, copy.getId())).containsExactly(added.title() + " 1", added.title() + " 2");
+        assertThat(copy.getDurationEst()).isEqualTo(st.days().get(added.title()).getDurationEst());
         // the days that were already there keep their rows (and so their history)
         assertThat(days).extracting(WorkoutSessionEntity::getId)
             .containsAll(st.days().values().stream().map(WorkoutSessionEntity::getId).toList());
@@ -171,6 +174,28 @@ class SeasonBlockRearrangeIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void aDraftThatAlsoChangesTheTrajectory_appliesExactlyTheWeekThePreviewShowed() {
+        Setup st = setup("season-block-trajectory@test.local");
+        for (int target = 3; target >= 1; target--) {
+            List<Integer> days = List.of(0, 2, 4, 6).subList(0, target);
+            SeasonDraftJson change = SeasonFixture.draft("maintain", null, null, days, SeasonFixture.SPORT);
+            SeasonPreviewService.Preview p = previewService.preview(st.owner(), st.season().getId(), change);
+            seasonService.apply(st.owner(), st.season().getId(), change, p.fingerprint());
+            List<WorkoutSessionEntity> after = templateDays(st);
+            assertThat(after).extracting(WorkoutSessionEntity::getType)
+                .containsExactlyElementsOf(p.block().days().stream().map(SeasonTrainPort.BlockDay::title).toList());
+            // back to a cut with the next count: the goal flips again, the preview must still hold
+            change = gym(List.of(0, 1, 3, 4).subList(0, target));
+            p = previewService.preview(st.owner(), st.season().getId(), change);
+            seasonService.apply(st.owner(), st.season().getId(), change, p.fingerprint());
+            if (p.block() != null) {
+                assertThat(templateDays(st)).extracting(WorkoutSessionEntity::getType)
+                    .containsExactlyElementsOf(p.block().days().stream().map(SeasonTrainPort.BlockDay::title).toList());
+            }
+        }
+    }
+
+    @Test
     void fingerprintCoversTheBlockDays() {
         Setup st = setup("season-block-stale@test.local");
         SeasonDraftJson change = gym(List.of(0, 1, 2, 3, 4));
@@ -179,6 +204,20 @@ class SeasonBlockRearrangeIT extends AbstractIntegrationTest {
             List.of(st.days().get("Felső A").getId())).get(0);
         row.setWorkingSets(5); // the block was edited in the day editor after the preview
         exerciseRepository.saveAndFlush(row);
+
+        assertThatThrownBy(() -> seasonService.apply(st.owner(), st.season().getId(), change, fingerprint))
+            .isInstanceOfSatisfying(SystemRuntimeErrorException.class,
+                e -> assertThat(e.getMessage()).isEqualTo("SEASON_PREVIEW_STALE"));
+    }
+
+    @Test
+    void fingerprintCoversTheBlocksMusclePriorities() {
+        Setup st = setup("season-block-stale-tier@test.local");
+        SeasonDraftJson change = gym(List.of(0, 2, 4));
+        String fingerprint = previewService.preview(st.owner(), st.season().getId(), change).fingerprint();
+        st.meso().setMusclePriorities(Map.of("chest", "emphasize")); // a tier changed in Blokk after the preview
+        em.merge(st.meso());
+        em.flush();
 
         assertThatThrownBy(() -> seasonService.apply(st.owner(), st.season().getId(), change, fingerprint))
             .isInstanceOfSatisfying(SystemRuntimeErrorException.class,

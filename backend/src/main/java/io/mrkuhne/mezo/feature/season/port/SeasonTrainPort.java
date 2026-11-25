@@ -71,13 +71,15 @@ public interface SeasonTrainPort {
     }
 
     /**
-     * The block's week re-arranged onto {@code gymDays} (0 = hétfő), judged with the draft's sport days — the train
-     * feature's choice of which day moves, repeats or drops. Empty when nothing would change. No write.
+     * The block's week re-arranged onto {@code gymDays} (0 = hétfő) — the train feature's choice of which day moves,
+     * repeats or drops, judged under the draft's sport days and trajectory ({@code deficit} = a cut). Empty when nothing
+     * would change. No write.
      */
-    Optional<BlockWeek> blockRearrangement(UUID owner, UUID mesocycleId, List<Integer> gymDays, Set<Integer> sportDays);
+    Optional<BlockWeek> blockRearrangement(UUID owner, UUID mesocycleId, List<Integer> gymDays, Set<Integer> sportDays,
+                                           boolean deficit);
 
-    /** Writes the re-arrangement {@link #blockRearrangement} shows for the same state. */
-    void rearrangeBlock(UUID owner, UUID mesocycleId, List<Integer> gymDays, Set<Integer> sportDays);
+    /** Writes the re-arrangement {@link #blockRearrangement} shows for the same state and arguments. */
+    void rearrangeBlock(UUID owner, UUID mesocycleId, List<Integer> gymDays, Set<Integer> sportDays, boolean deficit);
 
     /** The block's days and exercises as text, for the preview fingerprint. */
     String blockState(UUID owner, UUID mesocycleId);

@@ -71,8 +71,8 @@ public class SeasonTrainAdapter implements SeasonTrainPort {
 
     @Override
     public Optional<BlockWeek> blockRearrangement(UUID owner, UUID mesocycleId, List<Integer> gymDays,
-                                                  Set<Integer> sportDays) {
-        BlockDayArrangement.Plan plan = blockDayArrangeService.plan(owner, mesocycleId, gymDays, sportDays);
+                                                  Set<Integer> sportDays, boolean deficit) {
+        BlockDayArrangement.Plan plan = blockDayArrangeService.plan(owner, mesocycleId, gymDays, sportDays, deficit);
         if (!plan.changed()) {
             return Optional.empty();
         }
@@ -86,8 +86,9 @@ public class SeasonTrainAdapter implements SeasonTrainPort {
     }
 
     @Override
-    public void rearrangeBlock(UUID owner, UUID mesocycleId, List<Integer> gymDays, Set<Integer> sportDays) {
-        blockDayArrangeService.apply(owner, mesocycleId, gymDays, sportDays);
+    public void rearrangeBlock(UUID owner, UUID mesocycleId, List<Integer> gymDays, Set<Integer> sportDays,
+                               boolean deficit) {
+        blockDayArrangeService.apply(owner, mesocycleId, gymDays, sportDays, deficit);
     }
 
     @Override

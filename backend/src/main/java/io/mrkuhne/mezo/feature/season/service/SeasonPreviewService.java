@@ -76,8 +76,8 @@ public class SeasonPreviewService {
         if (moving.isPresent() && draft.gymDaysOrEmpty().isEmpty()) {
             warnings.add(new Warning("block_no_day", BLOCK_NO_DAY));
         } else if (moving.isPresent()) {
-            block = trainPort.blockRearrangement(owner, moving.get().id(), draft.gymDaysOrEmpty(), sportDays(draft))
-                .orElse(null);
+            block = trainPort.blockRearrangement(owner, moving.get().id(), draft.gymDaysOrEmpty(), sportDays(draft),
+                    deficit(draft)).orElse(null);
         }
         return new Preview(before.numbers(), after.numbers(),
             SeasonTodoRules.todo(before.numbers(), after.numbers(), current, draft, refitFrom, block != null),
@@ -99,6 +99,11 @@ public class SeasonPreviewService {
             return Optional.empty();
         }
         return trainPort.activeMesocycle(owner);
+    }
+
+    /** The block's week is judged under the draft's trajectory: a cut is the evaluator's deficit. */
+    public static boolean deficit(SeasonDraftJson draft) {
+        return "cut".equals(draft.trajectory());
     }
 
     /** The draft's sport weekdays (the block's week is judged against them). */
