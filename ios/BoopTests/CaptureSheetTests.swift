@@ -8,7 +8,7 @@ struct CaptureSheetTests {
     @Test func theNineDoorsPlusTheExpense() {
         #expect(CaptureSheet.doors.map(\.title) == ["Víz", "Kiegészítők", "Edzés indítása", "Sport", "Súly", "Check-in",
                                                     "Napló", "Alvás", "Kiadás"])
-        #expect(CaptureSheet.foodChips.map(\.title) == ["Fotó", "Szöveg", "Vonalkód", "Recept", "Kamra"])
+        #expect(CaptureSheet.foodChips.map(\.title) == ["Fotó", "Szöveg", "Vonalkód", "Recept", "Kamra", "Ital"])
     }
 
     @Test func everyDoorOpensSomethingReal() {

@@ -60,10 +60,12 @@ struct TrainClientReadTests {
         let today = try await train().todayWorkout()
 
         let first = try #require(today.exercises.first)
-        #expect(first.sets.filter { $0.kind == .warmup }.count == 2)
+        // The warm-ups never reach the app (owner, 2026-11-25) — but their count is kept for a write to hand back.
+        #expect(first.sets.filter { $0.kind == .warmup }.isEmpty)
+        #expect(first.warmupCount == 2)
         #expect(first.sets.filter { $0.kind == .working }.count == 3)
         #expect(first.rationale == "Múlt hét 8 × 77.5 kg (RIR 3) → +2.5 kg")
-        #expect(first.sets.first?.targetKg == 40)
+        #expect(first.sets.first?.targetKg == 80)
         #expect(today.title == "Pull Day")
         #expect(today.weekDoneDates == ["2026-11-16"])
     }
@@ -73,12 +75,35 @@ struct TrainClientReadTests {
         let today = try await train().todayWorkout()
 
         let first = try #require(today.exercises.first)
-        // The counts are still known, so the player can show four rows — but not one of them claims a weight.
-        #expect(first.sets.count == 4)
+        // The counts are still known, so the player can show the three working rows — but not one claims a weight.
+        #expect(first.sets.count == 3)
         #expect(first.sets[0].targetKg == nil)
         #expect(first.sets.allSatisfy { $0.targetKg == nil })
         #expect(first.anchorKg == nil)
         #expect(first.rationale == nil)
+    }
+
+    @Test func completedWorkoutCarriesItsEnergy() async throws {
+        stub.on("getTodayWorkout", .json(200, #"""
+        {"templateSessionId":"\#(sessionId)","exercises":[],"weekDoneDates":[],
+         "completedWorkout":{"id":"\#(pressId)","templateSessionId":"\#(sessionId)","date":"2026-11-25",
+                             "status":"completed","sets":[],"energy":{"kcal":412,"source":"watch"}}}
+        """#))
+        let today = try await train().todayWorkout()
+
+        #expect(today.completed?.energy == WorkoutEnergy(kcal: 412, source: .watch))
+    }
+
+    @Test func completedWorkoutWithoutEnergyReadsNil() async throws {
+        stub.on("getTodayWorkout", .json(200, #"""
+        {"templateSessionId":"\#(sessionId)","exercises":[],"weekDoneDates":[],
+         "completedWorkout":{"id":"\#(pressId)","templateSessionId":"\#(sessionId)","date":"2026-11-25",
+                             "status":"completed","sets":[]}}
+        """#))
+        let today = try await train().todayWorkout()
+
+        #expect(today.completed != nil)
+        #expect(today.completed?.energy == nil)
     }
 
     @Test func historyRangeIsPassedThrough() async throws {

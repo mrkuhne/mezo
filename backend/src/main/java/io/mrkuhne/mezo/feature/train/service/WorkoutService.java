@@ -114,6 +114,8 @@ public class WorkoutService {
     // MedalService — attaches the medals a set/session just earned to the logSet/finishWorkout
     // responses. No feature gate: medals are always-on (mirrors ExerciseRecordService).
     private final MedalService medalService;
+    /** The kcal the ceremony shows (mezo-r36n9.170) — on today's completed workout and the finish answer only. */
+    private final WorkoutEnergyService workoutEnergyService;
     private final SetLegService setLegService;
     // Actual-duration measurement (mezo-1jm8): gap/lead-in caps consumed when finishWorkout
     // derives activeSeconds from the session's logged set timestamps.
@@ -428,7 +430,8 @@ public class WorkoutService {
             .durationEst(day.getDurationEst())
             .exercises(mapped)
             .openWorkout(open != null ? toInstanceResponse(createdBy, open) : null)
-            .completedWorkout(completedToday != null ? toInstanceResponse(createdBy, completedToday) : null)
+            .completedWorkout(completedToday != null
+                ? withEnergy(createdBy, completedToday, toInstanceResponse(createdBy, completedToday)) : null)
             .weekDoneDates(weekDoneDates)
             .overloadSummary(overloadSummary)
             .comeback(comeback == null ? null : comeback.dto())
@@ -1166,7 +1169,7 @@ public class WorkoutService {
         }
         // levelUp stays absent: the XP world left the server (mezo-r36n9.97.5); the optional field
         // is kept only because the iPhone's contract copy still lists it.
-        WorkoutInstanceResponse base = toInstanceResponse(createdBy, instance);
+        WorkoutInstanceResponse base = withEnergy(createdBy, instance, toInstanceResponse(createdBy, instance));
         // Same rationale as logSet above: medals are derived and decorative, the finish/completion
         // write must not roll back because the medal replay blew up.
         try {
@@ -1266,6 +1269,18 @@ public class WorkoutService {
             .finishedAt(toOffsetDateTime(instance.getFinishedAt()))
             .activeSeconds(instance.getActiveSeconds())
             .build();
+    }
+
+    /** The session's kcal on a completed instance. Derived and decorative, like the medals: a failure here never
+     *  takes the workout read or the finish down with it. */
+    private WorkoutInstanceResponse withEnergy(UUID createdBy, WorkoutSessionEntity instance,
+            WorkoutInstanceResponse response) {
+        try {
+            workoutEnergyService.energyOf(createdBy, instance).ifPresent(response::setEnergy);
+        } catch (RuntimeException e) {
+            log.warn("Energy derivation failed for session {} — answering without it", instance.getId(), e);
+        }
+        return response;
     }
 
     /** {@code format: date-time} contract fields generate as {@link OffsetDateTime}; entities store {@link Instant}. */

@@ -1723,5 +1723,15 @@
     ],
     "mit_kapsz": "A Mai edzés kártyája alatt egy „Másik napot csinálok ma” sor: a hét még nyitott edzésnapjai közül választhatsz (elöl a kimaradtak), és azt indítod el a szokásos lejátszóval. A heti pipa a ténylegesen megcsinált napra kerül.",
     "munkamenet": "masik-nap"
+  },
+  "mezo-r36n9.170": {
+    "cim": "Bemelegítő szettek eltűnnek, és kalória az edzés végén (becslés, utána az óra)",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Az app sehol nem mutat bemelegítő sorozatot: a lejátszó az első munkasorozattal indul. Az edzés végén a három szám alatt ott a kalória: először a szerver becslése, és ha az órád is rögzítette az edzést, az órád mérése.",
+    "munkamenet": "boop-penz-l6-6ac287"
   }
 }
