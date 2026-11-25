@@ -77,4 +77,17 @@ class EffortRampTest {
         assertThat(EffortRamp.effectiveReserve(2, 3, List.of(), false, CFG)).isEqualTo(2);
         assertThat(EffortRamp.effectiveReserve(0, 9, c, true, CFG)).isEqualTo(1);
     }
+
+    @Test void allMevCurveDoesNotRamp() {
+        List<String> c = List.of("MEV", "MEV");
+        assertThat(EffortRamp.effectiveReserve(2, 1, c, false, CFG)).isEqualTo(2);
+        assertThat(EffortRamp.effectiveReserve(2, 2, c, false, CFG)).isEqualTo(2);
+        assertThat(EffortRamp.effectiveReserve(2, 2, c, true, CFG)).isEqualTo(2);
+        assertThat(EffortRamp.effectiveReserve(0, 2, c, true, CFG)).isEqualTo(CFG.freeFloor());
+    }
+
+    @Test void normalCurveUnchanged() {
+        assertThat(run(2, 6, false)).containsExactly(2, 2, 1, 1, 0, 4);
+        assertThat(run(3, 6, true)).containsExactly(3, 3, 2, 2, 1, 5);
+    }
 }

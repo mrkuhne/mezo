@@ -28,13 +28,24 @@ enum EdzesTab: String, CaseIterable {
 }
 
 /// A sub-page of the room, opened from a card.
-enum EdzesPage: String, Identifiable {
+enum EdzesPage: Identifiable, Equatable {
     case blockLoad
     /// The block builder and the weekly review (mezo-r36n9.83, `ios/Boop/EdzesTerv/`).
     case builder, review
-    /// The new-block flow (mezo-r36n9.113, `ios/Boop/EdzesTerv/UjBlokk/`).
-    case newBlock
-    var id: String { rawValue }
+    /// The new-block flow (mezo-r36n9.113, `ios/Boop/EdzesTerv/UjBlokk/`). Its model rides on the item (as the year
+    /// cover's does): a model kept in separate state could be read as nil by a cover built in the same update.
+    case newBlock(NewBlockCover)
+
+    var id: String {
+        switch self {
+        case .blockLoad: "blockLoad"
+        case .builder: "builder"
+        case .review: "review"
+        case .newBlock(let cover): "newBlock-\(cover.id)"
+        }
+    }
+
+    static func == (a: EdzesPage, b: EdzesPage) -> Bool { a.id == b.id }
 }
 
 /// Edzés as its own app, the way Étel is: its own data, on the shared page.
@@ -59,8 +70,11 @@ struct EdzesRoom: View {
     @State private var weekReview: WeekReviewModel?
     /// The builder, loaded in the background when the room opens, so it opens without a spinner (owner, 2026-11-19).
     @State private var builder: BlockBuilderModel?
-    /// The new-block intake on screen.
-    @State private var newBlock: NewBlockModel?
+    /// The Éves terv on screen (mezo-r36n9.113, `ios/Boop/EdzesTerv/EvesTerv/`): its own cover, the model riding on
+    /// the item — a model kept in separate state was read as nil by a cover built in the same update.
+    @State private var yearPlan: YearPlanCover?
+    /// The year plan behind the Ma tab's Következik card; the card reads only a freshly loaded plan (`freshPlan`).
+    @State private var year: YearPlanModel?
     /// The builder and the review zoom out of the button / card that opened them.
     @Namespace private var planZoom
     /// Which of the workout's own surfaces is up. The session itself lives in the store, so
@@ -142,9 +156,9 @@ struct EdzesRoom: View {
                     }
                     .navigationTransition(.zoom(sourceID: PlanZoom.builder, in: planZoom))
                 }
-            case .newBlock:
-                if let newBlock, let plan {
-                    UjBlokkFlow(model: newBlock,
+            case .newBlock(let cover):
+                if let plan {
+                    UjBlokkFlow(model: cover.model,
                                 onClose: { page = nil },
                                 onCreated: { minutes in
                                     // The builder re-reads and picks up the planned block; it may still be thrown away. The
@@ -169,6 +183,12 @@ struct EdzesRoom: View {
                 }
             }
         }
+        .fullScreenCover(item: $yearPlan) { cover in
+            EvesTervPage(model: cover.model) { yearPlan = nil }
+        }
+        // The year may have moved on behind a cover (a block started from the card, an edit on the map): read it again.
+        .onChange(of: page) { _, now in if now == nil { Task { await year?.load() } } }
+        .onChange(of: yearPlan?.id) { _, now in if now == nil { Task { await year?.load() } } }
         .fullScreenCover(isPresented: Binding(get: { phase == .briefing && workout != nil },
                                               set: { if !$0 { phase = .hidden } })) {
             if let w = workout {
@@ -285,21 +305,44 @@ struct EdzesRoom: View {
             }
             #endif
             if weekReview == nil, let plan { weekReview = WeekReviewModel(client: plan) }
+            if year == nil, let plan { year = YearPlanModel(client: plan, cache: cache) }
             async let preload: Void = prepareBuilder(fresh: false)
+            async let yearLoad: Void = loadYear()
             await weekReview?.load()
             await preload
+            await yearLoad
             if blockDay == nil { blockDay = block?.days.first(where: \.isCurrent)?.day ?? block?.days.first?.day }
         }
     }
 
-    /// Opens the new-block flow on the season's training days (read from the Évad overview, cached when offline).
-    private func openNewBlock() {
+    /// Opens the new-block flow on the season's training days (read from the Évad overview, cached when offline);
+    /// `prefill` when it starts a year block (the Következik card's „Indítás").
+    private func openNewBlock(prefill: YearBlockPrefill? = nil) {
         guard let plan else { return }
         Task {
             await evad?.load()
-            newBlock = NewBlockModel(client: plan, seasonGymDays: evad?.overview?.pillars.block.gymDays)
-            page = .newBlock
+            page = .newBlock(NewBlockCover(model: NewBlockModel(client: plan,
+                                                                seasonGymDays: evad?.overview?.pillars.block.gymDays,
+                                                                prefill: prefill)))
         }
+    }
+
+    private func loadYear() async { await year?.load() }
+
+    /// The Következik card: only for a plan just read from the server, and only while it names a next block.
+    @ViewBuilder private var kovetkezik: some View {
+        if let year, let fresh = year.freshPlan, let content = KovetkezikContent(plan: fresh, today: kovetkezikToday()) {
+            KovetkezikCard(content: content, hue: hue,
+                           onStart: { openNewBlock(prefill: year.prefill(for: content.block, today: Date())) },
+                           onYear: { openYearPlan() })
+        }
+    }
+
+    /// Opens the Éves terv: the map, or the empty state that leads to creating one. A fresh model each time, so the map
+    /// never opens on a stale plan from an earlier visit (the model falls back to the cached copy with its age).
+    private func openYearPlan() {
+        guard let plan else { return }
+        yearPlan = YearPlanCover(model: YearPlanModel(client: plan, cache: cache))
     }
 
     /// Loads the builder's block, catalog and evaluation ahead of the tap. `fresh` starts over after the builder closed
@@ -330,6 +373,7 @@ struct EdzesRoom: View {
     // MARK: - Ma
 
     @ViewBuilder private var ma: some View {
+        kovetkezik
         highlight
         todaysLoad
         timeline
@@ -737,7 +781,8 @@ struct EdzesRoom: View {
             NKMenuItem(glyph: "plus-ink", name: "Egyedi edzés", sub: "Saját összeállítás") { toast = soonToast("Egyedi edzés") },
             NKMenuItem(glyph: "dumbbell-ink", name: "Gyakorlatok", sub: "A saját súlyaiddal") { selected = EdzesTab.gyakorlatok.rawValue },
             NKMenuItem(glyph: "book-sage", name: "Előzmények", sub: "Minden eddigi edzés") { selected = EdzesTab.elozmenyek.rawValue },
-        ], hue: hue)
+        ] + (plan != nil ? [NKMenuItem(glyph: "sun-ink", name: "Éves terv", sub: "Az év blokkjai, előre") { openYearPlan() }] : []),
+        hue: hue)
     }
 
     // MARK: - Blokk
@@ -749,10 +794,12 @@ struct EdzesRoom: View {
                                    openReview: { page = .review }, openBuilder: { page = .builder })
             }
             blockLoadCard(b)
+            yearPlanRow
             weekCarousel(b)
             NKAskRow(hue: hue, text: "Kérdezd meg Boopot az edzéstervedről") { openPlace(.boop) }
         } else if store?.blockProblem != nil {
             NKBare("A BLOKKOD", hue: hue) { NKNoFreshData("A blokkodat most nem érem el") }
+            yearPlanRow
             NKAskRow(hue: hue, text: "Kérdezd meg Boopot az edzéstervedről") { openPlace(.boop) }
         } else {
             NKNotLiveYet(hue: hue, title: "Nincs futó blokkod",
@@ -766,6 +813,7 @@ struct EdzesRoom: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 20)
             }
+            yearPlanRow
             NKAskRow(hue: hue, text: "Kérdezd meg Boopot az edzéstervedről") { openPlace(.boop) }
         }
     }
@@ -790,6 +838,29 @@ struct EdzesRoom: View {
             }
             .buttonStyle(.plain)
             .accessibilityHint("Izomcsoportonkénti bontás")
+        }
+    }
+
+    /// The way into the Éves terv from the Blokk tab: one row under the block's load.
+    @ViewBuilder private var yearPlanRow: some View {
+        if plan != nil {
+            NKBare("AZ ÉVES TERV", hue: hue) {
+                Button { openYearPlan() } label: {
+                    HStack(spacing: 10) {
+                        Text("Melyik blokk mikor jön, és mire figyel")
+                            .nkFont(13).foregroundStyle(.white.opacity(0.7))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.45))
+                    }
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Éves terv")
+                .accessibilityHint("Melyik blokk mikor jön, és mire figyel")
+            }
         }
     }
 
@@ -1019,6 +1090,18 @@ private struct DayCard: View {
         .nkGlass()
         .accessibilityElement(children: .combine)
     }
+}
+
+/// The Éves terv cover's item: a fresh model per opening.
+struct YearPlanCover: Identifiable {
+    let id = UUID()
+    let model: YearPlanModel
+}
+
+/// The new-block flow's item (`EdzesPage.newBlock`): a fresh model per opening, carried by the page itself.
+struct NewBlockCover: Identifiable {
+    let id = UUID()
+    let model: NewBlockModel
 }
 
 // MARK: - Words

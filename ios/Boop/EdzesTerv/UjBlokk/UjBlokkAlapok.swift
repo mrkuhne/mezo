@@ -20,14 +20,21 @@ struct UjBlokkAlapok: View {
             PlanSky(height: 260)
             ScrollView {
                 VStack(alignment: .leading, spacing: 26) {
-                    UjBlokkHead(eyebrow: "ÚJ BLOKK · 1/2", title: "Alapok", sentence: "Három dolog kell, a többit én számolom.",
+                    UjBlokkHead(eyebrow: model.prefill == nil ? "ÚJ BLOKK · 1/2" : "ÚJ BLOKK · 1/2 · AZ ÉVES TERVBŐL", title: "Alapok",
+                                sentence: model.prefill.map(ujBlokkYearSentence) ?? "Három dolog kell, a többit én számolom.",
                                 onClose: onClose)
 
                     VStack(alignment: .leading, spacing: 12) {
-                        UjBlokkLabel("Hány hét", trailing: "az utolsó könnyítő")
-                        HStack(spacing: 6) {
-                            ForEach(Array(NewBlockModel.weekRange), id: \.self) { w in
-                                UjBlokkChoice(text: "\(w)", on: model.weeks == w, sub: "hét") { model.weeks = w }
+                        if model.tiersLocked {
+                            // The consolidation's length is the year plan's: no stepper.
+                            UjBlokkLabel("Hány hét")
+                            Text("\(model.weeks) hetes lezárás").nkFont(20, .medium).foregroundStyle(.white)
+                        } else {
+                            UjBlokkLabel("Hány hét", trailing: "az utolsó könnyítő")
+                            HStack(spacing: 6) {
+                                ForEach(Array(NewBlockModel.weekRange), id: \.self) { w in
+                                    UjBlokkChoice(text: "\(w)", on: model.weeks == w, sub: "hét") { model.weeks = w }
+                                }
                             }
                         }
                     }
@@ -64,7 +71,8 @@ struct UjBlokkAlapok: View {
                                 if i > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
                                 VStack(alignment: .leading, spacing: 8) {
                                     UjBlokkTierRow(name: SubMuscles.groupName(m), tier: MuscleTier(wire: model.tier(m)),
-                                                   disabled: { model.check(m, to: $0.rawValue) != .ok }) { set(m, $0) }
+                                                   disabled: { model.tiersLocked || model.check(m, to: $0.rawValue) != .ok }) { set(m, $0) }
+                                        .disabled(model.tiersLocked)
                                     if let b = blocked, b.muscle == m {
                                         HStack(alignment: .top, spacing: 8) {
                                             PlanMark(.shield, color: planWarn, size: 14).padding(.top, 2)
@@ -79,6 +87,10 @@ struct UjBlokkAlapok: View {
                         .animation(reduceMotion ? nil : .snappy, value: blocked)
                         .padding(.horizontal, 16).padding(.vertical, 6)
                         .nkGlass(22)
+                        if model.tiersLocked {
+                            Text("A lezárásban minden izom Tartáson marad, könnyű szinten.")
+                                .nkFont(13).foregroundStyle(.white.opacity(0.75)).fixedSize(horizontal: false, vertical: true)
+                        }
                         Text("Hangsúly: itt építünk a legtöbbet. Építés: rendesen nő. Tartás: megtartja, amit eddig felépítettél.")
                             .nkFont(12.5).foregroundStyle(.white.opacity(0.55)).fixedSize(horizontal: false, vertical: true)
                     }

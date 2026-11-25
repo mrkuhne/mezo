@@ -93,13 +93,15 @@ struct UjBlokkJeloltek: View {
             + (emphasized > 0 ? ", \(emphasized) izom Hangsúlyon." : ".")
     }
 
-    /// When the block starts: next Monday (planned) or today (active).
+    /// When the block starts: the year block's own day (when it opened from one that is still ahead), next Monday
+    /// (planned) or today (active).
     private var startChoice: some View {
         VStack(alignment: .leading, spacing: 12) {
             UjBlokkLabel("Mikor kezdjük")
             HStack(spacing: 6) {
-                UjBlokkChoice(text: "Jövő hétfőn", on: model.startChoice == .nextMonday) { model.startChoice = .nextMonday }
-                UjBlokkChoice(text: "Ma", on: model.startChoice == .today) { model.startChoice = .today }
+                ForEach(model.startOptions, id: \.self) { choice in
+                    UjBlokkChoice(text: ujBlokkStartText(choice), on: model.startChoice == choice) { model.startChoice = choice }
+                }
             }
         }
         .padding(.top, 4)

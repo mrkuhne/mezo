@@ -15,6 +15,7 @@ import io.mrkuhne.mezo.feature.season.repository.SeasonRepository;
 import io.mrkuhne.mezo.feature.season.repository.SeasonRevisionRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.HashSet;
@@ -25,8 +26,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -50,6 +53,7 @@ public class SeasonService {
     private final SeasonSleepPort sleepPort;
     private final MenuService menuService;
     private final SeasonExperimentRepository experimentRepository;
+    private final ObjectProvider<Clock> clock;
 
     public List<SeasonEntity> list(UUID owner) {
         return seasonRepository.findByCreatedByAndDeletedFalseOrderByStartDateDesc(owner);
@@ -249,6 +253,32 @@ public class SeasonService {
                 SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
     }
 
+    /**
+     * Éves terv (mezo-r36n9.113): a block that just started becomes the season's block — the active season, else the
+     * planned season whose window contains {@code start}, else nothing. The goal gets the block as its newest
+     * {@code goal_plan_link} (the earlier links stay as history) and the draft's block becomes {@code adopt <id>}, so a
+     * later accept never re-starts the old one. A block already linked to that goal (the season's own start) is a
+     * no-op. Goal fields, slots and sleep are untouched. Its own transaction: it runs after the start committed.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void adoptStartedBlock(UUID owner, UUID mesocycleId, LocalDate start) {
+        SeasonEntity s = seasonRepository.findActive(owner)
+            .or(() -> seasonRepository.findByCreatedByAndStatus(owner, SeasonEntity.STATUS_PLANNED).stream()
+                .filter(p -> !p.getStartDate().isAfter(start) && !p.endDate().isBefore(start))
+                .min(java.util.Comparator.comparing(SeasonEntity::getStartDate)))
+            .orElse(null);
+        if (s == null || goalPort.linkedMesocycles(owner, s.getGoalId()).contains(mesocycleId)) {
+            return;
+        }
+        goalPort.link(owner, s.getGoalId(), mesocycleId, start);
+        SeasonDraftJson d = s.getDraft();
+        if (d != null) {
+            s.setDraft(d.withBlock(new SeasonDraftJson.Block("adopt", mesocycleId, null)));
+            s.setUpdatedAt(Instant.now(clock.getIfAvailable(Clock::systemUTC)));
+            seasonRepository.save(s);
+        }
+    }
+
     /** The block the draft names: adopt a running one, re-run one, or start one from a template — then link it. */
     private void attachBlock(UUID owner, SeasonEntity s, SeasonDraftJson.Block block) {
         if (block == null || block.source() == null) {
@@ -271,9 +301,7 @@ public class SeasonService {
             .ifPresent(m -> goalPort.link(owner, s.getGoalId(), m.id(), m.startDate()));
         // From now on the season holds that block: a later accept compares against "adopt <id>", never re-starts it.
         SeasonDraftJson d = s.getDraft();
-        s.setDraft(new SeasonDraftJson(d.title(), d.trajectory(), d.targetWeightKg(), d.ratePctPerWeek(), d.kgPerWeek(),
-            d.startDate(), d.weeks(), d.gymDays(), d.gymTime(), d.sport(), d.sleepAnchor(), d.allowedRecipeIds(),
-            new SeasonDraftJson.Block("adopt", mesoId, null)));
+        s.setDraft(d.withBlock(new SeasonDraftJson.Block("adopt", mesoId, null)));
     }
 
     /**

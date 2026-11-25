@@ -182,10 +182,13 @@ public class SeasonApiService {
     }
 
     private SeasonResponse response(UUID owner, SeasonEntity s) {
+        // The newest linked block that still exists (a discarded newest one falls back to the one before it).
         List<UUID> linked = goalPort.linkedMesocycles(owner, s.getGoalId());
-        UUID block = linked.isEmpty() ? null : linked.get(linked.size() - 1);
-        if (block != null && trainPort.mesocycle(owner, block).isEmpty()) {
-            block = null;
+        UUID block = null;
+        for (int i = linked.size() - 1; i >= 0 && block == null; i--) {
+            if (trainPort.mesocycle(owner, linked.get(i)).isPresent()) {
+                block = linked.get(i);
+            }
         }
         return mapper.toResponse(s, previewService.currentDraft(owner, s), block);
     }

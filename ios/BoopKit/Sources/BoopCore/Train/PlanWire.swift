@@ -473,9 +473,12 @@ public struct WireCandidatesRequest: Encodable, Equatable, Sendable {
     public var priorities: [String: String]?
     public var sessionMinutesTarget: Int?
     public var sportGroups: [String]?
-    public init(daysOfWeek: [String], weeks: Int, priorities: [String: String]?, sessionMinutesTarget: Int?, sportGroups: [String]? = nil) {
+    /// A year-plan consolidation block (1–3 weeks, every muscle Tartás); nil = not sent.
+    public var consolidation: Bool?
+    public init(daysOfWeek: [String], weeks: Int, priorities: [String: String]?, sessionMinutesTarget: Int?, sportGroups: [String]? = nil,
+                consolidation: Bool? = nil) {
         self.daysOfWeek = daysOfWeek; self.weeks = weeks; self.priorities = priorities
-        self.sessionMinutesTarget = sessionMinutesTarget; self.sportGroups = sportGroups
+        self.sessionMinutesTarget = sessionMinutesTarget; self.sportGroups = sportGroups; self.consolidation = consolidation
     }
 }
 
@@ -566,10 +569,12 @@ public struct WireGenerateRequest: Encodable, Equatable, Sendable {
     public var split: String?
     public var sessionMinutesTarget: Int?
     public var sportGroups: [String]?
+    /// A year-plan consolidation block (1–3 weeks, every muscle Tartás); nil = not sent.
+    public var consolidation: Bool?
     public init(daysOfWeek: [String], weeks: Int, priorities: [String: String]?, goalText: String? = nil, split: String?,
-                sessionMinutesTarget: Int? = nil, sportGroups: [String]? = nil) {
+                sessionMinutesTarget: Int? = nil, sportGroups: [String]? = nil, consolidation: Bool? = nil) {
         self.daysOfWeek = daysOfWeek; self.weeks = weeks; self.priorities = priorities; self.goalText = goalText; self.split = split
-        self.sessionMinutesTarget = sessionMinutesTarget; self.sportGroups = sportGroups
+        self.sessionMinutesTarget = sessionMinutesTarget; self.sportGroups = sportGroups; self.consolidation = consolidation
     }
 }
 
@@ -584,5 +589,9 @@ public struct WireGenerateResponse: Decodable, Equatable, Sendable {
 public struct WireTemplateStart: Encodable, Equatable, Sendable {
     public var startDate: String
     public var status: String
-    public init(startDate: String, status: String) { self.startDate = startDate; self.status = status }
+    /// The Éves terv block this run starts (mezo-r36n9.113); nil = not sent.
+    public var yearBlockId: String?
+    public init(startDate: String, status: String, yearBlockId: String? = nil) {
+        self.startDate = startDate; self.status = status; self.yearBlockId = yearBlockId
+    }
 }

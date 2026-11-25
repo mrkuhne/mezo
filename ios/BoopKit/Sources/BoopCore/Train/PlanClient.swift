@@ -74,10 +74,12 @@ public struct PlanClient: Sendable {
         return created.id
     }
 
-    /// Starts a block from a template. A 409 `SEASON_REQUIRED` means no season covers the start date.
-    public func startTemplate(id: String, startDate: String, status: String) async throws(PlanFetchError) -> WireBlock {
+    /// Starts a block from a template. A 409 `SEASON_REQUIRED` means no season covers the start date. `yearBlockId`
+    /// names the Éves terv block this run starts; an id the server cannot use falls back to its ±14-day rule.
+    public func startTemplate(id: String, startDate: String, status: String,
+                              yearBlockId: String? = nil) async throws(PlanFetchError) -> WireBlock {
         try await raw.send(.post, "/api/train/meso-templates/\(id)/start", operationID: "startMesoTemplate",
-                           body: WireTemplateStart(startDate: startDate, status: status))
+                           body: WireTemplateStart(startDate: startDate, status: status, yearBlockId: yearBlockId))
     }
 
     /// Closes (archives) a block — idempotent on the server.
@@ -89,5 +91,37 @@ public struct PlanClient: Sendable {
     /// report, no AI review. A 409 `TRAIN_MESO_DISCARD_HAS_LOGS` means a workout was already logged in it.
     public func discardBlock(id: String) async throws(PlanFetchError) {
         _ = try await raw.sendRaw(.post, "/api/train/mesocycles/\(id)/discard", operationID: "discardMesocycle")
+    }
+
+    // MARK: the Éves terv (mezo-r36n9.113)
+
+    /// The proposed year: rotation, re-dated layout and warnings. Nothing is saved.
+    public func yearPlanPreview(_ request: WireYearPlanRequest) async throws(PlanFetchError) -> WireYearPlan {
+        try await raw.send(.post, "/api/train/year-plans/preview", operationID: "previewYearPlan", body: request)
+    }
+
+    /// Creates the active plan. A 409 `TRAIN_YEAR_PLAN_ACTIVE_EXISTS` means one is active and `replaceActive` was not set.
+    public func createYearPlan(_ request: WireYearPlanRequest) async throws(PlanFetchError) -> WireYearPlan {
+        try await raw.send(.post, "/api/train/year-plans", operationID: "createYearPlan", body: request)
+    }
+
+    /// The active plan, re-dated against today; nil when he has none (404 `TRAIN_YEAR_PLAN_NONE`) — a state, not a failure.
+    public func activeYearPlan() async throws(PlanFetchError) -> WireYearPlan? {
+        do throws(PlanFetchError) {
+            return try await raw.get("/api/train/year-plans/active", operationID: "getActiveYearPlan", as: WireYearPlan.self)
+        } catch .notFound {
+            return nil
+        }
+    }
+
+    /// One edit of a block; the whole re-dated plan comes back with its warnings. 409 `TRAIN_YEAR_BLOCK_LOCKED` /
+    /// `TRAIN_YEAR_NOTHING_TO_LINK`.
+    public func patchYearBlock(id: String, _ patch: WireYearBlockPatch) async throws(PlanFetchError) -> WireYearPlan {
+        try await raw.send(.patch, "/api/train/year-plans/blocks/\(id)", operationID: "patchYearBlock", body: patch)
+    }
+
+    /// Closes the plan; afterwards there is no active one.
+    public func archiveYearPlan(id: String) async throws(PlanFetchError) -> WireYearPlan {
+        try await raw.decodeBody(try await raw.sendRaw(.post, "/api/train/year-plans/\(id)/archive", operationID: "archiveYearPlan"))
     }
 }

@@ -63,6 +63,9 @@ import io.mrkuhne.mezo.api.dto.WorkoutAsPlannedRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutStartRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutSummaryResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
+import io.mrkuhne.mezo.api.dto.YearBlockPatch;
+import io.mrkuhne.mezo.api.dto.YearPlan;
+import io.mrkuhne.mezo.api.dto.YearPlanRequest;
 import io.mrkuhne.mezo.feature.auth.service.CurrentUser;
 import io.mrkuhne.mezo.feature.train.service.EwmaEstimator;
 import io.mrkuhne.mezo.feature.train.service.MesocycleDiscardService;
@@ -89,6 +92,8 @@ import io.mrkuhne.mezo.feature.train.service.TrainService;
 import io.mrkuhne.mezo.feature.train.service.VolumeArcService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutExerciseChangeService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
+import io.mrkuhne.mezo.feature.train.service.PlannedBlockStarter;
+import io.mrkuhne.mezo.feature.train.service.YearPlanService;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -128,10 +133,14 @@ public class TrainController implements TrainApi {
     private final MesoPlanEvaluateService mesoPlanEvaluateService;
     private final MesoPlanCandidatesService mesoPlanCandidatesService;
     private final TimingProfileService timingProfileService;
+    private final YearPlanService yearPlanService;
+    private final PlannedBlockStarter plannedBlockStarter;
 
     @Override
     public List<MesocycleResponse> listMesocycles() {
-        return service.listMesocycles(currentUserId.get());
+        UUID user = currentUserId.get();
+        plannedBlockStarter.startDue(user); // here, not in TrainService: the starter depends on it (no cycle)
+        return service.listMesocycles(user);
     }
 
     @Override
@@ -258,6 +267,33 @@ public class TrainController implements TrainApi {
     @Override
     public MesoPlanEvaluation evaluateMesoPlan(MesoPlanEvaluateRequest mesoPlanEvaluateRequest) {
         return mesoPlanEvaluateService.evaluate(currentUserId.get(), mesoPlanEvaluateRequest);
+    }
+
+    @Override
+    public YearPlan previewYearPlan(YearPlanRequest yearPlanRequest) {
+        return yearPlanService.preview(currentUserId.get(), yearPlanRequest);
+    }
+
+    @Override
+    public YearPlan createYearPlan(YearPlanRequest yearPlanRequest) {
+        return yearPlanService.create(currentUserId.get(), yearPlanRequest);
+    }
+
+    @Override
+    public YearPlan getActiveYearPlan() {
+        UUID user = currentUserId.get();
+        plannedBlockStarter.startDue(user); // a block due today shows as running, not as "indul"
+        return yearPlanService.active(user);
+    }
+
+    @Override
+    public YearPlan patchYearBlock(UUID blockId, YearBlockPatch yearBlockPatch) {
+        return yearPlanService.patchBlock(currentUserId.get(), blockId, yearBlockPatch);
+    }
+
+    @Override
+    public YearPlan archiveYearPlan(UUID id) {
+        return yearPlanService.archive(currentUserId.get(), id);
     }
 
     @Override

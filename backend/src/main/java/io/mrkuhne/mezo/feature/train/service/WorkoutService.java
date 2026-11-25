@@ -105,6 +105,8 @@ public class WorkoutService {
     // Session flow fix (mezo-cd8s): lazily settle abandoned instances at the top of getToday — its
     // own @Transactional bean (getToday is a read), always on (no feature gate).
     private final WorkoutAutoCloseService workoutAutoCloseService;
+    // Éves terv (mezo-r36n9.113): a due planned block starts on its day — own @Transactional bean, run first.
+    private final PlannedBlockStarter plannedBlockStarter;
     // Volume Progression (Plan 2 Phase A, mezo-hi9m): weekly per-muscle set-target rollover + the
     // ledger sync. The gate bean exists ONLY when
     // mezo.feature.volume-progression.enabled=true (mirrors hypertrophyGate/closingBlockGate).
@@ -196,6 +198,8 @@ public class WorkoutService {
         // after this, only a today-dated instance can be 'active', so the open-instance
         // lookup below can never resurrect last week's abandoned session. Runs before the
         // meso lookup so stale instances settle even when there is no active meso.
+        // Before both: a planned block due today becomes the active one (season gate permitting).
+        plannedBlockStarter.startDue(createdBy);
         workoutAutoCloseService.autoCloseStale(createdBy);
         WorkoutTodayResponse empty = new WorkoutTodayResponse();
         empty.setWeekDoneDates(List.of());

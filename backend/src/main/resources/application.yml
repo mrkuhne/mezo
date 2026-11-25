@@ -3004,6 +3004,28 @@ mezo:
       6:
         - { key: ppl2, label: "Toló / Húzó / Láb ×2", types: [Push, Pull, Legs, Push, Pull, Legs] }
         - { key: ul3, label: "Felső / Alsó ×3", types: [Upper, Lower, Upper, Lower, Upper, Lower] }
+  # Boop Éves terv (mezo-r36n9.113): 52-week block plan. Pairs = allowed two-group focus combinations (one kind each).
+  year-plan:
+    year-weeks: 52
+    default-block-weeks: 6
+    default-consolidation-weeks: 2
+    late-tolerance-days: 3
+    link-window-days: 14
+    kind-groups:
+      upper: [chest, back, shoulder, biceps, triceps]
+      lower: [quad, ham, glute, calf]
+    pairs:
+      - [back, biceps]
+      - [chest, triceps]
+      - [chest, shoulder]
+      - [back, shoulder]
+      - [shoulder, triceps]
+      - [biceps, triceps]
+      - [quad, glute]
+      - [ham, glute]
+      - [quad, calf]
+      - [ham, calf]
+      - [glute, calf]
   # Volume progression (Plan 2 Phase A) — weekly per-muscle set-volume tuning. Binds VolumeProperties.
   volume:
     deload-fraction: 0.5    # deload target = round(prevSets * this)

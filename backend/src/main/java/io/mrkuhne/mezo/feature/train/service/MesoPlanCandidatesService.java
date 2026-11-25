@@ -57,7 +57,12 @@ public class MesoPlanCandidatesService {
 
     @Transactional(readOnly = true)
     public MesoPlanCandidates candidates(UUID user, MesoPlanCandidatesRequest req) {
-        Map<String, String> priorities = PriorityTier.normalize(req.getPriorities());
+        boolean consolidation = Boolean.TRUE.equals(req.getConsolidation());
+        MesoWeeksGuard.check(req.getWeeks(), consolidation);
+        // Consolidation: every baseline group at Tartás, whatever the request said.
+        Map<String, String> priorities = consolidation
+            ? PriorityTier.allMaintain(volumeProperties.baselines().keySet())
+            : PriorityTier.normalize(req.getPriorities());
         PriorityGuard.checkEmphasizeCap(priorities, volumeProperties.bands().emphasizeMax());
         Shared shared = new Shared(generator.catalogue(user), evaluator.context(user));
 
@@ -99,7 +104,7 @@ public class MesoPlanCandidatesService {
 
     private List<Built> build(UUID user, MesoPlanCandidatesRequest req, Map<String, String> priorities, Shared shared) {
         MesoPlanGenerateRequest gen = MesoPlanGenerateRequest.builder()
-            .daysOfWeek(req.getDaysOfWeek()).weeks(req.getWeeks())
+            .daysOfWeek(req.getDaysOfWeek()).weeks(req.getWeeks()).consolidation(req.getConsolidation())
             .priorities(priorities.isEmpty() ? null : priorities).build();
         List<Built> out = new ArrayList<>();
         for (MesoPlanProperties.Split split : SplitCatalog.forDays(props, req.getDaysOfWeek().size())) {

@@ -26,6 +26,9 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSessionEn
      *  keeps soft-deleted rows out. */
     List<WorkoutSessionEntity> findByCreatedByAndDateOrderByCreatedAtAsc(UUID createdBy, LocalDate date);
 
+    /** True when the run has any workout instance (a logged session of any status). */
+    boolean existsByCreatedByAndMesocycleIdAndTemplateSessionIdIsNotNull(UUID createdBy, UUID mesocycleId);
+
     /** The instance a Boop as-planned booking made for this client ref (mezo-r36n9.161), if any. */
     Optional<WorkoutSessionEntity> findByCreatedByAndClientRef(UUID createdBy, UUID clientRef);
 

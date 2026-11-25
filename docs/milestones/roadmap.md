@@ -63,6 +63,23 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-11-25 — Boop Éves terv S3 + S4: the year map and following it (`mezo-r36n9.113`).**
+  Server (S3): `training_year_plan` / `training_year_block`, the pure `YearGenerator` (alternating upper/lower focus blocks,
+  first one upper, every group a focus ≥ 1× and the emphasised ones 2×, pair table, relaxations reported as notes) and
+  `YearSchedule` (a delay eats the buffer, then shortens the consolidation to 1 week, then pushes the year past 52 weeks),
+  `YearRules` (rule breaks are warnings, never refusals; skip consequence + where the focus could go), preview / create /
+  active / patch / archive under `/api/train/year-plans`. S4: block status follows its mesocycle on read
+  (`YearReconciler`), a **planned block starts on its day** (`PlannedBlockStarter`: only runs dated after the running one,
+  newest first, row lock, season gate respected), the started block is linked to the year (`yearBlockId` or the ±14-day
+  rule, one mesocycle per year block), the **season follows only blocks that really started** (`MesocycleStarted`), skipping
+  a linked never-started block deletes that planned run, the 2-week consolidation is all Tartás on a flat curve, and a due
+  block opens on today (`next.startsOn = max(plannedStart, today)`). Phone: the year view (create preview, 52-week strip,
+  block sheet, year review with *Jövő évi terv*), the **Következik** card on Edzés Ma, and the pre-filled new-block intake
+  with the planned date among the start-day pills. Spec
+  [2026-11-20-boop-eves-terv-design](../superpowers/specs/2026-11-20-boop-eves-terv-design.md), plan
+  [2026-11-21-boop-eves-terv-s3-s4](../superpowers/plans/2026-11-21-boop-eves-terv-s3-s4.md); docs
+  [`train.md`](../features/train.md), [`season.md`](../features/season.md), [`boop-ios.md`](../features/boop-ios.md).
+
 - **2026-11-23 — Owner recipe library migrated from ATLAS 4.0 (`mezo-hj7ul`).**
   Twenty-three recipes now use pantry-linked ingredient quantities and the app's frozen nutrition facts, rather than the
   HTML's estimated macros. The owner-approved 47 old recipes were soft-deleted; six retained recipes and historical meal
