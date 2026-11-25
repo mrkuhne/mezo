@@ -49,6 +49,16 @@ final class EdzesStore {
     private(set) var block: Cached<BlockPlan>?
     private(set) var blockProblem: TrainFetchError?
     private(set) var blockLoaded = false
+    /// Another day of this week's plan he chose to do today („Másik napot csinálok ma", mezo-r36n9.163); nil is
+    /// today's own. Every read of „today" asks the server for that day until he goes back.
+    private(set) var pickedDay: UUID?
+    /// The template days done this Mon–Sun week, whatever day they were done on; nil until the history answered.
+    private(set) var weekDone: Set<UUID>?
+    /// The title of a workout finished today, from the week's history — after a Tuesday done on Wednesday, the Ma
+    /// card says what was done, not Wednesday's plan.
+    private(set) var doneTodayTitle: String?
+    /// The template day of that workout.
+    private(set) var doneTodayTemplate: UUID?
 
     /// A cached day stays usable all day — the plan for today does not change under him — but it always says its
     /// age. Older than this and it is not today's plan any more.
@@ -345,10 +355,11 @@ final class EdzesStore {
         defer { loading = false }
         let date = day
         do {
-            let fresh = try await client.todayWorkout()
+            let fresh = try await client.todayWorkout(templateSessionId: pickedDay)
             today = Cached(value: fresh, fetchedAt: clock(), age: 0)
             problem = nil
-            try? await cache?.put(fresh, endpoint: Self.endpoint, date: date)
+            // Another day's plan is never written as today's: the offline fallback would show it as today's.
+            if pickedDay == nil { try? await cache?.put(fresh, endpoint: Self.endpoint, date: date) }
             // A workout running on a plan that has since changed (he edited the block, or started from a stale
             // cache): the fresh order, set counts and technique go into the running session, nothing logged is
             // lost (`WorkoutSession.apply`, mezo-r36n9.147).
@@ -358,6 +369,8 @@ final class EdzesStore {
             }
         } catch {
             let failure = (error as? TrainFetchError) ?? .server
+            // A picked day already on screen stays as it is: the cache only holds today's own plan.
+            if failure == .offline, pickedDay != nil, today != nil { return }
             // Only the network sends us to the cache. A refusal or a server fault is not "here is an old answer":
             // it is a problem the room reports.
             if failure == .offline, let hit = await cache?.get(TodayWorkout.self, endpoint: Self.endpoint,
@@ -368,6 +381,59 @@ final class EdzesStore {
                 problem = failure
             }
         }
+    }
+
+    /// Today he does another day of the week (`id`), or his own again (nil). The other day's plan needs the server;
+    /// without it nothing changes and the sentence to show comes back.
+    func pick(_ id: UUID?) async -> String? {
+        guard let id else {
+            pickedDay = nil
+            await load(force: true)
+            return nil
+        }
+        guard let client else { return "A másik nap tervét most nem érem el." }
+        do {
+            let fresh = try await client.todayWorkout(templateSessionId: id)
+            pickedDay = id
+            today = Cached(value: fresh, fetchedAt: clock(), age: 0)
+            problem = nil
+            return nil
+        } catch TrainFetchError.offline {
+            return "Most nem érem el a szervert, a másik nap tervét nem tudom letölteni."
+        } catch {
+            return "A szerver most nem adta oda annak a napnak a tervét."
+        }
+    }
+
+    /// The week's done template days and today's done title, from the week's history plus the Napló bookings still
+    /// in the queue. A failed read leaves them unknown, never empty.
+    func loadWeek(queued: [WorkoutAsPlannedPayload]) async {
+        guard let client else { return }
+        let week = NaploDays.week(containing: day)
+        guard let from = Self.noon(week.from), let to = Self.noon(week.to),
+              let history = try? await client.history(from: from, to: to) else { return }
+        var done = weekDoneTemplates(history: history, week: week, queued: queued)
+        // A workout finished on this phone whose write is still queued counts too.
+        if let f = finished, let t = f.session.templateSessionId, Self.ymd(f.finishedAt) >= week.from { done.insert(t) }
+        weekDone = done
+        let doneToday = history.last { $0.date == day && $0.status == .completed }
+        doneTodayTitle = doneToday?.title
+        doneTodayTemplate = doneToday?.templateSessionId
+    }
+
+    /// Today's weekday, Monday = 0, in the device's calendar.
+    var todayIndex: Int? { TrainWeekdays.index(ofDate: day, calendar: Self.calendar) }
+
+    private static var calendar: Calendar {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = .autoupdatingCurrent
+        return cal
+    }
+
+    private static func noon(_ ymd: String) -> Date? {
+        let p = ymd.split(separator: "-").compactMap { Int($0) }
+        guard p.count == 3 else { return nil }
+        return calendar.date(from: DateComponents(year: p[0], month: p[1], day: p[2], hour: 12))
     }
 
     /// The running block. Same rule as the day: the server first, the cache only when there is

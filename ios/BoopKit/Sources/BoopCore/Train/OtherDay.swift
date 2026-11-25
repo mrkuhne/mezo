@@ -42,11 +42,11 @@ public struct OtherDayChoice: Equatable, Identifiable, Sendable {
 }
 
 /// The week's training days he can do today instead of today's own: not today's, not already done this week, and
-/// startable (an id). The missed ones first, the most recent first — yesterday's is the one he means — then the
+/// startable (an id and at least one exercise — a „Pihenő" day is not a workout). The missed ones first, the most recent first — yesterday's is the one he means — then the
 /// week's later days in order.
 public func otherDayChoices(days: [BlockDay], todayIndex: Int, done: Set<UUID>) -> [OtherDayChoice] {
     let open = days.compactMap { d -> (Int, OtherDayChoice)? in
-        guard let id = d.id, !done.contains(id), let i = TrainWeekdays.index(of: d.day), i != todayIndex else { return nil }
+        guard let id = d.id, d.exerciseCount > 0, !done.contains(id), let i = TrainWeekdays.index(of: d.day), i != todayIndex else { return nil }
         return (i, OtherDayChoice(id: id, weekday: TrainWeekdays.name(i), title: d.type, muscle: d.muscle,
                                   when: i < todayIndex ? .missed : .later))
     }

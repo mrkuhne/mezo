@@ -32,6 +32,11 @@ struct OtherDayTests {
         #expect(otherDayChoices(days: noId, todayIndex: 2, done: []).isEmpty)
     }
 
+    @Test func aDayWithNoExercisesIsARestDaySoItIsNotOffered() {
+        let rest = [BlockDay(id: UUID(), day: "Kedd", type: "Pihenő", muscle: "regeneráció", exerciseCount: 0)]
+        #expect(otherDayChoices(days: rest, todayIndex: 2, done: []).isEmpty)
+    }
+
     @Test func theServersShortAndLongLabelsBothCount() {
         #expect(TrainWeekdays.index(of: "Ke") == 1)
         #expect(TrainWeekdays.index(of: "Kedd") == 1)

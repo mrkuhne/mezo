@@ -73,6 +73,8 @@ struct EdzesRoom: View {
     @State private var released: Set<UUID> = []
     /// „Mi van a termemben" (mezo-r36n9.66), from the Beállítások action. The workout player presents its own copy.
     @State private var showGym = false
+    /// „Melyik napot csinálod ma?" (mezo-r36n9.163).
+    @State private var showOtherDays = false
 
     /// `hidden` is not „no workout": the session may well be running, minimised.
     private enum WorkoutPhase { case hidden, briefing, playing, ceremony, result }
@@ -222,11 +224,20 @@ struct EdzesRoom: View {
         // A workout's start or finish reached the server: today and the brief re-read, so the card says what the
         // server now knows.
         .onChange(of: ritmus?.edzesTick) {
-            Task { await store?.load(force: true); await morning?.load(date: Date()) }
+            Task { await store?.load(force: true); await loadWeek(); await morning?.load(date: Date()) }
+        }
+        .sheet(isPresented: $showOtherDays) {
+            OtherDaySheet(choices: otherDays, hue: hue) { id in
+                showOtherDays = false
+                Task { if let message = await store?.pick(id) { toast = message } }
+            }
+            .presentationDetents([.medium, .large])
+            .presentationBackground(NK.ground).presentationCornerRadius(34).presentationDragIndicator(.visible)
         }
         .task {
             if store == nil { store = EdzesStore(client: train, cache: cache, folder: workoutFolder) }
             await store?.load()
+            await loadWeek()
             await store?.loadRecords()
             await store?.loadBlock()
             // The catalog is only needed by the swap sheet, but it is one cached read and the gym is exactly
@@ -237,6 +248,12 @@ struct EdzesRoom: View {
             #if DEBUG
             // `-previewEdzesGym YES` (mezo-r36n9.66): straight onto „Mi van a termemben".
             if UserDefaults.standard.bool(forKey: "previewEdzesGym") { showGym = true }
+            // `-previewOtherDay sheet|pick` (mezo-r36n9.163): „Melyik napot csinálod ma?" open, or its first day picked.
+            switch UserDefaults.standard.string(forKey: "previewOtherDay") {
+            case "sheet": await store?.loadBlock(); showOtherDays = true
+            case "pick": await store?.loadBlock(); if let first = otherDays.first { _ = await store?.pick(first.id) }
+            default: break
+            }
             // `-previewEdzesSwap YES` (mezo-r36n9.66): straight into the player, which opens the swap sheet;
             // `-previewEdzesPlayer YES` (mezo-r36n9.147): straight into the player on its lifting screen.
             if UserDefaults.standard.bool(forKey: "previewEdzesSwap") || UserDefaults.standard.bool(forKey: "previewEdzesPlayer") {
@@ -305,9 +322,22 @@ struct EdzesRoom: View {
         // the ceremony closed (owner, 2026-11-23).
         let doneToday = store?.doneToday ?? false
         let result: (() -> Void)? = store?.finishedToday == nil ? nil : { phase = .result }
-        if let s = brief?.day.session {
+        if let w = workout, let title = w.title, !doneToday, let i = store?.todayIndex, isAnotherDay(w, todayIndex: i) {
+            // Another day of the week, picked for today or running since (mezo-r36n9.163): the plan's own words.
+            let other = w.dayLabel.flatMap(TrainWeekdays.index(of:)).map(TrainWeekdays.adjective) ?? "másik"
+            TodaySessionCard(label: "pótlás", title: title, sub: anotherDaySub(other), hue: hue, done: false,
+                             progress: runningProgress, missions: store?.missions.count ?? 0,
+                             released: released.count, action: { startOrResume() })
+            if store?.session == nil, store?.pickedDay != nil {
+                quietLink("Mégis a mai napot csinálom") {
+                    released = []
+                    Task { _ = await store?.pick(nil) }
+                }
+            }
+        } else if let s = brief?.day.session {
             let done = s.done || doneToday
-            TodaySessionCard(label: done ? "megvolt" : "ma", title: s.title, sub: highlightSub,
+            TodaySessionCard(label: done ? "megvolt" : "ma", title: done ? doneTitle(s.title) : s.title,
+                             sub: highlightSub,
                              hue: hue, done: done, progress: runningProgress,
                              missions: store?.missions.count ?? 0, released: released.count,
                              action: (done && store?.session == nil) ? nil : { startOrResume() },
@@ -315,7 +345,8 @@ struct EdzesRoom: View {
         } else if let w = workout, !w.isRestDay, let title = w.title {
             // The brief has no session but the training plan does (a day started across
             // midnight, or a brief that has not caught up): the plan is the honest thing.
-            TodaySessionCard(label: doneToday ? "megvolt" : "ma", title: title, sub: highlightSub, hue: hue,
+            TodaySessionCard(label: doneToday ? "megvolt" : "ma", title: doneToday ? doneTitle(title) : title,
+                             sub: highlightSub, hue: hue,
                              done: doneToday, progress: runningProgress, missions: store?.missions.count ?? 0,
                              released: released.count,
                              action: (doneToday && store?.session == nil) ? nil : { startOrResume() },
@@ -325,6 +356,63 @@ struct EdzesRoom: View {
         } else if let c = brief.map({ maiCopy($0, .mozgas) }) {
             NKHighlight(hue: hue, label: "ma", text: c.headline, sub: c.sentence)
         }
+        if canPickOtherDay {
+            quietLink("Másik napot csinálok ma") { showOtherDays = true }
+        }
+    }
+
+    /// On a done day the card names what was done: another weekday's workout done today says its own title
+    /// (mezo-r36n9.163); today's own keeps the brief's words.
+    private func doneTitle(_ own: String) -> String {
+        guard let store, let other = store.doneTodayTemplate, let i = store.todayIndex,
+              let title = store.doneTodayTitle,
+              block?.days.first(where: { TrainWeekdays.index(of: $0.day) == i })?.id != other else { return own }
+        return title
+    }
+
+    /// The week's other open training days (mezo-r36n9.163), once the week's done days are known.
+    private var otherDays: [OtherDayChoice] {
+        guard let b = block, let i = store?.todayIndex, let done = store?.weekDone else { return [] }
+        return otherDayChoices(days: b.days, todayIndex: i, done: done)
+    }
+
+    /// Offered while nothing runs, today is not done yet and no other day is picked — also on a rest day.
+    private var canPickOtherDay: Bool {
+        guard let store, store.session == nil, store.pickedDay == nil, !(store.doneToday || brief?.day.session?.done == true)
+        else { return false }
+        if let w = workout, let i = store.todayIndex, isAnotherDay(w, todayIndex: i) { return false }
+        return !otherDays.isEmpty
+    }
+
+    /// „keddi nap, ma pótolod · 60 perc · 5 gyakorlat".
+    private func anotherDaySub(_ adjective: String) -> String {
+        let s = edzesSummary(workout, brief: nil)
+        return ["\(adjective) nap, ma pótolod", s.minutes.map { "\($0) perc" }, s.exercises.map { "\($0) gyakorlat" },
+                s.workingSets.map { "\($0) sorozat" }].compactMap { $0 }.joined(separator: " · ")
+    }
+
+    /// A quiet one-line action under the Ma card.
+    private func quietLink(_ text: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Text(text).nkFont(15, .medium).foregroundStyle(.white.opacity(0.85))
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.35))
+            }
+            .padding(.horizontal, 16)
+            .frame(maxWidth: .infinity, minHeight: 48)
+            .contentShape(Rectangle())
+            .nkGlass()
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// The week's done days and the queued Napló bookings, for the ticks and the other-day sheet.
+    private func loadWeek() async {
+        var queued: [WorkoutAsPlannedPayload] = []
+        if let ritmus { queued = asPlannedBookings(in: await ritmus.outbox.queue) }
+        await store?.loadWeek(queued: queued)
     }
 
     /// „17:30 · 60 perc · 5 gyakorlat · 18 sorozat" — each part only when it is known.
@@ -683,8 +771,11 @@ struct EdzesRoom: View {
         }
     }
 
-    /// A day counts as done when this week has a finished session on it.
+    /// A day counts as done when this week has a finished session **of that template day**, whatever day it was
+    /// done on (a Tuesday done on Wednesday ticks Tuesday, mezo-r36n9.163). Before the week's history answered,
+    /// the dates the server marked done stand in.
     private func isDayDone(_ day: BlockDay) -> Bool {
+        if let done = store?.weekDone, let id = day.id { return done.contains(id) }
         guard let done = workout?.weekDoneDates, !done.isEmpty, let b = brief else { return false }
         let names = ["Hét", "Ke", "Sze", "Csü", "Pé", "Szo", "Vas"]
         guard let index = names.firstIndex(where: { day.day.hasPrefix($0) }),

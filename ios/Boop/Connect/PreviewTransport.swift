@@ -660,7 +660,14 @@ struct PreviewTransport: ClientTransport {
             let list = previewDay.enumerated()
                 .map { i, e in previewExercise(e, index: i, plain: plain) }
                 .joined(separator: ",")
-            return json(#"{"templateSessionId":"\#(previewSessionId)","dayLabel":"Hét","title":"Vállak és hát","durationEst":68,"exercises":[\#(list)],"weekDoneDates":["\#(done)"],"overloadSummary":{"weightUp":2,"weightDown":0,"repUp":1,"hold":2}}"#)
+            // The cross-day start (mezo-r36n9.163): `?templateSessionId=` answers with that day of the preview block;
+            // without it, today's own weekday.
+            let path = request.path ?? ""
+            let picked = previewBlockDays.indices.first { path.contains("c1c2c3d4-001\($0)-") }
+            let weekday = (Calendar.current.component(.weekday, from: Date()) + 5) % 7
+            let (label, title) = picked.map { (previewBlockDays[$0].0, previewBlockDays[$0].1) } ?? (previewBlockDays[weekday].0, "Vállak és hát")
+            let id = picked.map { "c1c2c3d4-001\($0)-4a2b-9c3d-111122223333" } ?? previewSessionId
+            return json(#"{"templateSessionId":"\#(id)","dayLabel":"\#(label)","title":"\#(title)","durationEst":68,"exercises":[\#(list)],"weekDoneDates":["\#(done)"],"overloadSummary":{"weightUp":2,"weightDown":0,"repUp":1,"hold":2}}"#)
         case "listMesocycles": return json("[\(previewMesocycle)]")
         case "getMesocycleVolumeArc": return json(previewVolumeArc)
         case "getExerciseCatalog": return json(previewCatalog)
@@ -735,18 +742,20 @@ struct PreviewTransport: ClientTransport {
     /// A running block, so the timeline, the week carousel and the load page have something
     /// real-shaped to draw. The numbers are invented and the room says their age like any
     /// other answer — nothing here reaches a screen that claims to be his own data.
+    private static let previewBlockDays = [("Hét", "Vállak és hát", "váll · hát", 5), ("Ke", "Láb", "comb · far", 6),
+                    ("Sze", "Pihenő", "regeneráció", 0), ("Csü", "Mell és kar", "mell · tricepsz", 5),
+                    ("Pé", "Hát és bicepsz", "hát · bicepsz", 5), ("Szo", "Röplabda", "egész test", 0),
+                    ("Vas", "Pihenő", "regeneráció", 0)]
+
     private static var previewMesocycle: String {
         let profiles = previewMuscles.map { m in
             #""\#(m.key)":{"mev":\#(m.mev),"mav":\#(m.mav),"mrv":\#(m.mrv),"current":\#(previewCurrent(m)),"source":{"baseline":{"name":"\#(m.key)","mev":\#(m.mev),"mav":\#(m.mav),"mrv":\#(m.mrv)},"adjustments":[],"confidence":0.8}}"#
         }.joined(separator: ",")
-        let days = [("Hét", "Vállak és hát", "váll · hát", 5), ("Ke", "Láb", "comb · far", 6),
-                    ("Sze", "Pihenő", "regeneráció", 0), ("Csü", "Mell és kar", "mell · tricepsz", 5),
-                    ("Pé", "Hát és bicepsz", "hát · bicepsz", 5), ("Szo", "Röplabda", "egész test", 0),
-                    ("Vas", "Pihenő", "regeneráció", 0)]
+        let days = previewBlockDays
             .enumerated().map { i, d in
                 #"{"id":"c1c2c3d4-001\#(i)-4a2b-9c3d-111122223333","day":"\#(d.0)","type":"\#(d.1)","muscle":"\#(d.2)","exerciseCount":\#(d.3),"exercises":[],"current":\#(d.0 == "Hét")}"#
             }.joined(separator: ",")
-        return #"{"id":"\#(previewBlockId)","title":"Hypertrophy · Ősz","shortTitle":"Ősz","status":"active","goal":"Izomtömeg","startDate":"\#(dayString(offset: -16))","endDate":"\#(dayString(offset: -16 + 56))","weeks":8,"currentWeek":\#(previewCurrentWeek),"split":"5 napos","style":"hypertrophy","hasReport":false,"musclePriorities":{"chest":"emphasize","back":"emphasize","calf":"maintain"},"phaseCurve":[\#(previewPhaseList)],"volumePerMuscle":{\#(profiles)},"days":[\#(days)]}"#
+        return #"{"id":"\#(previewBlockId)","title":"Hypertrophy · Ősz","shortTitle":"Ősz","status":"active","goal":"Izomtömeg","startDate":"\#(dayString(offset: -16))","endDate":"\#(dayString(offset: -16 + 56))","weeks":8,"currentWeek":\#(previewCurrentWeek),"split":"5 napos","style":"hypertrophy","hasReport":false,"weeklyReviewMode":"manual","musclePriorities":{"chest":"emphasize","back":"emphasize","calf":"maintain"},"phaseCurve":[\#(previewPhaseList)],"volumePerMuscle":{\#(profiles)},"days":[\#(days)]}"#
     }
 
     /// What the invented block is doing with each muscle.
