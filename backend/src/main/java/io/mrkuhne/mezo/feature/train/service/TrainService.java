@@ -22,6 +22,7 @@ import io.mrkuhne.mezo.feature.train.port.SeasonGatePort;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleReportEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.feature.train.entity.TrainingYearBlockEntity;
+import io.mrkuhne.mezo.feature.train.entity.TrainingYearPlanEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.config.TrainProperties;
 import io.mrkuhne.mezo.feature.train.mapper.TrainMapper;
@@ -32,6 +33,7 @@ import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.MuscleGroupVolumeLogRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.feature.train.repository.TrainingYearBlockRepository;
+import io.mrkuhne.mezo.feature.train.repository.TrainingYearPlanRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -109,6 +111,7 @@ public class TrainService {
     /** Throws a superseded planned run away when a block starts now (mezo-r36n9.113). */
     private final MesocycleDiscardService discardService;
     private final TrainingYearBlockRepository yearBlockRepository;
+    private final TrainingYearPlanRepository yearPlanRepository;
     private final ObjectProvider<Clock> clock;
 
     public List<MesocycleResponse> listMesocycles(UUID createdBy) {
@@ -244,6 +247,9 @@ public class TrainService {
     @Transactional
     MesocycleResponse stampRun(UUID createdBy, StampSource src) {
         requireSeason(createdBy, src.startDate());
+        // Lock order (mezo-r36n9.113): the active year plan's row first — as a block PATCH does — and only then the
+        // mesocycles and year blocks this start archives, supersedes and links.
+        yearPlanRepository.findLockedByCreatedByAndStatusAndDeletedFalse(createdBy, TrainingYearPlanEntity.ACTIVE);
         boolean active = "active".equals(src.status());
         MesocycleEntity m = new MesocycleEntity();
         m.setCreatedBy(createdBy); // server-side ownership — never from the client
@@ -375,14 +381,17 @@ public class TrainService {
     }
 
     /**
-     * A block that starts now takes over (mezo-r36n9.113): every never-started planned run dated after it with no
-     * logged session is thrown away („Mégsem, eldobom" — soft delete, no report, no event), and its year block lets it
+     * A block that starts now takes over (mezo-r36n9.113): every never-started planned run dated after its start and
+     * before its end with no logged session is thrown away (a run queued at/after its end is its intended successor
+     * and stays) („Mégsem, eldobom" — soft delete, no report, no event), and its year block lets it
      * go (back to planned). Otherwise the planned run, made earlier, would activate on its day and archive this one.
      */
     private void supersedePlannedRuns(UUID createdBy, MesocycleEntity started) {
         LocalDate start = started.getStartDate();
+        LocalDate end = started.getEndDate();
         for (MesocycleEntity planned : mesocycleRepository.findByCreatedByAndStatusAndDeletedFalse(createdBy, "planned")) {
             if (planned.getStartDate() == null || !planned.getStartDate().isAfter(start)) continue;
+            if (!planned.getStartDate().isBefore(end)) continue; // the successor, queued for after this block
             if (workoutSessionRepository.existsByCreatedByAndMesocycleIdAndTemplateSessionIdIsNotNull(createdBy,
                 planned.getId())) {
                 continue;

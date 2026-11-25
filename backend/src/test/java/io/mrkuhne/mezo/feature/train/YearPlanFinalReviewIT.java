@@ -257,6 +257,22 @@ class YearPlanFinalReviewIT extends ApiIntegrationTest {
             + "and is_deleted = false", Integer.class, owner)).isEqualTo(1);
     }
 
+    @Test
+    void startingTodayKeepsThePlannedSuccessorDatedAtItsEnd() {
+        UUID template = template();
+        YearPlan plan = plan(LocalDate.of(2026, 11, 23));
+        // Block 2's run is queued for 2027-01-04; a 6-week block started today ends 2027-01-02 — it is the successor.
+        MesocycleResponse successor = start(template, LocalDate.of(2027, 1, 4), "planned", null);
+        assertThat(at(active(), 2).getMesocycleId()).isEqualTo(successor.getId());
+
+        start(template(), TODAY, "active", at(plan, 1).getId());
+
+        assertThat(deleted(successor.getId())).isFalse();
+        YearPlan after = active();
+        assertThat(at(after, 2).getMesocycleId()).isEqualTo(successor.getId());
+        assertThat(at(after, 1).getStatus()).isEqualTo(YearBlock.StatusEnum.RUNNING);
+    }
+
     // ---- minor 4: un-skipping a block reality skipped keeps it planned ----
 
     @Test
