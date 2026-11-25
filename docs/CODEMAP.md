@@ -1391,7 +1391,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     GET /api/train/run-sessions · POST /api/train/run-sessions · GET /api/train/timing-profile ·
     POST /api/train/year-plans/preview · POST /api/train/year-plans · GET /api/train/year-plans/active ·
     PATCH /api/train/year-plans/blocks/{blockId} · POST /api/train/year-plans/{id}/archive
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 142 IT + 60 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 143 IT + 61 unit
   - **ITs:** `BlockExerciseSuggestionsIT`, `CatalogMediaResolutionIT`, `CatalogWriteContractIT`, `ClosingBlockIT`,
     `ClosingBlockSwitchOffIT`, `ClosingBlockVolumeFlagIT`, `ComebackTodayIT`, `CrossDayWorkoutIT`, `CustomWorkoutIT`,
     `ExerciseCatalogContractIT`, `ExerciseCatalogLoaderIT`, `ExerciseCatalogPermissionIT`, `ExerciseCatalogSlugRaceIT`,
@@ -1426,7 +1426,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `WorkoutTimingBackfillIT`, `WorkoutTimingIT`, `WorkoutTodayAmountIT`, `WorkoutTodayAmountSwitchOffIT`,
     `WorkoutTodayPrescriptionIT`, `WorkoutTodayProgressionIT`, `WorkoutTodayStyleIT`, `WorkoutTodayStyleSwitchOffIT`,
     `WorkoutTodayTechniqueIT`, `WorkoutWeightGapIT`, `WorkoutWindowQueryServiceIT`, `YearPlanContractIT`,
-    `YearPlanLinkContractIT`, `YearPlanNextDueIT`, `YearPlanPropertiesBindingIT`
+    `YearPlanFinalReviewIT`, `YearPlanLinkContractIT`, `YearPlanNextDueIT`, `YearPlanPropertiesBindingIT`
   - **populators:** `BiometricProfilePopulator`, `CheckInPopulator`, `DatabasePopulator`, `GoalPopulator`,
     `MesoTemplatePopulator`, `PlannedSkipPopulator`, `ReadinessChoicePopulator`, `RecoveryPeriodPopulator`,
     `RunningPopulator`, `SleepLogPopulator`, `SportSlotSkipPopulator`, `TrainPopulator`, `TrainingYearPlanPopulator`,
