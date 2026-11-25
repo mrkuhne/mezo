@@ -2,7 +2,7 @@
 title: Language (Hungarian + English)
 type: feature-platform
 status: mixed
-updated: 2026-11-21
+updated: 2026-11-25
 tags: [platform, frontend, backend, auth, ai, boop, b4-etel]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/auth/service/UserLanguage.java

@@ -99,6 +99,7 @@ Jump from a route, tab, sub-feature, or concept to the doc + the section that co
 | Boop's morning brief — five orbs (Forma, Alvás, Mozgás, Fuel, Pulzus), Boop's spoken verdicts, energy curve, per-orb paths and sheets | iPhone app · Nap · Mai | [`boop-ios.md`](boop-ios.md) §2–§4 |
 | Move today's training session ("Áttolom 18:30-ra") with undo, from the meeting-conflict hint | iPhone app · Nap · Mai | [`boop-ios.md`](boop-ios.md) §2, §4 |
 | Reasoned exercise swap in the workout player + *Mi van a termemben* gym settings | iPhone app · Edzés | [`boop-ios.md`](boop-ios.md) §2, [`train.md`](train.md) §4 |
+| Éves terv — the 52-week year map (alternating upper/lower focus blocks, light weeks, buffer, 2-week consolidation), re-dated by reality; Következik card + pre-filled new block; a planned block starts on its day | iPhone app · Edzés | [`train.md`](train.md) §4 *Éves terv*, [`boop-ios.md`](boop-ios.md) §2, [`season.md`](season.md) §3.3 |
 | Bedtime reminder (nightly notification at the sleep-goal bedtime − 30 min) | iPhone app · Nap · Mai | [`boop-ios.md`](boop-ios.md) §2 |
 | Boop daily loop — offline-first check-in (orb swipe + watch snapshot on the energy curve), goal of the day, outbox with *Újra* rows | iPhone app · Ma | [`boop-ios.md`](boop-ios.md) §2–§4 |
 | Boop evening close (*Esti levezetés*: rating, goal outcome, voice/typed journal, Boop's line) and the day-close record | iPhone app · Ma · Este, Napló | [`dayclose.md`](dayclose.md), [`boop-ios.md`](boop-ios.md) §2 |

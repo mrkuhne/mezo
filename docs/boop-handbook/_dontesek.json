@@ -1160,5 +1160,77 @@
     "miert": "Korábban a Tartás majdnem növekedési adaggal indult, ezért a szint csökkentése szinte semmi helyet nem szabadított fel.",
     "levaltotta": "A „Sáv széle” döntés Tartásra vonatkozó fele (a Tartás a sáv tetejéről indult); az Építés és a Hangsúly kezdőpontja marad.",
     "kovetkezmeny": "A Tartásra állított izom valóban helyet szabadít a heti keretben; a 4 napos, 60 perces terv így belefér."
+  },
+  "d-2026-11-21-tervezett-blokk-sajat-napjan": {
+    "cim": "A tervezett blokk a saját napján elindul",
+    "datum": "2026-11-21",
+    "suly": "Közepes",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "A „Jövő hétfőn” kezdésű blokk a megadott napon magától elindul, ha az évad megengedi és a futó blokknál későbbi. (Boop döntése, a tulajdonos látta)",
+    "miert": "Különben a térképet követő blokk sosem indulna el.",
+    "levaltotta": "—",
+    "kovetkezmeny": "Egy régi, elfelejtett tervezett blokk nem indul el magától; el kell dobni."
+  },
+  "d-2026-11-21-evad-az-elindult-blokkot-koveti": {
+    "cim": "Az évad a ténylegesen elindult blokkot követi",
+    "datum": "2026-11-21",
+    "suly": "Közepes",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "Az évad blokkja az, amelyik tényleg fut; a tervezett blokk az indulásakor csatlakozik. (Boop döntése, a tulajdonos látta)",
+    "miert": "Az évad mindig a futó blokkot mutatja.",
+    "levaltotta": "—",
+    "kovetkezmeny": "A tervezett blokk a napjáig nem látszik az évadban."
+  },
+  "d-2026-11-21-kihagyott-tervezett-blokk-torlodik": {
+    "cim": "A kihagyott, még el nem kezdett tervezett blokk törlődik",
+    "datum": "2026-11-21",
+    "suly": "Közepes",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "Ha az éves tervben kihagysz egy olyan blokkot, amihez már készült, de el nem kezdett tervezett blokk, az törlődik. (Boop döntése, a tulajdonos látta)",
+    "miert": "Te döntöttél a kihagyásról; a félkész blokk nem maradhat lógva.",
+    "levaltotta": "—",
+    "kovetkezmeny": "A tervezett blokk szerkesztései elvesznek."
+  },
+  "d-2026-11-21-elso-blokk-felso": {
+    "cim": "Az éves terv első blokkja felső testes",
+    "datum": "2026-11-21",
+    "suly": "Közepes",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "Az év első blokkja felső, utána felváltva alsó és felső. (Boop döntése, a tulajdonos látta)",
+    "miert": "Egyértelmű, kiszámítható kezdés.",
+    "levaltotta": "—",
+    "kovetkezmeny": "Futó blokk adoptálásakor annak fókusza dönti el a fajtát."
+  },
+  "d-2026-11-21-fokusz-parok-tablazata": {
+    "cim": "Fókuszpárok táblázata",
+    "datum": "2026-11-21",
+    "suly": "Közepes",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "Egy blokk két fókusza csak összetartozó pár lehet (például hát + bicepsz, mell + tricepsz, comb + far); ha nem fér, a szabály lazul és ezt kimondja. (Boop döntése, a tulajdonos látta)",
+    "miert": "Értelmes párok, és mindig kimondott kivétel.",
+    "levaltotta": "—",
+    "kovetkezmeny": "Ritkán szokatlan párt is kaphat, figyelmeztetéssel."
+  },
+  "d-2026-11-21-lezaras-minden-tartas": {
+    "cim": "Az év végi lezárás minden izomra Tartás",
+    "datum": "2026-11-21",
+    "suly": "Közepes",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "A 2 hetes lezárás minden izomra Tartás, könnyű szinten, felfutás és külön könnyítő hét nélkül. (Boop döntése, a tulajdonos látta)",
+    "miert": "Egy év után pihentet és megtart.",
+    "levaltotta": "—",
+    "kovetkezmeny": "Nincs fókusz a lezárás alatt."
   }
 }

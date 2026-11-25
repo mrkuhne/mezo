@@ -2,7 +2,7 @@
 title: Me Area
 type: feature-domain
 status: mixed
-updated: 2026-11-20
+updated: 2026-11-25
 tags: [me, biometrics, progression, frontend, backend, data-layer, notification]
 key_files:
   - api/feature/goal/goal.yml

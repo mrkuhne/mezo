@@ -2,7 +2,7 @@
 title: Capacity (day load vs. what the owner can carry)
 type: feature-domain
 status: in-progress
-updated: 2026-11-21
+updated: 2026-11-25
 tags: [capacity, boop, b7-kapacitas, backend, ai, calendar, energy-curve, wearable]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/capacity

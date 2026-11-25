@@ -1212,7 +1212,7 @@
     "terulet": [
       "Edzés"
     ],
-    "mit_kapsz": "Az Edzés → Blokk fülön az Új blokk gombbal megadod, meddig tarthat egy edzés és melyik izom mennyire fontos; Boop legfeljebb három hibátlan, kész tervet mutat becsült idővel (ha semmi nem fér, javításokat ajánl). Kiválasztod, a blokk elindul, és a blokképítő megmutatja a heti keretet és minden izom „miért?”-jét; a „Mégsem, eldobom” visszavonja.",
+    "mit_kapsz": "Az Edzés → Blokk fülön az Új blokk gombbal megadod, meddig tarthat egy edzés és melyik izom mennyire fontos; Boop legfeljebb három hibátlan, kész tervet mutat becsült idővel (ha semmi nem fér, javításokat ajánl). Kiválasztod, a blokk elindul, és a blokképítő megmutatja a heti keretet és minden izom „miért?”-jét; a „Mégsem, eldobom” visszavonja. Az Éves terv: az Edzés szobában egész évre előre látod a blokkjaidat (52 hetes térkép, fókuszok, könnyítő hetek, 2 hetes lezárás); csúszásnál a többi odébb tolódik, a Következik kártya előre kitöltött új blokkot nyit, a tervezett blokk a saját napján elindul.",
     "munkamenet": "Muscle Ladder implementation"
   },
   "mezo-r36n9.115": {
