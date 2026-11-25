@@ -451,17 +451,23 @@ public class ProposalService {
     /**
      * "Ha mindet jóváhagyod": every open proposal's steps applied together to one draft week, through the same engines
      * as a single proposal ({@link CrossEffectCalculator}) — never a sum of per-proposal figures. Null below two open
-     * proposals. Reuses the week read of this request when there was one.
+     * proposals. Reuses the week read of this request when there was one. A bonus block: any failure while computing
+     * it is logged and the block is left out (null) — it must never turn the week read into a 500 (K3 final review).
      */
     private List<Line> allEffects(UUID owner, LocalDate monday, List<ProposalView> list, WeekPicture picture) {
         List<ProposalView> open = list.stream().filter(p -> p.status() == ProposalStatus.OPEN).toList();
         if (open.size() < 2) {
             return null;
         }
-        WeekPicture w = picture != null ? picture : pictures.picture(owner, monday);
-        List<AdjustmentDraft> steps = open.stream().flatMap(p -> p.steps().stream()).toList();
-        Effects e = calculator.effects(owner, w, new ProposalDraft("ALL", steps, Map.of(), 0));
-        return ProposalCompareLines.weekLines(w, e);
+        try {
+            WeekPicture w = picture != null ? picture : pictures.picture(owner, monday);
+            List<AdjustmentDraft> steps = open.stream().flatMap(p -> p.steps().stream()).toList();
+            Effects e = calculator.effects(owner, w, new ProposalDraft("ALL", steps, Map.of(), 0));
+            return ProposalCompareLines.weekLines(w, e);
+        } catch (RuntimeException ex) {
+            log.warn("Capacity week {}: the all-proposals effects failed and are left out", monday, ex);
+            return null;
+        }
     }
 
     static ProposalView toView(CapacityProposalEntity p) {
