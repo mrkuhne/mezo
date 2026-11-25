@@ -2,7 +2,7 @@
 title: Capacity (day load vs. what the owner can carry)
 type: feature-domain
 status: in-progress
-updated: 2026-11-24
+updated: 2026-11-25
 tags: [capacity, boop, b7-kapacitas, backend, ai, calendar, energy-curve, wearable]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/capacity
@@ -17,6 +17,8 @@ related: [boop-ios, companion, _platform-language, train]
 ---
 
 # Capacity — how much the day demands vs. how much he can carry
+
+> **2026-11-25 — reviewed after the workout-end kcal (`mezo-r36n9.170`, no capacity change).** `feature/wearable` gained `WatchWorkoutEnergyAdapter`, train's port for a gym session's watch kcal (the same `WorkoutReconciler` match the day load uses); capacity's own reads are unchanged.
 
 > **2026-11-24 — reviewed after Boop's drink slot and gym catch-up (`mezo-r36n9.160`–`.161`, no capacity change).** `BoopDayAssembler.meals` now skips `drink` meals (Boop's meal rules see meals only); the two Liquibase changesets of the day (`meal` CHECK, `workout_session.client_ref`) touch nothing the capacity block reads.
 

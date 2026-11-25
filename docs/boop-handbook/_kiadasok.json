@@ -916,5 +916,21 @@
     ],
     "mi_valtozott": "A Mai edzés kártyája alatt új sor: „Másik napot csinálok ma”. A lapon a hét még nyitott edzésnapjai: elöl a kimaradtak (a legutóbbi az első), utánuk a hét későbbi napjai; pihenőnap és már megcsinált nap nincs rajta. A választott nap a kártyán PÓTLÁS felirattal jelenik meg, az Indítás a szokásos eligazítással és lejátszóval indítja; „Mégis a mai napot csinálom” visszavált. A heti csempéken a pipa a ténylegesen megcsinált napra kerül (a szerdán megcsinált kedd a keddet pipálja), a kész kártya azt nevezi meg, amit ma csináltál. Ha kilépsz és visszajössz futó pótló edzés közben, a kártya a pótolt napot mutatja, net nélkül is.",
     "ellenorzes": "A mag tesztjei (1046) natívan lefutottak; az app lefordult, a szimulátorban a sor, a lap és a pótló kártya látszik (képernyőképek a docs/superpowers/specs/assets/masik-nap mappában); független kódátnézés három találatát javítottuk; a telefonos tesztkészlet és a telepítés a másik, Xcode-os gépen (mezo-r36n9.150)."
+  },
+  "76a19db21": {
+    "cim": "Nincs több bemelegítő szett, és kalória az edzés végén",
+    "datum": "2026-11-25",
+    "verzio": "",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app",
+      "Háttérrendszer"
+    ],
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.170"
+    ],
+    "mi_valtozott": "Az app sehol nem mutat bemelegítő sorozatot: a lejátszó az első munkasorozattal indul, a napszerkesztőből eltűnt a bemelegítő mező, a tervjelöltek nem beszélnek róla. Az edzés végi képen a három szám alatt ott a kalória: először a szerver becslése („kb. 380 kcal · becslés”, például), és ha az órád is rögzítette az edzést, az órád mérése („az órád mérte”). Ehhez a lezárás már a lezáró kép megnyílásakor felmegy a szerverre.",
+    "ellenorzes": "Szerver: új kalória-teszt (becslés, órás szám, nincs adat, lezáráskor) és a meglévő edzéstesztek, architektúra-teszt zöld. iPhone: a mag 1050 + 85 tesztje és az app 521 tesztje zöld (közben megjavítva négy, már korábban is piros teszt). Szimulátorban: lejátszó bemelegítő nélkül, lezáró kép becsléssel és órás számmal, a legkisebb iPhone-on is. Független kódátnézés két találata javítva."
   }
 }
