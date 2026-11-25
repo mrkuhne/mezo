@@ -560,7 +560,7 @@
     },
     "kezikonyv:03-naplo/check-in": {
       "page_id": "4168968e-752b-816e-88ae-dd50ce4569c1",
-      "hash": "50fa75db779e"
+      "hash": "e7e2a96a2e29"
     },
     "kezikonyv:03-naplo/emlekeztetok": {
       "page_id": "4168968e-752b-8121-9d56-d4b82f42ea46",
@@ -572,7 +572,7 @@
     },
     "kezikonyv:03-naplo/esti-zaras": {
       "page_id": "4168968e-752b-8105-8771-e260f9a71c7e",
-      "hash": "e06ef9e1a4e1"
+      "hash": "80400f01edc6"
     },
     "kezikonyv:03-naplo/hangnaplo": {
       "page_id": "4168968e-752b-81af-99f1-cf2997c051d9",
@@ -592,7 +592,7 @@
     },
     "kezikonyv:03-naplo/napok-lista": {
       "page_id": "4168968e-752b-8154-b39e-c2567a928484",
-      "hash": "4ec442262b26"
+      "hash": "116e9c8a65e4"
     },
     "kezikonyv:03-naplo/widget-es-zarolt-kepernyo": {
       "page_id": "4168968e-752b-81fc-8eee-d3c3791cb992",
@@ -3133,6 +3133,14 @@
     "funkciok:meal-italok": {
       "page_id": "4238968e-752b-815e-bc47-cfb17cbb2186",
       "hash": "e8d44a1c27ad"
+    },
+    "jegyek:mezo-r36n9.170": {
+      "page_id": "4238968e-752b-81fb-ab0a-f51bdb12766c",
+      "hash": "16bfa0693dea"
+    },
+    "kiadasok:7aa0550b3": {
+      "page_id": "4238968e-752b-81fb-89da-f51b5eeda22d",
+      "hash": "pending-relations"
     }
   }
 }
