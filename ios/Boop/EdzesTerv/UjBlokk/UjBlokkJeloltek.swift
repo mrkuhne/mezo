@@ -65,7 +65,7 @@ struct UjBlokkJeloltek: View {
                     }
                 }
                 startChoice
-                Text("A percek pihenővel és bemelegítéssel együtt értendők. \(c.candidates.count > 1 ? "Mindegyikben" : "Ebben") minden izom legalább kétszer kap munkát hetente, és egy izom sem kap két egymást követő napon nehéz adagot.")
+                Text("A percek pihenővel együtt értendők. \(c.candidates.count > 1 ? "Mindegyikben" : "Ebben") minden izom legalább kétszer kap munkát hetente, és egy izom sem kap két egymást követő napon nehéz adagot.")
                     .nkFont(12.5).foregroundStyle(.white.opacity(0.5)).padding(.horizontal, 4)
                     .fixedSize(horizontal: false, vertical: true)
             }

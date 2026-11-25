@@ -64,13 +64,31 @@ public record LlmCallContext(String feature, String operation, String entityKind
     public static final String FEATURE_PENZ_WEEKLY = "penz_weekly";
 
     /**
+     * Boop Levél's per-mail classify-and-extract call (mezo-r36n9.38). Payload-free: the prompt carries a redacted
+     * but still private mail body, which the audit log must never keep.
+     */
+    public static final String FEATURE_MAIL_CLASSIFY = "mail_classify";
+
+    /**
+     * Boop Levél's batched deal relevance score (mezo-r36n9.38). Payload-free: the prompt carries mail-derived deal
+     * lines plus his goal sentence and his own feedback examples.
+     */
+    public static final String FEATURE_MAIL_SCORE = "mail_score";
+
+    /** Boop Levél's phishing / injection screen of a shown item (mezo-r36n9.38). Payload-free: carries a mail body. */
+    public static final String FEATURE_MAIL_SCREEN = "mail_screen";
+
+    /**
      * False for a call whose prompt and answer must never be persisted in the audit log — the row keeps cost,
      * tokens and the true payload size, and is stamped scrubbed at write time. {@link #FEATURE_PENZ_SMS},
-     * {@link #FEATURE_PENZ_DIGEST}, {@link #FEATURE_PENZ_PROPOSAL} and {@link #FEATURE_PENZ_WEEKLY}.
+     * {@link #FEATURE_PENZ_DIGEST}, {@link #FEATURE_PENZ_PROPOSAL}, {@link #FEATURE_PENZ_WEEKLY} and the three mail
+     * slugs ({@link #FEATURE_MAIL_CLASSIFY}, {@link #FEATURE_MAIL_SCORE}, {@link #FEATURE_MAIL_SCREEN}).
      */
     public boolean keepsPayload() {
         return !FEATURE_PENZ_SMS.equals(feature) && !FEATURE_PENZ_DIGEST.equals(feature)
-            && !FEATURE_PENZ_PROPOSAL.equals(feature) && !FEATURE_PENZ_WEEKLY.equals(feature);
+            && !FEATURE_PENZ_PROPOSAL.equals(feature) && !FEATURE_PENZ_WEEKLY.equals(feature)
+            && !FEATURE_MAIL_CLASSIFY.equals(feature) && !FEATURE_MAIL_SCORE.equals(feature)
+            && !FEATURE_MAIL_SCREEN.equals(feature);
     }
 
     /** True when this context is the admin explorer's dry-run replay. */

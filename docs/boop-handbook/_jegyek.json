@@ -379,18 +379,20 @@
     "terulet": [
       "Alapok"
     ],
-    "mit_kapsz": "A Boop reggel 8-kor és délután 3-kor belenéz a Gmail- és iCloud-postádba. A kulcsot te hozod létre és te írod be. Ebben a lépésben még csak megszámolja és kategóriákba rendezi, amit talál.",
-    "allapot": "Később"
+    "mit_kapsz": "A Gmailed és az iCloud-postád mindent továbbít egy új, csak Boopnak szánt Gmail-fiókba; a Boop reggel 8-kor és délután 3-kor ezt nézi át. Egyetlen kulcsot hozol létre és írsz be te magad. A bankos, hivatali és egészségügyi leveleket gép soha nem olvassa. Az L2-vel együtt, egy kiadásban érkezik.",
+    "allapot": "Később",
+    "munkamenet": "level-area-development-afe3fa"
   },
   "mezo-r36n9.39": {
-    "cim": "L2 · A napi levélösszefoglaló",
+    "cim": "L2 · A reggeli posta — pontozott összefoglaló",
     "tipus": "Funkció",
     "szakasz": "Életpanel",
     "terulet": [
       "Alapok"
     ],
-    "mit_kapsz": "Megkapod naponta, hogy mi jött: mit intézett el helyetted, és mi az a kettő-három, ami tényleg megér egy percet — mindegyik 1-10 pontot kap aszerint, mennyire számít neked.",
-    "allapot": "Később"
+    "mit_kapsz": "A posta négy részre bomlik: határidős (számlák, programok, foglalások, lejáró ajánlatok), csomagok (hol tart), akciók és lehetőségek 1-10 ponttal, és a többi összecsukva. Embertől jött levél és a bank mindig előre kerül. Érdekel / nem érdekel gombból tanul. Szól a telefon, ha egy jó akció vagy egy számla holnap lejár (napi 1-2 értesítésen belül).",
+    "allapot": "Később",
+    "munkamenet": "level-area-development-afe3fa"
   },
   "mezo-r36n9.40": {
     "cim": "L3 · Figyelt termékek és árellenőrzés",
@@ -1460,5 +1462,276 @@
     ],
     "mit_kapsz": "Ha éjfél körül kérdezed Boopot az alvásodról, edzésedről vagy az évadról, a te napodról válaszol, nem a szomszédosról.",
     "munkamenet": "b6-b7-epites-5d50e3"
+  },
+  "mezo-r36n9.138": {
+    "cim": "A nap gyakorlatsorainak áttervezése",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "A blokképítő napjain a gyakorlatok sorai rendezettebbek lesznek: az izomrész, az ismétléstartomány és a tartalék külön kis címkékben áll, nem egy hosszú szövegsorban, így egy pillantással átlátod a napot.",
+    "munkamenet": "mezo-nippard-exercise-selection"
+  },
+  "mezo-r36n9.140": {
+    "tipus": "Apróságok",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Alapok"
+    ],
+    "szulo": "mezo-r36n9.38",
+    "cim": "Levél · a futárcégek és a továbbított levelek valódi mintái",
+    "mit_kapsz": "Amint a gyűjtőfiókba megérkeznek az első valódi levelek, a futárcégek (GLS, Foxpost, Packeta, MPL, DPD) értesítőit és a továbbítás nyomait a valódi levelek alapján pontosítjuk, így a csomagok még biztosabban egy sorban maradnak."
+  },
+  "mezo-r36n9.141": {
+    "tipus": "Apróságok",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Alapok"
+    ],
+    "szulo": "mezo-r36n9.38",
+    "cim": "Levél · pontos értesítés a szerverről",
+    "mit_kapsz": "A fizetős Apple-fiók után a szerver maga szól a reggeli és délutáni átnézés végén, nem csak akkor, amikor megnyitod az appot."
+  },
+  "mezo-r36n9.142": {
+    "tipus": "Apróságok",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Alapok"
+    ],
+    "szulo": "mezo-r36n9.38",
+    "cim": "Levél · az értesítésre koppintva a Levél nyíljon",
+    "mit_kapsz": "Ha egy levélről szól a telefon, a koppintás egyenesen a Levél oldalra visz, nem csak az appot nyitja meg."
+  },
+  "mezo-r36n9.143": {
+    "tipus": "Apróságok",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Alapok"
+    ],
+    "szulo": "mezo-r36n9.38",
+    "cim": "Levél · ne vesszen el értesítés az app indulásakor",
+    "mit_kapsz": "Az app indulásakor egy pillanatra még nincs meg minden adat — ilyenkor se törlődjön egy már betervezett értesítés."
+  },
+  "mezo-r36n9.144": {
+    "tipus": "Apróságok",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Alapok"
+    ],
+    "szulo": "mezo-r36n9.38",
+    "cim": "Levél · egy csomag mindig egy sor",
+    "mit_kapsz": "Ha ugyanarról a csomagról több forrásból jön hír, akkor is egyetlen sorban látszik, hol tart."
+  },
+  "mezo-r36n9.145": {
+    "tipus": "Apróságok",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Alapok"
+    ],
+    "szulo": "mezo-r36n9.38",
+    "cim": "Levél · apró javítások a háttérben",
+    "mit_kapsz": "Kisebb szilárdítások: újracsatlakozáskor tiszta lap, gyorsabb lekérdezések, rövid belépőkódok felismerése, pontosabb hibaüzenetek."
+  },
+  "mezo-r36n9.147": {
+    "cim": "Edzéslejátszó: a tíz hiba javítása (jegyzet, súly-átvitel, skála, ajánlott súly, csere, Ma oldal)",
+    "tipus": "Hiba",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés",
+      "Ma"
+    ],
+    "mit_kapsz": "A jegyzetet el tudod menteni és a billentyűzet eltűnik; a következő sorozat az előző sorozat súlyát hozza; a súlyt és az ismétlést ujjal húzható skálán állítod (fél kilónként); a terv ajánlása végig látszik; a bemelegítő sorozat jól jelölt; a javító lapon a tartalék is állítható; a cserénél külön van a „csak ma” és „a blokkban is”; a blokk módosítása azonnal átmegy az indított edzésbe, futó edzés közben a sorrend is cserélhető; edzés után a Ma oldal „megvolt”-at mutat, és megnézheted a mai eredményt.",
+    "munkamenet": "edzes-player-fixes"
+  },
+  "mezo-r36n9.139": {
+    "cim": "Napi gyakorlatsor mini táblázattal (duplikátum)",
+    "tipus": "Kinézet",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "szulo": "mezo-r36n9.138",
+    "mit_kapsz": "Ugyanaz, mint a „Rendezettebb gyakorlatsorok a blokképítő napjain” jegy — ott készült el, ez lezárva mint duplikátum.",
+    "munkamenet": "mezo-nippard-exercise-selection"
+  },
+  "mezo-r36n9.146": {
+    "cim": "Háttér: a heti menü tesztje néha magától elbukott",
+    "tipus": "Hiba",
+    "szakasz": "B6 Évad",
+    "terulet": [
+      "Terv"
+    ],
+    "mit_kapsz": "Semmi látható: egy szerveroldali teszt (a heti menü napi keretei) véletlenszerű sorrend miatt időnként elbukott; a javítás a tesztet teszi megbízhatóvá.",
+    "munkamenet": "edzes-player-fixes"
+  },
+  "mezo-r36n9.148": {
+    "cim": "Notion-tükör frissítése: az edzéslejátszó-javítások jegye, döntései és kézikönyv-oldalai",
+    "tipus": "Háttér",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "A Boop Notion-tered megkapja a 2026-11-23-i változásokat: a tíz hiba jegyét, a két döntést (sorrendcsere futó edzésnél, húzható skála), a lejátszó és a blokképítő oldalát és a kiadás sorát. A javítást végző munkamenet nem látta a teredet, ezért külön menet teszi fel.",
+    "munkamenet": "edzes-player-fixes"
+  },
+  "mezo-r36n9.149": {
+    "cim": "Háttér: a telefon szerződés-másolata elmaradt a szerverétől",
+    "tipus": "Háttér",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Semmi látható most; a telefonos app szerver-leírás másolatát hozzuk szinkronba a szerverével egy olyan menetben, ahol az app tesztjei is lefutnak. Addig minden működik a mostani másolattal.",
+    "munkamenet": "edzes-player-fixes"
+  },
+  "mezo-r36n9.150": {
+    "cim": "A lejátszó-javítások telepítése a telefonra a másik gépről (átadó)",
+    "tipus": "Háttér",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés",
+      "Alapok"
+    ],
+    "mit_kapsz": "Az új változat felkerül a telefonodra arról a gépről, ahol az Xcode be van állítva, és előtte lefut a telefonos tesztkészlet, ami az új Macen nem tudott. Az átadó leírja a lépéseket és mit ellenőrizz utána a telefonon.",
+    "munkamenet": "edzes-player-fixes"
+  },
+  "mezo-r36n9.151": {
+    "cim": "Hiba: a fotós ételnaplózás hibát dob (a kép rossz típussal megy fel)",
+    "tipus": "Hiba",
+    "szakasz": "B4 Étel",
+    "terulet": [
+      "Étel"
+    ],
+    "mit_kapsz": "A fotóból naplózás újra működik: a kép a szerverre képként megy fel, nem névtelen csomagként, így a szerver nem utasítja el; a mentett étkezés mellé a fotó is felkerül.",
+    "munkamenet": "kezdolap-orbok-fotos-naplozas"
+  },
+  "mezo-r36n9.152": {
+    "cim": "Hiba: a kezdőlap orbjaiban nincs szám, amíg a Forma még „tanul”",
+    "tipus": "Hiba",
+    "szakasz": "Kezdőlap",
+    "terulet": [
+      "Ma",
+      "Alapok"
+    ],
+    "mit_kapsz": "A kezdőlap orbjai akkor is mutatják az Alvás, Edzés és Energia számát, ha a Formához még kevés az éjszaka vagy hiányzik a tegnapi alvás — csak a Forma marad „–” a „még tanulom” felirattal. Az Étel orb ugyanazt a számot mutatja, mint az Étel szoba (az étkezéseid pontjainak átlaga).",
+    "munkamenet": "kezdolap-orbok-fotos-naplozas"
+  },
+  "mezo-r36n9.153": {
+    "cim": "Hiba: a Pénz orb a kezdőlapon még szürke, szám nélkül",
+    "tipus": "Hiba",
+    "szakasz": "Kezdőlap",
+    "terulet": [
+      "Pénz",
+      "Ma"
+    ],
+    "mit_kapsz": "A Pénz orb a kezdőlapon élő: a heti keretből megmaradt rész tölti ki, és a szám ugyanez százalékban, mint a többi orb 0–100 skálája. Keret nélkül „–”, túlköltésnél 0.",
+    "munkamenet": "kezdolap-orbok-fotos-naplozas"
+  },
+  "mezo-r36n9.154": {
+    "cim": "Gyors rögzítés teljesen: a webes kilenc ajtó a „+” lapon, és gyors logolás gomb a kezdőlapon",
+    "tipus": "Funkció",
+    "szakasz": "Kezdőlap",
+    "terulet": [
+      "Alapok",
+      "Ma"
+    ],
+    "mit_kapsz": "A „+” lapról minden rögzíthető, ami a webes gyors logolásban volt: étkezés, víz, kiegészítők, edzés indítása, sport, súly, check-in, napló (bármikor, nem csak az esti zárásban), alvás és kiadás. A kezdőlapon, az orbok alatt jobbra is van egy „Rögzítés” gomb ugyanerre a lapra. A súly, az alvás, a sport és a naplósor net nélkül is rögzül.",
+    "munkamenet": "kezdolap-orbok-fotos-naplozas"
+  },
+  "mezo-r36n9.156": {
+    "cim": "Hiba: a lapokon nincs bezáró gomb, és az Étel-lapok lehúzása frissít bezárás helyett",
+    "tipus": "Hiba",
+    "szakasz": "Kezdőlap",
+    "terulet": [
+      "Alapok",
+      "Étel"
+    ],
+    "mit_kapsz": "Minden felcsúszó lap jobb felső sarkában egy kis kerek X zárja be a lapot; a lehúzás is marad. Az Étel szobából nyíló lapokon a lehúzás újra bezár (eddig a szobát frissítette).",
+    "munkamenet": "suly-orb-gyorsajtok"
+  },
+  "mezo-r36n9.157": {
+    "cim": "Kezdőlap: öt gyorsajtó a Rögzítés kapszula helyett",
+    "tipus": "Funkció",
+    "szakasz": "Kezdőlap",
+    "terulet": [
+      "Alapok",
+      "Ma"
+    ],
+    "mit_kapsz": "Boop mondata alatt öt kis üvegajtó — Étkezés · Víz · Súly · Check-in · Napló —, mindegyik rögtön a saját lapját nyitja, egy koppintással kevesebb. A menüsor plusz gombja marad a teljes lappal.",
+    "munkamenet": "suly-orb-gyorsajtok"
+  },
+  "mezo-r36n9.158": {
+    "cim": "Súly terület: a kilencedik gömb a kezdőlapon és a súlyszoba",
+    "tipus": "Funkció",
+    "szakasz": "Kezdőlap",
+    "terulet": [
+      "Súly",
+      "Ma"
+    ],
+    "mit_kapsz": "A kör kilenc gömbből áll: az arany Súly gömb száma azt mondja, mennyire tartod az évad tervezett ütemét. Mögötte a Súly terület a Pénz mintájára: Ma (a mai mérés és a trend, a cél, a súlygörbe a terv vonalával, a hét mérései), Test (a Feelfit testzsírja és izomtömege, BMI), Napló (minden mérés hetenként). Net nélkül az utolsó kép a korával.",
+    "munkamenet": "suly-orb-gyorsajtok"
+  },
+  "mezo-r36n9.159": {
+    "cim": "Visszamenőleges rögzítés minden gyorslapon, és a Napló pótlásai (check-in, zárás)",
+    "tipus": "Funkció",
+    "szakasz": "Kezdőlap",
+    "terulet": [
+      "Alapok",
+      "Napló"
+    ],
+    "mit_kapsz": "A súly, az alvás, a sport és a naplósor lapján egy „Mikor” sor: Ma · Tegnap · Más nap (a sportnál időponttal), egy hétre visszamenőleg; az étkezésnél Tegnap gomb. A Napló a mai és az előző hat napot mindig mutatja; egy korábbi nap lapján pótolható a kimaradt check-in pillanat és a nap lezárása, és ott nyílik az edzés pótlása is. Ami később íródott, halk „utólag” jelet kap.",
+    "munkamenet": "visszamenoleg-ital"
+  },
+  "mezo-r36n9.160": {
+    "cim": "Italok: külön vödör, ami a napi keretbe számít, de étkezési ablakot nem foglal",
+    "tipus": "Funkció",
+    "szakasz": "Kezdőlap",
+    "terulet": [
+      "Étel"
+    ],
+    "mit_kapsz": "Új „Ital” bejárat az étkezés rögzítésében és a Mit rögzítesz? lapon: a szokásos italaid egy koppintásra (Boop tanulja), szabad szöveg, fotó, Mikor ittad. Az ital beszámít a napi kalóriába, a makrókba és a görbébe, de ablakot nem foglal és étkezés-pontot nem kap; az Étel szoba Ma lapján külön ITALOK sor.",
+    "munkamenet": "visszamenoleg-ital"
+  },
+  "mezo-r36n9.161": {
+    "cim": "Edzés pótlása: egy kimaradt tervnap „Megvolt” a terv számaival",
+    "tipus": "Funkció",
+    "szakasz": "Kezdőlap",
+    "terulet": [
+      "Edzés",
+      "Napló"
+    ],
+    "mit_kapsz": "A Napló egy korábbi napján „Edzés pótlása: <tervnap>”: a terv sorozataival készre könyveli az edzést arra a napra (a szerver is tanulja a dátumot); utána a javító lapon igazíthatod a súlyokat. Net nélkül is rögzül.",
+    "munkamenet": "visszamenoleg-ital"
+  },
+  "mezo-r36n9.162": {
+    "cim": "Italok és a szerver étkezés-számlálói: számít-e az ital a küldetésekben, a karakter pontjaiban, a heti tartásban?",
+    "tipus": "Feladat",
+    "szakasz": "Kezdőlap",
+    "terulet": [
+      "Étel"
+    ],
+    "mit_kapsz": "Döntés és ellenőrzés arról, hogy az ital hol számítson étkezésnek a szerver többi számlálójában (napi küldetések, karakter pontok, heti tartás). Addig egy ital kaphat egy étkezésnyi küldetés-pipát.",
+    "munkamenet": "visszamenoleg-ital"
+  },
+  "mezo-r36n9.163": {
+    "cim": "Másik napot csinálok ma: a kimaradt edzésnap élőben pótolható a Mai edzés fülről",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "A Mai edzés kártyája alatt egy „Másik napot csinálok ma” sor: a hét még nyitott edzésnapjai közül választhatsz (elöl a kimaradtak), és azt indítod el a szokásos lejátszóval. A heti pipa a ténylegesen megcsinált napra kerül.",
+    "munkamenet": "masik-nap"
+  },
+  "mezo-r36n9.170": {
+    "cim": "Bemelegítő szettek eltűnnek, és kalória az edzés végén (becslés, utána az óra)",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Az app sehol nem mutat bemelegítő sorozatot: a lejátszó az első munkasorozattal indul. Az edzés végén a három szám alatt ott a kalória: először a szerver becslése, és ha az órád is rögzítette az edzést, az órád mérése.",
+    "munkamenet": "boop-penz-l6-6ac287"
   }
 }

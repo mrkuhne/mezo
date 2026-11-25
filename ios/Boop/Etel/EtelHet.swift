@@ -385,7 +385,7 @@ struct HetDaySheet: View {
                                 }
                             }
                             Spacer(minLength: 4)
-                            if !day.kimelo { EtelScoreRing(points: mealPoints(m), size: 36).padding(.top, 2) }
+                            if !day.kimelo && m.slot != "drink" { EtelScoreRing(points: mealPoints(m), size: 36).padding(.top, 2) }
                         }
                         .padding(.vertical, 11)
                         .accessibilityElement(children: .combine)

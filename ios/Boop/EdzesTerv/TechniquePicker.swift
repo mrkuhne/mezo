@@ -206,6 +206,7 @@ struct TechniquePicker: View {
         case .drop: .drop
         case .myo, .restPause: .myo
         case .partials: .partials
+        case .topPause: .timer
         }
     }
 }

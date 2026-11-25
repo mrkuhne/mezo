@@ -518,6 +518,20 @@
     ],
     "csomag": "train"
   },
+  "train-edzes-potlas": {
+    "cim": "Edzés pótlása a terv számaival",
+    "terulet": "Edzés",
+    "app": "Kész",
+    "mit_tud": "Egy kimaradt tervnapot utólag, a nap dátumára, a terv sorozataival készre könyvel egy hívással; a súly gyakorlatonként felülírható; egy hétre visszamenőleg; kétszer nem könyvel.",
+    "app_megjegyzes": "A Napló korábbi napjának lapjáról a Megvolt lap; net nélkül is rögzül.",
+    "jegyek": [
+      "mezo-r36n9.161"
+    ],
+    "kezikonyv": [
+      "07-edzes/16-edzes-potlasa"
+    ],
+    "csomag": "train"
+  },
   "train-futoblokk": {
     "cim": "Futóblokkok és futás-napló",
     "terulet": "Edzés",
@@ -704,7 +718,7 @@
     "terulet": "Étel",
     "app": "Kész",
     "mit_tud": "A jóváhagyott étkezést elmenti a tételeivel, és a tápértékeket a mentés pillanatában rögzíti, így később sem változnak. Az időpont visszamenőleg is megadható.",
-    "app_megjegyzes": "Az app ment, visszamenőleges időponttal is, és net nélkül is (később küldi fel).",
+    "app_megjegyzes": "Az app ment, visszamenőleges időponttal is (Tegnap gombbal), és net nélkül is (később küldi fel).",
     "jegyek": [
       "mezo-r36n9.14"
     ],
@@ -780,6 +794,20 @@
     ],
     "kezikonyv": [
       "06-etel/02-etkezes-rogzitese"
+    ],
+    "csomag": "meal"
+  },
+  "meal-italok": {
+    "cim": "Italok: hatodik, pont nélküli rekesz",
+    "terulet": "Étel",
+    "app": "Kész",
+    "mit_tud": "Az ital (fehérje, gombakávé zabtejjel) étkezés-rekord a saját „ital” rekeszében: beszámít a nap összegébe, de a napi terv ablakai nem igénylik, pontot nem kap, és a szokásos listában saját vödörként jön vissza.",
+    "app_megjegyzes": "Az Ital bejárat a rögzítőben és a Mit rögzítesz? lapon; az Étel szoba Ma lapján az ITALOK csoport.",
+    "jegyek": [
+      "mezo-r36n9.160"
+    ],
+    "kezikonyv": [
+      "06-etel/11-italok"
     ],
     "csomag": "meal"
   },
@@ -1413,13 +1441,15 @@
     "terulet": "Alvás és egészség",
     "app": "Kész",
     "mit_tud": "Fogadja az egyedi méréseket (például testsúly, testzsír, pulzusminták), és eltárolja, melyik app és eszköz írta őket.",
-    "app_megjegyzes": "A széles adatkör 23 féle adatot küld.",
+    "app_megjegyzes": "A széles adatkör 23 féle adatot küld. A Súly terület Test oldala a Feelfit testzsírját és izomtömegét a telefonon olvassa az Egészségből.",
     "jegyek": [
-      "mezo-r36n9.11"
+      "mezo-r36n9.11",
+      "mezo-r36n9.158"
     ],
     "kezikonyv": [
       "08-adatok/02-szeles-adatkor",
-      "08-adatok/04-forrasok-es-eszkozok"
+      "08-adatok/04-forrasok-es-eszkozok",
+      "13-suly/01-terulet"
     ],
     "csomag": "wearable"
   },
@@ -1456,12 +1486,15 @@
     "terulet": "Alvás és egészség",
     "app": "Kész",
     "mit_tud": "Elmenti és listázza a mérlegeléseidet, és minden új mérésre újraszámolja a célt.",
-    "app_megjegyzes": "A telefon rögzít és listáz.",
+    "app_megjegyzes": "A telefon rögzít (a „+” Súly ajtaja, a kezdőlap gyorsajtója, a Súly szoba gombja — net nélkül is) és a Súly terület Napló oldala hetenként listáz.",
     "jegyek": [
+      "mezo-r36n9.154",
+      "mezo-r36n9.158",
       "mezo-r36n9.16"
     ],
     "kezikonyv": [
-      "04-terv/03-testsuly-trend"
+      "04-terv/03-testsuly-trend",
+      "13-suly/01-terulet"
     ],
     "csomag": "biometrics"
   },
@@ -1482,14 +1515,16 @@
   "biometrics-suly-trend": {
     "cim": "Kisimított súlytrend és heti tempó",
     "terulet": "Alvás és egészség",
-    "app": "Részben kész",
+    "app": "Kész",
     "mit_tud": "A mérésekből kisimított trendet és heti változási tempót számol, a súlycél ebből méri a valódi haladást.",
-    "app_megjegyzes": "Az Évad és a napi összefoglaló használja; külön trend-képernyő nincs.",
+    "app_megjegyzes": "A Súly terület Ma oldala és a kezdőlap Súly gömbje ebből él (az elmúlt négy hét heti üteme az évad tervezett üteméhez mérve); az Évad és a napi összefoglaló is használja.",
     "jegyek": [
+      "mezo-r36n9.158",
       "mezo-r36n9.16"
     ],
     "kezikonyv": [
-      "04-terv/03-testsuly-trend"
+      "04-terv/03-testsuly-trend",
+      "13-suly/01-terulet"
     ],
     "csomag": "biometrics"
   },
@@ -2071,12 +2106,14 @@
     "terulet": "Célok és évad",
     "app": "Kész",
     "mit_tud": "Egy összefoglalóban megmondja, terv szerint halad-e a súlyod, mikor érsz célba, melyik szakaszban jársz és mi jön legközelebb.",
-    "app_megjegyzes": "Az Évad oldal fejében és súlygörbéjén látszik.",
+    "app_megjegyzes": "Az Évad oldal fejében és súlygörbéjén, és a Súly terület fejében látszik; a kezdőlap Súly gömbjének száma ugyanerre épül.",
     "jegyek": [
+      "mezo-r36n9.158",
       "mezo-r36n9.16"
     ],
     "kezikonyv": [
-      "04-terv/01-terv-keret"
+      "04-terv/01-terv-keret",
+      "13-suly/01-terulet"
     ],
     "csomag": "goal"
   },
@@ -3799,5 +3836,155 @@
       "04-terv/08-hataskovetes"
     ],
     "csomag": "season"
+  },
+  "level-tukorfiok": {
+    "cim": "A tükörfiók összekötése és lecsatolása",
+    "terulet": "Levél",
+    "mit_tud": "Elmenti a Boop-fiók címét és az alkalmazásjelszót (mentés előtt kipróbálja a belépést, a jelszót titkosítva tárolja és sosem adja vissza), és lecsatolásnál törli a jelszót.",
+    "app": "Kész",
+    "app_megjegyzes": "A Fiókok oldal hatlépéses útmutatója, a két mező, az állapot szavakkal és a Lecsatolás megerősítéssel.",
+    "jegyek": [
+      "mezo-r36n9.38",
+      "mezo-r36n9.39"
+    ],
+    "kezikonyv": [
+      "12-level/02-fiokok-es-szabalyok"
+    ],
+    "csomag": "mail"
+  },
+  "level-atvetel": {
+    "cim": "Levelek átvétele naponta kétszer",
+    "terulet": "Levél",
+    "mit_tud": "Reggel 8-kor és délután 3-kor csak olvasva belép a tükörfiókba, letölti az újakat (Beérkezett és Spam), nem tölt le kétszer semmit, és kézi frissítést is enged néhány percenként.",
+    "app": "Kész",
+    "app_megjegyzes": "A Frissítés most gomb a Fiókok oldalon; az automatikus átnézés a kapcsolók bekapcsolásáig ki van kapcsolva.",
+    "jegyek": [
+      "mezo-r36n9.38",
+      "mezo-r36n9.39"
+    ],
+    "kezikonyv": [
+      "12-level/01-reggeli-posta"
+    ],
+    "csomag": "mail"
+  },
+  "level-vedelem": {
+    "cim": "Tisztítás és érzékeny feladók",
+    "terulet": "Levél",
+    "mit_tud": "Mielőtt bármi gép látná a levelet, kitakarja a személyes adatokat; a bank, biztosító, hivatal és egészségügyi levelét gép soha nem olvassa, csak a feladó látszik.",
+    "app": "Kész",
+    "app_megjegyzes": "Az érzékeny sor csak azt mondja, ki írt; a Szabályok oldalon bővíthető.",
+    "jegyek": [
+      "mezo-r36n9.38",
+      "mezo-r36n9.39"
+    ],
+    "kezikonyv": [
+      "12-level/01-reggeli-posta",
+      "12-level/02-fiokok-es-szabalyok"
+    ],
+    "csomag": "mail"
+  },
+  "level-besorolas": {
+    "cim": "A négy csoport és a csomagkövetés",
+    "terulet": "Levél",
+    "mit_tud": "Szabályokkal és egy olcsó modellel Határidős, Csomagok, Akciók és lehetőségek, A többi csoportba teszi a leveleket; a csomag csomagonként egy sor a legutóbbi állapottal; az ember írta levél mindig elöl.",
+    "app": "Kész",
+    "app_megjegyzes": "A szállítói szabályok ideiglenesek, a valódi levelekhez pontosítjuk.",
+    "jegyek": [
+      "mezo-r36n9.38",
+      "mezo-r36n9.39"
+    ],
+    "kezikonyv": [
+      "12-level/01-reggeli-posta"
+    ],
+    "csomag": "mail"
+  },
+  "level-pontozas-tanulas": {
+    "cim": "Ajánlatok pontozása és tanulás a koppintásokból",
+    "terulet": "Levél",
+    "mit_tud": "Az ajánlatokat 1–10-re pontozza indoklással, a gép által kitalált dátumot, összeget vagy linket eldobja, és az érdekel / nem érdekel koppintásokból feladónként tanul; három nem érdekel után csendes eltételt javasol.",
+    "app": "Kész",
+    "app_megjegyzes": "A kártyákon a pontszám, az indoklás és a két gomb; a javaslat a Szabályok oldalon.",
+    "jegyek": [
+      "mezo-r36n9.38",
+      "mezo-r36n9.39"
+    ],
+    "kezikonyv": [
+      "12-level/01-reggeli-posta"
+    ],
+    "csomag": "mail"
+  },
+  "level-szabalyok": {
+    "cim": "Saját feladó-szabályok",
+    "terulet": "Levél",
+    "mit_tud": "Megőrzi, kit ne olvasson gép, kit mutasson mindig és kit tegyen csendben el; a beépített érzékeny lista nem szűkíthető.",
+    "app": "Kész",
+    "jegyek": [
+      "mezo-r36n9.38",
+      "mezo-r36n9.39"
+    ],
+    "kezikonyv": [
+      "12-level/02-fiokok-es-szabalyok"
+    ],
+    "csomag": "mail"
+  },
+  "level-csengetes": {
+    "cim": "Csengetés a lejáró levélért",
+    "terulet": "Levél",
+    "mit_tud": "A szerver megmondja, melyik tétel csörögjön (lejáró határidő vagy 8-as pont fölötti, 36 órán belül lejáró, átvizsgált ajánlat); a telefon ütemezi, naponta legfeljebb kétszer, 08:00 és 21:00 között, ugyanarra a lejáratra egyszer.",
+    "app": "Részben kész",
+    "app_megjegyzes": "A telefon csak az app megnyitásakor ütemez, szerveroldali értesítés a fizetős Apple-fiók után jön; a csörgésre koppintva az app nyílik meg, nem közvetlenül a Levél.",
+    "jegyek": [
+      "mezo-r36n9.38",
+      "mezo-r36n9.39"
+    ],
+    "kezikonyv": [
+      "12-level/01-reggeli-posta"
+    ],
+    "csomag": "mail"
+  },
+  "level-koltsegkeret": {
+    "cim": "Napi költségkeret a levél feldolgozására",
+    "terulet": "Levél",
+    "mit_tud": "Napi 0,15 dolláros gépi keret a levélre; ha elfogy vagy a modell nem elérhető, a levelek szabályokkal kerülnek csoportba, és a Ma oldal kiírja.",
+    "app": "Kész",
+    "app_megjegyzes": "A „ma már nem pontoztam tovább” sor a Ma oldalon.",
+    "jegyek": [
+      "mezo-r36n9.38",
+      "mezo-r36n9.39"
+    ],
+    "kezikonyv": [
+      "12-level/01-reggeli-posta"
+    ],
+    "csomag": "mail"
+  },
+  "level-megorzes": {
+    "cim": "30 napos megőrzés",
+    "terulet": "Levél",
+    "mit_tud": "A levél szövegét 30 nap után törli, az összefoglaló, a pont és a visszajelzés marad; érzékeny levélből szöveg nem is tárolódik.",
+    "app": "Nem kell",
+    "app_megjegyzes": "Háttérfolyamat, nincs külön képernyő.",
+    "jegyek": [
+      "mezo-r36n9.38",
+      "mezo-r36n9.39"
+    ],
+    "kezikonyv": [
+      "12-level/01-reggeli-posta"
+    ],
+    "csomag": "mail"
+  },
+  "level-egeszseg": {
+    "cim": "Riasztás, ha a posta elnémul",
+    "terulet": "Levél",
+    "mit_tud": "Ha két átnézés egymás után nem hozott új levelet, vagy a jelszót már nem fogadja a fiók, jelzést ad a figyelőrendszerbe, és a Fiókok oldal szavakkal kiírja.",
+    "app": "Kész",
+    "app_megjegyzes": "Az admin képernyő megszűnt; a Fiókok oldal az egyetlen felület.",
+    "jegyek": [
+      "mezo-r36n9.38",
+      "mezo-r36n9.39"
+    ],
+    "kezikonyv": [
+      "12-level/02-fiokok-es-szabalyok"
+    ],
+    "csomag": "mail"
   }
 }

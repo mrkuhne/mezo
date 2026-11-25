@@ -13,6 +13,11 @@ public enum OutboxKind: String, Codable, CaseIterable, Sendable {
     /// A cash expense typed on the phone (Pénz L5): `POST /api/penz/transactions`, idempotent on the item id as
     /// `clientRef`. **Never rename** — persisted like the others.
     case penzExpense
+    /// The quick log's own writes (`mezo-r36n9.154`): a weight on the scale, a night typed by hand. **Never rename.**
+    case weightLog, sleepLog
+    /// A past template day booked as planned (`mezo-r36n9.161`): `POST /api/train/workouts/as-planned`, idempotent on the
+    /// item id as `clientRef`. **Never rename.**
+    case workoutAsPlanned
 }
 
 /// One pending write. `id` is the client ref the server keys idempotency on, so a resend never duplicates.
@@ -227,6 +232,11 @@ public actor Outbox {
         case .sportSession: ("sport|\(item.id.uuidString)", false)
         // Every cash expense stands alone: one refused amount never holds the next one back.
         case .penzExpense: ("penz|\(item.id.uuidString)", false)
+        // A weight or a night stands alone too: a refused one never holds the next one back.
+        case .weightLog: ("weight|\(item.id.uuidString)", false)
+        case .sleepLog: ("sleep|\(item.id.uuidString)", false)
+        // A booked workout stands alone: one refused booking never holds another back.
+        case .workoutAsPlanned: ("workout|\(item.id.uuidString)", false)
         }
     }
 

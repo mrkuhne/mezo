@@ -208,6 +208,7 @@ public struct TrainClient: Sendable {
                 PrescribedSet(kind: .init(wire: $0.kind.rawValue), targetKg: $0.targetWeightKg,
                               targetReps: $0.targetReps, targetRIR: $0.targetRIR, restSec: $0.restSec,
                               technique: $0.technique.map { SetTechnique(wire: $0.value1.rawValue) },
+                              topHoldSec: $0.topHoldSec,
                               legs: ($0.legs ?? []).map(map))
             }
         }
@@ -228,7 +229,10 @@ public struct TrainClient: Sendable {
             id: UUID(uuidString: w.id) ?? UUID(), templateSessionId: UUID(uuidString: w.templateSessionId),
             date: w.date, status: .init(wire: w.status.rawValue),
             sets: w.sets.compactMap(map), startedAt: w.startedAt, finishedAt: w.finishedAt,
-            activeSeconds: w.activeSeconds)
+            activeSeconds: w.activeSeconds,
+            energy: w.energy.flatMap { e in
+                WorkoutEnergy.Source(rawValue: e.value1.source.rawValue).map { WorkoutEnergy(kcal: e.value1.kcal, source: $0) }
+            })
     }
 
     static func map(_ s: Components.Schemas.ExerciseSetResponse) -> LoggedSet? {
@@ -364,6 +368,7 @@ extension TrainClient: OutboxSender {
             case .workoutNote: return try await sendNote(item)
             case .workoutFinish: return try await sendFinish(item)
             case .sportSession: return try await sendSport(item)
+            case .workoutAsPlanned: return try await sendAsPlanned(item)
             default: return .failed("not a training write: \(item.kind.rawValue)")
             }
         } catch {
@@ -578,6 +583,30 @@ extension TrainClient: OutboxSender {
         case .ok(let ok): return .sent(TrainPayloadCodec.encode(Self.map(try ok.body.json)))
         case .notFound: return .failed("TRAIN_WORKOUT_NOT_FOUND")
         case .badRequest: return Self.map(400)
+        case .unauthorized: return Self.map(401)
+        case .undocumented(let code, _): return Self.map(code)
+        }
+    }
+
+    /// A past template day booked as planned (`mezo-r36n9.161`): the item's id is the idempotency key. A 409 (a live
+    /// workout is open, or the day was already done in that week) and a 400 (outside the window) are final — the
+    /// row says the server's own words — never retried.
+    private func sendAsPlanned(_ item: OutboxItem) async throws -> OutboxSendResult {
+        guard let p = TrainPayloadCodec.decode(WorkoutAsPlannedPayload.self, from: item.payload)
+        else { return malformed("as-planned booking") }
+        let body = Components.Schemas.WorkoutAsPlannedRequest(
+            templateSessionId: p.templateSessionId.wire, date: p.date, startedAt: p.startedAt, clientRef: item.id.wire,
+            overrides: p.overrides.map { .init(exerciseId: $0.exerciseId.wire, weightKg: $0.weightKg) })
+        switch try await client.completeWorkoutAsPlanned(body: .json(body)) {
+        case .created: return .sent(nil)
+        case .conflict(let conflict):
+            let said = (try? conflict.body.json).flatMap { $0.first.flatMap { $0.message ?? $0.code } }
+            return .failed(said ?? "TRAIN_WORKOUT_CONFLICT")
+        case .badRequest(let bad):
+            let said = (try? bad.body.json).flatMap { $0.first.flatMap { $0.message ?? $0.code } }
+            return .failed(said ?? "TRAIN_AS_PLANNED_DATE_OUT_OF_WINDOW")
+        // The template day is gone from the active block (rotated, ended): final, said in the owner's words.
+        case .notFound: return .failed("Ez a tervnap már nincs a mostani blokkodban.")
         case .unauthorized: return Self.map(401)
         case .undocumented(let code, _): return Self.map(code)
         }

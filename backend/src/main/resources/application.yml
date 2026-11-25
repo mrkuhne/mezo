@@ -469,6 +469,14 @@ mezo:
     # AI pillar proposal (propose-only): off ⇒ POST /api/life-goals/propose answers from the rule template.
     lifegoal-ai-propose:
       enabled: true
+  # Boop Levél (mezo-r36n9.38): the morning post (MailProperties). Off by default; prod turns it on at deploy.
+  # secret-key has NO default: enabled without MEZO_MAIL_SECRET_KEY (base64, 32 bytes) fails at startup.
+  mail:
+    enabled: false
+    secret-key: ${MEZO_MAIL_SECRET_KEY:}
+    cron: "0 0 8,15 * * *"
+    zone: Europe/Budapest
+    daily-usd-cap: 0.15
   # Boop Pénz L6 news digest (mezo-r36n9.104): the twice-daily quotes + feeds + digest poll (PenzNewsProperties)
   penz:
     news:
@@ -542,6 +550,9 @@ mezo:
       # does not exist (it also needs mezo.penz.news.enabled)
       penz-news-job:
         enabled: true
+      # Boop Levél morning post (mezo-r36n9.38, schedule: mezo.mail.cron); off = the mail job bean does not exist
+      mail-job:
+        enabled: false
       character-conference-job:
         enabled: true
       # Csapatfal Act III team chat expiry sweep (mezo-a9bo7.21, schedule:
@@ -763,6 +774,11 @@ mezo:
         # csapatfal Act III Task 7 (mezo-a9bo7.22): the team chat voice call — over the
         # monthly-usd-cap ceiling every line falls back to the honest template (voiced=false).
         - team_chat
+        # Boop Levél (mezo-r36n9.38): the morning post's three model calls — a throttled account falls back to the
+        # rules-only grouping (the page says so). The daily mail cap (mezo.mail.daily-usd-cap) is a separate guard.
+        - mail_classify
+        - mail_score
+        - mail_screen
       # Never capped: the owner's admin dry-run replay bills the INSPECTED user but has to stay
       # usable on exactly the accounts that hit their ceiling (LlmCallContext.FEATURE_ADMIN_REPLAY),
       # and the boot smoke call is how we find out the provider works at all.
@@ -817,7 +833,7 @@ mezo:
         # mezo-ozri.4 — per-call model overrides, resolved by LlmModelRouter at CALL time (until it
         # existed the tiers were frozen at boot). Both maps are scoped to THIS provider: a model id
         # only means something to the vendor that serves it, and this block still answers the
-        # audio/vision calls the OpenAI adapter delegates here. Precedence: call-kind-models, then
+        # audio calls the OpenAI adapter delegates here. Precedence: call-kind-models, then
         # feature-models, then the tier defaults above — anything unmatched or blank falls through,
         # so config can never be why a call fails. Keys MUST be bracket-quoted ("[companion_chat]"):
         # the binder splits map keys on dots and relaxed-binds the rest.
@@ -866,12 +882,11 @@ mezo:
         reasoning-effort:
           chat: high
           smart: high
-      # Per-CallKind exceptions to `provider`. Honoured only while provider is openai, and only for
-      # these two kinds: no GPT-5.6 model has an audio endpoint at all, and the vision A/B is not
-      # measured yet (spec §10.3), so both stay on Gemini. An absent key = the active provider.
+      # Per-CallKind exceptions to `provider`. Honoured only while provider is openai.
+      # Audio stays on Gemini because GPT-5.6 has no audio endpoint; vision uses the active
+      # OpenAI provider since ADR 0059. An absent key = the active provider.
       per-call-kind:
         TRANSCRIBE: gemini
-        VISION: gemini
     personal-records:
       # Maximum full-source rows per page; character budget can reduce this.
       page-size: 5
@@ -3102,6 +3117,7 @@ mezo:
       # the owner's fixed rest-pause (mezo-r36n9.125): main-reps also pins the exercise's rep range; no minimum
       rest-pause: { main-reps: 20, main-reserve: 0, mini-reps: 5, mini-rest-sec: 10, minis: 4 }
       partials:  { main-reserve: 0 }
+      top-pause: { hold-sec: 2 }
       cap-weight: 2
       # Default technique planner (mezo-r36n9.81, spec §6.5): techniques from start-week to the last non-deload
       # week; per training day max-per-day (max-per-day-reduced in a deficit or on a sport day), at most

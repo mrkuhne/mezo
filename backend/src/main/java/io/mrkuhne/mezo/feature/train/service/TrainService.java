@@ -44,6 +44,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -547,12 +548,14 @@ public class TrainService {
      * carried over from the day's old rows (same identity, first unmatched) and every row is
      * re-stamped under the run's style — a no-op for an unstyled run.
      *
-     * <p>Ids (mezo-r36n9.83): when the new list is the SAME exercises in the same order — equal length and,
-     * at every index, the same identity (catalog id, else exact name; {@link #sameIdentity}) — the stored
-     * rows are updated IN PLACE (id, created_at, order kept), so a pending week proposal's lines and an
-     * open workout's logged sets keep pointing at them. Any other list (reorder, add, remove, swap) keeps
-     * the soft-delete + re-insert path with new ids — and, while a workout of that day is running
-     * (an {@code active} instance), such a structural save is refused with 409 {@code TRAIN_DAY_WORKOUT_RUNNING}
+     * <p>Ids (mezo-r36n9.83, mezo-r36n9.147): when the new list is the SAME exercises — equal length and every
+     * fresh row matched to a distinct stored row of the same identity (catalog id, else exact name;
+     * {@link #matchByIdentity}) — the stored rows are updated IN PLACE (id, created_at kept, orderIndex
+     * re-pinned by array order), so a pending week proposal's lines and an open workout's logged sets keep
+     * pointing at them. A pure reorder takes this path always, not only while a workout runs (owner decision
+     * 2026-11-23): a row that keeps its id keeps its history. Any other list (add, remove, swap) keeps the
+     * soft-delete + re-insert path with new ids — and, while a workout of that day is running (an
+     * {@code active} instance), such a structural save is refused with 409 {@code TRAIN_DAY_WORKOUT_RUNNING}
      * before any write; the in-place path stays allowed.
      */
     @Transactional
@@ -574,19 +577,23 @@ public class TrainService {
         }
         CatalogAttributes.Lookup stability = styler.styleRows(fresh, old, block, inputs);
         techniqueGuard.validateRows(fresh); // before any write: a 400 leaves the day untouched
-        boolean aligned = alignedByIdentity(old, fresh);
+        int[] keep = matchByIdentity(old, fresh);
         // A running workout's logged sets point at these rows: only the in-place path keeps them valid.
-        if (!aligned && workoutSessionRepository
+        if (keep == null && workoutSessionRepository
                 .existsByCreatedByAndTemplateSessionIdAndStatus(createdBy, dayId, "active")) {
             throw new SystemRuntimeErrorException(
                 SystemMessage.error(TRAIN_DAY_WORKOUT_RUNNING).build(), HttpStatus.CONFLICT);
         }
         List<ExerciseEntity> saved;
-        if (aligned) {
-            for (int i = 0; i < old.size(); i++) {
-                copyEditable(fresh.get(i), old.get(i));
+        if (keep != null) {
+            // the styled fresh row (technique, challenge, overrides, orderIndex = its array index) goes onto
+            // the stored row it keeps
+            for (int i = 0; i < fresh.size(); i++) {
+                copyEditable(fresh.get(i), old.get(keep[i]));
             }
-            saved = exerciseRepository.saveAll(old);
+            // `old` was loaded in the OLD order and a reorder only re-pinned orderIndex: sort for the response
+            saved = new ArrayList<>(exerciseRepository.saveAll(old));
+            saved.sort(Comparator.comparingInt(ExerciseEntity::getOrderIndex));
         } else {
             exerciseRepository.deleteAll(old);
             saved = exerciseRepository.saveAll(fresh);
@@ -654,17 +661,31 @@ public class TrainService {
             createdBy);
     }
 
-    /** Same exercises, same order: equal length and the same identity at every index (mezo-r36n9.83). */
-    private static boolean alignedByIdentity(List<ExerciseEntity> old, List<ExerciseEntity> fresh) {
+    /**
+     * The same exercises, in any order (mezo-r36n9.83 the same order, mezo-r36n9.147 any permutation): equal
+     * length and every fresh row matched to a distinct stored row of the same identity ({@link #sameIdentity});
+     * duplicate identities match in order, first unmatched stored row. Returns, per fresh index, the index of
+     * the stored row it updates — the identity mapping for an unchanged order, a permutation for a reorder —
+     * or {@code null} when the lists differ (add, remove, swap), which is the re-insert path.
+     */
+    private static int[] matchByIdentity(List<ExerciseEntity> old, List<ExerciseEntity> fresh) {
         if (old.size() != fresh.size()) {
-            return false;
+            return null;
         }
-        for (int i = 0; i < old.size(); i++) {
-            if (!sameIdentity(old.get(i), fresh.get(i))) {
-                return false;
+        int[] keep = new int[fresh.size()];
+        boolean[] taken = new boolean[old.size()];
+        for (int i = 0; i < fresh.size(); i++) {
+            int j = 0;
+            while (j < old.size() && (taken[j] || !sameIdentity(old.get(j), fresh.get(i)))) {
+                j++;
             }
+            if (j == old.size()) {
+                return null;
+            }
+            taken[j] = true;
+            keep[i] = j;
         }
-        return true;
+        return keep;
     }
 
     /** The carry-over / records identity: catalog id, else exact name (as {@code ExerciseStyler}). */
@@ -702,7 +723,7 @@ public class TrainService {
         to.setOrderIndex(from.getOrderIndex());
     }
 
-    /** Full-list replace, soft-delete + re-insert (the misaligned branch of {@link #replaceDayExercises}). */
+    /** Full-list replace, soft-delete + re-insert (the re-insert branch of {@link #replaceDayExercises}). */
     private CustomWorkoutResponse replaceCustomExercises(
             UUID createdBy, WorkoutSessionEntity template, List<GymExerciseInput> inputs) {
         List<ExerciseEntity> old = exerciseRepository

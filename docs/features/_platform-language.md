@@ -8,9 +8,17 @@ key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/auth/service/UserLanguage.java
   - backend/src/main/java/io/mrkuhne/mezo/techcore/message
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/OutputLanguageDirective.java
-  - backend/src/main/resources
+  - backend/src/main/resources/messages_hu.properties
+  - backend/src/main/resources/messages_en.properties
 related: [_platform-auth-security, _platform-design-system, companion, settings, _platform-api-backend]
 ---
+
+> **Exercise SPE palettes (`mezo-eiux9`).** `TRAIN_TECHNIQUE_NOT_ALLOWED` was added to both message bundles; it includes the exercise name. Boop's selection copy describes the specific movement. No language-layer mechanism changed. See [`train.md`](train.md) §4.
+> **2026-11-24 — reviewed after `mezo-r36n9.161` (no platform change).** One new code in both catalogs: `TRAIN_AS_PLANNED_DATE_OUT_OF_WINDOW` („Egy hétre visszamenőleg tudsz pótolni." / „A catch-up may be dated at most a week back.").
+
+> **2026-11-21 — reviewed after the Levél final review (`mezo-r36n9.39`, no language-layer change).** The dummy mail key moved from `application.yml` to the test properties; no message keys changed.
+
+> **2026-11-21 — reviewed after Boop Levél L1+L2 (`mezo-r36n9.38/.39`, no language-layer change).** Mail error keys (`MAIL_AUTH_FAILED`, `MAIL_UNREACHABLE`, `MAIL_RUN_COOLDOWN`, `MAIL_NOT_CONNECTED`, `MAIL_ITEM_NOT_FOUND`, `MAIL_INTAKE_ERROR`, `MAIL_SECRET_UNREADABLE`) added to both bundles; the phone's Levél copy is Hungarian-only like the rest of Boop.
 
 > **2026-11-21 — reviewed after Boop B6 Évad S4 (`mezo-r36n9.16`).** Five `EXPERIMENT_*` keys added to both `messages_hu` and `messages_en` (parity kept); the experiment copy on the phone is Hungarian-only like the rest of Boop. No language mechanism changed. See [`season.md`](season.md) §3.14.
 

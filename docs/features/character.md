@@ -9,9 +9,11 @@ key_files:
   - api/feature/character/character.yml
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion/CharacterPromptSource.java
   - backend/src/main/resources/db/changelog/1.0.0/script/202608272000_mezo-1gim.1_create_character_tables.sql
-  - backend/src/main/resources/db/changelog/1.1.0/script
+  - backend/src/main/resources/db/changelog/1.1.0/script/202609262200_mezo-a9bo7.11_character_maturity_week.sql
 related: [companion, proactive, insights, me, _platform-api-backend]
 ---
+
+> **2026-11-24 — reviewed after `mezo-r36n9.161` (no change).** The day's changeset folder gained `202611241400_mezo-r36n9.161_workout_session_client_ref.sql`; nothing of the character slice is affected.
 
 > **2026-11-21 — reviewed after Boop B6 Évad S4 (`mezo-r36n9.16`).** The shared changelog folder gained `season_experiment` (the season's experiments); nothing in character changed.
 

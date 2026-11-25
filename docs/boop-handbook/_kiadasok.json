@@ -805,5 +805,132 @@
       "mezo-r36n9.17"
     ],
     "mi_valtozott": "A Ma oldal „Mai terved” kártyájában reggel ott a nap szava és az oka (például: „Szoros, de belefér: rövid éjszaka, 4 megbeszélés délelőtt”). Rákoppintva a napod oldalán látod, mennyit bírsz ma, mi visz el energiát (minden programnál: szellemi, emberek közti vagy fizikai, és mennyire), és miből gazdálkodsz (alvás, pulzus, tegnapi edzés és evés, bejelentkezés). Egy programot megjelölhetsz: merít, semleges vagy feltölt — ez újraindítás után is látszik, és a becslés ehhez igazodik. Az Évad oldalon a „Hogy megy” alatt hétről hétre látod a terhedet a pihenésedhez mérve, és hogy az elmúlt 4 hétben hány nap volt túl sok. Boop beszélgetés közben is tudja, milyen napod lesz. Amíg kevés az adat, kiírja: „még tanulom, mennyit bírsz”."
+  },
+  "004f571c1": {
+    "cim": "Levél: a reggeli posta",
+    "datum": "2026-11-21",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app",
+      "Háttérrendszer"
+    ],
+    "szakasz": "Életpanel",
+    "jegyek": [
+      "mezo-r36n9.38",
+      "mezo-r36n9.39"
+    ],
+    "mi_valtozott": "Megnyílt a Levél terület. A Gmailed és az iCloudod egy külön, csak Boopnak szánt Gmail-fiókba továbbít, amit Boop reggel 8-kor és délután 3-kor átnéz. A posta négy részre bomlik: határidős (számlák, programok, foglalások), csomagok (hol tartanak), akciók és lehetőségek 1–10 ponttal, és a többi összecsukva. Embertől jött levél és a bank mindig előre kerül — bankos, hivatali, egészségügyi levelet gép soha nem olvas. Az „érdekel / nem érdekel” gombokból tanul. A kezdőlapon megjelenik a Levél kártyája, és a telefon szól, ha egy jó akció vagy egy számla holnap lejár (naponta legfeljebb kétszer — ez az Étel és az Edzés lejáró dolgaira is érvényes mostantól). Az árellenőrzés és a figyelt termékek a következő lépésben jönnek."
+  },
+  "984e54af2": {
+    "cim": "Rendezettebb gyakorlatsorok a blokképítő napjain",
+    "datum": "2026-11-21",
+    "verzio": "",
+    "tipus": "Kinézet",
+    "hova": [
+      "iPhone app"
+    ],
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.138"
+    ],
+    "mi_valtozott": "A blokképítő napjain minden gyakorlat sora rendezett: fent a neve, alatta három kis cella — sorozat (itt állítod − és + gombbal), ismétlés és tartalék —, legalul az izomrész és a technika vagy a kihívás. Az ismétlés vagy a tartalék cellájára koppintva egy kis szerkesztő nyílik csak arra az értékre; a visszaállítás is csak azt az egy értéket érinti. A sorra koppintva továbbra is a teljes beállítások jönnek."
+  },
+  "9eabffcd5": {
+    "cim": "Edzéslejátszó: a tíz észrevétel javítva",
+    "datum": "2026-11-23",
+    "verzio": "v3.34.0",
+    "tipus": "Javítás",
+    "hova": [
+      "iPhone app",
+      "Háttérrendszer"
+    ],
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.147"
+    ],
+    "mi_valtozott": "A súlyt és az ismétlést ujjal húzható skálán állítod (fél kilónként), a következő sorozat az előző sorozat súlyát hozza, a terv sora végig látszik, a bemelegítő nagyban van jelölve, a jegyzet menthető és a szerverre is felmegy, a javító lapon a tartalék is állítható, a csere külön van „csak ma” és „a blokkban is” módon, a blokk módosítása átmegy a futó edzésbe (futó edzés közben a sorrend is cserélhető), és edzés után a Ma oldal „megvolt”-at mond, a mai eredmény újranyitható."
+  },
+  "c894ba3e4": {
+    "cim": "Kezdőlap: számok az orbokban, élő Pénz orb, fotós naplózás javítva, teljes gyors rögzítés",
+    "datum": "2026-11-24",
+    "verzio": "",
+    "tipus": "Funkció és javítás",
+    "hova": [
+      "iPhone app"
+    ],
+    "szakasz": "Kezdőlap",
+    "jegyek": [
+      "mezo-r36n9.151",
+      "mezo-r36n9.152",
+      "mezo-r36n9.153",
+      "mezo-r36n9.154"
+    ],
+    "mi_valtozott": "A kezdőlap orbjai akkor is mutatják a számukat, ha a Forma még „tanul” (csak a Forma marad „–”); az Étel orb ugyanazt a számot mondja, mint az Étel szoba; a Pénz orb élő, a heti keret megmaradt részét mutatja százalékban. A fotóból ételnaplózás újra működik, és a mentett étkezés mellé a fotó is felkerül. A „+” lap mind a kilenc webes gyors-logolási ajtót tudja (víz, kiegészítők, edzés indítása, sport, súly, check-in, napló, alvás, kiadás), és a kezdőlapon az orbok alatt jobbra is van egy Rögzítés gomb. Közben kiderült és javítva lett egy indítási összeomlás a Pénz adatainak olvasásában."
+  },
+  "a32ba6cdc": {
+    "cim": "Lapok bezárása X-szel, öt gyorsajtó a kezdőlapon, és a kilencedik gömb: a Súly terület",
+    "datum": "2026-11-24",
+    "verzio": "",
+    "tipus": "Funkció és javítás",
+    "hova": [
+      "iPhone app"
+    ],
+    "szakasz": "Kezdőlap",
+    "jegyek": [
+      "mezo-r36n9.156",
+      "mezo-r36n9.157",
+      "mezo-r36n9.158"
+    ],
+    "mi_valtozott": "Minden felcsúszó lap jobb felső sarkában kis kerek X zárja a lapot; az Étel szobából nyíló lapokon a lehúzás újra bezár, nem frissít. A kezdőlapon a „Rögzítés” kapszula helyett öt üvegajtó áll Boop mondata alatt (Étkezés · Víz · Súly · Check-in · Napló), mindegyik rögtön a saját lapját nyitja. A kör kilenc gömb lett: az arany Súly gömb száma azt mondja, mennyire tartod az évad tervezett ütemét (évad vagy trend nélkül „–”). Mögötte a Súly terület a Pénz mintájára: Ma (a mai mérés és a trend, a cél, a súlygörbe a terv vonalával, a hét mérései, a cél sora az Évadba), Test (a Feelfit mérleg testzsírja és izomtömege az Egészségből, BMI, saját testikonnal), Napló (minden mérés hetenként). Net nélkül az utolsó kép a korával; egy mérés után a gömb és a szoba újraolvas. Szerverváltozás nem kellett.",
+    "ellenorzes": "A mag 995 tesztje natívan lefutott az új Macen; az app lefordult és a szimulátorban minden képernyő látszik; a telefonos tesztkészlet és a telepítés a másik, Xcode-os gépen (mezo-r36n9.150)."
+  },
+  "4fa57b938": {
+    "cim": "Visszamenőleg rögzítés minden lapon, a Napló pótlásai, az edzés pótlása és az italok",
+    "datum": "2026-11-24",
+    "verzio": "",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app",
+      "Háttérrendszer"
+    ],
+    "szakasz": "Kezdőlap",
+    "jegyek": [
+      "mezo-r36n9.159",
+      "mezo-r36n9.160",
+      "mezo-r36n9.161"
+    ],
+    "mi_valtozott": "Minden rögzítő lapon (súly, alvás, sport, naplósor) egy „Mikor” sor: Ma · Tegnap · Más nap, a sportnál időponttal is, egy hétre visszamenőleg; a választott nap olvashatóan a sor mellett, a visszajelzés is megmondja, melyik napra került. Az étkezésnél Tegnap gomb. A Napló a mai és az előző hat napot mindig mutatja, az üres napokat is; egy korábbi nap lapján PÓTLÁS: a kimaradt check-in pillanatok (reggel · dél · délután, a pillanat saját idejére), a nap lezárása (este kilencre) és az edzés pótlása. „Edzés pótlása: <tervnap>” egy kimaradt tervnapot a terv sorozataival könyvel készre arra a napra, gyakorlatonként egy súly átírható, a kezdés a terv ideje vagy más időpont; a szerver tanulja a dátumot, kétszer nem könyveli ugyanazt. Új Ital bejárat (a Mit rögzítesz? lapon, az Étel szobában és az étkezés rögzítésében): szokásos italaid egy koppintásra, szabad szöveg, fotó, Recept · Kamra · Vonalkód; az ital beszámít a napi kalóriába és a makrókba, de ablakot nem foglal és pontot nem kap; az Étel Ma lapján külön ITALOK sor. Net nélkül minden rögzítés a sorban marad és később megy fel.",
+    "ellenorzes": "A szerver új tesztjei (ital, edzés pótlása, architektúra) zölden lefutottak; a mag új tesztjei natívan lefutottak; az app lefordult és a szimulátorban minden új képernyő látszik (épített képernyőképek a specifikáció mellett); a telefonos tesztkészlet és a telepítés a másik, Xcode-os gépen (mezo-r36n9.150)."
+  },
+  "08efb6aeb": {
+    "cim": "Másik napot csinálok ma — a kimaradt edzésnap élőben pótolható",
+    "datum": "2026-11-25",
+    "verzio": "",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app"
+    ],
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.163"
+    ],
+    "mi_valtozott": "A Mai edzés kártyája alatt új sor: „Másik napot csinálok ma”. A lapon a hét még nyitott edzésnapjai: elöl a kimaradtak (a legutóbbi az első), utánuk a hét későbbi napjai; pihenőnap és már megcsinált nap nincs rajta. A választott nap a kártyán PÓTLÁS felirattal jelenik meg, az Indítás a szokásos eligazítással és lejátszóval indítja; „Mégis a mai napot csinálom” visszavált. A heti csempéken a pipa a ténylegesen megcsinált napra kerül (a szerdán megcsinált kedd a keddet pipálja), a kész kártya azt nevezi meg, amit ma csináltál. Ha kilépsz és visszajössz futó pótló edzés közben, a kártya a pótolt napot mutatja, net nélkül is.",
+    "ellenorzes": "A mag tesztjei (1046) natívan lefutottak; az app lefordult, a szimulátorban a sor, a lap és a pótló kártya látszik (képernyőképek a docs/superpowers/specs/assets/masik-nap mappában); független kódátnézés három találatát javítottuk; a telefonos tesztkészlet és a telepítés a másik, Xcode-os gépen (mezo-r36n9.150)."
+  },
+  "7aa0550b3": {
+    "cim": "Nincs több bemelegítő szett, és kalória az edzés végén",
+    "datum": "2026-11-25",
+    "verzio": "",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app",
+      "Háttérrendszer"
+    ],
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.170"
+    ],
+    "mi_valtozott": "Az app sehol nem mutat bemelegítő sorozatot: a lejátszó az első munkasorozattal indul, a napszerkesztőből eltűnt a bemelegítő mező, a tervjelöltek nem beszélnek róla. Az edzés végi képen a három szám alatt ott a kalória: először a szerver becslése („kb. 380 kcal · becslés”, például), és ha az órád is rögzítette az edzést, az órád mérése („az órád mérte”). Ehhez a lezárás már a lezáró kép megnyílásakor felmegy a szerverre.",
+    "ellenorzes": "Szerver: új kalória-teszt (becslés, órás szám, nincs adat, lezáráskor) és a meglévő edzéstesztek, architektúra-teszt zöld. iPhone: a mag 1050 + 85 tesztje és az app 521 tesztje zöld (közben megjavítva négy, már korábban is piros teszt). Szimulátorban: lejátszó bemelegítő nélkül, lezáró kép becsléssel és órás számmal, a legkisebb iPhone-on is. Független kódátnézés két találata javítva."
   }
 }

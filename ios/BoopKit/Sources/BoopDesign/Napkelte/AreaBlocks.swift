@@ -25,10 +25,12 @@ public struct NKHighlight: View {
     let hue: Hue, label: String, text: String, sub: String
     let photo: Image?
     let actions: [NKHighlightAction]
+    /// A mark at the trailing end of the label row — a score chip, say. nil = nothing there (every older caller).
+    let badge: AnyView?
     public init(hue: Hue, label: String, text: String, sub: String = "", photo: Image? = nil,
-                actions: [NKHighlightAction] = []) {
+                actions: [NKHighlightAction] = [], badge: AnyView? = nil) {
         self.hue = hue; self.label = label; self.text = text; self.sub = sub
-        self.photo = photo; self.actions = actions
+        self.photo = photo; self.actions = actions; self.badge = badge
     }
     public var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -40,6 +42,7 @@ public struct NKHighlight: View {
                 StillOrb(palette: hue.orb, size: 22, level: 0.85)
                 NKMono(label.uppercased())
                 Spacer()
+                badge
             }
             .padding(.horizontal, photo == nil ? 0 : 18)
             NKHueText(text, hue: hue, size: 21, serif: true, opacity: 1)
@@ -237,8 +240,12 @@ public struct NKCurve: View {
             if !labels.isEmpty {
                 HStack(spacing: 0) {
                     ForEach(labels.indices, id: \.self) { i in
+                        // A label keeps its own width even when the curve has more points than the row has room for
+                        // (a daily trend): the first sits on the left edge, the last on the right, never wrapped
+                        // letter by letter into a narrow cell (`mezo-r36n9.158`).
                         Text(labels[i]).nkFont(10, design: .monospaced).foregroundStyle(.white.opacity(0.45))
-                            .frame(maxWidth: .infinity)
+                            .lineLimit(1).fixedSize()
+                            .frame(maxWidth: .infinity, alignment: i == 0 ? .leading : (i == labels.count - 1 ? .trailing : .center))
                     }
                 }
             }

@@ -30,6 +30,8 @@ final class RitmusEnvironment {
     @ObservationIgnored private let planSource: (@Sendable (String) async throws -> [String: CheckInPlanLite])?
     @ObservationIgnored private let daySource: (@Sendable (String) async throws -> ServerDay)?
     @ObservationIgnored private let naploSource: (@Sendable (_ from: String, _ to: String) async throws -> [ServerDay])?
+    /// The server's journal lines of a day (`mezo-r36n9.159`); nil = never fetched (tests).
+    @ObservationIgnored private let journalSource: (@Sendable (String) async throws -> [JournalLineLite])?
     @ObservationIgnored private var lastNaploRefresh: Date?
     @ObservationIgnored private let goalsSource: (@Sendable ([String]) async throws -> [String: [String]])?
     @ObservationIgnored private let eventsSource: (@Sendable (Date) async -> [CalendarEventLite])?
@@ -45,6 +47,8 @@ final class RitmusEnvironment {
     @ObservationIgnored private let goalHistoryFile: URL
     /// The user's own folder (the ledger's parent): the chat keeps its day → conversation file here.
     @ObservationIgnored private let userDirectory: URL
+    /// The signed-in user's folder name — keys anything per-user that lives outside the folder (UserDefaults).
+    var userKey: String { userDirectory.lastPathComponent }
     /// Lets the outbox's delivery listener reach the chat attached after it.
     @ObservationIgnored private let chatRef: ChatRef
     /// The Boop tab's chat (B3 Task 12); nil until `attachChat` (tests without a server leave it out).
@@ -77,6 +81,7 @@ final class RitmusEnvironment {
          closeLine: (@Sendable (String) async throws -> String)? = nil,
          transcribe: (@Sendable (URL) async throws -> String)? = nil,
          naplo: (@Sendable (String, String) async throws -> [ServerDay])? = nil,
+         journal: (@Sendable (String) async throws -> [JournalLineLite])? = nil,
          reminderCenter: ReminderCenter = SystemReminderCenter(),
          clock: @escaping @Sendable () -> Date = { Date() }, calendar: Calendar = .current) {
         let ledger = LedgerStore(directory: ledgerDirectory)
@@ -90,7 +95,7 @@ final class RitmusEnvironment {
         reminders = RitmusReminders(center: reminderCenter, calendar: calendar, clock: clock)
         lineSource = line; snapshotSource = snapshot; planSource = plans
         daySource = day; goalsSource = goals; eventsSource = events; closeLineSource = closeLine
-        transcribeSource = transcribe; naploSource = naplo
+        transcribeSource = transcribe; naploSource = naplo; journalSource = journal
         self.outboxDirectory = outboxDirectory
         userDirectory = ledgerDirectory.deletingLastPathComponent()
         goalHistoryFile = userDirectory.appendingPathComponent("goal-history.json")
@@ -113,6 +118,11 @@ final class RitmusEnvironment {
             if item.kind == .mealDraft { await me.env?.mealDraftsChanged() }
             // A cash expense reached the server: the Pénz area re-reads (its row stops waiting).
             if item.kind == .penzExpense { await me.env?.penzChanged() }
+            // A weigh-in reached the server: the Súly orb and room re-read (the trend moved) — `mezo-r36n9.158`.
+            if item.kind == .weightLog { await me.env?.weightChanged() }
+            // A workout's start or finish landed: Edzés and the brief re-read, so Ma says „megvolt" and not „Indítás"
+            // (mezo-r36n9.147).
+            if item.kind == .workoutFinish || item.kind == .workoutStart { await me.env?.edzesChanged() }
             // The evening's line arrived after its relink went out (a retried recording): link it again.
             if let box = queue.outbox { await Self.relinkIfNeeded(item, ledger: ledger, outbox: box) }
             if await queue.outbox?.isQueued(item.id) == true { return }
@@ -176,6 +186,15 @@ final class RitmusEnvironment {
     /// Bumped when a cash expense is queued or reaches the server: the Pénz area re-reads the outbox (and the server).
     private(set) var penzTick = 0
     func penzChanged() { penzTick += 1 }
+    /// Bumped when a workout's start or finish reached the server: whoever shows today's session re-reads.
+    private(set) var edzesTick = 0
+    func edzesChanged() { edzesTick += 1 }
+    /// Bumped when a weigh-in is queued or reaches the server: the Súly orb and room re-read (`mezo-r36n9.158`).
+    private(set) var weightTick = 0
+    func weightChanged() { weightTick += 1 }
+
+    /// Send what is queued now, backoff ignored — for a write the owner is waiting on (a workout's finish).
+    func sendNow() { sendSoon() }
 
     /// Queues a cash expense typed on the phone (`OutboxKind.penzExpense`) and sends it at once if the net allows.
     /// Throws when the phone could not keep it — the capture then says so instead of pretending.
@@ -197,6 +216,53 @@ final class RitmusEnvironment {
         try await outbox.enqueue(OutboxItem(id: id, kind: .penzExpense, date: payload.date, capturedAt: clock(),
                                             payload: RitmusPayload.encode(payload)), rollbackOnFailure: true)
         penzTick += 1
+        sendSoon()
+    }
+
+    // MARK: - The quick log (`mezo-r36n9.154`)
+
+    /// A weight off the scale: queued, sent at once if the net allows. Throws when the phone could not keep it.
+    func captureWeight(kg: Double, at date: Date) async throws {
+        let day = self.day(of: date)
+        let rounded = (kg * 10).rounded() / 10
+        try await outbox.enqueue(OutboxItem(kind: .weightLog, date: day, capturedAt: date,
+                                            payload: RitmusPayload.encode(WeightLogPayload(date: day, weightKg: rounded))),
+                                 rollbackOnFailure: true)
+        weightTick += 1
+        sendSoon()
+    }
+
+    /// A night typed by hand, filed on the morning it ended.
+    func captureSleep(_ payload: SleepLogPayload) async throws {
+        try await outbox.enqueue(OutboxItem(kind: .sleepLog, date: payload.date, capturedAt: clock(),
+                                            payload: RitmusPayload.encode(payload)), rollbackOnFailure: true)
+        sendSoon()
+    }
+
+    /// A sport session outside the plan (the training client's own write).
+    func captureSport(_ payload: SportSessionPayload) async throws {
+        try await outbox.enqueue(OutboxItem(kind: .sportSession, date: payload.date, capturedAt: clock(),
+                                            payload: TrainPayloadCodec.encode(payload)), rollbackOnFailure: true)
+        sendSoon()
+    }
+
+    /// A past template day booked as planned (`mezo-r36n9.161`): queued, sent when the net allows; the Edzés room
+    /// re-reads on the tick, so the day shows as done.
+    func captureWorkoutAsPlanned(_ payload: WorkoutAsPlannedPayload) async throws {
+        try await outbox.enqueue(OutboxItem(kind: .workoutAsPlanned, date: payload.date, capturedAt: payload.startedAt,
+                                            payload: TrainPayloadCodec.encode(payload)), rollbackOnFailure: true)
+        edzesChanged()
+        sendSoon()
+    }
+
+    /// A journal line at any hour (the evening close keeps its own path): the day's ledger shows it at once, pending
+    /// until the server has it; the same write the close's typed line uses.
+    func captureJournal(text: String, at date: Date) async throws {
+        let day = self.day(of: date)
+        let id = UUID()
+        try await outbox.enqueue(OutboxItem(id: id, kind: .journal, date: day, capturedAt: date,
+                                            payload: RitmusPayload.encode(JournalPayload(text: text))), rollbackOnFailure: true)
+        try? ledger.addJournal(LedgerJournal(id: id, capturedAt: date, text: text, pending: true), date: day)
         sendSoon()
     }
 
@@ -308,7 +374,8 @@ final class RitmusEnvironment {
             events: { day in await todaysEvents(calendarReader, day: day) },
             closeLine: { date in try await ritmus.line(date) },
             transcribe: { file in try await ritmus.transcribe(file) },
-            naplo: { from, to in try await ritmus.fetchNaplo(from: from, to: to) })
+            naplo: { from, to in try await ritmus.fetchNaplo(from: from, to: to) },
+            journal: { date in try await ritmus.journalLines(on: date) })
         env.attachChat(client: client)
         env.watchNetwork()
         // Records into the outbox folder, where the `voice` sender looks for the files.
@@ -468,6 +535,11 @@ final class RitmusEnvironment {
     /// The last days for the Napló list: the server's closes and check-ins merged into the day files (what is pending on
     /// the phone wins), so the list can be drawn again offline from what was seen. Quietly nothing offline.
     /// Asked again within five minutes of the last good fetch it does nothing, unless `force`.
+    /// The day's journal lines on the server, newest first; empty without a source.
+    func journalLines(on date: String) async throws -> [JournalLineLite] {
+        try await journalSource?(date) ?? []
+    }
+
     func refreshNaplo(force: Bool = false) async {
         guard let naploSource else { return }
         if !force, let last = lastNaploRefresh, clock().timeIntervalSince(last) < 300 { return }

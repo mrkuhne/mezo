@@ -47,7 +47,7 @@ struct UjBlokkAlapok: View {
                                 UjBlokkChoice(text: "\(m)", on: model.minutes == m, sub: "perc") { model.minutes = m; blocked = nil }
                             }
                         }
-                        Text("Pihenővel, bemelegítéssel együtt. Ha egy lehetőség hosszabb, megmutatom, de nem vágok le a heti sorozatokból.")
+                        Text("Pihenővel együtt. Ha egy lehetőség hosszabb, megmutatom, de nem vágok le a heti sorozatokból.")
                             .nkFont(12.5).foregroundStyle(.white.opacity(0.55)).fixedSize(horizontal: false, vertical: true)
                     }
 

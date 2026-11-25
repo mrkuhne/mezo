@@ -22,7 +22,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 | [boop](#boop) | ✓ | 1 | [boop-ios](features/boop-ios.md), [capacity](features/capacity.md) |
 | [capacity](#capacity) | ✓ | 1 | [capacity](features/capacity.md) |
 | [character](#character) | ✓ | 1 | [character](features/character.md) |
-| [companion](#companion) | ✓ | 5 | [character](features/character.md), [companion](features/companion.md), [dayclose](features/dayclose.md), [journal](features/journal.md), [lifegoal](features/lifegoal.md), [me](features/me.md), [penz](features/penz.md), [today](features/today.md), [_platform-language](features/_platform-language.md) |
+| [companion](#companion) | ✓ | 5 | [character](features/character.md), [companion](features/companion.md), [dayclose](features/dayclose.md), [journal](features/journal.md), [lifegoal](features/lifegoal.md), [mail](features/mail.md), [me](features/me.md), [penz](features/penz.md), [today](features/today.md), [_platform-language](features/_platform-language.md) |
 | [dayclose](#dayclose) | ✓ | 1 | [boop-ios](features/boop-ios.md), [dayclose](features/dayclose.md) |
 | [fuel](#fuel) | ✓ | 2 | [fuel](features/fuel.md) |
 | [goal](#goal) | ✓ | 1 | [goal-engine](features/goal-engine.md), [me](features/me.md), [season](features/season.md) |
@@ -31,6 +31,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 | [journal](#journal) | ✓ | 1 | [journal](features/journal.md) |
 | [lifegoal](#lifegoal) | ✓ | 1 | [lifegoal](features/lifegoal.md) |
 | [llmlog](#llmlog) | ✓ | 2 | [companion](features/companion.md) |
+| [mail](#mail) | ✓ | 1 | [mail](features/mail.md) |
 | [meal](#meal) | ✓ | 3 | [fuel](features/fuel.md) |
 | [medication](#medication) | ✓ | 1 | · |
 | [needs](#needs) | ✓ | 1 | [needs](features/needs.md) |
@@ -303,10 +304,11 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 ### companion
 
 *BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-11-25, shipped) ·
-  [docs/features/companion.md](features/companion.md) (updated 2026-11-21, mixed) ·
-  [docs/features/dayclose.md](features/dayclose.md) (updated 2026-11-20, done) ·
-  [docs/features/journal.md](features/journal.md) (updated 2026-11-19, done) ·
+  [docs/features/companion.md](features/companion.md) (updated 2026-11-24, mixed) ·
+  [docs/features/dayclose.md](features/dayclose.md) (updated 2026-11-24, done) ·
+  [docs/features/journal.md](features/journal.md) (updated 2026-11-24, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-11-19, in-progress) ·
+  [docs/features/mail.md](features/mail.md) (updated 2026-11-21, done) ·
   [docs/features/me.md](features/me.md) (updated 2026-11-25, mixed) ·
   [docs/features/penz.md](features/penz.md) (updated 2026-11-21, done) ·
   [docs/features/today.md](features/today.md) (updated 2026-11-19, mixed) ·
@@ -415,23 +417,23 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `JointOveruseRule`, `KnowledgeBackfillRunner`, `LateEatingRule`, `LifeGoalGraphSource`,
     `LifeGoalProposeLlmAdapter`, `LifeGoalProposePort`, `LifeGoalSource`, `LifeGoalText`, `LifeGoalTools`,
     `LlmModelRouter`, `LlmRoundUsage`, `LlmRoundUsageAdvisor`, `LlmUsageExtractor`, `LoadFuelMismatchRule`,
-    `LoggingGapRule`, `MealCoachLlmAdapter`, `MealDraftLlmAdapter`, `MealRhythmDriftRule`, `MedicationTools`,
-    `MemoryCandidate`, `MemoryContext`, `MemoryContextItem`, `MemoryEmbeddingWriter`, `MemoryProvenanceEnvelope`,
-    `MemoryRequest`, `MemoryTools`, `MesoPlanLlmAdapter`, `MissedWorkoutsRule`, `MomentumAtRiskRule`,
-    `MotivationSlumpRule`, `NarrativeNoteSource`, `NoteEmbeddingCatchUp`, `NoteMentionCatchUp`, `OpenAiCompanionLlm`,
-    `OpenAiEmbeddingAdapter`, `OpenAiUsageExtractor`, `OutputLanguageDirective`, `PantryEstimateLlmAdapter`,
-    `PantryPhotoLlmAdapter`, `PantryScrapeLlmAdapter`, `PatternCritiqueEnvelope`, `PatternEventPayloadEnvelope`,
-    `PatternEvidenceEnvelope`, `PenzDigestLlmAdapter`, `PenzProposalLlmAdapter`, `PenzSmsLlmAdapter`,
-    `PenzWeeklyReviewLlmAdapter`, `PersistentPainRule`, `PersonalRecordTools`, `PoorRestednessRule`, `PracticeTools`,
-    `PreparedMemoryQuery`, `ProfileMetaEnvelope`, `ProtocolLapseRule`, `QueryMode`, `RapidWeightLossRule`,
-    `RecalledMemoriesEnvelope`, `RecipeBreakdownLlmAdapter`, `RecipeCookedLlmAdapter`, `RecipeImportLlmAdapter`,
-    `RecipeWorkshopLlmAdapter`, `RecordingToolCallback`, `RecoveryNeededRule`, `RefsEnvelope`, `RetrievalInput`,
-    `RetrievalServingMode`, `ScoreBreakdown`, `ScoreBreakdownEnvelope`, `SeasonContextPort`, `SeasonTools`,
-    `SessionTimeOverrideSource`, `SleepDebtRule`, `SleepDeficitCalculator`, `SleepShotLlmAdapter`,
-    `SlotPlanLlmAdapter`, `SpringAiCompanionLlm`, `StackPlacementLlmAdapter`, `SustainedStressRule`,
-    `TechniqueLlmAdapter`, `TestPlanEnvelope`, `TextSignalProvenanceEnvelope`, `ToolCallAudit`, `ToolCallsEnvelope`,
-    `ToolContexts`, `ToolOutcomesEnvelope`, `ToolText`, `TrainTools`, `TrainingNoteMentionSweep`, `TurnVerdictCheck`,
-    `WeekReviewSource`
+    `LoggingGapRule`, `MailClassifierLlmAdapter`, `MealCoachLlmAdapter`, `MealDraftLlmAdapter`, `MealRhythmDriftRule`,
+    `MedicationTools`, `MemoryCandidate`, `MemoryContext`, `MemoryContextItem`, `MemoryEmbeddingWriter`,
+    `MemoryProvenanceEnvelope`, `MemoryRequest`, `MemoryTools`, `MesoPlanLlmAdapter`, `MissedWorkoutsRule`,
+    `MomentumAtRiskRule`, `MotivationSlumpRule`, `NarrativeNoteSource`, `NoteEmbeddingCatchUp`, `NoteMentionCatchUp`,
+    `OpenAiCompanionLlm`, `OpenAiEmbeddingAdapter`, `OpenAiUsageExtractor`, `OutputLanguageDirective`,
+    `PantryEstimateLlmAdapter`, `PantryPhotoLlmAdapter`, `PantryScrapeLlmAdapter`, `PatternCritiqueEnvelope`,
+    `PatternEventPayloadEnvelope`, `PatternEvidenceEnvelope`, `PenzDigestLlmAdapter`, `PenzProposalLlmAdapter`,
+    `PenzSmsLlmAdapter`, `PenzWeeklyReviewLlmAdapter`, `PersistentPainRule`, `PersonalRecordTools`,
+    `PoorRestednessRule`, `PracticeTools`, `PreparedMemoryQuery`, `ProfileMetaEnvelope`, `ProtocolLapseRule`,
+    `QueryMode`, `RapidWeightLossRule`, `RecalledMemoriesEnvelope`, `RecipeBreakdownLlmAdapter`,
+    `RecipeCookedLlmAdapter`, `RecipeImportLlmAdapter`, `RecipeWorkshopLlmAdapter`, `RecordingToolCallback`,
+    `RecoveryNeededRule`, `RefsEnvelope`, `RetrievalInput`, `RetrievalServingMode`, `ScoreBreakdown`,
+    `ScoreBreakdownEnvelope`, `SeasonContextPort`, `SeasonTools`, `SessionTimeOverrideSource`, `SleepDebtRule`,
+    `SleepDeficitCalculator`, `SleepShotLlmAdapter`, `SlotPlanLlmAdapter`, `SpringAiCompanionLlm`,
+    `StackPlacementLlmAdapter`, `SustainedStressRule`, `TechniqueLlmAdapter`, `TestPlanEnvelope`,
+    `TextSignalProvenanceEnvelope`, `ToolCallAudit`, `ToolCallsEnvelope`, `ToolContexts`, `ToolOutcomesEnvelope`,
+    `ToolText`, `TrainTools`, `TrainingNoteMentionSweep`, `TurnVerdictCheck`, `WeekReviewSource`
 - **Contract** `api/feature/companion-feedback/companion-feedback.yml` — 3 operations
   - **endpoints:** GET /api/companion/feedback · PUT /api/companion/feedback ·
     DELETE /api/companion/feedback/{artifactKind}/{artifactId}
@@ -573,7 +575,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 ### dayclose
 
 *BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-25, in-progress) ·
-  [docs/features/dayclose.md](features/dayclose.md) (updated 2026-11-20, done)
+  [docs/features/dayclose.md](features/dayclose.md) (updated 2026-11-24, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/dayclose`
   - **entities→tables:** `DayCloseEntity`→`day_close`, `DayCloseLineCacheEntity`→`day_close_line_cache`
@@ -591,7 +593,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### fuel
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-21, done)
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-24, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/fuel`
   - **entities→tables:** `FuelSettingsEntity`→`fuel_settings`, `MealSlotTemplateEntity`→`meal_slot_template`,
@@ -723,7 +725,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### journal
 
-*BE + API* · read next: [docs/features/journal.md](features/journal.md) (updated 2026-11-19, done)
+*BE + API* · read next: [docs/features/journal.md](features/journal.md) (updated 2026-11-24, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/journal`
   - **entities→tables:** `DecisionEntryEntity`→`decision_entry`, `GratitudeEntryEntity`→`gratitude_entry`,
@@ -781,7 +783,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### llmlog
 
-*BE + API* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-11-21, mixed)
+*BE + API* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-11-24, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog`
   - **sub-features:** `context`
@@ -803,7 +805,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 - **Contract** `api/feature/llm-usage/llm-usage.yml` — 4 operations
   - **endpoints:** GET /api/llm-usage/summary · GET /api/llm-usage/breakdown · GET /api/llm-usage/calls ·
     GET /api/llm-usage/calls/{id}
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/llmlog` — 19 IT + 7 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/llmlog` — 19 IT + 8 unit
   - **ITs:** `AiDraftsApiIT`, `LlmActorPropagationIT`, `LlmBudgetCapIT`, `LlmBudgetLogDisabledIT`,
     `LlmCallContextTaggingIT`, `LlmCallDetailIT`, `LlmCallListIT`, `LlmCallListMidnightIT`, `LlmLogRecorderWiringIT`,
     `LlmLogRepositoryIT`, `LlmLogRetentionJobIT`, `LlmLogRetentionJobSwitchOffIT`,
@@ -812,9 +814,39 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   - **populators:** `DailySummaryPopulator`, `DatabasePopulator`, `LlmLogPopulator`, `MealPopulator`,
     `PantryItemPopulator`, `UserPopulator`
 
+### mail
+
+*BE + API* · read next: [docs/features/mail.md](features/mail.md) (updated 2026-11-21, done)
+
+- **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/mail`
+  - **entities→tables:** `MailFeedbackEntity`→`mail_feedback`, `MailFolderCursorEntity`→`mail_folder_cursor`,
+    `MailItemEntity`→`mail_item`, `MailMailboxEntity`→`mail_mailbox`, `MailMessageEntity`→`mail_message`,
+    `MailRunEntity`→`mail_run`, `MailSenderRuleEntity`→`mail_sender_rule`
+  - **repositories:** `MailFeedbackRepository`, `MailFolderCursorRepository`, `MailItemRepository`,
+    `MailMailboxRepository`, `MailMessageRepository`, `MailRunRepository`, `MailSenderRuleRepository`
+  - **services:** `MailClassifierLlm`, `MailCostCap`, `MailCredentialCipher`, `MailDigest`, `MailDigestQuery`,
+    `MailDigestService`, `MailErrors`, `MailHealth`, `MailIntakeService`, `MailIntakeStore`, `MailItemStore`,
+    `MailJob`, `MailLearning`, `MailMailboxService`, `MailMailboxStore`, `MailPurgeService`, `MailRulesService`,
+    `MailRunner`, `Verdict`
+  - **controllers→contract:** `MailController`→`MailApi`
+  - **mappers:** `MailMapper`
+  - **config:** `MailAsyncConfig`, `MailProperties`
+  - **other:** `BulkDetector`, `CarrierRules`, `ClassifiedMail`, `ClassifyPrompt`, `FetchedMail`, `Group`,
+    `ImapMailReader`, `JsonLdReader`, `MailFence`, `MailHeaders`, `MailOutputValidator`, `MailReader`, `MailRedactor`,
+    `MailRules`, `ParcelState`, `RedactedMail`, `RuleVerdict`, `ScorePrompt`, `ScoredDeal`, `ScreenPrompt`,
+    `ScreenVerdict`, `SenderPrior`, `SenderRule`, `SensitiveSeed`
+- **Contract** `api/feature/mail/mail.yml` — 8 operations
+  - **endpoints:** GET /api/mail/mailbox · PUT /api/mail/mailbox · DELETE /api/mail/mailbox ·
+    POST /api/mail/mailbox/run · GET /api/mail/digest · POST /api/mail/items/{id}/feedback · GET /api/mail/rules ·
+    PUT /api/mail/rules
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/mail` — 8 IT + 10 unit
+  - **ITs:** `ImapMailReaderIT`, `MailApiIT`, `MailCostCapIT`, `MailDigestPipelineIT`, `MailIntakeIT`,
+    `MailJobEnabledIT`, `MailJobSwitchIT`, `MailSchemaIT`
+  - **populators:** `DatabasePopulator`, `LlmLogPopulator`, `MailPopulator`, `UserPopulator`
+
 ### meal
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-21, done)
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-24, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/meal`
   - **sub-features:** `port`
@@ -839,11 +871,11 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   - **endpoints:** GET /api/fuel/day/{date} · GET /api/fuel/week/{start} · POST /api/meal · PUT /api/meal/{id} ·
     DELETE /api/meal/{id} · POST /api/meal/ai-draft · GET /api/recipe/{id}/logs · GET /api/meal/coach ·
     GET /api/meal/{id}/coach · POST /api/water-log · DELETE /api/water-log/{id}
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/meal` — 29 IT + 10 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/meal` — 30 IT + 10 unit
   - **ITs:** `ClientRefIdempotencyIT`, `FuelDayMovementIT`, `FuelDayRecoveryIT`, `FuelDayServiceIT`,
     `GoalDailyIntakeAdapterIT`, `GoalIntakeAdherenceAdapterIT`, `MealAiDraftApiIT`, `MealAiDraftServiceIT`,
     `MealAiDraftSwitchOffApiIT`, `MealAiLlmUnavailableApiIT`, `MealAiUploadLimitApiIT`, `MealApiIT`, `MealCoachApiIT`,
-    `MealCoachServiceIT`, `MealCoachStoreIT`, `MealCoachSwitchOffApiIT`, `MealItemRecipeOverridesIT`,
+    `MealCoachServiceIT`, `MealCoachStoreIT`, `MealCoachSwitchOffApiIT`, `MealDrinkApiIT`, `MealItemRecipeOverridesIT`,
     `MealOverridesIT`, `MealOverridesScoringIT`, `MealOverridesServiceIT`, `MealPhotoIT`,
     `MealRecipeCompositeScoringIT`, `MealRepositoryIT`, `MealRescoreRunnerIT`, `MealSaturatedFatBackfillRunnerIT`,
     `MealServiceIT`, `NutritionTargetsPropertiesIT`, `RecipeLogsServiceIT`, `WaterLogApiIT`
@@ -902,7 +934,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### nutrition
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-21, done)
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-24, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/nutrition`
   - **entities→tables:** `DietSettingsEntity`→`diet_settings`, `SensitivityProfileEntity`→`sensitivity_profile`
@@ -920,7 +952,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   - **endpoints:** GET /api/diet/settings · PUT /api/diet/settings · POST /api/diet/settings/preview
 - **Contract** `api/feature/sensitivity/sensitivity.yml` — 2 operations
   - **endpoints:** GET /api/sensitivity · PUT /api/sensitivity
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/nutrition` — 6 IT + 9 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/nutrition` — 6 IT + 10 unit
   - **ITs:** `DietPreferencesResolverIT`, `DietSettingsApiIT`, `DietSettingsDayTypeShiftIT`, `FuelPlanIT`,
     `SensitivityProfileIT`, `UsualMealsIT`
   - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPopulator`, `GoalSuggestionPopulator`,
@@ -1278,7 +1310,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### train
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-21, done) ·
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-24, done) ·
   [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-11-25, done) ·
   [docs/features/season.md](features/season.md) (updated 2026-11-25, in-progress) ·
   [docs/features/train.md](features/train.md) (updated 2026-11-25, done)
@@ -1329,11 +1361,11 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `TierBudget`, `TierChangeProposalService`, `TimingObservation`, `TimingObservationExtractor`,
     `TimingProfileListener`, `TimingProfileService`, `TrainService`, `TrainingStyle`, `VolumeArcService`,
     `VolumeBands`, `VolumeDecider`, `VolumeLedger`, `VolumePath`, `VolumeProgressionService`, `WarmupRule`,
-    `WeekProposalDecisionService`, `WeekProposalQueryService`, `WeekProposalService`, `WeeklyPin`,
-    `WeeklyScheduledActivityService`, `WeeklySignalReader`, `WeightGapService`, `WeightSnapper`,
-    `WorkoutAutoCloseService`, `WorkoutExerciseChangeService`, `WorkoutFinishedEvent`, `WorkoutService`,
-    `WorkoutWindowQueryService`, `YearGenerator`, `YearPlanAssembler`, `YearPlanLinker`, `YearPlanService`,
-    `YearReconciler`, `YearRules`, `YearSchedule`
+    `WatchWorkoutEnergyPort`, `WeekProposalDecisionService`, `WeekProposalQueryService`, `WeekProposalService`,
+    `WeeklyPin`, `WeeklyScheduledActivityService`, `WeeklySignalReader`, `WeightGapService`, `WeightSnapper`,
+    `WorkoutAutoCloseService`, `WorkoutEnergyService`, `WorkoutExerciseChangeService`, `WorkoutFinishedEvent`,
+    `WorkoutService`, `WorkoutWindowQueryService`, `YearGenerator`, `YearPlanAssembler`, `YearPlanLinker`,
+    `YearPlanService`, `YearReconciler`, `YearRules`, `YearSchedule`
   - **controllers→contract:** `PlannedSkipController`→`TrainSkipApi`, `ReadinessController`→`TrainReadinessApi`,
     `RecoveryController`→`TrainRecoveryApi`, `TrainController`→`TrainApi`,
     `WeekProposalController`→`TrainWeekProposalApi`
@@ -1359,7 +1391,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 - **Contract** `api/feature/train/train-week-proposal.yml` — 2 operations
   - **endpoints:** GET /api/train/mesocycles/{id}/week-proposals ·
     POST /api/train/mesocycles/{id}/week-proposals/{proposalId}/decisions
-- **Contract** `api/feature/train/train.yml` — 77 operations
+- **Contract** `api/feature/train/train.yml` — 78 operations
   - **endpoints:** GET /api/train/mesocycles · POST /api/train/mesocycles/{id}/activate ·
     POST /api/train/mesocycles/{id}/close · POST /api/train/mesocycles/{id}/discard ·
     PUT /api/train/mesocycles/{id}/muscle-priorities · PUT /api/train/mesocycles/{id}/settings ·
@@ -1378,10 +1410,10 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     PUT /api/train/sport-schedule · GET /api/train/sport-events · POST /api/train/sport-events ·
     DELETE /api/train/sport-events/{id} · GET /api/train/sport-slot-skips · GET /api/train/gym-schedule ·
     PUT /api/train/gym-schedule · GET /api/train/workouts/today · GET /api/train/workouts · POST /api/train/workouts ·
-    GET /api/train/workouts/{id} · POST /api/train/workouts/{id}/sets · PUT /api/train/workouts/{id}/sets/{setId} ·
-    DELETE /api/train/workouts/{id}/sets/{setId} · POST /api/train/workouts/{id}/feedback ·
-    POST /api/train/workouts/{id}/skip · POST /api/train/workouts/{id}/exercises ·
-    POST /api/train/workouts/{id}/exercises/{exerciseId}/discomfort ·
+    POST /api/train/workouts/as-planned · GET /api/train/workouts/{id} · POST /api/train/workouts/{id}/sets ·
+    PUT /api/train/workouts/{id}/sets/{setId} · DELETE /api/train/workouts/{id}/sets/{setId} ·
+    POST /api/train/workouts/{id}/feedback · POST /api/train/workouts/{id}/skip ·
+    POST /api/train/workouts/{id}/exercises · POST /api/train/workouts/{id}/exercises/{exerciseId}/discomfort ·
     DELETE /api/train/workouts/{id}/exercises/{exerciseId}/discomfort ·
     GET /api/train/workouts/{id}/exercises/{exerciseId}/substitutes ·
     POST /api/train/workouts/{id}/exercises/{exerciseId}/plan-sets · PUT /api/train/exercises/{exerciseId}/note ·
@@ -1391,7 +1423,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     GET /api/train/run-sessions · POST /api/train/run-sessions · GET /api/train/timing-profile ·
     POST /api/train/year-plans/preview · POST /api/train/year-plans · GET /api/train/year-plans/active ·
     PATCH /api/train/year-plans/blocks/{blockId} · POST /api/train/year-plans/{id}/archive
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 143 IT + 61 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 145 IT + 61 unit
   - **ITs:** `BlockExerciseSuggestionsIT`, `CatalogMediaResolutionIT`, `CatalogWriteContractIT`, `ClosingBlockIT`,
     `ClosingBlockSwitchOffIT`, `ClosingBlockVolumeFlagIT`, `ComebackTodayIT`, `CrossDayWorkoutIT`, `CustomWorkoutIT`,
     `ExerciseCatalogContractIT`, `ExerciseCatalogLoaderIT`, `ExerciseCatalogPermissionIT`, `ExerciseCatalogSlugRaceIT`,
@@ -1420,17 +1452,18 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `WeekProposalRunModeIT`, `WeekProposalStallFailureIT`, `WeekProposalStallIT`, `WeekProposalTechniqueIT`,
     `WeekProposalTierChangeApiIT`, `WeekProposalTierChangeIT`, `WeekProposalTierIT`, `WeeklyPinIT`,
     `WeeklyScheduledActivityServiceIT`, `WeeklyScheduledActivityTrainingDaysIT`, `WeeklySignalReaderIT`,
-    `WorkoutAutoCloseIT`, `WorkoutClosingNoteApiIT`, `WorkoutContractIT`, `WorkoutDayAdjustmentPersistenceIT`,
-    `WorkoutDetailContractIT`, `WorkoutDoneSemanticsIT`, `WorkoutExerciseChangeIT`, `WorkoutFinishNoLevelUpApiIT`,
-    `WorkoutPlannedMuscleGroupsIT`, `WorkoutServiceIT`, `WorkoutSessionRepositoryChallengeIT`, `WorkoutSetMutationIT`,
-    `WorkoutTimingBackfillIT`, `WorkoutTimingIT`, `WorkoutTodayAmountIT`, `WorkoutTodayAmountSwitchOffIT`,
-    `WorkoutTodayPrescriptionIT`, `WorkoutTodayProgressionIT`, `WorkoutTodayStyleIT`, `WorkoutTodayStyleSwitchOffIT`,
-    `WorkoutTodayTechniqueIT`, `WorkoutWeightGapIT`, `WorkoutWindowQueryServiceIT`, `YearPlanContractIT`,
-    `YearPlanFinalReviewIT`, `YearPlanLinkContractIT`, `YearPlanNextDueIT`, `YearPlanPropertiesBindingIT`
+    `WorkoutAsPlannedIT`, `WorkoutAutoCloseIT`, `WorkoutClosingNoteApiIT`, `WorkoutContractIT`,
+    `WorkoutDayAdjustmentPersistenceIT`, `WorkoutDetailContractIT`, `WorkoutDoneSemanticsIT`, `WorkoutEnergyServiceIT`,
+    `WorkoutExerciseChangeIT`, `WorkoutFinishNoLevelUpApiIT`, `WorkoutPlannedMuscleGroupsIT`, `WorkoutServiceIT`,
+    `WorkoutSessionRepositoryChallengeIT`, `WorkoutSetMutationIT`, `WorkoutTimingBackfillIT`, `WorkoutTimingIT`,
+    `WorkoutTodayAmountIT`, `WorkoutTodayAmountSwitchOffIT`, `WorkoutTodayPrescriptionIT`, `WorkoutTodayProgressionIT`,
+    `WorkoutTodayStyleIT`, `WorkoutTodayStyleSwitchOffIT`, `WorkoutTodayTechniqueIT`, `WorkoutWeightGapIT`,
+    `WorkoutWindowQueryServiceIT`, `YearPlanContractIT`, `YearPlanFinalReviewIT`, `YearPlanLinkContractIT`,
+    `YearPlanNextDueIT`, `YearPlanPropertiesBindingIT`
   - **populators:** `BiometricProfilePopulator`, `CheckInPopulator`, `DatabasePopulator`, `GoalPopulator`,
     `MesoTemplatePopulator`, `PlannedSkipPopulator`, `ReadinessChoicePopulator`, `RecoveryPeriodPopulator`,
     `RunningPopulator`, `SleepLogPopulator`, `SportSlotSkipPopulator`, `TrainPopulator`, `TrainingYearPlanPopulator`,
-    `UserPopulator`, `WeightLogPopulator`, `WorkoutDayAdjustmentPopulator`
+    `UserPopulator`, `WearableWorkoutPopulator`, `WeightLogPopulator`, `WorkoutDayAdjustmentPopulator`
 
 ### wearable
 
@@ -1443,8 +1476,8 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   - **repositories:** `CalendarEventRepository`, `DailyMetricRepository`, `HealthSampleRepository`,
     `WearableWorkoutRepository`
   - **services:** `CalendarDaysReplacedEvent`, `CalendarSnapshotService`, `DailyMetricService`, `HealthSampleService`,
-    `WearableBatches`, `WearableCheckInBiomarkerSource`, `WearableDeletionService`, `WearableSleepService`,
-    `WearableWorkoutService`, `WorkoutReconciler`
+    `WatchWorkoutEnergyAdapter`, `WearableBatches`, `WearableCheckInBiomarkerSource`, `WearableDeletionService`,
+    `WearableSleepService`, `WearableWorkoutService`, `WorkoutReconciler`
   - **controllers→contract:** `WearableController`→`WearableApi`
   - **config:** `WearableProperties`
 - **Contract** `api/feature/wearable/wearable.yml` — 6 operations
@@ -1481,7 +1514,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   `FeedbackPopulator`, `FlagLogPopulator`, `FuelSettingsPopulator`, `GoalPlanLinkPopulator`, `GoalPopulator`,
   `GoalSuggestionPopulator`, `GraphPopulator`, `HabitPopulator`, `HealthSamplePopulator`, `IntentionPopulator`,
   `JournalPopulator`, `KnowledgeFactPopulator`, `LearnedFactPopulator`, `LifeGoalPopulator`, `LlmLogPopulator`,
-  `MealPopulator`, `MealRhythmFixtureIT`, `MealSlotTemplatePopulator`, `MedicationDosePopulator`,
+  `MailPopulator`, `MealPopulator`, `MealRhythmFixtureIT`, `MealSlotTemplatePopulator`, `MedicationDosePopulator`,
   `MedicationPopulator`, `MemoirPopulator`, `MemoryEmbeddingPopulator`, `MemoryItemPopulator`, `MentionPopulator`,
   `MesoTemplatePopulator`, `NeedsPopulator`, `PantryCatalogPopulator`, `PantryImportPopulator`, `PantryItemPopulator`,
   `PatternEventPopulator`, `PatternPopulator`, `PenzPopulator`, `PeriodSummaryPopulator`, `PersonPopulator`,

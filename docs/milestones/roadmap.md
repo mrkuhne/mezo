@@ -79,6 +79,26 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
   [2026-11-20-boop-eves-terv-design](../superpowers/specs/2026-11-20-boop-eves-terv-design.md), plan
   [2026-11-21-boop-eves-terv-s3-s4](../superpowers/plans/2026-11-21-boop-eves-terv-s3-s4.md); docs
   [`train.md`](../features/train.md), [`season.md`](../features/season.md), [`boop-ios.md`](../features/boop-ios.md).
+
+- **2026-11-23 — Owner recipe library migrated from ATLAS 4.0 (`mezo-hj7ul`).**
+  Twenty-three recipes now use pantry-linked ingredient quantities and the app's frozen nutrition facts, rather than the
+  HTML's estimated macros. The owner-approved 47 old recipes were soft-deleted; six retained recipes and historical meal
+  logs remain. [ADR 0058](../decisions/0058-owner-recipe-import-from-pantry-facts.md) records the import rule and deletion boundary.
+
+- **2026-11-21 — Boop Levél L1 + L2: the morning post (`mezo-r36n9.38` + `mezo-r36n9.39`) — built, not yet deployed.**
+  One release. The server reads a read-only **mirror Gmail** (the owner's Gmail and iCloud forward into it; one app
+  password, AES-GCM sealed) at 08:00 and 15:00 Budapest, redacts every mail before any model, sorts it by rules first
+  (sensitive senders — bank, insurer, government, health, login codes — are never read by a model) and the cheap model
+  second, and keeps four groups: Határidős, Csomagok, Akciók és lehetőségek (1–10 score), A többi. *Érdekel / nem érdekel*
+  teaches a per-sender prior; a per-day LLM cap (0.15 USD) falls back to rules-only and says so. Phone: the Levél area
+  (Ma · Figyelt · Szabályok · Fiókok, six-step mirror guide, Lecsatolás), the **first wall source from a life area**, and
+  the wall's ring (`WallNotifier`, cap 2 per fire day, 08:00–21:00) — built for the first time, so Étel and Edzés
+  expiring items ring too; rings are scheduled only when the app is opened until the paid team's server push
+  (`mezo-r36n9.19`). Switches `mezo.mail.enabled` + `mezo.techcore.cron.mail-job.enabled` ship off; deploy needs
+  `MEZO_MAIL_SECRET_KEY` first. Carrier patterns are provisional; Figyelt + price check are L3. Spec
+  [2026-11-21-boop-level-posta-design](../superpowers/specs/2026-11-21-boop-level-posta-design.md);
+  [`mail.md`](../features/mail.md), [`boop-ios.md`](../features/boop-ios.md).
+
 - **2026-11-21 — Boop Tervajánló S1 + S2: a new block starts from ranked, flawless plan candidates (`mezo-r36n9.113`).**
   Server (S1): `POST /api/train/meso-plans/candidates` builds one deterministic plan per catalogued split of the chosen day
   count (`mezo.meso-plan.splits`), measures each with the evaluator and offers only flawless ones (every group ≥2×/week,

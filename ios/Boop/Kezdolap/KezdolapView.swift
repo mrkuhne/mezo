@@ -16,15 +16,26 @@ enum KezdolapRoute: Equatable {
     var room: Hue? { if case .room(let h) = self { h } else { nil } }
 }
 
-/// **The home screen** (owner 2026-11-13): "boop" at the top, the eight life areas as living orbs laid out on a
+/// **The home screen** (owner 2026-11-13): "boop" at the top, the nine life areas as living orbs laid out on a
 /// circle, Boop's own orb in the middle, and behind them a photographed misty mountain ridge with fog drifting
 /// across it (the cool blue world — no lilac here, owner round 2).
 ///
 /// The orbs **fade in out of the fog** when the screen opens. Tapping one **zooms into that orb** and cross-fades to
 /// its area; coming back fades the area out and the ring back in. Tapping Boop opens today's Nap page, which is not
-/// replaced — it moves one level in. The two areas that are not built yet (Pénz, Levél) sit faint and say so.
+/// replaced — it moves one level in. Nine areas since 2026-11-24 (Súly, `mezo-r36n9.158`); every one is live.
 struct KezdolapView: View {
     @Environment(MorningStore.self) private var morning: MorningStore?
+    /// The Étel orb's number is the Étel room's own (the day's meal points), the Pénz orb's the week's remaining share
+    /// (`mezo-r36n9.152`, `.153`): both read their own store, not the brief.
+    @Environment(\.foodClient) private var food
+    @Environment(PenzStore.self) private var penz: PenzStore?
+    @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
+    /// The "+" sheet's "Edzés indítása" asks the ring to open the Edzés room (`mezo-r36n9.154`).
+    @Environment(RitmusRouter.self) private var router: RitmusRouter?
+    @Environment(\.openPick) private var openPick
+    /// The Súly orb's number is the pace score of the Súly store (`mezo-r36n9.158`).
+    @Environment(SulyStore.self) private var suly: SulyStore?
+    @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openAccount) private var openAccount
     @Environment(\.setRoomOpen) private var setRoomOpen
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -40,6 +51,8 @@ struct KezdolapView: View {
     @State private var motion = OrbMotion()
     /// The screen's own rectangle in global coordinates: a tapped orb's point becomes the zoom's anchor in it.
     @State private var screen: CGRect = .zero
+    /// The day's meals, for the Étel orb (a light read: the day alone).
+    @State private var etel = EtelStore()
 
     /// The home's colour world: the cool blue of the mountain photo.
     private static let world = Hue.alvas
@@ -70,6 +83,43 @@ struct KezdolapView: View {
         .background { if let morning { MorningTriggers(store: morning) } }
         // The bottom bar's "Ma" tapped again while a page is open: back to the ring.
         .onChange(of: homeResetTick) { if route != nil { closeRoute() } }
+        // The Étel, Pénz and Súly numbers: on arrival, when the app comes back, when a meal, an expense or a weigh-in lands.
+        .task { await loadNumbers() }
+        .onChange(of: scenePhase) { _, phase in if phase == .active { Task { await loadNumbers(force: true) } } }
+        .onChange(of: ritmus?.mealDraftsTick) { Task { await loadFood() } }
+        .onChange(of: ritmus?.penzTick) { Task { await penz?.load(force: true) } }
+        .onChange(of: ritmus?.weightTick) { Task { await suly?.load(force: true) } }
+        // The "+" sheet asked for a room (from any place of the bar): the ring opens it once it is up.
+        .onAppear { if let hue = router?.takeRoom() { openArea(hue) } }
+        .onChange(of: router?.room) { _, hue in if let hue { router?.room = nil; openArea(hue) } }
+    }
+
+    /// The ring's own numbers: the day's meals, the week's money, the weight's pace. None blocks the ring; each shows "–" until it is here.
+    /// `force` re-reads the Súly store even when it has a picture: the scale's weigh-in arrives through the Health
+    /// sync, which bumps no tick, so coming forward and closing a room ask again.
+    private func loadNumbers(force: Bool = false) async {
+        // One after the other: an `async let` over the store's optional-chained read tripped the concurrency runtime
+        // (`swift_task_dealloc` abort at launch); two small reads need no parallelism.
+        await loadFood()
+        await penz?.load()
+        await suly?.load(force: force)
+    }
+
+    private func loadFood() async {
+        guard let food else { return }
+        await etel.loadDay(food: food, now: Date())
+    }
+
+    /// A room asked for from outside the ring: opened from the ring's centre, or — with a page already up — after the
+    /// ring has come back (two moves never overlap).
+    private func openArea(_ hue: Hue) {
+        let centre = CGPoint(x: screen.midX, y: screen.midY)
+        if route == nil {
+            openRoute(.room(hue), from: centre, in: screen)
+        } else {
+            closeRoute()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { openRoute(.room(hue), from: centre, in: screen) }
+        }
     }
 
     // MARK: - Going in and coming back
@@ -103,6 +153,8 @@ struct KezdolapView: View {
         withAnimation(reduceMotion ? .easeInOut(duration: 0.3) : .easeOut(duration: 0.6 * k)) { zoomed = false }
         // The page leaves once it has faded; until then it cross-fades with the ring coming back.
         DispatchQueue.main.asyncAfter(deadline: .now() + (reduceMotion ? 0.3 : 0.34 * k)) { route = nil }
+        // The room may have changed what the orbs say (a meal logged, an expense typed): read the numbers again.
+        Task { await loadNumbers(force: true) }
     }
 
     // MARK: - The ring
@@ -131,6 +183,8 @@ struct KezdolapView: View {
                     ringView(side: ring)
                     boopLine
                         .padding(.top, 34)
+                    quickDoors
+                        .padding(.top, 26).padding(.horizontal, 22)
                     Spacer(minLength: 0)
                     Color.clear.frame(height: 112)
                 }
@@ -150,7 +204,10 @@ struct KezdolapView: View {
     }
 
     private func ringView(side: CGFloat) -> some View {
-        NKOrbRing(items: Area.allCases.map { ringItem($0, brief: brief) }, orbSize: 56, live: route == nil) { item, point in
+        // Nine orbs: 56 pt where the ring is wide, smaller where it is not (a short phone's ring is its height), so
+        // every name keeps clear of the orb under it (`mezo-r36n9.158`).
+        NKOrbRing(items: Area.allCases.map { ringItem($0, brief: brief, foodDay: etel.day, penz: penz?.allowance, suly: suly?.score) },
+                  orbSize: side < 360 ? 46 : (side < 400 ? 52 : 56), live: route == nil) { item, point in
             open(item, at: point)
         } center: {
             boopCenter
@@ -177,6 +234,38 @@ struct KezdolapView: View {
         .accessibilityLabel("Boop · \(kezdolapLine(brief)). A napod megnyitása")
         .accessibilityAddTraits(.isButton)
     }
+
+    /// The quick log's own doors on the home screen (owner 2026-11-24, `mezo-r36n9.157`): the five he records most,
+    /// each one tap from the ring — a glass circle with a glyph and a quiet mono name, the ring's own vocabulary at a
+    /// smaller size. The bar's "+" keeps every other door.
+    private var quickDoors: some View {
+        HStack(spacing: 0) {
+            ForEach(Self.doors, id: \.label) { d in
+                Button { openPick(d.pick) } label: {
+                    VStack(spacing: 7) {
+                        NKGlyph(d.glyph, .white, size: 19)
+                            .frame(width: 46, height: 46)
+                            .glassEffect(.regular.interactive(), in: .circle)
+                        Text(d.label).nkFont(10, .medium, design: .monospaced).tracking(1.1)
+                            .foregroundStyle(.white.opacity(0.72)).lineLimit(1).minimumScaleFactor(0.8)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("\(d.name) rögzítése")
+            }
+        }
+    }
+
+    /// The five doors, in the order he reaches for them.
+    static let doors: [(glyph: String, label: String, name: String, pick: CapturePick)] = [
+        ("bowl-cream", "ÉTKEZÉS", "Étkezés", .meal(.pick, text: "")),
+        ("drop-sky", "VÍZ", "Víz", .quick(.water)),
+        ("scale-ink", "SÚLY", "Súly", .quick(.weight)),
+        ("spark-cream", "CHECK-IN", "Check-in", .cover(.checkin)),
+        ("book-sage", "NAPLÓ", "Napló", .quick(.journal)),
+    ]
 
     /// Boop's line under the ring: the day in a few words, and the second way into the Nap page.
     private var boopLine: some View {
@@ -211,7 +300,7 @@ struct KezdolapView: View {
         }
     }
 
-    /// Simulator review: `-previewHome nap|alvas|etel|edzes|energia|forma|penz|level|nap-oldal` opens the home
+    /// Simulator review: `-previewHome nap|alvas|etel|edzes|energia|suly|forma|penz|level|nap-oldal` opens the home
     /// already moved on.
     private static var initialRoute: KezdolapRoute? {
         #if DEBUG
@@ -224,6 +313,7 @@ struct KezdolapView: View {
         case "forma": return .room(.forma)
         case "penz": return .room(.penz)
         case "level": return .room(.level)
+        case "suly": return .room(.suly)
         case "nap-oldal": return .day
         default: return nil
         }

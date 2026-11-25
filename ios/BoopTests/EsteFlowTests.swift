@@ -91,6 +91,26 @@ final class EsteFlowTests {
 
     // MARK: - Steps and the close button
 
+    /// A past day closed from the Napló (`mezo-r36n9.159`): dated that day, stamped at nine that evening, its
+    /// journal line on that day too.
+    @Test func aCatchUpCloseIsStampedAtNineOnThatDay() async throws {
+        let env = environment()
+        let f = EsteFlow(env: env, brief: nil, date: "2026-11-11")
+        #expect(f.isCatchUp)
+        #expect(f.date == "2026-11-11")
+        f.pickEnergy(3)
+        f.pickRating(4)
+        _ = f.typed("Elmaradt a zárás, most pótolom.")
+        await f.closeDay()
+        let nine = Self.budapest.date(from: DateComponents(year: 2026, month: 11, day: 11, hour: 21, minute: 0))
+        let close = try #require(await sender.sent.first { $0.kind == .dayClose })
+        #expect(close.date == "2026-11-11")
+        #expect(close.capturedAt == nine)
+        let journal = try #require(await sender.sent.first { $0.kind == .journal })
+        #expect(journal.date == "2026-11-11")
+        #expect(env.ledger.ledger(for: "2026-11-11").close?.dayRating == 4)
+    }
+
     @Test func closeDisabledUntilRating() async throws {
         let f = try await flow(environment())
         #expect(!f.canClose)

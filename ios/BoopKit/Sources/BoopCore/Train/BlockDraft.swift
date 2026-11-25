@@ -41,7 +41,7 @@ public enum BlockStyle: String, CaseIterable, Sendable, Equatable {
 
 /// What may sit on an exercise's last set (T2). The wire spells `rest_drop`.
 public enum SetTechnique: String, CaseIterable, Codable, Sendable, Equatable {
-    case none, restDrop = "rest_drop", drop, myo, restPause = "rest_pause", partials
+    case none, restDrop = "rest_drop", drop, myo, restPause = "rest_pause", partials, topPause = "top_pause"
 
     /// The owner's fixed rest-pause makes the whole exercise this many reps (mezo-r36n9.125; the server pins it too).
     public static let restPauseReps = 20
@@ -61,6 +61,7 @@ public enum SetTechnique: String, CaseIterable, Codable, Sendable, Equatable {
         case .myo: "Myo set"
         case .restPause: "Rest pause"
         case .partials: "Félismétlések"
+        case .topPause: "Fent megtartás · 2 mp"
         }
     }
 
@@ -73,6 +74,7 @@ public enum SetTechnique: String, CaseIterable, Codable, Sendable, Equatable {
         case .myo: "Az utolsó sorozat majdnem bukásig, aztán 20 mp-es pihenőkkel 3–5 ismétléses mini-sorozatok, amíg megy."
         case .restPause: "20 ismétlés, aztán 10 mp pihenő és 5 ismétlés, ezt négyszer. Fix menet, nem áll le magától. Az egész gyakorlat 20 ismétlésre áll."
         case .partials: "Az utolsó teljes sorozat után azonnal félismétlések a nyújtott helyzetben, amennyi megy. Csak ott, ahol ez biztonságos."
+        case .topPause: "Az utolsó munkasorozat minden ismétlésének tetején 2 másodpercig tartsd meg a súlyt. Ugyanannyi ismétlés és súly, nincs külön lépés."
         }
     }
 
@@ -84,6 +86,7 @@ public enum SetTechnique: String, CaseIterable, Codable, Sendable, Equatable {
         case .myo: ["Majdnem bukásig", "20 mp pihenő", "3–5 ismétlés, amíg megy"]
         case .restPause: ["20 ismétlés", "10 mp pihenő", "5 ismétlés, négyszer"]
         case .partials: ["Az utolsó teljes sorozat", "Azonnal félismétlések", "Amennyi megy"]
+        case .topPause: ["Minden ismétlés tetején", "Tartsd meg 2 másodpercig", "Normál sorozatként naplózod"]
         }
     }
 }
@@ -153,6 +156,8 @@ public struct DraftExercise: Identifiable, Equatable, Sendable {
     /// Catalog attributes the technique rules read; false when the exercise has no catalog row.
     public let stable: Bool
     public let lengthened: Bool
+    /// The server's explicit list. Nil means an older response and uses the former strict fallback.
+    public let catalogAllowedTechniques: [SetTechnique]?
     /// The challenge rule's answer for the exercise itself (owner decision #72): the server's flag, else computed —
     /// see `DraftExercise.challengeAllowed(item:type:gear:)`. Whether it counts is `judged`'s.
     public let challengeAllowed: Bool
@@ -179,6 +184,7 @@ public struct DraftExercise: Identifiable, Equatable, Sendable {
                       sets: sets, repMin: repMin, repMax: repMax, targetRIR: targetRIR, warmups: warmups,
                       anchorWeightKg: anchorWeightKg, restSec: restSec, overrides: overrides, counts: counts,
                       isolation: isolation, stable: stable, lengthened: lengthened,
+                      catalogAllowedTechniques: catalogAllowedTechniques,
                       challengeAllowed: challengeAllowed, technique: technique,
                       challenge: challenge, ownStyle: ownStyle, wire: wire)
     }
@@ -200,9 +206,11 @@ public struct DraftExercise: Identifiable, Equatable, Sendable {
     /// Does it take part in the volume and technique story at all (not core, not plyo, not the closing block)?
     public var judged: Bool { counts && muscle != "core" && type != "plyo" }
 
-    /// The techniques it may carry: none on a free-weight lift, half reps only where the stretched position is safe.
+    /// The techniques it may carry: the server's exercise palette, or the old strict fallback if absent.
     public var allowedTechniques: [SetTechnique] {
-        guard stable, judged else { return [.none] }
+        guard judged else { return [.none] }
+        if let catalogAllowedTechniques { return [.none] + catalogAllowedTechniques.filter { $0 != .none } }
+        guard stable else { return [.none] }
         return lengthened ? [.none, .restDrop, .drop, .myo, .restPause, .partials] : [.none, .restDrop, .drop, .myo, .restPause]
     }
 
@@ -242,21 +250,21 @@ public struct DraftExercise: Identifiable, Equatable, Sendable {
         return "Szabadsúlyos alapgyakorlaton nincs kihívás."
     }
 
-    /// The builder chip's grey, untappable label when the row can carry neither a technique nor the day's challenge;
-    /// nil = the chip opens the picker. A free-weight isolation (no technique, but the challenge, decision #72) gets the
-    /// picker. A free-weight compound says so; any other locked row keeps the old wording.
+    /// Quiet text when only straight sets are available; the chip still opens the picker for the reasons.
     public var techniqueLockLabel: String? {
         guard allowedTechniques == [.none], !canTakeChallenge else { return nil }
-        // Only a catalogue row can be known as a free-weight lift: a custom compound (no kit on record) is not one.
-        return type == "compound" && catalogId != nil ? "szabadsúlyos alapgyakorlat" : "szabadsúly · nincs technika"
+        return "nincs választható technika"
     }
 
     /// Why a technique is not offered on this exercise, in his words; nil when it is.
     public func unavailableReason(_ technique: SetTechnique) -> String? {
         if allowedTechniques.contains(technique) { return nil }
         if !judged { return "Ez a gyakorlat nem számít bele a sorozatokba." }
-        if !stable { return "Szabadsúlyos gyakorlaton nincs technika." }
-        return "Ennél a gyakorlatnál a nyújtott helyzet ismétlése nem biztonságos."
+        if technique == .partials && !lengthened {
+            return "Ennél a gyakorlatnál a nyújtott helyzet ismétlése nem biztonságos."
+        }
+        if catalogAllowedTechniques != nil { return "Ehhez a gyakorlathoz ez a technika nem választható." }
+        return "Ehhez a gyakorlathoz nincs választható technika."
     }
 }
 
@@ -334,6 +342,7 @@ public struct BlockDraft: Equatable, Sendable {
                                      overrides: Set(e.overrides ?? []),
                                      counts: e.countsTowardVolume ?? true, isolation: e.type == "isolation",
                                      stable: cat?.stability == "stable", lengthened: cat?.lengthenedFriendly ?? false,
+                                     catalogAllowedTechniques: cat?.allowedTechniques?.compactMap { SetTechnique(rawValue: $0) },
                                      challengeAllowed: DraftExercise.challengeAllowed(item: cat, type: e.type ?? "compound"),
                                      technique: SetTechnique(wire: e.technique), challenge: e.challenge ?? false,
                                      ownStyle: e.trainingStyle.flatMap(BlockStyle.init(rawValue:)), wire: e)
@@ -449,6 +458,7 @@ public struct BlockDraft: Equatable, Sendable {
             targetRIR: p.targetRIR, warmups: 0, anchorWeightKg: nil, restSec: p.restSec, overrides: [], counts: true,
             isolation: catalog.type == .isolation, stable: item?.stability == "stable",
             lengthened: item?.lengthenedFriendly ?? false,
+            catalogAllowedTechniques: item?.allowedTechniques?.compactMap { SetTechnique(rawValue: $0) },
             challengeAllowed: DraftExercise.challengeAllowed(item: item, type: catalog.type.rawValue, gear: catalog.gear),
             technique: .none, challenge: false, ownStyle: nil, wire: wire))
     }
@@ -501,6 +511,7 @@ public struct BlockDraft: Equatable, Sendable {
             targetRIR: o.contains("targetRir") ? old.targetRIR : p.targetRIR, warmups: old.warmups, anchorWeightKg: nil,
             restSec: old.restSec, overrides: o, counts: old.counts, isolation: catalog.type == .isolation,
             stable: item?.stability == "stable", lengthened: item?.lengthenedFriendly ?? false,
+            catalogAllowedTechniques: item?.allowedTechniques?.compactMap { SetTechnique(rawValue: $0) },
             challengeAllowed: DraftExercise.challengeAllowed(item: item, type: catalog.type.rawValue, gear: catalog.gear),
             technique: .none, challenge: false, ownStyle: old.ownStyle, wire: old.wire)
         if row.allowedTechniques.contains(old.technique) { row.technique = old.technique }
@@ -541,6 +552,13 @@ public struct BlockDraft: Equatable, Sendable {
     public mutating func resetToStyle(day: Int, at index: Int) {
         guard has(day, index) else { return }
         days[day].exercises[index].overrides = []
+    }
+
+    /// The small ismétlés / tartalék editor's reset (mezo-r36n9.138): only that one key (`repRange` or `targetRir`), so
+    /// the row's other own values stay his.
+    public mutating func resetToStyle(day: Int, at index: Int, key: String) {
+        guard has(day, index) else { return }
+        days[day].exercises[index].overrides.remove(key)
     }
 
     // MARK: what is sent

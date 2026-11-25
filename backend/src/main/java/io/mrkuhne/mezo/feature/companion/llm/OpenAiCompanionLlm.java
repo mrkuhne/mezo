@@ -27,15 +27,14 @@ import java.util.UUID;
  * The OpenAI {@link CompanionLlm} adapter (mezo-ozri.2, spec §M1): {@code gpt-5.6-luna} on the
  * cheap tier, {@code gpt-5.6-terra} on the smart one. Exists only while
  * {@code mezo.companion.llm.provider} says {@code openai}, and is then {@link Primary} — the Gemini
- * adapter stays a bean beside it as the fallback and the media route. Everything it DOES lives in
+ * adapter stays a bean beside it as the fallback and the audio route. Everything it DOES lives in
  * {@link SpringAiCompanionLlm}; what is OpenAI-specific is the wiring below.
  *
- * <p><b>Audio and vision are NOT served here (spec §A1).</b> No GPT-5.6 model has an audio endpoint
- * at all, and {@code TranscriptionService} sends its inline audio through the CHAT port, so
- * feature-level routing could never catch it; the vision A/B is unmeasured (spec §10.3). Both
- * overloads therefore consult {@code mezo.companion.llm.per-call-kind} and hand the call to the
- * Gemini adapter, whose own recording and usage-extraction paths are then already correct — the row
- * lands with a {@code gemini-*} served model, as it should.
+ * <p><b>Audio stays on Gemini; vision uses OpenAI since ADR 0059.</b> No GPT-5.6 model has an
+ * audio endpoint, and {@code TranscriptionService} sends its inline audio through the CHAT port,
+ * so feature-level routing could never catch it. Both media overloads consult
+ * {@code mezo.companion.llm.per-call-kind}: the configured TRANSCRIBE exception delegates to
+ * Gemini, while the absent VISION exception uses this adapter and records a GPT served model.
  *
  * <p><b>{@code completeSmart} comes from {@link SpringAiCompanionLlm}, never from the port
  * (spec §8.3).</b> The {@code CompanionLlm} interface default routes it to the cheap tier, so an
@@ -61,7 +60,7 @@ public class OpenAiCompanionLlm extends SpringAiCompanionLlm {
      *                  unqualified injection point would be ambiguous.
      * @param llmUsageExtractor the OPENAI usage extractor, qualified for the same reason.
      * @param llmModelRouter which model each call gets, out of the {@code llm.openai} block only.
-     * @param geminiCompanionLlm the media delegate — see the class javadoc. Injected by CONCRETE
+     * @param geminiCompanionLlm the audio delegate — see the class javadoc. Injected by CONCRETE
      *                  type on purpose: a {@code CompanionLlm} parameter would resolve to
      *                  {@code this}, since this bean is the primary one.
      * @param llmActorResolver whose spend this is — the account half of the prompt-cache routing
@@ -134,7 +133,7 @@ public class OpenAiCompanionLlm extends SpringAiCompanionLlm {
         return actor == null ? feature : feature + ":" + actor;
     }
 
-    /** Vision rides Gemini until the A/B decides otherwise (spec §10.3). */
+    /** Vision uses OpenAI unless an explicit per-call-kind override delegates it elsewhere. */
     @Override
     public String complete(String systemPrompt, String userMessage, List<InlineImage> images) {
         return routedToGemini(CallKind.VISION)

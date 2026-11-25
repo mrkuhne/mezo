@@ -12,8 +12,9 @@ osszefoglalo: Fotó és szöveg együtt, utána bármi hozzátehető (recept, ka
 ## Mit csinál
 A rögzítő egy oldalon mindent egyszerre fogad:
 
-- **Mikor etted:** alapból most; egy koppintással fél, egy vagy két órája, vagy bármely időpont az elmúlt hétből.
-  Az étkezés a megadott időponthoz tartozó napszakhoz kerül.
+- **Mikor etted:** alapból most; egy koppintással fél, egy vagy két órája, **tegnap** (2026-11-24), vagy bármely
+  időpont az elmúlt hétből. Az étkezés a megadott időponthoz tartozó napszakhoz kerül.
+- **Ital:** külön bejárat ugyanitt — a hatodik, pont nélküli rekesz, saját oldalon: *Italok*.
 - **Fotó** (kamera vagy képtár) **és szöveg együtt:** fotó mellett a szövegmező „Segíts Boopnak a fotóhoz” lesz
   (például „másfél adag, olívaolajjal sütve”). A gomb ilyenkor „Kiszámolom a fotóból és a leírásból”.
 - **Leírás nélkül:** Recept · Kamra · Vonalkód · Szokásos. A recept- és a kamraválasztóban **keresőmező és szűrő** van (2026-11-21): beírhatod a nevét (ékezet nélkül is megtalálja), a recepteket étkezés szerint (reggeli, ebéd, vacsora, nassolás), a kamrát kategória szerint szűrheted — ugyanúgy, mint a Receptek és a Kamra fülön.
@@ -56,3 +57,8 @@ Siri („rögzítsd: ebéd…”) abban a szakaszban, amelyik először igényli
 
 ## Mi marad ki
 Több fotó egy vázlatba egyszerre: a rögzítő egy fotót visz, a többit a „Hozzáteszek még” adja hozzá.
+
+## Javítás 2026-11-24
+A fotóból rögzítés hibát dobott („Most nem sikerült kiszámolnom…”), és a mentett étkezés mellé sem került fel a kép:
+a telefon a fotót név nélküli csomagként küldte, a szerver pedig csak képként fogad el fotót. Mostantól a fotó
+képként megy fel, mindkét helyen (a számoláshoz és a mentett étkezéshez).

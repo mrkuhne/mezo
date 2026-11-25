@@ -51,5 +51,11 @@ Megnyitható: az idővonal „Kitöltöm” gombjáról, a Forma gombról, a „
 - Kitöltés widgetből és értesítésből az app megnyitása nélkül — fizetős fiókkal.
 - Kitöltés az Apple Watch-ról — B5.
 
+## Pótlás (2026-11-24)
+Egy kimaradt pillanat a Napló napjának lapjáról pótolható („Check-in pótlása: dél”): a nap és a pillanat rögzített,
+a fejléc „PÓTLÁS · TEGNAP · DÉL”, a kérdések fölött „Ahogy akkor voltál.” A kitöltés a pillanat saját idejére kerül
+(reggel 6:30 · dél 10:00 · délután 14:00), hogy az energiavonalon a helyére essen, és a pulzus, a lépés is aznapi
+legyen. A mai elfelejtett reggeli check-in is pótolható a Napló „Ma” sorából, 10 óra után. Egy hétre visszamenőleg.
+
 ## Mi marad ki
-A napszakok kézi kiválasztása — a telefon órája dönt.
+A napszakok kézi kiválasztása a mai kitöltésnél — a telefon órája dönt; a pótlásnál a Napló napja és pillanata.

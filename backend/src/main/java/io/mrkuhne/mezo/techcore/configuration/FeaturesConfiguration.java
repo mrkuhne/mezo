@@ -14,6 +14,12 @@ public class FeaturesConfiguration {
      */
     public static final String PENZ_NEWS_SWITCH = "mezo.penz.news.enabled";
 
+    /** Boop Levél (mezo-r36n9.38): the mail feature (cipher, store, service, controller). */
+    public static final String MAIL_SWITCH = "mezo.mail.enabled";
+
+    /** The mail morning-post cron bean (schedule: {@code mezo.mail.cron}); also needs {@link #MAIL_SWITCH}. */
+    public static final String MAIL_JOB_SWITCH = "mezo.techcore.cron.mail-job.enabled";
+
     /** The {@code PenzNewsJob} cron bean (schedule: {@code mezo.penz.news.cron}). */
     public static final String PENZ_NEWS_JOB_SWITCH = "mezo.techcore.cron.penz-news-job.enabled";
 

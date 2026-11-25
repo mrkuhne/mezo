@@ -38,7 +38,11 @@ struct SystemReminderCenter: ReminderCenter {
     }
 
     func request() async -> Bool {
-        (try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])) ?? false
+        #if DEBUG
+        // Simulator review (`-preview …`): never raise the system prompt over a screenshot.
+        if UserDefaults.standard.string(forKey: "preview") != nil { return false }
+        #endif
+        return (try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])) ?? false
     }
 
     func schedule(id: String, hour: Int, minute: Int, title: String, body: String) async throws {

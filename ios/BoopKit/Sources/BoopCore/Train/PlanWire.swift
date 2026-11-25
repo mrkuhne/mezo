@@ -66,6 +66,8 @@ public struct WireCatalogItem: Decodable, Equatable, Sendable {
     public let type: String?
     public let stability: String?
     public let lengthenedFriendly: Bool?
+    /// Explicit server palette; absent on older responses.
+    public let allowedTechniques: [String]?
     public let gear: [String]?
     public let challengeAllowed: Bool?
     /// The demo still (start position), a server path for `BoopConfig.mediaURL`; nil without a picture.

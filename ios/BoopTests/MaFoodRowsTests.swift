@@ -69,13 +69,13 @@ struct MaFoodRowsTests {
         // pick -> MealStart (what the shell opens) -> the composer's first stage
         func stage(_ pick: CapturePick) -> MealComposerModel.Stage? { pick.mealStart?.entrance.openingStage }
         let byTitle = Dictionary(uniqueKeysWithValues: CaptureSheet.foodChips.map { ($0.title, $0.pick) })
-        #expect(CaptureSheet.foodChips.map(\.title) == ["Fotó", "Szöveg", "Vonalkód", "Recept", "Kamra"])
+        #expect(CaptureSheet.foodChips.map(\.title) == ["Fotó", "Szöveg", "Vonalkód", "Recept", "Kamra", "Ital"])
         #expect(byTitle["Vonalkód"]!.mealStart?.entrance == .barcode)
         #expect(stage(byTitle["Vonalkód"]!) == .barcode)
         #expect(stage(byTitle["Recept"]!) == .recipes)
         #expect(stage(byTitle["Kamra"]!) == .pantry)
         #expect(byTitle["Fotó"]!.mealStart?.entrance == .photo && byTitle["Szöveg"]!.mealStart?.entrance == .text)
-        #expect(CapturePick.soon("Súly").mealStart == nil && CapturePick.cover(.checkin).mealStart == nil)
+        #expect(CapturePick.quick(.weight).mealStart == nil && CapturePick.cover(.checkin).mealStart == nil)
     }
 
     @Test func aGuessedSupplementClockIsHedgedAndAnUnknownDaypartHasNone() {

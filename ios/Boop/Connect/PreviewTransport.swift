@@ -196,6 +196,16 @@ struct PreviewTransport: ClientTransport {
 
     private static func macros(_ k: Double, _ p: Double, _ c: Double, _ f: Double) -> String { #"{"kcal":\#(k),"p":\#(p),"c":\#(c),"f":\#(f)}"# }
 
+    /// `-previewDrinks YES`: two drinks on the day, so the ITALOK group is reviewable (`mezo-r36n9.160`).
+    private static func previewDrinks(date: String) -> [String] {
+        guard UserDefaults.standard.bool(forKey: "previewDrinks") else { return [] }
+        func drink(_ id: String, _ title: String, _ time: String, _ k: Double, _ p: Double, _ c: Double, _ f: Double) -> String {
+            #"{"id":"\#(id)","slot":"drink","loggedAt":"\#(date)T\#(time):00+01:00","mealDate":"\#(date)","title":"\#(title)","macros":\#(macros(k, p, c, f)),"score":{"value":null,"breakdown":null},"items":[],"hasPhoto":false}"#
+        }
+        return [drink("d1d1d1d1-0000-4000-8000-000000000001", "Gombakávé zabtejjel mézzel", "09:40", 95, 2, 14, 3),
+                drink("d1d1d1d1-0000-4000-8000-000000000002", "Fehérjeturmix", "16:10", 180, 24, 9, 4)]
+    }
+
     private static func seedMeal(date: String) -> String {
         #"{"id":"\#(seedMealId)","slot":"breakfast","loggedAt":"\#(date)T08:10:00+01:00","mealDate":"\#(date)","title":"Zabkása gyümölccsel","macros":\#(macros(420, 22, 62, 9)),"score":{"value":0.74,"breakdown":\#(breakdown(0.74, ["macro": 0.86, "micro": 0.64, "who": 0.78, "fat_quality": 0.81, "nova": 0.92, "plant_diversity": 0.55, "energy_density": 0.88, "context": 0.9]))},"items":[{"source":"pantry","pantryItemId":"\#(oatsId)","amount":60,"unit":"g","lineOrder":0,"name":"Zabpehely","nova":1,"contribution":\#(macros(228, 8, 40, 4))},{"source":"pantry","amount":120,"unit":"g","lineOrder":1,"name":"Banán","nova":1,"contribution":\#(macros(106, 1, 27, 0))}],"hasPhoto":true}"#
     }
@@ -254,7 +264,7 @@ struct PreviewTransport: ClientTransport {
         let date = pathDate(request)
         switch op {
         case "getFuelDay":
-            let meals = ([seedMeal(date: date)] + foodMeals).joined(separator: ",")
+            let meals = ([seedMeal(date: date)] + previewDrinks(date: date) + foodMeals).joined(separator: ",")
             let mode = foodKimelo.map { "\"fuelMode\":\"GUIDANCE\",\"recoveryCategory\":\"\($0.category)\",\"recoveryDay\":1," } ?? ""
             return json(#"{"date":"\#(date)","targets":{"kcal":2400,"p":150,"c":260,"f":70,"water":2500},"consumed":{"kcal":420,"p":22,"c":62,"f":9,"water":\#(foodWater)},"meals":[\#(meals)],\#(mode)"skippedKcal":\#(foodSkips.count * 200)}"#)
         case "getFuelPlan": return json(foodPlan(date: date))
@@ -337,6 +347,10 @@ struct PreviewTransport: ClientTransport {
         case "getFuelWeek": return json(foodWeek(start: pathDate(request)))
         case "getUsualMeals":
             let now = ISO8601DateFormatter().string(from: Date().addingTimeInterval(-86_400))
+            // The drink bucket (`mezo-r36n9.160`): two usual drinks for the Ital sheet's chips.
+            if (request.path ?? "").contains("slot=drink") {
+                return json(#"{"usuals":[{"key":"drink:fehérjeturmix","title":"Fehérjeturmix","slot":"drink","count":4,"lastLoggedAt":"\#(now)","mealId":null,"kcal":180,"items":[]},{"key":"drink:gombakávé zabtejjel mézzel","title":"Gombakávé zabtejjel mézzel","slot":"drink","count":9,"lastLoggedAt":"\#(now)","mealId":null,"kcal":95,"items":[]},{"key":"drink:fekete kávé","title":"Fekete kávé","slot":"drink","count":12,"lastLoggedAt":"\#(now)","mealId":null,"kcal":0,"items":[]}]}"#)
+            }
             return json(#"{"usuals":[{"key":"lunch:csirke rizzsel","title":"Csirke rizzsel","slot":"lunch","count":5,"lastLoggedAt":"\#(now)","mealId":"\#(seedMealId)","kcal":361,"items":[{"source":"pantry","pantryItemId":"\#(oatsId)","amount":150,"unit":"g","name":"Csirkemell","per":100,"basisUnit":"g","kcal":165,"proteinG":31,"carbsG":0,"fatG":3.6,"nova":1},{"source":"estimate","amount":180,"unit":"g","name":"Barna rizs","per":100,"basisUnit":"g","kcal":123,"proteinG":2.7,"carbsG":26,"fatG":1}]},{"key":"breakfast:zabkása gyümölccsel","title":"Zabkása gyümölccsel","slot":"breakfast","count":4,"lastLoggedAt":"\#(now)"},{"key":"dinner:tojásrántotta","title":"Tojásrántotta","slot":"dinner","count":2,"lastLoggedAt":"\#(now)"}]}"#)
         case "scrapePantryItem":
             let url = ((try? JSONSerialization.jsonObject(with: Data(sent.utf8))) as? [String: Any])?["url"] as? String ?? ""
@@ -646,7 +660,14 @@ struct PreviewTransport: ClientTransport {
             let list = previewDay.enumerated()
                 .map { i, e in previewExercise(e, index: i, plain: plain) }
                 .joined(separator: ",")
-            return json(#"{"templateSessionId":"\#(previewSessionId)","dayLabel":"Hét","title":"Vállak és hát","durationEst":68,"exercises":[\#(list)],"weekDoneDates":["\#(done)"],"overloadSummary":{"weightUp":2,"weightDown":0,"repUp":1,"hold":2}}"#)
+            // The cross-day start (mezo-r36n9.163): `?templateSessionId=` answers with that day of the preview block;
+            // without it, today's own weekday.
+            let path = request.path ?? ""
+            let picked = previewBlockDays.indices.first { path.contains("c1c2c3d4-001\($0)-") }
+            let weekday = (Calendar.current.component(.weekday, from: Date()) + 5) % 7
+            let (label, title) = picked.map { (previewBlockDays[$0].0, previewBlockDays[$0].1) } ?? (previewBlockDays[weekday].0, "Vállak és hát")
+            let id = picked.map { "c1c2c3d4-001\($0)-4a2b-9c3d-111122223333" } ?? previewSessionId
+            return json(#"{"templateSessionId":"\#(id)","dayLabel":"\#(label)","title":"\#(title)","durationEst":68,"exercises":[\#(list)],"weekDoneDates":["\#(done)"],"overloadSummary":{"weightUp":2,"weightDown":0,"repUp":1,"hold":2}}"#)
         case "listMesocycles": return json("[\(previewMesocycle)]")
         case "getMesocycleVolumeArc": return json(previewVolumeArc)
         case "getExerciseCatalog": return json(previewCatalog)
@@ -721,18 +742,20 @@ struct PreviewTransport: ClientTransport {
     /// A running block, so the timeline, the week carousel and the load page have something
     /// real-shaped to draw. The numbers are invented and the room says their age like any
     /// other answer — nothing here reaches a screen that claims to be his own data.
+    private static let previewBlockDays = [("Hét", "Vállak és hát", "váll · hát", 5), ("Ke", "Láb", "comb · far", 6),
+                    ("Sze", "Pihenő", "regeneráció", 0), ("Csü", "Mell és kar", "mell · tricepsz", 5),
+                    ("Pé", "Hát és bicepsz", "hát · bicepsz", 5), ("Szo", "Röplabda", "egész test", 0),
+                    ("Vas", "Pihenő", "regeneráció", 0)]
+
     private static var previewMesocycle: String {
         let profiles = previewMuscles.map { m in
             #""\#(m.key)":{"mev":\#(m.mev),"mav":\#(m.mav),"mrv":\#(m.mrv),"current":\#(previewCurrent(m)),"source":{"baseline":{"name":"\#(m.key)","mev":\#(m.mev),"mav":\#(m.mav),"mrv":\#(m.mrv)},"adjustments":[],"confidence":0.8}}"#
         }.joined(separator: ",")
-        let days = [("Hét", "Vállak és hát", "váll · hát", 5), ("Ke", "Láb", "comb · far", 6),
-                    ("Sze", "Pihenő", "regeneráció", 0), ("Csü", "Mell és kar", "mell · tricepsz", 5),
-                    ("Pé", "Hát és bicepsz", "hát · bicepsz", 5), ("Szo", "Röplabda", "egész test", 0),
-                    ("Vas", "Pihenő", "regeneráció", 0)]
+        let days = previewBlockDays
             .enumerated().map { i, d in
                 #"{"id":"c1c2c3d4-001\#(i)-4a2b-9c3d-111122223333","day":"\#(d.0)","type":"\#(d.1)","muscle":"\#(d.2)","exerciseCount":\#(d.3),"exercises":[],"current":\#(d.0 == "Hét")}"#
             }.joined(separator: ",")
-        return #"{"id":"\#(previewBlockId)","title":"Hypertrophy · Ősz","shortTitle":"Ősz","status":"active","goal":"Izomtömeg","startDate":"\#(dayString(offset: -16))","endDate":"\#(dayString(offset: -16 + 56))","weeks":8,"currentWeek":\#(previewCurrentWeek),"split":"5 napos","style":"hypertrophy","hasReport":false,"musclePriorities":{"chest":"emphasize","back":"emphasize","calf":"maintain"},"phaseCurve":[\#(previewPhaseList)],"volumePerMuscle":{\#(profiles)},"days":[\#(days)]}"#
+        return #"{"id":"\#(previewBlockId)","title":"Hypertrophy · Ősz","shortTitle":"Ősz","status":"active","goal":"Izomtömeg","startDate":"\#(dayString(offset: -16))","endDate":"\#(dayString(offset: -16 + 56))","weeks":8,"currentWeek":\#(previewCurrentWeek),"split":"5 napos","style":"hypertrophy","hasReport":false,"weeklyReviewMode":"manual","musclePriorities":{"chest":"emphasize","back":"emphasize","calf":"maintain"},"phaseCurve":[\#(previewPhaseList)],"volumePerMuscle":{\#(profiles)},"days":[\#(days)]}"#
     }
 
     /// What the invented block is doing with each muscle.
@@ -1150,11 +1173,16 @@ struct PreviewTransport: ClientTransport {
         // mód, day 2 of a cold, no session.
         let evening = UserDefaults.standard.bool(forKey: "previewEvening")
         let recovering = UserDefaults.standard.bool(forKey: "previewRecovery")
-        let forma = recovering
+        // `-previewLearning YES`: Forma unknown (nine nights of fourteen) — the ring must blank Forma alone (mezo-r36n9.152).
+        let learning = UserDefaults.standard.bool(forKey: "previewLearning")
+        let formaKnown = recovering
             ? #"{"key":"forma","score":42,"display":"42","caption":"kímélő","headline":"Ma csak pihenj","sentence":"A pulzusod még öt ütéssel magasabb. Edzés helyett ma víz, alvás és egy rövid séta, ha jólesik."}"#
             : evening
             ? #"{"key":"forma","score":78,"display":"78","caption":"jó formában","headline":"Szép nap volt","sentence":"Megvolt az edzés és 9 200 lépés. Egy esti check-in és 22:30-kor ágy, hogy holnap is így ébredj."}"#
             : #"{"key":"forma","score":74,"display":"74","caption":"jó formában","headline":"Elég jó reggel","sentence":"Az alvásod és a pulzusod rendben, az edzésnapot bírni fogod."}"#
+        let forma = learning
+            ? #"{"key":"forma","score":null,"display":"–","caption":"9/14 éjszaka","headline":"Még tanulom a ritmusod","sentence":"Kilenc éjszakádat ismerem; tizennégy kell, hogy a Formádat megmondjam."}"#
+            : formaKnown
         let alvas = evening && !recovering
             ? #"{"key":"alvas","score":78,"display":"7ó 12p","caption":"mély 1ó 28p","headline":"Hamarosan lassíts","sentence":"22:30-kor ágy: tíz órakor tedd le a telefont, és jöhet a levezetés."}"#
             : #"{"key":"alvas","score":78,"display":"7ó 12p","caption":"mély 1ó 28p","headline":"Nyugodt éjszaka","sentence":"A mély alvásod a heti átlag fölött volt."}"#
@@ -1175,7 +1203,7 @@ struct PreviewTransport: ClientTransport {
         let tonightTip = recovering ? "Ma 22:00-kor feküdj le: a regeneráció alvás közben történik."
             : "Ma 22:30 körül érdemes lefeküdni, hogy a holnapi edzés előtt kipihent legyél."
         return #"""
-        {"date":"\#(date)","generatedAt":"\#(date)T05:40:00Z","state":"okay","nightsKnown":12,
+        {"date":"\#(date)","generatedAt":"\#(date)T05:40:00Z","state":"\#(learning ? "learning" : "okay")","nightsKnown":\#(learning ? 9 : 12),
          "metrics":[
           \#(forma),
           \#(alvas),

@@ -18,6 +18,7 @@ public record TrainTechniqueProperties(
     @NotNull @Valid Myo myo,
     @NotNull @Valid RestPause restPause,  // the owner's fixed rest-pause: 20, then 4 x (10 s, 5) (mezo-r36n9.125)
     @NotNull @Valid Partials partials,
+    @NotNull @Valid TopPause topPause,
     @NotNull @Positive Integer capWeight,  // what a technique/challenge row's technique set weighs against the caps (2)
     @NotNull @Valid Planner planner        // the default technique planner (mezo-r36n9.81)
 ) {
@@ -52,6 +53,9 @@ public record TrainTechniqueProperties(
 
     /** Lengthened partials after the main set. */
     public record Partials(@NotNull @PositiveOrZero Integer mainReserve) {}
+
+    /** Hold the top of every rep in the last working set; no extra set or leg. */
+    public record TopPause(@NotNull @Min(1) @Max(10) Integer holdSec) {}
 
     /**
      * The default technique planner (mezo-r36n9.81, spec §6.5): the first week techniques appear, the per-day

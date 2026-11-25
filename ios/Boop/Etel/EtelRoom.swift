@@ -116,6 +116,15 @@ final class EtelStore {
         _ = await (words, pics)
     }
 
+    /// The day alone — the home ring's Étel number (`mezo-r36n9.152`): no plan, no coach, no photos.
+    func loadDay(food: FoodClient, now: Date) async {
+        self.food = food; self.now = now
+        switch await Self.attempt({ try await food.day(now) }) {
+        case .success(let v): day = v; dayVersion += 1; dayProblem = nil
+        case .failure(let e): dayProblem = e
+        }
+    }
+
     /// The taken groups of `day` as the phone last saved them (the room and Ma's rows share this key).
     private func syncTaken(day today: String) {
         let saved = UserDefaults.standard.dictionary(forKey: "etel.takenIds.\(today)") as? [String: [String]] ?? [:]
@@ -614,6 +623,7 @@ struct EtelRoom: View {
                    headline: v.headline, sentence: v.sentence, glyph: "bowl-cream",
                    tabs: etelTabs(pending: store.pending.count), selectedTab: $selected,
                    actions: [NKAreaAction(glyph: "plus-ink", label: "Étkezés rögzítése") { composer = MealStart(entrance: .pick) },
+                             NKAreaAction(glyph: "cup-cream", label: "Ital rögzítése") { composer = MealStart(entrance: .drink) },
                              NKAreaAction(glyph: "repeat-deep", label: "Frissítés") { Task { await reload() } }],
                    onBack: { if let closeRoom { closeRoom() } else { dismiss() } },
                    onAsk: { openPlace(.boop) }) {
@@ -635,6 +645,9 @@ struct EtelRoom: View {
             }
             Color.clear.frame(height: 20)
         }
+        // Pull-to-refresh belongs to the page alone: as the outermost modifier it reached every sheet below through
+        // the environment, so a pull inside a sheet reloaded the room instead of closing the sheet (`mezo-r36n9.156`).
+        .refreshable { await reload() }
         .toolbar(.hidden, for: .navigationBar)
         .background(RoomSwipeBack().frame(width: 0, height: 0).accessibilityHidden(true))
         .nkToast($toast)
@@ -753,6 +766,7 @@ struct EtelRoom: View {
             case "compose": composer = MealStart(entrance: .pick)
             case "compose-recipe": composer = MealStart(entrance: .recipe)
             case "compose-pantry": composer = MealStart(entrance: .pantry)
+            case "compose-drink": composer = MealStart(entrance: .drink)
             case "sensitivity": etelSheet = .sensitivity
             case "diet": etelSheet = .diet
             case "rhythm": etelSheet = .rhythm
@@ -775,7 +789,6 @@ struct EtelRoom: View {
             }
         }
         .task(id: ritmus?.mealDraftsTick) { await store.refreshPending(ritmus?.food) }
-        .refreshable { await reload() }
     }
 
     private func reload() async {

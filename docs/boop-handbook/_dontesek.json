@@ -1161,6 +1161,266 @@
     "levaltotta": "A „Sáv széle” döntés Tartásra vonatkozó fele (a Tartás a sáv tetejéről indult); az Építés és a Hangsúly kezdőpontja marad.",
     "kovetkezmeny": "A Tartásra állított izom valóban helyet szabadít a heti keretben; a 4 napos, 60 perces terv így belefér."
   },
+  "d-2026-11-21-level-gmail": {
+    "datum": "2026-11-21",
+    "terulet": [
+      "Levél"
+    ],
+    "cim": "Fogyasztói Gmail, nem céges fiók",
+    "suly": "Közepes",
+    "valasztas": "A levelek olvasása hétköznapi Gmail-fiókkal történik, alkalmazásjelszóval — nincs bonyolult jóváhagyási folyamat.",
+    "miert": "Egyszerű, és nem kell hozzá saját tartomány vagy cégfiók.",
+    "levaltotta": "A bonyolultabb Google-engedélyes megoldás (hét napos lejáró belépők, külön biztonsági vizsgálat).",
+    "kovetkezmeny": "A Boop csak egy alkalmazásjelszót tárol, amit te bármikor visszavonhatsz."
+  },
+  "d-2026-11-21-level-tukorfiok": {
+    "datum": "2026-11-21",
+    "terulet": [
+      "Levél"
+    ],
+    "cim": "Egy külön tükörfiók, amibe a Gmailed és az iCloudod is továbbít",
+    "suly": "Nagy",
+    "valasztas": "Egy új Gmail-fiók csak Boopnak; a Gmailed és az iCloudod mindent ide továbbít, Boop csak ezt olvassa, egyetlen alkalmazásjelszóval.",
+    "miert": "Így Boop sosem kapja meg a valódi jelszavadat, és az Apple jelszóváltása sem töri el.",
+    "levaltotta": "A valódi postafiókjaid közvetlen olvasása.",
+    "kovetkezmeny": "Csak a továbbítás beállítása után érkezett levél látszik."
+  },
+  "d-2026-11-21-level-csengetes": {
+    "datum": "2026-11-21",
+    "terulet": [
+      "Levél"
+    ],
+    "cim": "A jó ajánlatért is csörög a telefon — a meglévő napi keretben",
+    "suly": "Közepes",
+    "valasztas": "Egy jó (8-as vagy jobb pontú) ajánlat, amely hamarosan lejár, csörgethet, de csak a Ma fal első helyén, naponta legfeljebb egyszer-kétszer, a többi Boop-értesítéssel közös keretben.",
+    "miert": "Ne maradj le a lejáró dologról, de ne legyen zaj, amit kikapcsolsz.",
+    "levaltotta": "Külön levélcsengetés.",
+    "kovetkezmeny": "Ugyanez a csengetés most Étel- és Edzés-tételeknek is csörög. Amíg nincs fizetős Apple-fiók, az app megnyitásakor ütemez."
+  },
+  "d-2026-11-21-level-aratellenorzes": {
+    "datum": "2026-11-21",
+    "terulet": [
+      "Levél"
+    ],
+    "cim": "Napi 10 árellenőrzés (a 3. lépéshez)",
+    "suly": "Kicsi",
+    "valasztas": "A későbbi árellenőrzés napi 10 ellenőrzést kaphat, ami nagyjából havi 3 euró.",
+    "miert": "Olcsó, és elég a figyelt termékekhez.",
+    "levaltotta": "—",
+    "kovetkezmeny": "Az árellenőrzés (Figyelt fül) építésekor nem kell újra rákérdezni."
+  },
+  "d-2026-11-21-level-egy-kiadas": {
+    "datum": "2026-11-21",
+    "terulet": [
+      "Levél"
+    ],
+    "cim": "A Levél első két lépése egyszerre jön ki",
+    "suly": "Közepes",
+    "valasztas": "Az átvétel és a pontozás egy kiadásban érkezik.",
+    "miert": "Az első, amit a telefonodon látsz, rögtön az értékelt posta legyen, ne csak darabszámok.",
+    "levaltotta": "Először csak a darabszámok.",
+    "kovetkezmeny": "Egy nagyobb kiadás, de egy összefüggő élmény."
+  },
+  "d-2026-11-21-level-negy-csoport": {
+    "datum": "2026-11-21",
+    "terulet": [
+      "Levél"
+    ],
+    "cim": "A reggeli posta négy csoportja",
+    "suly": "Közepes",
+    "valasztas": "Határidős · Csomagok · Akciók és lehetőségek (1–10 pont) · A többi (összehajtva). A valódi embertől jövő és az érzékeny feladótól jövő levél mindig elöl.",
+    "miert": "Ez az, ami megér egy percet: Boop javasolta, és elfogadtad („Igen, így jó”).",
+    "levaltotta": "Egyetlen pontozott lista.",
+    "kovetkezmeny": "A határidős és a csomag nem kap pontszámot — ott a dátum számít."
+  },
+  "d-2026-11-21-level-megoldas": {
+    "datum": "2026-11-21",
+    "terulet": [
+      "Levél"
+    ],
+    "cim": "A szerver naponta kétszer (8:00 és 15:00) olvassa a tükörfiókot",
+    "suly": "Nagy",
+    "valasztas": "A háttérrendszer reggel 8-kor és délután 3-kor átnézi a tükörfiókot (csak olvas), a telefon pedig megjeleníti.",
+    "miert": "Nincs új külön szolgáltatás vagy tartomány, és az összefoglaló természeténél fogva kötegelt.",
+    "levaltotta": "Saját beérkező cím külön szolgáltatóval (nem kérted); a telefon olvassa a levelet (nem működik); valós idejű értesítés.",
+    "kovetkezmeny": "A 15 óra utáni levél másnap reggel kerül sorra."
+  },
+  "d-2026-11-21-level-te-allitod": {
+    "datum": "2026-11-21",
+    "terulet": [
+      "Levél"
+    ],
+    "cim": "A tükörfiókot te állítod be",
+    "suly": "Kicsi",
+    "valasztas": "Te hozod létre az új Gmail-fiókot a Fiókok oldal hatlépéses útmutatója szerint; a jelszót te írod be.",
+    "miert": "A valódi jelszavaidat Boop sosem kéri.",
+    "levaltotta": "Boop állítja be helyetted.",
+    "kovetkezmeny": "A levelek addig gyűlnek, amíg az app elkészül; a szabályok az első valódi levelek alapján pontosodnak."
+  },
+  "d-2026-11-21-level-proba-oke": {
+    "datum": "2026-11-21",
+    "terulet": [
+      "Levél"
+    ],
+    "cim": "A Levél képernyői: „Igen, így jó”",
+    "suly": "Kicsi",
+    "valasztas": "A szimulátoros próba (Ma, Szabályok, Fiókok útmutató és összekötött állapot, a boríték-ikon) jóváhagyva; a kiemelés nem állíthat árösszehasonlítást.",
+    "miert": "Így pontosan azt építjük meg, amit láttál.",
+    "levaltotta": "—",
+    "kovetkezmeny": "Az első kiadásban nincs külön fotó a fejlécen (festett ég), és a Figyelt fül marad „hamarosan”."
+  },
+  "d-2026-11-23-futo-edzes-sorrend": {
+    "datum": "2026-11-23",
+    "terulet": [
+      "Edzés"
+    ],
+    "cim": "Futó edzés közben is átrendezheted a nap gyakorlatait",
+    "suly": "Közepes",
+    "valasztas": "A blokképítőben a futó edzés napján is cserélhető a sorrend, a sorozatszám, az ismétlés, a tartalék és a technika; a futó edzés azonnal követi. Gyakorlatot hozzáadni, cserélni vagy törölni továbbra is csak az edzés után lehet.",
+    "miert": "A naplózott sorozatok a gyakorlat sorához kötődnek; a sorrendcsere a sorokat megtartja, ezért biztonságos. A hozzáadás és a törlés új sorokat hozna, ami elvágná a már rögzített sorozatokat.",
+    "levaltotta": "A teljes zár (2026-11-20, napi gyakorlatszerkesztő): futó edzés napján semmi nem volt szerkeszthető.",
+    "kovetkezmeny": "A szerver a sorrendcserét mindig helyben menti (a sorok azonosítója marad), nem csak futó edzésnél."
+  },
+  "d-2026-11-23-huzhato-skala": {
+    "datum": "2026-11-23",
+    "terulet": [
+      "Edzés"
+    ],
+    "cim": "A súlyt és az ismétlést ujjal húzható skálán állítod, fél kilónként",
+    "suly": "Kicsi",
+    "valasztas": "A lejátszóban a + / − gombok helyett egy vízszintes skála van a szám alatt: húzod, és 0,5 kg-onként (ismétlésnél egyesével) ugrik, minden lépésnél egy kis koppanással. A számra koppintva továbbra is beírhatod.",
+    "miert": "A tulajdonos görgetős / tekerős bevitelt kért, és fél kilós lépést a 2,5 helyett.",
+    "levaltotta": "A + / − léptető 2,5 kg-os lépéssel (2026-11-17, 4. kör).",
+    "kovetkezmeny": "A javító lapon is skála van; a tartalék marad a vékony léptető soron."
+  },
+  "d-2026-11-24-etel-gomb-egy-szam": {
+    "cim": "A kezdőlap Étel gömbje ugyanazt a számot mutatja, mint az Étel szoba",
+    "datum": "2026-11-24",
+    "terulet": [
+      "Ma",
+      "Étel"
+    ],
+    "suly": "Kicsi",
+    "valasztas": "A kezdőlapon az Étel gömbben a mai étkezéseid pontjainak átlaga áll — ugyanaz, ami az Étel szoba gömbjében. Egy területhez egy szám.",
+    "miert": "A tulajdonos két különböző számot látott ugyanarra: kint a terv-tempót (mennyit ettél az óra szerint várthoz képest), bent az étkezések minőségét. Az „egy szám” a döntés.",
+    "kovetkezmeny": "A terv-tempó szám a reggeli összefoglalóban marad Boop és az AI számára, a képernyőn nem jelenik meg külön. Ugyanekkor derült ki, hogy amíg a Forma még „tanul”, az app minden gömb számát elrejtette — mostantól csak a Formáét.",
+    "levaltotta": "A kezdőlap eredeti szabálya (2026-11-16): minden gömb a reggeli összefoglaló pontszámát mutatja."
+  },
+  "d-2026-11-24-penz-gomb-szazalek": {
+    "cim": "A Pénz gömb a heti keret megmaradt részét mutatja százalékban",
+    "datum": "2026-11-24",
+    "terulet": [
+      "Pénz",
+      "Ma"
+    ],
+    "suly": "Kicsi",
+    "valasztas": "A kezdőlapon a Pénz gömb élő: annyira van tele, amennyi a heti keretedből megvan, és a szám ugyanez százalékban (0–100). Keret nélkül „–”, túlköltésnél 0.",
+    "miert": "A többi gömb is 0–100 skálán mond egy számot; az ezer forint kilógna, és nagy összegnél nem férne ki.",
+    "kovetkezmeny": "A Pénz szoba saját gömbje marad szám nélküli (csak a töltöttség); a forintos összeg ott van.",
+    "levaltotta": "A Pénz gömb „tervezett” állapota a kezdőlapon (halvány, szám nélkül), ami a Pénz terület elkészülte után is ottmaradt."
+  },
+  "d-2026-11-24-gyors-rogzites-teljes": {
+    "cim": "Gyors rögzítés: a webes kilenc ajtó a „+” lapon, és egy gomb a kezdőlapon",
+    "datum": "2026-11-24",
+    "terulet": [
+      "Alapok",
+      "Ma"
+    ],
+    "suly": "Közepes",
+    "valasztas": "A „+” lapról minden rögzíthető, ami a webes gyors logolásban volt: étkezés, víz, kiegészítők, edzés indítása, sport, súly, check-in, napló (bármikor), alvás — és a kiadás. A kezdőlapon az orbok alatt, jobbra, a menüsor fölött is van egy „Rögzítés” gomb ugyanerre a lapra.",
+    "miert": "A tulajdonos a webes gyors logolás teljességét kérte egy gyors gombról a kezdőlapon; a lapon a súly és az edzés addig csak „hamarosan” volt, a víz, a kiegészítők, a sport és az alvás hiányzott.",
+    "kovetkezmeny": "A „Napló” a lapon egy bármikori sor; az esti zárás a saját útján marad. A súly, az alvás, a sport és a naplósor net nélkül is rögzül, és magától elmegy. Az alvás kézi út: az órád éjszakáit nem kell beírni.",
+    "levaltotta": "„Csak a lap” változat (a menüsor plusz gombja az egyetlen ajtó) — elvetve."
+  },
+  "d-2026-11-24-lapok-x": {
+    "cim": "A lapok bezárása: kerek X minden lapon, és a frissítés nem ragad a lapokra",
+    "datum": "2026-11-24",
+    "terulet": [
+      "Alapok"
+    ],
+    "suly": "Kicsi",
+    "valasztas": "Minden felcsúszó lap jobb felső sarkába egy kis kerek üveg X kerül, a lehúzás is marad; az Étel szoba „lehúzásra frissít” beállítása csak a szobára vonatkozik, a lapjaira nem.",
+    "miert": "A lapokat nehéz vagy nem lehetett bezárni: bezáró gomb nem volt, és az Étel-lapokon a lehúzás a szobát frissítette. Az iOS 26 lapjai ugyanezt a kerek X-et viselik.",
+    "kovetkezmeny": "A Napkelte-kánon „csak lehúzás” szabálya változik; a teljes képernyős oldalak bal felső vissza nyila marad.",
+    "levaltotta": "„Csak a frissítés javítása” (X nélkül) — elvetve: a hosszú és a félmagas lapok továbbra is nehezen záródtak volna."
+  },
+  "d-2026-11-24-gyorsajtok": {
+    "cim": "Kezdőlap: öt gyorsajtó a Rögzítés kapszula helyett",
+    "datum": "2026-11-24",
+    "terulet": [
+      "Alapok",
+      "Ma"
+    ],
+    "suly": "Közepes",
+    "valasztas": "A „+ Rögzítés” kapszula helyett Boop mondata alatt öt kis üvegajtó: Étkezés · Víz · Súly · Check-in · Napló, mindegyik rögtön a saját lapját nyitja. A menüsor plusz gombján marad mind a kilenc ajtó.",
+    "miert": "A kapszula ugyanazt nyitotta, mint a sáv plusz gombja, és egyedül lebegett („elég béna lett”). Az öt ajtó egy koppintással kevesebb a leggyakoribb rögzítésekhez.",
+    "kovetkezmeny": "A többi négy ajtó (Kiegészítők, Edzés indítása, Sport, Alvás, Kiadás) csak a plusz lapján érhető el.",
+    "levaltotta": "„Egy szép kerek plusz gomb” — elvetve: két ajtó lett volna ugyanarra a lapra. Felülírja a d-2026-11-24-gyors-rogzites-teljes gombját."
+  },
+  "d-2026-11-24-suly-orb-utem": {
+    "cim": "A kilencedik gömb: Súly, aranyban; a száma az évad ütemének tartása",
+    "datum": "2026-11-24",
+    "terulet": [
+      "Súly",
+      "Ma"
+    ],
+    "suly": "Nagy",
+    "valasztas": "A kör kilenc gömbből áll, a Súly az Energia és a Forma között, arany színben (a mérleg sárgaréze). A gömb száma 0–100: mennyire tartja a trended az évad tervezett heti ütemét (pont a terven 100, fele ütemnél 50, állva vagy rossz irányba 0; a gyorsabb fogyás feleannyit von le; tartó évadnál a sávtól mért távolság). Évad vagy trend nélkül „–”. Mögötte a Súly terület a Pénz mintájára: Ma · Test · Napló.",
+    "miert": "A tulajdonos kérése: „teljesen hiányzik egy orb / domain ahol a súlyt tudom nézni… a szám rajta azt mutassa, hogy mennyire jól követjük a súlycélt”; a Pénz oldalt nevezte mintának, más egyedi színben.",
+    "kovetkezmeny": "A kör „nyolcnál tele” szabálya helyett: kilenc gömb, a kisebb telefonokon kisebb gömbökkel. Új szerverfunkció nem kell: az évad, a súlytrend és a súlynapló már megvolt.",
+    "levaltotta": "„A célig megtett út” mint szám — elvetve: hónapokig alig mozdulna, és nem mondaná meg, jól megy-e éppen. Felülírja a kezdőlap-döntés „a kör nyolcnál tele” tételét."
+  },
+  "d-2026-11-24-test-ful": {
+    "cim": "A Test oldal váltja ki a régi „Testösszetétel” tervet",
+    "datum": "2026-11-24",
+    "terulet": [
+      "Súly",
+      "Terv"
+    ],
+    "suly": "Kicsi",
+    "valasztas": "A Feelfit mérleg testzsírja és izomtömege (az Apple Egészségen át) a Súly terület Test oldalán jelenik meg, saját új ikonnal; külön „Test” kártya nem épül a tervbe.",
+    "miert": "A 2026-11-12-i döntés (Feelfit — A változat) egy Test kártyát ígért a tervbe; a Súly terület a jobb helye ugyanannak.",
+    "kovetkezmeny": "A 7. döntés szerverfele (a testzsír a cél energiaszámításába) nyitva marad külön lépésként.",
+    "levaltotta": "A 2026-11-12-i döntés „Test kártya a tervben” része."
+  },
+  "d-2026-11-24-visszamenoleg-a": {
+    "cim": "Visszamenőleges rögzítés: „Mikor” sor minden lapon, pótlás a Napló napjáról",
+    "datum": "2026-11-24",
+    "terulet": [
+      "Alapok",
+      "Napló"
+    ],
+    "suly": "Közepes",
+    "valasztas": "Minden rögzítő lap kap egy „Mikor” sort (Ma · Tegnap · Más nap, ahol számít, időponttal), egy hétre visszamenőleg; a kimaradt check-in és a nap lezárása a Napló korábbi napjának lapjáról pótolható. (A tulajdonos: „menjen az A szerintem”.)",
+    "miert": "A leggyakoribb eset („tegnap esti vacsora”, „reggeli mérés délben”) azon a lapon marad, ahol épp állsz; a check-in és a zárás egy nap dolga, oda való a nap lapjára.",
+    "kovetkezmeny": "Hét lapot kell megépíteni, mindegyiken egy sorral több; a check-inhez és a záráshoz a Naplóba kell menni. A víz és a kiegészítők nem változnak.",
+    "levaltotta": "„Egy Pótlás ajtó” (előbb napot választasz, aztán minden arra a napra megy) — elvetve: könnyű ottfelejtkezni, és a következő rögzítés rossz napra menne."
+  },
+  "d-2026-11-24-edzes-potlas-b": {
+    "cim": "Edzés pótlása: a kimaradt tervnap „Megvolt” a terv számaival",
+    "datum": "2026-11-24",
+    "terulet": [
+      "Edzés",
+      "Napló"
+    ],
+    "suly": "Közepes",
+    "valasztas": "A Napló korábbi napján „Edzés pótlása”: a terv sorozataival készre könyveli az edzést arra a napra, a szerver is megtanulja a dátumot; utána a javító lapon igazíthatók a súlyok. (A tulajdonos: „mehet a B”.)",
+    "miert": "A listán „edzés” áll; a Sport-kerülőút a terv napját hamisan üresen hagyta volna.",
+    "kovetkezmeny": "A csomag legnagyobb darabja, szerveres változással; a végére kerül, hogy ha nyúlik, külön jöhessen. Sorozatonként pontos számok utólag nem írhatók be, a terv számai mennek be.",
+    "levaltotta": "„Most csak a Sport” — elvetve."
+  },
+  "d-2026-11-24-ital-vodor": {
+    "cim": "Ital: hatodik, pont nélküli vödör, ami a napi keretbe számít, de ablakot nem foglal",
+    "datum": "2026-11-24",
+    "terulet": [
+      "Étel"
+    ],
+    "suly": "Közepes",
+    "valasztas": "Új „Ital” bejárat az étkezés rögzítésében: a szokásos italaid egy koppintásra, szabad szöveg, fotó, és a leírás nélküli bejáratok is (Recept · Kamra · Vonalkód). Az ital beszámít a napi kalóriába, a makrókba és a görbébe, de étkezési ablakot nem foglal és pontot nem kap; az Étel szoba Ma lapján külön ITALOK sor. (A tulajdonos: „italhoz is lehessen használni recept vagy kamra itemeket, ne kelljen mindig nulláról felvenni őket”.)",
+    "miert": "Egy ital eddig étkezésként ment be: az óra adta az ablakát (10:30 → tízórai), és a pontszámba is belehúzott.",
+    "kovetkezmeny": "A szerver megtanul egy „ital” rekeszt; a recepteknek és a kamrának nem kell ital-kategória, bármelyik italként rögzíthető. A vízszámlálóba csak a víz számít.",
+    "levaltotta": "„Külön ital-tábla” és „ablak nélküli idővonal” — elvetve."
+  },
   "d-2026-11-21-tervezett-blokk-sajat-napjan": {
     "cim": "A tervezett blokk a saját napján elindul",
     "datum": "2026-11-21",

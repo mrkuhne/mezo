@@ -91,12 +91,17 @@ public class ExerciseCatalogEntity {
     private String equipment = "other";
 
     /**
-     * {@code stable|free} (DB CHECKed): a stable exercise (machine, cable, supported) is fit for
-     * intensity techniques; a free-weight one is not. Loader-owned on master rows, user-settable on own rows.
+     * {@code stable|free} (DB CHECKed): physical support, separate from the technique palette.
+     * Loader-owned on master rows, user-settable on own rows.
      */
     @NotNull
     @Column(nullable = false)
     private String stability = "free";
+
+    /** Explicit master SPE palette. NULL on user-authored rows means the legacy stability fallback. */
+    @JdbcTypeCode(SqlTypes.ARRAY)
+    @Column(name = "allowed_techniques", columnDefinition = "varchar(16)[]")
+    private List<String> allowedTechniques;
 
     /** Loads the muscle well in its lengthened position; loader-owned on master rows. */
     @NotNull

@@ -59,4 +59,19 @@ class UsualMealRankerTest {
             meal("ismeretlen", "Valami", 100, "2026-11-13T12:00:00Z"),
             meal("lunch", "  ", 100, "2026-11-13T12:00:00Z")), SlotKey.LUNCH, 6)).isEmpty();
     }
+
+    /** A drink is its own bucket (mezo-r36n9.160): asked for drinks, the drinks come first, the meals after. */
+    @Test
+    void drinksAreTheirOwnBucket() {
+        List<LoggedMeal> history = List.of(
+            meal("drink", "Fehérjeturmix", 180, "2026-11-10T16:10:00Z"),
+            meal("drink", "Fehérjeturmix", 180, "2026-11-11T16:10:00Z"),
+            meal("snack", "Alma", 80, "2026-11-12T10:30:00Z"));
+
+        List<UsualMeal> out = UsualMealRanker.rank(history, SlotKey.DRINK, 5);
+
+        assertThat(out).extracting(UsualMeal::title).containsExactly("Fehérjeturmix", "Alma");
+        assertThat(out.get(0).slot()).isEqualTo(SlotKey.DRINK);
+        assertThat(out.get(0).count()).isEqualTo(2);
+    }
 }

@@ -75,10 +75,12 @@ public struct RitmusClient: OutboxSender {
             case .chatQuestion: return try await sendChatQuestion(item)
             case .mealDraft: return await MealDraftSender(drafter: FoodClient(client: client), directory: audioDirectory).send(item)
             case .workoutStart, .workoutSet, .workoutSetEdit, .workoutSkipExercise, .workoutFeedback,
-                 .workoutNote, .workoutFinish, .sportSession:
+                 .workoutNote, .workoutFinish, .sportSession, .workoutAsPlanned:
                 return await train.send(item)
             case .penzExpense:
                 return await penz?.send(item) ?? .retryLater
+            case .weightLog: return try await sendWeight(item)
+            case .sleepLog: return try await sendSleep(item)
             }
         } catch {
             // An answer whose body would not decode still carries its status; otherwise (no network, a timeout) the
@@ -202,6 +204,31 @@ public struct RitmusClient: OutboxSender {
         let request = Components.Schemas.CreateJournalEntryRequest(
             text: text, occurredOn: item.date, source: "boop", clientRef: item.id.uuidString)
         switch try await client.createJournalEntry(body: .json(request)) {
+        case .created: return .sent(nil)
+        case .badRequest: return Self.map(400)
+        case .unauthorized: return Self.map(401)
+        case .undocumented(let code, _): return Self.map(code)
+        }
+    }
+
+    /// A weight off the scale (`mezo-r36n9.154`): the server's weight log, keyed by day (a second one the same day
+    /// replaces the first server-side).
+    private func sendWeight(_ item: OutboxItem) async throws -> OutboxSendResult {
+        guard let p = RitmusPayload.decodeWeightLog(item.payload) else { return malformed("weight log") }
+        switch try await client.logWeight(body: .json(.init(date: p.date, weightKg: p.weightKg))) {
+        case .created: return .sent(nil)
+        case .badRequest: return Self.map(400)
+        case .unauthorized: return Self.map(401)
+        case .undocumented(let code, _): return Self.map(code)
+        }
+    }
+
+    /// A night typed by hand (`mezo-r36n9.154`): the server's sleep log for the morning it ended on.
+    private func sendSleep(_ item: OutboxItem) async throws -> OutboxSendResult {
+        guard let p = RitmusPayload.decodeSleepLog(item.payload) else { return malformed("sleep log") }
+        let body = Components.Schemas.LogSleepRequest(date: p.date, bedtime: p.bedtime, wakeup: p.wakeup,
+                                                      durationH: p.durationH, quality: p.quality)
+        switch try await client.logSleep(body: .json(body)) {
         case .created: return .sent(nil)
         case .badRequest: return Self.map(400)
         case .unauthorized: return Self.map(401)
@@ -340,6 +367,20 @@ public struct RitmusClient: OutboxSender {
     // MARK: - Fetches
 
     /// The day as the server has it: done check-ins, the day's focus, the close (404 = not closed).
+    /// The day's journal lines on the server, newest first (`mezo-r36n9.159`): the Napló day sheet's A NAP SORAI,
+    /// so a line written for a past day is visible where it was put.
+    public func journalLines(on date: String) async throws -> [JournalLineLite] {
+        switch try await client.listJournalEntries(query: .init(from: date, to: date)) {
+        case .ok(let ok):
+            return try ok.body.json.compactMap { e in
+                guard let id = UUID(uuidString: e.id) else { return nil }
+                return JournalLineLite(id: id, text: e.text, occurredOn: e.occurredOn, createdAt: e.createdAt)
+            }
+        case .unauthorized: throw RitmusFetchError.unauthorized
+        case .undocumented: throw RitmusFetchError.server
+        }
+    }
+
     public func fetchDay(_ date: String) async throws -> ServerDay {
         var day = ServerDay(date: date)
         do {
@@ -504,5 +545,17 @@ public struct RitmusClient: OutboxSender {
         let bytes = Array(SHA256.hash(data: Data(key.utf8)).prefix(16))
         return UUID(uuid: (bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7], bytes[8], bytes[9],
                            bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]))
+    }
+}
+
+/// One journal line of a day as the server keeps it: the day it is about and the moment it was written.
+public struct JournalLineLite: Identifiable, Equatable, Sendable {
+    public let id: UUID
+    public let text: String
+    public let occurredOn: String
+    public let createdAt: Date
+
+    public init(id: UUID, text: String, occurredOn: String, createdAt: Date) {
+        self.id = id; self.text = text; self.occurredOn = occurredOn; self.createdAt = createdAt
     }
 }

@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.train.service;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseCatalogEntity;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseCatalogRepository;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -14,8 +15,7 @@ import org.springframework.stereotype.Component;
 /**
  * Catalog attributes the training-style stamp needs (mezo-r36n9.79), read in ONE batched catalog
  * fetch per save or read — never per exercise (same rule as {@link CatalogMediaResolver}).
- * Only stability is read today: an exercise without a catalog link, or with an unknown id, counts
- * as {@code free} (a user-authored movement is never assumed to be machine-guided).
+ * An exercise without a catalog link or with an unknown id has no technique palette.
  */
 @Component
 @RequiredArgsConstructor
@@ -23,21 +23,40 @@ public class CatalogAttributes {
 
     private final ExerciseCatalogRepository exerciseCatalogRepository;
 
+    /** One source for catalog responses and technique validation. Master rows store the list; own rows fall back. */
+    public static List<String> allowedTechniqueWires(ExerciseCatalogEntity catalog) {
+        if (catalog.getAllowedTechniques() != null) return List.copyOf(catalog.getAllowedTechniques());
+        if (!"stable".equals(catalog.getStability())) return List.of();
+        return Boolean.TRUE.equals(catalog.getLengthenedFriendly())
+            ? List.of("rest_drop", "drop", "myo", "rest_pause", "partials")
+            : List.of("rest_drop", "drop", "myo", "rest_pause");
+    }
+
     /**
      * Attributes of one exercise that gate the set techniques (mezo-r36n9.80) and pick the planner's default
      * technique (mezo-r36n9.81): {@code equipment} is one of
      * {@code machine|cable|dumbbell|barbell|bodyweight|kettlebell|other}; null or unknown reads as {@code other}.
      * {@code challengeAllowed} is {@link TechniqueRules#challengeAllowed} of the catalogue row (owner decision #72).
      */
-    public record Attrs(boolean stable, boolean lengthenedFriendly, String equipment, boolean challengeAllowed) {
+    public record Attrs(boolean stable, boolean lengthenedFriendly, String equipment, boolean challengeAllowed,
+                        Set<Technique> allowedTechniques) {
         private static final Set<String> EQUIPMENT =
             Set.of("machine", "cable", "dumbbell", "barbell", "bodyweight", "kettlebell", "other");
 
         /** No catalog link: counts as free, never lengthened-friendly, equipment {@code other}, no challenge. */
         public static final Attrs FREE = new Attrs(false, false, "other", false);
 
+        /** Older/custom rows retain the former stable/lengthened palette. */
+        public Attrs(boolean stable, boolean lengthenedFriendly, String equipment, boolean challengeAllowed) {
+            this(stable, lengthenedFriendly, equipment, challengeAllowed,
+                stable ? (lengthenedFriendly
+                    ? Set.of(Technique.REST_DROP, Technique.DROP, Technique.MYO, Technique.REST_PAUSE, Technique.PARTIALS)
+                    : Set.of(Technique.REST_DROP, Technique.DROP, Technique.MYO, Technique.REST_PAUSE)) : Set.of());
+        }
+
         public Attrs {
             equipment = equipment != null && EQUIPMENT.contains(equipment) ? equipment : "other";
+            allowedTechniques = Set.copyOf(allowedTechniques);
         }
     }
 
@@ -74,7 +93,8 @@ public class CatalogAttributes {
         return new AttrsLookup(exerciseCatalogRepository.findByIdIn(ids).stream()
             .collect(Collectors.toUnmodifiableMap(ExerciseCatalogEntity::getId,
                 c -> new Attrs("stable".equals(c.getStability()), Boolean.TRUE.equals(c.getLengthenedFriendly()),
-                    c.getEquipment(), challengeAllowed(c)))));
+                    c.getEquipment(), challengeAllowed(c), allowedTechniqueWires(c).stream()
+                        .map(Technique::fromWire).collect(Collectors.toUnmodifiableSet())))));
     }
 
     /** {@link TechniqueRules#challengeAllowed} of one catalogue row — the catalogue item and {@link Attrs} share it. */

@@ -29,6 +29,9 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSessionEn
     /** True when the run has any workout instance (a logged session of any status). */
     boolean existsByCreatedByAndMesocycleIdAndTemplateSessionIdIsNotNull(UUID createdBy, UUID mesocycleId);
 
+    /** The instance a Boop as-planned booking made for this client ref (mezo-r36n9.161), if any. */
+    Optional<WorkoutSessionEntity> findByCreatedByAndClientRef(UUID createdBy, UUID clientRef);
+
     /** Is a workout of this template day running (an {@code active} instance)? Guards structural day saves. */
     boolean existsByCreatedByAndTemplateSessionIdAndStatus(UUID createdBy, UUID templateSessionId, String status);
 

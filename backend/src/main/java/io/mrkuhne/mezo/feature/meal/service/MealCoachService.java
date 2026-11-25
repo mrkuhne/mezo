@@ -165,14 +165,19 @@ public class MealCoachService {
      * call for the still-verdictless meals of that day. The caller owns the today-vs-history rule.
      */
     public List<MealCoachVerdict> generateForDay(UUID userId, LocalDate date, boolean allowGenerate) {
-        List<LoadedMeal> day = store.loadDay(userId, date);
+        List<LoadedMeal> day = mealsOnly(store.loadDay(userId, date));
         return verdicts(userId, date, day, day, allowGenerate);
     }
 
     /** One meal's verdict, generating on demand for any date (an explicit score-sheet open). */
+    /** The coach narrates meals only: a drink (Boop, mezo-r36n9.160) carries no breakdown and gets no verdict. */
+    private static List<LoadedMeal> mealsOnly(List<LoadedMeal> day) {
+        return day.stream().filter(m -> !"drink".equals(m.slot())).toList();
+    }
+
     public List<MealCoachVerdict> generateForMeal(UUID userId, UUID mealId) {
         LocalDate date = store.dateOfOwnedMeal(userId, mealId);
-        List<LoadedMeal> day = store.loadDay(userId, date);
+        List<LoadedMeal> day = mealsOnly(store.loadDay(userId, date));
         List<LoadedMeal> wanted = day.stream().filter(m -> m.id().equals(mealId)).toList();
         return verdicts(userId, date, day, wanted, true);
     }

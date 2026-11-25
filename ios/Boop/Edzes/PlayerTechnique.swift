@@ -23,6 +23,7 @@ func techniqueMark(_ t: SetTechnique) -> PlanMark.Kind {
     case .drop: .drop
     case .myo, .restPause: .myo
     case .partials: .partials
+    case .topPause: .timer
     }
 }
 
@@ -93,6 +94,7 @@ enum TechniqueLines {
     /// The one line under a set row that says what the technique adds — planned or done.
     static func rowNote(plan: PrescribedSet?, logged: SessionSet?) -> String? {
         if let logged, let t = logged.technique {
+            if t == .topPause { return t.name }
             let legs = logged.legs ?? []
             if t == .partials { return "+ \(logged.partials ?? 0) félismétlés" }
             let steps = legs.filter { $0.kind != .partials }
@@ -104,7 +106,8 @@ enum TechniqueLines {
             }
             return "\(t.name.lowercased()) · \(parts.joined(separator: " · "))\(half)"
         }
-        guard let plan, plan.isTechnique, let t = plan.technique else { return nil }
+        guard let plan, (plan.isTechnique || plan.technique == .topPause), let t = plan.technique else { return nil }
+        if t == .topPause { return t.name }
         if t == .partials { return "utána félismétlések, amennyi megy" }
         let then = plan.legs.last?.kind == .partials ? ", utána a kihívás" : ""
         return "\(t.name.lowercased()) az utolsó sorozaton\(then)"

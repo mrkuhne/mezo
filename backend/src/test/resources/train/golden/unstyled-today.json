@@ -29,6 +29,7 @@
     },
     "prescribedSets" : [ {
       "technique" : null,
+      "topHoldSec" : null,
       "legs" : [ ],
       "kind" : "warmup",
       "targetWeightKg" : 32.5,
@@ -37,6 +38,7 @@
       "restSec" : null
     }, {
       "technique" : null,
+      "topHoldSec" : null,
       "legs" : [ ],
       "kind" : "warmup",
       "targetWeightKg" : 47.5,
@@ -45,6 +47,7 @@
       "restSec" : null
     }, {
       "technique" : null,
+      "topHoldSec" : null,
       "legs" : [ ],
       "kind" : "working",
       "targetWeightKg" : 62.50,
@@ -53,6 +56,7 @@
       "restSec" : null
     }, {
       "technique" : null,
+      "topHoldSec" : null,
       "legs" : [ ],
       "kind" : "working",
       "targetWeightKg" : 62.50,
@@ -61,6 +65,7 @@
       "restSec" : null
     }, {
       "technique" : null,
+      "topHoldSec" : null,
       "legs" : [ ],
       "kind" : "working",
       "targetWeightKg" : 62.50,
@@ -112,6 +117,7 @@
     },
     "prescribedSets" : [ {
       "technique" : null,
+      "topHoldSec" : null,
       "legs" : [ ],
       "kind" : "warmup",
       "targetWeightKg" : 5.0,
@@ -120,6 +126,7 @@
       "restSec" : null
     }, {
       "technique" : null,
+      "topHoldSec" : null,
       "legs" : [ ],
       "kind" : "warmup",
       "targetWeightKg" : 7.5,
@@ -128,6 +135,7 @@
       "restSec" : null
     }, {
       "technique" : null,
+      "topHoldSec" : null,
       "legs" : [ ],
       "kind" : "working",
       "targetWeightKg" : 10.00,
@@ -136,6 +144,7 @@
       "restSec" : null
     }, {
       "technique" : null,
+      "topHoldSec" : null,
       "legs" : [ ],
       "kind" : "working",
       "targetWeightKg" : 10.00,
@@ -144,6 +153,7 @@
       "restSec" : null
     }, {
       "technique" : null,
+      "topHoldSec" : null,
       "legs" : [ ],
       "kind" : "working",
       "targetWeightKg" : 10.00,
@@ -191,6 +201,7 @@
     "lastWeek" : null,
     "prescribedSets" : [ {
       "technique" : null,
+      "topHoldSec" : null,
       "legs" : [ ],
       "kind" : "warmup",
       "targetWeightKg" : 40.0,
@@ -199,6 +210,7 @@
       "restSec" : null
     }, {
       "technique" : null,
+      "topHoldSec" : null,
       "legs" : [ ],
       "kind" : "warmup",
       "targetWeightKg" : 60.0,
@@ -207,6 +219,7 @@
       "restSec" : null
     }, {
       "technique" : null,
+      "topHoldSec" : null,
       "legs" : [ ],
       "kind" : "working",
       "targetWeightKg" : 80.0,
@@ -215,6 +228,7 @@
       "restSec" : null
     }, {
       "technique" : null,
+      "topHoldSec" : null,
       "legs" : [ ],
       "kind" : "working",
       "targetWeightKg" : 80.0,
@@ -223,6 +237,7 @@
       "restSec" : null
     }, {
       "technique" : null,
+      "topHoldSec" : null,
       "legs" : [ ],
       "kind" : "working",
       "targetWeightKg" : 80.0,
@@ -267,6 +282,7 @@
     },
     "prescribedSets" : [ {
       "technique" : null,
+      "topHoldSec" : null,
       "legs" : [ ],
       "kind" : "warmup",
       "targetWeightKg" : null,
@@ -275,6 +291,7 @@
       "restSec" : null
     }, {
       "technique" : null,
+      "topHoldSec" : null,
       "legs" : [ ],
       "kind" : "warmup",
       "targetWeightKg" : null,
@@ -283,6 +300,7 @@
       "restSec" : null
     }, {
       "technique" : null,
+      "topHoldSec" : null,
       "legs" : [ ],
       "kind" : "working",
       "targetWeightKg" : null,
@@ -291,6 +309,7 @@
       "restSec" : null
     }, {
       "technique" : null,
+      "topHoldSec" : null,
       "legs" : [ ],
       "kind" : "working",
       "targetWeightKg" : null,
@@ -299,6 +318,7 @@
       "restSec" : null
     }, {
       "technique" : null,
+      "topHoldSec" : null,
       "legs" : [ ],
       "kind" : "working",
       "targetWeightKg" : null,
@@ -350,6 +370,7 @@
     },
     "prescribedSets" : [ {
       "technique" : null,
+      "topHoldSec" : null,
       "legs" : [ ],
       "kind" : "warmup",
       "targetWeightKg" : 35.0,
@@ -358,6 +379,7 @@
       "restSec" : null
     }, {
       "technique" : null,
+      "topHoldSec" : null,
       "legs" : [ ],
       "kind" : "warmup",
       "targetWeightKg" : 50.0,
@@ -366,6 +388,7 @@
       "restSec" : null
     }, {
       "technique" : null,
+      "topHoldSec" : null,
       "legs" : [ ],
       "kind" : "working",
       "targetWeightKg" : 67.50,
@@ -374,6 +397,7 @@
       "restSec" : null
     }, {
       "technique" : null,
+      "topHoldSec" : null,
       "legs" : [ ],
       "kind" : "working",
       "targetWeightKg" : 67.50,
@@ -382,6 +406,7 @@
       "restSec" : null
     }, {
       "technique" : null,
+      "topHoldSec" : null,
       "legs" : [ ],
       "kind" : "working",
       "targetWeightKg" : 67.50,

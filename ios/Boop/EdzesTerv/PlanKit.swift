@@ -218,7 +218,7 @@ func planErrorText(_ error: PlanFetchError) -> String {
     case .rejected: "A szerver ezt így nem fogadta el."
     case .conflict("SEASON_REQUIRED"): "Edzésblokk csak évadhoz indulhat. Az Évad oldalon indíthatsz egyet."
     case .conflict: "Ez közben lezárult, ezért nem változott."
-    case .dayWorkoutRunning: "Ezen a napon most fut az edzésed — utána szerkesztheted."
+    case .dayWorkoutRunning: "Ezen a napon most fut az edzésed — gyakorlatot hozzáadni, cserélni vagy törölni utána lehet. A sorrend és a beállítások most is mennek."
     case .server: "Valami elakadt a szerveren. Próbáld újra kicsit később."
     }
 }
@@ -253,9 +253,7 @@ func planReasonLine(_ reason: WireReason, target: Int) -> (tone: PlanTone, text:
     case "freq_high":
         guard let v = reason.value else { return nil }
         return (.good, "Minden izom hetente \(v)×, naponta kevés sorozattal.")
-    case "more_warmups":
-        guard let v = reason.value else { return nil }
-        return (.neutral, "Több bemelegítés: hetente kb. \(v) bemelegítő sorozattal több.")
+    // „more_warmups" is deliberately silent: the app never talks about warm-ups (owner, 2026-11-25).
     default: return nil
     }
 }

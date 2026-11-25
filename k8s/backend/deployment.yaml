@@ -28,7 +28,7 @@ spec:
         - name: ghcr-pull
       containers:
         - name: backend
-          image: ghcr.io/mrkuhne/mezo-backend:3.32.0
+          image: ghcr.io/mrkuhne/mezo-backend:3.38.0
           ports:
             - name: http
               containerPort: 8090
@@ -105,6 +105,14 @@ spec:
                 secretKeyRef:
                   name: mezo-app
                   key: OPENAI_API_KEY
+            # mezo-r36n9.38 Boop Levél: AES key that seals the owner's mirror-Gmail app password. No default
+            # exists in application.yml, and the cipher refuses a blank or the test dummy under MEZO_AUTH_STRICT,
+            # so a missing key stops the mail feature loudly. Lands BEFORE the mail switches are turned on.
+            - name: MEZO_MAIL_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: mezo-app
+                  key: MEZO_MAIL_SECRET_KEY
             # mezo-kdhn: PRODUCTION answers chat turns on OpenAI (gpt-5.6-luna). Set HERE, on the
             # Deployment, and deliberately NOT by changing application.yml's `gemini` default —
             # the explicit-env precedent of MEZO_FEATURE_COMPANION_ENABLED below. That keeps local
@@ -163,6 +171,13 @@ spec:
             # briefing + dawn BriefingJob (05:45). Explicit switch (the companion
             # precedent) rather than relying on the application.yml default.
             - name: MEZO_FEATURE_PROACTIVE_ENABLED
+              value: "true"
+            # mezo-r36n9.38/.39 Boop Levél, the morning post: the feature (API, cipher, pipeline) and its
+            # 08:00 + 15:00 Budapest job. Flipped AFTER MEZO_MAIL_SECRET_KEY landed (separate merge).
+            # Rollback = delete these two entries (the mailbox row and its sealed password stay).
+            - name: MEZO_MAIL_ENABLED
+              value: "true"
+            - name: MEZO_TECHCORE_CRON_MAILJOB_ENABLED
               value: "true"
             # LLM call audit log (mezo-2zyu): every Gemini call lands in llm_log_history with
             # its token/cost breakdown and its caller attribution (feature/operation/entity).

@@ -8,7 +8,12 @@ import java.util.Locale;
  * also the recipe {@code category} vocabulary, so a window and a recipe can be matched directly.
  */
 public enum SlotKey {
-    BREAKFAST, LUNCH, DINNER, SNACK;
+    BREAKFAST, LUNCH, DINNER, SNACK,
+    /**
+     * Boop's drink bucket (mezo-r36n9.160): a meal row the day plan never places in a window and the scorer never
+     * judges. Never a recipe category — the recipe contract enum stays the four above.
+     */
+    DRINK;
 
     /** Lowercase wire/DB value ({@code recipe.category}, the contract enum). */
     public String wire() {

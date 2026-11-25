@@ -14,7 +14,7 @@ Ha nincs futó blokkod, az Edzés → Blokk fülön megjelenik az **Új blokk** 
 
 **1. Alapok.** Három dolgot adsz meg, a többit Boop számolja:
 - **Hány hetes** legyen a blokk (4–8 hét);
-- **Meddig tarthat egy edzés** (percben) — a pihenővel és a bemelegítéssel együtt;
+- **Meddig tarthat egy edzés** (percben) — a pihenővel együtt;
 - **Melyik izomnak mi a szintje:** Hangsúly (itt építesz a legtöbbet), Építés (rendesen nő) vagy Tartás (megtartja, amit eddig
   felépítettél).
 Az edzésnapokat az évadodból veszi (az Évad oldalon állítható); ha még nincs évadod, előbb azt kéri, és nem csinál semmit.

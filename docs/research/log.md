@@ -1,7 +1,7 @@
 ---
 title: Research Wiki — Action Log
 type: summary
-updated: 2026-11-17
+updated: 2026-11-24
 tags: [tooling]
 related: [SCHEMA.md, index.md]
 ---
@@ -28,3 +28,4 @@ bottom. Rotate (archive the head) when this passes ~500 lines. Format: `YYYY-MM-
 - 2026-11-17 · INGEST/QUERY · A felhasználótól kapott 52 oldalas *The Bodybuilding Transformation System — Beginner* kézikönyv oldalszámos, parafrazált kinyerése `raw/articles/2026-11-17-bodybuilding-transformation-beginner-extraction.md`-be (eredeti 44 MB-os, jogfenntartott PDF nincs a gitben; SHA-256 és helyi forrásút rögzítve). A `queries/bodybuilding-beginner-guidebook-mezo-digest.md` a meglévő Train/Goal megoldásokkal veti össze és kijelöli a kezdő útvonal tervezési kérdéseit; teljes 12 hetes programlap nincs a forrásfájlban. Driver: mezo-drcuc.
 - 2026-11-17 · INGEST/QUERY · Jeff Nippard *The Muscle Ladder* (2024), owner-supplied 664-page PDF: copyrighted file kept outside git, SHA256/page-map source record under raw/books; mezo-specific development digest with page citations and current Train comparison. The existing program-design-rules page gained corrections on frequency and rep-zone interpretation.
 - 2026-11-17 · QUERY · *The Muscle Ladder* × Train tényellenőrző audit (`queries/muscle-ladder-train-fact-check-audit.md`, mezo-1z4jc): a PDF döntő oldalai újraolvasva (hash egyezik), a mai Train-szabályok a kódból és tesztekből, a küszöbök elsődleges forrásból (Schoenfeld/Grgic/Krieger, Pelland, Refalo, Robinson, Halperin, Lopez, Singer, Bell, Coleman, Plotkin, Enes, Reynolds). Eredmény: a felosztás, gyakoriság, ismétléssáv, deload-százalék és pihenő védhető; a deload-százalékokra, az izmonkénti MEV/MAV/MRV számokra és a rep-mix arányokra nincs elsődleges bizonyíték; három belső hiba bd-be véve (mezo-s5sd4, mezo-p9plo, mezo-ehdgq); a Train-leírás két elavult állítása javítva.
+- 2026-11-24 · INGEST · OpenAI's GPT-5.6 Luna model capability table captured for `mezo-h38eq`: image input on Chat Completions, no audio. Distilled into `entities/gpt-5-6-luna.md`; a synthetic live image probe also checked the actual funded account and showed that tiny print needs legible input for reliable number extraction.

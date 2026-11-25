@@ -43,6 +43,7 @@ enum SessionText {
     static let undo = "Visszavonom"
     static let undoFailed = "Most nem sikerült visszatenni"
     static let start = "Indítom"
+    static let done = "Megvolt"
 }
 
 // MARK: - The session card on the Mozgás path
@@ -89,6 +90,9 @@ struct SessionCard: View {
                     smallPill(undoTitle(planned), primary: false) { undo(to: planned) }
                 } else if let conflict, !store.conflictKept {
                     smallPill(moveButtonTitle(conflict.suggestedTime), primary: true) { move(to: conflict.suggestedTime) }
+                } else if session.done {
+                    // A done session is not started again (owner, 2026-11-23: the card still said „Indítom").
+                    smallPill(SessionText.done, primary: false) { toast("A mai edzés megvolt.") }
                 } else {
                     smallPill(SessionText.start, primary: true) { toast(soonToast("Edzés")) }
                 }

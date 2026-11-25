@@ -14,7 +14,7 @@ import java.util.Set;
  */
 public final class TechniqueRules {
 
-    public static final String NOT_STABLE = "TRAIN_TECHNIQUE_NOT_STABLE";
+    public static final String NOT_ALLOWED = "TRAIN_TECHNIQUE_NOT_ALLOWED";
     public static final String NOT_LENGTHENED = "TRAIN_TECHNIQUE_NOT_LENGTHENED";
     public static final String CHALLENGE_FREE_WEIGHT_COMPOUND = "TRAIN_CHALLENGE_FREE_WEIGHT_COMPOUND";
 
@@ -25,13 +25,13 @@ public final class TechniqueRules {
 
     /**
      * First violated rule, or empty. A plain row (no technique, no challenge) is always fine. A technique and the
-     * challenge together are fine (mezo-r36n9.98). A technique needs a stable exercise, partials also a
+     * challenge together are fine (mezo-r36n9.98). A technique needs the exercise's palette, partials also a
      * lengthened-friendly one; the challenge needs {@link CatalogAttributes.Attrs#challengeAllowed()} — the single
      * challenge rule, {@link #challengeAllowed(String, Collection, String)} (owner decision #72, mezo-r36n9.127).
      */
     public static Optional<String> check(Technique t, boolean challenge, CatalogAttributes.Attrs a) {
-        if (carries(t) && !a.stable()) return Optional.of(NOT_STABLE);
         if (t == Technique.PARTIALS && !a.lengthenedFriendly()) return Optional.of(NOT_LENGTHENED);
+        if (carries(t) && !a.allowedTechniques().contains(t)) return Optional.of(NOT_ALLOWED);
         if (challenge && !a.challengeAllowed()) return Optional.of(CHALLENGE_FREE_WEIGHT_COMPOUND);
         return Optional.empty();
     }
@@ -57,7 +57,7 @@ public final class TechniqueRules {
             case REST_DROP, DROP -> Set.of(SetLegKind.DROP);
             case MYO, REST_PAUSE -> Set.of(SetLegKind.MINI);
             case PARTIALS -> Set.of(SetLegKind.PARTIALS);
-            case NONE -> Set.of();
+            case NONE, TOP_PAUSE -> Set.of();
         };
     }
 

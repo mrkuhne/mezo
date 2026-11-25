@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.train;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.ExerciseCatalogItem;
+import io.mrkuhne.mezo.api.dto.Technique;
 import io.mrkuhne.mezo.api.dto.GymExerciseInput;
 import io.mrkuhne.mezo.api.dto.MesoDay;
 import io.mrkuhne.mezo.api.dto.MesoDayInput;
@@ -42,6 +43,18 @@ class ExerciseCatalogContractIT extends ApiIntegrationTest {
             assertThat(i.getType()).isEqualTo(ExerciseCatalogItem.TypeEnum.PLYO);
             assertThat(i.getId()).isNotNull();
         });
+    }
+
+    @Test
+    void testGetExerciseCatalog_shouldReturnReviewedTechniquePalettes_whenAuthenticated() {
+        List<ExerciseCatalogItem> items =
+            getForList("/api/train/exercises", ownerAuthHeaders(), HttpStatus.OK, ExerciseCatalogItem.class);
+        assertThat(items).filteredOn(i -> "hammer-curl".equals(i.getSlug())).singleElement()
+            .satisfies(i -> assertThat(i.getAllowedTechniques()).containsExactly(Technique.MYO, Technique.REST_DROP, Technique.DROP));
+        assertThat(items).filteredOn(i -> "hip-thrust".equals(i.getSlug())).singleElement()
+            .satisfies(i -> assertThat(i.getAllowedTechniques()).containsExactly(Technique.TOP_PAUSE));
+        assertThat(items).filteredOn(i -> "overhead-press".equals(i.getSlug())).singleElement()
+            .satisfies(i -> assertThat(i.getAllowedTechniques()).isEmpty());
     }
 
     @Test
@@ -98,6 +111,7 @@ class ExerciseCatalogContractIT extends ApiIntegrationTest {
                 assertThat(i.getJoints()).isNull();
                 assertThat(i.getLengthened()).isNull();
                 assertThat(i.getDemand()).isNull();
+                assertThat(i.getAllowedTechniques()).isEmpty();
             });
     }
 

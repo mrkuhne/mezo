@@ -118,6 +118,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
     CheckInPopulator.class,
     PantryCatalogPopulator.class, PantryItemPopulator.class, PantryImportPopulator.class,
     io.mrkuhne.mezo.support.populator.PenzPopulator.class,
+    io.mrkuhne.mezo.support.populator.MailPopulator.class,
     RecipePopulator.class, MealPopulator.class, WaterLogPopulator.class,
     FuelSettingsPopulator.class, MealSlotTemplatePopulator.class,
     MedicationPopulator.class, MedicationDosePopulator.class,

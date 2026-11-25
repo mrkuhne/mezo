@@ -24,3 +24,24 @@ public enum CheckInMoment: String, CaseIterable, Codable, Sendable {
         }
     }
 }
+
+public extension CheckInMoment {
+    /// The moment's own time on a day (`yyyy-MM-dd`) — the slot's configured clock, the instant a catch-up is
+    /// stamped with (`mezo-r36n9.159`, spec §3.5). nil for a malformed day.
+    func time(on day: String, calendar: Calendar) -> Date? {
+        let p = day.split(separator: "-").compactMap { Int($0) }
+        let t = slotId.split(separator: ":").compactMap { Int($0) }
+        guard p.count == 3, t.count == 2 else { return nil }
+        return calendar.date(from: DateComponents(year: p[0], month: p[1], day: p[2], hour: t[0], minute: t[1]))
+    }
+
+    /// The moment's name in the catch-up eyebrow: REGGEL · DÉL · DÉLUTÁN.
+    var catchUpName: String {
+        switch self {
+        case .reggel: "REGGEL"
+        case .delben: "DÉL"
+        case .delutan: "DÉLUTÁN"
+        }
+    }
+}
+

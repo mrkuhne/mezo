@@ -16,9 +16,10 @@ struct MaiCopyTests {
             #expect(hue(for: k) == h)
             #expect(metricKey(for: h) == k)
         }
-        // Pénz and Levél are colour worlds without a metric, so the bridge covers `Hue.metrics`, not every case.
+        // Pénz, Levél and Súly are colour worlds without a metric, so the bridge covers `Hue.metrics`, not every case.
         #expect(MetricKey.allCases.map { hue(for: $0) } == Hue.metrics)
-        #expect(Hue.allCases.count == Hue.metrics.count + 2)
+        #expect(Hue.allCases.count == Hue.metrics.count + 3)
+        #expect(metricKey(for: .suly) == .forma)
     }
 
     @Test func firstMetricIsCalledForma() {
@@ -40,6 +41,17 @@ struct MaiCopyTests {
         #expect(c.score == nil)
         #expect(c.orbDisplay == "–")
         #expect(c.orbCaption == "még tanulom")
+    }
+
+    /// `mezo-r36n9.152`: "learning" is about Forma alone — the four other areas keep the score the server sent.
+    @Test func learningKeepsTheOtherFourScores() {
+        for key in [MetricKey.alvas, .mozgas, .fuel, .pulzus] {
+            let c = copy(key, learning: true)
+            #expect(c.score == 74)
+            #expect(c.miniValue == "74")
+            #expect(c.orbDisplay == "74")
+            #expect(c.orbCaption == "jó formában")
+        }
     }
 
     @Test func scoredMetricShowsItsDisplayInTheHeroAndTheScoreInTheMiniOrb() {

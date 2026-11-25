@@ -13,7 +13,22 @@ private func rgb(_ c: Color) -> (Int, Int, Int) {
     // The five metric worlds first, then the two the life dashboard added (Pénz, Levél): they have no metric,
     // so anything that means "a metric" iterates `Hue.metrics`, not `allCases`.
     #expect(Hue.metrics.map(\.name) == ["Forma", "Alvás", "Mozgás", "Fuel", "Pulzus"])
-    #expect(Hue.allCases.map(\.name) == ["Forma", "Alvás", "Mozgás", "Fuel", "Pulzus", "Pénz", "Levél"])
+    #expect(Hue.allCases.map(\.name) == ["Forma", "Alvás", "Mozgás", "Fuel", "Pulzus", "Pénz", "Levél", "Súly"])
+}
+
+/// The ninth area's world (owner 2026-11-24, `mezo-r36n9.158`): gold, the one colour the ring did not have.
+@Test func sulyWorldIsGold() {
+    #expect(rgb(Hue.suly.glow) == (0xE6, 0xB3, 0x3A))
+    #expect(Hue.suly.orb.count == 4 && Hue.suly.sky.count == 3)
+    #expect(Hue.suly.name == "Súly")
+}
+
+/// The Súly room's Test tab wears its own body mark (owner: „a test kapjon saját új ikont"); a Napló tab reads as a book.
+@Test func testTabWearsTheBodyGlyph() {
+    #expect(NKAreaBar.glyph("Test") == "body-cream")
+    #expect(NKAreaBar.glyph("Napló") == "book-sage")
+    #expect(NKGlyph.outlined.contains("body-cream"))
+    #expect(NKGlyph.outlined.contains("cup-cream"))
 }
 
 @Test func everyHueHasThreeSkiesAndFourOrbColours() {

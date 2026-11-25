@@ -114,7 +114,7 @@ public struct FoodClient: Sendable {
             var parts: [Operations.draftMealFromAi.Input.Body.multipartFormPayload] = [
                 .date(.init(payload: .init(body: HTTPBody(day))))]
             if let words, !words.isEmpty { parts.append(.text(.init(payload: .init(body: HTTPBody(words))))) }
-            if let photo { parts.append(.photo(.init(payload: .init(body: HTTPBody(photo)), filename: "meal.jpg"))) }
+            if let photo { parts.append(Self.jpegPart(photo, name: "photo")) }
             let ai: Components.Schemas.MealAiDraftResponse = try await call {
                 switch try await client.draftMealFromAi(body: .multipartForm(MultipartBody(parts))) {
                 case .ok(let ok): return try ok.body.json
@@ -1029,8 +1029,7 @@ public struct FoodClient: Sendable {
 
     private func putPhoto(_ data: Data, mealId: UUID) async throws {
         try await call {
-            let part = Operations.putMealPhoto.Input.Body.multipartFormPayload.photo(
-                .init(payload: .init(body: HTTPBody(data)), filename: "meal.jpg"))
+            let part: Operations.putMealPhoto.Input.Body.multipartFormPayload = Self.jpegPart(data, name: "photo")
             switch try await client.putMealPhoto(path: .init(id: mealId.wire), body: .multipartForm(MultipartBody([part]))) {
             case .ok: return
             case .badRequest, .notFound: throw FoodFetchError.rejected
@@ -1060,7 +1059,22 @@ public struct FoodClient: Sendable {
         }
     }
 
+    /// A photo part that says it is a JPEG. The generated `.photo(...)` part carries no content type, so the runtime
+    /// writes `application/octet-stream` — and the server refuses a photo part that does not name an image type
+    /// (`mezo-r36n9.151`: the draft never arrived, a saved meal never got its picture). The bytes are JPEG already
+    /// (`MealPhoto.jpeg`), so the raw part names them as such, like „Ezt főztem" does.
+    static func jpegPart<Part: Sendable>(_ bytes: Data, name: String) -> Part where Part: MultipartRawPartConvertible {
+        var fields = HTTPFields()
+        fields[.contentType] = "image/jpeg"
+        return Part(raw: MultipartRawPart(name: name, filename: "meal.jpg", headerFields: fields, body: HTTPBody(bytes)))
+    }
+
     /// The meal slot a moment falls in, by the clock (a draft the model did not classify).
+    /// The slot a capture of this kind gets at this moment: a drink is always `drink`, a meal follows the clock.
+    public static func slot(at date: Date, cal: Calendar, kind: MealKind) -> String {
+        kind.fixedSlot ?? slot(at: date, cal: cal)
+    }
+
     public static func slot(at date: Date, cal: Calendar) -> String {
         switch cal.component(.hour, from: date) {
         case 4..<10: return "breakfast"
@@ -1249,4 +1263,15 @@ extension FoodClient {
             items: r.items.map { SensitivityItem(key: $0.key, level: SensitivityLevel(rawValue: $0.level.rawValue.lowercased()) ?? .avoid, note: $0.note) },
             novaRule: NovaRule(enabled: r.novaRule.enabled, maxLevel: r.novaRule.maxLevel))
     }
+}
+
+/// A multipart payload that can carry a raw part (the generator emits `.undocumented` for every form that allows it).
+protocol MultipartRawPartConvertible {
+    init(raw: MultipartRawPart)
+}
+extension Operations.draftMealFromAi.Input.Body.multipartFormPayload: MultipartRawPartConvertible {
+    init(raw: MultipartRawPart) { self = .undocumented(raw) }
+}
+extension Operations.putMealPhoto.Input.Body.multipartFormPayload: MultipartRawPartConvertible {
+    init(raw: MultipartRawPart) { self = .undocumented(raw) }
 }

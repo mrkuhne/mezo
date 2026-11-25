@@ -24,7 +24,7 @@ struct EdzesStoreTests {
 
     var todayJSON: String {
         #"""
-        {"templateSessionId":"\#(sessionId)","dayLabel":"Hét","title":"Pull Day","durationEst":62,
+        {"templateSessionId":"\#(sessionId)","title":"Pull Day","durationEst":62,
          "exercises":[{"id":"\#(pressId)","name":"Fekvenyomás","muscle":"chest","warmupSets":2,"workingSets":3,
           "repMin":6,"repMax":10,"targetRIR":2,"type":"compound","anchorWeightKg":77.5,
           "prescribedSets":[{"kind":"warmup","targetWeightKg":40,"targetReps":8},
@@ -49,7 +49,8 @@ struct EdzesStoreTests {
         await s.load()
 
         #expect(s.today?.value.title == "Pull Day")
-        #expect(s.today?.value.exercises.first?.sets.count == 5)
+        // Three working sets: the two warm-ups never reach the app (mezo-r36n9.170).
+        #expect(s.today?.value.exercises.first?.sets.count == 3)
         #expect(s.ageText == nil)              // straight from the server: no age to report
         #expect(s.problem == nil)
         // Written through, so the next launch without a network has something true to show.
@@ -385,5 +386,148 @@ struct EdzesSwapTests {
         #expect(SwapSheet.lastText(kg: nil, reps: 12) == "12 ismétlés")
         #expect(SwapSheet.lastText(kg: 57.5, reps: 10) == "57,5 kg × 10")
         #expect(SwapSheet.typeName(.isolation) == "izolált")
+    }
+}
+
+// MARK: - „Másik napot csinálok ma" (mezo-r36n9.163)
+
+extension EdzesStoreTests {
+    nonisolated var tuesdayId: String { "c1c2c3d4-0009-4a2b-9c3d-111122223333" }
+    nonisolated var tuesdayJSON: String {
+        #"{"templateSessionId":"\#(tuesdayId)","dayLabel":"Kedd","title":"Pull","exercises":[],"weekDoneDates":[]}"#
+    }
+
+    @Test func pickingAnotherDayLoadsThatDaysPlanAndKeepsItOnReload() async throws {
+        let cache = ServerCache(directory: directory())
+        transport.on("getTodayWorkout") { _ in (200, tuesdayJSON) }
+        let s = store(cache: cache)
+        let message = await s.pick(UUID(uuidString: tuesdayId))
+        #expect(message == nil)
+        #expect(s.pickedDay == UUID(uuidString: tuesdayId))
+        #expect(s.today?.value.title == "Pull")
+        await s.load(force: true)
+        #expect(transport.pathsOf("getTodayWorkout").allSatisfy { $0.contains("templateSessionId=\(tuesdayId)") })
+        // Another day's plan is not today's: the offline fallback must never show it as today's.
+        let hit = await cache.get(TodayWorkout.self, endpoint: "train/today", date: dayKey(Date()), maxAge: 3600)
+        #expect(hit == nil)
+    }
+
+    @Test func pickingOfflineSaysSoAndKeepsTodaysPlan() async throws {
+        transport.on("getTodayWorkout", 200, todayJSON)
+        let s = store()
+        await s.load()
+        transport.on("getTodayWorkout") { _ in throw URLError(.notConnectedToInternet) }
+        let message = await s.pick(UUID(uuidString: tuesdayId))
+        #expect(message == "Most nem érem el a szervert, a másik nap tervét nem tudom letölteni.")
+        #expect(s.pickedDay == nil)
+        #expect(s.today?.value.title == "Pull Day")
+    }
+
+    @Test func backToTodayDropsThePick() async throws {
+        transport.on("getTodayWorkout") { _ in (200, tuesdayJSON) }
+        let s = store()
+        _ = await s.pick(UUID(uuidString: tuesdayId))
+        transport.on("getTodayWorkout", 200, todayJSON)
+        _ = await s.pick(nil)
+        #expect(s.pickedDay == nil)
+        #expect(s.today?.value.title == "Pull Day")
+        #expect(transport.pathsOf("getTodayWorkout").last?.contains("templateSessionId") == false)
+    }
+
+    @Test func theWeeksDoneDaysAndTodaysDoneTitleComeFromTheHistory() async throws {
+        let today = dayKey(Date())
+        transport.on("listWorkouts", 200,
+                     #"[{"id":"\#(UUID())","templateSessionId":"\#(tuesdayId)","date":"\#(today)","status":"completed","origin":"meso","title":"Pull"}]"#)
+        let s = store()
+        await s.loadWeek(queued: [])
+        #expect(s.weekDone == [UUID(uuidString: tuesdayId)!])
+        #expect(s.doneTodayTitle == "Pull")
+    }
+}
+
+// MARK: - Review fixes (mezo-r36n9.163)
+
+extension EdzesStoreTests {
+    @Test func todaysDayDoneEarlierThisWeekIsDone() async throws {
+        // He did Wednesday's day on Monday from the sheet: Wednesday's own plan comes back with that completion.
+        let monday = NaploDays.week(containing: dayKey(Date())).from
+        let done = #"{"id":"\#(UUID())","templateSessionId":"\#(sessionId)","date":"\#(monday)","status":"completed","sets":[]}"#
+        transport.on("getTodayWorkout", 200,
+                     #"{"templateSessionId":"\#(sessionId)","dayLabel":"Hét","title":"Pull Day","exercises":[],"completedWorkout":\#(done),"weekDoneDates":["\#(monday)"]}"#)
+        let s = store()
+        await s.load()
+        #expect(s.doneToday)
+        #expect(!s.trainedToday || dayKey(Date()) == monday)
+    }
+
+    @Test func aRunningOtherDaysWorkoutIsReloadedAsThatDayAfterTheRoomIsRebuilt() async throws {
+        let folder = directory()
+        transport.on("getTodayWorkout") { _ in (200, tuesdayJSON) }
+        let first = EdzesStore(client: TrainClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: transport)),
+                               cache: nil, folder: folder)
+        _ = await first.pick(UUID(uuidString: tuesdayId))
+        _ = first.startWorkout(date: dayKey(Date()))
+        // The room closes and opens again: a fresh store, no pick in memory, the session on file.
+        let again = EdzesStore(client: TrainClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: transport)),
+                               cache: nil, folder: folder)
+        await again.load()
+        #expect(transport.pathsOf("getTodayWorkout").last?.contains("templateSessionId=\(tuesdayId)") == true)
+        #expect(again.today?.value.title == "Pull")
+    }
+
+    @Test func anOtherDaysPlanIsCachedUnderItsOwnKeyForTheOfflineGym() async throws {
+        let cache = ServerCache(directory: directory())
+        let folder = directory()
+        transport.on("getTodayWorkout") { _ in (200, tuesdayJSON) }
+        let first = EdzesStore(client: TrainClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: transport)),
+                               cache: cache, folder: folder)
+        _ = await first.pick(UUID(uuidString: tuesdayId))
+        _ = first.startWorkout(date: dayKey(Date()))
+        transport.on("getTodayWorkout") { _ in throw URLError(.notConnectedToInternet) }
+        let again = EdzesStore(client: TrainClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: transport)),
+                               cache: cache, folder: folder)
+        await again.load()
+        #expect(again.today?.value.title == "Pull")
+        #expect(await cache.get(TodayWorkout.self, endpoint: "train/today", date: dayKey(Date()), maxAge: 3600) == nil)
+    }
+
+    // MARK: - The finish went out with the ceremony (mezo-r36n9.170)
+
+    func completedTodayJSON(finishedAt: String) -> String {
+        #"{"templateSessionId":"\#(sessionId)","title":"Pull Day","exercises":[{"id":"\#(pressId)","name":"Fekvenyomás","muscle":"chest","warmupSets":0,"workingSets":2,"repMin":6,"repMax":10,"targetRIR":2,"type":"compound"}],"weekDoneDates":[],"completedWorkout":{"id":"c1c2c3d4-0007-4a2b-9c3d-111122223333","templateSessionId":"\#(sessionId)","date":"\#(dayKey(Date()))","status":"completed","sets":[],"finishedAt":"\#(finishedAt)","energy":{"kcal":380,"source":"estimate"}}}"#
+    }
+
+    @Test func aSessionTheServerFinishedAfterItStartedIsEndedOnTheNextLoad() async throws {
+        let folder = directory()
+        transport.on("getTodayWorkout", 200, todayJSON)
+        let first = EdzesStore(client: TrainClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: transport)),
+                               cache: nil, folder: folder)
+        await first.load()
+        _ = first.startWorkout(date: dayKey(Date()))
+        #expect(first.session != nil)
+        // The app closed on the ceremony; the finish had reached the server.
+        transport.on("getTodayWorkout", 200, completedTodayJSON(finishedAt: "2099-01-01T00:00:00Z"))
+        let again = EdzesStore(client: TrainClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: transport)),
+                               cache: nil, folder: folder)
+        await again.load()
+        #expect(again.session != nil)
+        #expect(again.energy(for: again.session!) == WorkoutEnergy(kcal: 380, source: .estimate))
+        again.endIfFinishedOnServer()
+        #expect(again.session == nil)
+    }
+
+    @Test func anEarlierFinishOfTheSameDayDoesNotEndANewSession() async throws {
+        let folder = directory()
+        transport.on("getTodayWorkout", 200, todayJSON)
+        let first = EdzesStore(client: TrainClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: transport)),
+                               cache: nil, folder: folder)
+        await first.load()
+        _ = first.startWorkout(date: dayKey(Date()))
+        transport.on("getTodayWorkout", 200, completedTodayJSON(finishedAt: "2000-01-01T00:00:00Z"))
+        let again = EdzesStore(client: TrainClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: transport)),
+                               cache: nil, folder: folder)
+        await again.load()
+        again.endIfFinishedOnServer()
+        #expect(again.session != nil)
     }
 }

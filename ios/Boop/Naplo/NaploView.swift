@@ -44,15 +44,18 @@ struct NaploView: View {
         let range = NaploDays.range(endingOn: env.today)
         let (closes, checkIns) = NaploDays.sources(from: NaploDays.days(from: range.from, to: range.to).map { env.ledger.ledger(for: $0) })
         let rows = NaploDays.rows(closes: closes, checkIns: checkIns, from: range.from, to: range.to)
-        if rows.isEmpty {
-            empty
-        } else {
-            VStack(alignment: .leading, spacing: 12) {
-                NKMono("A NAPOK").padding(.leading, 4)
-                ForEach(rows) { row in
-                    Button { open = OpenDay(id: row.date) } label: { NaploDayRowView(row: row, today: env.today, calendar: env.calendar) }
-                        .buttonStyle(PressStyle())
+        // The week is always there (`mezo-r36n9.159`): an empty day is a row too, so its catch-ups can be found.
+        let entries = NaploDays.weekEntries(rows: rows, today: env.today)
+        VStack(alignment: .leading, spacing: 12) {
+            NKMono("A NAPOK").padding(.leading, 4)
+            ForEach(entries) { entry in
+                Button { open = OpenDay(id: entry.id) } label: {
+                    switch entry {
+                    case .day(let row): NaploDayRowView(row: row, today: env.today, calendar: env.calendar)
+                    case .empty(let date): NaploEmptyDayRow(date: date, today: env.today, calendar: env.calendar)
+                    }
                 }
+                .buttonStyle(PressStyle())
             }
         }
     }
@@ -158,6 +161,19 @@ struct NaploDayDetail: View {
     let env: RitmusEnvironment
     let date: String
     @State private var selected: UUID?
+    /// The day's catch-ups (`mezo-r36n9.159`): built once the sheet is up, re-read after each cover closes.
+    @Environment(\.trainClient) private var train
+    @Environment(MorningStore.self) private var morning: MorningStore?
+    @Environment(\.workoutFolder) private var workoutFolder
+    @State private var catchUp: NaploCatchUpModel?
+    @State private var cover: NaploCover?
+    @State private var gym: NaploGymDoor?
+
+    private enum NaploCover: Identifiable {
+        case checkin(CheckInMoment), este
+        var id: String { switch self { case .checkin(let m): "checkin-\(m.rawValue)"; case .este: "este" } }
+    }
+    private struct NaploGymDoor: Identifiable { let id: UUID; let title: String }
     /// B4: the day's meal photos (nil food client = no food world, e.g. before sign-in: the section is simply absent).
     @Environment(\.foodClient) private var food
     @State private var meals = NaploMeals()
@@ -168,6 +184,11 @@ struct NaploDayDetail: View {
             VStack(spacing: 12) {
                 Text(NaploDate.label(date, today: env.today, calendar: env.calendar))
                     .nkFont(30, design: .serif).foregroundStyle(.white).multilineTextAlignment(.center).padding(.vertical, 14)
+                if let catchUp {
+                    NaploCatchUpBlock(model: catchUp, onCheckIn: { cover = .checkin($0) },
+                                      onGym: { if let id = catchUp.gymTemplateId { gym = NaploGymDoor(id: id, title: catchUp.gymTitle ?? "edzés") } },
+                                      onClose: { cover = .este })
+                }
                 if let close = day.close {
                     ClosedDayCard(rows: EsteFlow.summaryRows(for: close), quote: EsteFlow.quote(for: close, in: day, voiceFailed: false))
                 }
@@ -175,6 +196,7 @@ struct NaploDayDetail: View {
                     MaEnergyCard(day: day, predicted: [], now: nil,
                                  calendar: env.calendar, selected: $selected, title: "AZ ENERGIÁD")
                 }
+                if let catchUp { NaploJournalLines(lines: catchUp.journalLines) }
                 NaploMealPhotos(model: meals)
             }
             .padding(.horizontal, 16).padding(.top, 20).padding(.bottom, 40)
@@ -183,6 +205,27 @@ struct NaploDayDetail: View {
         .background(NKGround(hue: .alvas))
         .preferredColorScheme(.dark)
         .task { if let food { await meals.load(food: food, date: date, calendar: env.calendar) } }
+        .task {
+            let model = NaploCatchUpModel(env: env, date: date, train: train, morning: morning,
+                                          liveWorkoutFile: workoutFolder.map(EdzesStore.sessionFile))
+            catchUp = model
+            await model.load()
+        }
+        // The Napló's merge may land after the sheet opened, and a catch-up changes the day: the block follows the ledger.
+        .onChange(of: env.ledger.ledger(for: date)) { catchUp?.recompute() }
+        // The catch-up covers hang on the sheet itself (a cover over a sheet), and the block re-reads when one closes.
+        .fullScreenCover(item: $cover) { c in
+            switch c {
+            case .checkin(let moment):
+                CheckinView(env: env, catchUp: .init(date: date, moment: moment)) { cover = nil; Task { await catchUp?.load() } }
+            case .este:
+                EsteView(env: env, brief: catchUp?.brief, date: date) { cover = nil; Task { await catchUp?.load() } }
+            }
+        }
+        .sheet(item: $gym) { door in
+            NaploGymCover(templateSessionId: door.id, date: date, title: door.title) { _ in gym = nil; Task { await catchUp?.load() } }
+                .presentationDetents([.large]).presentationBackground(NK.ground).presentationCornerRadius(34).presentationDragIndicator(.visible)
+        }
     }
 }
 

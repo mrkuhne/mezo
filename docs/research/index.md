@@ -1,7 +1,7 @@
 ---
 title: Research Wiki — Catalog
 type: summary
-updated: 2026-11-17
+updated: 2026-11-24
 tags: [tooling]
 related: [SCHEMA.md, log.md, README.md]
 ---
@@ -14,6 +14,7 @@ ingest.
 
 ## Entities
 
+- [GPT-5.6 Luna](entities/gpt-5-6-luna.md) — image input on Chat Completions, no audio input; capability and mezo vision routing evidence. `confidence: high`.
 - [Matthew Walker](entities/matthew-walker.md) — *Why We Sleep* / UC Berkeley; the DOAC interview source behind mezo's Sleep cluster (QQRT, regularity, debunks). `confidence: medium`.
 - [Jeremy Ethier](entities/jeremy-ethier.md) — kinesiology-based fitness educator; the morning-routine video that seeded the habit engine. `confidence: medium`.
 - [Hermes Agent](entities/hermes-agent.md) — Nous Research terminal agent; mezo's local-LLM harness (ADR 0029); capabilities + verified v0.20.4 quirks. `confidence: high`.

@@ -60,4 +60,5 @@ inputs:
   - inputFile: ../feature/penz/penz-weekly.yml
   - inputFile: ../feature/season/season.yml
   - inputFile: ../feature/capacity/capacity.yml
+  - inputFile: ../feature/mail/mail.yml
 output: ../openapi.yml

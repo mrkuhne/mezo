@@ -64,7 +64,8 @@ public struct Trend: View {
 /// flatten into a blob, so they are drawn as thin outlines on the same 64-unit grid — as are the Napkelte-only glyphs
 /// `mic` (voice) and `offline` (a cloud with a slash, "nincs net"; B3, spike `RMicGlyph` / `ROfflineGlyph`).
 public struct NKGlyph: View {
-    static let outlined: Set<String> = ["check-ink", "clock-ink", "camera-ink", "book-sage", "mic", "offline", "e-penz"]
+    static let outlined: Set<String> = ["check-ink", "clock-ink", "camera-ink", "book-sage", "mic", "offline", "e-penz", "e-level",
+                                        "body-cream", "cup-cream"]
     let name: String, color: Color, size: CGFloat
     public init(_ name: String, _ color: Color, size: CGFloat = 18) { self.name = name; self.color = color; self.size = size }
 
@@ -82,6 +83,26 @@ public struct NKGlyph: View {
                     case "clock-ink":
                         ctx.stroke(P { $0.addEllipse(in: CGRect(x: 9, y: 9, width: 46, height: 46)) }, with: .color(color), style: st)
                         ctx.stroke(P { $0.move(to: CGPoint(x: 32, y: 20)); $0.addLine(to: CGPoint(x: 32, y: 32)); $0.addLine(to: CGPoint(x: 40, y: 37)) }, with: .color(color), style: st)
+                    case "body-cream":
+                        // A standing figure: the head, and the shoulders narrowing to the waist and out to the hips.
+                        ctx.stroke(P { $0.addEllipse(in: CGRect(x: 24, y: 6, width: 16, height: 16)) }, with: .color(color), style: st)
+                        ctx.stroke(P {
+                            $0.move(to: CGPoint(x: 16, y: 58))
+                            $0.addCurve(to: CGPoint(x: 18, y: 30), control1: CGPoint(x: 20, y: 50), control2: CGPoint(x: 20, y: 40))
+                            $0.addCurve(to: CGPoint(x: 46, y: 30), control1: CGPoint(x: 22, y: 26), control2: CGPoint(x: 42, y: 26))
+                            $0.addCurve(to: CGPoint(x: 48, y: 58), control1: CGPoint(x: 44, y: 40), control2: CGPoint(x: 44, y: 50))
+                        }, with: .color(color), style: st)
+                    case "cup-cream":
+                        // A mug with its handle and two wisps of steam: the drink door (mezo-r36n9.160).
+                        ctx.stroke(P { $0.addRoundedRect(in: CGRect(x: 12, y: 24, width: 30, height: 30), cornerSize: CGSize(width: 7, height: 7)) }, with: .color(color), style: st)
+                        ctx.stroke(P {
+                            $0.move(to: CGPoint(x: 42, y: 30))
+                            $0.addCurve(to: CGPoint(x: 42, y: 46), control1: CGPoint(x: 56, y: 30), control2: CGPoint(x: 56, y: 46))
+                        }, with: .color(color), style: st)
+                        ctx.stroke(P {
+                            $0.move(to: CGPoint(x: 22, y: 16)); $0.addCurve(to: CGPoint(x: 22, y: 6), control1: CGPoint(x: 18, y: 13), control2: CGPoint(x: 26, y: 9))
+                            $0.move(to: CGPoint(x: 32, y: 16)); $0.addCurve(to: CGPoint(x: 32, y: 6), control1: CGPoint(x: 28, y: 13), control2: CGPoint(x: 36, y: 9))
+                        }, with: .color(color), style: st)
                     case "camera-ink":
                         ctx.stroke(P { $0.addRoundedRect(in: CGRect(x: 8, y: 18, width: 48, height: 34), cornerSize: CGSize(width: 10, height: 10)) }, with: .color(color), style: st)
                         ctx.stroke(P { $0.addEllipse(in: CGRect(x: 23, y: 26, width: 18, height: 18)) }, with: .color(color), style: st)
@@ -101,6 +122,18 @@ public struct NKGlyph: View {
                             $0.move(to: CGPoint(x: 19, y: 29)); $0.addLine(to: CGPoint(x: 39, y: 29))
                             $0.move(to: CGPoint(x: 19, y: 38)); $0.addLine(to: CGPoint(x: 39, y: 38))
                         }, with: .color(color), style: st)
+                    case "e-level":
+                        // Levél's own mark (the spike's): an envelope whose flap is a soft wave, the morning sun
+                        // rising over its top edge.
+                        ctx.stroke(P { $0.addRoundedRect(in: CGRect(x: 7, y: 24, width: 50, height: 32), cornerSize: CGSize(width: 8, height: 8)) },
+                                   with: .color(color), style: st)
+                        ctx.stroke(P { p in
+                            p.move(to: CGPoint(x: 11, y: 30))
+                            p.addCurve(to: CGPoint(x: 32, y: 43), control1: CGPoint(x: 19, y: 33), control2: CGPoint(x: 25, y: 43))
+                            p.addCurve(to: CGPoint(x: 53, y: 30), control1: CGPoint(x: 39, y: 43), control2: CGPoint(x: 45, y: 33))
+                        }, with: .color(color), style: st)
+                        ctx.stroke(P { $0.addArc(center: CGPoint(x: 45, y: 19), radius: 6, startAngle: .degrees(180), endAngle: .degrees(360), clockwise: false) },
+                                   with: .color(color), style: st)
                     case "offline":
                         ctx.stroke(P {
                             $0.move(to: CGPoint(x: 18, y: 48)); $0.addLine(to: CGPoint(x: 46, y: 48))

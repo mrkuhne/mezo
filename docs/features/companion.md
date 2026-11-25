@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-11-21
+updated: 2026-11-24
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -16,6 +16,8 @@ related: [dayclose, boop-ios, insights, proactive, today, me, character, _platfo
 > **2026-11-21 — Boop Pénz weekly review (`mezo-r36n9.120`): the weekly adapter.** `companion/llm/PenzWeeklyReviewLlmAdapter` adapts the penz-owned `PenzWeeklyReviewLlm` port on the cheap tier (call tagged `penz_weekly/narrate`, payload-free in the audit log via `LlmCallContext.FEATURE_PENZ_WEEKLY`; a budget refusal, throttle or provider error is an empty answer). Since the `.119` review round an empty / unparseable answer stores the week `failed` (fallback sections shown) so the next run retries — see [`penz.md`](penz.md) §3.14. `FakeCompanionLlm` gained a scriptable weekly answer for ITs.
 
 # Companion (AI chat brain) — Feature Documentation
+
+> **2026-11-21 — Boop Levél L1+L2 (`mezo-r36n9.38/.39`): one more port adapter.** `companion/llm/MailClassifierLlmAdapter` adapts the mail-owned `MailClassifierLlm` port (classify / batched score / screen, cheap tier, `LlmCallContext` slugs `mail_classify`, `mail_score`, `mail_screen`, all **payload-free** in `keepsPayload()`, also listed as throttled features); `FakeCompanionLlm` gained a `[fake-mail:<base64>]` script hook. See [`mail.md`](mail.md) §3.5.
 
 > **2026-11-21 — reviewed after the Évad S2 review round (`mezo-r36n9.16`).** A reasoned skip excuses only the session (food and night still count), today's night is never judged, the season title is made inert before it reaches a prompt, the learned-expenditure wall card is keyed on the ISO week, and the Hét tab no longer waits on the day judgement — all described below.
 
@@ -3285,9 +3287,10 @@ whose `model` doubles as the requested-model id on each row.
 Three things about this that are easy to get wrong:
 
 - **The Gemini adapter is a bean even under `provider: openai`.** It is the chat fallback and, via
-  `mezo.companion.llm.per-call-kind`, the delegate for `TRANSCRIBE` and `VISION` — the OpenAI
-  adapter overrides those two `complete` overloads and hands them straight to it, so the row lands
-  with a `gemini-*` served model. No GPT-5.6 model has an audio endpoint at all, and
+  `mezo.companion.llm.per-call-kind`, the delegate for `TRANSCRIBE`; `VISION` uses OpenAI since
+  [ADR 0059](../decisions/0059-route-vision-to-openai.md). The OpenAI adapter overrides both media
+  `complete` overloads, handing audio to Gemini and handling images itself, so the audit row names
+  the model that served each call. No GPT-5.6 model has an audio endpoint at all, and
   `TranscriptionService` sends its inline audio through the CHAT port, so feature-level routing
   could never have caught it. This is also why the tiers are held **per provider** rather than as
   one flat pair: a single pair would hand the Gemini adapter a GPT model id it cannot serve.
@@ -6779,7 +6782,7 @@ The Ref column describes UI/audit references, whose limits do not limit source-r
   `gemini-2.5-pro` (heavy pipelines) — model tiers are config, not code (ADR 0008).
 - `mezo.companion.llm.openai.chat-model` = `gpt-5.6-luna` / `.smart-model` = `gpt-5.6-terra`
   (mezo-ozri.2). Tiers are per provider because **both** providers stay live: the Gemini pair is
-  load-bearing for audio, vision and the fallback whichever adapter answers a chat turn. Which model
+  load-bearing for audio and the fallback, while OpenAI's cheap tier serves vision. Which model
   becomes the default is decided by the `mezo-ozri.3` eval re-baseline, not by the config default —
   it picked `gpt-5.6-luna` (exact match 90.5% vs the incumbent's 88.1%, at 7.2× lower cost per
   successful action;
@@ -6795,7 +6798,7 @@ The Ref column describes UI/audit references, whose limits do not limit source-r
   have (image input, an audio route), a feature only states a preference. Anything unmatched,
   unknown or blank falls through to the tier default — config can never be why a call fails.
   Both maps are per PROVIDER on purpose: a model id only means something to the vendor that can
-  serve it, and the `gemini` block still answers the audio/vision calls the OpenAI adapter
+  serve it, and the `gemini` block still answers audio calls the OpenAI adapter
   delegates to it, so one flat table could hand the Gemini client a GPT id.
 - `mezo.companion.llm.openai.reasoning-effort.chat` = **`high`**, `.smart` = **`high`**
   (mezo-ozri.4 built the lever, mezo-641c measured it; the `gemini` block keeps both empty — the
@@ -6838,9 +6841,10 @@ The Ref column describes UI/audit references, whose limits do not limit source-r
     judgement call measures whether the answer is well-FORMED, not whether it is well-JUDGED, and
     those two came apart here. `none` is the level to avoid on any judgement call — cheapest and by
     far the most credulous.
-- `mezo.companion.llm.per-call-kind` = `{TRANSCRIBE: gemini, VISION: gemini}`
+- `mezo.companion.llm.per-call-kind` = `{TRANSCRIBE: gemini}`
   (`Map<CallKind, LlmProvider>`) — per-`CallKind` exceptions to `provider`, honoured only by
-  `OpenAiCompanionLlm`. An absent or unknown key means "the active provider", never a boot failure.
+  `OpenAiCompanionLlm`. `VISION` has no exception and uses the active OpenAI provider in production
+  ([ADR 0059](../decisions/0059-route-vision-to-openai.md)); an absent or unknown key means "the active provider".
 - `mezo.companion.embedding.model` = `gemini-embedding-001` (`@NotBlank`) — the V2.1 embedding
   model behind `EmbeddingPort`; the **768 dimension is structural** (the `vector(768)` schema +
   `EmbeddingPort.DIMENSIONS` constant), deliberately NOT config.
@@ -7407,7 +7411,7 @@ can carry reasoning on OpenAI Chat Completions (§3 "The turn gear"). Real traff
 `SpringAiCompanionLlm` (`llm/SpringAiCompanionLlm.java`), the shared base both provider adapters
 extend; **`OpenAiCompanionLlm` is the production adapter** (`@Primary` under
 `mezo.companion.llm.provider: openai`), with `GeminiCompanionLlm` staying live as the chat fallback
-and the TRANSCRIBE/VISION delegate (§3 "LLM adapter selection" has the full two-adapter table); test
+and the TRANSCRIBE delegate (VISION uses OpenAI since ADR 0059; §3 "LLM adapter selection" has the full two-adapter table); test
 fake `FakeCompanionLlm`. Provider swap = one new `SpringAiCompanionLlm` subclass + one starter swap
 (ADR 0008 + its mezo-ozri.2 amendment). **Since mezo-78rn the port also
 carries a multimodal overload** — `complete(system, user, imageBytes, mimeType) → String`, ONE
@@ -8075,6 +8079,8 @@ execution checklist"). The house recipe, **contract-first**:
   ([`proactive.md`](proactive.md) §3).
 
 ## 8. Testing
+
+**Vision provider changes:** run the real-provider wiring and the four consumer API suites (`MealAiDraftApiIT`, `RecipeImportIT`/`RecipeCookedIT`, `PantryPhotoApiIT`, `SleepShotApiIT`) with the fake LLM for deterministic plumbing; then send synthetic images to the funded provider and inspect the served model and extracted values. A tiny printed label can be misread even when the call succeeds, so the image sample must be legible and the numeric fields checked. Neither the fake nor a direct provider probe proves the whole production request path; inspect the next live call audit after deployment.
 
 **Conversation-first:** `ConversationFirstIT` covers general-topic context, pronoun follow-ups,
 dependent reads, stored evidence, long history and owner isolation through real repositories and
@@ -9225,6 +9231,7 @@ reduced-motion branch) cover the FE surface — full detail: [`insights.md`](ins
 
 ## 9. Decisions, gotchas & deferred
 
+- **Image analysis uses OpenAI (2026-11-24, `mezo-h38eq`, [ADR 0059](../decisions/0059-route-vision-to-openai.md)).** Production's `provider: openai` now serves `VISION` through `OpenAiCompanionLlm` on the cheap `gpt-5.6-luna` tier; the shared switch covers meal, recipe, pantry-label and sleep images. `TRANSCRIBE` still delegates to Gemini; embeddings and the chat fallback also remain there. The change followed Gemini's `402 prepayment credits are depleted` on two meal-photo drafts. Image bytes remain ephemeral; the audit records metadata and the served OpenAI model.
 - **Admin readers gone (2026-11-19, `mezo-r36n9.97.4`).** The owner console's RAG memory explorer left with the web app; `MemoryProjectionService`, `MemoryHealthQuery`, `MemoryNeighborQuery`, `MemoryPromptTraceQuery` and `GraphStructureQuery` now have no production caller and stay for slice B8 to keep or cut. Likewise the llmlog aggregate queries the admin hub read (`AiDraftOutcomeRepository#aggregateByFeatureSince`, several `LlmLogRepository` rows).
 - **Web screens retired 2026-11-19 (#52, mezo-r36n9.97.3).** The web app was switched off; the frontend paths this doc used to list are in git history.
 
@@ -10333,8 +10340,8 @@ change is distinct from those smoothed rates. The underlying trend calculation i
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/LlmModelRouter.java` — which model id serves THIS call (mezo-ozri.4): `modelFor(provider, tier, kind)` resolves call-kind override → feature override (read off `LlmCallContextHolder` itself, so no call site needed new plumbing) → tier default, scoped to the requesting provider's own config block; `reasoningEffortFor(provider, tier)` returns the tier's effort or `null` for "send nothing". Unit-covered by `LlmModelRouterTest`, bound end-to-end by `LlmModelRoutingIT`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/ModelTier.java` — `CHEAP` | `SMART`, the tier vocabulary the router and the adapters' `optionsFor` hook share (mezo-ozri.4).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/SpringAiCompanionLlm.java` — the provider-neutral adapter base (mezo-ozri.2): ONE `ChatClient` plus the per-call `optionsFor(model, tier, carriesTools)` hook (mezo-ozri.4 — the model is resolved per call by `LlmModelRouter` and recorded as `requestedModel`, so the audit row names what was actually asked for; on the streamed path the routing decision is taken beside the `LlmCallContext` read, on the caller's thread), the `LlmRoundUsageAdvisor` tally, `.messages(toMessages(history))` between `.system(...)` and `.user(...)` (mezo-q71s) + `tools(Object...)` + `toolContext` registration, the Spring AI `Media` image part (mezo-78rn), and **every call path recorded** via `.call().chatResponse()` + `LlmCallRecorder` (mezo-2zyu) including `conversationHistory` on `CallSpec`/`LlmCallRecord` for the `CHAT`/`TOOL`/`CHAT_STREAM` kinds. Overrides `completeSmart` deliberately — the port's default would route the smart tier to the cheap model in silence (spec §8.3).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/GeminiCompanionLlm.java` — the Google adapter (`!companion-fake`), **always a bean**: the chat fallback and the `TRANSCRIBE`/`VISION` delegate. Constructor plus a one-line `optionsFor` (the model id is a Gemini request's whole option set — the reasoning effort is deliberately not read, it is an OpenAI concept); both its `ChatModel` and its `LlmUsageExtractor` are `@Qualifier`-ed (`googleGenAiChatModel` / `googleGenAiUsageExtractor`, mezo-ozri.1) so the second Spring AI starter cannot make any context ambiguous — guarded by `ChatModelQualifierIT`. Models from `mezo.companion.llm.gemini.*` only — it always asks the router as `GEMINI`, whatever the provider switch says, so a delegated audio call can never resolve a GPT id.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/OpenAiCompanionLlm.java` — the OpenAI adapter (mezo-ozri.2): `@Primary` + `@ConditionalOnProperty(mezo.companion.llm.provider=openai)`, so it does not exist under the shipped `gemini` default. Overrides the two media `complete` overloads to delegate to `GeminiCompanionLlm` per `per-call-kind`; `optionsFor(model, tier, carriesTools)` states `streamOptions.includeUsage(true)` unconditionally (without it every streamed row is written with null tokens and null cost — silently) and carries the tier's configured reasoning effort except on a tool-carrying request, where it pins `none` (mezo-ozri.3).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/GeminiCompanionLlm.java` — the Google adapter (`!companion-fake`), **always a bean**: the chat fallback and the `TRANSCRIBE` delegate. Constructor plus a one-line `optionsFor` (the model id is a Gemini request's whole option set — the reasoning effort is deliberately not read, it is an OpenAI concept); both its `ChatModel` and its `LlmUsageExtractor` are `@Qualifier`-ed (`googleGenAiChatModel` / `googleGenAiUsageExtractor`, mezo-ozri.1) so the second Spring AI starter cannot make any context ambiguous — guarded by `ChatModelQualifierIT`. Models from `mezo.companion.llm.gemini.*` only — it always asks the router as `GEMINI`, whatever the provider switch says, so a delegated audio call can never resolve a GPT id.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/OpenAiCompanionLlm.java` — the OpenAI adapter (mezo-ozri.2): `@Primary` + `@ConditionalOnProperty(mezo.companion.llm.provider=openai)`, so it does not exist under the shipped `gemini` default. Its media overloads consult `per-call-kind`: `TRANSCRIBE` delegates to Gemini, while `VISION` uses OpenAI since ADR 0059; `optionsFor(model, tier, carriesTools)` states `streamOptions.includeUsage(true)` unconditionally (without it every streamed row is written with null tokens and null cost — silently) and carries the tier's configured reasoning effort except on a tool-carrying request, where it pins `none` (mezo-ozri.3).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java` — deterministic fake (`companion-fake`); `[fake-tool:…]` sentinel execution since V0.5; the greedy `[fake-meal:{json}]` sentinel (matched in user text + UTF-8 image bytes, mezo-78rn); the greedy `[fake-recipe-fit:{json}]` sentinel (planted in a recipe name, mezo-bw3y); the `MESO_REVIEW` branch (mezo-meyc.3) answering the canned `MESO_REVIEW_ANSWER` unless `[fake-meso-review:…]` is planted in the run TITLE, or `[fake-meso-review-echo]` which returns the **assembled user payload verbatim** (the only way to assert what the generator actually sent — the fake stays stateless, no prompt recorder) — failure injection rides the shared `[fake-fail]`. Unlike the `feature.proactive`/`feature.activity` markers this one is IMPORTED (`MesoReviewGenerator.MESO_REVIEW_MARKER`), not mirrored as a literal: the generator is in the SAME `companion` slice, so no new package cycle is possible. The plan-generator's `MesoPlanLlmAdapter` (`MARKER = "[meso-plan]"`) branch dispatches on the greedy `MESO_PLAN_SENTINEL` — `[fake-meso-plan:{json}]` planted in the request's `goalText` — with a default `{"rationale":"FAKE-INDOK","days":[]}` (a valid but empty-days answer — the un-scripted happy path still reaches the LLM branch and `MesoPlanMerger` runs, but an empty suggestion accepts no pick, so `MesoPlanGeneratorService` reports `llmUsed = false` and keeps the deterministic rationale, the same as no answer at all); failure injection rides the same shared `[fake-fail]`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/MealDraftLlmAdapter.java` — companion-side adapter for the meal-owned `MealDraftLlm` port (ADR 0012, mezo-78rn); `@ConditionalOnProperty(COMPANION_SWITCH)`, delegates both overloads to `CompanionLlm`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/SleepShotLlmAdapter.java` — companion-side adapter for the sleep-owned `SleepShotLlm` vision port (ADR 0012, mezo-66ab); `@ConditionalOnProperty(COMPANION_SWITCH)`, delegates to `CompanionLlm.complete` with one `InlineImage`.

@@ -30,11 +30,19 @@ Ha a hét már életbe lépett, a kártya azt mutatja: „Indulhat, a hét szám
   Csütörtök 5”), a kártya alján pedig mindig ott van, **miért ez a sáv** (a szint és a sport alapján), és ha az izom kilóg a sávjából, egy **konkrét javaslat** („+1 Lehúzás
   (hétfő)”) **Elfogadom** és **miért?** gombbal.
 - **Napok** — naponként egy lap: becsült edzéshossz, aznap van-e sport, izomcsoportonkénti sorozatszám (a felső címkék
-  továbbra is egész izomcsoportok), gyakorlatonként az **izomrész** a név alatt (például „Hát · középső”, „Bicepsz ·
-  brachialis”, „Comb”) az ismétléssel és a tartalékkal — egy sorban, ha elfér, különben az izomrész felül, a számok alatta —,
-  egy léptető (1–8 sorozat) és egyetlen címke a technikáról vagy a kihívásról (szabadsúlyos gyakorlaton nincs technika, de a szabadsúlyos izolált
-  gyakorlat — például kalapács bicepsz — megkaphatja a nap kihívását, így a címkéje is megnyitja a választót; csak a
-  szabadsúlyos alapgyakorlaton szürke: „szabadsúlyos alapgyakorlat”). A címkére koppintva felugrik a **választó**: az öt
+  továbbra is egész izomcsoportok), és gyakorlatonként egy **három soros sor** (2026-11-21):
+  - **felül** a ≡ fogó, a gyakorlat neve és a „⋯” menü;
+  - **középen három egyforma mező** nagy számmal, alatta kiírva, mi az: **sorozat** · **ismétlés** · **tartalék**. A
+    sorozat mező maga a léptető: a bal fele „−”, a jobb fele „+” (1–8). Az ismétlés és a tartalék mezőn egy kis lefelé
+    mutató nyíl jelzi, hogy rákoppintva átállíthatod (lásd lent). Ha egy számot te állítottál át az edzésmódhoz képest, a
+    mező sarkában egy kis színes pötty ül; a 0 tartalék (bukásig) sárga, és sárga a sorozatszám is, ha egy gyakorlatra túl sok
+    sorozat jut;
+  - **alul egy sor címke:** az **izomrész** (például „Hát · középső”, „Bicepsz · brachialis”, „Comb”), mellette egyetlen
+    címke a technikáról vagy a kihívásról; kis telefonon a második címke a következő sorba csúszik. Szabadsúlyos gyakorlaton nincs technika, de a szabadsúlyos izolált
+    gyakorlat — például kalapács bicepsz — megkaphatja a nap kihívását, így a címkéje is megnyitja a választót; csak a
+    szabadsúlyos alapgyakorlaton szürke: „szabadsúlyos alapgyakorlat”.
+
+  A technika-címkére koppintva felugrik a **választó**: az öt
   technika (ami annál a gyakorlatnál nem választható, az halványan, az okával), alatta **a nap kihívása** (naponta egy
   gyakorlaton), és egy **„i” gomb**, ami mindegyik alá kiír egy rövid leírást. Amit Boop tett oda a heti javaslatban, azon
   **„Boop”** jelzés van, amíg át nem állítod. A lista tetején **Boop ajánlása** áll: a gyakorlat tulajdonságai
@@ -62,11 +70,22 @@ Ha a hét már életbe lépett, a kártya azt mutatja: „Indulhat, a hét szám
     használható.
   - **Csere:** ugyanilyen javaslatokat kapsz a kicserélendő helyett (képpel és izomrésszel). A csere **a blokk hátralévő részére** szól, és **megtartja
     azt, amit te állítottál** (sorozatszám, tartomány, kezdősúly).
-  - **Beállítások** (a gyakorlat sorára koppintva is): **ismétléstartomány**, **tartalék**, **kezdősúly**, **bemelegítés**.
+  - **Ismétlés és tartalék közvetlenül a sorból:** az **ismétlés** mezőre koppintva egy kis lap nyílik a gyakorlat nevével,
+    nagyban a tartománnyal (például „8–12 ismétlés”) és két léptetővel: **Legalább** és **Legfeljebb** (1–30; a „legalább”
+    sosem lehet több a „legfeljebb”-nél, ha túllépné, a másik vele mozdul). A **tartalék** mezőre koppintva ugyanilyen lap
+    jön egy léptetővel 0–4 között; a 0 neve „bukásig”. Ha az értéket te állítottad, a lapon ott áll: „Ezt te állítottad; az
+    edzésmód nem írja felül.”, alatta a **„Visszaállítom az edzésmódra”** (itt csak azt az egy értéket adja vissza az
+    edzésmódnak — az ismétlést, illetve a tartalékot —, a többi saját értéked marad; a Beállítások lapon a gomb mindet
+    visszaadja). A **„Kész”** bezárja a lapot; a változás a többivel együtt a
+    „Mentés”-sel megy el.
+  - **Beállítások** (a gyakorlat sorának üres részére koppintva is): **ismétléstartomány**, **tartalék**, **kezdősúly**, **bemelegítés**.
     Amit te állítottál át az edzésmódhoz képest, azon **„TE ÁLLÍTOTTAD”** jelzés áll, a **„Visszaállítom az edzésmódra”** gomb
     pedig visszaadja az edzésmód értékeit.
-  - **Zárolt nap:** amíg az adott nap edzése fut, a nap lapja csak olvasható — a telefonon is, és a szerver sem fogad el rajta
-    szerkezeti változtatást.
+  - **A futó edzés napja (2026-11-23 óta):** amíg az adott nap edzése fut, a napot **továbbra is szerkesztheted** — a sorrend
+    (fogóval), a sorozatszám, az ismétlés, a tartalék és a technika mind menthető, és **a futó edzés azonnal követi** (a már
+    rögzített sorozatok megmaradnak). Amit ilyenkor nem lehet: gyakorlatot **hozzáadni, cserélni vagy törölni** — ezek a menüből
+    eltűnnek, és a szerver is visszautasítja őket, mert új sorokat hoznának, amikhez a rögzített sorozatok nem kötődnének.
+    Korábban (2026-11-20 és 23 között) a nap teljesen zárolt volt.
   - **Függő heti javaslat:** ha a „Mentés” olyan napot érint, amelyiken egy még el nem döntött heti javaslat is változtatna,
     mentés előtt rákérdez, hogy biztosan így akarod-e.
 - **Blokk** — az **edzésmód** négy közül (Kiegyensúlyozott · Sok ismétlés · Nagyobb súly · Két sorozat bukásig), két kapcsoló

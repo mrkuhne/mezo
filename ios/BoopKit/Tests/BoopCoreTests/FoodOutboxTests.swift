@@ -68,6 +68,17 @@ final class FoodOutboxTests {
         #expect(await again.pendingDrafts().first?.capturedAt == afterMidnight)
     }
 
+    /// A drink queued offline is still a drink when the net computes it (`mezo-r36n9.160`): the sender stamps the
+    /// drink slot on the draft, whatever window the clock would have picked.
+    @Test func aDrinkCapturedOfflineStaysADrink() async throws {
+        let (food, _) = make()
+        _ = try await food.enqueueMeal(draft: MealCapture(text: "fehérjeturmix", kind: .drink), photoRef: nil, capturedAt: afterMidnight)
+        await food.flush()
+        let card = try #require(await food.pendingDrafts().first)
+        guard case .ready(let draft) = card.state else { Issue.record("expected a confirmation card"); return }
+        #expect(draft.slot == "drink")
+    }
+
     @Test func photoIsStoredBesideTheQueueNotInThePayload() async throws {
         let (food, box) = make()
         let ref = try food.storePhoto(try bigImage())
@@ -267,5 +278,19 @@ final class FoodOutboxTests {
         let card = try #require(await food.pendingDrafts().first)
         #expect(card.isTooOld(now: afterMidnight.addingTimeInterval(8 * 86_400), calendar: budapest))
         #expect(!card.isTooOld(now: afterMidnight.addingTimeInterval(3 * 86_400), calendar: budapest))
+    }
+
+
+    /// A card from the queue says what it is (`mezo-r36n9.160`): a drink reopened from the Étel room — still waiting
+    /// or ready for a tap — comes back as a drink, never as the clock's meal.
+    @Test func aDrinkCardCarriesItsKind() async throws {
+        let (food, _) = make()
+        _ = try await food.enqueueMeal(draft: MealCapture(text: "fehérjeturmix", kind: .drink), photoRef: nil, capturedAt: afterMidnight)
+        _ = try await food.enqueueMeal(draft: MealCapture(text: "alma"), photoRef: nil, capturedAt: afterMidnight.addingTimeInterval(60))
+        let waiting = await food.pendingDrafts()
+        #expect(waiting.map(\.kind) == [.drink, .meal])
+        await food.flush()
+        let ready = await food.pendingDrafts()
+        #expect(ready.map(\.kind) == [.drink, .meal])
     }
 }

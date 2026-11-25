@@ -4,7 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.InputStream;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 import tools.jackson.databind.ObjectMapper;
@@ -49,5 +52,19 @@ class ExerciseCatalogClassificationTest {
             assertThat(Set.of("stable", "free")).contains(r.stability());
             assertThat(r.lengthenedFriendly()).isNotNull();
         });
+    }
+
+    @Test
+    void testCatalog_shouldDeclareEveryTechniquePalette_whenAllExercisesReviewed() throws Exception {
+        List<ExerciseCatalogLoader.CatalogJsonItem> rows = rows();
+        Map<String, ExerciseCatalogLoader.CatalogJsonItem> bySlug = rows.stream()
+            .collect(Collectors.toMap(ExerciseCatalogLoader.CatalogJsonItem::slug, Function.identity()));
+        assertThat(bySlug).hasSize(166);
+        assertThat(rows).allSatisfy(r -> assertThat(r.allowedTechniques()).isNotNull());
+        assertThat(rows.stream().filter(r -> !r.allowedTechniques().isEmpty())).hasSize(59);
+        assertThat(bySlug.get("hammer-curl").allowedTechniques()).containsExactly("myo", "rest_drop", "drop");
+        assertThat(bySlug.get("hip-thrust").allowedTechniques()).containsExactly("top_pause");
+        assertThat(bySlug.get("overhead-press").allowedTechniques()).isEmpty();
+        assertThat(bySlug.get("cross-body-hammer-curl").allowedTechniques()).isEmpty();
     }
 }

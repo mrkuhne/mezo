@@ -466,6 +466,12 @@ public class WorkoutWindowQueryService {
     /** Minutes for an EXTRA gym instance's net-kcal estimate: derived work time when known, else
      *  the wall-clock span clamped to a sane [0, 150], else the configured default (spec §5.2). */
     private int gymMinutes(WorkoutSessionEntity instance) {
+        return gymMinutes(instance, props.gymDefaultMinutes());
+    }
+
+    /** The same minutes rule, shared with {@link WorkoutEnergyService} so the ceremony's estimate and the
+     *  day's food budget can never disagree about one session. */
+    static int gymMinutes(WorkoutSessionEntity instance, int defaultMinutes) {
         if (instance.getActiveSeconds() != null) {
             return instance.getActiveSeconds() / 60;
         }
@@ -473,7 +479,7 @@ public class WorkoutWindowQueryService {
             long minutes = Duration.between(instance.getStartedAt(), instance.getFinishedAt()).toMinutes();
             return (int) Math.max(0, Math.min(150, minutes));
         }
-        return props.gymDefaultMinutes();
+        return defaultMinutes;
     }
 
     /** One planned sport occurrence on the date — a weekday-matched recurring slot OR a dated one-off

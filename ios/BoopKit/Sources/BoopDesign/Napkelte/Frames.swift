@@ -371,10 +371,20 @@ public struct NKFlowFrame<Content: View>: View {
 /// Present with `.presentationDetents([.medium, .large])`, `.presentationBackground(NK.ground)`, `.presentationCornerRadius(34)`.
 public struct NKSheetFrame<Content: View>: View {
     let hue: Hue, eyebrow: String, title: String, content: Content
-    public init(hue: Hue, eyebrow: String, title: String, @ViewBuilder content: () -> Content) {
-        self.hue = hue; self.eyebrow = eyebrow; self.title = title; self.content = content()
+    /// The glass close top-right (owner 2026-11-24, `mezo-r36n9.156`): every sheet has a way out that is not a
+    /// drag — a tall sheet's drag competes with its scroll, and a medium one only steps down.
+    let closable: Bool
+    @Environment(\.dismiss) private var dismiss
+    public init(hue: Hue, eyebrow: String, title: String, closable: Bool = true, @ViewBuilder content: () -> Content) {
+        self.hue = hue; self.eyebrow = eyebrow; self.title = title; self.closable = closable; self.content = content()
     }
     public var body: some View {
+        sheet
+            .overlay(alignment: .topTrailing) {
+                if closable { NKCloseButton { dismiss() }.padding(.top, 12).padding(.trailing, 12) }
+            }
+    }
+    private var sheet: some View {
         ScrollView {
             VStack(spacing: 0) {
                 ZStack(alignment: .bottomLeading) {
@@ -392,5 +402,29 @@ public struct NKSheetFrame<Content: View>: View {
         .scrollIndicators(.hidden)
         .background(NK.ground)
         .preferredColorScheme(.dark)
+    }
+}
+
+/// A sheet's own way out: a glass circle with a hairline cross, drawn (the canon allows no SF Symbol here), the
+/// Liquid Glass close every iOS 26 sheet carries top-right. 44 pt to the finger, 36 pt to the eye.
+public struct NKCloseButton: View {
+    let action: @MainActor @Sendable () -> Void
+    public init(action: @escaping @MainActor @Sendable () -> Void) { self.action = action }
+    public var body: some View {
+        Button(action: action) {
+            Canvas { ctx, s in
+                var p = Path()
+                p.move(to: CGPoint(x: 0, y: 0)); p.addLine(to: CGPoint(x: s.width, y: s.height))
+                p.move(to: CGPoint(x: s.width, y: 0)); p.addLine(to: CGPoint(x: 0, y: s.height))
+                ctx.stroke(p, with: .color(.white), style: StrokeStyle(lineWidth: 1.8, lineCap: .round))
+            }
+            .frame(width: 11, height: 11)
+            .frame(width: 36, height: 36)
+            .glassEffect(.regular.interactive(), in: .circle)
+            .frame(width: 44, height: 44)
+            .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Bezárom")
     }
 }

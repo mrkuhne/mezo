@@ -62,9 +62,19 @@ struct ShellView: View {
     /// The cash expense sheet the "+" sheet asked for (opens once that sheet has gone), and whether it is up.
     @State private var penzAfterCapture = false
     @State private var penzCapture = false
+    /// The quick log's own sheet the "+" sheet asked for (opens once that sheet has gone), and the one on screen.
+    @State private var quickAfterCapture: QuickLog?
+    @State private var quick: QuickLog?
+    /// Simulator review: `-previewOpen megvolt` opens the Megvolt sheet for yesterday's preview template day (DEBUG).
+    @State private var previewMegvolt = false
+    /// Simulator review: `-previewOpen naploDay` opens yesterday's Napló day sheet from the shell (DEBUG).
+    @State private var previewNaploDay = false
+    /// The area the "+" sheet asked to open ("Edzés indítása"): Ma, then the ring opens that room.
+    @State private var areaAfterCapture: Hue?
     @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
     /// The day's brief: Boop's own goals and the bedtime target for the close.
     @Environment(MorningStore.self) private var morning: MorningStore?
+    @Environment(\.trainClient) private var train
     @Environment(PenzStore.self) private var penz: PenzStore?
     @State private var toast: String?
     /// A room is open over the page: the bar is hidden.
@@ -73,11 +83,48 @@ struct ShellView: View {
 
     private var tab: ShellTab { ShellTab.restored(tabKey) }
 
+    /// What a pick asks for. From the "+" sheet it waits until that sheet is gone (two presentations never overlap);
+    /// from a page (the home screen's quick doors) it opens at once.
+    private func handle(_ pick: CapturePick, afterSheet: Bool) {
+        if afterSheet {
+            switch pick {
+            case .cover(let cover): coverAfterCapture = cover
+            case .meal: mealAfterCapture = pick.mealStart
+            case .penzExpense: penzAfterCapture = true
+            case .quick(let kind): quickAfterCapture = kind
+            case .area(let hue): areaAfterCapture = hue
+            }
+        } else {
+            switch pick {
+            case .cover(let cover): router.open(cover)
+            case .meal: meal = pick.mealStart
+            case .penzExpense: penzCapture = true
+            case .quick(let kind): quick = kind
+            case .area(let hue): select(.ma); router.openRoom(hue)
+            }
+        }
+    }
+
     /// The cover a sheet made wait opens as soon as that sheet is gone.
     private func openCoverAfterSheet() {
         if let cover = coverAfterCapture { coverAfterCapture = nil; router.open(cover) }
         if let start = mealAfterCapture { mealAfterCapture = nil; meal = start }
         if penzAfterCapture { penzAfterCapture = false; penzCapture = true }
+        if let q = quickAfterCapture { quickAfterCapture = nil; quick = q }
+        if let hue = areaAfterCapture { areaAfterCapture = nil; select(.ma); router.openRoom(hue) }
+    }
+
+    /// The quick log's own sheets (`mezo-r36n9.154`); each closes itself with the toast to show.
+    @ViewBuilder private func quickSheet(_ kind: QuickLog) -> some View {
+        let done: (String?) -> Void = { text in quick = nil; if let text { toast = text } }
+        switch kind {
+        case .water: WaterSheet(onDone: done)
+        case .supplements: SupplementsSheet(onDone: done)
+        case .sport: SportSheet(onDone: done)
+        case .weight: WeightSheet(onDone: done)
+        case .sleep: SleepLogSheet(onDone: done)
+        case .journal: JournalSheet(onDone: done)
+        }
     }
 
     var body: some View {
@@ -106,17 +153,14 @@ struct ShellView: View {
         .environment(\.openAccount, { account = true })
         .environment(\.openPlace, { select($0) })
         .environment(\.openMeal, { meal = $0 })
+        .environment(\.openCapture, { capturing = true })
         .nkToast($toast)
         .preferredColorScheme(.dark)
         // page-level presentations (boop-ios.md §9)
+        .environment(\.openPick, { handle($0, afterSheet: false) })
         .sheet(isPresented: $capturing, onDismiss: openCoverAfterSheet) {
             CaptureSheet { pick in
-                switch pick {
-                case .cover(let cover): coverAfterCapture = cover
-                case .soon(let name): toast = soonToast(name)
-                case .meal: mealAfterCapture = pick.mealStart
-                case .penzExpense: penzAfterCapture = true
-                }
+                handle(pick, afterSheet: true)
                 capturing = false
             }
                 .presentationDetents([.height(650), .large])
@@ -139,6 +183,20 @@ struct ShellView: View {
                 .task { await penz?.load() }
                 .penzSheetStyle([.large])
         }
+        .sheet(item: $quick) { kind in
+            quickSheet(kind).penzSheetStyle([.large])
+        }
+        .sheet(isPresented: $previewNaploDay) {
+            if let ritmus, let y = ritmus.calendar.date(byAdding: .day, value: -1, to: ritmus.clock()) {
+                NaploDayDetail(env: ritmus, date: ritmus.day(of: y))
+                    .presentationDetents([.large]).presentationBackground(NK.ground).presentationCornerRadius(34).presentationDragIndicator(.visible)
+            }
+        }
+        .sheet(isPresented: $previewMegvolt) {
+            let y = ritmus.flatMap { env in env.calendar.date(byAdding: .day, value: -1, to: env.clock()).map { env.day(of: $0) } } ?? ""
+            WorkoutAsPlannedSheet(templateSessionId: nil, date: y, title: "Edzés", train: train) { done in previewMegvolt = false; if let done { toast = done } }
+                .penzSheetStyle([.large])
+        }
         .sheet(isPresented: $account, onDismiss: openCoverAfterSheet) {
             AccountSheet(me: me)
                 .presentationDetents([.medium, .large])
@@ -151,7 +209,7 @@ struct ShellView: View {
             switch cover {
             case .checkin:
                 if let ritmus {
-                    CheckinView(env: ritmus) { router.close() }
+                    CheckinView(env: ritmus, catchUp: Self.previewCatchUp(ritmus)) { router.close() }
                 } else {
                     coverFallback(hue: .mozgas)
                 }
@@ -181,10 +239,15 @@ struct ShellView: View {
             switch UserDefaults.standard.string(forKey: "previewOpen") {
             case "capture": capturing = true
             case "meal": meal = MealStart()
+            case "drink": meal = MealStart(entrance: .drink)
+            case "megvolt": previewMegvolt = true
+            case "naploDay": previewNaploDay = true
             case "barcode": meal = MealStart(entrance: .barcode)
             case "mealText": meal = MealStart(entrance: .text, text: "csirkemell rizzsel és brokkolival")
             case "account": account = true
             case "penzCapture": penzCapture = true
+            // `-previewOpen water|supplements|sport|weight|sleep|journal`: one quick-log sheet.
+            case let raw? where QuickLog(rawValue: raw) != nil: quick = QuickLog(rawValue: raw)
             case "checkin", "checkinDone": router.open(.checkin)
             case "este", "esteDone": router.open(.este)
             default: break
@@ -201,6 +264,17 @@ struct ShellView: View {
             try? await Task.sleep(for: .seconds(3)); select(to)
             try? await Task.sleep(for: .seconds(3)); select(.ma)
         }
+        #endif
+    }
+
+    /// Simulator review: `-previewCatchup YES` opens the check-in as yesterday's missed dél (DEBUG only).
+    private static func previewCatchUp(_ ritmus: RitmusEnvironment) -> CheckinFlow.CatchUp? {
+        #if DEBUG
+        guard UserDefaults.standard.bool(forKey: "previewCatchup"),
+              let y = ritmus.calendar.date(byAdding: .day, value: -1, to: ritmus.clock()) else { return nil }
+        return .init(date: ritmus.day(of: y), moment: .delben)
+        #else
+        return nil
         #endif
     }
 

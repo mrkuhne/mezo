@@ -209,6 +209,8 @@ public class ExerciseCatalogService {
         dto.setEditable(!master && (mine || viewer.isOwner()));
         dto.setMediaEditable(master ? viewer.isOwner() : (mine || viewer.isOwner()));
         dto.setChallengeAllowed(CatalogAttributes.challengeAllowed(e));
+        dto.setAllowedTechniques(CatalogAttributes.allowedTechniqueWires(e).stream()
+            .map(io.mrkuhne.mezo.api.dto.Technique::fromValue).toList());
         return dto;
     }
 

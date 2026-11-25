@@ -206,7 +206,8 @@ private struct PantryAddHost: View {
     }
 
     var body: some View {
-        NKSheetFrame(hue: .fuel, eyebrow: model.isReplacing ? "PONTOSÍTOM" : "FELVESZEK EGYET", title: title) {
+        NKSheetFrame(hue: .fuel, eyebrow: model.isReplacing ? "PONTOSÍTOM" : "FELVESZEK EGYET", title: title,
+                     closable: !(model.stage == .reading || model.saving)) {
             switch model.stage {
             case .reading: reading
             case .confirm: PantryConfirm(model: model, profile: profile, onSaved: { onSaved($0) })

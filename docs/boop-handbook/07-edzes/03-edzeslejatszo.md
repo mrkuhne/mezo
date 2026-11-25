@@ -39,7 +39,7 @@ osszefoglalo: Edzés közben a telefon sorozatról sorozatra vezet — előírt 
 - **A csere internetet kér.** Ez az egyetlen ilyen a lejátszóban: a cserélt gyakorlatnak a szerver ad azonosítót,
   és minden utána rögzített sorozat ahhoz tartozik. Ha nincs net, a lap ott helyben meg is mondja, miért nem ment,
   és addig marad nyitva.
-- **A csere ajánl is (2026-11-19 óta).** A „Végleg lecserélem másikra” lap legfeljebb **öt ajánlást** ad, mindegyik mellett
+- **A csere ajánl is (2026-11-19 óta).** A csere lapja (2026-11-23 óta „Ma mást csinálok helyette” vagy „Lecserélem a blokkban is”) legfeljebb **öt ajánlást** ad, mindegyik mellett
   egy mondattal, miért került oda — például „ugyanaz a mozgás, kíméli a vállad, amit ma jeleztél”. Alattuk a „Minden
   gyakorlat” keresővel: **a teljes lista mindig választható**, a kiszűrt gyakorlat is, csak halk címke áll mellette
   („nincs hozzá eszközöd” vagy „legutóbb fájt”). Két gomb szól a lapnak: **„ehhez nincs eszközöm”** és **„nem esik jól”** —
@@ -60,13 +60,20 @@ a szakaszok sorban érkeznek. Egy mondat arról, milyen nap volt (ez **soha nem 
 rekordjaid aranyban, és a test azokkal az izmokkal, amiket ma megdolgoztattál. Ha kevesebb mozgást kértél a
 telefonodon, az egész azonnal a kész állapotában jelenik meg.
 
+**Kalória a végén (2026-11-25):** a három szám alatt egy sor mondja, mennyi kalóriát égettél. Először a **becslés** jön
+(„kb. 380 kcal · becslés · az órád pontosítja”, például) — a szerver számolja az edzés aktív idejéből és a testadataidból,
+ugyanazzal a módszerrel, amivel a napi étkezési kereted is számol. Ha az órád is rögzítette az edzést, és az adata
+beérkezett, a becslés helyére **az órád mérése** kerül („412 kcal · az órád mérte”, például) — ezt a „Megnézem a mai
+eredményt” lapon látod. Ha egyik sincs (nincs net, vagy még nincs testsúlyod), a sor egyszerűen nem jelenik meg; a telefon
+nem talál ki számot. Ehhez a lezárás már a lezáró kép megnyílásakor felmegy a szerverre, nem csak a „Kész” gombra.
+
 **Ami szándékosan kimaradt a Lágy változatból:** az ötcsillagos pontozás, a pontok és a küldetések. A Boop nem
 játékosít, és egy edzés itt nincs leosztályozva ötből.
 
 **A régi leírás (ami ebből még nem él):**
 1. **Sorozatonként:** a léptető előre kitöltve az előírt súllyal, ismétléssel és tartalékkal (RIR); súlytalan gyakorlatnál csak ismétlés.
 2. **Pihenőidő-számláló** sorozatok között.
-3. **Gyakorlat-hozzáadás** edzés közben, és a csere **az egész mezociklusra** (a mai napra szóló csere és az ajánlás már él).
+3. **Gyakorlat-hozzáadás** edzés közben (a csere a mai napra és a blokk végéig, az ajánlás már él).
 4. **Gyakorlat utáni visszajelzés:** pumpa (1–4), ízületi fájdalom (1–3), munka mennyisége (1–3) — kihagyható.
 5. **Gyakorlat-megjegyzés**, amit legközelebb előre betölt.
 6. **Befejezés** záró megjegyzéssel, majd összegzés.
@@ -88,8 +95,37 @@ játékosít, és egy edzés itt nincs leosztályozva ötből.
   súlyába csak a főrész számít.
 - **A sorozatok közti pihenő** stílusos blokkban annyi, amennyit a szerver előír (máskor 90 másodperc).
 
+**A tulajdonos tíz észrevétele után (2026-11-23):**
+
+- **Súly és ismétlés: húzható skála.** A két nagy szám alatt egy vízszintes skála van; ujjal húzod, **fél kilónként** (az
+  ismétlés egyesével) ugrik, minden lépésnél egy kis koppanás. A számra koppintva továbbra is beírhatod. A tervezett érték kis
+  pont a skálán, így látod, mennyire tértél el tőle. A tartalék marad a vékony soron.
+- **Az előző sorozat súlya átjön.** Az első munkasorozat a terv számait hozza; minden további munkasorozat **azt a
+  súlyt**, amit az előzőn ténylegesen emeltél (az ismétlés és a tartalék marad a tervé). A szám mellett kis szó mondja, honnan
+  jött: „TERV” vagy „ELŐZŐ”.
+- **A terv sora végig látszik.** A számok alatt egy „TERV · 60 kg · 8 ismétlés · 2 tartalék” sor marad akkor is, ha már
+  átírtad a számokat. Ha a szerver még nem tud ajánlani súlyt (új gyakorlat, nincs előzménye), ezt mondja ki: „ehhez még nincs
+  ajánlott súly, az első alkalom után lesz”.
+- **Nincs bemelegítő sorozat (2026-11-25).** Az app sehol nem mutat bemelegítést: a lejátszó az első **munkasorozattal**
+  indul, a napszerkesztőben nincs „Bemelegítő sorozat” mező, a tervjelöltek nem beszélnek róla. Bemelegíteni
+  nyugodtan bemelegíthetsz, csak nem kell rögzíteni — nem számít bele semmibe. (A szerver a háttérben megtartja a
+  régi bemelegítő-beállítást, de a telefon nem mutatja és nem módosítja.)
+- **Jegyzet, ami megmarad.** A jegyzet lapján **Mentés** gomb van, a billentyűzet fölött **Kész**; a jegyzet a lap bezárásakor
+  **a szerverre is felmegy** mint a gyakorlat saját jegyzete, és legközelebb is ott lesz. (Korábban csak a telefonon élt, és az
+  edzés lezárásával elveszett.)
+- **A javító lapon a tartalék is.** Egy kész sorozat javításakor a súly és az ismétlés skálája mellett a tartalék is állítható.
+- **Két csere, külön mondva.** A „…” menüben **„Ma mást csinálok helyette”** csak a mai edzésre cserél (a blokkod nem
+  változik), **„Lecserélem a blokkban is”** a blokk végéig. (A régi „Végleg lecserélem másikra” valójában a mai cserét csinálta.)
+- **A blokk módosítása átmegy a futó edzésbe.** Ha a blokképítőben átírod a mai napot — sorrend, sorozatszám, technika —, a
+  telefon friss tervet kér, és a futó edzésbe is beolvasztja: a sorrend, a sorozatok és a technika az új terv szerint
+  folytatódnak, amit már rögzítettél, megmarad. Indításkor is mindig friss tervet kér. Lásd [Blokképítő](16-blokk-epito.md).
+- **Edzés után a Ma oldal „megvolt”-at mond**, nem „Indítás”-t: a lezárás **azonnal** felmegy a szerverre, a nap újraolvassa
+  magát, és a kártyán **„Megnézem a mai eredményt”** nyitja újra a lezáró képet (a telefon megőrzi az utolsó lezárt edzést).
+  A fal „megvolt” kártyája és a terület menüje ugyanezt tudja.
+
 ## Hogyan működik
-1. A telefon lekéri a mai edzést: a háttérrendszer kiszámolja minden gyakorlat előírt sorozatait (bemelegítés + munkasorozatok),
+1. A telefon lekéri a mai edzést: a háttérrendszer kiszámolja minden gyakorlat előírt sorozatait (a bemelegítőket a telefon
+   eldobja, csak a munkasorozatok látszanak),
    az indoklást és a múlt heti viszonyítást (lásd [Progresszió-motor](04-progresszio-motor.md)).
 2. **Indítás:** ha már van nyitott edzés, azt folytatja (sosem duplikál). Egyszerre csak egy nyitott edzés lehet, és egy
    mezociklus-nap hetente egyszer teljesíthető (a saját edzésre ez nem vonatkozik).
@@ -98,7 +134,8 @@ játékosít, és egy edzés itt nincs leosztályozva ötből.
 4. A visszajelzés gyakorlatonként egyszer mentődik (felülírható). **Ma nem befolyásolja a következő heti terhelést** — csak az
    AI és a mintafelismerők kapják meg.
 5. **Befejezés:** az edzés lezárul, a rendszer kiszámolja az aktív időt, és frissíti a megtanult időzítést (mennyi egy sorozat,
-   egy pihenő, egy átállás).
+   egy pihenő, egy átállás). A válaszban ott a kalória: ha az órád edzése időben egyezik ezzel az edzéssel és van kalóriája, az
+   (több egyező közül a nagyobb, mert az Egészség app ugyanazt az edzést néha kétszer tárolja); különben a becslés.
 6. A webes appban a sorozatállapot és a pihenőidő a böngészőben él; a Boop ezt Swiftben, saját modellel építi újra.
 
 ## Hogyan dönt az ajánlás
@@ -130,7 +167,7 @@ Az ajánlás azért ilyen szerény, mert a döntés a tiéd marad: Boop csak a r
 | `workout_timing_profile` | Megtanult időzítés (sorozat, pihenő, átállás) |
 
 ## Mi jön még
-- A csere **az egész mezociklusra** (a mai napra szóló már él), és gyakorlat hozzáadása edzés közben.
+- Gyakorlat hozzáadása edzés közben (a csere a blokk végéig 2026-11-23 óta él).
 - B5: Élő tevékenység (lásd [Élő tevékenység](08-elo-tevekenyseg.md)); az óra (lásd [Apple Watch-app](07-apple-watch.md)).
 - Nyitott kérdés a tulajdonosnak: a visszajelzés (például erős ízületi fájdalom) befolyásolja-e a **terhelést** — a gyakorlatcsere ajánlását már befolyásolja (a nemrég erősen fájó gyakorlat kimarad az ajánlásból), a heti súlyt még nem.
 

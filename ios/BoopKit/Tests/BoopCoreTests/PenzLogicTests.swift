@@ -279,3 +279,18 @@ struct PenzLogicTests {
         #expect(penzByDay(penzShown(txs)).map(\.day) == ["2026-11-19"], "no empty day group for transfer legs")
     }
 }
+
+/// The home ring's Pénz orb (`mezo-r36n9.153`, owner: a percentage): the week's remaining as a share of its budget,
+/// 0–100, nil without a budget — the orb then says "–", never 0.
+struct PenzWeekShareTests {
+    @Test func remainingAsAShareOfTheWeeksBudget() {
+        #expect(penzWeekShare(PenzFixtures.allowance(weekRemaining: 3_450_000, weekBudget: 7_700_000)) == 45)
+        #expect(penzWeekShare(PenzFixtures.allowance(weekRemaining: 7_700_000, weekBudget: 7_700_000)) == 100)
+        #expect(penzWeekShare(PenzFixtures.allowance(weekRemaining: 0, weekBudget: 7_700_000)) == 0)
+    }
+
+    @Test func overspentClampsToZeroAndNoBudgetIsNoNumber() {
+        #expect(penzWeekShare(PenzFixtures.allowance(weekRemaining: -500_000, weekBudget: 7_700_000)) == 0)
+        #expect(penzWeekShare(PenzFixtures.allowance(weekRemaining: 0, weekBudget: 0)) == nil)
+    }
+}

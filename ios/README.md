@@ -35,6 +35,11 @@ cd ios && xcodebuild test -project Boop.xcodeproj -scheme Boop -destination 'pla
 
 Pass them after the bundle id: `xcrun simctl launch <sim> io.mrkuhne.boop -preview shell -previewEvening YES`.
 
+The exercise SPE design spike (`mezo-eiux9`) opens without sign-in or server via
+`-previewSPE YES`. Add `-previewSPEView hammer|hip|press|player|logged` to open the
+three technique selectors or the Hip Thrust player before/after logging. Its
+exercise rows and numbers are invented, and no workout is saved.
+
 | Flag | What it does |
 |---|---|
 | `-previewNotify checkin\|este` | rings the real check-in / close reminder at the next whole minute (background the app; a tap opens the cover) |
@@ -52,10 +57,17 @@ Pass them after the bundle id: `xcrun simctl launch <sim> io.mrkuhne.boop -previ
 | `-previewEvening YES` | the clock reads 21:10 and the brief is an evening one: dusk sky, *Esti check-in* / *Esti levezetés* pills, evening paths |
 | `-previewRecovery YES` | kímélő mód, day 2 of a cold: calm grey-blue sky, the banner, no session |
 | `-previewScroll 850` | tab pages open scrolled to that offset |
-| `-previewOpen capture\|account` | opens the "+" capture sheet or the account sheet |
+| `-previewOpen capture\|account` | opens the "+" capture sheet (the nine quick-log doors + the meal chips) or the account sheet |
+| `-previewOpen water\|supplements\|sport\|weight\|sleep\|journal` | opens one quick-log sheet of the "+" (víz · kiegészítők · sport · súly · alvás · napló) |
+| `-previewLearning YES` | the brief is "learning" (Forma unknown, 9/14 nights): the ring blanks Forma alone, the other orbs keep their numbers |
+| `-previewHome suly -sulyTab Ma\|Test\|Napló` | the Súly area (`mezo-r36n9.158`) on invented figures from `Suly/SulyPreview.swift` (the Évad preview's season: 84,1 kg → 82, planned −0,4 kg a week, the ring says 84); `-sulyState full\|noseason\|empty\|offline\|error` (no active season · no weigh-ins and no trend · no net, cache primed five hours old · the server failing) |
 | `-previewOpen checkin\|checkinDone` | opens the check-in (its first item / its payoff after every item is answered and saved), the clock reads 16:02 |
 | `-previewOpen este\|esteDone` | opens the evening close (esteDone: already closed), the clock reads 21:32 and the day has its goal |
-| `-previewOpen naploDay` | Napló opens yesterday's day |
+| `-previewOpen naploDay` | Napló opens yesterday's day (its sheet with the PÓTLÁS block, `mezo-r36n9.159`) |
+| `-previewWhen tegnap` | the Súly / Alvás / Sport / Napló quick sheets and the Ital sheet open on yesterday (the Mikor row's Tegnap chip) |
+| `-previewOpen checkin -previewCatchup YES` | the check-in as yesterday's missed dél catch-up (PÓTLÁS · TEGNAP · DÉL) |
+| `-previewOpen drink` | the composer in drink mode (Ital · Mit ittál?, `mezo-r36n9.160`); `-previewHome etel -previewDrinks YES` puts two drinks on the preview day (the ITALOK group) |
+| `-previewOpen megvolt` | the Megvolt sheet for yesterday's preview template day (`mezo-r36n9.161`) |
 | `-previewOpen chatAnswer\|chatAsk\|chatQueued` | the Boop tab: one answered question / one asked at launch whose answer takes 8 s / one question waiting for the net (use with `-previewOffline YES`) |
 | `-previewOffline YES` | no network: captures stay pending on the phone (waiting glyph), the mic keeps a recording for later upload |
 | `-previewColdTap checkin\|este` | simulates a notification tap from a cold launch: the cover is asked for before any view exists |
@@ -63,6 +75,8 @@ Pass them after the bundle id: `xcrun simctl launch <sim> io.mrkuhne.boop -previ
 | `-previewHome etel -etelTab Receptek\|Kamra` | opens the Étel room on that tab (`-etelSheet compose-recipe\|compose-pantry` opens the meal composer's recipe / shelf picker with its search and filter; `-etelSheet cooked\|cooked-filled\|cooked-review\|kamra-estimated` then opens „Ezt főztem" empty / with text and three photos / read into the review, or an estimated Kamra food; add `-etelReview other\|added\|facts` to the review to open the „Másik" list / quick-add the first missing row / open its facts) |
 | `-previewHome edzes -previewEdzesSwap YES` | starts today's preview workout and opens the player on the swap sheet of the first exercise (`-previewEdzesSwapAt N`: the N-th, from 0 — 3 is the curl that asks which kit is missing); the preview answers suggestions, the gym profile and „nem esik jól" statefully |
 | `-previewEdzesSwapFail YES` | the preview's suggestions answer 503: the swap sheet's fallback line over the plain list |
+| `-previewHome edzes -previewEdzesPlayer YES` | starts today's preview workout and opens the player on its lifting screen (the scales, the plan line — no warm-up sets since mezo-r36n9.170); `-previewEdzesSheet note\|menu\|swapBlock` opens that sheet of the first exercise (mezo-r36n9.147) |
+| `-previewHome edzes -previewEdzesCeremony estimate\|watch\|none` | starts today's preview workout and opens the closing ceremony with its kcal line: the server's estimate, the watch's figure, or none (mezo-r36n9.170); nothing is sent |
 | `-previewHome penz -penzTab Ma\|Pénzem\|Költés\|Gyakorlás` | the Pénz area (L5) on invented figures; `-penzState review\|calm\|close\|empty\|offline\|error`, `-penzSheet capture\|review\|edit\|close\|budgets\|goal\|invest\|month`, `-penzPending 1890` (a typed cash row; with `-previewOffline YES` it waits), `-previewOpen penzCapture` (the "+" Kiadás sheet); L6: `-penzPortfolio full\|empty\|stale\|unpriced\|error`, `-penzDigest ready\|pending\|quiet\|unhealthy\|failed\|limited\|error` (`pending` turns `ready` after the refresh ask; `limited` answers it 429), `-penzPage news1\|news2\|news3\|sleeve\|sleeve-short\|sleeve-mid`, `-penzSheet record\|event\|allocation`; L7: `-penzPractice full\|quiet\|empty\|error`, `-penzProposals open\|accepted\|none`, `-penzSheet newTrade\|tags\|cap\|live\|trade\|trade-plan\|trade-closed\|why`, `-penzPage journal\|strategy\|catalog\|proposal\|proposal-accepted`; weekly review (`mezo-r36n9.120`): `-penzWeekly ready\|pending\|quiet\|failed\|error`, `-penzPage weekly\|weekly-short\|weekly-mid` |
 | `-previewTab terv -evadState full\|maintain\|empty\|offline\|error` | the Évad page (B6 S1) on invented figures from `Evad/EvadPreview.swift`: a cut season in week 7 / a maintain season inside its band / no season yet (empty state → Új évad) / no net (cache primed five hours old) / the server failing; `-previewOffline YES` = `offline`. `-evadTab Évad\|Menü\|Lista\|Hatás`, `-evadOpen modositas\|szabalyok\|uj\|kiserlet\|ujkiserlet` (opens the sub-page; `kiserlet` = the newest finished experiment, `-evadExperiment <id>` picks another; S4's Hatás tab: `-evadExp empty\|noProposal`, default a proposal, a running experiment and three finished ones from `Evad/EvadExperimentPreview.swift`), `-evadLit 0…3` (lights a pillar of Mi mire hat), `-evadSessions 5` / `-evadPace 0.6` (pre-set Módosítás), `-evadStale YES` (the first accept answers 409 SEASON_PREVIEW_STALE), `-evadAutoAccept YES` (taps Elfogadom once the first changed preview is in), `-evadBottom YES` (sub-pages open scrolled to their actions) |
 | `-previewTab terv -capacitySeason none\|oneweek` | the Évad overview's *Teher és pihenés* block (B7 K2): `none` = no active season (both capacity blocks left out), `oneweek` = the season's first week, only week 1 lived (its recovery is a short tick) |
