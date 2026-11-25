@@ -2,7 +2,7 @@
 title: Boop — native iOS app
 type: feature-domain
 status: in-progress
-updated: 2026-11-24
+updated: 2026-11-25
 tags: [ios, level, l1-l2-level, evad, b6-evad, season, penz, l5-penz, blokk-epito, heti-atnezes, kezdolap, area-kit, l0, elo-fal, l0b, b4-etel, food, barcode, meal-photos, sensitivities, b3-napi-ritmus, offline-first, outbox, dayclose, b1-adatalap, health-samples, apns, swiftui, boop, napkelte, lagy, auth, onboarding, healthkit, eventkit, wearable, morning-brief, energy-curve, voice]
 key_files:
   - ios/Boop
