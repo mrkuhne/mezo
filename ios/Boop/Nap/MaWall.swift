@@ -35,6 +35,10 @@ struct MaWall: View {
     /// Levél's digest feeds the `level` source; a tap on its card opens the Levél room.
     @Environment(LevelStore.self) private var level: LevelStore?
     @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
+    /// Day capacity (B7 K3): the current week's open proposals feed the `kapacitas` source; a tap on its card opens the
+    /// Átrendezés page, which the Nap page presents at page level (boop-ios.md §9).
+    @Environment(KapacitasStore.self) private var kapacitas: KapacitasStore?
+    @Environment(\.openAtrendezes) private var openAtrendezes
     @Environment(\.openPlace) private var openPlace
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -63,7 +67,19 @@ struct MaWall: View {
         r.register(WallSource(id: WallSources.level) { [digest = level?.digest] input in
             levelWallCandidates(digest, now: input.now)
         })
+        r.register(WallSource(id: WallSources.kapacitas) { [week = kapacitas?.weeks[monday], queued = kapacitas?.queuedAccepts ?? [], start = todaySessionStart] input in
+            kapacitasWallCandidates(week: week, now: input.now, todaySessionStart: start, excluding: queued)
+        })
         return r
+    }
+
+    /// The Monday of the week on the wall, in the phone's zone.
+    private var monday: String { kapacitasMonday(for: ctx.now) }
+
+    /// Today's planned session, still ahead and not done — what makes a today-proposal urgent on the wall.
+    private var todaySessionStart: Date? {
+        guard let s = brief.day.session, !s.done else { return nil }
+        return (s.time ?? s.plannedTime).flatMap { wallClock($0, on: ctx.now) }
     }
 
     private var wall: Wall {
@@ -128,14 +144,17 @@ struct MaWall: View {
             if evad?.overview != nil { await evad?.experiments.load() }
         }
         .task(id: level.map(ObjectIdentifier.init)) { await level?.refresh() }
+        // the current week's proposals (B7 K3): the week read generates them on the server's first call
+        .task(id: kapacitasKey) { await kapacitas?.loadWeek(monday: monday) }
         // the wall may ring for what expires: what is on screen now counts as seen, the rest may reach his pocket
         .onAppear { reconcileNotifications(markSeen: true) }
         .onChange(of: allExpiring.map(\.id)) { reconcileNotifications(markSeen: true) }
-        // back in the app: the experiments are re-read (a result that finished, a proposal that appeared), and the
-        // wall's notifications are reconciled
+        // back in the app: the experiments are re-read (a result that finished, a proposal that appeared), the
+        // week (the live loop may have proposed a today-change meanwhile), and the wall's notifications are reconciled
         .onChange(of: scenePhase) { _, phase in
             guard phase == .active else { return }
             if evad?.overview != nil { Task { await evad?.experiments.load(force: true) } }
+            Task { await kapacitas?.loadWeek(monday: monday) }
             reconcileNotifications(markSeen: false)
         }
     }
@@ -154,6 +173,11 @@ struct MaWall: View {
     }
 
     @State private var settledOpen = false
+
+    /// Re-reads when the store is replaced (sign-in, a preview re-made) or the week turns.
+    private var kapacitasKey: String {
+        (kapacitas.map { "\(ObjectIdentifier($0).hashValue)" } ?? "-") + "|" + monday
+    }
 
     private var settledSection: some View {
         NKFoldRow("Ma történt", sub: "\(wall.settledToday.count) dolog", hue: ctx.hue, open: $settledOpen) {
@@ -194,6 +218,7 @@ struct MaWall: View {
             return
         }
         else if c.area == WallSources.evad { evad?.pendingSub = evadWallOpens(c.id); openPlace(.terv) }
+        else if c.area == WallSources.kapacitas { openAtrendezes?() }
         settle(id: c.id, line: c.settled)
     }
 
@@ -248,6 +273,7 @@ func hue(_ area: String) -> Hue {
     case WallSources.energia: .pulzus
     case WallSources.evad: evadHue
     case WallSources.level: .level
+    case WallSources.kapacitas: kapacitasHue
     default: .forma
     }
 }
@@ -298,4 +324,16 @@ func parseSettled(_ raw: String) -> WallSettled? {
     let parts = raw.split(separator: "\t", omittingEmptySubsequences: false).map(String.init)
     guard parts.count == 3, let epoch = TimeInterval(parts[2]) else { return nil }
     return WallSettled(id: parts[0], line: parts[1], at: Date(timeIntervalSince1970: epoch))
+}
+
+// MARK: - Opening Átrendezés from the wall
+
+/// The wall's Átrendezés card asks the Nap page to present the page (page level, boop-ios.md §9). Nil = not signed in.
+private struct OpenAtrendezesKey: EnvironmentKey { static let defaultValue: (@MainActor @Sendable () -> Void)? = nil }
+
+extension EnvironmentValues {
+    var openAtrendezes: (@MainActor @Sendable () -> Void)? {
+        get { self[OpenAtrendezesKey.self] }
+        set { self[OpenAtrendezesKey.self] = newValue }
+    }
 }

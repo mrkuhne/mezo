@@ -22,6 +22,21 @@ struct NapView: View {
     @State private var sheet: DetailSheet?
     /// Boop's proposals, shared by Ma and the rooms.
     @State private var desk = ProposalDesk()
+    /// B7 K3: the wall's Átrendezés card opens the page — presented here, at page level (boop-ios.md §9).
+    @State private var atrendezes = false
+    @Environment(KapacitasStore.self) private var kapacitas: KapacitasStore?
+    @Environment(\.openPlace) private var openPlace
+
+    /// What the wall's Átrendezés card calls (nil before sign-in: no store, no card action).
+    private var atrendezesOpener: (@MainActor @Sendable () -> Void)? {
+        guard kapacitas != nil else { return nil }
+        return { atrendezes = true }
+    }
+
+    /// *Megbeszélem Boop-pal* on the Átrendezés page: close it, open Boop.
+    private var askBoop: @MainActor @Sendable () -> Void {
+        { atrendezes = false; openPlace(.boop) }
+    }
 
     private var state: NapEmptyState {
         guard let link else { return .notConnected }
@@ -80,7 +95,9 @@ struct NapView: View {
                         // left presentations unpresented, see the connect cover below).
                         NapSheets(sheet: Binding(get: { [s = sheet] in s }, set: { sheet = $0 }),
                                   why: Binding(get: { [w = desk.why] in w }, set: { desk.why = $0 }),
-                                  desk: desk, brief: morning.brief ?? brief, store: morning, ctx: ctx)
+                                  atrendezes: Binding(get: { [a = atrendezes] in a }, set: { atrendezes = $0 }),
+                                  desk: desk, brief: morning.brief ?? brief, store: morning, ctx: ctx,
+                                  kapacitas: kapacitas, ask: askBoop)
                     }
                 }
             case .loading:
@@ -92,6 +109,7 @@ struct NapView: View {
             }
         }
         .nkToast($toast)
+        .environment(\.openAtrendezes, atrendezesOpener)
         .onAppear { if sheet == nil { sheet = NapView.initialSheet } }
         // Read the flag here so the page re-renders when it flips (a binding passed down left the cover unpresented).
         .connectCover(link, isPresented: Binding(get: { [showing = connecting] in showing }, set: { connecting = $0 }))
@@ -170,10 +188,13 @@ struct NapView: View {
 private struct NapSheets: ViewModifier {
     @Binding var sheet: DetailSheet?
     @Binding var why: Proposal?
+    @Binding var atrendezes: Bool
     let desk: ProposalDesk
     let brief: Brief
     let store: MorningStore
     let ctx: MaiContext
+    let kapacitas: KapacitasStore?
+    let ask: @MainActor @Sendable () -> Void
 
     func body(content: Content) -> some View {
         content
@@ -182,6 +203,10 @@ private struct NapSheets: ViewModifier {
             }
             .sheet(item: $why) { p in
                 ProposalWhySheet(proposal: p, desk: desk, brief: brief, store: store, ctx: ctx)
+            }
+            .fullScreenCover(isPresented: $atrendezes) {
+                AtrendezesPage(monday: kapacitasMonday(for: ctx.now), crumb: "Ma", close: { atrendezes = false }, ask: ask)
+                    .environment(kapacitas)
             }
             #if DEBUG
             .task {

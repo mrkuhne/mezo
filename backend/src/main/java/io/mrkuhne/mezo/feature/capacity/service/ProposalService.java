@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Predicate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -62,6 +63,10 @@ public class ProposalService {
 
     static final short GENERATOR_VERSION = 1;
     private static final String RANK = "rank";
+    /** A fact marking a proposal the live loop stored (Task 20), not the week read. */
+    static final String LIVE = "live";
+    /** Settled states that do not hold a (kind, day) back from the live loop: superseded or lapsed. */
+    private static final Set<String> RELEASED = Set.of(ProposalStatus.IGNORED.wire(), ProposalStatus.EXPIRED.wire());
 
     /** A proposal as the API shows it. */
     public record ProposalView(UUID id, String kind, LocalDate day, ProposalStatus status, String title, String move,
@@ -273,12 +278,45 @@ public class ProposalService {
         });
     }
 
+    // ── the live loop's today-change (Task 20) ─────────────────────────────────
+
+    /**
+     * The live loop's today-change ({@link LiveReplanListener}) — runs inside the caller's transaction with the owner's
+     * {@link CapacityLock} held. A week with no proposal yet gets its whole set, exactly as the first week read would
+     * (otherwise that read would see a non-empty week and never fill the other days). Otherwise the generator runs on
+     * a fresh picture and only the best draft about {@code today} is stored, unless a proposal of the same kind for
+     * today is already open or he already decided on one (accepted, declined, undone). Words are the template's; the
+     * caller hands the stored rows to {@link #rephraseLater} after commit.
+     *
+     * @return the rows stored (empty = nothing to propose)
+     */
+    List<Stored> proposeToday(UUID owner, LocalDate today) {
+        LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        List<CapacityProposalEntity> existing = proposals.findByCreatedByAndWeekStartAndDeletedFalse(owner, monday);
+        if (existing.isEmpty()) {
+            return store(owner, monday, generate(owner, monday, Set.of(), d -> true).built(), 0, false);
+        }
+        Set<String> held = new HashSet<>();
+        for (CapacityProposalEntity p : existing) {
+            if (!RELEASED.contains(p.getStatus())) {
+                held.add(suppressKey(p.getKind(), p.getDay()));
+            }
+        }
+        List<Built> built = generate(owner, monday, held, d -> today.equals(dayOf(d))).built();
+        return built.isEmpty() ? List.of() : store(owner, monday, List.of(built.get(0)), existing.size(), true);
+    }
+
     // ── generation ────────────────────────────────────────────────────────────
 
     /** Reads the week once, generates, prices and words (template only) every draft not suppressed. */
     private Generated generate(UUID owner, LocalDate monday, Set<String> suppressed) {
+        return generate(owner, monday, suppressed, d -> true);
+    }
+
+    /** {@link #generate(UUID, LocalDate, Set)} keeping only the drafts {@code keep} accepts (priced only those). */
+    private Generated generate(UUID owner, LocalDate monday, Set<String> suppressed, Predicate<ProposalDraft> keep) {
         WeekPicture w = pictures.picture(owner, monday);
-        List<ProposalDraft> drafts = ProposalGenerator.forWeek(w, List.of(), props);
+        List<ProposalDraft> drafts = ProposalGenerator.forWeek(w, List.of(), props).stream().filter(keep).toList();
         if (drafts.isEmpty()) {
             return new Generated(w, List.of());
         }
@@ -297,6 +335,11 @@ public class ProposalService {
 
     /** Inside the caller's transaction: one open row per built proposal, in rank order. */
     private List<Stored> store(UUID owner, LocalDate monday, List<Built> built) {
+        return store(owner, monday, built, 0, false);
+    }
+
+    /** {@link #store(UUID, LocalDate, List)} with ranks from {@code firstRank}; {@code live} marks the live loop's. */
+    private List<Stored> store(UUID owner, LocalDate monday, List<Built> built, int firstRank, boolean live) {
         Instant now = clock().instant();
         List<Stored> out = new ArrayList<>();
         for (int i = 0; i < built.size(); i++) {
@@ -308,7 +351,10 @@ public class ProposalService {
             e.setKind(b.draft().kind());
             e.setBundle(AdjustmentDraft.toBundle(b.draft().bundle()));
             Map<String, Object> facts = new LinkedHashMap<>(b.draft().facts());
-            facts.put(RANK, i);
+            facts.put(RANK, firstRank + i);
+            if (live) {
+                facts.put(LIVE, true);
+            }
             e.setFacts(facts);
             e.setEffects(effectsMap(b.wording(), ProposalCompareLines.lines(b.effects()), b.draft().touchedDays()));
             e.setTitle(b.wording().title());
@@ -326,7 +372,7 @@ public class ProposalService {
     // ── the background rephrase ───────────────────────────────────────────────
 
     /** Fire-and-forget, after the rows committed: the request never waits for (or fails on) the model. */
-    private void rephraseLater(UUID owner, List<Stored> stored) {
+    void rephraseLater(UUID owner, List<Stored> stored) {
         if (stored == null || stored.isEmpty()) {
             return;
         }

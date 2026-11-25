@@ -431,3 +431,17 @@ public func kapacitasWhereYouSee(_ p: KapacitasProposal) -> [(title: String, bod
     }
     return out
 }
+
+// MARK: - Words the wall card shares with the page (Task 20)
+
+/// 0 = Monday … 6 = Sunday (nil when unreadable).
+func kapacitasWeekdayIndex(_ ymd: String) -> Int? { weekdayIndex(ymd) }
+
+/// „csütörtök" of a day (nil when unreadable).
+func kapacitasWeekdayName(_ ymd: String?) -> String? { dayName(ymd) }
+
+/// „csütörtökön" of a day.
+func kapacitasWeekdayOn(_ ymd: String?) -> String? { on(ymd) }
+
+/// „Négy" — a count in words (digits past ten).
+func kapacitasCountWord(_ n: Int) -> String { n > 0 && n < countWords.count ? countWords[n] : "\(n)" }

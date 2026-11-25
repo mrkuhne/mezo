@@ -720,6 +720,8 @@ the server's kímélő day and judged flag win, a day the server did not answer 
 - **Experiment `finishedOn` is the day after the window**, not the day the pass ran, so the list call and the job agree.
 - Deferred: the guided recipe-seeding chat (#23);
   `mezo-r36n9.123` — the *Korábbi évadok* page and the current weight in Új évad step 1.
+- **2026-11-25 (B7 K3 Task 20):** `MaWall.swift` also registers the day-capacity `kapacitas` source (rank 0.85, above
+  the Évad correction's 0.8); the `evad` source and its taps are unchanged. See [`capacity.md`](capacity.md) §4.
 
 ## 10. Key files
 
