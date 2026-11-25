@@ -57,13 +57,12 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(name = FeaturesConfiguration.MAIL_SWITCH, havingValue = "true")
 public class ImapMailReader implements MailReader {
 
-    public static final String AUTH_FAILED = "MAIL_AUTH_FAILED";
-    public static final String UNREACHABLE = "MAIL_UNREACHABLE";
+    public static final String AUTH_FAILED = io.mrkuhne.mezo.feature.mail.service.MailErrors.AUTH_FAILED;
+    public static final String UNREACHABLE = io.mrkuhne.mezo.feature.mail.service.MailErrors.UNREACHABLE;
 
     private static final String TIMEOUT_MS = "20000";
     private static final Duration FIRST_RUN_WINDOW = Duration.ofDays(7);
     private static final Logger LOG = LoggerFactory.getLogger(ImapMailReader.class);
-    private static final int BODY_CHAR_CAP = 500_000;
     private static final Pattern GM_MSGID = Pattern.compile("X-GM-MSGID\\s+(\\d+)", Pattern.CASE_INSENSITIVE);
     private static final Pattern UID_ITEM = Pattern.compile("\\bUID\\s+(\\d+)", Pattern.CASE_INSENSITIVE);
 
@@ -155,7 +154,7 @@ public class ImapMailReader implements MailReader {
         List<FetchedMail> mails = new ArrayList<>();
         for (Message m : batch) {
             long uid = uidOf(folder, m);
-            mails.add(toMail(folderName, uid, validity, gm.get(uid), (MimeMessage) m));
+            mails.add(MimeMailExtractor.toMail(folderName, uid, validity, gm.get(uid), (MimeMessage) m, null, clock));
         }
         return new FolderBatch(validity, mails);
     }
@@ -166,109 +165,6 @@ public class ImapMailReader implements MailReader {
         } catch (MessagingException e) {
             throw translate(e);
         }
-    }
-
-    /** One bad message degrades to what could be read; it never fails the batch. */
-    private FetchedMail toMail(String folder, long uid, long validity, Long gmMsgId, MimeMessage m) {
-        Map<String, List<String>> raw = new LinkedHashMap<>();
-        try {
-            Enumeration<Header> all = m.getAllHeaders();
-            while (all.hasMoreElements()) {
-                Header h = all.nextElement();
-                raw.computeIfAbsent(h.getName(), k -> new ArrayList<>()).add(h.getValue());
-            }
-        } catch (MessagingException | RuntimeException e) {
-            LOG.debug("mail uid {}: headers unreadable", uid);
-        }
-        String from = "";
-        String fromName = "";
-        try {
-            jakarta.mail.Address[] addrs = m.getFrom();
-            if (addrs != null && addrs.length > 0) {
-                if (addrs[0] instanceof InternetAddress ia) {
-                    from = ia.getAddress() == null ? "" : ia.getAddress();
-                    fromName = ia.getPersonal() == null ? "" : ia.getPersonal();
-                } else {
-                    from = addrs[0].toString();
-                }
-            }
-        } catch (MessagingException | RuntimeException e) {
-            LOG.debug("mail uid {}: From unreadable", uid);
-        }
-        String subject = null; // MailHeaders turns null into ""
-        try {
-            subject = m.getSubject();
-        } catch (MessagingException | RuntimeException e) {
-            LOG.debug("mail uid {}: Subject unreadable", uid);
-        }
-        if (subject == null || subject.isEmpty()) { // envelope unusable: decode the raw header instead
-            List<String> rawSubject = raw.getOrDefault("Subject", List.of());
-            if (!rawSubject.isEmpty() && rawSubject.get(0) != null) {
-                try {
-                    subject = jakarta.mail.internet.MimeUtility.decodeText(rawSubject.get(0).strip());
-                } catch (java.io.UnsupportedEncodingException e) {
-                    subject = rawSubject.get(0).strip();
-                }
-            }
-        }
-        MailHeaders headers = new MailHeaders(from, fromName, subject, raw);
-        List<String> ids = headers.values("Message-ID");
-        String messageId = ids.isEmpty() || ids.get(0) == null ? "" : ids.get(0).strip();
-        Date received = null;
-        try {
-            received = m.getReceivedDate() != null ? m.getReceivedDate() : m.getSentDate();
-        } catch (MessagingException | RuntimeException e) {
-            LOG.debug("mail uid {}: date unreadable", uid);
-        }
-        Instant at = received == null ? Instant.now(clock) : received.toInstant();
-        String[] bodies = new String[2];
-        try {
-            collect(m, bodies);
-        } catch (MessagingException | IOException | RuntimeException e) {
-            // headers-only / partial mail; the exception text is not logged (it could echo content)
-            LOG.debug("mail uid {}: body unreadable ({})", uid, e.getClass().getSimpleName());
-        }
-        return new FetchedMail(folder, uid, validity, gmMsgId, messageId, at, headers, bodies[0], bodies[1]);
-    }
-
-    /** First text/plain into {@code out[0]}, first text/html into {@code out[1]}; attachments are never opened. */
-    private static void collect(Part part, String[] out) throws MessagingException, IOException {
-        if (out[0] != null && out[1] != null) {
-            return;
-        }
-        if (isAttachment(part)) {
-            return;
-        }
-        if (part.isMimeType("multipart/*")) {
-            jakarta.mail.Multipart mp = (jakarta.mail.Multipart) part.getContent();
-            for (int i = 0; i < mp.getCount(); i++) {
-                collect(mp.getBodyPart(i), out);
-            }
-        } else if (part.isMimeType("text/plain") && out[0] == null) {
-            out[0] = cap(text(part));
-        } else if (part.isMimeType("text/html") && out[1] == null) {
-            out[1] = cap(text(part));
-        }
-    }
-
-    private static boolean isAttachment(Part part) throws MessagingException {
-        String d = part.getDisposition();
-        return Part.ATTACHMENT.equalsIgnoreCase(d) || (part.getFileName() != null && !part.isMimeType("multipart/*"));
-    }
-
-    private static String text(Part part) throws MessagingException, IOException {
-        try {
-            Object c = part.getContent();
-            return c instanceof String s ? s : "";
-        } catch (java.io.UnsupportedEncodingException e) {
-            try (InputStream in = part.getInputStream()) {
-                return new String(in.readNBytes(BODY_CHAR_CAP), StandardCharsets.UTF_8);
-            }
-        }
-    }
-
-    private static String cap(String s) {
-        return s.length() > BODY_CHAR_CAP ? s.substring(0, BODY_CHAR_CAP) : s;
     }
 
     /** One {@code UID FETCH a:b (UID X-GM-MSGID)}; a failure only costs the Gmail ids. */

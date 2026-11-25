@@ -1,11 +1,13 @@
 ---
-title: Mail — Boop Levél, the morning post (mirror mailbox → scored digest)
+title: Mail — Boop Levél, the morning post (his own Gmail → scored digest)
 type: feature-domain
 status: done
-updated: 2026-11-21
-tags: [backend, boop, level, mail, imap, llm, privacy]
+updated: 2026-11-25
+tags: [backend, boop, level, mail, imap, google, gmail-api, oauth, llm, privacy]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/mail
+  - backend/src/main/java/io/mrkuhne/mezo/feature/mail/service/google
+  - backend/src/main/resources/db/changelog/1.1.0/script/202611251200_mezo-r36n9.38_mail_google.sql
   - api/feature/mail/mail.yml
   - backend/src/main/resources/db/changelog/1.1.0/script/202611211200_mezo-r36n9.38_mail.sql
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/MailClassifierLlmAdapter.java
@@ -14,6 +16,12 @@ related: [boop-ios, penz, companion, _platform-api-backend, _platform-auth-secur
 ---
 
 # Mail — Boop Levél, the morning post (L1 + L2) — Feature Documentation
+
+> **Change 2026-11-25 (owner decision, spec §12, `mezo-r36n9.38`/`.39`): Google sign-in to his own Gmail, no mirror
+> mailbox.** The mailbox is reached through a **„Belépés Google-lel”** button (OAuth, `gmail.readonly`, Gmail REST API)
+> instead of a Boop-only mirror Gmail over IMAP + app password; see §3.10. The IMAP reader, the mirror/app-password
+> connect (`PUT /api/mail/mailbox`) and everything below that talks about the *mirror* are **kept in the code but unused
+> by the app**; redaction, rules, pipeline, digest and screens are unchanged and shared by both kinds.
 
 > Backend feature with an iPhone client: **Boop**'s *Levél* area (`ios/Boop/Level/`, §6, and
 > [`boop-ios.md`](boop-ios.md) §2 *Levél*). Built 2026-11-21 in **one release** — L1 `mezo-r36n9.38` (intake, redaction,
@@ -26,8 +34,9 @@ related: [boop-ios, penz, companion, _platform-api-backend, _platform-auth-secur
 
 ## 1. Summary
 
-The owner's mail lives in two inboxes (Gmail, iCloud) that bury what matters. Both **auto-forward everything into one
-Gmail account made only for Boop** (the *mirror*); the server reads that one account over IMAP at **08:00 and 15:00
+The owner's mail lives in two inboxes (Gmail, iCloud) that bury what matters. Since 2026-11-25 the server reads **his own
+Gmail** (signed in with Google; iCloud can optionally forward into it) — originally a Boop-only *mirror* account over
+IMAP, kept as the unused `imap` kind — at **08:00 and 15:00
 Europe/Budapest**, strips every mail down to redacted text, sorts it with deterministic rules first and a cheap model
 second, and keeps a rolling digest in **four groups** (spec §4.1): **Határidős** (deadlines), **Csomagok** (one row per
 parcel), **Akciók és lehetőségek** (deals, scored 1–10), **A többi** (folded by category) — plus two kinds that always
@@ -35,7 +44,7 @@ rise to the top: **a real person** and **a sensitive sender** (bank, insurer, go
 mail is **never read by a model**). Taps on *érdekel / nem érdekel* teach a per-sender prior and a few-shot example
 list. A deal or a due date that is about to lapse can **ring the phone** through the Ma wall's `.expires` role.
 
-What it never does: write to the mailbox (read-only IMAP, no flags/moves/deletes/SMTP), download attachments, let a
+What it never does: write to the mailbox (read-only access, no flags/moves/deletes/SMTP; Gmail scope is `gmail.readonly`), download attachments, let a
 model see a sensitive mail, trust a model's date/amount/link that the mail text does not contain, or spend more than a
 fixed cost a day.
 
@@ -43,11 +52,12 @@ fixed cost a day.
 
 All on the iPhone (§6); the server has no UI.
 
-- **Fiókok (connect).** A six-step guide (new Boop-only Gmail → 2-step verification → app password → Gmail forwarding →
-  iCloud forwarding → add the Boop account to the Gmail app), then two fields: the mirror address and the **app
-  password he types himself**. `PUT /api/mail/mailbox` verifies an IMAP login **before** storing anything. Connected
-  state shows the address, last run, how many mails the last run saw and the run state in words. **Lecsatolás** deletes
-  the stored credential (the classified items stay).
+- **Fiókok (connect).** Not connected: the **„Belépés Google-lel”** button plus two lines (what Boop sees — Beérkezett +
+  Spam, read-only — and what it never does) and an optional iCloud-forwarding line. States: *not connected*,
+  *unconfigured* (server has no client id → the screen says setup is pending), *connected* (address, last run, mails
+  seen, run state in words) and *auth_failed* („A Google visszavonta a hozzáférést — lépj be újra” + the button).
+  **Lecsatolás** revokes the token at Google (best effort) and deletes it (the classified items stay). The old
+  six-step mirror guide and the app-password fields are gone from the app (the legacy `PUT` path remains, §4.2).
 - **Ma.** Head verdict + sentence, the highlight (best deal or the nearest due date), stat tiles (arrived · handled ·
   worth a minute), a heat strip of arrival by two-hour slot, people and sensitive rows first, then the four groups.
   Every number is measured from stored rows.
@@ -84,7 +94,9 @@ GET /api/mail/digest ──► MailDigestQuery.digest (reads items + messages; n
   (`UserFanOut.forEachActiveUser`), each user in its own try/catch (intake → digest), one purge after the fan-out.
   `runManualAsync(owner)` (`:66`) runs the same for one user, behind a DB cooldown (§3.9).
 
-### 3.2 Intake — IMAP, cursors, idempotency
+### 3.2 Intake — IMAP (legacy `imap` kind), cursors, idempotency
+
+> Since 2026-11-25 the app connects only `google` mailboxes (§3.10); this IMAP path is intact but unused by the app.
 
 `service/imap/ImapMailReader.java:58` (Angus Mail, IMAPS `imap.gmail.com:993`, one short-lived connection per run,
 RFC 2971 `ID` when supported, 20 s timeouts). Folders **INBOX** then **`[Gmail]/Spam`** (iCloud forwards without SRS, so
@@ -205,6 +217,48 @@ connect = verify IMAP login **first** (422 `MAIL_AUTH_FAILED`, 503 `MAIL_UNREACH
 the password is never logged, never echoed, never returned; disconnect nulls both secret columns (the address stays).
 Changing the address drops the old folder cursors.
 
+### 3.10 Google sign-in and the Gmail API reader (2026-11-25, spec §12)
+
+- **Mailbox kinds.** `mail_mailbox.kind` is `imap | google` (changeset
+  `1.1.0/script/202611251200_mezo-r36n9.38_mail_google.sql`, `varchar(8) not null default 'imap'`, check constraint,
+  appended last in `1.1.0_master.yml`; the v3.33.0 changeset is untouched). `MailIntakeService` branches on `kind`; both
+  go through the same `persist(...)` (same store, rules, redaction).
+- **Personal-mode OAuth app.** The owner creates a Google Cloud project in **Personal** user type (an app only its
+  creator can authorise: no 100-user cap, no 7-day test-token expiry, no unverified-app screen, no verification/CASA),
+  enables the Gmail API and creates an **iOS OAuth client** for Boop's bundle id. The client id is **public**.
+- **Sign-in on the phone.** `ASWebAuthenticationSession` + **PKCE** (`GooglePKCE.swift`), redirect
+  `com.googleusercontent.apps.<id-prefix>:/oauth2redirect`, scopes `gmail.readonly openid email`; no Google SDK. The
+  phone posts `{code, codeVerifier, redirectUri}` once to `POST /api/mail/mailbox/google`; the redirect must equal the
+  reversed client id scheme (else 400 `MAIL_GOOGLE_REDIRECT_INVALID`).
+- **Server exchange + refresh** (`service/google/GoogleOAuthClient`, RestClient 10 s, **no client secret** — the iOS
+  client id is used for the exchange and for every refresh; with a Personal app only his account can authorise). The
+  **refresh token is sealed with the same AES-GCM cipher in the same columns as the app password** and never returned
+  or logged. The **id_token** is checked (`aud` = client id, `iss` Google, `email_verified`) and gives the address. A
+  missing refresh token is `MAIL_AUTH_FAILED`.
+- **Revoke.** `DELETE /api/mail/mailbox` on a google mailbox calls Google's revoke endpoint first (best effort, a failure
+  never blocks). Replacing the account also revokes the old grant (google → imap, account A → account B); re-consenting
+  with the **same** account does **not** revoke (Google may treat old and new refresh tokens as one grant).
+- **`GmailApiReader`** (`service/google/GmailApiReader`): the **first run** lists `newer_than:7d` for labels **INBOX +
+  SPAM**; later runs use `users.history.list` from the stored `historyId` (`messageAdded`, paginated); a **404** (history
+  expired) falls back to a **bounded full sync** of the last 7 days. **200-per-label cap:** the list is capped per label
+  and a full sync over the cap skips the oldest mails; when the cap is hit inside history the cursor advances to that
+  record (overflow skipped, never a stall). Each mail is `messages.get format=raw` → the shared **`MimeMailExtractor`**
+  (`service/imap/`, extracted from the IMAP reader) so redaction/rules/pipeline are identical. Folder `INBOX` /
+  `[Gmail]/Spam`, `uid = uidvalidity = 0`, `gm_msgid` = the hex API id, `receivedAt` = `internalDate`. The cursor row is
+  folder `gmail-api`, `last_uid` = `historyId` (read before listing, advances even on an empty run).
+- **Error classification.** Gmail API: **401** and 403 `insufficientPermissions` / `PERMISSION_DENIED` →
+  `MAIL_AUTH_FAILED` (re-login state); **429**, **5xx**, `rateLimitExceeded` / `userRateLimitExceeded` /
+  `dailyLimitExceeded`, `accessNotConfigured` / `SERVICE_DISABLED` and any unknown 403 → `MAIL_UNREACHABLE`. Token
+  endpoint: `invalid_grant` (revoked / expired) and other 4xx → `MAIL_AUTH_FAILED`; `invalid_client` /
+  `unauthorized_client` / `invalid_request` (a configuration problem, not his login) → `MAIL_UNREACHABLE` + a WARN;
+  5xx/IO/429 → `MAIL_UNREACHABLE`. Logs name status + reason, never a token.
+- **Host allow-list.** `MailProperties.Google.isEndpointsAllowed()` (`@AssertTrue`) fails startup of an enabled mail
+  feature unless token/revoke URLs are https on exactly `oauth2.googleapis.com` and the API URL on
+  `gmail.googleapis.com` (no userinfo; loopback hosts exempt for tests). The client id and redirect override are
+  stripped once in the record's compact constructor (blank → null).
+- **Config.** New env **`MEZO_MAIL_GOOGLE_CLIENT_ID`** → `mezo.mail.google.client-id` (a **public** identifier, not a
+  secret). Blank ⇒ `GET` returns `googleClientId: null` and connect is 409 `MAIL_GOOGLE_NOT_CONFIGURED`.
+
 ### 3.9 Health and manual runs
 
 `MailHealth.java:23` — gauges `mezo.mail.zero.run.streak` (max) and `mezo.mail.auth.failed` (0/1), recomputed from the
@@ -233,15 +287,18 @@ is kept for learning and history; sensitive mail has no body to purge.
 | `deal-worth-threshold` / `notify-threshold` / `notify-window-hours` | 7 / 8 / 36 | worth-a-minute, ring score, ring window |
 | `silent-after-nopes` / `feedback-half-life-days` / `few-shot-examples` | 3 / 90 / 8 | learning |
 | `body-max-chars` / `raw-retention-days` / `manual-run-cooldown-minutes` | 6000 / 30 / 10 | |
-| `imap-host` / `imap-port` | `imap.gmail.com` / 993 | the ITs point them at GreenMail |
+| `imap-host` / `imap-port` | `imap.gmail.com` / 993 | legacy IMAP kind; the ITs point them at GreenMail |
+| `google.client-id` (env `MEZO_MAIL_GOOGLE_CLIENT_ID`) | blank | public iOS OAuth client id; blank = Google sign-in unconfigured |
+| `google.redirect-uri` / `token-url` / `revoke-url` / `api-url` | derived / Google hosts | overrides for tests; host allow-list applies (§3.10) |
 
 ### 4.2 Endpoints (contract `api/feature/mail/mail.yml`, tag `Mail`, `MailController.java:33`)
 
 | Method + path | operationId | Notes |
 |---|---|---|
-| `GET /api/mail/mailbox` | `getMailMailbox` | `{address, state none|connected|silent|auth_failed|disconnected, lastRunAt, lastFetched}` |
-| `PUT /api/mail/mailbox` | `putMailMailbox` | body `{address, appPassword}`; verifies IMAP first; 422 `MAIL_AUTH_FAILED`, 503 `MAIL_UNREACHABLE` |
-| `DELETE /api/mail/mailbox` | `deleteMailMailbox` | Lecsatolás: state `disconnected`, secrets nulled |
+| `GET /api/mail/mailbox` | `getMailMailbox` | `{kind imap|google|null, googleClientId, address, state none|connected|silent|auth_failed|disconnected, lastRunAt, lastFetched}` |
+| `POST /api/mail/mailbox/google` | `postMailMailboxGoogle` | body `{code, codeVerifier, redirectUri}`; server exchanges, seals the refresh token; 400 `MAIL_GOOGLE_REDIRECT_INVALID`, 409 `MAIL_GOOGLE_NOT_CONFIGURED`, 422 `MAIL_AUTH_FAILED`, 502 `MAIL_UNREACHABLE` |
+| `PUT /api/mail/mailbox` | `putMailMailbox` | legacy IMAP/app-password connect, unused by the app; body `{address, appPassword}`; verifies IMAP first; 422 `MAIL_AUTH_FAILED`, 503 `MAIL_UNREACHABLE` |
+| `DELETE /api/mail/mailbox` | `deleteMailMailbox` | Lecsatolás: google token revoked at Google first (best effort); state `disconnected`, secrets nulled |
 | `POST /api/mail/mailbox/run` | `runMailMailbox` | 202; 409 `MAIL_NOT_CONNECTED`; 429 `MAIL_RUN_COOLDOWN` |
 | `GET /api/mail/digest?date=` | `getMailDigest` | counts, 12 heat slots, `people / sensitive / deadlines / parcels / deals`, `rest[{category,count,items}]`, `rulesOnly(+Reason)`; item `screen`, `flagged`, `notifiable`, `gmailMessageId` (decimal string) |
 | `POST /api/mail/items/{id}/feedback` | `postMailFeedback` | `{verdict: interest|nope}`; 204; 404 `MAIL_ITEM_NOT_FOUND` for a foreign item |
@@ -321,6 +378,8 @@ Focused gate: `./mvnw clean test -Dmezo.test.use-testcontainers=true -Dtest='Mai
   + app password (no OAuth); a **mirror** Gmail fed by Gmail and iCloud; ring for a good deal within decision #35's
   cap; 10 price checks a day for L3; L1 + L2 in one release; the four groups; approach A (server polls twice a day);
   he sets the mirror up himself.
+- **Owner decision 2026-11-25** (spec §12, `14-decisions.md` #112, supersedes the mirror decisions): no mirror mailbox —
+  Google sign-in to his own Gmail (Personal-mode OAuth app, so no weekly re-login); iCloud may forward into the Gmail.
 - **Privacy:** sensitive mail is headers-only and never modelled; redaction before any token; no real mail content in
   commits, docs or Notion; nothing leaves the owner's cluster except the redacted text sent to the cheap model.
 - **Known limitations** (said out loud):

@@ -13,6 +13,8 @@ key_files:
 related: [_platform-data-layer, _platform-auth-security, _platform-notifications, train, today, fuel, ritual, companion]
 ---
 
+> **2026-11-25 — reviewed after Boop Levél Google sign-in (`mezo-r36n9.38`/`.39`, additive contract, no platform change).** `api/feature/mail/mail.yml` gains `POST /api/mail/mailbox/google` and `kind` / `googleClientId` on the mailbox GET; two message keys (`MAIL_GOOGLE_NOT_CONFIGURED`, `MAIL_GOOGLE_REDIRECT_INVALID`) in both bundles. See [`mail.md`](mail.md) §3.10.
+
 > **Exercise SPE palettes (`mezo-eiux9`).** The additive Train contract returns `ExerciseCatalogItem.allowedTechniques` and optional `PrescribedSet.topHoldSec`; `top_pause` extends the technique enum. `TRAIN_TECHNIQUE_NOT_ALLOWED` is localized in both message bundles and replaces the old stability refusal for manual picks. See [`train.md`](train.md) §4 *Intensity techniques*.
 > **2026-11-24 — reviewed after Boop's backdated capture, drinks and gym catch-up (`mezo-r36n9.159`–`.161`, additive contract, no platform change).** `meal.yml`/`fuel-plan.yml` widen the meal slot vocabulary with `drink`; `train.yml` gains `completeWorkoutAsPlanned` (+ `TRAIN_AS_PLANNED_DATE_OUT_OF_WINDOW` in both message catalogs). Reminder learned the hard way: `api/openapi.yml` is the merged bundle — run `cd api/generate && npm run generate:api` after a fragment edit, or the backend generator and the phone copy keep the old contract.
 

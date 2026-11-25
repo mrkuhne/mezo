@@ -33,7 +33,7 @@ osszefoglalo: A Levél Ma oldalán négy csoportban látod, mi érkezett: határ
   csoportba kerülnek, csak pontszám nélkül.
 
 ## Hogyan működik
-1. **Átvétel.** Reggel 8-kor és délután 3-kor a háttérrendszer belép a tükörfiókba (csak olvas), és letölti az
+1. **Átvétel.** Reggel 8-kor és délután 3-kor a háttérrendszer a Google-hozzáféréseddel megnézi a Gmailedet (csak olvas; az első alkalommal az elmúlt hét napot), és letölti az
    újakat. Kézzel is kérhetsz frissítést a Fiókok oldalon; ez néhány percenként egyszer megy.
 2. **Tisztítás, mielőtt bármi gép látná.** A levélből kikerülnek a képek és a reklámszövegek, a linkekből csak a
    webcím marad, az e-mail-címek, számlaszámok, telefonszámok és hivatkozási számok kitakarva — a határidő, az
@@ -88,7 +88,7 @@ látja modell, és a lapon csak olyan dátum és összeg áll, ami tényleg a le
 ## Adattáblák
 | Tábla | Mit tárol |
 |---|---|
-| `mail_mailbox` | A tükörfiók: cím, a titkosított alkalmazásjelszó, állapot, utolsó átnézés |
+| `mail_mailbox` | A Gmail-fiók: cím, a titkosított hozzáférési kulcs, állapot, utolsó átnézés |
 | `mail_folder_cursor` | Hol tartott az átvétel a Beérkezett és a Spam mappában |
 | `mail_run` | Minden átnézés: mikor, hány levelet látott, rendben ment-e |
 | `mail_message` | A letöltött levelek (érzékenynél csak a feladó és a dátum; a szöveg 30 nap után törlődik) |

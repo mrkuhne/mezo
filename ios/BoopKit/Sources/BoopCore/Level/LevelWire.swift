@@ -97,6 +97,15 @@ public enum LevelMailboxState: String, Codable, Sendable, Equatable {
     }
 }
 
+/// How the mailbox is reached (`mail_mailbox.kind`); a kind the app does not know survives as `.unknown`.
+public enum LevelMailboxKind: String, Codable, Sendable, Equatable {
+    case imap, google, unknown
+    public init(from decoder: Decoder) throws {
+        let raw = (try? decoder.singleValueContainer().decode(String.self)) ?? ""
+        self = LevelMailboxKind(rawValue: raw) ?? .unknown
+    }
+}
+
 /// Which of his mailboxes forwarded the mail.
 public enum LevelVia: String, Codable, Sendable, Equatable {
     case gmail, icloud, unknown
@@ -135,14 +144,23 @@ public struct LevelMailbox: Codable, Equatable, Sendable {
     public var state: LevelMailboxState
     public var lastRunAt: Date?
     public var lastFetched: Int?
+    /// nil = no mailbox yet.
+    public var kind: LevelMailboxKind?
+    /// The server's iOS OAuth client id (public); nil = Google sign-in is not set up on the server. Present even when
+    /// there is no mailbox.
+    public var googleClientId: String?
 
-    public init(address: String? = nil, state: LevelMailboxState = .none, lastRunAt: Date? = nil, lastFetched: Int? = nil) {
+    public init(address: String? = nil, state: LevelMailboxState = .none, lastRunAt: Date? = nil, lastFetched: Int? = nil,
+                kind: LevelMailboxKind? = nil, googleClientId: String? = nil) {
         self.address = address; self.state = state; self.lastRunAt = lastRunAt; self.lastFetched = lastFetched
+        self.kind = kind; self.googleClientId = googleClientId
     }
 
-    private enum CodingKeys: String, CodingKey { case address, state, lastRunAt, lastFetched }
+    private enum CodingKeys: String, CodingKey { case address, state, lastRunAt, lastFetched, kind, googleClientId }
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
+        kind = (try? c.decodeIfPresent(LevelMailboxKind.self, forKey: .kind)) ?? nil
+        googleClientId = c.optional(.googleClientId)
         address = c.optional(.address)
         state = c.lenient(.state, .unknown)
         lastRunAt = c.instant(.lastRunAt)
@@ -154,7 +172,17 @@ public struct LevelMailbox: Codable, Equatable, Sendable {
         try c.encode(state, forKey: .state)
         try c.encodeInstant(lastRunAt, forKey: .lastRunAt)
         try c.encodeIfPresent(lastFetched, forKey: .lastFetched)
+        try c.encodeIfPresent(kind, forKey: .kind)
+        try c.encodeIfPresent(googleClientId, forKey: .googleClientId)
     }
+}
+
+/// `POST /api/mail/mailbox/google` — encode-only: the one-time code and its PKCE verifier go out once; the server
+/// exchanges them and keeps the refresh token.
+struct LevelGoogleConnectRequest: Encodable {
+    let code: String
+    let codeVerifier: String
+    let redirectUri: String
 }
 
 /// `PUT /api/mail/mailbox` — encode-only on purpose: the app password goes out once and is never read back, kept

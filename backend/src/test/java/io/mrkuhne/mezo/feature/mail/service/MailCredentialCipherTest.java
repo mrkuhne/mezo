@@ -13,7 +13,7 @@ class MailCredentialCipherTest {
 
     private static MailProperties props(String key) {
         return new MailProperties(key, "0 0 8,15 * * *", "Europe/Budapest", 0.15, 7, 8, 36, 3, 90, 8, 6000, 30, 10,
-            "imap.gmail.com", 993);
+            "imap.gmail.com", 993, MailProperties.Google.of(null));
     }
 
     private static String key32() {

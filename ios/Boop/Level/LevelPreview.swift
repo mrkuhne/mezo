@@ -8,10 +8,11 @@ import BoopCore
 /// real-looking mail (the spike's: a bank, a sister-in-law, a shoe shop at −32 %, a phishing "Maldív-szigetek") —
 /// never the owner's. The Mac's firewall blocks the simulator app's network, so this is how the area is looked at.
 ///
-/// `-previewLevel normal|empty|loading|failed|rulesOnly|rulesOnlyFailure|disconnected|connected|stalled|authFailed|offline|cooldown`
+/// `-previewLevel googleNone|googleUnconfigured` (Fiókok before / without the Google client id) and
+/// `normal|empty|loading|failed|rulesOnly|rulesOnlyFailure|disconnected|connected|stalled|authFailed|offline|cooldown`
 /// (default `normal`; `connected` = `normal`, meant for `-levelTab Fiókok`): a full day · a quiet day · the digest
 /// never answers · the digest answers 500 · part of the day rules-only (the cap) · rules-only (the model failed) ·
-/// no mailbox yet · the same as normal · the mailbox went quiet · the app password was revoked · no net (the cache is
+/// no mailbox yet · the same as normal · the mailbox went quiet · Google withdrew access · no net (the cache is
 /// primed five hours old) · "Átnézés most" answers 429. `-levelTab Ma|Figyelt|Szabályok|Fiókok`.
 /// Writes are kept for the run; the app password `wrong` is refused with 422, so the form's error can be seen.
 enum LevelPreview {
@@ -38,15 +39,17 @@ final class LevelPreviewModel: @unchecked Sendable {
     var mailbox: LevelMailbox
     var rules: LevelRules
     var runs = 0
+    static let clientId = "123456789012-abcdefexample.apps.googleusercontent.com"
 
     init(state: String) {
         self.state = state
         let at = Self.at(0, 8, 0)
         switch state {
-        case "disconnected": mailbox = LevelMailbox(address: nil, state: .none)
-        case "stalled": mailbox = LevelMailbox(address: "boop.posta@example.com", state: .silent, lastRunAt: at, lastFetched: 0)
-        case "authFailed": mailbox = LevelMailbox(address: "boop.posta@example.com", state: .authFailed, lastRunAt: at, lastFetched: 0)
-        default: mailbox = LevelMailbox(address: "boop.posta@example.com", state: .connected, lastRunAt: at, lastFetched: 34)
+        case "disconnected", "googleNone": mailbox = LevelMailbox(address: nil, state: .none, googleClientId: Self.clientId)
+        case "googleUnconfigured": mailbox = LevelMailbox(address: nil, state: .none, googleClientId: nil)
+        case "stalled": mailbox = LevelMailbox(address: "elek.minta@gmail.example", state: .silent, lastRunAt: at, lastFetched: 0, kind: .google, googleClientId: Self.clientId)
+        case "authFailed": mailbox = LevelMailbox(address: "elek.minta@gmail.example", state: .authFailed, lastRunAt: at, lastFetched: 0, kind: .google, googleClientId: Self.clientId)
+        default: mailbox = LevelMailbox(address: "elek.minta@gmail.example", state: .connected, lastRunAt: at, lastFetched: 34, kind: .google, googleClientId: Self.clientId)
         }
         func seed(_ p: String) -> LevelRule { LevelRule(pattern: p, origin: .seed) }
         func own(_ p: String) -> LevelRule { LevelRule(pattern: p, origin: .owner) }
@@ -159,7 +162,10 @@ struct LevelPreviewTransport: ClientTransport {
                 m.mailbox = LevelMailbox(address: c.address, state: .connected, lastRunAt: nil, lastFetched: nil)
                 return try json(m.mailbox)
             case "deleteMailMailbox":
-                m.mailbox = LevelMailbox(address: nil, state: .none)
+                m.mailbox = LevelMailbox(address: nil, state: .none, googleClientId: m.mailbox.googleClientId)
+                return try json(m.mailbox)
+            case "postMailMailboxGoogle":
+                m.mailbox = LevelMailbox(address: "elek.minta@gmail.example", state: .connected, kind: .google, googleClientId: m.mailbox.googleClientId)
                 return try json(m.mailbox)
             case "runMailMailbox":
                 m.runs += 1

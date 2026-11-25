@@ -36,6 +36,10 @@ public class MailIntakeStore {
     public static final String STATE_AUTH_FAILED = "auth_failed";
     public static final String STATE_SILENT = "silent";
     public static final String STATE_DISCONNECTED = "disconnected";
+    public static final String KIND_IMAP = "imap";
+    public static final String KIND_GOOGLE = "google";
+    /** The cursor folder of the Gmail API reader: {@code last_uid} holds the historyId, uidvalidity 0. */
+    public static final String GMAIL_CURSOR = "gmail-api";
     public static final String OUTCOME_OK = "ok";
     public static final String OUTCOME_AUTH_FAILED = "auth_failed";
     public static final String OUTCOME_UNREACHABLE = "unreachable";

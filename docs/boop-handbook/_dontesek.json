@@ -1492,5 +1492,17 @@
     "miert": "Egy év után pihentet és megtart.",
     "levaltotta": "—",
     "kovetkezmeny": "Nincs fókusz a lezárás alatt."
+  },
+  "d-2026-11-25-level-google-belepes": {
+    "datum": "2026-11-25",
+    "terulet": [
+      "Levél"
+    ],
+    "cim": "Google-belépés a saját Gmailhez, gyűjtőfiók nélkül",
+    "suly": "Nagy",
+    "valasztas": "Nem lesz külön gyűjtőfiók: a „Belépés Google-lel” gombbal engedélyezed, hogy Boop csak olvasva lássa a saját Gmailedet (Beérkezett és Spam). Az iCloud-leveleket, ha akarod, az iCloud továbbítja a Gmailedbe.",
+    "miert": "„Nem gyűjtőfiókot szeretnék, adok hozzáférést a gmailemhez.” Két lehetőség közül (alkalmazásjelszó vagy Google-belépés) a Google-belépést választottad.",
+    "levaltotta": "A tükörfiók (d-2026-11-21-level-tukorfiok) és a hatlépéses beállítási útmutató.",
+    "kovetkezmeny": "Egyszeri, kb. tízperces Google-projekt beállítás „személyes” módban — így nem jár le hetente a belépés, és nincs Google-ellenőrzés. Ha a Google visszavonja a hozzáférést, újra be kell lépni; a Lecsatolás a Google-nál is visszavonja."
   }
 }

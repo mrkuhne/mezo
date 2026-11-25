@@ -182,7 +182,9 @@ public func levelErrorText(_ error: PlanFetchError) -> String {
     case .notFound: return "Ezt a levelet már nem találom."
     case .rejected(let code), .conflict(let code):
         switch code {
-        case "MAIL_AUTH_FAILED": return "A postafiók nem fogadta el a jelszót. Nézd meg, hogy az alkalmazásjelszót írtad-e be, nem a szokásosat."
+        case "MAIL_AUTH_FAILED": return "A Google nem engedte a belépést"
+        case "MAIL_GOOGLE_NOT_CONFIGURED": return "A Google-belépés még nincs beállítva a szerveren."
+        case "MAIL_GOOGLE_REDIRECT_INVALID": return "A Google-belépés beállítása nem egyezik az alkalmazással."
         case "MAIL_UNREACHABLE": return "Most nem érem el a postafiókot. Próbáld újra kicsit később."
         case "MAIL_RUN_COOLDOWN": return "Az előbb néztem át a postát. Kicsit várj, mielőtt újra kérnéd."
         case "MAIL_NOT_CONNECTED": return "Előbb kösd be a postafiókot."
