@@ -440,19 +440,24 @@ private struct BuilderMusclesView: View {
         let muscles = model.bandedMuscles
         let current = selected ?? model.outside.first?.muscle ?? muscles.first?.muscle ?? ""
         let hinted = muscles.map(\.muscle).filter { model.coverageFinding($0) != nil }
+        // The glance keeps its room while the last answer still has findings (a hint just taken, a fresh answer on its
+        // way): the body does not jump 176 → 200 → 176 between two answers.
+        let glance = !hinted.isEmpty || !model.coverage.isEmpty
         VStack(spacing: 0) {
             VStack(spacing: 0) {
                 NKBodyMap(muscles.map { m in
                     let fill = min(1, Double(m.weeklySets) / Double(max(1, m.band.high)))
                     return NKBodyHeat(muscle: m.muscle, level: m.muscle == current ? 1 : fill * 0.12)
                 }, hue: planHue, views: .both)
-                .frame(maxWidth: .infinity).frame(height: hinted.isEmpty ? 200 : 176)
-                .padding(.horizontal, 40).padding(.top, 10).padding(.bottom, hinted.isEmpty ? 10 : 2)
+                .frame(maxWidth: .infinity).frame(height: glance ? 176 : 200)
+                .padding(.horizontal, 40).padding(.top, 10).padding(.bottom, glance ? 2 : 10)
                 .accessibilityHidden(true)
-                glanceLine(hinted, current)
+                if glance { glanceLine(hinted, current) }
             }
             .background(RoundedRectangle(cornerRadius: 30, style: .continuous).fill(Color.black.opacity(0.42)).padding(.horizontal, 20))
-            .animation(.smooth(duration: 0.4), value: current)
+            .animation(reduceMotion ? nil : .smooth(duration: 0.4), value: current)
+            .animation(reduceMotion ? nil : .smooth(duration: 0.3), value: glance)
+            .animation(reduceMotion ? nil : .smooth(duration: 0.3), value: hinted.count)
 
             dots(muscles, current)
 
@@ -480,8 +485,12 @@ private struct BuilderMusclesView: View {
 
     /// The coverage glance (mezo-r36n9.114): one quiet line under the body while a hint is open; a tap steps to the
     /// next card with one. Never in the head's pill (that one is the band) and never on the main button.
+    /// With no hint on screen (only reserved room) the line is invisible and not reachable.
     @ViewBuilder private func glanceLine(_ hinted: [String], _ current: String) -> some View {
-        if !hinted.isEmpty {
+        if hinted.isEmpty {
+            Text("0 hiányzó kiegészítő mozgás").nkFont(12, .medium).frame(minHeight: 30).padding(.bottom, 4)
+                .hidden().accessibilityHidden(true)
+        } else {
             Button {
                 let next = hinted.first { $0 != current && (hinted.firstIndex(of: $0) ?? 0) > (hinted.firstIndex(of: current) ?? -1) }
                     ?? hinted.first { $0 != current } ?? hinted[0]
@@ -778,6 +787,20 @@ func coverageAllative(_ dayName: String) -> String {
     }
 }
 
+/// „hétfőre", „keddre", „csütörtökre" — the day a proposal would go on, for VoiceOver.
+func coverageSublative(_ dayName: String) -> String {
+    switch dayName.prefix(3).lowercased() {
+    case "hét": "hétfőre"
+    case "ked": "keddre"
+    case "sze": "szerdára"
+    case "csü": "csütörtökre"
+    case "pén": "péntekre"
+    case "szo": "szombatra"
+    case "vas": "vasárnapra"
+    default: dayName.lowercased()
+    }
+}
+
 /// The coverage hint on a muscle card: quieter than the band proposal (a hairline, no yellow), the server's verdict,
 /// „miért?" with its why, the one proposed exercise as the add sheet's card with its day and prescription, and
 /// Hozzáadom · Mást választok. Without a proposal it says nothing fits in his gym and offers only Mást választok.
@@ -829,12 +852,14 @@ private struct CoverageHintBox: View {
                             .padding(.horizontal, 18).padding(.vertical, 9).background(Capsule().fill(.white))
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Hozzáadom: \(finding.proposal?.exercise.name ?? ""), \(coverageSublative(dayName ?? ""))")
                 }
                 Button(action: other) {
                     Text("Mást választok").nkFont(14, .medium).foregroundStyle(.white.opacity(0.8))
                         .frame(minHeight: 36).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Mást választok: \(SubMuscles.groupName(finding.group).lowercased())")
             }
         }
         .padding(14).frame(maxWidth: .infinity, alignment: .leading)

@@ -50,11 +50,11 @@ public final class BlockBuilderModel {
     private var evaluatedLineup: [[String]]?
 
     /// The coverage hints of the draft on screen (mezo-r36n9.114): 0..3 findings in the server's priority order. Read
-    /// through `coverageFinding(_:)`, which hides them while the line-up differs from the one they were computed for.
+    /// through `coverageFinding(_:)`, which hides a group's finding while rows of that group changed since the answer.
     public private(set) var coverage: [WireCoverageFinding] = []
-    /// The line-up (`weekday:ids` per training day, ids sorted — a reorder changes no hint) the findings on screen
-    /// belong to; nil before the first answer.
-    private var coverageLineup: [String]?
+    /// The rows the findings on screen were computed for — `weekday:catalogId` → count (order-free, a reorder changes no
+    /// hint) and each id's coarse group; nil before the first answer.
+    private var coverageBasis: CoverageBasis?
     /// The hints he took with „Hozzáadom", by group: the added row's key and its draft day (the undo line).
     private var coverageAdded: [String: (rowId: String, day: Int)] = [:]
     /// Ask for coverage hints after every evaluation (off only in tests that script no coverage read).
@@ -271,35 +271,70 @@ public final class BlockBuilderModel {
         }
     }
 
-    private static func coverageLineup(_ days: [WireCoverageDay]) -> [String] {
-        days.map { "\($0.dayIndex):\($0.catalogIds.sorted().joined(separator: ","))" }
+    struct CoverageBasis: Equatable {
+        var counts: [String: Int] = [:]
+        var groups: [String: String] = [:]
     }
 
-    /// The findings still describe the draft on screen (no add / remove / swap / move between days since).
+    /// The draft's catalogue rows on its training days, as the coverage read sees them.
+    private static func coverageBasis(_ draft: BlockDraft) -> CoverageBasis {
+        var b = CoverageBasis()
+        for d in draft.days where !d.exercises.isEmpty {
+            guard let weekday = d.weekdayIndex else { continue }
+            for e in d.exercises {
+                guard let id = e.catalogId?.lowercased() else { continue }
+                b.counts["\(weekday):\(id)", default: 0] += 1
+                b.groups[id] = e.muscle
+            }
+        }
+        return b
+    }
+
+    /// The groups whose rows changed since the answer on screen. A pull also moves the biceps rule, a press the triceps
+    /// one, so those go with it.
+    private var coverageTouched: Set<String> {
+        guard let basis = coverageBasis, let draft else { return [] }
+        let now = Self.coverageBasis(draft)
+        guard now.counts != basis.counts else { return [] }
+        var touched = Set<String>()
+        for key in Set(now.counts.keys).union(basis.counts.keys) where now.counts[key] != basis.counts[key] {
+            let id = String(key.split(separator: ":", maxSplits: 1).last ?? "")
+            guard let group = now.groups[id] ?? basis.groups[id] else { continue }
+            touched.insert(group)
+            if group == "back" { touched.insert("biceps") }
+            if group == "chest" || group == "shoulder" { touched.insert("triceps") }
+        }
+        return touched
+    }
+
+    /// The findings describe the whole draft on screen (no add / remove / swap / move between days since).
     public var coverageFresh: Bool {
-        guard let coverageLineup, let draft else { return false }
-        return coverageLineup == Self.coverageLineup(coverageDays(draft, nil))
+        guard let coverageBasis, let draft else { return false }
+        return coverageBasis.counts == Self.coverageBasis(draft).counts
     }
 
     /// Asks for the draft's coverage hints. A failure (offline, a server error) is silent: no findings, never an error
-    /// on the card. An answer for a line-up that changed meanwhile is dropped.
+    /// on the card. An answer for rows that changed meanwhile is dropped. Undo entries whose row is gone are let go.
     private func refreshCoverage(_ evaluation: WireEvaluation) async {
         guard let draft else { return }
         let days = coverageDays(draft, evaluation)
-        let lineup = Self.coverageLineup(days)
+        let basis = Self.coverageBasis(draft)
         let findings = (try? await client.coverage(blockId: draft.blockId, days: days))?.findings ?? []
-        guard let now = self.draft, Self.coverageLineup(coverageDays(now, nil)) == lineup else { return }
+        guard let now = self.draft, Self.coverageBasis(now).counts == basis.counts else { return }
         coverage = findings
-        coverageLineup = lineup
+        coverageBasis = basis
+        coverageAdded = coverageAdded.filter { group, _ in coverageAddedDay(group) != nil }
     }
 
     /// The draft day (index) a weekday (0 = Monday) falls on; nil when the draft has no such day.
     public func draftDay(weekday: Int) -> Int? { draft?.days.firstIndex { $0.weekdayIndex == weekday } }
 
-    /// The hint on a group's card: only for a fresh answer, not once he took it, and never one whose proposal lands on
-    /// the day of today's open workout (that card is read-only). Tartás and untrained groups the server keeps silent.
+    /// The hint on a group's card: only while that group's rows are as the answer saw them (an edit elsewhere keeps it),
+    /// not while the row he took with Hozzáadom is on the draft, and never one whose proposal lands on the day of today's
+    /// open workout (that card is read-only). Tartás and untrained groups the server keeps silent.
     public func coverageFinding(_ group: String) -> WireCoverageFinding? {
-        guard coverageFresh, coverageAdded[group] == nil, let f = coverage.first(where: { $0.group == group }) else { return nil }
+        guard coverageBasis != nil, coverageAddedDay(group) == nil, !coverageTouched.contains(group),
+              let f = coverage.first(where: { $0.group == group }) else { return nil }
         if let p = f.proposal {
             guard let day = draftDay(weekday: p.dayIndex), day != lockedDayIndex else { return nil }
         }
@@ -391,7 +426,7 @@ public final class BlockBuilderModel {
         evaluation = nil
         evaluationStale = false
         coverage = []
-        coverageLineup = nil
+        coverageBasis = nil
         coverageAdded = [:]
         justCreated = false
         discardError = nil

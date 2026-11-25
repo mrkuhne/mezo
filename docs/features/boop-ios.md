@@ -950,10 +950,13 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     `PlanClient.coverage(blockId:days:)` (`POST /api/train/mesocycles/{id}/coverage`, `getBlockCoverage`, on the lenient
     `RawJSONClient`; `WireCoverage` drops an unreadable finding, a broken `lastTopSet` / `prescription` reads as absent) with
     each non-empty draft day as its weekday (0 = Monday), its catalogue ids lower-cased and the evaluator's
-    `minutesEstimate`. The findings are keyed by group and shown only while `coverageFresh` (the line-up — weekday + sorted
-    ids — equals the one they were computed for: a set step or a reorder keeps them, an add / remove / swap hides them until
-    the fresh answer); a failed read is silent (no findings, never an error). `coverageFinding(_:)` also hides a finding
-    taken with Hozzáadom and one whose proposal lands on the locked day; Tartás / untrained groups are the server's silence
+    `minutesEstimate`. The findings are keyed by group; between two answers only the **touched** groups hide (`weekday:catalogId`
+    counts compared with the answer's basis — a set step or a reorder touches nothing; an added / removed / swapped row
+    hides its own coarse group, a back row also the biceps, a chest / shoulder row also the triceps), the rest stay, and the
+    glance keeps its room while the last answer has findings (no 176 → 200 → 176 jump); a failed read is silent (no
+    findings, never an error). `coverageFinding(_:)` also hides a finding while the row taken with Hozzáadom is still on the
+    draft (deleted by hand → the hint returns; stale undo entries are dropped on the next answer) and one whose proposal
+    lands on the locked day; Tartás / untrained groups are the server's silence
     (not re-filtered). Screens (`BlockBuilderPage`): the glance line under the body map *„N hiányzó kiegészítő mozgás ›"*
     (steps to the next hinted card; the map shrinks to 176 pt while it shows), a hollow ring in the dot strip (amber when the
     muscle is also outside its band), and `CoverageHintBox` on `BuilderMuscleCard` after the band proposal: hairline outline,

@@ -64,18 +64,44 @@ struct PlanCoverageTests {
         #expect(m.coverageFinding("chest") != nil && m.coverageFinding("biceps") == nil)
     }
 
-    @Test(.timeLimit(.minutes(1))) func hiddenWhileTheLineupChangesBackWithTheFreshAnswer() async throws {
+    @Test(.timeLimit(.minutes(1))) func onlyTheTouchedGroupHidesUntilTheFreshAnswer() async throws {
         let stub = StubTransport()
         let m = await loaded(stub)
         m.draft?.step(day: 0, exercise: 0, by: 1)
         m.draft?.move(day: 0, from: [0], to: 2)
         #expect(m.coverageFresh && m.coverageFinding("back") != nil, "a set step or a reorder keeps the hints")
-        m.draft?.remove(day: 1, at: 0)
-        #expect(!m.coverageFresh && m.coverageFinding("back") == nil, "a removed row hides them until the fresh answer")
+        m.draft?.remove(day: 1, at: 0)   // Thursday's bench press: a chest row
+        #expect(!m.coverageFresh)
+        #expect(m.coverageFinding("chest") == nil, "the touched group hides until the fresh answer")
+        #expect(m.coverageFinding("back") != nil, "an untouched group keeps its hint meanwhile")
+        m.draft?.remove(day: 1, at: 0)   // now Thursday's cable row: a back row
+        #expect(m.coverageFinding("back") == nil)
         stub.on("evaluateMesoPlan", .json(200, PlanFixtures.evaluationJSON))
         stub.on("getBlockCoverage", .json(200, #"{"findings":[]}"#))
         await m.evaluateNow()
         #expect(m.coverageFresh && m.coverage.isEmpty)
+    }
+
+    @Test(.timeLimit(.minutes(1))) func otherHintsStayRightAfterHozzaadom() async throws {
+        let m = await loaded(StubTransport())
+        #expect(m.acceptCoverage("back"))
+        #expect(m.coverageFinding("chest") != nil, "the chest hint stays while the fresh answer is on its way")
+        #expect(m.coverageFinding("back") == nil && m.coverageAddedDay("back") == 1)
+    }
+
+    @Test(.timeLimit(.minutes(1))) func aHandDeletedAddedRowBringsTheHintBack() async throws {
+        let stub = StubTransport()
+        let m = await loaded(stub)
+        #expect(m.acceptCoverage("back"))
+        let last = try #require(m.draft?.days[1].exercises.indices.last)
+        m.draft?.remove(day: 1, at: last)
+        #expect(m.coverageAddedDay("back") == nil)
+        #expect(m.coverageFinding("back") != nil, "the row is gone by hand: the hint is back, not stuck as taken")
+        // The next answer lets the stale undo entry go.
+        stub.on("evaluateMesoPlan", .json(200, PlanFixtures.evaluationJSON))
+        stub.on("getBlockCoverage", .json(200, Self.coverageJSON))
+        await m.evaluateNow()
+        #expect(m.acceptCoverage("back") && m.coverageAddedDay("back") == 1)
     }
 
     @Test(.timeLimit(.minutes(1))) func aFailedReadIsSilent() async throws {
