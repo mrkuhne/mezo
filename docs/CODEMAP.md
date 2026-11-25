@@ -70,7 +70,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 ### auth
 
 *BE + API* · read next: [docs/features/_platform-auth-security.md](features/_platform-auth-security.md) (updated 2026-11-19, done) ·
-  [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-11-21, mixed)
+  [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-11-25, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/auth`
   - **entities→tables:** `AppUserEntity`→`app_user`, `InviteEntity`→`invite`
@@ -93,7 +93,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### biometrics
 
-*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-11-20, mixed)
+*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-11-25, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics`
   - **sub-features:** `checkin`, `profile`, `sleep`, `weight`
@@ -137,8 +137,8 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### boop
 
-*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-21, in-progress) ·
-  [docs/features/capacity.md](features/capacity.md) (updated 2026-11-21, in-progress)
+*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-25, in-progress) ·
+  [docs/features/capacity.md](features/capacity.md) (updated 2026-11-25, in-progress)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/boop`
   - **sub-features:** `port`
@@ -164,7 +164,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### capacity
 
-*BE + API* · read next: [docs/features/capacity.md](features/capacity.md) (updated 2026-11-21, in-progress)
+*BE + API* · read next: [docs/features/capacity.md](features/capacity.md) (updated 2026-11-25, in-progress)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/capacity`
   - **sub-features:** `port`
@@ -194,7 +194,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### character
 
-*BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-11-21, shipped)
+*BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-11-25, shipped)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/character`
   - **sub-features:** `detector`
@@ -302,15 +302,15 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### companion
 
-*BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-11-21, shipped) ·
+*BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-11-25, shipped) ·
   [docs/features/companion.md](features/companion.md) (updated 2026-11-21, mixed) ·
   [docs/features/dayclose.md](features/dayclose.md) (updated 2026-11-20, done) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-11-19, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-11-19, in-progress) ·
-  [docs/features/me.md](features/me.md) (updated 2026-11-20, mixed) ·
+  [docs/features/me.md](features/me.md) (updated 2026-11-25, mixed) ·
   [docs/features/penz.md](features/penz.md) (updated 2026-11-21, done) ·
   [docs/features/today.md](features/today.md) (updated 2026-11-19, mixed) ·
-  [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-11-21, mixed)
+  [docs/features/_platform-language.md](features/_platform-language.md) (updated 2026-11-25, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/companion`
   - **sub-features:** `advisor`, `embedding`, `feedback`, `flags`, `graph`, `llm`, `memory`, `port`, `profile`,
@@ -572,7 +572,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### dayclose
 
-*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-21, in-progress) ·
+*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-25, in-progress) ·
   [docs/features/dayclose.md](features/dayclose.md) (updated 2026-11-20, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/dayclose`
@@ -621,9 +621,9 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### goal
 
-*BE + API* · read next: [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-11-20, done) ·
-  [docs/features/me.md](features/me.md) (updated 2026-11-20, mixed) ·
-  [docs/features/season.md](features/season.md) (updated 2026-11-21, in-progress)
+*BE + API* · read next: [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-11-25, done) ·
+  [docs/features/me.md](features/me.md) (updated 2026-11-25, mixed) ·
+  [docs/features/season.md](features/season.md) (updated 2026-11-25, in-progress)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/goal`
   - **sub-features:** `engine`
@@ -1059,7 +1059,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### people
 
-*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-11-20, mixed)
+*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-11-25, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/people`
   - **entities→tables:** `MentionEntity`→`mention`, `PersonEntity`→`person`, `PersonFactEntity`→`person_fact`
@@ -1230,7 +1230,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### season
 
-*BE + API* · read next: [docs/features/season.md](features/season.md) (updated 2026-11-21, in-progress)
+*BE + API* · read next: [docs/features/season.md](features/season.md) (updated 2026-11-25, in-progress)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/season`
   - **sub-features:** `port`
@@ -1279,9 +1279,9 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 ### train
 
 *BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-21, done) ·
-  [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-11-20, done) ·
-  [docs/features/season.md](features/season.md) (updated 2026-11-21, in-progress) ·
-  [docs/features/train.md](features/train.md) (updated 2026-11-21, done)
+  [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-11-25, done) ·
+  [docs/features/season.md](features/season.md) (updated 2026-11-25, in-progress) ·
+  [docs/features/train.md](features/train.md) (updated 2026-11-25, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/train`
   - **sub-features:** `port`
@@ -1434,8 +1434,8 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### wearable
 
-*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-21, in-progress) ·
-  [docs/features/capacity.md](features/capacity.md) (updated 2026-11-21, in-progress)
+*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-25, in-progress) ·
+  [docs/features/capacity.md](features/capacity.md) (updated 2026-11-25, in-progress)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/wearable`
   - **entities→tables:** `CalendarEventEntity`→`calendar_event`, `DailyMetricEntity`→`daily_metric`,
