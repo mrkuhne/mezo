@@ -22,6 +22,8 @@ related: [_platform-auth-security, _platform-design-system, companion, settings,
 
 > **2026-11-21 — reviewed after Boop Levél L1+L2 (`mezo-r36n9.38/.39`, no language-layer change).** Mail error keys (`MAIL_AUTH_FAILED`, `MAIL_UNREACHABLE`, `MAIL_RUN_COOLDOWN`, `MAIL_NOT_CONNECTED`, `MAIL_ITEM_NOT_FOUND`, `MAIL_INTAKE_ERROR`, `MAIL_SECRET_UNREADABLE`) added to both bundles; the phone's Levél copy is Hungarian-only like the rest of Boop.
 > **2026-11-21 — reviewed after Boop B7 K3 Task 17 (`mezo-r36n9.17`, no language-layer change).** One new capacity key in both `messages_hu` and `messages_en` (parity kept): `CAPACITY_CLIENT_REF_REUSED`. See [`capacity.md`](capacity.md) §4.
+> **2026-11-25 — reviewed after Boop B7 K3 Task 20 (`mezo-r36n9.17`, no language-layer change).** Only a new capacity migration landed under `backend/src/main/resources`; no message key changed. See [`capacity.md`](capacity.md) §4.
+>
 > **2026-11-21 — reviewed after Boop B7 K3 Task 17 (`mezo-r36n9.17`, no language-layer change).** New keys in both `messages_hu` and `messages_en` (parity kept): `CAPACITY_CLIENT_REF_REUSED`, `TRAIN_SKIP_CAPACITY_OWNED`. See [`capacity.md`](capacity.md) §4.
 
 > **2026-11-21 — reviewed after Boop B6 Évad S4 (`mezo-r36n9.16`).** Five `EXPERIMENT_*` keys added to both `messages_hu` and `messages_en` (parity kept); the experiment copy on the phone is Hungarian-only like the rest of Boop. No language mechanism changed. See [`season.md`](season.md) §3.14.
