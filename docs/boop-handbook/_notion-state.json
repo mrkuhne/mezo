@@ -1860,123 +1860,123 @@
     },
     "funkciok:recipe-behuzas-szoveg-foto": {
       "page_id": "41e8968e-752b-81fe-bd6a-e7f07a29aef6",
-      "hash": "cfc6ce154c84"
+      "hash": "3ee7eaac8b55"
     },
     "funkciok:recipe-ezt-foztem": {
       "page_id": "41e8968e-752b-81b4-9ad5-f183e9c76c12",
-      "hash": "31ef0adbfb0b"
+      "hash": "7ff3a263a3d7"
     },
     "funkciok:recipe-receptmuhely": {
       "page_id": "41e8968e-752b-8117-9369-eb4493a871f6",
-      "hash": "1305956d5a08"
+      "hash": "dc45d3c02b17"
     },
     "funkciok:recipe-recept-ertekeles": {
       "page_id": "41e8968e-752b-819d-bef9-fc79fd4efb45",
-      "hash": "307d82fcac9a"
+      "hash": "c63e1243c469"
     },
     "funkciok:recipe-receptfoto": {
       "page_id": "41e8968e-752b-81ad-b425-e481667d7b48",
-      "hash": "832068dd6b0e"
+      "hash": "05847f582339"
     },
     "funkciok:recipe-allergen-osszesites": {
       "page_id": "41e8968e-752b-8103-b1c8-fb3417ad8f77",
-      "hash": "814235e92ae3"
+      "hash": "0d2f7cc1081d"
     },
     "funkciok:recipe-frissul-a-kamraval": {
       "page_id": "41e8968e-752b-8192-9a83-fc3c2b0cb3c8",
-      "hash": "79895d0a4ffb"
+      "hash": "a4f0dbe70078"
     },
     "funkciok:pantry-kamra-lista": {
       "page_id": "41e8968e-752b-81a1-a70d-dd44f01fa9df",
-      "hash": "925d0c1987e2"
+      "hash": "5ab5400fac93"
     },
     "funkciok:pantry-katalogusbol": {
       "page_id": "41e8968e-752b-8152-b47b-e94f6971320d",
-      "hash": "92474ebc9db8"
+      "hash": "7f26212778cf"
     },
     "funkciok:pantry-kezzel": {
       "page_id": "41e8968e-752b-8144-85d8-f6b8749b92c8",
-      "hash": "391fe085291d"
+      "hash": "9bf46157a7a4"
     },
     "funkciok:pantry-gyors-becsles": {
       "page_id": "41e8968e-752b-81d4-ada6-f627f21c5685",
-      "hash": "7a6c81b38ad8"
+      "hash": "880744ccdbf6"
     },
     "funkciok:pantry-vonalkod": {
       "page_id": "41e8968e-752b-8199-ae96-c28166f9c483",
-      "hash": "0b91f6341135"
+      "hash": "5dc26f610810"
     },
     "funkciok:pantry-termekoldal": {
       "page_id": "41e8968e-752b-814e-9580-deee9aed3a10",
-      "hash": "0a69538a4f28"
+      "hash": "c7e8609342f7"
     },
     "funkciok:pantry-cimkefoto": {
       "page_id": "41e8968e-752b-8198-95ef-c033ace2be10",
-      "hash": "e037643f417d"
+      "hash": "36855d6be01c"
     },
     "funkciok:pantry-pontositas": {
       "page_id": "41e8968e-752b-818e-9078-f28606f1af51",
-      "hash": "91b7c623831c"
+      "hash": "11469f7bd8c8"
     },
     "funkciok:pantry-torles": {
       "page_id": "41e8968e-752b-817a-97fa-d299e0f053ca",
-      "hash": "c9eae2349707"
+      "hash": "bd0113f0ba9f"
     },
     "funkciok:pantry-tetel-pontszam": {
       "page_id": "41e8968e-752b-8197-977c-e63e9024e65c",
-      "hash": "1e3e160e1e25"
+      "hash": "e4993dda073d"
     },
     "funkciok:pantry-kiegeszito-tetelek": {
       "page_id": "41e8968e-752b-81f3-8864-fb6fe61c6c95",
-      "hash": "69af49ce3187"
+      "hash": "0f20d80785f1"
     },
     "funkciok:pantry-ar-keszlet": {
       "page_id": "41e8968e-752b-8172-8da5-c628e309c821",
-      "hash": "ae0cfb6726d4"
+      "hash": "eabfefee5222"
     },
     "funkciok:pantry-katalogus-feltoltes": {
       "page_id": "41e8968e-752b-8175-956d-db1f795a1560",
-      "hash": "bdf9a9684c4e"
+      "hash": "ecce6bf2d7e8"
     },
     "funkciok:wearable-ejszakak": {
       "page_id": "41e8968e-752b-81e5-9c17-e75e51e285ef",
-      "hash": "63f3dab8b7bf"
+      "hash": "15f574bb602b"
     },
     "funkciok:wearable-napi-ertekek": {
       "page_id": "41e8968e-752b-815e-b4e8-c6591526e7ea",
-      "hash": "be92f9e8f18a"
+      "hash": "22278ea32d18"
     },
     "funkciok:wearable-egyedi-meresek": {
       "page_id": "41e8968e-752b-8158-bea8-ceb86a6be384",
-      "hash": "199a6c4d74a5"
+      "hash": "75b8750f26b7"
     },
     "funkciok:wearable-torlesek": {
       "page_id": "41e8968e-752b-8150-b048-d1c8ff196dd3",
-      "hash": "d1378378cd34"
+      "hash": "c02887293014"
     },
     "funkciok:biometrics-testadatok": {
       "page_id": "41e8968e-752b-81bc-94a9-f055717e9845",
-      "hash": "f971f3714d6d"
+      "hash": "e9b6f7f9dfe0"
     },
     "funkciok:biometrics-sulynaplo": {
       "page_id": "41e8968e-752b-81a8-9c57-ea8348c47a7a",
-      "hash": "4d0198c3aa61"
+      "hash": "58d917dece9a"
     },
     "funkciok:biometrics-suly-egeszsegbol": {
       "page_id": "41e8968e-752b-8162-9468-f6352e78efca",
-      "hash": "0b51010cabf3"
+      "hash": "204aa9807fee"
     },
     "funkciok:biometrics-suly-trend": {
       "page_id": "41e8968e-752b-8175-a211-f5f15901235f",
-      "hash": "91b1fbedb1ec"
+      "hash": "c6e80d996193"
     },
     "funkciok:biometrics-alvas-egy-ejszaka": {
       "page_id": "41e8968e-752b-8121-a335-c24d2889d60b",
-      "hash": "caaab67f015d"
+      "hash": "f7283ee70c8d"
     },
     "funkciok:biometrics-kezi-alvasnaplo": {
       "page_id": "41e8968e-752b-816b-976a-fe767f3ab624",
-      "hash": "68d0c76572e8"
+      "hash": "f1bca279a58c"
     },
     "funkciok:biometrics-alvas-kepernyokep": {
       "page_id": "41e8968e-752b-81a3-ac19-f2ea0408abfd",
