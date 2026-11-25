@@ -202,7 +202,7 @@ accepted adaptive correction or a concurrent accept between preview and accept t
   `SeasonService.adoptStartedBlock` in its own transaction (`REQUIRES_NEW`): the active season, else the planned season
   whose window contains the block's start, else nothing. A block already linked to that goal (the season's own start)
   is a no-op; otherwise the block becomes the goal's **newest `goal_plan_link`** and the draft's block becomes
-  `adopt <id>`. Goal fields, slots and sleep are untouched. The newer block takes over the weeks it runs in
+  `adopt <id>` (its `updatedAt` stamped from the injected `Clock`, so a test clock governs it). Goal fields, slots and sleep are untouched. The newer block takes over the weeks it runs in
   (`SeasonGoalAdapter.link`): an overlapping earlier link ends the week before and stays as history, one that starts in
   the same week or later is removed (the goal allows one mesocycle per week). Links are ordered by start week, then
   age. A failure is logged and **never fails the start** — the block runs, the season keeps its previous block. Every
