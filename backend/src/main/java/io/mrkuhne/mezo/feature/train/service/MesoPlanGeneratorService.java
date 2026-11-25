@@ -150,7 +150,9 @@ public class MesoPlanGeneratorService {
                          List<MesoPlanFiller.Candidate> candidates, List<MesoPlanFiller.FilledDay> days) {}
 
     private Draft draft(MesoPlanGenerateRequest req, MesoPlanProperties.Split split, Catalogue catalogue) {
-        Map<String, String> priorities = consolidation(req) ? allMaintain()
+        // Consolidation: every baseline group at Tartás, whatever the request said.
+        Map<String, String> priorities = consolidation(req)
+            ? PriorityTier.allMaintain(volumeProperties.baselines().keySet())
             : PriorityTier.normalize(req.getPriorities());
         PriorityGuard.checkEmphasizeCap(priorities, volumeProperties.bands().emphasizeMax());
         MesoPlanSkeleton.Skeleton skeleton = buildSkeleton(req, priorities, split);
@@ -160,13 +162,6 @@ public class MesoPlanGeneratorService {
 
     static boolean consolidation(MesoPlanGenerateRequest req) {
         return Boolean.TRUE.equals(req.getConsolidation());
-    }
-
-    /** Consolidation: every baseline group at Tartás, whatever the request said. */
-    private Map<String, String> allMaintain() {
-        Map<String, String> out = new LinkedHashMap<>();
-        volumeProperties.baselines().keySet().forEach(g -> out.put(g, "maintain"));
-        return out;
     }
 
     /** Null when no split is chosen; else the catalogued split of the clamped day count (400 when unknown). */

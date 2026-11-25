@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.train.service;
 
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
@@ -54,6 +55,13 @@ public enum PriorityTier {
             }
         }
         return normalized;
+    }
+
+    /** Every group at Tartás, in the given order — a consolidation block's priorities (mezo-r36n9.113). */
+    public static Map<String, String> allMaintain(Collection<String> groups) {
+        Map<String, String> out = new LinkedHashMap<>();
+        groups.forEach(g -> out.put(g, "maintain"));
+        return out;
     }
 
     private static SystemRuntimeErrorException invalidTier() {

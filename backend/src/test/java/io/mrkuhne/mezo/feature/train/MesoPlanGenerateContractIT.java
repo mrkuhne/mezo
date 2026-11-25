@@ -256,6 +256,14 @@ class MesoPlanGenerateContractIT extends ApiIntegrationTest {
     }
 
     @Test
+    void generateConsolidationFourWeeksIs400() {
+        String body = postForBody(GENERATE, MesoPlanGenerateRequest.builder()
+            .daysOfWeek(Set.of("Hét", "Sze", "Pén", "Szo")).weeks(4).consolidation(true).build(),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(body, "TRAIN_MESO_WEEKS_RANGE");
+    }
+
+    @Test
     void generateTwoWeeksWithoutFlagIs400() {
         String body = postForBody(GENERATE, MesoPlanGenerateRequest.builder()
             .daysOfWeek(Set.of("Hét", "Sze", "Pén", "Szo")).weeks(2).build(),

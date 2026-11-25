@@ -59,7 +59,10 @@ public class MesoPlanCandidatesService {
     public MesoPlanCandidates candidates(UUID user, MesoPlanCandidatesRequest req) {
         boolean consolidation = Boolean.TRUE.equals(req.getConsolidation());
         MesoWeeksGuard.check(req.getWeeks(), consolidation);
-        Map<String, String> priorities = consolidation ? allMaintain() : PriorityTier.normalize(req.getPriorities());
+        // Consolidation: every baseline group at Tartás, whatever the request said.
+        Map<String, String> priorities = consolidation
+            ? PriorityTier.allMaintain(volumeProperties.baselines().keySet())
+            : PriorityTier.normalize(req.getPriorities());
         PriorityGuard.checkEmphasizeCap(priorities, volumeProperties.bands().emphasizeMax());
         Shared shared = new Shared(generator.catalogue(user), evaluator.context(user));
 
@@ -93,13 +96,6 @@ public class MesoPlanCandidatesService {
             .intakeBudget(recommended == null ? null
                 : intakeBudget(user, req, priorities, find(built, recommended), shared))
             .build();
-    }
-
-    /** Consolidation: every baseline group at Tartás, whatever the request said. */
-    private Map<String, String> allMaintain() {
-        Map<String, String> out = new LinkedHashMap<>();
-        volumeProperties.baselines().keySet().forEach(g -> out.put(g, MAINTAIN));
-        return out;
     }
 
     private static Built find(List<Built> built, CandidateRanker.Scored s) {
