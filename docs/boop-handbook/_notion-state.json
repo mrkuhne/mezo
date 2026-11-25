@@ -3081,6 +3081,58 @@
     "dontesek:d-2026-11-24-ital-vodor": {
       "page_id": "4238968e-752b-81b5-babc-efb8155b8d61",
       "hash": "dfa704723458"
+    },
+    "kiadasok:9eabffcd5": {
+      "page_id": "4238968e-752b-810e-bb19-e028f6879eb9",
+      "hash": "eb610df34f6c"
+    },
+    "kiadasok:c894ba3e4": {
+      "page_id": "4238968e-752b-81e9-9b65-d8c157c241e9",
+      "hash": "ca72996879f2"
+    },
+    "kiadasok:a32ba6cdc": {
+      "page_id": "4238968e-752b-816d-8856-e98fcdc57a18",
+      "hash": "053b380036f3"
+    },
+    "kiadasok:4fa57b938": {
+      "page_id": "4238968e-752b-8116-95c9-cc0f6c92defa",
+      "hash": "59ad1ac260c0"
+    },
+    "kiadasok:08efb6aeb": {
+      "page_id": "4238968e-752b-817e-a3fc-ea91bc471270",
+      "hash": "pending-relations"
+    },
+    "kezikonyv:01-alapok/lapok-bezarasa": {
+      "page_id": "4238968e-752b-8141-a471-fbe38783b294",
+      "hash": "7a1dd3d6000c"
+    },
+    "kezikonyv:06-etel/11-italok": {
+      "page_id": "4238968e-752b-813b-b3b4-d7e91aa05173",
+      "hash": "523e55054828"
+    },
+    "kezikonyv:07-edzes/16-edzes-potlasa": {
+      "page_id": "4238968e-752b-8143-b545-e57c3d6130bd",
+      "hash": "dfbedc3a9439"
+    },
+    "kezikonyv:07-edzes/19-masik-nap-ma": {
+      "page_id": "4238968e-752b-8169-a28a-e04e16d8fea6",
+      "hash": "7988e6dff63c"
+    },
+    "kezikonyv:13-suly/00-attekintes": {
+      "page_id": "4238968e-752b-81fa-80f1-cecc1e7e4f4b",
+      "hash": "04d98f432094"
+    },
+    "kezikonyv:13-suly/01-terulet": {
+      "page_id": "4238968e-752b-81d6-8a52-e97ad5502a0a",
+      "hash": "pending-relations"
+    },
+    "funkciok:train-edzes-potlas": {
+      "page_id": "4238968e-752b-819f-bab8-f96899472c87",
+      "hash": "00b3adbfce4c"
+    },
+    "funkciok:meal-italok": {
+      "page_id": "4238968e-752b-815e-bc47-cfb17cbb2186",
+      "hash": "e8d44a1c27ad"
     }
   }
 }
