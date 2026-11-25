@@ -410,6 +410,105 @@ public struct WireSuggestions: Decodable, Equatable, Sendable {
     }
 }
 
+// MARK: - Coverage hints (POST /api/train/mesocycles/{id}/coverage, mezo-r36n9.114)
+
+/// One training day of the draft as the coverage read takes it: the weekday (0 = Monday), the day's catalogue ids
+/// (lower-cased; rows without one are left out) and the evaluator's minutes estimate (picks the proposal's day).
+public struct WireCoverageDay: Encodable, Equatable, Sendable {
+    public var dayIndex: Int
+    public var catalogIds: [String]
+    public var minutesEstimate: Int?
+    public init(dayIndex: Int, catalogIds: [String], minutesEstimate: Int?) {
+        self.dayIndex = dayIndex; self.catalogIds = catalogIds; self.minutesEstimate = minutesEstimate
+    }
+}
+
+public struct WireCoverageRequest: Encodable, Equatable, Sendable {
+    public var days: [WireCoverageDay]
+    public init(days: [WireCoverageDay]) { self.days = days }
+}
+
+/// The one proposed exercise of a finding, on a named weekday (`dayIndex` 0 = Monday) with the style's prescription
+/// (nil → the add's own fallback). A broken optional part (last top set, prescription) reads as absent.
+public struct WireCoverageProposal: Decodable, Equatable, Sendable {
+    public let exercise: WireCatalogItem
+    public let reasonText: String
+    public let signals: [String]
+    public let lastTopSet: WireTopSet?
+    public let prescription: Prescription?
+    public let dayIndex: Int
+
+    public init(exercise: WireCatalogItem, reasonText: String, signals: [String] = [], lastTopSet: WireTopSet? = nil,
+                prescription: Prescription?, dayIndex: Int) {
+        self.exercise = exercise; self.reasonText = reasonText; self.signals = signals; self.lastTopSet = lastTopSet
+        self.prescription = prescription; self.dayIndex = dayIndex
+    }
+
+    private enum CodingKeys: String, CodingKey { case exercise, reasonText, signals, lastTopSet, prescription, dayIndex }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        exercise = try c.decode(WireCatalogItem.self, forKey: .exercise)
+        dayIndex = try c.decode(Int.self, forKey: .dayIndex)
+        reasonText = (try? c.decodeIfPresent(String.self, forKey: .reasonText)) ?? ""
+        signals = (try? c.decodeIfPresent([String].self, forKey: .signals)) ?? []
+        lastTopSet = (try? c.decodeIfPresent(WireTopSet.self, forKey: .lastTopSet)) ?? nil
+        prescription = (try? c.decodeIfPresent(Prescription.self, forKey: .prescription)) ?? nil
+    }
+}
+
+/// One missing complementary movement of a coarse group (`ham`, `back`, …): the server's fixed Hungarian verdict and
+/// „miért?" sentences, the fine tokens the missing movement trains (what „Mást választok" pre-picks) and at most one
+/// proposal (nil: nothing suitable in his gym). `code` stays a plain string (the server may add rules).
+public struct WireCoverageFinding: Decodable, Equatable, Sendable {
+    public let group: String
+    public let code: String
+    public let missingPattern: String
+    public let muscles: [String]
+    public let verdictText: String
+    public let whyText: String
+    public let proposal: WireCoverageProposal?
+
+    public init(group: String, code: String, missingPattern: String = "", muscles: [String], verdictText: String,
+                whyText: String, proposal: WireCoverageProposal?) {
+        self.group = group; self.code = code; self.missingPattern = missingPattern; self.muscles = muscles
+        self.verdictText = verdictText; self.whyText = whyText; self.proposal = proposal
+    }
+
+    private enum CodingKeys: String, CodingKey { case group, code, missingPattern, muscles, verdictText, whyText, proposal }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        group = try c.decode(String.self, forKey: .group)
+        verdictText = try c.decode(String.self, forKey: .verdictText)
+        code = (try? c.decodeIfPresent(String.self, forKey: .code)) ?? ""
+        missingPattern = (try? c.decodeIfPresent(String.self, forKey: .missingPattern)) ?? ""
+        muscles = (try? c.decodeIfPresent([String].self, forKey: .muscles)) ?? []
+        whyText = (try? c.decodeIfPresent(String.self, forKey: .whyText)) ?? ""
+        // A proposal that is there but unreadable drops the whole finding (the list skips it): showing it without one
+        // would claim nothing in his gym fits.
+        proposal = try c.decodeIfPresent(WireCoverageProposal.self, forKey: .proposal)
+    }
+}
+
+public struct WireCoverage: Decodable, Equatable, Sendable {
+    public let findings: [WireCoverageFinding]
+
+    public init(findings: [WireCoverageFinding]) { self.findings = findings }
+
+    private enum CodingKeys: String, CodingKey { case findings }
+    private struct Lossy: Decodable {
+        let value: WireCoverageFinding?
+        init(from decoder: Decoder) throws { value = try? WireCoverageFinding(from: decoder) }
+    }
+
+    /// Lenient: a finding this build cannot read is dropped, the rest stay; no list reads as no findings.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        findings = ((try? c.decodeIfPresent([Lossy].self, forKey: .findings)) ?? nil)?.compactMap(\.value) ?? []
+    }
+}
+
 // MARK: - The new-block intake (mezo-r36n9.113)
 
 /// Any JSON value, kept as it came. The generated template is relayed, not interpreted: the phone decodes it into this

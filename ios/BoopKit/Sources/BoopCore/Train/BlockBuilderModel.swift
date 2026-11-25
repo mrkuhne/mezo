@@ -49,6 +49,17 @@ public final class BlockBuilderModel {
     /// only that line-up.
     private var evaluatedLineup: [[String]]?
 
+    /// The coverage hints of the draft on screen (mezo-r36n9.114): 0..3 findings in the server's priority order. Read
+    /// through `coverageFinding(_:)`, which hides them while the line-up differs from the one they were computed for.
+    public private(set) var coverage: [WireCoverageFinding] = []
+    /// The line-up (`weekday:ids` per training day, ids sorted — a reorder changes no hint) the findings on screen
+    /// belong to; nil before the first answer.
+    private var coverageLineup: [String]?
+    /// The hints he took with „Hozzáadom", by group: the added row's key and its draft day (the undo line).
+    private var coverageAdded: [String: (rowId: String, day: Int)] = [:]
+    /// Ask for coverage hints after every evaluation (off only in tests that script no coverage read).
+    private let coverageHints: Bool
+
     private let client: PlanClient
     private let debounce: Duration
     private var evaluationTask: Task<Void, Never>?
@@ -56,10 +67,12 @@ public final class BlockBuilderModel {
     /// Set while the model itself swaps the draft (a re-read): that swap asks for one evaluation, not two.
     private var replacing = false
 
-    public init(client: PlanClient, debounce: Duration = .milliseconds(300), lockedDay: LockedDay? = nil) {
+    public init(client: PlanClient, debounce: Duration = .milliseconds(300), lockedDay: LockedDay? = nil,
+                coverageHints: Bool = true) {
         self.client = client
         self.debounce = debounce
         self.lockedDay = lockedDay
+        self.coverageHints = coverageHints
     }
 
     /// Today's open workout's template day: its id, else its weekday label (`Hét`…`Vas`).
@@ -236,12 +249,99 @@ public final class BlockBuilderModel {
             evaluatedLineup = Self.lineup(draft)
             evaluationStale = false
             evaluationError = nil
+            // The same draft, with the minutes the evaluator just priced: the coverage hints ride on every evaluation.
+            if coverageHints { await refreshCoverage(result) }
         } catch {
             // A late failure of an older draft must not mark a newer, good answer as stale.
             guard evaluateRequest() == request else { return }
             evaluationError = error
             evaluationStale = evaluation != nil
         }
+    }
+
+    // MARK: coverage hints (mezo-r36n9.114)
+
+    /// The training days as the coverage read takes them: weekday, lower-cased catalogue ids, the evaluator's minutes.
+    private func coverageDays(_ draft: BlockDraft, _ evaluation: WireEvaluation?) -> [WireCoverageDay] {
+        draft.days.indices.compactMap { i in
+            let d = draft.days[i]
+            guard !d.exercises.isEmpty, let weekday = d.weekdayIndex else { return nil }
+            return WireCoverageDay(dayIndex: weekday, catalogIds: d.exercises.compactMap { $0.catalogId?.lowercased() },
+                                   minutesEstimate: evaluation?.days.first { $0.dayIndex == i }?.minutesEstimate)
+        }
+    }
+
+    private static func coverageLineup(_ days: [WireCoverageDay]) -> [String] {
+        days.map { "\($0.dayIndex):\($0.catalogIds.sorted().joined(separator: ","))" }
+    }
+
+    /// The findings still describe the draft on screen (no add / remove / swap / move between days since).
+    public var coverageFresh: Bool {
+        guard let coverageLineup, let draft else { return false }
+        return coverageLineup == Self.coverageLineup(coverageDays(draft, nil))
+    }
+
+    /// Asks for the draft's coverage hints. A failure (offline, a server error) is silent: no findings, never an error
+    /// on the card. An answer for a line-up that changed meanwhile is dropped.
+    private func refreshCoverage(_ evaluation: WireEvaluation) async {
+        guard let draft else { return }
+        let days = coverageDays(draft, evaluation)
+        let lineup = Self.coverageLineup(days)
+        let findings = (try? await client.coverage(blockId: draft.blockId, days: days))?.findings ?? []
+        guard let now = self.draft, Self.coverageLineup(coverageDays(now, nil)) == lineup else { return }
+        coverage = findings
+        coverageLineup = lineup
+    }
+
+    /// The draft day (index) a weekday (0 = Monday) falls on; nil when the draft has no such day.
+    public func draftDay(weekday: Int) -> Int? { draft?.days.firstIndex { $0.weekdayIndex == weekday } }
+
+    /// The hint on a group's card: only for a fresh answer, not once he took it, and never one whose proposal lands on
+    /// the day of today's open workout (that card is read-only). Tartás and untrained groups the server keeps silent.
+    public func coverageFinding(_ group: String) -> WireCoverageFinding? {
+        guard coverageFresh, coverageAdded[group] == nil, let f = coverage.first(where: { $0.group == group }) else { return nil }
+        if let p = f.proposal {
+            guard let day = draftDay(weekday: p.dayIndex), day != lockedDayIndex else { return nil }
+        }
+        return f
+    }
+
+    /// „Hozzáadom": the proposed exercise goes to the end of its named day with the style's prescription (the add's own
+    /// fallback without one). Returns false when there is nothing to add.
+    @discardableResult
+    public func acceptCoverage(_ group: String) -> Bool {
+        guard let f = coverageFinding(group), let p = f.proposal, let day = draftDay(weekday: p.dayIndex),
+              let uuid = UUID(uuidString: p.exercise.id) else { return false }
+        let catalog = CatalogExercise(id: uuid, slug: "", name: p.exercise.name, muscle: p.exercise.muscle ?? "",
+                                      type: ExerciseType(wire: p.exercise.type), stim: 0, fatigue: 0, gear: p.exercise.gear)
+        draft?.add(day: day, catalog: catalog, prescription: p.prescription)
+        guard let row = draft?.days[day].exercises.last else { return false }
+        coverageAdded[group] = (row.id, day)
+        return true
+    }
+
+    /// The draft day a taken hint's row sits on — while that row is still in the draft (the „Hozzáadva …" line).
+    public func coverageAddedDay(_ group: String) -> Int? {
+        guard let added = coverageAdded[group], let draft, draft.days.indices.contains(added.day),
+              draft.days[added.day].exercises.contains(where: { $0.id == added.rowId }) else { return nil }
+        return added.day
+    }
+
+    /// „visszavonom": takes the added row off its day again.
+    public func undoCoverage(_ group: String) {
+        guard let added = coverageAdded.removeValue(forKey: group), let draft, draft.days.indices.contains(added.day),
+              let index = draft.days[added.day].exercises.firstIndex(where: { $0.id == added.rowId }) else { return }
+        self.draft?.remove(day: added.day, at: index)
+    }
+
+    /// „Mást választok": the add sheet's day — the proposal's, else the first open day that already trains the group,
+    /// else the first open training day.
+    public func coverageOtherDay(_ group: String) -> Int? {
+        guard let draft else { return nil }
+        let open = draft.days.indices.filter { $0 != lockedDayIndex }
+        if let p = coverageFinding(group)?.proposal, let d = draftDay(weekday: p.dayIndex), open.contains(d) { return d }
+        let trains = Set(muscle(group)?.spread.filter { $0.sets > 0 }.map(\.dayIndex) ?? [])
+        return open.first { trains.contains($0) } ?? open.first { !draft.days[$0].exercises.isEmpty } ?? open.first
     }
 
     // MARK: the tier budget (mezo-r36n9.113)
@@ -290,6 +390,9 @@ public final class BlockBuilderModel {
         original = nil
         evaluation = nil
         evaluationStale = false
+        coverage = []
+        coverageLineup = nil
+        coverageAdded = [:]
         justCreated = false
         discardError = nil
         return true
@@ -367,6 +470,8 @@ public final class BlockBuilderModel {
                 saved.append(day.name.lowercased())
             }
             saveState = .saved
+            // Saved: the added rows are his now (and the re-read re-mints their keys) — no undo line any more.
+            coverageAdded = [:]
             await reload(keeping: nil)
         } catch {
             saveState = .failed(saved: saved, error: error)

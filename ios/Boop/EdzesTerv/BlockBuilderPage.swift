@@ -30,6 +30,7 @@ struct BlockBuilderPage: View {
     @State private var discarding = false
     #if DEBUG
     @State private var previewApplied = false
+    @State private var previewHianyApplied = false
     #endif
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -89,7 +90,7 @@ struct BlockBuilderPage: View {
                 } else {
                     Group {
                         switch mode {
-                        case .izmok: BuilderMusclesView(model: model, selected: $muscle) { whyMuscle = $0 }
+                        case .izmok: BuilderMusclesView(model: model, ui: edit, selected: $muscle) { whyMuscle = $0 }
                         case .napok: BuilderDaysView(model: model, ui: edit, day: $day) { picking = $0 }
                         case .blokk: BuilderBlockView(model: model) { whyMuscle = $0 }
                         }
@@ -172,6 +173,7 @@ struct BlockBuilderPage: View {
         }
         #if DEBUG
         .task(id: model.evaluation != nil) { applyPreviewEdit() }
+        .task(id: model.coverageFresh) { applyPreviewHiany() }
         #endif
     }
 
@@ -254,6 +256,18 @@ struct BlockBuilderPage: View {
             default: break
             }
         }
+    }
+
+    /// Simulator review of the coverage hints (boop-ios.md, preview flags): `-previewBlokkHiany list|why|added|none`
+    /// opens the Izmok tab on the first muscle with a hint (`why`: its „miért?" open; `added`: its exercise taken).
+    private func applyPreviewHiany() {
+        guard !previewHianyApplied, model.coverageFresh,
+              let state = UserDefaults.standard.string(forKey: "previewBlokkHiany") else { return }
+        previewHianyApplied = true
+        // The server's priority order (the hamstrings first), not the cards' body order.
+        let first = model.coverage.map(\.group).first { model.coverageFinding($0) != nil } ?? "ham"
+        muscle = first
+        if state == "added" { model.acceptCoverage(first) }
     }
     #endif
 
@@ -417,29 +431,35 @@ private struct WhyPick: Identifiable {
 
 private struct BuilderMusclesView: View {
     let model: BlockBuilderModel
+    let ui: DayEditUI
     @Binding var selected: String?
     let openWhy: (String) -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         let muscles = model.bandedMuscles
         let current = selected ?? model.outside.first?.muscle ?? muscles.first?.muscle ?? ""
+        let hinted = muscles.map(\.muscle).filter { model.coverageFinding($0) != nil }
         VStack(spacing: 0) {
-            NKBodyMap(muscles.map { m in
-                let fill = min(1, Double(m.weeklySets) / Double(max(1, m.band.high)))
-                return NKBodyHeat(muscle: m.muscle, level: m.muscle == current ? 1 : fill * 0.12)
-            }, hue: planHue, views: .both)
-            .frame(maxWidth: .infinity).frame(height: 200)
-            .padding(.horizontal, 40).padding(.vertical, 10)
+            VStack(spacing: 0) {
+                NKBodyMap(muscles.map { m in
+                    let fill = min(1, Double(m.weeklySets) / Double(max(1, m.band.high)))
+                    return NKBodyHeat(muscle: m.muscle, level: m.muscle == current ? 1 : fill * 0.12)
+                }, hue: planHue, views: .both)
+                .frame(maxWidth: .infinity).frame(height: hinted.isEmpty ? 200 : 176)
+                .padding(.horizontal, 40).padding(.top, 10).padding(.bottom, hinted.isEmpty ? 10 : 2)
+                .accessibilityHidden(true)
+                glanceLine(hinted, current)
+            }
             .background(RoundedRectangle(cornerRadius: 30, style: .continuous).fill(Color.black.opacity(0.42)).padding(.horizontal, 20))
             .animation(.smooth(duration: 0.4), value: current)
-            .accessibilityHidden(true)
 
             dots(muscles, current)
 
             ScrollView(.horizontal) {
                 LazyHStack(spacing: 14) {
                     ForEach(muscles, id: \.muscle) { m in
-                        BuilderMuscleCard(model: model, muscle: m.muscle, openWhy: openWhy)
+                        BuilderMuscleCard(model: model, ui: ui, muscle: m.muscle, current: m.muscle == current, openWhy: openWhy)
                             .containerRelativeFrame(.horizontal)
                             .scrollTransition(.interactive, axis: .horizontal) { view, phase in
                                 view.scaleEffect(phase.isIdentity ? 1 : 0.92).opacity(phase.isIdentity ? 1 : 0.55)
@@ -458,20 +478,53 @@ private struct BuilderMusclesView: View {
         .onAppear { if selected == nil { selected = current } }
     }
 
-    /// The muscles as a strip: which one is on the card, and which ones are outside their band.
+    /// The coverage glance (mezo-r36n9.114): one quiet line under the body while a hint is open; a tap steps to the
+    /// next card with one. Never in the head's pill (that one is the band) and never on the main button.
+    @ViewBuilder private func glanceLine(_ hinted: [String], _ current: String) -> some View {
+        if !hinted.isEmpty {
+            Button {
+                let next = hinted.first { $0 != current && (hinted.firstIndex(of: $0) ?? 0) > (hinted.firstIndex(of: current) ?? -1) }
+                    ?? hinted.first { $0 != current } ?? hinted[0]
+                if reduceMotion { selected = next } else { withAnimation(.smooth) { selected = next } }
+            } label: {
+                HStack(spacing: 7) {
+                    Circle().strokeBorder(.white.opacity(0.55), lineWidth: 1.3).frame(width: 8, height: 8)
+                    Text("\(hinted.count) hiányzó kiegészítő mozgás")
+                        .nkFont(12, .medium).foregroundStyle(.white.opacity(0.62))
+                        .contentTransition(.numericText())
+                    Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold)).foregroundStyle(.white.opacity(0.4))
+                }
+                .padding(.horizontal, 12).frame(minHeight: 30)
+                .contentShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            .padding(.bottom, 4)
+            .accessibilityHint("A következő izomra lép, ahol hiányzik egy kiegészítő mozgás")
+        }
+    }
+
+    /// The muscles as a strip: which one is on the card, which ones are outside their band, and — a hollow ring —
+    /// which ones carry a coverage hint.
     private func dots(_ muscles: [WireMuscleEvaluation], _ current: String) -> some View {
         HStack(spacing: 6) {
             ForEach(muscles, id: \.muscle) { m in
                 let out = m.fit != "inside"
+                let hint = model.coverageFinding(m.muscle) != nil
                 Button { withAnimation(.smooth) { selected = m.muscle } } label: {
-                    Capsule()
-                        .fill(m.muscle == current ? Color.white : (out ? planWarn.opacity(0.85) : .white.opacity(0.22)))
-                        .frame(width: m.muscle == current ? 26 : 9, height: 9)
-                        .frame(height: 30)
-                        .contentShape(Rectangle())
+                    Group {
+                        if m.muscle != current && hint {
+                            Circle().strokeBorder(out ? planWarn.opacity(0.9) : .white.opacity(0.7), lineWidth: 1.4).frame(width: 9, height: 9)
+                        } else {
+                            Capsule()
+                                .fill(m.muscle == current ? Color.white : (out ? planWarn.opacity(0.85) : .white.opacity(0.22)))
+                                .frame(width: m.muscle == current ? 26 : 9, height: 9)
+                        }
+                    }
+                    .frame(height: 30)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(SubMuscles.groupName(m.muscle))
+                .accessibilityLabel(SubMuscles.groupName(m.muscle) + (hint ? ", hiányzik egy kiegészítő mozgás" : ""))
             }
         }
         .padding(.vertical, 2)
@@ -481,16 +534,21 @@ private struct BuilderMusclesView: View {
 
 private struct BuilderMuscleCard: View {
     let model: BlockBuilderModel
+    let ui: DayEditUI
     let muscle: String
+    /// The card on screen (the simulator review scrolls only that one to its hint).
+    var current = false
     let openWhy: (String) -> Void
     @State private var why = false
     /// Why the raise he just tried does not fit now (mezo-r36n9.113).
     @State private var blocked: String?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         if let m = model.muscle(muscle), let draft = model.draft {
             let tier = draft.tier(muscle)
             let inside = m.fit == "inside"
+            ScrollViewReader { proxy in
             ScrollView {
                 VStack(spacing: 12) {
                     HStack(alignment: .firstTextBaseline) {
@@ -550,18 +608,75 @@ private struct BuilderMuscleCard: View {
                         .padding(14).frame(maxWidth: .infinity, alignment: .leading)
                         .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(planWarn.opacity(0.1)))
                     }
+                    coverage(draft)
                     bandReason(m, tier: tier, inside: inside)
                 }
                 .padding(20)
             }
             .scrollIndicators(.hidden)
             .scrollBounceBehavior(.basedOnSize)
+            #if DEBUG
+            .task(id: current && model.coverageFinding(muscle) != nil) {
+                // `-previewBlokkHiany why`: the card on screen scrolls to its hint.
+                guard current, model.coverageFinding(muscle) != nil,
+                      UserDefaults.standard.string(forKey: "previewBlokkHiany") == "why" else { return }
+                try? await Task.sleep(for: .milliseconds(450))
+                proxy.scrollTo("coverage", anchor: UnitPoint(x: 0.5, y: 0.08))
+            }
+            #endif
+            }
             .frame(maxHeight: .infinity, alignment: .top)
             .nkGlass(30)
             .padding(.vertical, 8)
             .sensoryFeedback(.impact(weight: .light), trigger: m.weeklySets)
             .sensoryFeedback(.selection, trigger: tier)
         }
+    }
+
+    /// The coverage hint (mezo-r36n9.114) — or, once taken, the one quiet line that can undo it.
+    @ViewBuilder private func coverage(_ draft: BlockDraft) -> some View {
+        if let finding = model.coverageFinding(muscle) {
+            CoverageHintBox(finding: finding, dayName: finding.proposal.flatMap { model.draftDay(weekday: $0.dayIndex) }
+                                .flatMap { draft.days[safe: $0]?.name },
+                            whyInitially: previewWhy,
+                            add: {
+                                guard let day = finding.proposal.flatMap({ model.draftDay(weekday: $0.dayIndex) }) else { return }
+                                withAnimation(reduceMotion ? nil : .snappy) { _ = model.acceptCoverage(muscle) }
+                                ui.structuralEdit(day: day)
+                            },
+                            other: {
+                                guard let day = model.coverageOtherDay(muscle) else { return }
+                                ui.menuRow = nil
+                                ui.sheet = .add(day, muscles: Set(finding.muscles))
+                            })
+                .id("coverage")
+                .transition(.opacity)
+        } else if let day = model.coverageAddedDay(muscle), let name = draft.days[safe: day]?.name {
+            HStack(spacing: 8) {
+                PlanMark(.check, color: planGood, size: 14)
+                Text("Hozzáadva \(coverageAllative(name))").nkFont(13).foregroundStyle(.white.opacity(0.72))
+                Text("·").nkFont(13).foregroundStyle(.white.opacity(0.4))
+                Button {
+                    withAnimation(reduceMotion ? nil : .snappy) { model.undoCoverage(muscle) }
+                    ui.structuralEdit(day: day)
+                } label: {
+                    Text("visszavonom").nkFont(13, .medium).foregroundStyle(planHue.glow).frame(minHeight: 36).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 4).frame(minHeight: 36)
+            .id("coverage")
+            .transition(.opacity)
+        }
+    }
+
+    private var previewWhy: Bool {
+        #if DEBUG
+        current && UserDefaults.standard.string(forKey: "previewBlokkHiany") == "why"
+        #else
+        false
+        #endif
     }
 
     private func verdict(_ m: WireMuscleEvaluation) -> String {
@@ -645,6 +760,107 @@ private struct BuilderMuscleCard: View {
         return "Javaslat: " + parts.joined(separator: " · ")
     }
 
+}
+
+// MARK: - The coverage hint (mezo-r36n9.114)
+
+/// „Hétfőhöz", „Keddhez", „Csütörtökhöz" — the day the added row went to, lower-cased, in the allative.
+func coverageAllative(_ dayName: String) -> String {
+    switch dayName.prefix(3).lowercased() {
+    case "hét": "hétfőhöz"
+    case "ked": "keddhez"
+    case "sze": "szerdához"
+    case "csü": "csütörtökhöz"
+    case "pén": "péntekhez"
+    case "szo": "szombathoz"
+    case "vas": "vasárnaphoz"
+    default: dayName.lowercased() + "-hoz"
+    }
+}
+
+/// The coverage hint on a muscle card: quieter than the band proposal (a hairline, no yellow), the server's verdict,
+/// „miért?" with its why, the one proposed exercise as the add sheet's card with its day and prescription, and
+/// Hozzáadom · Mást választok. Without a proposal it says nothing fits in his gym and offers only Mást választok.
+private struct CoverageHintBox: View {
+    let finding: WireCoverageFinding
+    /// The proposal's day as he says it („Csütörtök"); nil without a proposal.
+    let dayName: String?
+    let add: () -> Void
+    let other: () -> Void
+    @State private var why: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    init(finding: WireCoverageFinding, dayName: String?, whyInitially: Bool, add: @escaping () -> Void,
+         other: @escaping () -> Void) {
+        self.finding = finding; self.dayName = dayName; self.add = add; self.other = other
+        _why = State(initialValue: whyInitially)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .center) {
+                Text("KIEGÉSZÍTŐ MOZGÁS").nkFont(10, .semibold, design: .monospaced).tracking(1.3).foregroundStyle(.white.opacity(0.5))
+                Spacer(minLength: 8)
+                if !finding.whyText.isEmpty { whyToggle }
+            }
+            verdict.nkFont(14).fixedSize(horizontal: false, vertical: true)
+            if why {
+                Text(finding.whyText).nkFont(13).foregroundStyle(.white.opacity(0.72))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.leading, 12)
+                    .overlay(alignment: .leading) { Capsule().fill(.white.opacity(0.18)).frame(width: 2) }
+                    .transition(.opacity)
+            }
+            if let p = finding.proposal, let dayName {
+                let rx = p.prescription ?? .fallback
+                ExercisePickCard(name: p.exercise.name, image: BoopConfig.mediaURL(p.exercise.imageStartUrl),
+                                 role: exerciseRoleLine(muscle: p.exercise.muscle ?? "", type: ExerciseType(wire: p.exercise.type)),
+                                 reason: p.reasonText, last: nil, first: false, hue: planHue,
+                                 footnote: "\(dayName.lowercased()) · \(rx.workingSets) × \(rx.repMin == rx.repMax ? "\(rx.repMin)" : "\(rx.repMin)–\(rx.repMax)")")
+            } else {
+                Text("Ehhez most nem találtam olyan gyakorlatot, ami a termedben megvan. A teljes listából választhatsz.")
+                    .nkFont(13).foregroundStyle(.white.opacity(0.72))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            HStack(spacing: 18) {
+                if finding.proposal != nil, dayName != nil {
+                    Button(action: add) {
+                        Text("Hozzáadom").nkFont(14, .semibold).foregroundStyle(NK.ground)
+                            .padding(.horizontal, 18).padding(.vertical, 9).background(Capsule().fill(.white))
+                    }
+                    .buttonStyle(.plain)
+                }
+                Button(action: other) {
+                    Text("Mást választok").nkFont(14, .medium).foregroundStyle(.white.opacity(0.8))
+                        .frame(minHeight: 36).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.white.opacity(0.035)))
+        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(.white.opacity(0.13), lineWidth: 0.75))
+    }
+
+    /// „Hiányzik a lábhajlítás — a combhajlítót most csak …": the head white, the rest quieter.
+    private var verdict: Text {
+        let text = finding.verdictText
+        guard let dash = text.range(of: " — ") else { return Text(text).foregroundStyle(.white) }
+        return Text(text[..<dash.lowerBound] + " — ").foregroundStyle(.white)
+            + Text(text[dash.upperBound...]).foregroundStyle(.white.opacity(0.72))
+    }
+
+    private var whyToggle: some View {
+        Button { if reduceMotion { why.toggle() } else { withAnimation(.snappy) { why.toggle() } } } label: {
+            HStack(spacing: 5) {
+                Text("miért?").nkFont(13, .medium).foregroundStyle(planHue.glow)
+                Image(systemName: why ? "chevron.up" : "chevron.down").font(.system(size: 10, weight: .semibold)).foregroundStyle(planHue.glow)
+            }
+            .frame(minHeight: 28).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(why ? "Miért — elrejtés" : "Miért")
+    }
 }
 
 // MARK: - Napok: one day a page

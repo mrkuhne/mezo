@@ -944,6 +944,29 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     row's small ismétlés / tartalék editor; *add*: two sub-muscles picked,
     *addOpen*: the dropdown open, *addEmpty*: nothing picked), `-previewBlokkDay N` (day page),
     `-previewBlokkSuggest fail` (suggestions 503 → the full list with its one-line note).
+  - **Coverage hints on the Izmok tab (`mezo-r36n9.114`, 2026-11-25; spec
+    [`2026-11-25-boop-hianyjelzes-design.md`](../superpowers/specs/2026-11-25-boop-hianyjelzes-design.md), look: spike
+    `spike/boop-hianyjelzes`, owner decision #59)** — after every successful evaluation `BlockBuilderModel` asks
+    `PlanClient.coverage(blockId:days:)` (`POST /api/train/mesocycles/{id}/coverage`, `getBlockCoverage`, on the lenient
+    `RawJSONClient`; `WireCoverage` drops an unreadable finding, a broken `lastTopSet` / `prescription` reads as absent) with
+    each non-empty draft day as its weekday (0 = Monday), its catalogue ids lower-cased and the evaluator's
+    `minutesEstimate`. The findings are keyed by group and shown only while `coverageFresh` (the line-up — weekday + sorted
+    ids — equals the one they were computed for: a set step or a reorder keeps them, an add / remove / swap hides them until
+    the fresh answer); a failed read is silent (no findings, never an error). `coverageFinding(_:)` also hides a finding
+    taken with Hozzáadom and one whose proposal lands on the locked day; Tartás / untrained groups are the server's silence
+    (not re-filtered). Screens (`BlockBuilderPage`): the glance line under the body map *„N hiányzó kiegészítő mozgás ›"*
+    (steps to the next hinted card; the map shrinks to 176 pt while it shows), a hollow ring in the dot strip (amber when the
+    muscle is also outside its band), and `CoverageHintBox` on `BuilderMuscleCard` after the band proposal: hairline outline,
+    *KIEGÉSZÍTŐ MOZGÁS*, *miért?* (chevron toggle, the server's `whyText`), the verdict (head before „ — " white, the rest
+    quieter), the proposal as `ExercisePickCard` with `footnote` *„csütörtök · 3 × 10–15"* (prescription, else
+    `Prescription.fallback`), **Hozzáadom** (`acceptCoverage` → `BlockDraft.add(day:catalog:prescription:)` on the draft day of
+    the proposal's weekday; the box becomes *„Hozzáadva csütörtökhöz · visszavonom"*, `undoCoverage` removes that row; a
+    successful save clears the undo lines) and **Mást választok** (`DayEditSheet.add(day, muscles: finding.muscles)` on
+    `coverageOtherDay` — the proposal's day, else the first open day training the group). No proposal → *„Ehhez most nem
+    találtam olyan gyakorlatot, ami a termedben megvan…"* and only Mást választok. Never enables *Igazítsd a sávba*. DEBUG
+    (with `-previewBlokk YES -previewBlokkOpen epito`): `-previewBlokkHiany list|why|added|none` — the fixture week's
+    hamstrings hinge only (Építés) and its back rows only: Combhajlító + Hát hints, Mell silent (Tartás); *why*: the „miért?"
+    open and the card scrolled to it, *added*: the leg curl taken, *none*: no hint (`PlanPreviewTransport.coverage`).
   - **Új blokk — the new-block flow and the plan recommender (`mezo-r36n9.113`, S1 + S2, 2026-11-21; spec
     [`2026-11-20-boop-eves-terv-design.md`](../superpowers/specs/2026-11-20-boop-eves-terv-design.md) §5, plan
     [`2026-11-21-boop-eves-terv-s1-s2.md`](../superpowers/plans/2026-11-21-boop-eves-terv-s1-s2.md))** — the no-block state of

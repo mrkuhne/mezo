@@ -55,6 +55,13 @@ public struct PlanClient: Sendable {
                            operationID: "getBlockExerciseSuggestions", body: request)
     }
 
+    /// The draft week's missing complementary movements (coverage hints, mezo-r36n9.114): 0..3 findings, each with at
+    /// most one proposed exercise on a named weekday. Read-only advice; a 409 means the block is archived.
+    public func coverage(blockId: String, days: [WireCoverageDay]) async throws(PlanFetchError) -> WireCoverage {
+        try await raw.send(.post, "/api/train/mesocycles/\(blockId)/coverage", operationID: "getBlockCoverage",
+                           body: WireCoverageRequest(days: days))
+    }
+
     // MARK: the new-block intake (mezo-r36n9.113)
 
     /// Ranked, flawless split candidates for the chosen days — read-only, no AI.
