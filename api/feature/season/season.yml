@@ -859,7 +859,7 @@ components:
       type: object
       required: [kind, date, text]
       properties:
-        kind: { type: string, enum: [mesocycle, deload, kimelo, season] }
+        kind: { type: string, enum: [mesocycle, deload, kimelo, season, other], description: 'other = another change he logged himself inside the window (a new supplement in the stack, a journal line saying he started something)' }
         date: { type: string, format: date }
         text: { type: string, description: 'One Hungarian line („Közben új edzésblokk indult”)' }
     SeasonExperimentCreate:

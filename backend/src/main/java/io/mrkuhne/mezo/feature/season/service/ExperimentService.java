@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.feature.season.entity.SeasonEntity;
 import io.mrkuhne.mezo.feature.season.entity.SeasonExperimentEntity;
 import io.mrkuhne.mezo.feature.season.entity.SeasonExperimentResultJson;
 import io.mrkuhne.mezo.feature.season.entity.SeasonRevisionEntity;
+import io.mrkuhne.mezo.feature.season.port.SeasonExperimentSourcePort;
 import io.mrkuhne.mezo.feature.season.port.SeasonMetricsPort;
 import io.mrkuhne.mezo.feature.season.port.SeasonTrainPort;
 import io.mrkuhne.mezo.feature.season.repository.SeasonExperimentRepository;
@@ -18,8 +19,10 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -56,6 +59,11 @@ public class ExperimentService {
     static final String OVERLAP_DELOAD = "Közben könnyebb edzéshét volt";
     static final String OVERLAP_KIMELO = "Közben kímélő napjaid voltak";
     static final String OVERLAP_SEASON = "Közben módosítottad az évadot";
+    static final String OVERLAP_SUPPLEMENT = "Közben új étrend-kiegészítőt kezdtél: ";
+    static final String OVERLAP_JOURNAL = "Közben ezt írtad a naplóba: „%s”";
+    /** „Another change he logged”: at most one per day, at most this many per window. */
+    static final int OTHER_MAX = 3;
+    static final int QUOTE_MAX = 60;
 
     private final SeasonRepository seasons;
     private final SeasonRevisionRepository revisions;
@@ -63,6 +71,7 @@ public class ExperimentService {
     private final SeasonMetricsPort metrics;
     private final SeasonTrainPort trainPort;
     private final ExperimentProposalDetector detector;
+    private final SeasonExperimentSourcePort sources;
     private final WearableProperties wearableProperties;
     private final PlatformTransactionManager transactionManager;
 
@@ -233,7 +242,7 @@ public class ExperimentService {
         LocalDate end = e.endDate();
         LocalDate baselineFrom = start.minusDays(e.getLengthDays());
         LocalDate baselineTo = start.minusDays(1);
-        List<ExperimentEvaluator.Overlap> overlaps = overlaps(owner, e.getSeasonId(), start, end);
+        List<ExperimentEvaluator.Overlap> overlaps = overlaps(owner, e, start, end);
         int marked = (int) markedIn(e, start, end);
         ExperimentEvaluator.Result r = ExperimentEvaluator.evaluate(
             metrics.experimentSignals(owner, baselineFrom, baselineTo), metrics.experimentSignals(owner, start, end),
@@ -249,8 +258,10 @@ public class ExperimentService {
         experiments.saveAndFlush(e);
     }
 
-    /** The other changes inside {@code from..to}: a block started, a deload week, kímélő days, a season change. */
-    List<ExperimentEvaluator.Overlap> overlaps(UUID owner, UUID seasonId, LocalDate from, LocalDate to) {
+    /** The other changes inside {@code from..to}: a block started, a deload week, kímélő days, a season change, and
+     *  another change he logged himself ({@link #otherChanges}). */
+    List<ExperimentEvaluator.Overlap> overlaps(UUID owner, SeasonExperimentEntity e, LocalDate from, LocalDate to) {
+        UUID seasonId = e.getSeasonId();
         List<ExperimentEvaluator.Overlap> out = new ArrayList<>();
         if (to.isBefore(from)) {
             return out;
@@ -272,8 +283,46 @@ public class ExperimentService {
                 break;
             }
         }
+        out.addAll(otherChanges(owner, e, from, to));
         out.sort(Comparator.comparing(ExperimentEvaluator.Overlap::date));
         return out;
+    }
+
+    /**
+     * Kind {@code other} (spec §5.9): a supplement newly in the stack or a journal line saying he started something
+     * (the detector's sources and pattern), inside {@code from..to}, never the experiment's own subject (same
+     * {@code subjectRef} / same normalised title); at most one per day, at most {@link #OTHER_MAX}, earliest first.
+     */
+    private List<ExperimentEvaluator.Overlap> otherChanges(UUID owner, SeasonExperimentEntity e, LocalDate from,
+                                                           LocalDate to) {
+        List<ExperimentEvaluator.Overlap> all = new ArrayList<>();
+        for (SeasonExperimentSourcePort.NewSupplement s : sources.newSupplements(owner, from)) {
+            if (!s.since().isAfter(to) && !s.pantryItemId().equals(e.getSubjectRef())) {
+                all.add(new ExperimentEvaluator.Overlap("other", s.since(),
+                    OVERLAP_SUPPLEMENT + ExperimentProposalDetector.shorten(s.name())));
+            }
+        }
+        String own = ExperimentProposalDetector.key(e.getTitle());
+        for (SeasonExperimentSourcePort.JournalLine j : sources.journalLines(owner, from, to)) {
+            ExperimentProposalDetector.startedSentence(j.text())
+                .filter(t -> !ExperimentProposalDetector.key(t).equals(own))
+                .ifPresent(t -> all.add(new ExperimentEvaluator.Overlap("other", j.date(),
+                    OVERLAP_JOURNAL.formatted(quote(t)))));
+        }
+        // stable: a supplement wins its day over a journal line; journal lines of one day keep their order
+        all.sort(Comparator.comparing(ExperimentEvaluator.Overlap::date));
+        Set<LocalDate> days = new HashSet<>();
+        List<ExperimentEvaluator.Overlap> out = new ArrayList<>();
+        for (ExperimentEvaluator.Overlap o : all) {
+            if (out.size() < OTHER_MAX && days.add(o.date())) {
+                out.add(o);
+            }
+        }
+        return out;
+    }
+
+    private static String quote(String t) {
+        return t.length() <= QUOTE_MAX ? t : t.substring(0, QUOTE_MAX - 1).strip() + "…";
     }
 
     // --- view ------------------------------------------------------------------------------------------------------
@@ -284,7 +333,7 @@ public class ExperimentService {
         if (e.is(SeasonExperimentEntity.STATUS_RUNNING) && e.getStartDate() != null) {
             dayIndex = dayIndex(e, today);
             LocalDate to = e.endDate().isBefore(today) ? e.endDate() : today;
-            overlaps = overlaps(owner, e.getSeasonId(), e.getStartDate(), to);
+            overlaps = overlaps(owner, e, e.getStartDate(), to);
         } else if (e.is(SeasonExperimentEntity.STATUS_DONE) && e.getResult() != null) {
             overlaps = e.getResult().overlapsOrEmpty().stream()
                 .map(o -> new ExperimentEvaluator.Overlap(o.kind(), o.date(), o.text())).toList();

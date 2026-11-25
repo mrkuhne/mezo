@@ -483,10 +483,14 @@ recipe names with „×n" when used n times. `amountText`: g / ml rounded **up**
 - **Overlaps** (`SeasonTrainPort.trainEvents` + `season_revision`): a block started, a deload week, kímélő days, a season
   change (the first revision — the activation — is skipped) inside the window (a deload week counts when
   `[week, week+6]` touches it, dated `max(week, from)`), each with a Hungarian line; shown live on
-  the running card and stored on the result.
+  the running card and stored on the result. Kind `other` is another change he logged himself inside the window
+  (through `SeasonExperimentSourcePort`: a supplement newly in the stack, or a journal line matching the detector's
+  „elkezdtem|mostantól" pattern, quoted ≤ 60 characters), never the experiment's own subject (same `subject_ref` /
+  normalised title), at most one per day and three in all, earliest first.
 - **Proposals** (`ExperimentProposalDetector`, through `SeasonExperimentSourcePort`): only with the season's
   `propose_experiments` on, no open proposal and nothing running; at most one per run; candidates of the last 3 days,
-  newest first, skipping any subject this season already had: a supplement newly in the stack (`protocol_item`; a row
+  newest first, skipping any subject this season already had (a journal subject by its normalised title — lowercase,
+  whitespace collapsed, trailing punctuation dropped — so an edited entry does not re-propose a dismissed one): a supplement newly in the stack (`protocol_item`; a row
   removed earlier still counts as "already in the stack"), a recipe or food eaten for the first time and again within 7
   days (`meal_item`), a journal line with „elkezdtem|mostantól" at a word start. The reason is one Hungarian sentence, no
   health value. **Isolated:** the list call and the daily pass are not one transaction — finishing commits first, the
@@ -494,7 +498,9 @@ recipe names with „×n" when used n times. `amountText`: g / ml rounded **up**
   listing is read.
 - **Keep-as-habit.** `keepExperiment` (done only, else 409 `EXPERIMENT_NOT_DONE`) sets `kept`; `SeasonContextRenderer`
   then adds `[Évad] Szokás (kísérletből megtartva): <title>` to every AI context; while one runs it adds
-  `[Évad] Kísérlet fut: <title> (<n>. nap / <length>)`.
+  `[Évad] Kísérlet fut: <title> (<n>. nap / <length>)`. Both are read in their own read-only `REQUIRES_NEW`
+  transaction inside a catch, so a failing read drops only these lines and never marks Boop's reply transaction
+  rollback-only.
 - **The old job is off** (spec §5.12-2): `mezo.techcore.cron.experiment-job.enabled: false`; the proactive experiment
   table stays readable, nothing proposes there any more.
 - **The wall** (iOS `evadCandidates(…, experiments:)`): the proposal is an `.improves` card („Indítsunk róla

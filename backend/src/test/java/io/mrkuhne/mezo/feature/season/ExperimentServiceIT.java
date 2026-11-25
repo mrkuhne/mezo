@@ -10,9 +10,16 @@ import io.mrkuhne.mezo.feature.season.entity.SeasonExperimentEntity;
 import io.mrkuhne.mezo.feature.season.repository.SeasonExperimentRepository;
 import io.mrkuhne.mezo.feature.season.repository.SeasonRepository;
 import io.mrkuhne.mezo.feature.season.port.SeasonTrainPort;
+import io.mrkuhne.mezo.feature.season.service.ExperimentEvaluator;
 import io.mrkuhne.mezo.feature.season.service.ExperimentService;
 import io.mrkuhne.mezo.feature.season.service.SeasonContextRenderer;
 import io.mrkuhne.mezo.feature.season.service.SeasonService;
+import io.mrkuhne.mezo.feature.season.mapper.SeasonMapper;
+import io.mrkuhne.mezo.api.dto.SeasonExperimentOverlap;
+import io.mrkuhne.mezo.feature.journal.entity.JournalEntryEntity;
+import io.mrkuhne.mezo.feature.journal.repository.JournalEntryRepository;
+import io.mrkuhne.mezo.feature.wearable.config.WearableProperties;
+import java.time.ZoneId;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
@@ -55,6 +62,14 @@ class ExperimentServiceIT extends AbstractIntegrationTest {
     @Autowired private SleepLogPopulator sleepLogPopulator;
     @Autowired private io.mrkuhne.mezo.support.populator.MealPopulator mealPopulator;
     @Autowired private SeasonTrainPort trainPort;
+    @Autowired private SeasonMapper seasonMapper;
+    @Autowired private JournalEntryRepository journalEntryRepository;
+    @Autowired private WearableProperties wearableProperties;
+
+    /** Noon of {@code day} in the Boop zone — a stack add stamped on that local day. */
+    private Instant noon(LocalDate day) {
+        return day.atTime(12, 0).atZone(ZoneId.of(wearableProperties.zone())).toInstant();
+    }
 
     private SeasonEntity season(UUID owner) {
         return seasonService.activate(owner, seasonService.create(owner, SeasonFixture.draft()).getId());
@@ -373,5 +388,103 @@ class ExperimentServiceIT extends AbstractIntegrationTest {
         // a window starting inside the week is dated at the week start when that is later
         assertThat(trainPort.trainEvents(owner, TODAY.minusDays(5), TODAY.minusDays(3)))
             .containsExactly(new SeasonTrainPort.TrainEvent(SeasonTrainPort.TrainEventKind.DELOAD, TODAY.minusDays(3)));
+    }
+
+    @Test
+    void loggedSupplementInWindowIsAnOverlap() {
+        UUID owner = fixture.owner("exp-other-supp@test.local");
+        season(owner);
+        PantryItemEntity old = pantryItemPopulator.createSupplement(owner, "D-vitamin");
+        PantryItemEntity magnesium = pantryItemPopulator.createSupplement(owner, "Magnézium");
+        PantryItemEntity late = pantryItemPopulator.createSupplement(owner, "Cink");
+        ProtocolEntity p = protocolPopulator.createActiveProtocol(owner);
+        protocolPopulator.createProtocolItemAt(owner, p.getId(), old.getId(), "breakfast", null, noon(TODAY.minusDays(30)));
+        protocolPopulator.createProtocolItemAt(owner, p.getId(), magnesium.getId(), "evening", null, noon(TODAY.minusDays(2)));
+        UUID id = experimentService.create(owner, "Korábbi lefekvés", "habit", null, 14, TODAY).experiment().getId();
+        startedDaysAgo(id, 5);
+
+        ExperimentService.View running = experimentService.list(owner, TODAY).running();
+
+        assertThat(running.overlaps()).extracting(o -> o.kind() + "|" + o.date() + "|" + o.text())
+            .containsExactly("other|" + TODAY.minusDays(2) + "|Közben új étrend-kiegészítőt kezdtél: Magnézium");
+        // the contract carries kind `other`
+        assertThat(seasonMapper.toDto(running).getOverlaps()).extracting(SeasonExperimentOverlap::getKind)
+            .containsExactly(SeasonExperimentOverlap.KindEnum.OTHER);
+
+        // finished: a supplement added after the window is not inside it; the stored result keeps the line
+        protocolPopulator.createProtocolItemAt(owner, p.getId(), late.getId(), "evening", null, noon(TODAY.minusDays(1)));
+        startedDaysAgo(id, 15); // window today-15 .. today-2
+        ExperimentService.View done = experimentService.list(owner, TODAY).past().get(0);
+        assertThat(done.overlaps()).extracting(o -> o.kind() + "|" + o.text())
+            .containsExactly("other|Közben új étrend-kiegészítőt kezdtél: Magnézium");
+    }
+
+    @Test
+    void ownSubjectIsNotItsOwnOverlap() {
+        UUID owner = fixture.owner("exp-other-own@test.local");
+        season(owner);
+        PantryItemEntity magnesium = pantryItemPopulator.createSupplement(owner, "Magnézium");
+        ProtocolEntity p = protocolPopulator.createActiveProtocol(owner);
+        protocolPopulator.createProtocolItemAt(owner, p.getId(), magnesium.getId(), "evening", null, noon(TODAY.minusDays(1)));
+        UUID id = experimentService.create(owner, "Magnézium", "supplement", magnesium.getId(), 14, TODAY)
+            .experiment().getId();
+        startedDaysAgo(id, 3);
+
+        assertThat(experimentService.list(owner, TODAY).running().overlaps()).isEmpty();
+
+        // a journal-derived experiment is not its own overlap either (same normalised title)
+        experimentService.dismiss(owner, id, TODAY);
+        journalPopulator.createEntry(owner, TODAY.minusDays(2), "Elkezdtem esténként olvasni.", "boop");
+        UUID text = experimentService.create(owner, "elkezdtem esténként olvasni", "text", null, 14, TODAY)
+            .experiment().getId();
+        startedDaysAgo(text, 3);
+        assertThat(experimentService.list(owner, TODAY).running().overlaps()).extracting(o -> o.text())
+            .containsExactly("Közben új étrend-kiegészítőt kezdtél: Magnézium");
+    }
+
+    @Test
+    void loggedJournalLinesInWindowAreOverlapsOnePerDayAtMostThree() {
+        UUID owner = fixture.owner("exp-other-journal@test.local");
+        season(owner);
+        UUID id = experimentService.create(owner, "Korábbi lefekvés", "habit", null, 14, TODAY).experiment().getId();
+        startedDaysAgo(id, 6);
+        journalPopulator.createEntry(owner, TODAY.minusDays(8), "Elkezdtem úszni.", "boop"); // before the window
+        journalPopulator.createEntry(owner, TODAY.minusDays(5),
+            "Jó nap volt. Mostantól minden reggel hideg vízzel zuhanyozom, és utána nyújtok tíz percet a teraszon.",
+            "boop");
+        journalPopulator.createEntry(owner, TODAY.minusDays(4), "Elkezdtem a kreatint.", "boop");
+        journalPopulator.createEntry(owner, TODAY.minusDays(4), "Mostantól nem kávézom délután.", "boop");
+        journalPopulator.createEntry(owner, TODAY.minusDays(3), "Fáradt vagyok.", "boop");
+        journalPopulator.createEntry(owner, TODAY.minusDays(2), "Elkezdtem jógázni.", "boop");
+        journalPopulator.createEntry(owner, TODAY.minusDays(1), "Mostantól sétálok ebéd után.", "boop");
+
+        List<ExperimentEvaluator.Overlap> overlaps = experimentService.list(owner, TODAY).running().overlaps();
+
+        assertThat(overlaps).extracting(o -> o.kind()).containsOnly("other");
+        assertThat(overlaps).extracting(o -> o.date())
+            .containsExactly(TODAY.minusDays(5), TODAY.minusDays(4), TODAY.minusDays(2));
+        assertThat(overlaps.get(0).text()).startsWith("Közben ezt írtad a naplóba: „Mostantól minden reggel")
+            .endsWith("…”");
+        String quote = overlaps.get(0).text().substring("Közben ezt írtad a naplóba: „".length(),
+            overlaps.get(0).text().length() - 1);
+        assertThat(quote.length()).isLessThanOrEqualTo(60);
+        assertThat(overlaps.get(2).text()).isEqualTo("Közben ezt írtad a naplóba: „Elkezdtem jógázni”");
+    }
+
+    @Test
+    void editedJournalLineIsNotReproposed() {
+        UUID owner = fixture.owner("exp-journal-edit@test.local");
+        season(owner);
+        JournalEntryEntity entry = journalPopulator.createEntry(owner, TODAY.minusDays(1),
+            "Elkezdtem esténként olvasni.", "boop");
+        ExperimentService.View proposal = experimentService.list(owner, TODAY).proposal();
+        assertThat(proposal).isNotNull();
+        experimentService.dismiss(owner, proposal.experiment().getId(), TODAY);
+
+        JournalEntryEntity edited = journalEntryRepository.findById(entry.getId()).orElseThrow();
+        edited.setText("ELKEZDTEM   esténként olvasni;");
+        journalEntryRepository.saveAndFlush(edited);
+
+        assertThat(experimentService.list(owner, TODAY).proposal()).isNull();
     }
 }
