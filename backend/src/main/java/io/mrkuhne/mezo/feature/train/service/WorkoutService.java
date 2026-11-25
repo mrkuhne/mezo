@@ -795,19 +795,42 @@ public class WorkoutService {
         return toInstanceResponse(createdBy, workoutSessionRepository.save(instance));
     }
 
-    /** A fresh instance of a template day, dated and started as given — `startWorkout`'s and the catch-up's one builder. */
-    private static WorkoutSessionEntity newInstance(UUID createdBy, WorkoutSessionEntity template, LocalDate date, Instant startedAt) {
+    /**
+     * The catch-up books a session on the day it actually belonged to (B7 K3 final review): when the day-adjustment
+     * ledger moved this template within {@code date}'s Mon–Sun week, only its new day may carry it — booking it on
+     * the day it left would put a second session into the week the ledger already re-dated (409
+     * {@code TRAIN_AS_PLANNED_MOVED}, shown to him as train's own words).
+     */
+    private void requireEffectiveDay(UUID createdBy, WorkoutSessionEntity template, LocalDate date) {
+        LocalDate monday = date.minusDays(date.getDayOfWeek().getValue() - 1L);
+        Optional<LocalDate> movedTo = dayAdjustmentPort.effectiveSessions(createdBy, monday, monday.plusDays(6))
+            .entrySet().stream()
+            .filter(e -> template.getId().equals(e.getValue().movedInTemplateId()))
+            .map(Map.Entry::getKey)
+            .findFirst();
+        if (movedTo.isPresent() && !movedTo.get().equals(date)) {
+            throw new SystemRuntimeErrorException(
+                SystemMessage.error("TRAIN_AS_PLANNED_MOVED").build(), HttpStatus.CONFLICT);
+        }
+    }
+
+    /**
+     * A fresh instance of a template day, dated and started as given — `startWorkout`'s and the catch-up's one builder.
+     * Not static: the ledger decides the label (B7 K3).
+     */
+    private WorkoutSessionEntity newInstance(UUID createdBy, WorkoutSessionEntity template, LocalDate date, Instant startedAt) {
         WorkoutSessionEntity instance = new WorkoutSessionEntity();
         instance.setCreatedBy(createdBy); // server-side ownership — never from the client
         instance.setMesocycleId(template.getMesocycleId());
         instance.setOrigin(template.getOrigin());
         instance.setTemplateSessionId(template.getId());
-        // A session the ledger moved onto today carries today's weekday label (B7 K3), so the logged history and
-        // its prose ("Edzés: Sze …") name the day it was actually done; the template keeps its plan label.
-        boolean movedHere = dayAdjustmentPort.effectiveSession(createdBy, LocalDate.now())
+        // A session the ledger moved onto the instance's date carries that date's weekday label (B7 K3), so the logged
+        // history and its prose ("Edzés: Sze …") name the day it was actually done; the template keeps its plan label.
+        // The catch-up passes its own (past) date, so a moved session booked on its new day is labelled the same way.
+        boolean movedHere = dayAdjustmentPort.effectiveSession(createdBy, date)
             .filter(l -> template.getId().equals(l.movedInTemplateId())).isPresent();
         instance.setDayLabel(movedHere
-            ? HU_DAY_LABELS.get(LocalDate.now().getDayOfWeek().getValue() - 1) : template.getDayLabel());
+            ? HU_DAY_LABELS.get(date.getDayOfWeek().getValue() - 1) : template.getDayLabel());
         instance.setType(template.getType());
         instance.setMuscle(template.getMuscle());
         instance.setMuscleAccent(template.isMuscleAccent());
@@ -853,6 +876,9 @@ public class WorkoutService {
                 SystemMessage.error("TRAIN_AS_PLANNED_DATE_OUT_OF_WINDOW").build(), HttpStatus.BAD_REQUEST);
         }
         Instant startedAt = CapturedAtWindow.require(req.getStartedAt(), now.getZone(), now).toInstant();
+        if (!"custom".equals(template.getOrigin())) {
+            requireEffectiveDay(createdBy, template, date);
+        }
         if (workoutSessionRepository
             .findFirstByCreatedByAndStatusAndTemplateSessionIdIsNotNullOrderByDateDescCreatedAtDesc(
                 createdBy, "active").isPresent()) {

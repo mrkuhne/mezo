@@ -2,6 +2,13 @@ package io.mrkuhne.mezo.feature.capacity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.api.dto.WorkoutAsPlannedRequest;
+import io.mrkuhne.mezo.api.dto.WorkoutInstanceResponse;
+import io.mrkuhne.mezo.feature.train.MesocycleActivated;
+import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
+import org.springframework.context.ApplicationEventPublisher;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.mrkuhne.mezo.api.dto.FuelDayResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutStartRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
@@ -106,6 +113,8 @@ class LedgerReadersIT extends AbstractIntegrationTest {
     @Autowired private PlannedSkipService plannedSkips;
     @Autowired private RecoveryPeriodPopulator recoveries;
     @Autowired private WorkoutSessionRepository workoutSessions;
+    @Autowired private MesocycleRepository mesocycles;
+    @Autowired private ApplicationEventPublisher events;
 
     private final LocalDate today = LocalDate.now(); // getToday and the pending preview key on the real clock
     private UUID owner;
@@ -508,5 +517,75 @@ class LedgerReadersIT extends AbstractIntegrationTest {
 
         assertThat(wed).contains("gym (Sze): Evezés 2"); // the day it is done on, round(3 × 0.5) sets
         assertThat(mon).contains("pihenőnap (gym)");
+    }
+
+    // ── main's newer readers (K3 final review, after the rebase) ──────────────
+
+    /** Two days of one Mon–Sun week inside the catch-up window (today−7 … today): {plan day, moved-to day}. */
+    private LocalDate[] catchUpPair() {
+        return today.getDayOfWeek() == DayOfWeek.MONDAY
+            ? new LocalDate[] {today.minusDays(6), today.minusDays(1)}
+            : new LocalDate[] {today.minusDays(1), today};
+    }
+
+    private WorkoutAsPlannedRequest booking(WorkoutSessionEntity template, LocalDate date) {
+        return WorkoutAsPlannedRequest.builder().templateSessionId(template.getId()).date(date)
+            .startedAt(date.atTime(18, 0).atZone(ZoneId.systemDefault()).toOffsetDateTime())
+            .clientRef(UUID.randomUUID()).overrides(List.of()).build();
+    }
+
+    @Test
+    void movedSessionIsBookedOnlyOnItsEffectiveDay() {
+        owner("asplanned");
+        LocalDate[] pair = catchUpPair();
+        LocalDate planDay = pair[0];
+        LocalDate movedTo = pair[1];
+        WorkoutSessionEntity session = templateOn(planDay);
+        active(new MoveSessionDay(session.getId(), planDay, movedTo));
+
+        // On the day it was moved away from: refused with train's own words, never a second session for the week.
+        assertThatThrownBy(() -> workoutService.completeAsPlanned(owner, booking(session, planDay)))
+            .isInstanceOf(SystemRuntimeErrorException.class)
+            .hasMessage("TRAIN_AS_PLANNED_MOVED");
+
+        // On its effective day: booked, dated and labelled as that day.
+        WorkoutInstanceResponse booked = workoutService.completeAsPlanned(owner, booking(session, movedTo));
+        assertThat(booked.getDate()).isEqualTo(movedTo);
+        assertThat(workoutSessions.findById(booked.getId()).orElseThrow().getDayLabel()).isEqualTo(label(movedTo));
+    }
+
+    @Test
+    void newActiveBlockExpiresTheOldBlocksSessionChanges() {
+        owner("meso-change");
+        LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate movedTo = today.getDayOfWeek() == DayOfWeek.SUNDAY ? monday : monday.plusDays(6);
+        WorkoutSessionEntity old = templateOn(today);
+        active(new MoveSessionDay(old.getId(), today, movedTo));
+        active(new ShortenSession(today, 40));
+        active(new ShiftSessionTime(today, LocalTime.of(18, 15)));
+        active(new ShiftBedtime(today, LocalTime.of(22, 0))); // not about the session: stays
+
+        // A planned block starts mid-week (PlannedBlockStarter → TrainService.activateMesocycle): the old block is
+        // archived, the new one is active with its own session today, and MesocycleActivated is published.
+        mesocycles.findById(old.getMesocycleId()).ifPresent(m -> {
+            m.setStatus("archived");
+            mesocycles.saveAndFlush(m);
+        });
+        var next = train.createMesocycle(owner, "Next block", "active");
+        WorkoutSessionEntity fresh = train.createWorkoutSession(owner, next.getId(), label(today), "Push 1", 0, "active");
+        train.createExercise(owner, fresh.getId(), "Fekvenyomás", 0);
+        events.publishEvent(new MesocycleActivated(owner, next.getId()));
+
+        assertThat(adjustments.findAll().stream().filter(r -> owner.equals(r.getCreatedBy())))
+            .extracting(DayAdjustmentEntity::getKind, DayAdjustmentEntity::getState)
+            .containsExactlyInAnyOrder(
+                org.assertj.core.groups.Tuple.tuple("MOVE_SESSION_DAY", "expired"),
+                org.assertj.core.groups.Tuple.tuple("SHORTEN_SESSION", "expired"),
+                org.assertj.core.groups.Tuple.tuple("SHIFT_SESSION_TIME", "expired"),
+                org.assertj.core.groups.Tuple.tuple("SHIFT_BEDTIME", "active"));
+        // The plan wins: today is the new block's session at its own length, not the old block's shortened one.
+        WorkoutTodayResponse todays = workoutService.getToday(owner, null);
+        assertThat(todays.getTemplateSessionId()).isEqualTo(fresh.getId());
+        assertThat(todays.getDurationEst()).isNull(); // the template's own estimate (none), not the old 40 minutes
     }
 }

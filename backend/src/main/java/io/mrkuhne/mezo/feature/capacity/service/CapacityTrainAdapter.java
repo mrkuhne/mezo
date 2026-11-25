@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.capacity.service;
 
 import io.mrkuhne.mezo.feature.capacity.port.CapacityTrainPort;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
+import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.GymScheduleSlotRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportScheduleSlotRepository;
@@ -35,6 +36,7 @@ public class CapacityTrainAdapter implements CapacityTrainPort {
     private final SportScheduleSlotRepository sportSlots;
     private final MesocycleRepository mesocycles;
     private final WorkoutSessionRepository workoutSessions;
+    private final ExerciseRepository exercises;
 
     @Override
     public Map<LocalDate, List<Session>> sessions(UUID owner, LocalDate from, LocalDate to) {
@@ -84,8 +86,13 @@ public class CapacityTrainAdapter implements CapacityTrainPort {
         return !workoutSessions.findDoneInstancesBetween(owner, date, date).isEmpty();
     }
 
-    /** The raw label match of {@code WorkoutService#findPlannedTemplateForDate}, read from the repositories so a
-     *  ledger-aware train read can never leak back into the ledger's own checks. */
+    /**
+     * The raw label match of {@code WorkoutService#findPlannedTemplateForDate}, read from the repositories so a
+     * ledger-aware train read can never leak back into the ledger's own checks — with the rest-day rule of
+     * {@code EffectivePlanService.plannedSession} / {@code ToolText.gymLine}: a template day with no exercises is a
+     * rest day, not a session (K3 final review: production keeps empty Saturday/Sunday templates, and counting them
+     * made every day a gym day, so no move was ever possible).
+     */
     @Override
     public Optional<UUID> plannedTemplate(UUID owner, LocalDate date) {
         String label = WorkoutService.HU_DAY_LABELS.get(date.getDayOfWeek().getValue() - 1);
@@ -93,8 +100,10 @@ public class CapacityTrainAdapter implements CapacityTrainPort {
             .flatMap(meso -> workoutSessions
                 .findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(owner, List.of(meso.getId())).stream()
                 .filter(s -> s.getTemplateSessionId() == null && label.equals(s.getDayLabel()))
-                .map(WorkoutSessionEntity::getId)
-                .findFirst());
+                .findFirst())
+            .filter(s -> !exercises.findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(owner, List.of(s.getId()))
+                .isEmpty())
+            .map(WorkoutSessionEntity::getId);
     }
 
     @Override
@@ -107,5 +116,13 @@ public class CapacityTrainAdapter implements CapacityTrainPort {
     @Override
     public boolean workoutRunning(UUID owner, UUID templateSessionId) {
         return workoutSessions.existsByCreatedByAndTemplateSessionIdAndStatus(owner, templateSessionId, "active");
+    }
+
+    @Override
+    public boolean templateInBlock(UUID owner, UUID templateSessionId, UUID mesocycleId) {
+        return workoutSessions.findById(templateSessionId)
+            .filter(s -> owner.equals(s.getCreatedBy()) && !s.isDeleted() && s.getTemplateSessionId() == null)
+            .filter(s -> mesocycleId.equals(s.getMesocycleId()))
+            .isPresent();
     }
 }

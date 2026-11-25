@@ -42,14 +42,15 @@ public interface CapacityTrainPort {
 
     /**
      * Does the plan put a gym session on {@code date}: a gym schedule slot on that weekday, or an active-meso template
-     * day labelled with it. A skip does not empty the day (undoing it would bring the session back).
+     * day labelled with it that has exercises (an empty template day is a rest day). A skip does not empty the day
+     * (undoing it would bring the session back).
      */
     boolean gymPlanned(UUID owner, LocalDate date);
 
     /** A completed gym workout dated {@code date} exists. */
     boolean gymDoneOn(UUID owner, LocalDate date);
 
-    /** The owner's active-meso template day planned for {@code date}, if any. */
+    /** The owner's active-meso template day planned for {@code date}, if any; never an empty (rest-day) template. */
     java.util.Optional<UUID> plannedTemplate(UUID owner, LocalDate date);
 
     /** {@code templateSessionId} is a meso template day (not an instance) of the owner. */
@@ -60,4 +61,7 @@ public interface CapacityTrainPort {
      * {@code TRAIN_DAY_WORKOUT_RUNNING} (an {@code active} instance of the template).
      */
     boolean workoutRunning(UUID owner, UUID templateSessionId);
+
+    /** {@code templateSessionId} is a template day of the owner's mesocycle {@code mesocycleId}. */
+    boolean templateInBlock(UUID owner, UUID templateSessionId, UUID mesocycleId);
 }

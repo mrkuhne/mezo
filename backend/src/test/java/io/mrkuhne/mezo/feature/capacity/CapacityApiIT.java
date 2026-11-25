@@ -413,4 +413,40 @@ class CapacityApiIT extends ApiIntegrationTest {
         assertThat(skipRows.findByIdAndCreatedByAndDeletedFalse(id, user.id()).orElseThrow().getReasonCategory())
             .isEqualTo(PlannedSkipEntity.Reason.KAPACITAS);
     }
+
+    /**
+     * K3 final review finding 1 — production's shape: the block has a template for every weekday label, but Saturday
+     * and Sunday have no exercises (rest days by the same rule the coach's tool line and the effective plan use). An
+     * empty template is not a gym session, so a move onto the weekend is proposed AND accepted.
+     */
+    @Test
+    void emptyWeekendTemplatesAreRestDaysSoAMoveIsProposedAndAccepted() {
+        RegisteredUser user = registerUser("cap-empty-weekend");
+        UUID mesoId = train.createActiveMeso(user.id()).getId();
+        sessionOn(user.id(), mesoId, thursday, "Pull 1");
+        withPeople(user.id(), thursday, "Tervezés", "07:00", "11:00");
+        withPeople(user.id(), thursday, "Egyeztetés", "12:00", "13:00");
+        withPeople(user.id(), thursday, "Átadó", "13:30", "14:30");
+        // Monday–Wednesday and Friday: gym days with exercises and a slot; Saturday and Sunday: empty templates
+        for (int dow : new int[] {0, 1, 2, 4}) {
+            sessionOn(user.id(), mesoId, monday.plusDays(dow), "Nap " + dow);
+        }
+        for (int dow : new int[] {5, 6}) {
+            train.createWorkoutSession(user.id(), mesoId, WorkoutService.HU_DAY_LABELS.get(dow), "Pihenő", dow, "active");
+        }
+
+        CapacityProposal move = week(user).getProposals().stream()
+            .filter(p -> p.getSteps().stream().anyMatch(s -> "MOVE_SESSION_DAY".equals(s.getKind().getValue())))
+            .findFirst().orElseThrow(() -> new AssertionError("no move proposed onto the empty weekend"));
+        String target = move.getSteps().stream().filter(s -> "MOVE_SESSION_DAY".equals(s.getKind().getValue()))
+            .map(s -> String.valueOf(s.getPayload().get("toDate"))).findFirst().orElseThrow();
+        assertThat(LocalDate.parse(target)).isIn(saturday, monday.plusDays(6));
+
+        accept(user, move.getId(), UUID.randomUUID(), HttpStatus.OK);
+        assertThat(adjustments.findAll()).filteredOn(r -> user.id().equals(r.getCreatedBy()))
+            .anySatisfy(r -> {
+                assertThat(r.getKind()).isEqualTo("MOVE_SESSION_DAY");
+                assertThat(r.getState()).isEqualTo(AdjustmentState.ACTIVE.wire());
+            });
+    }
 }

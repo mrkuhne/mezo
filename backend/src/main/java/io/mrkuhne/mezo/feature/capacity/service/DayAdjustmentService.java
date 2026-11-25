@@ -190,6 +190,9 @@ public class DayAdjustmentService {
      */
     @Transactional
     public void undo(UUID owner, UUID adjustmentId) {
+        // The owner's lock first (accept's order: lock, then the proposal row), so the staleness sweep and the
+        // new-block expiry can never write over an undo in flight (K3 final review finding 6).
+        lock.lock(owner);
         // Lock the proposal BEFORE the rows are loaded: a concurrent undo / accept of the same bundle then waits, and
         // this transaction reads the rows as that one left them.
         Optional<CapacityProposalEntity> proposal = rows.findProposalIdOf(adjustmentId, owner)
@@ -253,12 +256,16 @@ public class DayAdjustmentService {
      * Sweeps the owner's live rows against the plan as it is now. An active move whose target day gained a gym session
      * before the day (the schedule changed) → {@code expired}; whose session was done on its new day, or whose target
      * day passed (trained or not — the re-dating stays in history) → {@code done}. A waiting calendar to-do whose day
-     * passed → {@code expired}.
+     * passed → {@code expired}. Once the move's OLD day has passed it settles {@code done}, never {@code expired}: an
+     * expired move would put the session back onto a day that is behind him, a missed workout he never chose. Runs
+     * under the owner's {@link CapacityLock} (as the calendar watcher does), so it never writes over an undo or an
+     * accept that is committing at the same moment.
      *
      * @return the rows whose state changed
      */
     @Transactional
     public List<DayAdjustmentView> expireStale(UUID owner, LocalDate today) {
+        lock.lock(owner);
         Instant now = clock().instant();
         List<DayAdjustmentEntity> changed = new ArrayList<>();
         for (DayAdjustmentEntity e : rows.findByCreatedByAndStateInAndDeletedFalse(owner, LIVE)) {
@@ -271,7 +278,7 @@ public class DayAdjustmentService {
                 if (m.toDate().isBefore(today) || train.gymDoneOn(owner, m.toDate())) {
                     next = AdjustmentState.DONE;
                 } else if (train.gymPlanned(owner, m.toDate())) {
-                    next = AdjustmentState.EXPIRED;
+                    next = m.fromDate().isBefore(today) ? AdjustmentState.DONE : AdjustmentState.EXPIRED;
                 }
             } else if (p instanceof AdjustmentPayload.CalendarTodo
                 && AdjustmentState.WAITING.wire().equals(e.getState()) && e.getDate().isBefore(today)) {
@@ -279,6 +286,39 @@ public class DayAdjustmentService {
             }
             if (next != null) {
                 e.setState(next.wire());
+                e.setUpdatedAt(now);
+                changed.add(e);
+            }
+        }
+        return rows.saveAll(changed).stream().map(DayAdjustmentService::view).toList();
+    }
+
+    /**
+     * A new block became the active mesocycle (a planned block starting mid-week, or a manual activation): the plan
+     * wins (K3 final review ruling). A live move whose session is not a template day of the new block would leave
+     * that session nowhere — so it expires; a session time shift or shortening still ahead was decided for the old
+     * block's session of that day — it expires too. Settled ({@code done}) rows and past days stay as history; every
+     * other kind (bedtime, meal energy, calendar to-dos, lighten, skip) is not about which template the day holds.
+     *
+     * @return the rows that expired
+     */
+    @Transactional
+    public List<DayAdjustmentView> expireForNewBlock(UUID owner, UUID mesocycleId) {
+        lock.lock(owner);
+        LocalDate today = today();
+        Instant now = clock().instant();
+        List<DayAdjustmentEntity> changed = new ArrayList<>();
+        for (DayAdjustmentEntity e : rows.findByCreatedByAndStateInAndDeletedFalse(owner,
+                List.of(AdjustmentState.ACTIVE.wire()))) {
+            AdjustmentPayload p = view(e).payload();
+            boolean expire = switch (p) {
+                case MoveSessionDay m -> !train.templateInBlock(owner, m.templateSessionId(), mesocycleId);
+                case AdjustmentPayload.ShiftSessionTime s -> !s.date().isBefore(today);
+                case AdjustmentPayload.ShortenSession s -> !s.date().isBefore(today);
+                default -> false;
+            };
+            if (expire) {
+                e.setState(AdjustmentState.EXPIRED.wire());
                 e.setUpdatedAt(now);
                 changed.add(e);
             }

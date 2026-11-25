@@ -86,6 +86,8 @@ class DayAdjustmentServiceIT extends AbstractIntegrationTest {
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private TrainPopulator trainPopulator;
     @Autowired private MutableClock clock;
+    @Autowired private CapacityLock capacityLock;
+    @Autowired private org.springframework.transaction.support.TransactionTemplate transactions;
 
     private UUID owner;
     private WorkoutSessionEntity thursday;
@@ -94,6 +96,7 @@ class DayAdjustmentServiceIT extends AbstractIntegrationTest {
     void setUp() {
         owner = databasePopulator.populateUser("cap-ledger@test.local");
         thursday = trainPopulator.createTemplateDay(owner, trainPopulator.createActiveMeso(owner).getId(), "Csü");
+        trainPopulator.createExercise(owner, thursday.getId(), "Evezés", 0); // an empty template day is a rest day
         trainPopulator.createGymSlot(owner, 4, "17:30"); // Friday
         at(TUE, 7, 0);
     }
@@ -219,6 +222,50 @@ class DayAdjustmentServiceIT extends AbstractIntegrationTest {
         assertThat(service.expireStale(owner, SUN)).singleElement()
             .satisfies(v -> assertThat(v.state()).isEqualTo(AdjustmentState.DONE));
         assertThat(service.activeFor(owner, SAT)).extracting(DayAdjustmentView::id).containsExactly(moved);
+    }
+
+    @Test
+    void moveWhoseOldDayPassedSettlesDoneNeverExpired() {
+        UUID id = accept(move(THU, SAT)).get(0).id();
+        trainPopulator.createGymSlot(owner, 5, "10:00"); // Saturday gains a session — but Thursday is already behind
+
+        // Expiring now would put the session back on a Thursday that has passed: a missed workout he never chose.
+        assertThat(service.expireStale(owner, FRI)).singleElement()
+            .satisfies(v -> assertThat(v.state()).isEqualTo(AdjustmentState.DONE));
+        assertThat(adjustments.findById(id).orElseThrow().getState()).isEqualTo("done");
+    }
+
+    @Test
+    void expireStaleWaitsForTheOwnersLock() throws Exception {
+        accept(move(THU, SAT));
+        trainPopulator.createGymSlot(owner, 5, "10:00");
+        java.util.concurrent.CountDownLatch held = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch release = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.ExecutorService pool = java.util.concurrent.Executors.newFixedThreadPool(2);
+        try {
+            // An undo / accept in flight holds the owner's lock …
+            java.util.concurrent.Future<?> holder = pool.submit(() -> transactions.executeWithoutResult(s -> {
+                capacityLock.lock(owner);
+                held.countDown();
+                try {
+                    release.await(10, java.util.concurrent.TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }));
+            assertThat(held.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+            // … so the sweep waits instead of writing over what that transaction is about to commit.
+            java.util.concurrent.Future<List<DayAdjustmentView>> sweep = pool.submit(() -> service.expireStale(owner, TUE));
+            Thread.sleep(500);
+            assertThat(sweep.isDone()).isFalse();
+            release.countDown();
+            holder.get(10, java.util.concurrent.TimeUnit.SECONDS);
+            assertThat(sweep.get(10, java.util.concurrent.TimeUnit.SECONDS)).singleElement()
+                .satisfies(v -> assertThat(v.state()).isEqualTo(AdjustmentState.EXPIRED));
+        } finally {
+            release.countDown();
+            pool.shutdownNow();
+        }
     }
 
     @Test
