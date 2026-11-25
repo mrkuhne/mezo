@@ -20,7 +20,7 @@ osszefoglalo: Az Edzés gömbről nyíló szoba mutatja a mai edzést a valódi 
 - **Hol tartasz (B5):** a blokkod hetei egy sorban — balról jobbra az idő, a magasság az, hogy mennyit kér tőled
   az a hét. Az aktuális hét ki van emelve és meg van nevezve, a **könnyű hét pedig üres, szaggatott kerettel**:
   az nem egy kihagyott hét, hanem a terv része.
-- **A gyakorlatok valódi sorozatai (B5):** minden gyakorlat sora megmutatja, hány bemelegítő és hány éles sorozat van, milyen
+- **A gyakorlatok valódi sorozatai (B5):** minden gyakorlat sora megmutatja, hány éles sorozat van (bemelegítőt az app nem mutat), milyen
   ismétlésszámra, és **milyen súllyal** — pontosan azzal, amit a motor előírt. Ha egy sorozatot már rögzítettél, a sor kipipálva
   áll. **Ha a motor nem írt elő súlyt, nem is látsz súlyt** — csak a darabszámokat: a terv „kiindulási súlya" nem egy adott
   sorozatra szóló előírás, és nem írjuk ki annak.

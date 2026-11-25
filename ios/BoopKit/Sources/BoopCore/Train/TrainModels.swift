@@ -137,8 +137,11 @@ public struct PlannedExercise: Codable, Equatable, Sendable, Identifiable {
     public var name: String
     public var muscle: String
     public var type: ExerciseType
-    /// The resolved sets, warmups first. Always `warmupCount + workingCount` long.
+    /// The resolved sets — **working and technique sets only**. The server still prescribes warm-ups, but the app
+    /// never shows them (owner, 2026-11-25: „az nem számít és csak összezavar"), so they are dropped right here,
+    /// on the way in from the wire and from the cache alike, and nothing downstream ever meets one.
     public var sets: [PrescribedSet]
+    /// The server's warm-up count, kept only so a write (a swap) hands it back unchanged — never shown.
     public var warmupCount: Int
     public var workingCount: Int
     public var repMin: Int
@@ -174,7 +177,8 @@ public struct PlannedExercise: Codable, Equatable, Sendable, Identifiable {
                 videoURL: String? = nil, imageStartURL: String? = nil, imageEndURL: String? = nil,
                 replacesName: String? = nil, replacedByName: String? = nil, planSlot: Bool = true,
                 technique: SetTechnique? = nil, challenge: Bool = false, challengeBest: Int? = nil) {
-        self.id = id; self.name = name; self.muscle = muscle; self.type = type; self.sets = sets
+        self.id = id; self.name = name; self.muscle = muscle; self.type = type
+        self.sets = sets.filter { $0.kind != .warmup }
         self.warmupCount = warmupCount; self.workingCount = workingCount
         self.repMin = repMin; self.repMax = repMax; self.targetRIR = targetRIR
         self.anchorKg = anchorKg; self.rationale = rationale; self.progression = progression
@@ -265,11 +269,24 @@ public struct WorkoutInstance: Codable, Equatable, Sendable, Identifiable {
     /// not trustworthy", and the room says so rather than printing a made-up duration.
     public var finishedAt: Date?
     public var activeSeconds: Int?
+    /// The session's kcal — only on a finished workout, and only when the server knows one.
+    public var energy: WorkoutEnergy?
     public init(id: UUID, templateSessionId: UUID? = nil, date: String, status: WorkoutStatus,
-                sets: [LoggedSet] = [], startedAt: Date? = nil, finishedAt: Date? = nil, activeSeconds: Int? = nil) {
+                sets: [LoggedSet] = [], startedAt: Date? = nil, finishedAt: Date? = nil, activeSeconds: Int? = nil,
+                energy: WorkoutEnergy? = nil) {
         self.id = id; self.templateSessionId = templateSessionId; self.date = date; self.status = status
         self.sets = sets; self.startedAt = startedAt; self.finishedAt = finishedAt; self.activeSeconds = activeSeconds
+        self.energy = energy
     }
+}
+
+/// What a finished workout burned (owner, 2026-11-25: „becslés, utána óra"): the server's estimate from the work
+/// time right away, the watch's own figure once a matching workout from the watch has synced.
+public struct WorkoutEnergy: Codable, Equatable, Sendable {
+    public enum Source: String, Codable, Equatable, Sendable { case estimate, watch }
+    public var kcal: Int
+    public var source: Source
+    public init(kcal: Int, source: Source) { self.kcal = kcal; self.source = source }
 }
 
 /// How many exercises move by each lever today. Load **reductions** are counted apart and are not overload.

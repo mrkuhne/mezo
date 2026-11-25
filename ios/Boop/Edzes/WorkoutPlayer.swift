@@ -250,7 +250,6 @@ struct WorkoutPlayer: View {
                 .accessibilityLabel("Minden ismétlés tetején tartsd meg \(seconds) másodpercig.")
             }
 
-            stepLine(e)
             numberPads
             planLine(e)
             setList(e)
@@ -340,26 +339,6 @@ struct WorkoutPlayer: View {
         case .plan: return "TERV"
         case .previous: return "ELŐZŐ"
         case .none: return nil
-        }
-    }
-
-    /// The set in front of him, when it is a warm-up: said big, with its reps. The ladder's 4 reps read as a
-    /// mistake when the only sign was a tiny pill (owner, 2026-11-23: „ismétlés szám default 4-el kezdődik miért?").
-    @ViewBuilder private func stepLine(_ e: SessionExercise) -> some View {
-        if let plan = e.plan(at: e.logged.count), plan.kind == .warmup {
-            let n = e.logged.count + 1
-            let total = e.planned.filter { $0.kind == .warmup }.count
-            HStack(spacing: 8) {
-                Text(total > 1 ? "BEMELEGÍTŐ \(n)/\(total)" : "BEMELEGÍTŐ")
-                    .nkFont(10, .semibold, design: .monospaced).tracking(1.4).foregroundStyle(NK.ground)
-                    .padding(.horizontal, 8).padding(.vertical, 4)
-                    .background(Capsule().fill(hue.glow))
-                Text("könnyű súllyal, \(plan.targetReps.map { "\($0) ismétlés" } ?? "kevés ismétlés")")
-                    .nkFont(13).foregroundStyle(.white.opacity(0.8))
-                    .lineLimit(1).minimumScaleFactor(0.8)
-                Spacer(minLength: 0)
-            }
-            .accessibilityElement(children: .combine)
         }
     }
 

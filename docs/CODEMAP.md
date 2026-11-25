@@ -1312,7 +1312,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 *BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-24, done) ·
   [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-11-20, done) ·
   [docs/features/season.md](features/season.md) (updated 2026-11-21, in-progress) ·
-  [docs/features/train.md](features/train.md) (updated 2026-11-24, done)
+  [docs/features/train.md](features/train.md) (updated 2026-11-25, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/train`
   - **sub-features:** `port`
@@ -1358,10 +1358,11 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `TechniqueRefineRequested`, `TechniqueRules`, `TechniqueWeights`, `TemplatePlan`, `TierBudget`,
     `TierChangeProposalService`, `TimingObservation`, `TimingObservationExtractor`, `TimingProfileListener`,
     `TimingProfileService`, `TrainService`, `TrainingStyle`, `VolumeArcService`, `VolumeBands`, `VolumeDecider`,
-    `VolumeLedger`, `VolumePath`, `VolumeProgressionService`, `WarmupRule`, `WeekProposalDecisionService`,
-    `WeekProposalQueryService`, `WeekProposalService`, `WeeklyPin`, `WeeklyScheduledActivityService`,
-    `WeeklySignalReader`, `WeightGapService`, `WeightSnapper`, `WorkoutAutoCloseService`,
-    `WorkoutExerciseChangeService`, `WorkoutFinishedEvent`, `WorkoutService`, `WorkoutWindowQueryService`
+    `VolumeLedger`, `VolumePath`, `VolumeProgressionService`, `WarmupRule`, `WatchWorkoutEnergyPort`,
+    `WeekProposalDecisionService`, `WeekProposalQueryService`, `WeekProposalService`, `WeeklyPin`,
+    `WeeklyScheduledActivityService`, `WeeklySignalReader`, `WeightGapService`, `WeightSnapper`,
+    `WorkoutAutoCloseService`, `WorkoutEnergyService`, `WorkoutExerciseChangeService`, `WorkoutFinishedEvent`,
+    `WorkoutService`, `WorkoutWindowQueryService`
   - **controllers→contract:** `PlannedSkipController`→`TrainSkipApi`, `ReadinessController`→`TrainReadinessApi`,
     `RecoveryController`→`TrainRecoveryApi`, `TrainController`→`TrainApi`,
     `WeekProposalController`→`TrainWeekProposalApi`
@@ -1417,7 +1418,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     POST /api/train/running-blocks · PUT /api/train/running-blocks/{id} · DELETE /api/train/running-blocks/{id} ·
     POST /api/train/running-blocks/{id}/activate · POST /api/train/running-blocks/{id}/close ·
     GET /api/train/run-sessions · POST /api/train/run-sessions · GET /api/train/timing-profile
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 137 IT + 56 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 138 IT + 56 unit
   - **ITs:** `BlockExerciseSuggestionsIT`, `CatalogMediaResolutionIT`, `CatalogWriteContractIT`, `ClosingBlockIT`,
     `ClosingBlockSwitchOffIT`, `ClosingBlockVolumeFlagIT`, `ComebackTodayIT`, `CrossDayWorkoutIT`, `CustomWorkoutIT`,
     `ExerciseCatalogContractIT`, `ExerciseCatalogLoaderIT`, `ExerciseCatalogPermissionIT`, `ExerciseCatalogSlugRaceIT`,
@@ -1446,7 +1447,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `WeekProposalStallIT`, `WeekProposalTechniqueIT`, `WeekProposalTierChangeApiIT`, `WeekProposalTierChangeIT`,
     `WeekProposalTierIT`, `WeeklyPinIT`, `WeeklyScheduledActivityServiceIT`, `WeeklyScheduledActivityTrainingDaysIT`,
     `WeeklySignalReaderIT`, `WorkoutAsPlannedIT`, `WorkoutAutoCloseIT`, `WorkoutClosingNoteApiIT`, `WorkoutContractIT`,
-    `WorkoutDayAdjustmentPersistenceIT`, `WorkoutDetailContractIT`, `WorkoutDoneSemanticsIT`,
+    `WorkoutDayAdjustmentPersistenceIT`, `WorkoutDetailContractIT`, `WorkoutDoneSemanticsIT`, `WorkoutEnergyServiceIT`,
     `WorkoutExerciseChangeIT`, `WorkoutFinishNoLevelUpApiIT`, `WorkoutPlannedMuscleGroupsIT`, `WorkoutServiceIT`,
     `WorkoutSessionRepositoryChallengeIT`, `WorkoutSetMutationIT`, `WorkoutTimingBackfillIT`, `WorkoutTimingIT`,
     `WorkoutTodayAmountIT`, `WorkoutTodayAmountSwitchOffIT`, `WorkoutTodayPrescriptionIT`, `WorkoutTodayProgressionIT`,
@@ -1455,7 +1456,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   - **populators:** `BiometricProfilePopulator`, `CheckInPopulator`, `DatabasePopulator`, `GoalPopulator`,
     `MesoTemplatePopulator`, `PlannedSkipPopulator`, `ReadinessChoicePopulator`, `RecoveryPeriodPopulator`,
     `RunningPopulator`, `SleepLogPopulator`, `SportSlotSkipPopulator`, `TrainPopulator`, `UserPopulator`,
-    `WeightLogPopulator`, `WorkoutDayAdjustmentPopulator`
+    `WearableWorkoutPopulator`, `WeightLogPopulator`, `WorkoutDayAdjustmentPopulator`
 
 ### wearable
 
@@ -1468,8 +1469,8 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   - **repositories:** `CalendarEventRepository`, `DailyMetricRepository`, `HealthSampleRepository`,
     `WearableWorkoutRepository`
   - **services:** `CalendarDaysReplacedEvent`, `CalendarSnapshotService`, `DailyMetricService`, `HealthSampleService`,
-    `WearableBatches`, `WearableCheckInBiomarkerSource`, `WearableDeletionService`, `WearableSleepService`,
-    `WearableWorkoutService`, `WorkoutReconciler`
+    `WatchWorkoutEnergyAdapter`, `WearableBatches`, `WearableCheckInBiomarkerSource`, `WearableDeletionService`,
+    `WearableSleepService`, `WearableWorkoutService`, `WorkoutReconciler`
   - **controllers→contract:** `WearableController`→`WearableApi`
   - **config:** `WearableProperties`
 - **Contract** `api/feature/wearable/wearable.yml` — 6 operations

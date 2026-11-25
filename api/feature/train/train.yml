@@ -4822,6 +4822,27 @@ components:
           description: >
             Derived work time: consecutive set-completion intervals, each clipped at the gap cap.
             Absent when nothing was logged.
+        energy:
+          allOf:
+            - $ref: '#/components/schemas/WorkoutEnergy'
+          nullable: true
+          description: >
+            The session's energy (mezo-r36n9.170), filled only on a COMPLETED instance and only on
+            today's completedWorkout and the finish response. The watch's figure when a Health
+            strength workout matches the session and carries kcal, else the server's net estimate
+            (the same gym model the day's food budget uses). Null when neither is known (no body
+            data yet, no timing).
+    WorkoutEnergy:
+      type: object
+      required: [kcal, source]
+      properties:
+        kcal:
+          type: integer
+          minimum: 1
+        source:
+          type: string
+          enum: [estimate, watch]
+          description: "'estimate' = the server's net estimate from the work time; 'watch' = the matched Health workout's kcal."
     WorkoutSummaryResponse:
       type: object
       required: [id, date, status, origin, title]

@@ -2,7 +2,7 @@
 title: Train
 type: feature-domain
 status: done
-updated: 2026-11-24
+updated: 2026-11-25
 tags: [train, season, running, sport, frontend, backend, data-layer, progression, hypertrophy]
 key_files:
   - api/feature/train/train.yml
@@ -13,6 +13,8 @@ key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/train
 related: [season, _platform-data-layer, _platform-design-system, today, fuel, me, companion, ../research/concepts/personalized-exercise-selection.md]
 ---
+
+> **2026-11-25 — A workout's energy on the instance (`mezo-r36n9.170`).** `WorkoutInstanceResponse` gains optional nullable `energy` (`WorkoutEnergy {kcal ≥ 1, source estimate|watch}`), filled only on a completed instance and only on `getTodayWorkout.completedWorkout` and the `finishWorkout` answer (`WorkoutService.withEnergy`, decorative — a failure logs and answers without it). `WorkoutEnergyService`: the watch's figure first, through the consumer-owned `WatchWorkoutEnergyPort` implemented in wearable (`WatchWorkoutEnergyAdapter`: the day's Health workouts with kcal run through `WorkoutReconciler` against the session; the **largest** match wins, never the sum — Health often holds one workout twice); else the net estimate `ActivityEnergyModel.netKcal("gym", …)` over `WorkoutWindowQueryService.gymMinutes(instance, default)` — the very minutes rule the day's food budget uses, now a shared static. No table, no migration, no error code. The iPhone app also stops showing warm-up sets (they are still prescribed). Test: `WorkoutEnergyServiceIT`.
 
 > **2026-11-24 — Book a past template day as planned (Boop gym catch-up, `mezo-r36n9.161`, decision #104).** `POST /api/train/workouts/as-planned` (`completeWorkoutAsPlanned`; body `templateSessionId`, `date`, `startedAt`, `clientRef`, `overrides[{exerciseId, weightKg}]`) → `WorkoutService.completeAsPlanned`: idempotent on `clientRef` (`workout_session.client_ref`, Liquibase `202611241400_mezo-r36n9.161_workout_session_client_ref.sql`, unique per owner); `date` within today−7 … today else 400 `TRAIN_AS_PLANNED_DATE_OUT_OF_WINDOW`; `startedAt` through `CapturedAtWindow`; D6 (a live workout) and D5 (the template day completed in the **given date's** Mon–Sun week — `completedInWeekOf`) answer 409 as `startWorkout` does; a template day whose block is no longer active (rotated, ended; `origin != custom`) → 404, never a booking onto a stale block (Review Focus 4); the instance is built by the shared `newInstance` dated `date`, status `completed`, `finishedAt = startedAt`, **no derived timing**; the prescription is today's `getToday` — every working set of a prescribed exercise is logged done at `startedAt` (an override's weight where given, RIR = the exercise's target), an exercise with neither a prescription nor an override gets the skip marker (`skipMarker`, shared with `skipExercise`), never a zero weight; `WorkoutFinishedEvent` is published. Test: `WorkoutAsPlannedIT` (9).
 

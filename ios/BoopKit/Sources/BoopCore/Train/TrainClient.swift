@@ -229,7 +229,10 @@ public struct TrainClient: Sendable {
             id: UUID(uuidString: w.id) ?? UUID(), templateSessionId: UUID(uuidString: w.templateSessionId),
             date: w.date, status: .init(wire: w.status.rawValue),
             sets: w.sets.compactMap(map), startedAt: w.startedAt, finishedAt: w.finishedAt,
-            activeSeconds: w.activeSeconds)
+            activeSeconds: w.activeSeconds,
+            energy: w.energy.flatMap { e in
+                WorkoutEnergy.Source(rawValue: e.value1.source.rawValue).map { WorkoutEnergy(kcal: e.value1.kcal, source: $0) }
+            })
     }
 
     static func map(_ s: Components.Schemas.ExerciseSetResponse) -> LoggedSet? {

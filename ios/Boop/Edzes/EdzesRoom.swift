@@ -66,6 +66,11 @@ struct EdzesRoom: View {
     /// Which of the workout's own surfaces is up. The session itself lives in the store, so
     /// closing the player („kis méretre") leaves the workout running.
     @State private var phase: WorkoutPhase = .hidden
+    /// The workout whose finish already went out when the ceremony opened — so its kcal can arrive while he looks at
+    /// it — and must not be sent twice.
+    @State private var finishSent: UUID?
+    /// DEBUG only: the kcal `-previewEdzesCeremony` shows, standing in for the server's answer.
+    @State private var previewEnergy: WorkoutEnergy?
     /// The day of the week the Blokk tab's carousel is showing.
     @State private var blockDay: String?
     /// The missions he let go of on the briefing screen. Kept here so the choice survives that screen closing
@@ -183,7 +188,7 @@ struct EdzesRoom: View {
                               catalog: store.catalog,
                               records: store.records,
                               onMinimise: { phase = .hidden },
-                              onFinish: { phase = .ceremony },
+                              onFinish: { phase = .ceremony; sendFinish() },
                               onLogged: { exerciseId, set in enqueueSet(exerciseId, set) },
                               onEdited: { exerciseId, set in enqueueEdit(exerciseId, set) },
                               onNote: { exerciseId, note in enqueueNote(exerciseId, note) },
@@ -206,9 +211,10 @@ struct EdzesRoom: View {
             }
         }
         .fullScreenCover(isPresented: Binding(get: { phase == .ceremony && store?.session != nil },
-                                              set: { if !$0 { phase = .hidden } })) {
+                                              // The finish has already gone out: closing the ceremony any way ends it.
+                                              set: { if !$0 { finishWorkout() } })) {
             if let store, let session = store.session {
-                WorkoutCeremony(session: session, hue: hue,
+                WorkoutCeremony(session: session, hue: hue, energy: previewEnergy ?? store.energy(for: session),
                                 onDone: { finishWorkout() },
                                 onNote: { toast = soonToast("Edzés jegyzet") })
             }
@@ -217,8 +223,8 @@ struct EdzesRoom: View {
         .fullScreenCover(isPresented: Binding(get: { phase == .result && store?.finishedToday != nil },
                                               set: { if !$0 { phase = .hidden } })) {
             if let store, let finished = store.finished, let session = store.finishedToday {
-                WorkoutCeremony(session: session, hue: hue, onDone: { phase = .hidden }, onNote: {},
-                                finishedAt: finished.finishedAt)
+                WorkoutCeremony(session: session, hue: hue, energy: store.energy(for: session),
+                                onDone: { phase = .hidden }, onNote: {}, finishedAt: finished.finishedAt)
             }
         }
         // A workout's start or finish reached the server: today and the brief re-read, so the card says what the
@@ -258,6 +264,18 @@ struct EdzesRoom: View {
             // `-previewEdzesPlayer YES` (mezo-r36n9.147): straight into the player on its lifting screen.
             if UserDefaults.standard.bool(forKey: "previewEdzesSwap") || UserDefaults.standard.bool(forKey: "previewEdzesPlayer") {
                 if store?.session != nil { phase = .playing } else if workout != nil { beginWorkout() }
+            }
+            // `-previewEdzesCeremony estimate|watch|none` (mezo-r36n9.170): the closing ceremony with its kcal line —
+            // the estimate, the watch's figure, or none at all (offline / no body data). Nothing is sent.
+            if let mode = UserDefaults.standard.string(forKey: "previewEdzesCeremony") {
+                if store?.session == nil, workout != nil { beginWorkout() }
+                switch mode {
+                case "estimate": previewEnergy = WorkoutEnergy(kcal: 380, source: .estimate)
+                case "watch": previewEnergy = WorkoutEnergy(kcal: 412, source: .watch)
+                default: previewEnergy = nil
+                }
+                finishSent = store?.session?.ref
+                phase = .ceremony
             }
             #endif
             if weekReview == nil, let plan { weekReview = WeekReviewModel(client: plan) }
@@ -602,23 +620,35 @@ struct EdzesRoom: View {
         return Double(s.progress.done) / Double(s.progress.total)
     }
 
-    private func finishWorkout() {
-        guard let store, let session = store.session else { return }
+    /// The finish goes out **the moment the ceremony opens** (mezo-r36n9.170), not when he taps „Kész" on it: the
+    /// server answers the session's kcal only for a finished workout, and the ceremony is where he reads it. The
+    /// write is idempotent on the server and guarded here, so the ceremony's own close never sends it again.
+    private func sendFinish() {
+        guard let store, let session = store.session, finishSent != session.ref else { return }
+        finishSent = session.ref
         let item = OutboxItem.workoutWrite(.workoutFinish,
                                            payload: TrainPayloadCodec.encode(WorkoutFinishPayload(workoutRef: session.ref)),
                                            workoutRef: session.ref, date: brief?.date ?? "", capturedAt: Date())
-        store.endWorkout()
-        phase = .hidden
-        toast = "Edzés lezárva"
-        // The finish goes out **now**, not at the next foreground, and the day re-reads itself twice: at once (the
-        // phone's own „megvolt") and again when the server has it (`edzesTick`) — so Ma never falls back to
-        // „Indítás" (owner, 2026-11-23). Queue first, then flush, in one task: the two must not race.
-        let morning = morning
+        // Queue first, then flush, in one task: the two must not race. When the server has it, `edzesTick` re-reads
+        // the day, and the kcal arrives on the open ceremony.
         Task {
             if let ritmus {
                 try? await ritmus.outbox.enqueue(item)
                 ritmus.sendNow()
             }
+        }
+    }
+
+    private func finishWorkout() {
+        guard let store, store.session != nil else { phase = .hidden; return }
+        sendFinish()
+        store.endWorkout()
+        phase = .hidden
+        toast = "Edzés lezárva"
+        // The day re-reads itself twice: at once (the phone's own „megvolt") and again when the server has it
+        // (`edzesTick`) — so Ma never falls back to „Indítás" (owner, 2026-11-23).
+        let morning = morning
+        Task {
             await store.load(force: true)
             await loadWeek()
             await morning?.load(date: Date())
