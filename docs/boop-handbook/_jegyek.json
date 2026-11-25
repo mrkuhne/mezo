@@ -1733,5 +1733,25 @@
     ],
     "mit_kapsz": "Az app sehol nem mutat bemelegítő sorozatot: a lejátszó az első munkasorozattal indul. Az edzés végén a három szám alatt ott a kalória: először a szerver becslése, és ha az órád is rögzítette az edzést, az órád mérése.",
     "munkamenet": "boop-penz-l6-6ac287"
+  },
+  "mezo-r36n9.155": {
+    "cim": "Egy kezdőlapi teszt elvárásának javítása (pulzus kijelzés)",
+    "tipus": "Karbantartás",
+    "szakasz": "Kezdőlap",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "Egy automatikus ellenőrzés rossz elvárással nézte a kezdőlap pulzus-gömbjének kijelzését; ez javítva lett, hogy a tesztek megbízhatóan zöldek legyenek. A felületen semmi nem változott.",
+    "munkamenet": "—"
+  },
+  "mezo-r36n9.171": {
+    "cim": "Éves terv: apró pótlások",
+    "tipus": "Karbantartás",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Az éves terv és az új blokk indításának átnézéséből maradt apró javítások gyűjtője: néhány ritka eset kezelése a blokkok indításánál és archiválásánál, a hónapjelölők és a könnyítő hét pontosítása a telefonon. A legtöbb nem látható; amelyik igen, az a terv pontosabb megjelenítését hozza.",
+    "munkamenet": "Muscle Ladder implementation"
   }
 }
