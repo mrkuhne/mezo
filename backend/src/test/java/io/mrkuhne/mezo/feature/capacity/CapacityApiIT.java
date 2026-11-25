@@ -295,6 +295,45 @@ class CapacityApiIT extends ApiIntegrationTest {
         assertThat(after.getAdjustments()).isNotEmpty();
     }
 
+    /**
+     * Fix round 1: "Ha mindet jóváhagyod" — the week's lines with every open proposal applied together (the move of
+     * Thursday's session to Saturday and a later Wednesday bedtime), from the engines; absent below two open ones.
+     */
+    @Test
+    void weekCarriesAllEffectsOfTheOpenProposals() {
+        RegisteredUser user = registerUser("cap-all");
+        var meso = train.createActiveMeso(user.id());
+        WorkoutSessionEntity pull = sessionOn(user.id(), meso.getId(), thursday, "Pull 1");
+        withPeople(user.id(), thursday, "Tervezés", "07:00", "11:00");
+        withPeople(user.id(), thursday, "Egyeztetés", "12:00", "13:00");
+        withPeople(user.id(), thursday, "Átadó", "13:30", "14:30");
+        CapacityProposalEntity move = storedProposal(user.id(),
+            new AdjustmentPayload.MoveSessionDay(pull.getId(), thursday, saturday));
+        storedProposal(user.id(), new AdjustmentPayload.ShiftBedtime(monday.plusDays(2), java.time.LocalTime.of(23, 15)));
+
+        CapacityWeek w = week(user);
+
+        assertThat(w.getAllEffects()).extracting(c -> c.getLabel())
+            .containsExactly("Túl sok nap a héten", "Szoros nap", "Heti edzés", "Heti kalória", "Alvás a héten",
+                "Súlycél");
+        long overBefore = w.getDays().stream().filter(d -> "túl sok".equals(d.getLabel())).count();
+        long tightBefore = w.getDays().stream().filter(d -> "szoros".equals(d.getLabel())).count();
+        var over = w.getAllEffects().get(0);
+        assertThat(over.getBefore()).isEqualTo(String.valueOf(overBefore));
+        assertThat(Integer.parseInt(over.getAfter())).isLessThanOrEqualTo((int) overBefore);
+        assertThat(over.getFavours()).isEqualTo(Integer.compare((int) overBefore, Integer.parseInt(over.getAfter())));
+        assertThat(w.getAllEffects().get(1).getBefore()).isEqualTo(String.valueOf(tightBefore));
+        // the move keeps the week's one session; the later bedtime keeps the full need
+        assertThat(w.getAllEffects().get(2).getBefore()).isEqualTo("1");
+        assertThat(w.getAllEffects().get(2).getAfter()).isEqualTo("1");
+        assertThat(w.getAllEffects().get(4).getBefore()).isEqualTo(w.getAllEffects().get(4).getAfter());
+
+        // one open proposal left: no "all" block
+        postForBody("/api/capacity/proposals/" + move.getId() + "/decline", null, user.headers(), HttpStatus.OK,
+            CapacityProposal.class);
+        assertThat(week(user).getAllEffects()).isNull();
+    }
+
     @Test
     void clientRefOfAnotherProposalIs409() {
         RegisteredUser user = registerUser("cap-ref");

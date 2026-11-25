@@ -42661,6 +42661,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CapacityPattern'
+        allEffects:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/CapacityCompareLine'
+          description: >
+            "Ha mindet jóváhagyod" — the week's compare lines (Most → Utána)
+            with ALL open proposals' steps applied together through the same
+            engines as a proposal's effects (load model on the draft week, fuel
+            expected extras, SleepNeedRule, week totals). Absent when fewer than
+            two proposals are open.
     CapacityWeekDay:
       type: object
       required:

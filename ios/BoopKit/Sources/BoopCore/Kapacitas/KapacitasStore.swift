@@ -64,6 +64,8 @@ public final class KapacitasStore {
     public private(set) var queuedAccepts: Set<String> = []
     /// Proposals whose decision is on its way to the server right now.
     public private(set) var deciding: Set<String> = []
+    /// Queued accepts the outbox is sending this very moment: „vissza" waits (disabled, with a line) until it lands.
+    public private(set) var sendingQueued: Set<String> = []
     /// The page's one quiet line (a stale card refreshed, a day already started, no net).
     public var notice: String?
 
@@ -76,6 +78,7 @@ public final class KapacitasStore {
     static let dayStartedNotice = "Ez a nap már elkezdődött, rajta már nem változtatok."
     static let offlineNotice = "Most nincs net, nem tudtam elküldeni. Próbáld újra később."
     static let failedNotice = "Nem sikerült elküldeni. Próbáld újra."
+    public static let sendingNotice = "Épp most küldöm el, utána visszavonhatod."
 
     /// "3 órás adat" while a cached week is on screen.
     public func weekAgeText(_ monday: String) -> String? { penzAgeText(weekAges[monday]) }
@@ -89,7 +92,6 @@ public final class KapacitasStore {
     public func loadWeek(monday: String) async {
         guard let client, !weekLoading.contains(monday) else { return }
         weekLoading.insert(monday)
-        defer { weekLoading.remove(monday) }
         do throws(PlanFetchError) {
             await put(try await client.week(monday: monday), monday: monday)
         } catch {
@@ -100,6 +102,8 @@ public final class KapacitasStore {
                 weekProblem[monday] = error
             }
         }
+        // freed before the outbox is read: a refused replay may refresh this very week
+        weekLoading.remove(monday)
         await syncOutbox()
     }
 
@@ -182,10 +186,15 @@ public final class KapacitasStore {
     /// simply leaves the outbox.
     public func undo(_ p: KapacitasProposal, monday: String) async {
         if queuedAccepts.contains(p.id) {
-            if let ref = clientRefs[p.id], let id = UUID(uuidString: ref), await outbox?.inFlight != id {
-                await outbox?.remove(id)
-                queuedAccepts.remove(p.id)
+            guard let ref = clientRefs[p.id], let id = UUID(uuidString: ref) else { return }
+            if await outbox?.inFlight == id {
+                // it is on its way right now: taking it out would race the send — wait for it to land
+                sendingQueued.insert(p.id)
+                notice = Self.sendingNotice
+                return
             }
+            await outbox?.remove(id)
+            queuedAccepts.remove(p.id)
             return
         }
         guard let client, !deciding.contains(p.id),
@@ -230,23 +239,44 @@ public final class KapacitasStore {
     public func syncOutbox() async {
         guard let outbox else { return }
         let items = await outbox.queue.filter { $0.kind == .dayAdjustment }
+        let flying = await outbox.inFlight
         var waiting = Set<String>()
-        var refused: [UUID] = []
+        var refused: [(id: UUID, proposalId: String, code: String)] = []
         for item in items {
             guard let p = KapacitasOutboxSender.decode(item.payload) else { continue }
-            if item.failure == nil {
+            if item.failure == nil || item.exhausted == true {
                 waiting.insert(p.proposalId)
                 clientRefs[p.proposalId] = p.clientRef
-            } else if item.exhausted != true {
-                refused.append(item.id)
             } else {
-                waiting.insert(p.proposalId)
+                refused.append((item.id, p.proposalId, item.failure ?? ""))
             }
         }
         queuedAccepts = waiting
+        // what is still flying keeps „vissza" waiting; whatever landed frees it
+        sendingQueued = sendingQueued.filter { pid in
+            waiting.contains(pid) && clientRefs[pid].flatMap(UUID.init(uuidString:)) == flying
+        }
+        if sendingQueued.isEmpty, notice == Self.sendingNotice { notice = nil }
         guard !refused.isEmpty else { return }
-        for id in refused { await outbox.remove(id) }
-        notice = Self.staleNotice
-        for monday in weeks.keys { await loadWeek(monday: monday) }
+        for r in refused { await outbox.remove(r.id) }
+        // the replay's refusal, said as the online accept would say it
+        var refreshed = Set<String>()
+        for r in refused {
+            let found = weeks.first { $0.value.proposals.contains { $0.id == r.proposalId } }
+            switch r.code {
+            case "CAPACITY_PROPOSAL_STALE":
+                if let (monday, week) = found, let p = week.proposals.first(where: { $0.id == r.proposalId }) {
+                    await refreshAfterStale(p, monday: monday)
+                    refreshed.insert(monday)
+                } else {
+                    notice = Self.staleNotice
+                }
+            case "CAPACITY_DAY_STARTED", "TRAIN_DAY_WORKOUT_RUNNING":
+                notice = Self.dayStartedNotice
+            default:
+                notice = Self.staleNotice
+            }
+        }
+        for monday in weeks.keys where !refreshed.contains(monday) { await loadWeek(monday: monday) }
     }
 }

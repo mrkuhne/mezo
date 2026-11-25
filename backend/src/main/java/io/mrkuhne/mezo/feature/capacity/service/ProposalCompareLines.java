@@ -70,6 +70,39 @@ public final class ProposalCompareLines {
         return List.copyOf(out);
     }
 
+    /**
+     * The week as a whole ("Ha mindet jóváhagyod", spike *KapAtrendezes*): túl sok and szoros days over all seven days
+     * (a touched day takes its after-verdict, the rest keep theirs), the week's gym sessions and expected kcal, the
+     * planned sleep ({@code SleepNeedRule} need × 7 — a later bedtime always keeps the full need) and the season target.
+     */
+    public static List<Line> weekLines(WeekPicture w, Effects e) {
+        int overBefore = 0;
+        int overAfter = 0;
+        int tightBefore = 0;
+        int tightAfter = 0;
+        for (CapacityDay d : w.days()) {
+            String before = d.verdict();
+            String after = e.day(d.date()).map(DayEffect::verdictAfter).orElse(before);
+            overBefore += "túl sok".equals(before) ? 1 : 0;
+            overAfter += "túl sok".equals(after) ? 1 : 0;
+            tightBefore += "szoros".equals(before) ? 1 : 0;
+            tightAfter += "szoros".equals(after) ? 1 : 0;
+        }
+        List<Line> out = new ArrayList<>();
+        out.add(new Line("Túl sok nap a héten", String.valueOf(overBefore), String.valueOf(overAfter),
+            Integer.compare(overBefore, overAfter)));
+        out.add(new Line("Szoros nap", String.valueOf(tightBefore), String.valueOf(tightAfter), 0));
+        out.add(new Line("Heti edzés", String.valueOf(e.before().sessions()), String.valueOf(e.after().sessions()),
+            0));
+        out.add(new Line("Heti kalória", kcalPlain(e.before().expectedKcal()), kcalPlain(e.after().expectedKcal()),
+            0));
+        String sleep = w.sleep() == null || w.sleep().needMin() <= 0 ? UNKNOWN : HuDays.duration(7 * w.sleep().needMin());
+        out.add(new Line("Alvás a héten", sleep, sleep, 0));
+        String season = date(e.seasonTargetDate());
+        out.add(new Line("Súlycél", season, season, 0));
+        return List.copyOf(out);
+    }
+
     /** Lighter is better; a heavier day is a cost only once it reaches szoros. */
     static int verdictFavours(String before, String after) {
         int b = RANK.indexOf(before);

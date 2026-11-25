@@ -73,7 +73,7 @@ class ProposalWordingWriterTest {
         assertThat(w.move()).isEqualTo("csütörtök 18:00  →  szombat 18:00 (üres nap)");
         assertThat(w.effectLines()).containsExactly(
             "A csütörtök túl sok helyett szoros lesz, a szombat laza helyett rendben",
-            "Az edzésnapi 290 kcal többlet szombaton jár, amikor megcsinálod",
+            "Az edzésnapi 290\u00A0kcal többlet szombaton jár, amikor megcsinálod",
             "A vasárnapi röplabda előtt nem marad pihenőnap",
             "A heti 4 edzés megmarad, az Évad terve nem változik");
         assertThat(w.why()).containsExactly("Amit csütörtökön látok: 6 óra megbeszélés",
@@ -166,7 +166,7 @@ class ProposalWordingWriterTest {
             new WeekTotals(4, 17920, 52.5), new WeekTotals(3, 17420, 52.5), null, 500);
         Wording w = writer(null).template(new ProposalDraft("SKIP_SESSION", List.of(), f, 0.3), e);
 
-        assertThat(w.effectLines()).contains("Az 500 kcal edzésnapi többlet csütörtökön nem jár, a napi keret nem változik");
+        assertThat(w.effectLines()).contains("Az 500\u00A0kcal edzésnapi többlet csütörtökön nem jár, a napi keret nem változik");
     }
 
     @Test
@@ -221,7 +221,7 @@ class ProposalWordingWriterTest {
         meal.put("lunchKcal", 200);
         meal.put("dinnerKcal", -200);
         Wording m = writer(null).template(new ProposalDraft("MOVE_MEAL_ENERGY", List.of(), meal, 0.05), sleep);
-        assertThat(m.move()).isEqualTo("ebéd +200 kcal  ·  vacsora −200 kcal");
+        assertThat(m.move()).isEqualTo("ebéd +200\u00A0kcal  ·  vacsora −200\u00A0kcal");
         assertThat(m.effectLines()).hasSizeBetween(3, 4).contains("A napi keret ugyanannyi marad");
     }
 }

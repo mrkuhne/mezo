@@ -10,13 +10,16 @@ struct KapDetailPick: Identifiable, Equatable { let id: String }
 /// server's (`GET /api/capacity/week`); nothing moves until he accepts, and the season plan never does.
 ///
 /// Offline is an answer: the cached week shows with its age, an accept is queued (the same clientRef), and *Minden
-/// hatása* opens from the cache. *Ha mindet jóváhagyod* is left out: the server has no all-at-once figures yet, and a
-/// summed guess would be an invented number. *Ebből tanulok* appears once the patterns arrive (K4).
+/// hatása* opens from the cache. *Ha mindet jóváhagyod* is the server's `allEffects` (every open proposal applied
+/// together by its engines — never a sum made here), shown from two open proposals. *Ebből tanulok* appears once the
+/// patterns arrive (K4). *Megbeszélem Boop-pal* closes the page and opens the Boop place (the presenter's `ask`).
 struct AtrendezesPage: View {
     let monday: String
     /// The page it came from („Ma", „Évad").
     var crumb = "Ma"
     let close: @MainActor @Sendable () -> Void
+    /// *Megbeszélem Boop-pal*: the presenter closes the page and opens Boop (nil = no such action here).
+    var ask: (@MainActor @Sendable () -> Void)? = nil
 
     @Environment(KapacitasStore.self) private var store: KapacitasStore?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -83,7 +86,7 @@ struct AtrendezesPage: View {
                 VStack(spacing: 12) {
                     ForEach(cards) { p in
                         ProposalCard(p: p, state: KapCardState.of(p, in: week, queued: store.queuedAccepts),
-                                     busy: store.deciding.contains(p.id),
+                                     busy: store.deciding.contains(p.id) || store.sendingQueued.contains(p.id),
                                      accept: { Task { await store.accept(p, monday: monday) } },
                                      decline: { Task { await store.decline(p, monday: monday) } },
                                      undo: { Task { await store.undo(p, monday: monday) } },
@@ -93,6 +96,13 @@ struct AtrendezesPage: View {
                 // a settled card folds into its row; reduced motion: it simply changes
                 .animation(reduceMotion ? nil : .easeInOut(duration: 0.25),
                            value: cards.map { "\($0.id)\($0.status)" } + store.queuedAccepts.sorted())
+            }
+        }
+        if let all = week.allEffects, !all.isEmpty {
+            NKBare("Ha mindet jóváhagyod", hue: kapacitasHue, glyph: "link-deep") {
+                NKCompareColumns(leftTitle: "Most", rightTitle: "Utána", lines: all.map {
+                    NKCompareLine(label: $0.label, left: $0.before, right: $0.after, favours: $0.favours)
+                }, hue: kapacitasHue)
             }
         }
         let history = kapacitasHistory(week, shown: Set(cards.map(\.id)))
@@ -110,7 +120,9 @@ struct AtrendezesPage: View {
             }
         }
         NKActions([NKAction(glyph: "repeat-deep", title: "Kérek más javaslatot", primary: true,
-                            action: { Task { await store.regenerate(monday: monday) } })], hue: kapacitasHue)
+                            action: { Task { await store.regenerate(monday: monday) } })]
+                  + (ask.map { [NKAction(glyph: "chat-ink", title: "Megbeszélem Boop-pal", action: $0)] } ?? []),
+                  hue: kapacitasHue)
     }
 
     /// Under the strip: the hardest day's first „why" line, when one of its proposals carries it.

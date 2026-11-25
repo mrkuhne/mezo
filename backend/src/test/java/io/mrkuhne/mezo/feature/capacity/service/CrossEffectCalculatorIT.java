@@ -184,7 +184,7 @@ class CrossEffectCalculatorIT extends AbstractIntegrationTest {
         assertThat(e.seasonTargetDate()).isEqualTo(goal.getTargetDate());
         // the card line carries the engine's figure and says the extra comes with the session
         Wording words = this.words.template(draft, e);
-        assertThat(words.effectLines()).anyMatch(l -> l.contains(x + " kcal") && l.contains("amikor megcsinálod"));
+        assertThat(words.effectLines()).anyMatch(l -> l.contains(x + "\u00A0kcal") && l.contains("amikor megcsinálod"));
 
         // …and once the move is really in the ledger, the engines show exactly the calculator's "after"
         DayAdjustmentEntity row = new DayAdjustmentEntity();

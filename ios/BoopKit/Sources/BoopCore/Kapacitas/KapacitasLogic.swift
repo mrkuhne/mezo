@@ -221,8 +221,11 @@ public func kapacitasMonday(of ymd: String) -> String {
     return addDays(ymd, -((weekday + 5) % 7)) ?? ymd
 }
 
-/// The Monday of the week holding `date`, in the phone's zone.
-public func kapacitasMonday(for date: Date, calendar: Calendar = .current) -> String {
+/// The Monday of the week holding `date`, in the phone's zone. Always the Gregorian calendar: the phone's own
+/// calendar may be Buddhist or Japanese, whose year would make a wrong `yyyy-MM-dd`.
+public func kapacitasMonday(for date: Date, timeZone: TimeZone = .current) -> String {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = timeZone
     let c = calendar.dateComponents([.year, .month, .day], from: date)
     return kapacitasMonday(of: String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0))
 }
@@ -359,4 +362,72 @@ public func kapacitasHistory(_ w: KapacitasWeek, shown: Set<String>) -> [Kapacit
                                         sub: kapacitasDayLabel(a.date), value: value, state: state))
     }
     return rows
+}
+
+// MARK: - Ha jóváhagyod, itt látod (K3 fix round 1)
+
+private let weekdayOn = ["hétfőn", "kedden", "szerdán", "csütörtökön", "pénteken", "szombaton", "vasárnap"]
+
+private func on(_ ymd: String?) -> String? { ymd.flatMap(weekdayIndex).map { weekdayOn[$0] } }
+private func dayName(_ ymd: String?) -> String? { ymd.flatMap(weekdayIndex).map { weekdayNames[$0] } }
+private func cap(_ s: String) -> String { s.prefix(1).uppercased() + s.dropFirst() }
+
+/// „23:15" from the payload's „23:15" / „23:15:00" (the server's clock value, never computed here).
+private func clock(_ t: String?) -> String? {
+    guard let t, !t.isEmpty else { return nil }
+    let parts = t.split(separator: ":")
+    guard parts.count >= 2, let h = Int(parts[0]) else { return t }
+    return "\(h):\(parts[1])"
+}
+
+/// The sublative suffix after a clock time, as it is read aloud: „23:15-re" (tizenöt), „22:30-ra" (harminc),
+/// „18:00-ra", „21:40-re" (negyven).
+func clockSublative(_ t: String) -> String {
+    let m = t.split(separator: ":").last.flatMap { Int($0) } ?? 0
+    let front = m % 10 != 0 || [10, 40, 50].contains(m)
+    return t + (front ? "-re" : "-ra")
+}
+
+/// Where he will see each step once he accepts: fixed words per step kind, naming the days and clock values from the
+/// step's payload. Never the kcal target — accepting changes where the expected extra is, never the target.
+public func kapacitasWhereYouSee(_ p: KapacitasProposal) -> [(title: String, body: String)] {
+    let steps = p.steps.isEmpty ? [KapacitasStep(kind: p.kind)] : p.steps
+    var out: [(title: String, body: String)] = []
+    for s in steps {
+        let x = s.payload
+        let day = on(x?.date ?? p.day).map(cap) ?? "Aznap"
+        switch s.kind {
+        case "MOVE_SESSION_DAY":
+            let to = on(x?.toDate).map(cap) ?? "Az új napon"
+            let from = on(x?.fromDate ?? p.day)
+            out.append(("A napod és az edzés",
+                        "\(to) a napod oldalán és a lejátszóban ott lesz az edzés" + (from.map { ", \($0) már nem" } ?? "")
+                            + ". Az edzésnapi többlet is \(on(x?.toDate) ?? "azon a napon") jár, amikor megcsinálod."))
+        case "SHIFT_SESSION_TIME":
+            out.append(("A napod és az edzés", clock(x?.time).map {
+                "\(day) a napod oldalán és a lejátszóban \($0)-kor kezdődik az edzés."
+            } ?? "\(day) a napod oldalán és a lejátszóban az új időpontban lesz az edzés."))
+        case "SHORTEN_SESSION":
+            out.append(("Edzés", x?.minutes.map { "\(day) a lejátszó \($0) perces edzést kínál fel." }
+                        ?? "\(day) a lejátszó rövidebb edzést kínál fel."))
+        case "LIGHTEN_SESSION":
+            out.append(("Edzés", "\(day) a lejátszó könnyebb edzést kínál fel."))
+        case "SWAP_SESSION_KIND":
+            out.append(("Edzés", "\(day) a napod oldalán és a lejátszóban a cserélt edzés lesz."))
+        case "SKIP_SESSION":
+            out.append(("A napod", "\(day) a napod oldalán kihagyottként látod az edzést."))
+        case "SHIFT_BEDTIME":
+            let night = dayName(x?.night ?? p.day).map { cap($0) + " este" } ?? "Aznap este"
+            out.append(("Esti emlékeztető", clock(x?.bedtime).map {
+                "\(night) a lefekvés-emlékeztető \(clockSublative($0)) igazodik."
+            } ?? "\(night) a lefekvés-emlékeztető az új időhöz igazodik."))
+        case "MOVE_MEAL_ENERGY":
+            out.append(("Étel", "\(day) az Étel napi tervében nagyobb lesz az ebéd és kisebb a vacsora."))
+        case "CALENDAR_TODO":
+            out.append(("Naptár", "Te teszed át a naptáradban, én észreveszem."))
+        default:
+            continue
+        }
+    }
+    return out
 }

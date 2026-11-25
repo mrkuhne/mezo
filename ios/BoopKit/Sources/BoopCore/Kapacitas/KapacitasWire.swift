@@ -98,10 +98,44 @@ public struct KapacitasCompareLine: Codable, Equatable, Sendable {
     }
 }
 
-/// Only the step's kind is read (an „ALVÁS + EDZÉS" card has steps of both).
+/// A step: its kind (an „ALVÁS + EDZÉS" card has steps of both) and the days / clock values its payload names, for
+/// *Ha jóváhagyod, itt látod*. Read leniently: a missing or odd field is nil, never a failed week.
 public struct KapacitasStep: Codable, Equatable, Sendable {
     public let kind: String
-    public init(kind: String) { self.kind = kind }
+    public let payload: KapacitasStepPayload?
+    public init(kind: String, payload: KapacitasStepPayload? = nil) { self.kind = kind; self.payload = payload }
+
+    enum CodingKeys: String, CodingKey { case kind, payload }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        kind = try c.decode(String.self, forKey: .kind)
+        payload = try? c.decodeIfPresent(KapacitasStepPayload.self, forKey: .payload)
+    }
+}
+
+/// The payload fields the phone reads (MOVE_SESSION_DAY fromDate/toDate, SHIFT_SESSION_TIME date/time, SHORTEN_SESSION
+/// date/minutes, SHIFT_BEDTIME night/bedtime, the others date).
+public struct KapacitasStepPayload: Codable, Equatable, Sendable {
+    public let fromDate: String?, toDate: String?, date: String?, night: String?, time: String?, bedtime: String?
+    public let minutes: Int?
+
+    public init(fromDate: String? = nil, toDate: String? = nil, date: String? = nil, night: String? = nil,
+                time: String? = nil, bedtime: String? = nil, minutes: Int? = nil) {
+        self.fromDate = fromDate; self.toDate = toDate; self.date = date; self.night = night; self.time = time
+        self.bedtime = bedtime; self.minutes = minutes
+    }
+
+    enum CodingKeys: String, CodingKey { case fromDate, toDate, date, night, time, bedtime, minutes }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        func s(_ k: CodingKeys) -> String? { (try? c.decodeIfPresent(String.self, forKey: k)) ?? nil }
+        fromDate = s(.fromDate); toDate = s(.toDate); date = s(.date); night = s(.night); time = s(.time)
+        bedtime = s(.bedtime)
+        minutes = ((try? c.decodeIfPresent(Int.self, forKey: .minutes)) ?? nil)
+            ?? ((try? c.decodeIfPresent(Double.self, forKey: .minutes)) ?? nil).map { Int($0) }
+    }
 }
 
 /// One proposal of the week.
@@ -164,11 +198,15 @@ public struct KapacitasWeek: Codable, Equatable, Sendable {
     public let proposals: [KapacitasProposal]
     public let adjustments: [KapacitasAdjustment]
     public let patterns: [KapacitasPattern]
+    /// „Ha mindet jóváhagyod": the week with every open proposal applied together, from the server's engines; nil
+    /// below two open proposals.
+    public let allEffects: [KapacitasCompareLine]?
 
     public init(monday: String, days: [KapacitasWeekDay], proposals: [KapacitasProposal],
-                adjustments: [KapacitasAdjustment] = [], patterns: [KapacitasPattern] = []) {
+                adjustments: [KapacitasAdjustment] = [], patterns: [KapacitasPattern] = [],
+                allEffects: [KapacitasCompareLine]? = nil) {
         self.monday = monday; self.days = days; self.proposals = proposals; self.adjustments = adjustments
-        self.patterns = patterns
+        self.patterns = patterns; self.allEffects = allEffects
     }
 }
 

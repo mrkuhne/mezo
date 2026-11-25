@@ -238,7 +238,7 @@ public class ProposalWordingWriter {
         lines.add(load(e, from, to));
         Integer x = e.sessionKcal();
         lines.add(x != null && x > 0
-            ? "Az edzésnapi " + x + " kcal többlet " + HuDays.on(to) + " jár, amikor megcsinálod"
+            ? "Az edzésnapi " + x + "\u00A0kcal többlet " + HuDays.on(to) + " jár, amikor megcsinálod"
             : "Az edzésnapi többlet " + HuDays.on(to) + " jár, amikor megcsinálod");
         rest(e).ifPresent(lines::add);
         lines.add("A heti " + e.after().sessions() + " edzés megmarad, " + evadLower());
@@ -260,7 +260,7 @@ public class ProposalWordingWriter {
         Integer after = de.map(DayEffect::expectedExtraAfter).orElse(null);
         lines.add(before != null && after != null
             ? "A " + HuDays.adj(day) + " edzésnapi többlet " + before + " helyett " + after
-                + " kcal, és akkor jár, amikor megcsinálod"
+                + "\u00A0kcal, és akkor jár, amikor megcsinálod"
             : "A rövidebb edzéssel kisebb az edzésnapi többlet, és akkor jár, amikor megcsinálod");
         lines.add("A heti " + e.after().sessions() + " edzés megmarad, " + evadLower());
         List<String> why = new ArrayList<>();
@@ -278,7 +278,7 @@ public class ProposalWordingWriter {
         lines.add(load(e, day, null));
         Integer x = e.sessionKcal();
         lines.add(x != null && x > 0
-            ? HuDays.the(x + " kcal edzésnapi többlet", true) + " " + HuDays.on(day)
+            ? HuDays.the(x + "\u00A0kcal edzésnapi többlet", true) + " " + HuDays.on(day)
                 + " nem jár, a napi keret nem változik"
             : "Az edzésnapi többlet " + HuDays.on(day) + " nem jár, a napi keret nem változik");
         lines.add("A heti edzés " + e.before().sessions() + " helyett " + e.after().sessions() + ", "
@@ -332,7 +332,7 @@ public class ProposalWordingWriter {
         int lunch = ((Number) f.get("lunchKcal")).intValue();
         int dinner = ((Number) f.get("dinnerKcal")).intValue();
         return new Wording(HuDays.cap(HuDays.on(day)) + " egy nagyobb ebéd, kisebb vacsora",
-            "ebéd " + signed(lunch) + " kcal  ·  vacsora " + signed(dinner) + " kcal", lines, List.copyOf(why));
+            "ebéd " + signed(lunch) + "\u00A0kcal  ·  vacsora " + signed(dinner) + "\u00A0kcal", lines, List.copyOf(why));
     }
 
     private static Wording todo(Map<String, Object> f) {

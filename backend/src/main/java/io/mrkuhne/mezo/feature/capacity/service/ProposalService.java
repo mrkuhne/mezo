@@ -73,9 +73,12 @@ public class ProposalService {
     public record PatternView(String key, String line, int evidence) {
     }
 
-    /** The Átrendezés page's week. */
+    /**
+     * The Átrendezés page's week. {@code allEffects} is "Ha mindet jóváhagyod": the week's compare lines with every
+     * open proposal applied together — null when fewer than two are open.
+     */
     public record WeekView(LocalDate monday, List<CapacityDay> days, List<ProposalView> proposals,
-                           List<DayAdjustmentView> adjustments, List<PatternView> patterns) {
+                           List<DayAdjustmentView> adjustments, List<PatternView> patterns, List<Line> allEffects) {
     }
 
     /** One generated proposal, priced and worded, before it is stored. */
@@ -135,16 +138,19 @@ public class ProposalService {
         LocalDate today = today();
         ledger.expireStale(owner, today);
         List<CapacityDay> dayList = null;
+        WeekPicture picture = null;
         List<CapacityProposalEntity> existing = generatable(monday, today)
             ? proposals.findByCreatedByAndWeekStartAndDeletedFalse(owner, monday) : List.of();
         if (existing.stream().anyMatch(p -> ProposalStatus.OPEN.wire().equals(p.getStatus())
             && p.getFingerprint() != null)) {
             WeekPicture now = pictures.picture(owner, monday);
+            picture = now;
             dayList = now.days();
             expireChanged(owner, existing, now);
         }
         if (generatable(monday, today) && existing.isEmpty()) {
             Generated g = generate(owner, monday, Set.of());
+            picture = g.picture();
             dayList = g.picture().days();
             List<Stored> stored = tx.execute(s -> {
                 lock.lock(owner);
@@ -155,7 +161,7 @@ public class ProposalService {
             });
             rephraseLater(owner, stored);
         }
-        return view(owner, monday, dayList != null ? dayList : days.week(owner, monday));
+        return view(owner, monday, dayList != null ? dayList : days.week(owner, monday), picture);
     }
 
     /**
@@ -219,7 +225,7 @@ public class ProposalService {
             return store(owner, monday, g.built());
         });
         rephraseLater(owner, stored);
-        return view(owner, monday, g.picture().days());
+        return view(owner, monday, g.picture().days(), g.picture());
     }
 
     // ── decisions ─────────────────────────────────────────────────────────────
@@ -385,14 +391,31 @@ public class ProposalService {
 
     // ── reads ─────────────────────────────────────────────────────────────────
 
-    private WeekView view(UUID owner, LocalDate monday, List<CapacityDay> dayList) {
+    private WeekView view(UUID owner, LocalDate monday, List<CapacityDay> dayList, WeekPicture picture) {
         List<ProposalView> list = proposals.findByCreatedByAndWeekStartAndDeletedFalse(owner, monday).stream()
             .sorted(Comparator.comparing((CapacityProposalEntity p) -> !ProposalStatus.OPEN.wire().equals(p.getStatus()))
                 .thenComparing(CapacityProposalEntity::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder()))
                 .thenComparing(ProposalService::rank))
             .map(ProposalService::toView)
             .toList();
-        return new WeekView(monday, dayList, list, ledger.list(owner, monday, monday.plusDays(6)), List.of());
+        return new WeekView(monday, dayList, list, ledger.list(owner, monday, monday.plusDays(6)), List.of(),
+            allEffects(owner, monday, list, picture));
+    }
+
+    /**
+     * "Ha mindet jóváhagyod": every open proposal's steps applied together to one draft week, through the same engines
+     * as a single proposal ({@link CrossEffectCalculator}) — never a sum of per-proposal figures. Null below two open
+     * proposals. Reuses the week read of this request when there was one.
+     */
+    private List<Line> allEffects(UUID owner, LocalDate monday, List<ProposalView> list, WeekPicture picture) {
+        List<ProposalView> open = list.stream().filter(p -> p.status() == ProposalStatus.OPEN).toList();
+        if (open.size() < 2) {
+            return null;
+        }
+        WeekPicture w = picture != null ? picture : pictures.picture(owner, monday);
+        List<AdjustmentDraft> steps = open.stream().flatMap(p -> p.steps().stream()).toList();
+        Effects e = calculator.effects(owner, w, new ProposalDraft("ALL", steps, Map.of(), 0));
+        return ProposalCompareLines.weekLines(w, e);
     }
 
     static ProposalView toView(CapacityProposalEntity p) {

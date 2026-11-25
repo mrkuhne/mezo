@@ -59,57 +59,65 @@ final class KapacitasPreviewModel: @unchecked Sendable {
         proposals = []; adjustments = []
         guard state != "empty" else { return }
         let thu = Self.day(monday, 3), wed = Self.day(monday, 2), fri = Self.day(monday, 4), sat = Self.day(monday, 5)
+        // the server's own wording (ProposalWordingWriter / ProposalCompareLines), a no-break space in the numbers
+        let nb = "\u{00A0}"
         func p(_ id: String, _ kind: String, _ day: String, _ title: String, _ move: String, _ lines: [String],
-               _ why: [String], _ effects: [[String: Any]], steps: [String]? = nil, touched: [String]) -> [String: Any] {
+               _ why: [String], _ effects: [[String: Any]], steps: [(String, [String: Any])], touched: [String]) -> [String: Any] {
             ["id": id, "kind": kind, "day": day, "status": "open", "title": title, "move": move, "effectLines": lines,
-             "why": why, "effects": effects, "steps": (steps ?? [kind]).map { ["kind": $0, "payload": [:] as [String: Any]] },
+             "why": why, "effects": effects, "steps": steps.map { ["kind": $0.0, "payload": $0.1] },
              "touchedDays": touched, "decidedAt": NSNull()]
         }
         proposals = [
             p("7a000000-0000-4000-8000-000000000001", "MOVE_SESSION_DAY", thu, "A lábnapot tedd át szombatra",
-              "csütörtök 18:00  →  szombat 10:00 (üres nap)",
-              ["A csütörtök túl sokból szorosra enyhül, a szombat laza helyett rendben lesz",
-               "A kalória vele megy: csütörtökön 2 350, szombaton 2 640 kcal",
+              "csütörtök 18:00  →  szombat 18:00 (üres nap)",
+              ["A csütörtök túl sok helyett szoros lesz, a szombat laza helyett rendben",
+               "Az edzésnapi 290\(nb)kcal többlet szombaton jár, amikor megcsinálod",
                "A vasárnapi röplabda előtt egy pihenőnap marad",
                "A heti 4 edzés megmarad, az Évad terve nem változik"],
               ["Csütörtök: 6 óra megbeszélés, ebből 4 szünet nélkül, este lábnap, előtte várhatóan 6 óra alvás.",
                "Az utóbbi 3 hasonló csütörtökből 2-n elmaradt az esti edzés.",
                "Szombaton üres a naptárad, és péntek este nincs semmi késői."],
               [Self.line("Csütörtök terhe", "túl sok", "szoros", 1), Self.line("Szombat terhe", "laza", "rendben"),
-               Self.line("Csütörtöki keret", "2 640 kcal", "2 350 kcal"), Self.line("Szombati keret", "2 350 kcal", "2 640 kcal"),
+               Self.line("Csütörtöki edzésnapi többlet", "290\(nb)kcal", "0\(nb)kcal"),
+               Self.line("Szombati edzésnapi többlet", "0\(nb)kcal", "290\(nb)kcal"),
                Self.line("Pihenő a röpi előtt", "2 nap", "1 nap", -1), Self.line("Heti edzés", "4", "4"),
-               Self.line("Heti kalória", "17 920", "17 920"), Self.line("Súlycél", "dec. 19.", "dec. 19.")],
-              touched: [thu, sat]),
+               Self.line("Heti kalória", "17\(nb)920", "17\(nb)920"), Self.line("Súlycél", "dec. 19.", "dec. 19.")],
+              steps: [("MOVE_SESSION_DAY", ["fromDate": thu, "toDate": sat])], touched: [thu, sat]),
             p("7a000000-0000-4000-8000-000000000002", "SHIFT_BEDTIME", wed,
               "Szerdán feküdj később, a csütörtök reggeli edzés csússzon egy órát",
-              "lefekvés 22:30 → 23:15  ·  csütörtök reggeli séta 6:45 → 7:45",
-              ["A 21:30-ig tartó hívás után is meglesz a 7 óra 15 perc alvás",
+              "lefekvés 22:30 → 23:15  ·  csütörtök edzés 6:45 → 7:45",
+              ["A 21:30-ig tartó hívás után is meglesz a 7 óra 30 perc alvás",
                "Csütörtökön 8:30-kor kezdődik az első megbeszélés, így még belefér",
-               "A reggeli 7:45 helyett 8:15-re kerül, a keret nem változik"],
+               "A heti 4 edzés megmarad, az Évad terve nem változik"],
               ["Szerdán 21:30-ig hívásod van."],
-              [Self.line("Alvás szerda éjjel", "6 ó 30 p", "7 ó 15 p", 1), Self.line("Csütörtök terhe", "túl sok", "túl sok")],
-              steps: ["SHIFT_BEDTIME", "SHIFT_SESSION_TIME"], touched: [wed, thu]),
-            p("7a000000-0000-4000-8000-000000000003", "CALENDAR_TODO", fri, "A pénteki sprint review-t tedd át 15:00-ra",
+              [Self.line("Lefekvés szerdán", "22:30", "23:15"), Self.line("Alvás aznap éjjel", "7 óra 30 perc", "7 óra 30 perc"),
+               Self.line("Heti edzés", "4", "4")],
+              steps: [("SHIFT_BEDTIME", ["night": wed, "bedtime": "23:15"]), ("SHIFT_SESSION_TIME", ["date": thu, "time": "07:45"])],
+              touched: [wed, thu]),
+            p("7a000000-0000-4000-8000-000000000003", "CALENDAR_TODO", fri, "A pénteki „Sprint review” eseményt tedd egy órával korábbra",
               "péntek 16:00–17:30  →  15:00–16:30",
               ["A 17:30-as hátedzés előtt egy óra szünet marad, nem rohansz",
-               "Az edzés előtti uzsonna 16:30-ra kerül",
+               "A péntek túl sok helyett szoros lesz",
                "A naptáradhoz nem nyúlok: te teszed át, én észreveszem"],
               ["Pénteken a review után fél órával kezdődik az edzés."],
-              [Self.line("Péntek terhe", "túl sok", "szoros", 1)], touched: [fri]),
+              [Self.line("Péntek terhe", "túl sok", "szoros", 1)],
+              steps: [("CALENDAR_TODO", ["date": fri])], touched: [fri]),
             p("7a000000-0000-4000-8000-000000000004", "MOVE_MEAL_ENERGY", thu, "Csütörtökön egy nagyobb ebéd, kisebb vacsora",
-              "ebéd 650 → 850 kcal  ·  vacsora 800 → 600 kcal",
-              ["A délutáni mélypont előtt több energiád lesz a megbeszélésekhez",
-               "A könnyebb vacsora után jobban alszol a rövid éjszaka előtt",
+              "ebéd +200\(nb)kcal  ·  vacsora −200\(nb)kcal",
+              ["A 13:00 és 15:30 közötti megbeszélések előtt több energiád lesz",
+               "A könnyebb vacsora után könnyebben pihensz",
                "A napi keret ugyanannyi marad"],
               ["Csütörtökön délután jön a legtöbb megbeszélés."],
-              [Self.line("Csütörtöki keret", "2 640 kcal", "2 640 kcal")], touched: [thu]),
+              [Self.line("Heti kalória", "17\(nb)920", "17\(nb)920")],
+              steps: [("MOVE_MEAL_ENERGY", ["date": thu])], touched: [thu]),
         ]
         guard state == "settled" else { return }
         accept(at: 0); accept(at: 2)
         proposals[3]["status"] = "declined"
         // the week's earlier changes, no longer on the cards: one taken back, one lapsed
         proposals.append(p("7a000000-0000-4000-8000-000000000005", "MOVE_SESSION_DAY", Self.day(monday, 1),
-                           "Hátedzés: kedd → szerda", "kedd 18:00 → szerda 18:00", [], [], [], touched: []))
+                           "Hátedzés: kedd → szerda", "kedd 18:00 → szerda 18:00", [], [], [],
+                           steps: [("MOVE_SESSION_DAY", [:])], touched: []))
         proposals[4]["status"] = "undone"
         adjustments.append(["id": "7b000000-0000-4000-8000-000000000005", "date": Self.day(monday, 1), "kind": "MOVE_SESSION_DAY",
                             "payload": [:] as [String: Any], "bundleId": "7c000000-0000-4000-8000-000000000005",
@@ -137,7 +145,16 @@ final class KapacitasPreviewModel: @unchecked Sendable {
                 let v = r < 0.6 ? ("laza", "laza") : r < 0.9 ? ("rendben", "rendben") : r <= 1.0 ? ("szoros", "szoros") : ("tulSok", "túl sok")
                 return ["date": Self.day(monday, i), "verdict": v.0, "label": v.1, "ratio": r, "calendarKnown": true]
             }
-            return ["monday": monday, "days": days, "proposals": proposals, "adjustments": adjustments, "patterns": [] as [Any]]
+            var week: [String: Any] = ["monday": monday, "days": days, "proposals": proposals, "adjustments": adjustments,
+                                       "patterns": [] as [Any]]
+            let open = proposals.filter { $0["status"] as? String == "open" }.count
+            if open >= 2 {
+                week["allEffects"] = [Self.line("Túl sok nap a héten", "2", "0", 1), Self.line("Szoros nap", "1", "2"),
+                                      Self.line("Heti edzés", "4", "4"), Self.line("Heti kalória", "17\u{00A0}920", "17\u{00A0}920"),
+                                      Self.line("Alvás a héten", "52 óra 30 perc", "52 óra 30 perc"),
+                                      Self.line("Súlycél", "dec. 19.", "dec. 19.")]
+            }
+            return week
         }
     }
 
@@ -233,7 +250,7 @@ struct KapacitasPreviewRoot: View {
         ZStack {
             NK.ground.ignoresSafeArea()
             if let store {
-                AtrendezesPage(monday: monday, crumb: "Ma", close: {})
+                AtrendezesPage(monday: monday, crumb: "Ma", close: {}, ask: {})
                     .environment(store)
             }
         }

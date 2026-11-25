@@ -25,6 +25,7 @@ enum EvadSub: String, Identifiable {
 struct EvadPage: View {
     @Environment(EvadStore.self) private var store: EvadStore?
     @Environment(KapacitasStore.self) private var kapacitas: KapacitasStore?
+    @Environment(\.openPlace) private var openPlace
     @State private var tab = "Évad"
     @State private var open: EvadSub?
     @State private var swapMeal: EvadMenuMeal?
@@ -61,7 +62,7 @@ struct EvadPage: View {
                 case .ujkiserlet: EvadNewExperimentPage(close: { open = nil })
                 case .atrendezes:
                     AtrendezesPage(monday: kapacitasNextMonday(after: kapacitasMonday(for: Date())), crumb: "Évad",
-                                   close: { open = nil })
+                                   close: { open = nil }, ask: { open = nil; openPlace(.boop) })
                 }
             }
             .environment(store)

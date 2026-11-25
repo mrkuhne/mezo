@@ -26,6 +26,8 @@ public final class CapacityProposalMapper {
             .patterns(w.patterns().stream()
                 .map(p -> CapacityPattern.builder().key(p.key()).line(p.line()).evidence(p.evidence()).build())
                 .toList())
+            .allEffects(w.allEffects() == null ? null : w.allEffects().stream().map(l -> CapacityCompareLine.builder()
+                .label(l.label()).before(l.before()).after(l.after()).favours(l.favours()).build()).toList())
             .build();
     }
 

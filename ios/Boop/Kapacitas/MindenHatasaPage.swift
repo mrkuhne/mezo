@@ -3,7 +3,8 @@ import BoopCore
 import BoopDesign
 
 /// **Minden hatása** (spike `KapDetail`, screen 05): one proposal, every cross-effect — the server's compare rows
-/// (Most → Utána), its effect lines by topic, and why Boop proposes it. Read from the store, so it opens from the
+/// (Most → Utána), its effect lines by topic, why Boop proposes it, and where he will see it once accepted (fixed words
+/// per step kind, `kapacitasWhereYouSee`). Read from the store, so it opens from the
 /// cache too; the decision buttons show while the proposal is still open.
 struct MindenHatasaPage: View {
     let proposalId: String
@@ -53,7 +54,13 @@ struct MindenHatasaPage: View {
             }
         }
         if p.status == "open" && !store.queuedAccepts.contains(p.id) {
-            NKActions([NKAction(glyph: "check-deep", title: ProposalCard.primaryTitle(p), primary: true, action: {
+            let seen = kapacitasWhereYouSee(p)
+            if !seen.isEmpty {
+                NKBare("Ha jóváhagyod, itt látod", hue: kapacitasHue, glyph: "check-ink") {
+                    NKList(seen, hue: kapacitasHue)
+                }
+            }
+            NKActions([NKAction(glyph: "check-ink", title: ProposalCard.primaryTitle(p), primary: true, action: {
                            Task { await store.accept(p, monday: monday); close() }
                        }),
                        NKAction(title: "Most nem", action: {
