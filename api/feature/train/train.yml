@@ -2604,6 +2604,13 @@ components:
           allOf:
             - $ref: '#/components/schemas/YearUnlinkedRunning'
           nullable: true
+        nextYearStart:
+          type: string
+          format: date
+          nullable: true
+          description: >-
+            The Monday „Jövő évi terv" starts on — on/after the day after the plan's end, after a running
+            consolidation block's own end, and never before the Monday on/after today. Only on the active plan.
         review:
           $ref: '#/components/schemas/YearReview'
     YearBlock:
@@ -2695,7 +2702,7 @@ components:
           enum: [last_week, no_block]
     YearUnlinkedRunning:
       type: object
-      required: [mesocycleId, title, startDate]
+      required: [mesocycleId, title, startDate, status]
       properties:
         mesocycleId:
           type: string
@@ -2705,6 +2712,10 @@ components:
         startDate:
           type: string
           format: date
+        status:
+          type: string
+          enum: [active, planned]
+          description: active = the block runs now; planned = it starts on startDate
     YearReview:
       type: object
       required: [blocksDone, blocksSkipped, focused, unfocused]
