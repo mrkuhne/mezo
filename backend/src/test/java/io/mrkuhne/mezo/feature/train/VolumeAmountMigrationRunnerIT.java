@@ -232,12 +232,13 @@ class VolumeAmountMigrationRunnerIT extends AbstractIntegrationTest {
                 .build()))
             .build()).getId();
 
-        MesocycleResponse planned = mesoTemplateService.start(owner, templateId,
-            MesoTemplateStartRequest.builder().startDate(LocalDate.now().plusWeeks(2))
-                .status(MesoTemplateStartRequest.StatusEnum.PLANNED).build());
+        // Active first: an active start discards a never-started planned run dated after it (mezo-r36n9.113).
         MesocycleResponse active = mesoTemplateService.start(owner, templateId,
             MesoTemplateStartRequest.builder().startDate(LocalDate.now())
                 .status(MesoTemplateStartRequest.StatusEnum.ACTIVE).build());
+        MesocycleResponse planned = mesoTemplateService.start(owner, templateId,
+            MesoTemplateStartRequest.builder().startDate(LocalDate.now().plusWeeks(2))
+                .status(MesoTemplateStartRequest.StatusEnum.PLANNED).build());
 
         assertThat(reload(planned.getId()).getVolumeModel()).isEqualTo((short) 2);
         assertThat(reload(active.getId()).getVolumeModel()).isEqualTo((short) 2);
