@@ -1,7 +1,7 @@
 # Boop — Emlékeztetők + ébresztők, widgetek, edzés a zárolt képernyőn
 
 - **Issue:** `mezo-r36n9.172` (epic `mezo-r36n9`) · session `boop-ebreszto-widget` · branch `feat/boop-ebreszto-widget`
-- **Date:** 2026-11-25 · **Status:** builder-checked, D8 answered by the owner; waiting for the owner's OK
+- **Date:** 2026-11-25 · **Status:** approved by the owner 2026-11-25 (spec + spike)
 - **Takes over:** the workout Live Activity from B5 (`mezo-r36n9.15`, which keeps the watchOS app) and the widget of
   `mezo-r36n9.13.1` (B3's check-in widget, design already approved).
 
