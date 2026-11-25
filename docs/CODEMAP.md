@@ -308,7 +308,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   [docs/features/dayclose.md](features/dayclose.md) (updated 2026-11-24, done) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-11-24, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-11-19, in-progress) ·
-  [docs/features/mail.md](features/mail.md) (updated 2026-11-21, done) ·
+  [docs/features/mail.md](features/mail.md) (updated 2026-11-25, done) ·
   [docs/features/me.md](features/me.md) (updated 2026-11-25, mixed) ·
   [docs/features/penz.md](features/penz.md) (updated 2026-11-21, done) ·
   [docs/features/today.md](features/today.md) (updated 2026-11-19, mixed) ·
@@ -816,7 +816,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### mail
 
-*BE + API* · read next: [docs/features/mail.md](features/mail.md) (updated 2026-11-21, done)
+*BE + API* · read next: [docs/features/mail.md](features/mail.md) (updated 2026-11-25, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/mail`
   - **entities→tables:** `MailFeedbackEntity`→`mail_feedback`, `MailFolderCursorEntity`→`mail_folder_cursor`,

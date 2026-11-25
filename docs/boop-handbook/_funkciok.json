@@ -3838,11 +3838,11 @@
     "csomag": "season"
   },
   "level-tukorfiok": {
-    "cim": "A tükörfiók összekötése és lecsatolása",
+    "cim": "A Google-belépés összekötése és lecsatolása",
     "terulet": "Levél",
-    "mit_tud": "Elmenti a Boop-fiók címét és az alkalmazásjelszót (mentés előtt kipróbálja a belépést, a jelszót titkosítva tárolja és sosem adja vissza), és lecsatolásnál törli a jelszót.",
+    "mit_tud": "A „Belépés Google-lel” gombbal csak olvasási hozzáférést kap a saját Gmailedhez (a hozzáférési kulcsot titkosítva tárolja és sosem adja vissza), lecsatolásnál a Google-nál is visszavonja és törli; ha a Google visszavonja a hozzáférést, újra belépést kér.",
     "app": "Kész",
-    "app_megjegyzes": "A Fiókok oldal hatlépéses útmutatója, a két mező, az állapot szavakkal és a Lecsatolás megerősítéssel.",
+    "app_megjegyzes": "A Fiókok oldal Google-gombja, a négy állapot (nincs összekötve, nincs beállítva, összekötve, újra belépés kell) és a Lecsatolás megerősítéssel.",
     "jegyek": [
       "mezo-r36n9.38",
       "mezo-r36n9.39"
@@ -3855,7 +3855,7 @@
   "level-atvetel": {
     "cim": "Levelek átvétele naponta kétszer",
     "terulet": "Levél",
-    "mit_tud": "Reggel 8-kor és délután 3-kor csak olvasva belép a tükörfiókba, letölti az újakat (Beérkezett és Spam), nem tölt le kétszer semmit, és kézi frissítést is enged néhány percenként.",
+    "mit_tud": "Reggel 8-kor és délután 3-kor csak olvasva belép a Gmailedbe, letölti az újakat (Beérkezett és Spam), nem tölt le kétszer semmit, és kézi frissítést is enged néhány percenként.",
     "app": "Kész",
     "app_megjegyzes": "A Frissítés most gomb a Fiókok oldalon; az automatikus átnézés a kapcsolók bekapcsolásáig ki van kapcsolva.",
     "jegyek": [
