@@ -1713,5 +1713,15 @@
     ],
     "mit_kapsz": "Döntés és ellenőrzés arról, hogy az ital hol számítson étkezésnek a szerver többi számlálójában (napi küldetések, karakter pontok, heti tartás). Addig egy ital kaphat egy étkezésnyi küldetés-pipát.",
     "munkamenet": "visszamenoleg-ital"
+  },
+  "mezo-r36n9.163": {
+    "cim": "Másik napot csinálok ma: a kimaradt edzésnap élőben pótolható a Mai edzés fülről",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "A Mai edzés kártyája alatt egy „Másik napot csinálok ma” sor: a hét még nyitott edzésnapjai közül választhatsz (elöl a kimaradtak), és azt indítod el a szokásos lejátszóval. A heti pipa a ténylegesen megcsinált napra kerül.",
+    "munkamenet": "masik-nap"
   }
 }
