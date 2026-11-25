@@ -1980,43 +1980,43 @@
     },
     "funkciok:biometrics-alvas-kepernyokep": {
       "page_id": "41e8968e-752b-81a3-ac19-f2ea0408abfd",
-      "hash": "c1946dbd23f5"
+      "hash": "c00703504104"
     },
     "funkciok:biometrics-alvascel": {
       "page_id": "41e8968e-752b-8153-8ee8-ec52369df54c",
-      "hash": "c6a4c84d4f51"
+      "hash": "d88814f76ec8"
     },
     "funkciok:biometrics-alvashiany": {
       "page_id": "41e8968e-752b-81a9-8031-dbaac7e22eab",
-      "hash": "7aa753a0cdbe"
+      "hash": "5f9c76ce85c7"
     },
     "funkciok:medication-gyogyszerek": {
       "page_id": "41e8968e-752b-81e9-b8dd-db59a8a919aa",
-      "hash": "b02028d22eb0"
+      "hash": "d4b0c5ce7d19"
     },
     "funkciok:medication-adagok": {
       "page_id": "41e8968e-752b-816c-8b0f-df7226a2a517",
-      "hash": "fd946dcc6358"
+      "hash": "af9b54e5a2ff"
     },
     "funkciok:medication-ciklus-fazis": {
       "page_id": "41e8968e-752b-8183-baba-d67a27367d68",
-      "hash": "e3f45c14c00f"
+      "hash": "227c61f23f6b"
     },
     "funkciok:proactive-diagnozis": {
       "page_id": "41e8968e-752b-81a4-bf03-cb16532e8da4",
-      "hash": "87a0e8ac7c53"
+      "hash": "cb22aac1b039"
     },
     "funkciok:wearable-naptar": {
       "page_id": "41e8968e-752b-8183-a015-f5e5481b3615",
-      "hash": "8aca5142219e"
+      "hash": "d78bf6b2c0c1"
     },
     "funkciok:wearable-checkin-pillanatkep": {
       "page_id": "41e8968e-752b-8189-8055-cd3e27491998",
-      "hash": "72ea695def0f"
+      "hash": "4ddd6ab555b8"
     },
     "funkciok:biometrics-checkin": {
       "page_id": "41e8968e-752b-8134-a798-d3a6e90f0804",
-      "hash": "c7d0f8b9bde3"
+      "hash": "20ffae972290"
     },
     "funkciok:biometrics-checkin-kerdesek": {
       "page_id": "41e8968e-752b-819e-948c-e1cae17fdf93",
