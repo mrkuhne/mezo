@@ -37,6 +37,9 @@ struct RootView: View {
             } else if UserDefaults.standard.bool(forKey: "previewEvesTerv") {
                 // The Éves terv on fixtures (mezo-r36n9.113).
                 EvesTervPreviewRoot()
+            } else if UserDefaults.standard.bool(forKey: "previewKapacitas") {
+                // The Átrendezés page and Minden hatása on fixtures (B7 K3): `-kapOpen atrendezes|hatas`.
+                KapacitasPreviewRoot()
             } else if UserDefaults.standard.bool(forKey: "previewBlokk") || UserDefaults.standard.bool(forKey: "previewUjBlokk") {
                 // The block builder and the weekly review on fixtures (mezo-r36n9.83).
                 PlanPreviewRoot()
@@ -78,6 +81,9 @@ struct RootView: View {
         .background { if let link, case .ready = session.state { SyncTriggers(link: link) } }
         .background { if let ritmus, case .ready = session.state { RitmusTriggers(env: ritmus, morning: morning) } }
         .background { if let ritmus, let penz, case .ready = session.state { PenzTriggers(env: ritmus, store: penz) } }
+        .background {
+            if let ritmus, let kapacitasStore, case .ready = session.state { KapacitasTriggers(env: ritmus, store: kapacitasStore) }
+        }
     }
 
     /// One Health link and one morning brief store per signed-in user; refreshed on open once the shell shows.
@@ -121,9 +127,9 @@ struct RootView: View {
                 Task { await EvadPreviewFixtures.primeCache(previewCache) }
                 suly = SulyPreview.store(cache: cache)
                 Task { await SulyPreview.primeCache(previewCache) }
-                kapacitas = KapacitasClient(raw: RawJSONClient(transport: PreviewTransport(), baseURL: URL(string: "https://preview.invalid")!,
-                                                               token: { "preview" }))
-                let previewKap = KapacitasStore(client: kapacitas, cache: cache)
+                // B7 K3: the Átrendezés week answers from fixtures; the rest goes on to PreviewTransport
+                kapacitas = KapacitasClient(raw: KapacitasPreview.raw)
+                let previewKap = KapacitasStore(client: kapacitas, cache: cache, outbox: ritmus?.outbox)
                 kapacitasStore = previewKap
                 Task { await previewKap.load() }
                 let previewFolder = RitmusEnvironment.directories(for: me.id).outbox
@@ -148,7 +154,7 @@ struct RootView: View {
             evad = EvadStore(client: EvadClient(raw: session.raw), cache: cache)
             suly = SulyStore(evad: EvadClient(raw: session.raw), client: SulyClient(raw: session.raw), health: HealthKitReader(), cache: cache)
             kapacitas = KapacitasClient(raw: session.raw)
-            let liveKap = KapacitasStore(client: kapacitas, cache: cache)
+            let liveKap = KapacitasStore(client: kapacitas, cache: cache, outbox: ritmus?.outbox)
             kapacitasStore = liveKap
             Task { await liveKap.load() }
             workoutFolder = RitmusEnvironment.directories(for: me.id).outbox
@@ -224,6 +230,19 @@ private struct PenzTriggers: View {
                 }
             }
             .onChange(of: env.refused.count) { Task { store.setPending(await env.outbox.queue) } }
+    }
+}
+
+/// The Átrendezés upkeep (B7 K3): a queued accept delivered, or refused on replay, re-reads the outbox and the weeks
+/// on screen — whether or not the page is open.
+private struct KapacitasTriggers: View {
+    let env: RitmusEnvironment
+    let store: KapacitasStore
+    var body: some View {
+        Color.clear
+            .task { await store.syncOutbox() }
+            .onChange(of: env.kapacitasTick) { Task { await store.outboxChanged() } }
+            .onChange(of: env.refused.count) { Task { await store.syncOutbox() } }
     }
 }
 

@@ -11,6 +11,8 @@ enum EvadSub: String, Identifiable {
     case modositas, szabalyok, uj, receptek, listak, tetelek
     /// S4: one finished experiment's result, and „Új kísérlet".
     case kiserlet, ujkiserlet
+    /// B7 K3: the next week's Átrendezés page (from *A jövő heted*).
+    case atrendezes
     var id: String { rawValue }
 }
 
@@ -22,6 +24,7 @@ enum EvadSub: String, Identifiable {
 /// the empty state, whose "Megnézem" opens the first-season draft.
 struct EvadPage: View {
     @Environment(EvadStore.self) private var store: EvadStore?
+    @Environment(KapacitasStore.self) private var kapacitas: KapacitasStore?
     @State private var tab = "Évad"
     @State private var open: EvadSub?
     @State private var swapMeal: EvadMenuMeal?
@@ -56,9 +59,13 @@ struct EvadPage: View {
                 case .tetelek: EvadStaplesPage(close: { open = nil })
                 case .kiserlet: EvadExperimentPage(id: experimentId, close: { open = nil })
                 case .ujkiserlet: EvadNewExperimentPage(close: { open = nil })
+                case .atrendezes:
+                    AtrendezesPage(monday: kapacitasNextMonday(after: kapacitasMonday(for: Date())), crumb: "Évad",
+                                   close: { open = nil })
                 }
             }
             .environment(store)
+            .environment(kapacitas)
         }
         .sheet(item: $swapMeal) { meal in
             if let menu = store?.menu {

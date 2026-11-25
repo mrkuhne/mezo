@@ -647,6 +647,8 @@ public struct FoodClient: Sendable {
             switch try await client.upsertPlannedSkip(body: .json(body)) {
             case .ok: return
             case .badRequest: throw FoodFetchError.rejected
+            // 409 TRAIN_SKIP_CAPACITY_OWNED (B7 K3): the day's skip belongs to an accepted Átrendezés change
+            case .conflict: throw FoodFetchError.rejected
             case .unauthorized: throw FoodFetchError.unauthorized
             case .undocumented: throw FoodFetchError.server
             }

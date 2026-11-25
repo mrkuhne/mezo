@@ -6,7 +6,11 @@ import BoopDesign
 /// weekly load against recovery, from `GET /api/capacity/season`. A season with no data (404), or no net and nothing
 /// cached, leaves both blocks out — they are an extra, never an error. Weeks after today (the plan) are drawn faint.
 struct EvadTeher: View {
+    /// B7 K3: *A jövő heted* opens the next week's Átrendezés page (EvadPage presents it).
+    var openAtrendezes: @MainActor @Sendable () -> Void = {}
     @Environment(KapacitasStore.self) private var store: KapacitasStore?
+
+    private var nextMonday: String { kapacitasNextMonday(after: kapacitasMonday(for: Date())) }
 
     var body: some View {
         Group {
@@ -23,12 +27,28 @@ struct EvadTeher: View {
                 .nkStale(store?.ageText.map { NKStale(age: $0) })
                 // first read happens when the store is made (RootView); opening the tab refreshes it
                 .task { await store?.load(force: true) }
+            }
+            nextWeek
+            if let s = store?.season, !s.weeks.isEmpty {
                 NKBare("Mennyit bírsz az évadban", hue: evadHue, glyph: "bolt-ink") {
                     NKStatRow(kapacitasSeasonStats(s.stats).map {
                         NKStat(value: $0.value, target: $0.target, label: $0.label, hot: $0.hot)
                     }, hue: evadHue)
                 }
             }
+        }
+    }
+
+    /// *A jövő heted* (spike KapSeasonPage): the next week's strip and the way into its proposals — only while it has
+    /// open proposals.
+    @ViewBuilder private var nextWeek: some View {
+        let m = nextMonday
+        if let week = store?.weeks[m], let n = store?.openCount(monday: m), n > 0 {
+            NKBare("A jövő heted", hue: evadHue, glyph: "clock-ink", trailing: kapacitasWeekLabel(monday: m)) {
+                KapWeekStrip(week: week, hue: evadHue)
+                NKInfoRow("\(n) javaslatom van rá · Átrendezés", hue: evadHue, action: openAtrendezes)
+            }
+            .nkStale(store?.weekAgeText(m).map { NKStale(age: $0) })
         }
     }
 }
