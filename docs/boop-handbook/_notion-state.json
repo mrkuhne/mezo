@@ -1412,7 +1412,7 @@
     },
     "jegyek:mezo-r36n9.113": {
       "page_id": "41e8968e-752b-8145-b144-e62b83f8070b",
-      "hash": "5694f8bb6887"
+      "hash": "ea5cc9eea741"
     },
     "dontesek:d-2026-11-20-csere-kimeles": {
       "page_id": "41e8968e-752b-8121-9368-ccaea7c1e215",
@@ -2912,23 +2912,23 @@
     },
     "kezikonyv:12-level/00-attekintes": {
       "page_id": "41f8968e-752b-818d-9b31-d32061e34dcf",
-      "hash": "9580f7e19e26"
+      "hash": "5231ea837ca8"
     },
     "kezikonyv:12-level/01-reggeli-posta": {
       "page_id": "41f8968e-752b-81e8-ad96-c14712f67dec",
-      "hash": "c37c25ee4c56"
+      "hash": "6b5a6b496cd5"
     },
     "kezikonyv:12-level/02-fiokok-es-szabalyok": {
       "page_id": "41f8968e-752b-81d7-9349-db08f8bf37c1",
-      "hash": "28b3726f0fbf"
+      "hash": "327b9cf7faf9"
     },
     "funkciok:level-tukorfiok": {
       "page_id": "41f8968e-752b-81ca-b38a-ed8c3302ac79",
-      "hash": "7ad35debcf9f"
+      "hash": "d480075df9ef"
     },
     "funkciok:level-atvetel": {
       "page_id": "41f8968e-752b-817e-b70a-fe28e5447b3c",
-      "hash": "d2365dbdd334"
+      "hash": "6b04f54e4436"
     },
     "funkciok:level-vedelem": {
       "page_id": "41f8968e-752b-81aa-b636-c7b1054f8f4e",
@@ -3189,6 +3189,10 @@
     "funkciok:train-eves-terv": {
       "page_id": "4238968e-752b-819a-8797-d3a8583033cb",
       "hash": "963596fe8c7d"
+    },
+    "dontesek:d-2026-11-25-level-google-belepes": {
+      "page_id": "4238968e-752b-8128-8ff5-fbbed656a8b7",
+      "hash": "0e0c045d718e"
     }
   }
 }
