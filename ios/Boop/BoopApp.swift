@@ -21,6 +21,7 @@ struct BoopApp: App {
             RootView()
                 .environment(session)
                 .task {
+                    Task { await AlarmProbe.run() }   // inert unless -probeAlarm YES (mezo-r36n9.172 probe)
                     #if DEBUG
                     await Self.debugNotify()
                     if let p = UserDefaults.standard.string(forKey: "preview") { session.debugPreview(p); return }
