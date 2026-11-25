@@ -9,11 +9,14 @@ import io.mrkuhne.mezo.api.dto.CoverageFinding;
 import io.mrkuhne.mezo.api.dto.CoverageProposal;
 import io.mrkuhne.mezo.api.dto.GymProfile;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseCatalogEntity;
+import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
+import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseCatalogRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -30,12 +33,14 @@ class BlockCoverageIT extends ApiIntegrationTest {
     @Autowired private ExerciseCatalogRepository catalogRepository;
     @Autowired private MesocycleRepository mesocycleRepository;
 
+    private UUID user;
     private HttpHeaders auth;
     private MesocycleEntity block;
 
     @BeforeEach
     void setUp() {
         RegisteredUser u = registerUser("Block Coverage");
+        user = u.id();
         auth = u.headers();
         block = trainPopulator.createMesocycle(u.id(), "block", "active");
         block.setTrainingStyle("balanced");
@@ -188,5 +193,50 @@ class BlockCoverageIT extends ApiIntegrationTest {
         MesocycleEntity archived = trainPopulator.createMesocycle(owner.id(), "old", "archived");
 
         postForBody(uri(archived), hingeOnlyWeek(), owner.headers(), HttpStatus.CONFLICT, String.class);
+    }
+
+    @Test
+    void testCoverage_shouldRankALegCurlAsTheSameRole_notAnotherType() {
+        CoverageProposal p = read(hingeOnlyWeek()).getFindings().get(0).getProposal();
+
+        assertThat(p.getExercise().getType()).hasToString("isolation");
+        assertThat(p.getSignals()).contains("SAME_ROLE").doesNotContain("OTHER_TYPE");
+    }
+
+    @Test
+    void testCoverage_shouldIgnoreAnotherUsersCustomRow_butLetTheOwnOneSilenceTheGroup() {
+        UUID foreign = trainPopulator.createUserCatalogExercise(registerUser("Coverage Stranger").id(),
+            "Stranger Curl", "ham", "isolation").getId();
+        UUID own = trainPopulator.createUserCatalogExercise(user, "My Curl", "ham", "isolation").getId();
+
+        BlockCoverageResponse withForeign = read(new BlockCoverageRequest().days(List.of(
+            day(0, 60, catalog("Romanian Deadlift"), foreign))));
+        BlockCoverageResponse withOwn = read(new BlockCoverageRequest().days(List.of(
+            day(0, 60, catalog("Romanian Deadlift"), own))));
+
+        // the stranger's row is not in the viewer's pool: ignored, the leg curl is still missing
+        assertThat(withForeign.getFindings()).extracting(CoverageFinding::getCode)
+            .containsExactly(CoverageFinding.CodeEnum.HAM_NO_KNEE_FLEXION);
+        // the viewer's own custom row could be the leg curl: unknown, silent
+        assertThat(withOwn.getFindings()).isEmpty();
+    }
+
+    @Test
+    void testCoverage_shouldSkipARowThatHurtBefore() {
+        offKinds("machine"); // the Nordic curl is the only knee-flexion row left
+        UUID nordic = catalog("Nordic Ham Curl");
+        assertThat(read(hingeOnlyWeek()).getFindings().get(0).getProposal().getExercise().getId()).isEqualTo(nordic);
+
+        WorkoutSessionEntity past = trainPopulator.createTemplateDay(user, block.getId(), "Past");
+        ExerciseEntity ex = trainPopulator.createExercise(user, past.getId(), "Nordic Ham Curl", 0, "ham", "isolation",
+            nordic);
+        WorkoutSessionEntity done = trainPopulator.completedInstanceWithWorkingSet(
+            user, ex.getWorkoutSessionId(), ex.getId(), new BigDecimal("0"), 6, 1);
+        trainPopulator.createFeedback(user, done.getId(), ex.getId(), 3, 3, 2);
+
+        BlockCoverageResponse res = read(hingeOnlyWeek());
+
+        assertThat(res.getFindings()).hasSize(1);
+        assertThat(res.getFindings().get(0).getProposal()).isNull();
     }
 }

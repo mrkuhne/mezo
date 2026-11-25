@@ -69,7 +69,7 @@ public class CoverageService {
             : req.getDays().stream().filter(Objects::nonNull).toList();
         List<ExerciseCatalogEntity> all = reads.pool(userId);
         Map<UUID, ExerciseCatalogEntity> byId = all.stream()
-            .collect(Collectors.toMap(ExerciseCatalogEntity::getId, Function.identity()));
+            .collect(Collectors.toMap(ExerciseCatalogEntity::getId, Function.identity(), (a, b) -> a));
         List<Day> days = draft.stream().map(d -> new Day(d.getDayIndex(), ids(d).stream().map(byId::get)
             .filter(Objects::nonNull).map(CoverageService::row).toList())).toList();
 
@@ -99,7 +99,7 @@ public class CoverageService {
                 .muscles(muscles).verdictText(f.code().verdictText()).whyText(f.code().whyText());
             Integer dayIndex = pickDay(draft, days, f.group());
             if (dayIndex != null && !pool.isEmpty()) {
-                item.proposal(propose(viewer, block, all, pool, f.group(), dayIndex, draft, inWeek, gym, pain, today,
+                item.proposal(propose(viewer, block, all, pool, f.group(), f.missingPattern(), dayIndex, draft, inWeek, gym, pain, today,
                     style));
             }
             out.add(item);
@@ -109,18 +109,16 @@ public class CoverageService {
 
     /** The top-ranked row of the missing pattern, rendered like an add suggestion; null when none is eligible. */
     private CoverageProposal propose(AppUserEntity viewer, MesocycleEntity block, List<ExerciseCatalogEntity> all,
-                                     List<ExerciseCatalogEntity> pool, String group, int dayIndex,
+                                     List<ExerciseCatalogEntity> pool, String group, String pattern, int dayIndex,
                                      List<CoverageDraftDay> draft, Set<UUID> inWeek, GymAvailability gym,
                                      Map<UUID, PainLevel> pain, LocalDate today, TrainingStyle style) {
         UUID userId = viewer.getId();
         Map<UUID, ExerciseSetEntity> topSets = reads.topSets(userId, pool);
         List<Candidate> candidates = SubstituteReads.candidates(pool, gym, pain, topSets);
-        Set<UUID> dayIds = draft.stream().filter(d -> d.getDayIndex() == dayIndex).findFirst()
-            .map(d -> Set.copyOf(ids(d))).orElse(Set.of());
         Set<String> painJoints = dayIndex == BlockSuggestionService.weekdayIndex(today)
             ? reads.painJointsToday(userId, today) : Set.of();
         Context ctx = new Context(block.getGoalPreset(), false, painJoints, inWeek, Set.of());
-        Result ranked = ExerciseSubstituteRanker.rankForGroup(group, BlockSuggestionService.preferredType(pool, dayIds),
+        Result ranked = ExerciseSubstituteRanker.rankForGroup(group, preferredType(pattern),
             candidates, ctx);
         if (ranked.suggestions().isEmpty()) {
             return null;
@@ -136,6 +134,15 @@ public class CoverageService {
             .lastTopSet(s.getLastTopSet()).prescription(s.getPrescription()).dayIndex(dayIndex);
     }
 
+    /** Single-joint movement patterns: the proposal slot prefers an isolation row (a leg curl reads as „same role"). */
+    private static final Set<String> ISOLATION_PATTERNS = Set.of(
+        "knee-flexion", "knee-extension", "raise", "fly", "elbow-flexion", "elbow-extension");
+
+    /** The slot type the ranker compares candidates with: the missing pattern decides, not the day. */
+    static String preferredType(String pattern) {
+        return ISOLATION_PATTERNS.contains(pattern) ? "isolation" : "compound";
+    }
+
     /** A catalogue row of the finding's missing pattern in its group (and target token, when the rule names one). */
     private static boolean matches(Finding f, ExerciseCatalogEntity c) {
         return f.missingPattern().equals(c.getPattern()) && f.group().equals(MuscleGroup.of(c.getMuscle()))
@@ -144,7 +151,7 @@ public class CoverageService {
 
     /**
      * Among the draft days that already train the group (a primary row, or a secondary of a known-pattern row) the
-     * one with the lowest {@code minutesEstimate}; none → the lowest-minutes day of the draft. Null minutes sort
+     * one with the lowest {@code minutesEstimate}; none → the lowest-minutes draft day with at least one row. Null minutes sort
      * last, ties go to the earliest weekday; an empty draft → null.
      */
     static Integer pickDay(List<CoverageDraftDay> draft, List<Day> days, String group) {
@@ -152,12 +159,17 @@ public class CoverageService {
             .comparing(CoverageDraftDay::getMinutesEstimate, Comparator.nullsLast(Comparator.naturalOrder()))
             .thenComparing(CoverageDraftDay::getDayIndex);
         List<CoverageDraftDay> training = new ArrayList<>();
+        List<CoverageDraftDay> anyRows = new ArrayList<>();
         for (int i = 0; i < draft.size(); i++) {
+            if (days.get(i).rows().isEmpty()) {
+                continue; // an empty day is never a training day
+            }
+            anyRows.add(draft.get(i));
             if (days.get(i).rows().stream().anyMatch(r -> trains(r, group))) {
                 training.add(draft.get(i));
             }
         }
-        return (training.isEmpty() ? draft : training).stream().min(order).map(CoverageDraftDay::getDayIndex)
+        return (training.isEmpty() ? anyRows : training).stream().min(order).map(CoverageDraftDay::getDayIndex)
             .orElse(null);
     }
 
