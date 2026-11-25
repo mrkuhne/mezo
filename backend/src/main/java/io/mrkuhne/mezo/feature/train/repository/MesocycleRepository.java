@@ -8,6 +8,8 @@ import java.util.UUID;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.repository.query.Param;
+import org.springframework.data.jpa.repository.Query;
 
 /**
  * Repository for {@link MesocycleEntity}. Extends {@link JpaRepository} directly rather than the
@@ -24,6 +26,10 @@ public interface MesocycleRepository extends JpaRepository<MesocycleEntity, UUID
     /** Owned-by-id lookup holding a row lock to commit — serialises the weekly proposal per run. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<MesocycleEntity> findLockedByIdAndCreatedByAndDeletedFalse(UUID id, UUID createdBy);
+
+    /** The stored status straight from the database (a scalar read, never a stale managed entity). */
+    @Query("select m.status from MesocycleEntity m where m.id = :id")
+    String findStatusById(@Param("id") UUID id);
 
     /** All owned mesocycles in one status — the activate flow archives the previous active ones. */
     List<MesocycleEntity> findByCreatedByAndStatusAndDeletedFalse(UUID createdBy, String status);

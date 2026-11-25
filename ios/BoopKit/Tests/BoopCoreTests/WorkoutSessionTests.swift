@@ -24,6 +24,25 @@ struct WorkoutSessionTests {
         WorkoutSession(TodayWorkout(title: "Pull Day", exercises: exercises, open: open))
     }
 
+    // MARK: - No warm-ups (owner, 2026-11-25: „az nem számít és csak összezavar")
+
+    @Test func warmUpsNeverEnterTheSession() {
+        let s = session([exercise(press, "Fekvenyomás", warmups: 2, working: 3)])
+        #expect(s.progress == (done: 0, total: 3))
+        #expect(s.exercises[press]?.planned.allSatisfy { $0.kind == .working } == true)
+        #expect(s.exercises[press]?.plan(at: 0)?.targetKg == 80)
+    }
+
+    @Test func aWarmUpLoggedByAnOlderBuildIsNotBroughtBack() {
+        let open = WorkoutInstance(id: UUID(), date: "2026-11-25", status: .active, sets: [
+            LoggedSet(id: UUID(), exerciseId: press, setIndex: 0, kind: .warmup, weightKg: 40, reps: 8),
+            LoggedSet(id: UUID(), exerciseId: press, setIndex: 1, kind: .working, weightKg: 80, reps: 8),
+        ])
+        let s = session([exercise(press, "Fekvenyomás", warmups: 1, working: 3)], open: open)
+        #expect(s.exercises[press]?.logged.count == 1)
+        #expect(s.progress == (done: 1, total: 3))
+    }
+
     // MARK: - The shape of a set
 
     @Test func itStartsOnTheFirstSetOfTheFirstExercise() {
@@ -31,7 +50,7 @@ struct WorkoutSessionTests {
         #expect(s.currentExerciseId == press)
         #expect(s.currentSetIndex == 0)
         #expect(s.step == .set)
-        #expect(s.progress == (done: 0, total: 6))
+        #expect(s.progress == (done: 0, total: 4))   // two working sets each — the warm-ups never count
     }
 
     @Test func aSetThatIsNotTheLastGoesToRest() {
@@ -138,7 +157,7 @@ struct WorkoutSessionTests {
         #expect(s.all.count == 2)
         #expect(step == .set)
         // And a skipped exercise is out of the count: 14 / 16 must not include what he dropped.
-        #expect(s.progress.total == 3)
+        #expect(s.progress.total == 2)
     }
 
     @Test func skippingTheLastRemainingExerciseFinishes() {
@@ -335,16 +354,15 @@ struct WorkoutSessionLastLoggedTests {
 
 // MARK: - What the next set is prefilled with (mezo-r36n9.147, owner 2026-11-23)
 
-/// „Edzés közben nem viszi át a következő szettre az előző szett logolt súlyát." The rule: warm-ups and the
-/// first working set come from the plan; every later working set starts from the weight he actually lifted on
+/// „Edzés közben nem viszi át a következő szettre az előző szett logolt súlyát." The rule: the first working set
+/// comes from the plan (warm-ups are no longer in the session at all, owner 2026-11-25); every later working set starts from the weight he actually lifted on
 /// the previous working set. Reps and the reserve stay the plan's.
 struct WorkoutPrefillTests {
     let press = UUID(uuidString: "d1d2d3d4-0003-4a2b-9c3d-111122223333")!
     let base = WorkoutSessionTests()
 
     @Test func theFirstWorkingSetComesFromThePlan() {
-        var s = base.session([base.exercise(press, "Fekvenyomás", warmups: 1, working: 3, kg: 80, reps: 8)])
-        _ = s.log(kg: 48, reps: 8, rir: nil)                      // the warm-up
+        let s = base.session([base.exercise(press, "Fekvenyomás", warmups: 1, working: 3, kg: 80, reps: 8)])
         let p = WorkoutSession.prefill(for: s.current!)
         #expect(p.kg == 80)
         #expect(p.reps == 8)
@@ -354,7 +372,6 @@ struct WorkoutPrefillTests {
 
     @Test func aLaterWorkingSetCarriesThePreviousWorkingSetsWeight() {
         var s = base.session([base.exercise(press, "Fekvenyomás", warmups: 1, working: 3, kg: 80, reps: 8)])
-        _ = s.log(kg: 48, reps: 8, rir: nil)
         _ = s.log(kg: 82.5, reps: 8, rir: 2)                      // he went heavier than the plan
         let p = WorkoutSession.prefill(for: s.current!)
         #expect(p.kg == 82.5)
@@ -362,13 +379,13 @@ struct WorkoutPrefillTests {
         #expect(p.source == .previous)
     }
 
-    @Test func aWarmUpNeverCarriesAWorkingWeight() {
-        // Two warm-ups, then the working sets: the second warm-up stays the plan's lighter weight.
-        var s = base.session([base.exercise(press, "Fekvenyomás", warmups: 2, working: 2, kg: 80, reps: 8)])
-        _ = s.log(kg: 40, reps: 8, rir: nil)
+    @Test func theFirstSetInFrontOfHimIsAWorkingSetEvenWhenThePlanHadWarmUps() {
+        // Two warm-ups in the server's plan: the player still opens on the first working set at the plan's weight.
+        let s = base.session([base.exercise(press, "Fekvenyomás", warmups: 2, working: 2, kg: 80, reps: 8)])
         let p = WorkoutSession.prefill(for: s.current!)
-        #expect(p.kg == 48)                                        // 0.6 × 80, the plan's warm-up
+        #expect(p.kg == 80)
         #expect(p.source == .plan)
+        #expect(s.current?.plan(at: 0)?.kind == .working)
     }
 
     @Test func withNoPlanWeightTheFirstWorkingSetIsEmptyAndTheNextOneCarries() {

@@ -141,11 +141,8 @@ struct DayEditSettingsSheet: View {
                         .buttonStyle(.plain)
                     }
                 }
-                field("Bemelegítő sorozat", mine: false) {
-                    DayEditStepper(text: "\(row.warmups)", label: "Bemelegítő sorozat",
-                                   down: { edit { $0.setWarmups(day: at.day, at: at.index, row.warmups - 1) } },
-                                   up: { edit { $0.setWarmups(day: at.day, at: at.index, row.warmups + 1) } })
-                }
+                // No warm-up field: the app never shows warm-ups (owner, 2026-11-25), and the row keeps the
+                // server's own count untouched on save.
                 if !row.overrides.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack(alignment: .top, spacing: 9) {

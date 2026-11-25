@@ -282,4 +282,36 @@ class MesoPlanCandidatesContractIT extends ApiIntegrationTest {
         assertWellFormed(at60);
         assertThat(at60.getNothingFits()).isTrue();
     }
+
+    @Test
+    void consolidationTwoWeeksAllMaintain() {
+        MesoPlanCandidates res = candidates(MesoPlanCandidatesRequest.builder()
+            .daysOfWeek(Set.of("Hét", "Kedd", "Csü", "Pén")).weeks(2).consolidation(true)
+            .priorities(Map.of("chest", "emphasize")).build());
+        assertThat(res.getCandidates()).isNotEmpty();
+        assertThat(res.getCandidates()).allSatisfy(c -> {
+            MesoTemplateUpsertRequest t = c.getTemplate();
+            assertThat(t.getWeeks()).isEqualTo(2);
+            assertThat(t.getMusclePriorities()).isNotEmpty().allSatisfy((k, v) -> assertThat(v).isEqualTo("maintain"));
+            assertThat(t.getPhaseCurve()).extracting(Enum::name).containsExactly("MEV", "MEV");
+            assertThat(t.getTitle()).isEqualTo("Lezárás");
+            assertThat(t.getStyle()).isEqualTo("Lezárás · 2 hét");
+        });
+    }
+
+    @Test
+    void twoWeeksWithoutFlagIs400() {
+        String body = postForBody(CANDIDATES, MesoPlanCandidatesRequest.builder()
+            .daysOfWeek(Set.of("Hét", "Kedd", "Csü", "Pén")).weeks(2).build(),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(body, "TRAIN_MESO_WEEKS_RANGE");
+    }
+
+    @Test
+    void consolidationFourWeeksIs400() {
+        String body = postForBody(CANDIDATES, MesoPlanCandidatesRequest.builder()
+            .daysOfWeek(Set.of("Hét", "Kedd", "Csü", "Pén")).weeks(4).consolidation(true).build(),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(body, "TRAIN_MESO_WEEKS_RANGE");
+    }
 }

@@ -127,6 +127,11 @@ public final class MesoPlanSkeleton {
         return List.copyOf(out);
     }
 
+    /** The consolidation block's curve: every week at MEV, no ramp, no deload. */
+    public static List<String> flatCurve(int weeks) {
+        return java.util.Collections.nCopies(weeks, "MEV");
+    }
+
     public static int frequencyOf(Skeleton s, String group) {
         return (int) s.days().stream().filter(d -> d.muscles().stream().anyMatch(m -> m.group().equals(group))).count();
     }

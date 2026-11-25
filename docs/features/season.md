@@ -2,7 +2,7 @@
 title: Évad — the season (Boop B6)
 type: feature-domain
 status: in-progress
-updated: 2026-11-21
+updated: 2026-11-25
 tags: [backend, boop, season, goal, train, sleep, fuel, companion, b6-evad]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/season
@@ -193,6 +193,21 @@ accepted adaptive correction or a concurrent accept between preview and accept t
   allowed; the phone disables the control) (the block's weekdays would no longer match). Sport
   days, pace and gym time stay editable. The full "one accept moves the block too" (spec §5.12-1) waits for the
   in-block day editor — follow-up `mezo-r36n9.122` (depends on `mezo-r36n9.116`).
+- **The season follows a newly started block** (Éves terv, `mezo-r36n9.113`). The season always shows the **running** block, so only a
+  block that actually starts publishes train's `MesocycleStarted` — `TrainService.stampRun` for an **active** stamp
+  (template start, re-run, the season's own start) and `activateMesocycle` on a real activation (a planned block
+  reaching its day through `PlannedBlockStarter`, or a manual activate). A planned stamp touches nothing until it
+  starts. The event's start is the day the block runs from: its start date, or today when that lies in the past (a
+  re-activated old run never claims the season's weeks from its long-past start). `SeasonBlockLinkListener` (`AFTER_COMMIT`, synchronous) calls
+  `SeasonService.adoptStartedBlock` in its own transaction (`REQUIRES_NEW`): the active season, else the planned season
+  whose window contains the block's start, else nothing. A block already linked to that goal (the season's own start)
+  is a no-op; otherwise the block becomes the goal's **newest `goal_plan_link`** and the draft's block becomes
+  `adopt <id>` (its `updatedAt` stamped from the injected `Clock`, so a test clock governs it). Goal fields, slots and sleep are untouched. The newer block takes over the weeks it runs in
+  (`SeasonGoalAdapter.link`): an overlapping earlier link ends the week before and stays as history, one that starts in
+  the same week or later is removed (the goal allows one mesocycle per week). Links are ordered by start week, then
+  age. A failure is logged and **never fails the start** — the block runs, the season keeps its previous block. Every
+  season read (overview, `GET /api/seasons`) takes the newest linked block that still exists, so a discarded newest
+  block falls back to the one before it (its link stays shortened — restoring it is a follow-up).
 - **close** (`POST …/{id}/close`) — status `closed` + a small `closed_summary`; goal and slots stay. **The sleep goal
   gets its base back** (`sleep_base_min`) unless he changed it himself since the season wrote it.
 - **putRules** (`PUT …/{id}/rules`) — the switches; no kcal effect, so no preview.
@@ -541,7 +556,8 @@ S3's Liquibase file is `202611231000_mezo-r36n9.16_season_menu.sql`. S2 adds no 
   The draft energy reaches the calculator through a ThreadLocal set and cleared in `try/finally` (the frozen
   biometrics↔goal ArchUnit cycle pins the 3-arg body) — tech debt `mezo-r36n9.124` (explicit parameter + re-freeze).
 - **→ train** (`SeasonTrainPort`): reads / replaces gym + sport slots (per-day gym times kept unless the time is
-  changed), prices draft slots, starts a block from a template, reads mesocycles. **train → season**: `SeasonGatePort`.
+  changed), prices draft slots, starts a block from a template, reads mesocycles. **train → season**: `SeasonGatePort`;
+  **← train event** `MesocycleStarted` → `SeasonBlockLinkListener` (§3.3, the season follows a newly started block).
 - **→ biometrics/sleep** (`SeasonSleepPort`): reads / writes `sleep_goal` directly (the sleep-goal service bean is
   behind its own switch); ghost defaults when unset.
 - **→ weight / sleep log / recipes** (`SeasonMetricsPort`): latest weight, EWMA trend + 14-day rate, weigh-in day
@@ -597,6 +613,13 @@ Backend (`./mvnw test -Dtest='Season*IT,Season*Test,MesocycleGateIT,GoalPrescrip
   with a running block 409 (sport change passes, no-block change passes), close gives the sleep goal its base back /
   keeps one he changed, concurrent apply on a planned season 409, apply after an accepted balance adjustment 409,
   activation keeps each gym day's own time.
+- `SeasonBlockRelinkIT` (`mezo-r36n9.113`, HTTP, committed) — a template start becomes the season's block (goal,
+  title, day kcal unchanged; draft `adopt <new>`; the old link kept), the deload week follows the new block, no season
+  no link, the season's own template start links once, a discarded newest block falls back to the previous one, a
+  planned stamp leaves the running block and its link alone, a planned block activated on its day by a read becomes
+  the season's block (the old link ends the week before), a same-week start replaces the old link, a re-activated old
+  run joins from today, a planned season whose window holds the start follows the block, a failed link never fails
+  the start.
 - `SeasonOverviewIT` — 404 without season, maintain band, null rest-day link, `slower`, `no_data` with three
   weigh-ins, deload listed from the block, projection flat after the target, past-target season computes.
 - `MesocycleGateIT` (gate on) — template start without season 409, planned season in 5 days passes, too far ahead

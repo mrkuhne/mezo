@@ -104,7 +104,7 @@ public class MesoTemplateService {
             t.getWeeks(), t.getSplit(), t.getStyle(), t.getTrainingStyle(), t.getPhaseCurve(), t.getNotes(),
             req.getStatus().getValue(),
             mapper.toDayInputs(t.getDays()), mapper.toBaselines(t.getVolumePerMuscle()),
-            t.getMusclePriorities(), t.getSportGroups(), t.isTechniquesEnabled()));
+            t.getMusclePriorities(), t.getSportGroups(), t.isTechniquesEnabled(), req.getYearBlockId()));
     }
 
     /**

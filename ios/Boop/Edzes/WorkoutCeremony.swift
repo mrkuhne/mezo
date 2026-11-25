@@ -26,6 +26,10 @@ import BoopDesign
 struct WorkoutCeremony: View {
     let session: WorkoutSession
     let hue: Hue
+    /// What the workout burned, from the server (mezo-r36n9.170): its estimate first, the watch's figure once the
+    /// watch's workout has synced. `nil` until it arrives — offline, or no body data yet — and then the line is
+    /// simply not there; nothing is guessed on the phone.
+    var energy: WorkoutEnergy? = nil
     let onDone: () -> Void
     let onNote: () -> Void
     /// Looking at the day's result again, after the fact (mezo-r36n9.147): the numbers are the same, the clock is
@@ -55,7 +59,11 @@ struct WorkoutCeremony: View {
                 ScrollView {
                     VStack(spacing: 26) {
                         head(p)
-                        counters(p)
+                        VStack(spacing: 10) {
+                            counters(p)
+                            if let energy { energyLine(energy, p: p).transition(.opacity) }
+                        }
+                        .animation(reduceMotion ? nil : .easeOut(duration: 0.6), value: energy)
                         if !records.isEmpty { recordSection(p) }
                         // Nothing logged, nothing worked: an empty body would be a picture of
                         // a workout that did not happen.
@@ -125,6 +133,31 @@ struct WorkoutCeremony: View {
         .padding(.vertical, 18)
         .nkGlass()
         .opacity(reveal(p, from: 0.1))
+    }
+
+    /// The kcal, under the three numbers (owner, 2026-11-25: „írjuk ki edzés végén kcal"). It says plainly whether it
+    /// is the estimate or the watch's own measurement — the estimate is replaced once the watch's workout syncs.
+    private func energyLine(_ e: WorkoutEnergy, p: Double) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(e.source == .estimate ? "kb. \(Int(Double(e.kcal) * p))" : "\(Int(Double(e.kcal) * p))")
+                    .nkFont(24, .medium).foregroundStyle(hue.glow)
+                    .contentTransition(.numericText())
+                Text("kcal").nkFont(13).foregroundStyle(.white.opacity(0.7))
+            }
+            Spacer(minLength: 8)
+            Text(e.source == .estimate ? "becslés · az órád pontosítja" : "az órád mérte")
+                .nkFont(12).foregroundStyle(.white.opacity(0.55))
+                .multilineTextAlignment(.trailing)
+                .lineLimit(2).minimumScaleFactor(0.85)
+        }
+        .padding(.horizontal, 18).padding(.vertical, 14)
+        .nkGlass()
+        .opacity(reveal(p, from: 0.1))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(e.source == .estimate
+                            ? "Körülbelül \(e.kcal) kilokalória, becslés"
+                            : "\(e.kcal) kilokalória, az órád mérte")
     }
 
     private var divider: some View {

@@ -25,6 +25,9 @@ import BoopDesign
 //   -previewUjBlokkSeason none             no season days: the needs-season state
 //   -previewUjBlokkScroll Y                the step opens scrolled down by Y points
 //   -previewUjBlokkStart fail              „Ezzel kezdem" fails at the start (503): the inline error under the button
+//   -previewEvesTerv YES                   the Éves terv (mezo-r36n9.113); its states in EvesTerv/EvesTervPreview.swift
+//   -previewKovetkezik YES|nincs|lezaras   with `-preview shell -previewHome edzes`: the Ma tab's Következik card and the
+//                                          pre-filled intake behind „Indítás" (scenarios in EvesTerv/EvesTervPreview.swift)
 //
 // The evaluator below is a FIXTURE: it imitates the server's answer so the steppers move the numbers on screen. The
 // app itself never computes a band — it asks `POST /api/train/meso-plans/evaluate`.
@@ -60,7 +63,8 @@ enum PlanPreview {
 struct PlanPreviewRoot: View {
     @State private var page: EdzesPage? = {
         if UserDefaults.standard.bool(forKey: "previewUjBlokk") {
-            return UserDefaults.standard.string(forKey: "previewUjBlokkScreen") == "letrehozva" ? .builder : .newBlock
+            return UserDefaults.standard.string(forKey: "previewUjBlokkScreen") == "letrehozva"
+                ? .builder : .newBlock(NewBlockCover(model: PlanPreview.newBlockModel()))
         }
         switch UserDefaults.standard.string(forKey: "previewBlokkOpen") {
         case "epito": return .builder
@@ -76,7 +80,6 @@ struct PlanPreviewRoot: View {
         if d.string(forKey: "previewUjBlokkScreen") == "letrehozva" { m.justCreated = true; m.minutesTarget = 60 }
         return m
     }()
-    @State private var newBlock = PlanPreview.newBlockModel()
     @Namespace private var zoom
 
     var body: some View {
@@ -93,7 +96,7 @@ struct PlanPreviewRoot: View {
             case .builder:
                 BlockBuilderPage(model: builder,
                                  initialMode: BlockBuilderPage.Mode(rawValue: (UserDefaults.standard.string(forKey: "previewBlokkTab") ?? "").capitalized) ?? .izmok,
-                                 onNewBlock: { newBlock = PlanPreview.newBlockModel(screen: nil); page = .newBlock }) {
+                                 onNewBlock: { page = .newBlock(NewBlockCover(model: PlanPreview.newBlockModel(screen: nil))) }) {
                     page = nil
                     builder = BlockBuilderModel(client: PlanPreview.client)
                     Task { await builder.load() }
@@ -102,8 +105,8 @@ struct PlanPreviewRoot: View {
             case .review:
                 WeekReviewDeck(model: review) { page = nil; Task { await review.load() } }
                     .navigationTransition(.zoom(sourceID: PlanZoom.review, in: zoom))
-            case .newBlock:
-                UjBlokkFlow(model: newBlock, step: PlanPreview.initialStep, blocked: PlanPreview.initialBlocked,
+            case .newBlock(let cover):
+                UjBlokkFlow(model: cover.model, step: PlanPreview.initialStep, blocked: PlanPreview.initialBlocked,
                             onClose: { page = nil },
                             onCreated: { minutes in
                                 // The cover's content keeps the model it was built with: re-arm that one.
@@ -159,11 +162,14 @@ final class PlanPreviewTransport: ClientTransport, @unchecked Sendable {
                 return ["template": c.first { $0["splitKey"] as? String == split }?["template"] ?? [:], "llmUsed": false]
             case "createMesoTemplate": return ["id": "7e000000-0000-4000-8000-0000000000aa"]
             case "startMesoTemplate":
+                EvesTervPreviewServer.started(yearBlockId: sent?["yearBlockId"] as? String)
                 var b = block; b["status"] = (sent?["status"] as? String) ?? "planned"; b["currentWeek"] = 1
                 return b
             case "closeMesocycle": return block
             case "discardMesocycle": return [String: Any]()
             case "getBlockExerciseSuggestions": return Self.suggestions(sent ?? [:])
+            case "previewYearPlan", "createYearPlan", "getActiveYearPlan", "patchYearBlock", "archiveYearPlan":
+                return EvesTervPreviewServer.answer(operationID, path: request.path, sent: sent)
             case "listWeekProposals": return state == "empty" ? [] : [proposal()]
             case "decideWeekProposal":
                 if let s = sent {

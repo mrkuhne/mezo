@@ -452,6 +452,20 @@
     ],
     "csomag": "train"
   },
+  "train-eves-terv": {
+    "cim": "Éves terv (egész éves blokktérkép)",
+    "terulet": "Edzés",
+    "app": "Kész",
+    "mit_tud": "Egész évre előre kirakja az edzésblokkokat felváltva felső és alsó fókusszal, könnyítő hetekkel és 2 hetes lezárással; csúszásnál, kihagyásnál átütemez, és a következő blokkot előre kitöltve felajánlja.",
+    "app_megjegyzes": "Az Edzés szobában: létrehozás-előnézet, 52 hetes térkép, blokk lap, Következik kártya; telefonra telepítés még hátra.",
+    "jegyek": [
+      "mezo-r36n9.113"
+    ],
+    "kezikonyv": [
+      "07-edzes/19-eves-terv"
+    ],
+    "csomag": "train"
+  },
   "train-sablonok-futamok": {
     "cim": "Sablonok, blokk indítása és újrafuttatása",
     "terulet": "Edzés",

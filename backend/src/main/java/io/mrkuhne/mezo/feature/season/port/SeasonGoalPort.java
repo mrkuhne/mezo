@@ -89,7 +89,10 @@ public interface SeasonGoalPort {
     /** Mesocycle ids linked to the goal (goal_plan_link), oldest start week first. */
     List<UUID> linkedMesocycles(UUID owner, UUID goalId);
 
-    /** Links the mesocycle to the goal from the week it starts in (week 1 when it started earlier); idempotent. */
+    /**
+     * Links the mesocycle to the goal from the week it starts in (week 1 when it started earlier); idempotent. It takes
+     * over the weeks it runs in: an overlapping earlier link ends the week before, a same-week or later one is removed.
+     */
     void link(UUID owner, UUID goalId, UUID mesocycleId, LocalDate mesocycleStart);
 
     /** The planned (formula) and the learned daily expenditure, kcal; {@code learned} is what the engine now serves. */

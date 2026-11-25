@@ -14,7 +14,7 @@ Ha nincs futó blokkod, az Edzés → Blokk fülön megjelenik az **Új blokk** 
 
 **1. Alapok.** Három dolgot adsz meg, a többit Boop számolja:
 - **Hány hetes** legyen a blokk (4–8 hét);
-- **Meddig tarthat egy edzés** (percben) — a pihenővel és a bemelegítéssel együtt;
+- **Meddig tarthat egy edzés** (percben) — a pihenővel együtt;
 - **Melyik izomnak mi a szintje:** Hangsúly (itt építesz a legtöbbet), Építés (rendesen nő) vagy Tartás (megtartja, amit eddig
   felépítettél).
 Az edzésnapokat az évadodból veszi (az Évad oldalon állítható); ha még nincs évadod, előbb azt kéri, és nem csinál semmit.
@@ -25,10 +25,14 @@ miért nem.
 
 **2. Jelöltek.** Boop két-három **kész tervet** mutat, mindegyiknél a felosztás neve és a leghosszabb nap becsült ideje
 (például „Felső / Alsó · ~58 perc”). Az első az **ajánlott**; mindegyiknél ott van, miért jó (belefér az időbe, minden izom
-legalább hetente kétszer sorra kerül), és egy **„miért?”** lap. Kiválasztod, mikor kezdjétek (alapból jövő hétfőn, vagy ma), és
+legalább hetente kétszer sorra kerül), és egy **„miért?”** lap. Kiválasztod, mikor kezdjétek (alapból jövő hétfőn, vagy ma; ha az éves tervből indítasz, ott a terv szerinti nap is, például „dec. 14-től”), és
 az **Ezzel kezdem** gombbal a blokk létrejön, a megszokott blokképítő pedig megnyílik rajta. Ha mégsem tetszik: **„Mégsem,
 eldobom”** — a blokk és a hozzá készült sablon törlődik, nem készül róla összegzés, mintha meg sem kezdted volna. (Ha már
 rögzítettél benne edzést, nem dobható el — akkor le kell zárni.)
+
+**Az éves tervből előre kitöltve.** Ha a **Következik** kártyáról indítasz, az Alapok már ki vannak töltve a terv blokkjából: a fókusz izmok **Hangsúlyon**, a többi **Tartáson**, a hetek és a kezdés is be van állítva (a „Boop kitöltötte, amit tud; átállíthatod” felirattal). Ha a blokk ideje már elérkezett, a kezdés alapból **Ma** — nem jövő hétfő —, hogy az év ne csússzon. Az elindított blokk az éves tervhez kötődik. Lásd [Éves terv](19-eves-terv.md).
+
+**Az év végi lezárás.** A lezárás blokkjánál nincs szintválasztó: minden izom **Tartáson** van, a blokk 1–3 hetes („2 hetes lezárás”), könnyű szinten, felfutás és külön könnyítő hét nélkül.
 
 **Ha semmi nem fér bele.** Boop nem ad hibás tervet. Azt mondja: „Ebbe az időbe most nem fér bele jó terv”, megmutatja a
 legközelebbit (ha mégis kéred), és **javításokat** ajánl, amelyek megoldanák: több perc (ha 90 percnél több kell, az is
@@ -72,9 +76,7 @@ megjelenik választhatóként), egy megnevezett izom Hangsúly helyett Építés
 Nincs új tábla: a jelöltek csak a kérés idejére léteznek; a kiválasztott terv a megszokott sablonként és blokkként mentődik.
 
 ## Mi jön még
-- **Éves térkép:** Boop egész évre előre megmutatja, melyik blokk milyen hangsúllyal jön és mikor vannak a könnyű hetek — a
-  következő szelet.
-- **Követés:** a blokkváltáskor a térkép szerint az új blokk magától felajánlódik — a szelet utáni.
+- Az éves térkép és a követése már él: lásd [Éves terv](19-eves-terv.md).
 
 ## Mi marad ki
 - Edzettségi szint kérdése — szándékosan kimarad.

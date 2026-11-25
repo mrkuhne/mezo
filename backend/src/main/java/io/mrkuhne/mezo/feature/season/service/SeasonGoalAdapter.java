@@ -156,10 +156,12 @@ public class SeasonGoalAdapter implements SeasonGoalPort {
 
     @Override
     public List<UUID> linkedMesocycles(UUID owner, UUID goalId) {
-        return linkRepository.findByGoalIdAndCreatedByAndDeletedFalseOrderByStartWeekAsc(goalId, owner).stream()
-            .filter(l -> PLAN_MESOCYCLE.equals(l.getPlanType()))
-            .map(GoalPlanLinkEntity::getPlanId)
-            .toList();
+        return mesocycleLinks(owner, goalId).stream().map(GoalPlanLinkEntity::getPlanId).toList();
+    }
+
+    private List<GoalPlanLinkEntity> mesocycleLinks(UUID owner, UUID goalId) {
+        return linkRepository.findByGoalIdAndCreatedByAndDeletedFalseOrderByStartWeekAscCreatedAtAsc(goalId, owner)
+            .stream().filter(l -> PLAN_MESOCYCLE.equals(l.getPlanType())).toList();
     }
 
     @Override
@@ -171,8 +173,35 @@ public class SeasonGoalAdapter implements SeasonGoalPort {
         int goalWeeks = (int) Math.max(1, ChronoUnit.WEEKS.between(goal.getStartDate(), goal.getTargetDate()));
         long fromStart = ChronoUnit.DAYS.between(goal.getStartDate(), mesocycleStart);
         int startWeek = (int) Math.min(goalWeeks, Math.max(1, fromStart / 7 + 1));
+        makeRoom(owner, goalId, mesocycleId, startWeek);
         linkService.attachPlan(owner, goalId, GoalPlanAttachRequest.builder()
             .planType(PLAN_MESOCYCLE).planId(mesocycleId).startWeek(startWeek).build());
+    }
+
+    /**
+     * A newer block takes over the weeks it runs in (mezo-r36n9.113 — the season follows a newly started block): an
+     * overlapping earlier link ends the week before (kept as history), one starting in the same week or later is
+     * superseded (removed). Without this the goal's one-mesocycle-per-week rule would refuse the newer block.
+     */
+    private void makeRoom(UUID owner, UUID goalId, UUID mesocycleId, int startWeek) {
+        int weeks = Math.max(1, linkService.resolvePlan(owner, PLAN_MESOCYCLE, mesocycleId).getWeeks());
+        int endWeek = startWeek + weeks - 1;
+        boolean changed = false;
+        for (GoalPlanLinkEntity l : mesocycleLinks(owner, goalId)) {
+            if (l.getStartWeek() > endWeek || l.getEndWeek() < startWeek) {
+                continue;
+            }
+            if (l.getStartWeek() < startWeek) {
+                l.setEndWeek(startWeek - 1);
+                linkRepository.save(l);
+            } else {
+                linkRepository.delete(l);
+            }
+            changed = true;
+        }
+        if (changed) {
+            linkRepository.flush();
+        }
     }
 
     /**

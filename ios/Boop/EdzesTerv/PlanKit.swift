@@ -253,9 +253,7 @@ func planReasonLine(_ reason: WireReason, target: Int) -> (tone: PlanTone, text:
     case "freq_high":
         guard let v = reason.value else { return nil }
         return (.good, "Minden izom hetente \(v)×, naponta kevés sorozattal.")
-    case "more_warmups":
-        guard let v = reason.value else { return nil }
-        return (.neutral, "Több bemelegítés: hetente kb. \(v) bemelegítő sorozattal több.")
+    // „more_warmups" is deliberately silent: the app never talks about warm-ups (owner, 2026-11-25).
     default: return nil
     }
 }

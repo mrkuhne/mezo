@@ -44,7 +44,7 @@ func pixel(_ img: UIImage, x: Int, y: Int) -> (Int, Int, Int)? {
 }
 
 @Test func outlinedSetCoversTheBlobbingGlyphs() {
-    #expect(NKGlyph.outlined == ["check-ink", "clock-ink", "camera-ink", "book-sage", "mic", "offline", "e-penz", "e-level", "body-cream"])
+    #expect(NKGlyph.outlined == ["check-ink", "clock-ink", "camera-ink", "book-sage", "mic", "offline", "e-penz", "e-level", "body-cream", "cup-cream"])
 }
 
 @Test @MainActor func pillRendersAtAccessibilitySize() {

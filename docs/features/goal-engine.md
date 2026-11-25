@@ -2,7 +2,7 @@
 title: Goal Engine (G5–G6)
 type: feature-domain
 status: done
-updated: 2026-11-20
+updated: 2026-11-25
 tags: [goal, engine, season, backend, tdee, projection, guards, adaptive]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/goal

@@ -258,6 +258,14 @@ struct MealComposerTests {
         await m.setPhoto(Data("nope".utf8))
         #expect(m.problem != nil && !m.hasPhoto)
     }
+
+    /// The Mikor etted row's Tegnap chip (`mezo-r36n9.159`): yesterday at the same clock time, as a chosen moment.
+    @Test func tegnapIsYesterdayAtTheSameClockTime() {
+        let m = model()
+        m.setYesterday()
+        #expect(m.capturedAt == Calendar.current.date(byAdding: .day, value: -1, to: moment))
+        #expect(m.chosenAt != nil)
+    }
 }
 
 struct DraftNoticeTests {
@@ -323,13 +331,5 @@ struct DraftNoticeTests {
         let texts = draftBadges(for: scanned, profile: profile).map(\.text)
         #expect(texts.contains { $0.contains("Tej") && $0.contains("tartalmazza") })
         #expect(texts.contains("Ultra-feldolgozott"))
-    }
-
-    /// The Mikor etted row's Tegnap chip (`mezo-r36n9.159`): yesterday at the same clock time, as a chosen moment.
-    @Test func tegnapIsYesterdayAtTheSameClockTime() {
-        let m = model()
-        m.setYesterday()
-        #expect(m.capturedAt == Calendar.current.date(byAdding: .day, value: -1, to: moment))
-        #expect(m.chosenAt != nil)
     }
 }

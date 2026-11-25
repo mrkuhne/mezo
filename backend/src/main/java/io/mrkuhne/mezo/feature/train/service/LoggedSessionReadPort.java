@@ -48,7 +48,8 @@ public class LoggedSessionReadPort {
         return List.copyOf(out);
     }
 
-    private static LoggedSession gym(WorkoutSessionEntity w) {
+    /** One gym instance flattened — also the session {@link WorkoutEnergyService} asks the watch about. */
+    static LoggedSession gym(WorkoutSessionEntity w) {
         Instant start = w.getStartedAt();
         Instant end = null;
         if (start != null) {

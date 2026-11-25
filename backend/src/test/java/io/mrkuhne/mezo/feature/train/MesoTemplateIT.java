@@ -341,7 +341,8 @@ class MesoTemplateIT extends ApiIntegrationTest {
         HttpHeaders auth = ownerAuthHeaders();
 
         MesocycleResponse run = postForBody(TEMPLATES + "/" + template.getId() + "/start",
-            startRequest(LocalDate.now(), MesoTemplateStartRequest.StatusEnum.PLANNED), auth,
+            // a week out: a planned run due today would start on the next list read (mezo-r36n9.113)
+            startRequest(LocalDate.now().plusDays(7), MesoTemplateStartRequest.StatusEnum.PLANNED), auth,
             HttpStatus.OK, MesocycleResponse.class);
 
         assertThat(run.getStatus()).isEqualTo(MesocycleResponse.StatusEnum.PLANNED);

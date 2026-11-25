@@ -13,6 +13,7 @@ import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.service.MesoTemplateService;
 import io.mrkuhne.mezo.feature.train.service.TrainService;
+import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.MesoTemplatePopulator;
@@ -40,6 +41,7 @@ class MesocycleGateIT extends AbstractIntegrationTest {
 
     @Autowired private MesoTemplateService mesoTemplateService;
     @Autowired private TrainService trainService;
+    @Autowired private WorkoutService workoutService;
     @Autowired private MesocycleRepository mesocycleRepository;
     @Autowired private MesoTemplatePopulator templatePopulator;
     @Autowired private TrainPopulator trainPopulator;
@@ -95,6 +97,18 @@ class MesocycleGateIT extends AbstractIntegrationTest {
         MesocycleEntity planned = trainPopulator.createMesocycle(owner, "Tervezett blokk", "planned");
 
         assertThatThrownBy(() -> trainService.activateMesocycle(owner, planned.getId())).hasMessage("SEASON_REQUIRED");
+    }
+
+    @Test
+    void plannedBlockWithoutSeasonStaysPlanned() {
+        UUID owner = databasePopulator.populateUser("gate-due-planned@test.local");
+        MesocycleEntity planned = trainPopulator.createMesocycle(owner, "Esedékes blokk", "planned");
+        assertThat(planned.getStartDate()).isBeforeOrEqualTo(LocalDate.now());
+
+        // the today read starts due planned blocks, but never past the season gate — and never fails because of it
+        workoutService.getToday(owner, null);
+
+        assertThat(mesocycleRepository.findById(planned.getId()).orElseThrow().getStatus()).isEqualTo("planned");
     }
 
     @Test

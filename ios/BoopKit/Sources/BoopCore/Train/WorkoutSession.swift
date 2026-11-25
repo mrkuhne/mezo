@@ -95,7 +95,7 @@ public struct SessionExercise: Codable, Sendable, Equatable, Identifiable {
     public let id: UUID
     public var name: String
     public var muscle: String
-    /// What the plan asked for, warmups first.
+    /// What the plan asked for — never a warm-up (see `PlannedExercise.sets`).
     public var planned: [PrescribedSet]
     /// What has actually been done.
     public var logged: [SessionSet]
@@ -234,7 +234,9 @@ public struct WorkoutSession: Codable, Sendable, Equatable {
         }
         // A workout already open on the server: its logged sets come back into the session, so
         // reopening the player continues rather than starting again.
-        for set in today.open?.sets ?? [] where map[set.exerciseId] != nil {
+        // A warm-up logged by an older build is not brought back: the app no longer shows warm-ups, and counting it
+        // would put the plan one set out of step.
+        for set in today.open?.sets ?? [] where map[set.exerciseId] != nil && set.kind != .warmup {
             map[set.exerciseId]?.logged.append(
                 SessionSet(id: set.id, kind: set.kind, kg: set.weightKg, reps: set.reps ?? 0,
                            rir: set.rir, at: set.doneAt ?? startedAt, technique: set.technique, legs: set.legs))

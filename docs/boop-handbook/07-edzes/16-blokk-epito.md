@@ -102,6 +102,8 @@ sárga jelzés szól. Az **edzésidő a pihenőkkel együtt** számolt. Ha az é
 Az építő és a pakli abból a gombból, illetve kártyából **nagyul ki**, amire koppintottál, és lefelé húzva oda zsugorodik vissza; az
 építő már a Blokk fül megnyitásakor betölt a háttérben, így várakozás nélkül nyílik.
 
+**A tervezett blokk a saját napján indul (éves terv).** Ha az új blokkot „Jövő hétfőn” kezdéssel hoztad létre, a megadott napon tényleg elindul, és onnantól az a futó blokkod (az előzőt lezárja) — de csak ha az évad megengedi, és csak a futó blokknál későbbi tervezett blokkot indítja el. Ha a blokk az éves terv blokkja volt, és még el sem kezdted, a **„Mégsem, eldobom”** a blokkot visszaállítja „tervezett”-re az éves tervben; ha az éves tervben **kihagyod** ezt a blokkot, a hozzá készült, még el nem kezdett tervezett blokk **törlődik** (a szerkesztéseid vele együtt). Lásd [Éves terv](19-eves-terv.md).
+
 Egyetlen fő gomb van: ha változtattál valamit, **„Mentés”** — így soha nem kell elfogadnod egy sorozat-javaslatot ahhoz,
 hogy egy beállítást elments; ha nincs mit menteni, de valamelyik izom kilóg, **„Igazítsd a sávba”** (minden kilógó izomra
 alkalmazza a javaslatot). Ha a „Két sorozat bukásig” módról váltanál, előtte szól, hogy a gyakorlatok két sorozaton maradnak. Kisebb telefonon,
@@ -155,7 +157,7 @@ ha a „Nincs mit menteni” felirat nem fér el a gombon, helyette „Nincs vá
 - A technika és a kihívás edzés közben (lépésenként mit csinálj, a legyőzendő szám) — külön jegy, a technika-tervező után.
 - **Lefedettség-jelzések:** az építő szól, ha a blokkból hiányzik egy kiegészítő mozgás (például hátsó vállat vagy alkart érő
   gyakorlat), és egy **„Hozzáadom”** gombbal ugyanaz a hozzáadó lap nyílik meg — a következő jegy.
-- Éves térkép és annak követése (a blokkok előre tervezett sora) — a tervajánló következő szeletei.
+- Az éves térkép és a követése már él: lásd [Éves terv](19-eves-terv.md).
 
 ## Mi marad ki
 - Napot hozzáadni, átnevezni vagy másik napra áthelyezni még nem lehet (ehhez a szerveren is kell egy kiegészítés).

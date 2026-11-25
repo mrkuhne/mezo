@@ -174,7 +174,8 @@ final class EdzesStore {
         do {
             let result = try await client.changeExercise(
                 workoutId: workoutId, replacing: id, with: replacement,
-                warmupSets: old?.planned.filter { $0.kind == .warmup }.count ?? plan.warmupCount,
+                // The app never holds warm-ups, so the server's own count goes back untouched.
+                warmupSets: plan.warmupCount,
                 workingSets: max(1, old?.planned.filter { $0.kind == .working }.count ?? plan.workingCount),
                 repMin: plan.repMin, repMax: plan.repMax, targetRIR: plan.targetRIR,
                 forWholeBlock: forWholeBlock)
@@ -305,6 +306,27 @@ final class EdzesStore {
 
     /// The workout is over: the session leaves the phone's memory and its file — and stays, as the day's result,
     /// in the finished file until the next one replaces it.
+    /// What the server says this finished workout burned (mezo-r36n9.170): its estimate at once, the watch's figure
+    /// once the watch's workout has synced. Only today's completed instance of the same plan day counts — never a
+    /// number from another workout.
+    func energy(for session: WorkoutSession) -> WorkoutEnergy? {
+        guard let c = today?.value.completed, c.status == .completed, c.date == day else { return nil }
+        if let mine = session.templateSessionId, let theirs = c.templateSessionId, mine != theirs { return nil }
+        return c.energy
+    }
+
+    /// The finish goes out when the ceremony opens (mezo-r36n9.170), so an app closed on the ceremony comes back with
+    /// a session the server has already completed. When today's completed instance of the same plan day finished
+    /// after this session started and nothing is open, it is this session: end it, so „Folytatom" never offers a
+    /// workout whose sets the server would refuse. Never called while the ceremony is on screen.
+    func endIfFinishedOnServer() {
+        guard let running = session, let t = today?.value, t.open == nil,
+              let c = t.completed, c.status == .completed, c.date == day,
+              running.templateSessionId == nil || running.templateSessionId == c.templateSessionId,
+              let finishedAt = c.finishedAt, finishedAt >= running.startedAt else { return }
+        endWorkout()
+    }
+
     func endWorkout() {
         if let session {
             finished = FinishedWorkout(session: session, finishedAt: clock())
