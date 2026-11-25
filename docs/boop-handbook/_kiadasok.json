@@ -917,7 +917,7 @@
     "mi_valtozott": "A Mai edzés kártyája alatt új sor: „Másik napot csinálok ma”. A lapon a hét még nyitott edzésnapjai: elöl a kimaradtak (a legutóbbi az első), utánuk a hét későbbi napjai; pihenőnap és már megcsinált nap nincs rajta. A választott nap a kártyán PÓTLÁS felirattal jelenik meg, az Indítás a szokásos eligazítással és lejátszóval indítja; „Mégis a mai napot csinálom” visszavált. A heti csempéken a pipa a ténylegesen megcsinált napra kerül (a szerdán megcsinált kedd a keddet pipálja), a kész kártya azt nevezi meg, amit ma csináltál. Ha kilépsz és visszajössz futó pótló edzés közben, a kártya a pótolt napot mutatja, net nélkül is.",
     "ellenorzes": "A mag tesztjei (1046) natívan lefutottak; az app lefordult, a szimulátorban a sor, a lap és a pótló kártya látszik (képernyőképek a docs/superpowers/specs/assets/masik-nap mappában); független kódátnézés három találatát javítottuk; a telefonos tesztkészlet és a telepítés a másik, Xcode-os gépen (mezo-r36n9.150)."
   },
-  "76a19db21": {
+  "7aa0550b3": {
     "cim": "Nincs több bemelegítő szett, és kalória az edzés végén",
     "datum": "2026-11-25",
     "verzio": "",
