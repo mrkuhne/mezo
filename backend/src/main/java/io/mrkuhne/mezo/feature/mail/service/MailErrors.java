@@ -10,6 +10,9 @@ public final class MailErrors {
     public static final String AUTH_FAILED = "MAIL_AUTH_FAILED";
     public static final String RUN_COOLDOWN = "MAIL_RUN_COOLDOWN";
     public static final String NOT_CONNECTED = "MAIL_NOT_CONNECTED";
+    public static final String UNREACHABLE = "MAIL_UNREACHABLE";
+    public static final String GOOGLE_NOT_CONFIGURED = "MAIL_GOOGLE_NOT_CONFIGURED";
+    public static final String GOOGLE_REDIRECT_INVALID = "MAIL_GOOGLE_REDIRECT_INVALID";
 
     private MailErrors() {
     }
@@ -27,5 +30,22 @@ public final class MailErrors {
     public static SystemRuntimeErrorException runCooldown() {
         return new SystemRuntimeErrorException(SystemMessage.error(RUN_COOLDOWN).build(),
             HttpStatus.TOO_MANY_REQUESTS);
+    }
+
+    /** 502 — Google (or the mail server) cannot be reached right now. */
+    public static SystemRuntimeErrorException unreachable() {
+        return new SystemRuntimeErrorException(SystemMessage.error(UNREACHABLE).build(), HttpStatus.BAD_GATEWAY);
+    }
+
+    /** 409 — Sign in with Google is not set up on the server (no client id). */
+    public static SystemRuntimeErrorException googleNotConfigured() {
+        return new SystemRuntimeErrorException(SystemMessage.error(GOOGLE_NOT_CONFIGURED).build(),
+            HttpStatus.CONFLICT);
+    }
+
+    /** 400 — the redirect is not the one the iOS client allows. */
+    public static SystemRuntimeErrorException googleRedirectInvalid() {
+        return new SystemRuntimeErrorException(SystemMessage.error(GOOGLE_REDIRECT_INVALID).build(),
+            HttpStatus.BAD_REQUEST);
     }
 }

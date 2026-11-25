@@ -831,17 +831,17 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   - **controllers→contract:** `MailController`→`MailApi`
   - **mappers:** `MailMapper`
   - **config:** `MailAsyncConfig`, `MailProperties`
-  - **other:** `BulkDetector`, `CarrierRules`, `ClassifiedMail`, `ClassifyPrompt`, `FetchedMail`, `Group`,
-    `ImapMailReader`, `JsonLdReader`, `MailFence`, `MailHeaders`, `MailOutputValidator`, `MailReader`, `MailRedactor`,
-    `MailRules`, `ParcelState`, `RedactedMail`, `RuleVerdict`, `ScorePrompt`, `ScoredDeal`, `ScreenPrompt`,
-    `ScreenVerdict`, `SenderPrior`, `SenderRule`, `SensitiveSeed`
-- **Contract** `api/feature/mail/mail.yml` — 8 operations
+  - **other:** `BulkDetector`, `CarrierRules`, `ClassifiedMail`, `ClassifyPrompt`, `FetchedMail`, `GmailApiReader`,
+    `GoogleOAuthClient`, `Group`, `ImapMailReader`, `JsonLdReader`, `MailFence`, `MailHeaders`, `MailOutputValidator`,
+    `MailReader`, `MailRedactor`, `MailRules`, `MimeMailExtractor`, `ParcelState`, `RedactedMail`, `RuleVerdict`,
+    `ScorePrompt`, `ScoredDeal`, `ScreenPrompt`, `ScreenVerdict`, `SenderPrior`, `SenderRule`, `SensitiveSeed`
+- **Contract** `api/feature/mail/mail.yml` — 9 operations
   - **endpoints:** GET /api/mail/mailbox · PUT /api/mail/mailbox · DELETE /api/mail/mailbox ·
-    POST /api/mail/mailbox/run · GET /api/mail/digest · POST /api/mail/items/{id}/feedback · GET /api/mail/rules ·
-    PUT /api/mail/rules
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/mail` — 8 IT + 10 unit
-  - **ITs:** `ImapMailReaderIT`, `MailApiIT`, `MailCostCapIT`, `MailDigestPipelineIT`, `MailIntakeIT`,
-    `MailJobEnabledIT`, `MailJobSwitchIT`, `MailSchemaIT`
+    POST /api/mail/mailbox/google · POST /api/mail/mailbox/run · GET /api/mail/digest ·
+    POST /api/mail/items/{id}/feedback · GET /api/mail/rules · PUT /api/mail/rules
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/mail` — 10 IT + 12 unit
+  - **ITs:** `ImapMailReaderIT`, `MailApiIT`, `MailCostCapIT`, `MailDigestPipelineIT`, `MailGoogleUnconfiguredIT`,
+    `MailIntakeGoogleIT`, `MailIntakeIT`, `MailJobEnabledIT`, `MailJobSwitchIT`, `MailSchemaIT`
   - **populators:** `DatabasePopulator`, `LlmLogPopulator`, `MailPopulator`, `UserPopulator`
 
 ### meal

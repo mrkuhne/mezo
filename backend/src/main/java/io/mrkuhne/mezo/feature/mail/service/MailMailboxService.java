@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.mail.service;
 import io.mrkuhne.mezo.feature.mail.config.MailProperties;
 import io.mrkuhne.mezo.feature.mail.entity.MailMailboxEntity;
 import io.mrkuhne.mezo.feature.mail.entity.MailRunEntity;
+import io.mrkuhne.mezo.feature.mail.service.google.GoogleOAuthClient;
 import io.mrkuhne.mezo.feature.mail.service.imap.MailReader;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -30,10 +31,12 @@ import org.springframework.stereotype.Service;
 public class MailMailboxService {
 
     /** The mailbox as the API shows it; {@code state} is {@code none} when there is no row. */
-    public record MailboxView(String address, String state, Instant lastRunAt, Integer lastFetched) {
+    public record MailboxView(String address, String state, Instant lastRunAt, Integer lastFetched, String kind,
+                              String googleClientId) {
     }
 
     private final MailReader reader;
+    private final GoogleOAuthClient google;
     private final MailCredentialCipher cipher;
     private final MailMailboxStore store;
     private final MailRunner runner;
@@ -60,7 +63,29 @@ public class MailMailboxService {
         return view(owner, Optional.of(m));
     }
 
+    /**
+     * Sign in with Google (spec §12): the phone's one-time code is exchanged HERE (no secret, PKCE), the refresh
+     * token is sealed into the secret columns and never returned; the address is the verified ID-token email.
+     * 409 when no client id is set up, 400 when the redirect is not the iOS client's, 422 when Google refuses.
+     */
+    public MailboxView connectGoogle(UUID owner, String code, String codeVerifier, String redirectUri) {
+        MailProperties.Google cfg = properties.google();
+        if (!cfg.configured()) {
+            throw MailErrors.googleNotConfigured();
+        }
+        String expected = cfg.expectedRedirectUri();
+        if (expected == null || !expected.equals(redirectUri)) {
+            throw MailErrors.googleRedirectInvalid();
+        }
+        GoogleOAuthClient.Tokens tokens = google.exchange(code, codeVerifier, redirectUri);
+        MailMailboxEntity m = store.connect(owner, MailIntakeStore.KIND_GOOGLE, tokens.email(),
+            cipher.seal(tokens.refreshToken()));
+        health.refresh();
+        return view(owner, Optional.of(m));
+    }
+
     public MailboxView disconnect(UUID owner) {
+        revokeAtGoogle(store.find(owner));
         Optional<MailMailboxEntity> m = store.disconnect(owner);
         health.refresh();
         return view(owner, m);
@@ -87,12 +112,26 @@ public class MailMailboxService {
         }
     }
 
+    /** A Google mailbox is revoked at Google before its token is nulled; best effort, a failure never blocks. */
+    private void revokeAtGoogle(Optional<MailMailboxEntity> mailbox) {
+        mailbox.filter(m -> MailIntakeStore.KIND_GOOGLE.equals(m.getKind()) && m.getSecretCipher() != null
+            && m.getSecretNonce() != null).ifPresent(m -> {
+                try {
+                    google.revoke(cipher.open(new MailCredentialCipher.Sealed(m.getSecretCipher(),
+                        m.getSecretNonce())));
+                } catch (RuntimeException e) {
+                    log.warn("Google revoke skipped for owner {}: {}", m.getCreatedBy(), e.getClass().getSimpleName());
+                }
+            });
+    }
+
     private MailboxView view(UUID owner, Optional<MailMailboxEntity> mailbox) {
+        String clientId = properties.google().configured() ? properties.google().clientId().strip() : null;
         if (mailbox.isEmpty()) {
-            return new MailboxView(null, "none", null, null);
+            return new MailboxView(null, "none", null, null, null, clientId);
         }
         MailMailboxEntity m = mailbox.get();
         Integer fetched = store.latestRun(owner).map(MailRunEntity::getFetched).orElse(null);
-        return new MailboxView(m.getAddress(), m.getState(), m.getLastRunAt(), fetched);
+        return new MailboxView(m.getAddress(), m.getState(), m.getLastRunAt(), fetched, m.getKind(), clientId);
     }
 }

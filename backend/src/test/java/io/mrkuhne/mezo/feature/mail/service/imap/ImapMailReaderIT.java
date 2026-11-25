@@ -42,7 +42,7 @@ class ImapMailReaderIT {
         greenMail.start();
         user = greenMail.setUser(ADDRESS, ADDRESS, PASSWORD);
         MailProperties props = new MailProperties("k", "0 0 8,15 * * *", "Europe/Budapest", 0.15, 7, 8, 36, 3, 90, 8,
-            6000, 30, 10, "127.0.0.1", greenMail.getImaps().getPort());
+            6000, 30, 10, "127.0.0.1", greenMail.getImaps().getPort(), MailProperties.Google.of(null));
         Properties extra = new Properties();
         extra.put("mail.imaps.ssl.trust", "*"); // GreenMail's self-signed certificate; test only
         extra.put("mail.imaps.ssl.checkserveridentity", "false");
@@ -120,7 +120,7 @@ class ImapMailReaderIT {
     @Test
     void unreachableServerIsMailUnreachable() {
         MailProperties props = new MailProperties("k", "0 0 8,15 * * *", "Europe/Budapest", 0.15, 7, 8, 36, 3, 90, 8,
-            6000, 30, 10, "127.0.0.1", 1);
+            6000, 30, 10, "127.0.0.1", 1, MailProperties.Google.of(null));
         ImapMailReader dead = new ImapMailReader(props, new Properties(), CLOCK);
         assertThatThrownBy(() -> dead.verify(ADDRESS, PASSWORD))
             .isInstanceOfSatisfying(SystemRuntimeErrorException.class,

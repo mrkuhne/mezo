@@ -4,6 +4,9 @@ import io.mrkuhne.mezo.feature.mail.config.MailProperties;
 import io.mrkuhne.mezo.feature.mail.entity.MailMailboxEntity;
 import io.mrkuhne.mezo.feature.mail.service.MailIntakeStore.NewMessage;
 import io.mrkuhne.mezo.feature.mail.service.MailIntakeStore.RunOutcome;
+import io.mrkuhne.mezo.feature.mail.service.google.GmailApiReader;
+import io.mrkuhne.mezo.feature.mail.service.google.GmailApiReader.GmailBatch;
+import io.mrkuhne.mezo.feature.mail.service.google.GoogleOAuthClient;
 import io.mrkuhne.mezo.feature.mail.service.imap.FetchedMail;
 import io.mrkuhne.mezo.feature.mail.service.imap.ImapMailReader;
 import io.mrkuhne.mezo.feature.mail.service.imap.MailReader;
@@ -69,15 +72,20 @@ public class MailIntakeService {
     }
 
     private final MailReader reader;
+    private final GoogleOAuthClient oauth;
+    private final GmailApiReader gmail;
     private final MailIntakeStore store;
     private final MailCredentialCipher cipher;
     private final MailProperties properties;
     private final MailHealth health;
     private final ObjectProvider<Clock> clock;
 
-    public MailIntakeService(MailReader reader, MailIntakeStore store, MailCredentialCipher cipher,
-                             MailProperties properties, MailHealth health, ObjectProvider<Clock> clock) {
+    public MailIntakeService(MailReader reader, GoogleOAuthClient oauth, GmailApiReader gmail,
+                             MailIntakeStore store, MailCredentialCipher cipher, MailProperties properties,
+                             MailHealth health, ObjectProvider<Clock> clock) {
         this.reader = reader;
+        this.oauth = oauth;
+        this.gmail = gmail;
         this.store = store;
         this.cipher = cipher;
         this.properties = properties;
@@ -113,8 +121,12 @@ public class MailIntakeService {
             String password = cipher.open(new MailCredentialCipher.Sealed(mailbox.getSecretCipher(),
                 mailbox.getSecretNonce()));
             List<SenderRule> rules = store.ownerRules(userId);
-            for (String folder : FOLDERS) {
-                fetched += readFolder(userId, mailbox, password, folder, rules, stored);
+            if (MailIntakeStore.KIND_GOOGLE.equals(mailbox.getKind())) {
+                fetched += readGoogle(userId, mailbox, password, rules, stored);
+            } else {
+                for (String folder : FOLDERS) {
+                    fetched += readFolder(userId, mailbox, password, folder, rules, stored);
+                }
             }
         } catch (SystemRuntimeErrorException e) {
             errorCode = e.getMessages().isEmpty() ? null : e.getMessages().get(0).getCode();
@@ -140,24 +152,43 @@ public class MailIntakeService {
         if (batch.mails().isEmpty()) {
             return 0; // the cursor stays as it is (a UIDVALIDITY change is simply rescanned next run)
         }
+        long highest = batch.mails().stream().mapToLong(FetchedMail::uid).max().orElse(0);
+        return persist(userId, mailbox, folder, batch.uidValidity(), highest, batch.mails(), rules, stored);
+    }
+
+    /**
+     * The Gmail API path (spec §12): refresh the access token from the sealed refresh token, read Inbox + Spam from
+     * the stored historyId, then the SAME store / rules / redaction path as IMAP. The cursor (folder
+     * {@code gmail-api}, {@code last_uid} = historyId) advances even on an empty run.
+     */
+    private int readGoogle(UUID userId, MailMailboxEntity mailbox, String refreshToken, List<SenderRule> rules,
+                           List<IntakedMail> stored) {
+        String access = oauth.refresh(refreshToken).token();
+        long since = store.cursor(mailbox.getId(), MailIntakeStore.GMAIL_CURSOR).lastUid();
+        GmailBatch batch = gmail.read(access, since, BATCH_MAX);
+        return persist(userId, mailbox, MailIntakeStore.GMAIL_CURSOR, 0, batch.historyId(), batch.mails(), rules,
+            stored);
+    }
+
+    /** One short transaction: the batch and its cursor; returns how many mails were fetched. */
+    private int persist(UUID userId, MailMailboxEntity mailbox, String cursorFolder, long uidValidity, long cursor,
+                        List<FetchedMail> mails, List<SenderRule> rules, List<IntakedMail> stored) {
         List<Prepared> prepared = new ArrayList<>();
-        long highest = 0;
-        for (FetchedMail mail : batch.mails()) {
-            highest = Math.max(highest, mail.uid()); // the cursor moves past a mail even when it is skipped
-            try {
+        for (FetchedMail mail : mails) {
+            try { // the cursor moves past a mail even when it is skipped
                 prepared.add(prepare(mail, rules));
             } catch (RuntimeException e) {
-                LOG.warn("mail uid {} in {} skipped: {}", mail.uid(), folder, e.getClass().getSimpleName());
+                LOG.warn("mail uid {} in {} skipped: {}", mail.uid(), mail.folder(), e.getClass().getSimpleName());
             }
         }
-        List<Optional<UUID>> ids = store.storeBatch(userId, mailbox.getId(), folder, batch.uidValidity(), highest,
+        List<Optional<UUID>> ids = store.storeBatch(userId, mailbox.getId(), cursorFolder, uidValidity, cursor,
             prepared.stream().map(Prepared::row).toList());
         for (int i = 0; i < prepared.size(); i++) {
             Prepared p = prepared.get(i);
             ids.get(i).ifPresent(id -> stored.add(new IntakedMail(id, p.mail().headers(), p.rawText(), p.redacted(),
                 p.verdict())));
         }
-        return batch.mails().size();
+        return mails.size();
     }
 
     private record Prepared(FetchedMail mail, String rawText, RedactedMail redacted, RuleVerdict verdict,
@@ -171,7 +202,8 @@ public class MailIntakeService {
         RuleVerdict verdict = MailRules.decide(h, rawText, redacted, rules);
         boolean sensitive = verdict instanceof RuleVerdict.Sensitive;
         String messageId = mail.messageId() == null || mail.messageId().isBlank()
-            ? "<nomsgid:" + mail.uidValidity() + "." + mail.uid() + "@" + mail.folder() + ">"
+            ? "<nomsgid:" + (mail.gmMsgId() != null && mail.uid() == 0 ? "gm" + mail.gmMsgId()
+                : mail.uidValidity() + "." + mail.uid() + "@" + mail.folder()) + ">"
             : mail.messageId().strip();
         String hashed = sensitive ? h.from() + "\n" + h.subject() : redacted.text();
         NewMessage row = new NewMessage(mail.gmMsgId(), cut(messageId, 998), sha256(messageId + "\n" + normalize(hashed)),

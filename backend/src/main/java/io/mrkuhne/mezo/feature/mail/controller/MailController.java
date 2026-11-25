@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.mail.controller;
 import io.mrkuhne.mezo.api.controller.MailApi;
 import io.mrkuhne.mezo.api.dto.MailDigestResponse;
 import io.mrkuhne.mezo.api.dto.MailFeedbackRequest;
+import io.mrkuhne.mezo.api.dto.MailGoogleConnectRequest;
 import io.mrkuhne.mezo.api.dto.MailMailboxRequest;
 import io.mrkuhne.mezo.api.dto.MailMailboxResponse;
 import io.mrkuhne.mezo.api.dto.MailRulesRequest;
@@ -50,6 +51,12 @@ public class MailController implements MailApi {
     public MailMailboxResponse putMailMailbox(MailMailboxRequest request) {
         return mapper.mailbox(mailbox.connect(currentUserId.get(), request.getAddress().strip(),
             request.getAppPassword()));
+    }
+
+    @Override
+    public MailMailboxResponse connectMailGoogle(MailGoogleConnectRequest request) {
+        return mapper.mailbox(mailbox.connectGoogle(currentUserId.get(), request.getCode(),
+            request.getCodeVerifier(), request.getRedirectUri()));
     }
 
     @Override

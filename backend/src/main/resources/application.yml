@@ -474,6 +474,9 @@ mezo:
   mail:
     enabled: false
     secret-key: ${MEZO_MAIL_SECRET_KEY:}
+    # Sign in with Google (spec §12): the PUBLIC iOS OAuth client id (no secret); blank = the button is off.
+    google:
+      client-id: ${MEZO_MAIL_GOOGLE_CLIENT_ID:}
     cron: "0 0 8,15 * * *"
     zone: Europe/Budapest
     daily-usd-cap: 0.15

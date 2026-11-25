@@ -36,12 +36,29 @@ paths:
     delete:
       tags: [Mail]
       operationId: deleteMailMailbox
-      summary: Disconnect — the state becomes `disconnected` and both secret columns are emptied; the row stays
+      summary: Disconnect — a Google mailbox is first revoked at Google (best effort); the state becomes `disconnected` and both secret columns are emptied; the row stays
       responses:
         '200':
           description: The disconnected mailbox
           content: { application/json: { schema: { $ref: '#/components/schemas/MailMailboxResponse' } } }
         '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/mail/mailbox/google:
+    post:
+      tags: [Mail]
+      operationId: connectMailGoogle
+      summary: Connect the owner's own Gmail with Google sign-in — the phone sends the one-time code once; the server exchanges it, seals the refresh token and never returns it
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/MailGoogleConnectRequest' } } }
+      responses:
+        '200':
+          description: Connected (kind `google`, address = the Google account's verified email)
+          content: { application/json: { schema: { $ref: '#/components/schemas/MailMailboxResponse' } } }
+        '400': { description: 'Validation failure, or MAIL_GOOGLE_REDIRECT_INVALID — the redirect is not the iOS client one', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: 'Missing/invalid token', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '409': { description: 'MAIL_GOOGLE_NOT_CONFIGURED — the server has no Google client id; nothing was stored', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '422': { description: 'MAIL_AUTH_FAILED — Google refused the exchange; nothing was stored', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '502': { description: 'MAIL_UNREACHABLE — Google cannot be reached; nothing was stored', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/mail/mailbox/run:
     post:
       tags: [Mail]
@@ -119,10 +136,32 @@ components:
           minLength: 1
           maxLength: 100
           description: The Gmail app password. Never returned, logged or echoed in an error.
+    MailGoogleConnectRequest:
+      type: object
+      required: [code, codeVerifier, redirectUri]
+      properties:
+        code:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 2048
+          description: The one-time authorization code from the Google sign-in (PKCE). Never logged or echoed.
+        codeVerifier:
+          type: string
+          writeOnly: true
+          minLength: 43
+          maxLength: 128
+          description: The PKCE code verifier. Never logged or echoed.
+        redirectUri:
+          type: string
+          maxLength: 512
+          description: 'Must equal com.googleusercontent.apps.<client id prefix>:/oauth2redirect'
     MailMailboxResponse:
       type: object
       required: [state]
       properties:
+        kind: { type: string, nullable: true, description: 'imap | google; null when no mailbox row exists' }
+        googleClientId: { type: string, nullable: true, description: 'The public iOS OAuth client id for Google sign-in; null when the server has none configured' }
         address: { type: string, nullable: true }
         state: { type: string, description: 'none | connected | silent | auth_failed | disconnected' }
         lastRunAt: { type: string, format: date-time, nullable: true }
