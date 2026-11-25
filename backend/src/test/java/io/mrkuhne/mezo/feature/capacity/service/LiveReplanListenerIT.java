@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.feature.capacity.entity.CapacityLiveStateEntity;
 import io.mrkuhne.mezo.feature.capacity.entity.CapacityProposalEntity;
 import io.mrkuhne.mezo.feature.capacity.repository.CapacityLiveStateRepository;
 import io.mrkuhne.mezo.feature.capacity.repository.CapacityProposalRepository;
+import io.mrkuhne.mezo.feature.wearable.service.DailyMetricsIngestedEvent;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.feature.wearable.config.WearableProperties;
@@ -53,6 +54,7 @@ class LiveReplanListenerIT extends AbstractIntegrationTest {
     @Autowired private WearableProperties wearable;
     @Autowired private JdbcTemplate jdbc;
     @Autowired private DayAdjustmentServiceIT.MutableClock clock;
+    @Autowired private LiveReplanListener listener;
 
     private final LocalDate monday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         .plusWeeks(2);
@@ -144,6 +146,40 @@ class LiveReplanListenerIT extends AbstractIntegrationTest {
         CapacityProposalEntity p = openToday(owner).get(0);
         assertThat(p.getTitle()).isNotBlank();   // the template's words, at once
         assertThat(p.getFingerprint()).isNotNull();
+    }
+
+    @Test
+    void alreadyHeavyAtFirstTriggerProposesWhenWeekHasProposals() {
+        UUID owner = owner("live-first");
+        // the week was already read: it holds a proposal (another day), so the week read will not generate again
+        CapacityProposalEntity other = new CapacityProposalEntity();
+        other.setCreatedBy(owner);
+        other.setWeekStart(monday);
+        AdjustmentPayload step = new AdjustmentPayload.ShiftBedtime(monday.plusDays(5), LocalTime.of(23, 0));
+        other.setDay(step.day());
+        other.setKind(step.kind().name());
+        other.setBundle(AdjustmentDraft.toBundle(List.of(AdjustmentDraft.of(step))));
+        other.setTitle("például: később fekszel");
+        other.setGeneratorVersion((short) 1);
+        other.setStatus("open");
+        proposals.saveAndFlush(other);
+        assertThat(state(owner)).isNull();
+
+        // the day's first trigger already finds it packed: compared with an implicit "rendben", it is worse
+        packed(owner);
+
+        await().atMost(30, SECONDS).untilAsserted(() -> assertThat(openToday(owner)).isNotEmpty());
+        assertThat(state(owner).getProposedAt()).isEqualTo(seven);
+        assertThat(LiveReplanListener.step(state(owner).getVerdict())).isGreaterThanOrEqualTo(2);
+    }
+
+    @Test
+    void healthBackfillOfOldDaysRunsNoPass() {
+        UUID owner = owner("live-backfill");
+        listener.onDailyMetrics(new DailyMetricsIngestedEvent(owner, List.of(today.minusDays(5), today.minusDays(4))));
+        await().during(2, SECONDS).atMost(5, SECONDS).untilAsserted(() -> assertThat(state(owner)).isNull());
+        listener.onDailyMetrics(new DailyMetricsIngestedEvent(owner, List.of(today.minusDays(1))));
+        await().atMost(30, SECONDS).untilAsserted(() -> assertThat(state(owner)).isNotNull());
     }
 
     @Test

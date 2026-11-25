@@ -227,6 +227,13 @@ public struct NKWallRows: View {
                         }
                         .buttonStyle(.plain)
                     }
+                    // the card's "no" (Átrendezés „Most nem") as a quiet link; the pressed label goes back to the wiring
+                    if let sec = item.secondary {
+                        Button { onAct(item.id, sec) } label: {
+                            Text(sec).nkFont(13.5, .medium).foregroundStyle(.white.opacity(0.7))
+                        }
+                        .buttonStyle(.plain)
+                    }
                     Button { onWhy(item.id) } label: {
                         Text("miért?").nkFont(13).foregroundStyle(.white.opacity(0.5))
                             .underline(true, pattern: .dot)

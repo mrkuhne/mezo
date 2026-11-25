@@ -5,10 +5,20 @@ import Foundation
 // second card surface and no notification policy of its own: only a today-proposal whose session is under three
 // hours away is `.expires`, so only it may ring, inside the wall's own two-a-day cap (decision #35).
 
-/// Candidate ids: the week card, and the urgent today card (keyed by its proposal, so a new one is a new card).
+/// Candidate ids: the week card (keyed by the set of open proposals, so a proposal that arrives after he settled the
+/// card — the live loop's today-change — brings it back), and the urgent today card (keyed by its proposal).
 public enum KapacitasWallID {
-    public static let week = "kapacitas-het"
+    public static let week = "kapacitas-het-"
     public static let today = "kapacitas-ma-"
+    /// „Most nem": the card leaves the wall for the day, nothing opens.
+    public static let notNow = "Most nem"
+
+    /// `kapacitas-het-<FNV-1a of the sorted open ids>` — stable across launches (the wall's „acted" set is stored).
+    static func week(_ open: [KapacitasProposal]) -> String {
+        var h: UInt32 = 2_166_136_261
+        for b in open.map(\.id).sorted().joined(separator: ",").utf8 { h = (h ^ UInt32(b)) &* 16_777_619 }
+        return week + String(h, radix: 16)
+    }
 }
 
 /// The Kapacitás source's candidate:
@@ -36,7 +46,7 @@ public func kapacitasWallCandidates(week: KapacitasWeek?, now: Date, todaySessio
             text: [verdictSentence(week, day: today, today: today), "Az edzés előtt még átrendezném."]
                 .compactMap { $0 }.joined(separator: " "),
             sub: p.title,
-            primary: "Megnézem",
+            primary: "Megnézem", secondary: KapacitasWallID.notNow,
             settled: "Átrendezés megnézve",
             why: p.why.first ?? why)]
     }
@@ -45,10 +55,10 @@ public func kapacitasWallCandidates(week: KapacitasWeek?, now: Date, todaySessio
     let lead = verdictSentence(week, day: top.day, today: today)
         ?? kapacitasHardestDay(week).flatMap { verdictSentence(week, day: week.days[$0].date, today: today) }
     return [WallCandidate(
-        id: KapacitasWallID.week, role: .improves, kind: .teendo, area: WallSources.kapacitas, rank: 0.85,
+        id: KapacitasWallID.week(open), role: .improves, kind: .teendo, area: WallSources.kapacitas, rank: 0.85,
         text: [lead, count].compactMap { $0 }.joined(separator: " "),
         sub: kapacitasMovesInBrief(open),
-        primary: "Megnézem",
+        primary: "Megnézem", secondary: KapacitasWallID.notNow,
         settled: "Átrendezés megnézve",
         why: why)]
 }

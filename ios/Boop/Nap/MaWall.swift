@@ -125,10 +125,10 @@ struct MaWall: View {
                                onLater: { settle(id: "checkin", line: "Check-in későbbre téve") })
             }
             if let hero = wall.hero {
-                NKWallHero(item: item(hero), onAct: { _ in act(hero) }, onWhy: { why = hero })
+                NKWallHero(item: item(hero), onAct: { label in act(hero, label: label) }, onWhy: { why = hero })
             }
             NKWallRows(items: wall.rows.map(item),
-                       onAct: { id, _ in if let c = wall.rows.first(where: { $0.id == id }) { act(c) } },
+                       onAct: { id, label in if let c = wall.rows.first(where: { $0.id == id }) { act(c, label: label) } },
                        onWhy: { id in why = wall.rows.first { $0.id == id } })
             if wall.hero == nil, wall.rows.isEmpty, let line = wall.emptyLine {
                 NKWallQuiet(hue: ctx.hue, line: line)
@@ -203,7 +203,13 @@ struct MaWall: View {
 
     // MARK: acting
 
-    private func act(_ c: WallCandidate) {
+    /// `label` is the button he pressed (the primary or the secondary).
+    private func act(_ c: WallCandidate, label: String) {
+        // Átrendezés „Most nem": off the wall for the day, nothing opens (spec anti-goal: a „no" is respected)
+        if c.area == WallSources.kapacitas, label == KapacitasWallID.notNow {
+            settle(id: c.id, line: "Átrendezés későbbre téve")
+            return
+        }
         if c.id.hasPrefix("etel-window") { onMeal() }
         else if c.id == "etel-supplements" { onEtelRoom() }
         else if c.id == "edzes-keszulj" || c.id == "edzes-megvolt" { onDrill(.mozgas) }

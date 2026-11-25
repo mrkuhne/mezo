@@ -35,14 +35,15 @@ import org.springframework.transaction.support.TransactionTemplate;
  * The live re-plan loop (Boop B7 K3, mezo-r36n9.17, spec §5.5 "élő"): when the day gets worse, Boop proposes a
  * today-change. Triggered after commit ({@code @Async}, never on the request thread) by everything that can change
  * today's load or capacity — a check-in, a finished workout, a logged sport session, a calendar PUT, a logged meal and
- * an Apple Health day-totals batch.
+ * an Apple Health day-totals batch (only one that carries today or yesterday — a backfill of older days is skipped).
  *
  * <p>On a trigger it re-reads TODAY (his zone, the injected clock) through the model-free day path
  * ({@link CapacityDayService#history}: stored or rule scores, never a model call) and whether today's gym session now
  * collides with a timed calendar event. Then, in its own transaction under the owner's {@link CapacityLock}, against
  * the last stored state for today ({@code capacity_live_state}):
  * <ul>
- *   <li>a new day (or no state yet) → the reading becomes the baseline; nothing is proposed;</li>
+ *   <li>a new day (or no state yet) compares against an implicit "rendben, no collision" reading, so a day already
+ *       szoros / túl sok or colliding at its first trigger is treated as worse;</li>
  *   <li>the verdict is worse by at least one step, or the session started colliding → a today-proposal
  *       ({@link ProposalService#proposeToday}, template words; the model rephrase runs in the background after
  *       commit) — at most one per {@code mezo.capacity.live.min-interval};</li>
@@ -119,7 +120,15 @@ public class LiveReplanListener {
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onDailyMetrics(DailyMetricsIngestedEvent event) {
-        replan(event.owner());
+        // a Health backfill batch (old days only) cannot change today: no pass
+        LocalDate today = today();
+        if (event.dates().contains(today) || event.dates().contains(today.minusDays(1))) {
+            replan(event.owner());
+        }
+    }
+
+    private LocalDate today() {
+        return LocalDate.now(clock.getIfAvailable(Clock::systemUTC).withZone(ZoneId.of(wearable.zone())));
     }
 
     // ── the loop ──────────────────────────────────────────────────────────────
@@ -152,9 +161,12 @@ public class LiveReplanListener {
             fresh.setCreatedBy(owner);
             return fresh;
         });
-        boolean baseline = state.getId() == null || !today.equals(state.getDay());
-        boolean worse = !baseline && step(verdict) > step(state.getVerdict());
-        boolean broke = !baseline && collides && !state.isCollides();
+        // a new day (or the first ever reading) compares against an implicit "rendben, no collision": a day already
+        // szoros / túl sok or colliding at its first trigger still gets its today-change
+        boolean newDay = state.getId() == null || !today.equals(state.getDay());
+        int before = newDay ? STEP.get("rendben") : step(state.getVerdict());
+        boolean worse = step(verdict) > before;
+        boolean broke = collides && (newDay || !state.isCollides());
         List<Stored> stored = List.of();
         if (worse || broke) {
             if (limited(state, now)) {

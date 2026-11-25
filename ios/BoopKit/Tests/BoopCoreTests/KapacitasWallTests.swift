@@ -49,18 +49,21 @@ struct KapacitasWallTests {
         let cards = kapacitasWallCandidates(week: Self.packed, now: Self.at(24, 9), timeZone: Self.zone)
         #expect(cards.count == 1, "one source, one card — never a second card surface")
         let c = try #require(cards.first)
-        #expect(c.id == "kapacitas-het" && c.role == .improves && c.kind == .teendo && c.rank == 0.85)
+        #expect(c.id.hasPrefix("kapacitas-het-") && c.role == .improves && c.kind == .teendo && c.rank == 0.85)
         #expect(c.area == WallSources.kapacitas)
         #expect(c.text == "A csütörtök *túl sok* lenne. Négy dolgot tennék át a héten.",
                 "the top proposal's day verdict, then the open proposals counted in words (the declined one not)")
         #expect(c.sub == "Edzés szombatra, később fekvés szerdán, egy esemény korábbra pénteken és nagyobb ebéd csütörtökön.")
-        #expect(c.primary == "Megnézem" && c.secondary == nil)
+        #expect(c.primary == "Megnézem" && c.secondary == "Most nem")
+        // the same open set → the same id on every launch; a new proposal (the live loop's) → a new card
+        #expect(kapacitasWallCandidates(week: Self.packed, now: Self.at(24, 9), timeZone: Self.zone).first?.id == c.id)
         #expect(c.expiresAt == nil && !c.notifiable, "a week card never rings")
         #expect(c.why == "A csütörtök négy megbeszéléssel indul", "miért? is the server's own why line")
 
         // the proposal the outbox is still sending is not counted again
         let less = kapacitasWallCandidates(week: Self.packed, now: Self.at(24, 9), excluding: ["p4"], timeZone: Self.zone)
         #expect(less.first?.text.hasSuffix("Három dolgot tennék át a héten.") == true)
+        #expect(less.first?.id != c.id, "a different open set is a different card")
         // the top proposal's day is today: „A mai nap"
         let thu = kapacitasWallCandidates(week: Self.packed, now: Self.at(26, 7), timeZone: Self.zone)
         #expect(thu.first?.text.hasPrefix("A mai nap *túl sok* lenne.") == true)
@@ -74,7 +77,7 @@ struct KapacitasWallTests {
         #expect(cards.count == 1, "the urgent card replaces the week card, never both")
         let c = try #require(cards.first)
         #expect(c.role == .expires && c.expiresAt == start && c.notifiable)
-        #expect(c.id == "kapacitas-ma-p1")
+        #expect(c.id == "kapacitas-ma-p1" && c.secondary == "Most nem")
         #expect(c.text.hasPrefix("A mai nap *túl sok* lenne."))
         #expect(c.sub == "például: MOVE_SESSION_DAY", "the today proposal's own title")
         // inside the wall's own two-a-day cap: no notification policy of its own
@@ -83,7 +86,7 @@ struct KapacitasWallTests {
         // three hours or more away: the plain week card
         let early = kapacitasWallCandidates(week: Self.packed, now: Self.at(26, 14), todaySessionStart: start,
                                             timeZone: Self.zone)
-        #expect(early.first?.role == .improves && early.first?.id == "kapacitas-het")
+        #expect(early.first?.role == .improves && early.first?.id.hasPrefix("kapacitas-het-") == true)
         // the session already started: nothing urgent left, the week card
         let late = kapacitasWallCandidates(week: Self.packed, now: Self.at(26, 18), todaySessionStart: start,
                                            timeZone: Self.zone)
