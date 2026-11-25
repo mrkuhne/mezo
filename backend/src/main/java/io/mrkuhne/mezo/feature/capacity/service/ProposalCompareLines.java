@@ -117,7 +117,7 @@ public final class ProposalCompareLines {
     }
 
     private static String kcal(Integer v) {
-        return v == null ? UNKNOWN : thousands(v) + " kcal";
+        return v == null ? UNKNOWN : thousands(v) + "\u00A0kcal"; // a no-break space: the unit never wraps alone
     }
 
     private static String kcalPlain(Integer v) {

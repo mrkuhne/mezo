@@ -222,6 +222,20 @@ struct KapacitasStoreTests {
         #expect(store.sendingQueued.isEmpty && store.notice == nil && !store.queuedAccepts.contains(p.id))
     }
 
+    /// „-ra/-re" follows how the minutes are read aloud: három, hat, nyolc (and húsz, harminc, egész óra) take „-ra";
+    /// egy, kettő, négy, öt, hét, kilenc, tíz, negyven, ötven take „-re" (K3 final review finding 5).
+    @Test func clockSublativeFollowsTheSpokenMinutes() {
+        #expect(clockSublative("22:33") == "22:33-ra")
+        #expect(clockSublative("22:36") == "22:36-ra")
+        #expect(clockSublative("22:38") == "22:38-ra")
+        #expect(clockSublative("22:20") == "22:20-ra")
+        #expect(clockSublative("22:31") == "22:31-re")
+        #expect(clockSublative("22:45") == "22:45-re")
+        #expect(clockSublative("22:47") == "22:47-re")
+        #expect(clockSublative("22:59") == "22:59-re")
+        #expect(clockSublative("22:10") == "22:10-re")
+    }
+
     @Test func whereYouSeeCopyAndAllEffects() throws {
         let move = KapacitasProposal(id: "m", kind: "MOVE_SESSION_DAY", day: "2026-11-26", status: "open", title: "",
                                      move: "", effectLines: [], why: [], effects: [],

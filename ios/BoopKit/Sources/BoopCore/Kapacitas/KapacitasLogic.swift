@@ -384,7 +384,9 @@ private func clock(_ t: String?) -> String? {
 /// „18:00-ra", „21:40-re" (negyven).
 func clockSublative(_ t: String) -> String {
     let m = t.split(separator: ":").last.flatMap { Int($0) } ?? 0
-    let front = m % 10 != 0 || [10, 40, 50].contains(m)
+    // as the minutes are read aloud: the last word decides (három, hat, nyolc, húsz, harminc and the whole hour → -ra)
+    let unit = m % 10
+    let front = unit != 0 ? ![3, 6, 8].contains(unit) : [10, 40, 50].contains(m)
     return t + (front ? "-re" : "-ra")
 }
 
