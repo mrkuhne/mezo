@@ -132,3 +132,17 @@ lefutottak ezen a gépen.
 - A szimulátoros tesztfuttatóhoz **fejlesztői mód** kell (`sudo DevToolsSecurity -enable`), ami rendszergazdai jog nélkül
   nem kapcsolható be; az app építése és a szimulátorban futtatása enélkül is megy.
 - Az éles adatbázis Tailscale nélkül nem érhető el.
+
+## Ötödik csomag ugyanebben az átadóban (2026-11-25, `mezo-r36n9.163`)
+
+„Másik napot csinálok ma” — csak a telefon változott, szerveroldali kiadásra nem kell várni. A telefonon nézd meg:
+
+- Edzés · Ma: a kártya alatt a **„Másik napot csinálok ma”** sor; a lapon elöl a kimaradt nap(ok) („KEDD · KIMARADT”),
+  pihenőnap nincs rajta.
+- Egy napot választva a kártya **PÓTLÁS**, „keddi nap, ma pótolod · …”; Indítás → eligazítás → lejátszó a választott
+  nap gyakorlataival; „Mégis a mai napot csinálom” visszavált.
+- Futó pótló edzés közben lépj ki az Edzés szobából és vissza: a kártya és a gyakorlatok a pótolt napéi maradnak.
+- Befejezés után a kártya „megvolt” a pótolt edzés nevével, a Blokk fülön **A heted** a keddet pipálja.
+
+Új telefonos tesztek: `EdzesStoreTests` (a választás, net nélkül, vissza a maira, a hét kész napjai, a korábban kész
+mai nap, újranyitás futó pótlás közben, a saját gyorsítótár-kulcs). A mag `OtherDayTests` (9) natívan lefutott.
