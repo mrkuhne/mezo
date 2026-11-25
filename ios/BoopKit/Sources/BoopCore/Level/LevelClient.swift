@@ -27,7 +27,7 @@ public struct LevelClient: Sendable {
     /// Hands the server the one-time Google code (PKCE) — it exchanges it and seals the refresh token; none comes back.
     /// 400 `MAIL_GOOGLE_REDIRECT_INVALID`, 409 `MAIL_GOOGLE_NOT_CONFIGURED`, 422 `MAIL_AUTH_FAILED`.
     public func connectGoogle(code: String, codeVerifier: String, redirectUri: String) async throws(PlanFetchError) -> LevelMailbox {
-        try await raw.send(.post, "/api/mail/mailbox/google", operationID: "postMailMailboxGoogle",
+        try await raw.send(.post, "/api/mail/mailbox/google", operationID: "connectMailGoogle",
                            body: LevelGoogleConnectRequest(code: code, codeVerifier: codeVerifier, redirectUri: redirectUri))
     }
 

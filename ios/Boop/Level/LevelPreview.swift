@@ -164,7 +164,7 @@ struct LevelPreviewTransport: ClientTransport {
             case "deleteMailMailbox":
                 m.mailbox = LevelMailbox(address: nil, state: .none, googleClientId: m.mailbox.googleClientId)
                 return try json(m.mailbox)
-            case "postMailMailboxGoogle":
+            case "connectMailGoogle":
                 m.mailbox = LevelMailbox(address: "elek.minta@gmail.example", state: .connected, kind: .google, googleClientId: m.mailbox.googleClientId)
                 return try json(m.mailbox)
             case "runMailMailbox":

@@ -72,7 +72,7 @@ struct GooglePKCETests {
 
     @Test func connectGoogleSendsTheContractBodyAndStoresNoCode() async throws {
         let stub = StubTransport()
-        stub.on("postMailMailboxGoogle", .json(200, Self.googleJSON))
+        stub.on("connectMailGoogle", .json(200, Self.googleJSON))
         let s = LevelStore(client: LevelClientTests.client(stub), cache: nil)
         #expect(await s.connectGoogle(code: "the-code", codeVerifier: "the-verifier", redirectUri: "r:/oauth2redirect") == .connected)
         #expect(stub.sent[0].path == "/api/mail/mailbox/google")
@@ -86,7 +86,7 @@ struct GooglePKCETests {
     @Test func connectGoogleOutcomes() async {
         func run(_ reply: StubTransport.Reply) async -> LevelGoogleOutcome {
             let stub = StubTransport()
-            stub.on("postMailMailboxGoogle", reply)
+            stub.on("connectMailGoogle", reply)
             let s = LevelStore(client: LevelClientTests.client(stub), cache: nil)
             let o = await s.connectGoogle(code: "c", codeVerifier: "v", redirectUri: "r")
             if o != .connected { #expect(s.mailbox == nil, "a failure stores nothing") }
