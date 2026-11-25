@@ -17,8 +17,8 @@ hosszú időszakkal**, és jelenként megmutatja: előtte | közben, a napok sz�
 A fül részei:
 - **Boop ötlete** — ha Boop észrevesz valami újat, felajánlja: „Indulhat” vagy „Most nem”. Ugyanez a javaslat a Ma falon is megjelenik,
   egy koppintással indul.
-- **Folyamatban** — a futó kísérlet: hányadik napnál tart, hány napot pipáltál ki („Ma megvolt”), mennyi kell az eredményhez, és ha
-  közben más is változott (új edzésblokk, könnyebb hét, kímélő napok, évadmódosítás), azt is kiírja. „Leállítom” megszakítja.
+- **Folyamatban** — a futó kísérlet: hányadik napnál tart, hány napot pipáltál ki (a napok kis körein; egy kimaradt napot utólag is), mennyi kell az eredményhez, és ha
+  közben más is változott (új edzésblokk, könnyebb hét, kímélő napok, évadmódosítás, vagy amit magad jeleztél: új étrend-kiegészítő, egy naplóbejegyzés arról, hogy elkezdtél valamit), azt is kiírja. „Leállítom” megszakítja.
 - **Korábbi kísérletek** — mindegyik egy sorral és az eredménnyel; koppintásra az eredménylap.
 - **Új kísérlet** — magad nevezel el egyet és választasz hosszt. Amíg egy fut, újat nem indíthatsz.
 

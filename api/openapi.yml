@@ -41881,6 +41881,10 @@ components:
             - deload
             - kimelo
             - season
+            - other
+          description: >-
+            other = another change he logged himself inside the window (a new
+            supplement in the stack, a journal line saying he started something)
         date:
           type: string
           format: date
