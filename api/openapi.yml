@@ -1213,6 +1213,72 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/mesocycles/{id}/coverage':
+    post:
+      tags:
+        - Train
+      operationId: getBlockCoverage
+      summary: >-
+        Missing complementary movements in a training block's draft week, each
+        with one proposed exercise (mezo-r36n9.114)
+      description: >-
+        The block builder's coverage hints (spec
+        2026-11-25-boop-hianyjelzes-design). The phone sends its current draft
+        week; a fixed rules table, per coarse muscle group over the catalogue
+        movement patterns of the draft rows, finds a missing complementary
+        movement (e.g. the hamstrings trained only with hip hinges, no leg
+        curl). At most one finding per group, at most three overall, in the
+        table's priority order; silent for groups at Tartás (the block's stored
+        muscle priorities) and for groups the draft does not train;
+        user-authored rows (no pattern) never create or close a gap. Each
+        finding carries fixed Hungarian verdict/why phrases and, when the gym,
+        the discomfort history and the draft allow, ONE proposed catalogue
+        exercise of the missing pattern on a named draft day with the block
+        style's prescription. Advice only — read-only, never blocks a save.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlockCoverageRequest'
+      responses:
+        '200':
+          description: Ordered findings (0..3)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlockCoverageResponse'
+        '400':
+          description: 'Validation error (missing days, a dayIndex outside 0..6)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Block not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: The block is archived
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/train/mesocycles/{id}/evaluation':
     get:
       tags:
@@ -21480,6 +21546,147 @@ components:
           items:
             type: string
             format: uuid
+    BlockCoverageRequest:
+      type: object
+      required:
+        - days
+      properties:
+        days:
+          type: array
+          description: 'The builder''s current draft week, one entry per training day'
+          items:
+            $ref: '#/components/schemas/CoverageDraftDay'
+    CoverageDraftDay:
+      type: object
+      required:
+        - dayIndex
+        - catalogIds
+      properties:
+        dayIndex:
+          type: integer
+          minimum: 0
+          maximum: 6
+          description: 'Weekday, 0 = Monday (Hét) … 6 = Sunday (Vas)'
+        catalogIds:
+          type: array
+          description: >-
+            Catalogue ids of the day's exercises in the draft (user-authored ids
+            included; rows without a catalogue id are left out). Unknown ids are
+            ignored.
+          items:
+            type: string
+            format: uuid
+        minutesEstimate:
+          type: integer
+          nullable: true
+          description: >-
+            The day's estimated session minutes (as the evaluation shows them);
+            picks the proposal's day. Null sorts last.
+    BlockCoverageResponse:
+      type: object
+      required:
+        - findings
+      properties:
+        findings:
+          type: array
+          description: 'Ordered by the rules table''s priority, 0..3, at most one per group'
+          items:
+            $ref: '#/components/schemas/CoverageFinding'
+    CoverageFinding:
+      type: object
+      required:
+        - group
+        - code
+        - missingPattern
+        - muscles
+        - verdictText
+        - whyText
+      properties:
+        group:
+          type: string
+          description: >-
+            Coarse muscle group key (ham, quad, back, biceps, triceps, shoulder,
+            chest)
+        code:
+          type: string
+          enum:
+            - HAM_NO_KNEE_FLEXION
+            - HAM_NO_HINGE
+            - QUAD_NO_KNEE_EXTENSION
+            - BACK_NO_HORIZONTAL_PULL
+            - BACK_NO_VERTICAL_PULL
+            - BICEPS_NO_ELBOW_FLEXION
+            - TRICEPS_NO_ELBOW_EXTENSION
+            - SHOULDER_NO_SIDE_RAISE
+            - CHEST_NO_FLY
+          description: Stable rule code (one per row of the rules table)
+        missingPattern:
+          type: string
+          description: >-
+            The catalogue movement pattern the week lacks (knee-flexion, hinge,
+            knee-extension, …)
+        muscles:
+          type: array
+          description: >-
+            The fine catalogue tokens the missing movement trains (e.g.
+            [shoulder-side] for the raise rule, [ham] for the leg curl) — what
+            „Mást választok" pre-picks in the add sheet
+          items:
+            type: string
+        verdictText:
+          type: string
+          description: >-
+            One fixed Hungarian sentence naming what is missing, ending with a
+            full stop
+        whyText:
+          type: string
+          description: One or two fixed Hungarian sentences explaining why it matters
+        proposal:
+          nullable: true
+          description: >-
+            The one proposed exercise; null when no catalogue row of the pattern
+            is available
+          allOf:
+            - $ref: '#/components/schemas/CoverageProposal'
+    CoverageProposal:
+      type: object
+      required:
+        - exercise
+        - reasonText
+        - signals
+        - dayIndex
+      properties:
+        exercise:
+          $ref: '#/components/schemas/ExerciseCatalogItem'
+        reasonText:
+          type: string
+          description: >-
+            One fixed-phrase Hungarian sentence (the add suggestions' wording),
+            ending with a full stop
+        signals:
+          type: array
+          description: Stable signal codes behind the reason
+          items:
+            type: string
+        lastTopSet:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/LastTopSet'
+        prescription:
+          nullable: true
+          description: >-
+            The block style's prescription for the new row; null on an unstyled
+            block or a plyo row
+          allOf:
+            - $ref: '#/components/schemas/SuggestionPrescription'
+        dayIndex:
+          type: integer
+          minimum: 0
+          maximum: 6
+          description: >-
+            The draft day to add it to: among the days already training the
+            group the one with the lowest minutesEstimate (ties → earliest),
+            else the lowest-minutes training day
     BlockSuggestionOutgoing:
       type: object
       required:
