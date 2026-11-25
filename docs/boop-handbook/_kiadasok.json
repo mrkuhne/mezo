@@ -901,5 +901,20 @@
     ],
     "mi_valtozott": "Minden rögzítő lapon (súly, alvás, sport, naplósor) egy „Mikor” sor: Ma · Tegnap · Más nap, a sportnál időponttal is, egy hétre visszamenőleg; a választott nap olvashatóan a sor mellett, a visszajelzés is megmondja, melyik napra került. Az étkezésnél Tegnap gomb. A Napló a mai és az előző hat napot mindig mutatja, az üres napokat is; egy korábbi nap lapján PÓTLÁS: a kimaradt check-in pillanatok (reggel · dél · délután, a pillanat saját idejére), a nap lezárása (este kilencre) és az edzés pótlása. „Edzés pótlása: <tervnap>” egy kimaradt tervnapot a terv sorozataival könyvel készre arra a napra, gyakorlatonként egy súly átírható, a kezdés a terv ideje vagy más időpont; a szerver tanulja a dátumot, kétszer nem könyveli ugyanazt. Új Ital bejárat (a Mit rögzítesz? lapon, az Étel szobában és az étkezés rögzítésében): szokásos italaid egy koppintásra, szabad szöveg, fotó, Recept · Kamra · Vonalkód; az ital beszámít a napi kalóriába és a makrókba, de ablakot nem foglal és pontot nem kap; az Étel Ma lapján külön ITALOK sor. Net nélkül minden rögzítés a sorban marad és később megy fel.",
     "ellenorzes": "A szerver új tesztjei (ital, edzés pótlása, architektúra) zölden lefutottak; a mag új tesztjei natívan lefutottak; az app lefordult és a szimulátorban minden új képernyő látszik (épített képernyőképek a specifikáció mellett); a telefonos tesztkészlet és a telepítés a másik, Xcode-os gépen (mezo-r36n9.150)."
+  },
+  "08efb6aeb": {
+    "cim": "Másik napot csinálok ma — a kimaradt edzésnap élőben pótolható",
+    "datum": "2026-11-25",
+    "verzio": "",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app"
+    ],
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.163"
+    ],
+    "mi_valtozott": "A Mai edzés kártyája alatt új sor: „Másik napot csinálok ma”. A lapon a hét még nyitott edzésnapjai: elöl a kimaradtak (a legutóbbi az első), utánuk a hét későbbi napjai; pihenőnap és már megcsinált nap nincs rajta. A választott nap a kártyán PÓTLÁS felirattal jelenik meg, az Indítás a szokásos eligazítással és lejátszóval indítja; „Mégis a mai napot csinálom” visszavált. A heti csempéken a pipa a ténylegesen megcsinált napra kerül (a szerdán megcsinált kedd a keddet pipálja), a kész kártya azt nevezi meg, amit ma csináltál. Ha kilépsz és visszajössz futó pótló edzés közben, a kártya a pótolt napot mutatja, net nélkül is.",
+    "ellenorzes": "A mag tesztjei (1046) natívan lefutottak; az app lefordult, a szimulátorban a sor, a lap és a pótló kártya látszik (képernyőképek a docs/superpowers/specs/assets/masik-nap mappában); független kódátnézés három találatát javítottuk; a telefonos tesztkészlet és a telepítés a másik, Xcode-os gépen (mezo-r36n9.150)."
   }
 }
