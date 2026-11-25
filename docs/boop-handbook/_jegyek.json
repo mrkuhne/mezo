@@ -1753,5 +1753,17 @@
     ],
     "mit_kapsz": "Az éves terv és az új blokk indításának átnézéséből maradt apró javítások gyűjtője: néhány ritka eset kezelése a blokkok indításánál és archiválásánál, a hónapjelölők és a könnyítő hét pontosítása a telefonon. A legtöbb nem látható; amelyik igen, az a terv pontosabb megjelenítését hozza.",
     "munkamenet": "Muscle Ladder implementation"
+  },
+  "mezo-r36n9.172": {
+    "cim": "Emlékeztetők és ébresztők, widgetek, edzés a zárolt képernyőn",
+    "tipus": "Funkció",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Alapok",
+      "Ma",
+      "Edzés"
+    ],
+    "mit_kapsz": "Bármire beállítható emlékeztető, mint az Apple Emlékeztetők appjában (pl. vitamin 8:00-kor): ébresztőként egész képernyőn szól, némításon és alvó módon is, „Kész” és szundi gombbal, a kiegészítőknél a „Bevettem” be is írja a napodba. Utána widgetek a főképernyőre és a zárolt képernyőre (a következő teendő, a mai nap kipipálható emlékeztetőkkel, a napközbeni kérdés), és edzés közben a zárolt képernyőn a gyakorlat és a pihenő visszaszámlálója gombokkal.",
+    "munkamenet": "boop-ebreszto-widget"
   }
 }
