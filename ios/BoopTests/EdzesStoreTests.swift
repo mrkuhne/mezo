@@ -24,7 +24,7 @@ struct EdzesStoreTests {
 
     var todayJSON: String {
         #"""
-        {"templateSessionId":"\#(sessionId)","dayLabel":"Hét","title":"Pull Day","durationEst":62,
+        {"templateSessionId":"\#(sessionId)","title":"Pull Day","durationEst":62,
          "exercises":[{"id":"\#(pressId)","name":"Fekvenyomás","muscle":"chest","warmupSets":2,"workingSets":3,
           "repMin":6,"repMax":10,"targetRIR":2,"type":"compound","anchorWeightKg":77.5,
           "prescribedSets":[{"kind":"warmup","targetWeightKg":40,"targetReps":8},
@@ -49,7 +49,8 @@ struct EdzesStoreTests {
         await s.load()
 
         #expect(s.today?.value.title == "Pull Day")
-        #expect(s.today?.value.exercises.first?.sets.count == 5)
+        // Three working sets: the two warm-ups never reach the app (mezo-r36n9.170).
+        #expect(s.today?.value.exercises.first?.sets.count == 3)
         #expect(s.ageText == nil)              // straight from the server: no age to report
         #expect(s.problem == nil)
         // Written through, so the next launch without a network has something true to show.
@@ -391,8 +392,8 @@ struct EdzesSwapTests {
 // MARK: - „Másik napot csinálok ma" (mezo-r36n9.163)
 
 extension EdzesStoreTests {
-    var tuesdayId: String { "c1c2c3d4-0009-4a2b-9c3d-111122223333" }
-    var tuesdayJSON: String {
+    nonisolated var tuesdayId: String { "c1c2c3d4-0009-4a2b-9c3d-111122223333" }
+    nonisolated var tuesdayJSON: String {
         #"{"templateSessionId":"\#(tuesdayId)","dayLabel":"Kedd","title":"Pull","exercises":[],"weekDoneDates":[]}"#
     }
 
@@ -488,5 +489,45 @@ extension EdzesStoreTests {
         await again.load()
         #expect(again.today?.value.title == "Pull")
         #expect(await cache.get(TodayWorkout.self, endpoint: "train/today", date: dayKey(Date()), maxAge: 3600) == nil)
+    }
+
+    // MARK: - The finish went out with the ceremony (mezo-r36n9.170)
+
+    func completedTodayJSON(finishedAt: String) -> String {
+        #"{"templateSessionId":"\#(sessionId)","title":"Pull Day","exercises":[{"id":"\#(pressId)","name":"Fekvenyomás","muscle":"chest","warmupSets":0,"workingSets":2,"repMin":6,"repMax":10,"targetRIR":2,"type":"compound"}],"weekDoneDates":[],"completedWorkout":{"id":"c1c2c3d4-0007-4a2b-9c3d-111122223333","templateSessionId":"\#(sessionId)","date":"\#(dayKey(Date()))","status":"completed","sets":[],"finishedAt":"\#(finishedAt)","energy":{"kcal":380,"source":"estimate"}}}"#
+    }
+
+    @Test func aSessionTheServerFinishedAfterItStartedIsEndedOnTheNextLoad() async throws {
+        let folder = directory()
+        transport.on("getTodayWorkout", 200, todayJSON)
+        let first = EdzesStore(client: TrainClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: transport)),
+                               cache: nil, folder: folder)
+        await first.load()
+        _ = first.startWorkout(date: dayKey(Date()))
+        #expect(first.session != nil)
+        // The app closed on the ceremony; the finish had reached the server.
+        transport.on("getTodayWorkout", 200, completedTodayJSON(finishedAt: "2099-01-01T00:00:00Z"))
+        let again = EdzesStore(client: TrainClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: transport)),
+                               cache: nil, folder: folder)
+        await again.load()
+        #expect(again.session != nil)
+        #expect(again.energy(for: again.session!) == WorkoutEnergy(kcal: 380, source: .estimate))
+        again.endIfFinishedOnServer()
+        #expect(again.session == nil)
+    }
+
+    @Test func anEarlierFinishOfTheSameDayDoesNotEndANewSession() async throws {
+        let folder = directory()
+        transport.on("getTodayWorkout", 200, todayJSON)
+        let first = EdzesStore(client: TrainClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: transport)),
+                               cache: nil, folder: folder)
+        await first.load()
+        _ = first.startWorkout(date: dayKey(Date()))
+        transport.on("getTodayWorkout", 200, completedTodayJSON(finishedAt: "2000-01-01T00:00:00Z"))
+        let again = EdzesStore(client: TrainClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: transport)),
+                               cache: nil, folder: folder)
+        await again.load()
+        again.endIfFinishedOnServer()
+        #expect(again.session != nil)
     }
 }

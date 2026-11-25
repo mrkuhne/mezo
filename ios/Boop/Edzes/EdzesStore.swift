@@ -315,6 +315,18 @@ final class EdzesStore {
         return c.energy
     }
 
+    /// The finish goes out when the ceremony opens (mezo-r36n9.170), so an app closed on the ceremony comes back with
+    /// a session the server has already completed. When today's completed instance of the same plan day finished
+    /// after this session started and nothing is open, it is this session: end it, so „Folytatom" never offers a
+    /// workout whose sets the server would refuse. Never called while the ceremony is on screen.
+    func endIfFinishedOnServer() {
+        guard let running = session, let t = today?.value, t.open == nil,
+              let c = t.completed, c.status == .completed, c.date == day,
+              running.templateSessionId == nil || running.templateSessionId == c.templateSessionId,
+              let finishedAt = c.finishedAt, finishedAt >= running.startedAt else { return }
+        endWorkout()
+    }
+
     func endWorkout() {
         if let session {
             finished = FinishedWorkout(session: session, finishedAt: clock())

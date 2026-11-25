@@ -230,7 +230,11 @@ struct EdzesRoom: View {
         // A workout's start or finish reached the server: today and the brief re-read, so the card says what the
         // server now knows.
         .onChange(of: ritmus?.edzesTick) {
-            Task { await store?.load(force: true); await loadWeek(); await morning?.load(date: Date()) }
+            Task {
+                await store?.load(force: true)
+                if phase != .ceremony { store?.endIfFinishedOnServer() }
+                await loadWeek(); await morning?.load(date: Date())
+            }
         }
         .sheet(isPresented: $showOtherDays) {
             OtherDaySheet(choices: otherDays, hue: hue) { id in
@@ -243,6 +247,8 @@ struct EdzesRoom: View {
         .task {
             if store == nil { store = EdzesStore(client: train, cache: cache, folder: workoutFolder) }
             await store?.load()
+            // The app closed while the ceremony was open: the finish had gone out, so the server's word ends it here.
+            if phase != .ceremony { store?.endIfFinishedOnServer() }
             await loadWeek()
             await store?.loadRecords()
             await store?.loadBlock()

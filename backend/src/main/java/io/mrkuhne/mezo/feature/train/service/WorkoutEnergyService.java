@@ -9,6 +9,8 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * The kcal shown when a workout ends (mezo-r36n9.170, owner 2026-11-25: „becslés, utána óra"). The
@@ -26,6 +28,12 @@ public class WorkoutEnergyService {
     private final ObjectProvider<WatchWorkoutEnergyPort> watch;
     private final TrainProperties props;
 
+    /**
+     * Runs in its own read-only transaction: it is called from inside {@code finishWorkout}, and a failing read there
+     * would otherwise mark the finish's transaction rollback-only — a caller's catch cannot undo that. Everything it
+     * needs from the session comes from the passed entity, so the not-yet-committed finish is no problem.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
     public Optional<WorkoutEnergy> energyOf(UUID userId, WorkoutSessionEntity instance) {
         if (!"completed".equals(instance.getStatus())) {
             return Optional.empty();
