@@ -947,5 +947,19 @@
       "mezo-r36n9.113"
     ],
     "mi_valtozott": "Az Edzés oldalról elérhető az Éves terv. Boop javasol egy 52 hetes térképet: hathetes fókuszblokkok felváltva felsőtestre és lábra, mindegyik végén könnyítő héttel, tartalék hetekkel és a végén két hét könnyű szinten tartással. Minden izom legalább egyszer fókuszba kerül, amit te kiemelsz, kétszer; ha most készíted, a futó blokkod lesz az első. Egy blokk fókusza cserélhető, a blokk mozgatható, áthelyezhető vagy kihagyható — a szabályszegés figyelmeztetés, nem tiltás. Ha csúszol vagy kihagysz, a térkép átrendeződik (előbb a tartalék fogy, aztán rövidül a lezárás, végül kitolódik az év vége). A blokk utolsó hetén a Következik kártya előre kitöltve indítja a következő blokkot, a „Jövő hétfőn” kezdésű blokk a saját napján tényleg elindul, és az évad mindig a ténylegesen futó blokkot mutatja. Például: egy kihagyott vádliblokk után Boop szól, hogy a vádli idén nem kap fókuszt, és felajánlja egy későbbi blokkba."
+  },
+  "fc06d0969": {
+    "cim": "Évad kísérletek: az általad jelzett változások is számítanak",
+    "datum": "2026-11-25",
+    "verzio": "v3.40.1",
+    "tipus": "Javítás",
+    "hova": [
+      "Háttérrendszer"
+    ],
+    "szakasz": "B6 A Terv",
+    "jegyek": [
+      "mezo-r36n9.136"
+    ],
+    "mi_valtozott": "Ha egy kísérlet alatt új étrend-kiegészítőt kezdesz, vagy a naplóba azt írod, hogy elkezdtél valamit, a kísérlet ezt is kiírja „közben más is változott” jelzésként, és az eredménynél is figyelembe veszi. Egy ritka szerverhiba már nem akaszthatja meg Boop válaszát, és ha átírsz egy naplóbejegyzést, Boop nem javasolja újra ugyanazt a kísérletet."
   }
 }

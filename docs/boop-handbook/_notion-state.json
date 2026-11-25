@@ -632,7 +632,7 @@
     },
     "kezikonyv:04-terv/08-hataskovetes": {
       "page_id": "4168968e-752b-81f1-938c-eb8dd448db7c",
-      "hash": "d922721b6a7c"
+      "hash": "97b1bb667e07"
     },
     "kezikonyv:05-alvas/00-attekintes": {
       "page_id": "4168968e-752b-81a9-98ef-c41118a98d20",
@@ -2828,7 +2828,7 @@
     },
     "jegyek:mezo-r36n9.136": {
       "page_id": "41f8968e-752b-81c6-9c06-cfd184736883",
-      "hash": "b394bbc5c897"
+      "hash": "04b511f84cc3"
     },
     "kiadasok:3f844c206": {
       "page_id": "41f8968e-752b-81a1-b186-c71391ae11ab",
@@ -3193,6 +3193,10 @@
     "dontesek:d-2026-11-25-level-google-belepes": {
       "page_id": "4238968e-752b-8128-8ff5-fbbed656a8b7",
       "hash": "0e0c045d718e"
+    },
+    "kiadasok:fc06d0969": {
+      "page_id": "4238968e-752b-8154-825f-c79836229ed3",
+      "hash": "97961ffd560d"
     }
   }
 }
