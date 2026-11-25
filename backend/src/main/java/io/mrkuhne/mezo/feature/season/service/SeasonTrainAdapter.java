@@ -19,6 +19,8 @@ import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.feature.train.service.PlannedSkipService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutWindowQueryService;
 import io.mrkuhne.mezo.feature.train.repository.SportScheduleSlotRepository;
+import io.mrkuhne.mezo.feature.train.service.BlockDayArrangeService;
+import io.mrkuhne.mezo.feature.train.service.BlockDayArrangement;
 import io.mrkuhne.mezo.feature.train.service.GymScheduleService;
 import io.mrkuhne.mezo.feature.train.service.MesoTemplateService;
 import io.mrkuhne.mezo.feature.train.service.SportService;
@@ -65,6 +67,33 @@ public class SeasonTrainAdapter implements SeasonTrainPort {
     private final RunSessionLogRepository runSessionLogRepository;
     private final PlannedSkipService plannedSkipService;
     private final RecoveryPeriodRepository recoveryPeriodRepository;
+    private final BlockDayArrangeService blockDayArrangeService;
+
+    @Override
+    public Optional<BlockWeek> blockRearrangement(UUID owner, UUID mesocycleId, List<Integer> gymDays,
+                                                  Set<Integer> sportDays) {
+        BlockDayArrangement.Plan plan = blockDayArrangeService.plan(owner, mesocycleId, gymDays, sportDays);
+        if (!plan.changed()) {
+            return Optional.empty();
+        }
+        String title = mesocycleRepository.findById(mesocycleId).map(MesocycleEntity::getTitle).orElse("");
+        List<BlockDay> days = plan.slots().stream().map(s -> new BlockDay(s.weekday(), s.title(),
+            s.change().name().toLowerCase(java.util.Locale.ROOT), s.change() == BlockDayArrangement.Change.KEEP
+                ? null : s.fromWeekday())).toList();
+        List<BlockDay> dropped = plan.dropped().stream()
+            .map(d -> new BlockDay(d.weekday(), d.title(), "drop", null)).toList();
+        return Optional.of(new BlockWeek(mesocycleId, title, days, dropped));
+    }
+
+    @Override
+    public void rearrangeBlock(UUID owner, UUID mesocycleId, List<Integer> gymDays, Set<Integer> sportDays) {
+        blockDayArrangeService.apply(owner, mesocycleId, gymDays, sportDays);
+    }
+
+    @Override
+    public String blockState(UUID owner, UUID mesocycleId) {
+        return blockDayArrangeService.state(owner, mesocycleId);
+    }
 
     @Override
     public Schedule currentSchedule(UUID owner) {

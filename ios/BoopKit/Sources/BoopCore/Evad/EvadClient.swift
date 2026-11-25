@@ -166,7 +166,7 @@ public func evadErrorText(_ error: PlanFetchError) -> String {
         case "SEASON_NOT_EDITABLE": "Ez az évad már lezárult, ezért nem változtatható."
         case "SEASON_ACTIVE_EXISTS": "Már fut egy évadod."
         case "SEASON_PROFILE_REQUIRED": "Az évad számaihoz előbb a testadataid kellenek (magasság, születési dátum, nem)."
-        case "SEASON_BLOCK_DAYS_LOCKED": "Amíg fut az edzésblokk, az edzésnapok nem változhatnak."
+        case "SEASON_BLOCK_NEEDS_GYM_DAY": "Amíg fut az edzésblokk, legalább egy edzésnap kell."
         case "MENU_NOT_PROPOSED": "Ezt a menüt már jóváhagytad, ezért nem állítom össze újra."
         case "EXPERIMENT_ALREADY_RUNNING": "Már fut egy kísérlet. Egyszerre csak egy futhat, hogy tiszta legyen az eredmény."
         case "EXPERIMENT_NOT_PROPOSED": "Ez a javaslat már nem aktuális."
@@ -174,7 +174,7 @@ public func evadErrorText(_ error: PlanFetchError) -> String {
         case "EXPERIMENT_NOT_DONE": "Csak egy befejezett kísérletet lehet megtartani."
         default: "A szerver ezt most nem fogadta el."
         }
-    // Train's day-save refusal; no Évad call returns it, but the error type is shared.
+    // Train's running-workout refusal: an Évad accept that would drop a block day whose workout is running.
     case .dayWorkoutRunning: "Épp fut az edzésed. Ha végeztél, próbáld újra."
     case .server: "A szerver most nem válaszolt rendesen. Próbáld újra."
     }

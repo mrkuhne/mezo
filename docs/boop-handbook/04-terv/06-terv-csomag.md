@@ -26,16 +26,27 @@ híz. Minden változtatás után Boop azonnal megmutatja:
 - **Ennyi változna** — „Most” és „Utána” oszlop: edzésnapon, pihenőnapon (vagy „nincs pihenőnap”, ha minden nap mozogsz),
   szénhidrát edzésnapon, **heti összesen**, alvásigény, lefekvés, célba érés és tempó (vagy a sáv);
 - piros figyelmeztetés, ha a motor szerint baj lenne (például „Ilyen tempónál izmot is veszítenél, nem csak zsírt.”);
+- **A blokkod új hete** — ha az edzésnapok változnak és fut egy edzésblokk: napról napra, melyik edzés hova kerül
+  („Szerda · Alsó A — Eddig kedden volt.”), melyik nap új („Új nap: a hétfői edzés még egyszer.”) és melyik marad ki;
 - **Ehhez ezt kell tenned** — például „Korábbi lefekvés: 21:55 körül feküdj le. Az esti emlékeztetőt is ehhez igazítom.”, vagy
-  hogy a blokkot át kell tenni heti 5 napra;
+  hogy a futó blokk napjai is az új edzésnapokra kerülnek;
 - **Elfogadom** / **Mégsem**. Amíg nem fogadod el, semmi sem változik.
 
 Egy fontos részlet: **egy plusz edzés nem emeli az edzésnapi kalóriát.** Minden nap célja az alap + azon a napon végzett mozgás
 + a cél miatti különbség. A plusz edzés egy pihenőnapot edzésnappá tesz, így a **heti összes** kalória nő (például 16 800-ról
 17 000-re), az alvásigény nő, és korábban kell feküdni — ezt a három sort érdemes nézni.
 
-**Amíg fut az edzésblokk, az edzésnapok zárolva vannak:** a blokk napjai ezekhez igazodnak. Az „Edzések hetente”
-léptető ilyenkor szürke, és egy sor elmondja, miért. A sportnapok, a tempó és az edzés időpontja szabadon változtatható.
+**Egy elfogadás, minden együtt mozdul (2026-11-25 óta).** Ha futó edzésblokk mellett változtatsz az edzésnapokon (több,
+kevesebb vagy más napok), az *Elfogadom* egyszerre állítja át a célt, a heti napokat, az alvásigényt **és a blokkot**:
+- ha ugyanannyi nap marad, a blokk napjai sorrendben az új napokra költöznek (a gyakorlatok és a korábbi edzéseid
+  megmaradnak);
+- ha több nap lesz, az új nap egy meglévő edzésnap ismétlése — azt választja Boop, amelyikkel a heti izommunka a
+  legkiegyensúlyozottabb marad (ugyanaz a kiértékelő dönt, mint a Blokk-építőben), és oda teszi a hétben, ahol a
+  legjobb helyen van;
+- ha kevesebb, az a nap marad ki, amelyik nélkül a hét a legkevésbé billen fel; a kimaradt nap korábbi edzései megmaradnak.
+
+Ha épp fut egy edzés azon a napon, ami kimaradna, Boop megkér, hogy előbb fejezd be. Ha az előnézet óta a blokkban
+változtattál valamit (például a napszerkesztőben), Boop újraszámolja az előnézetet, mielőtt elfogadnád.
 
 **Boop ismeri az évadot (2026-11-21 óta).** Az évad szabályai — a cél és a tempó, a heti edzés- és sportnapok, az edzés- és
 pihenőnapi kalória és fehérje, a kiválasztott receptek szabálya, a feldolgozottsági szabály (ha nem „bármi mehet”), az
@@ -78,8 +89,9 @@ rendszer elutasítja, és Boop az Évad oldalra küld. A már futó blokk zavart
 - Az évad szabályai azért vannak Boop minden AI-jában, mert a tulajdonos kérése, hogy a terv egy rendszer legyen: ha Boop
   nem tudna az évadról, olyat is javasolhatna, ami ellentmond neki.
 - Az elfogadás egy lépés, hogy soha ne legyen olyan pillanat, amikor a kalória már 5 edzéssel számol, a többi még 4-gyel.
-- Az edzésnapok zárolása futó blokk alatt átmeneti: amíg a blokk napjait nem lehet ugyanazzal az elfogadással átrendezni, így
-  nem csúszhat szét a blokk és a heti beosztás.
+- Az új nap mindig egy meglévő nap ismétlése, nem egy frissen kitalált edzés: így az elfogadás azonnali és kiszámítható, a
+  részleteket utána a napszerkesztőben bármikor átírhatod. (2026-11-20 és 11-25 között futó blokk alatt az edzésnapok
+  zárolva voltak, amíg ez a lépés el nem készült.)
 
 ## Beállítások
 | Beállítás | Mit állít | Alapérték |

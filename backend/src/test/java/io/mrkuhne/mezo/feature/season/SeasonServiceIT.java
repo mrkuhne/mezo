@@ -170,23 +170,6 @@ class SeasonServiceIT extends AbstractIntegrationTest {
 
 
     @Test
-    void applyChangingGymDaysWithRunningBlockIs409() {
-        UUID owner = fixture.owner("season-lock-gym@test.local");
-        trainPopulator.createActiveMeso(owner);
-        SeasonEntity s = seasonService.activate(owner, seasonService.create(owner, SeasonFixture.draft()).getId());
-        em.flush();
-        SeasonDraftJson change = SeasonFixture.draft("cut", new BigDecimal("80.0"), null, List.of(0, 1, 2, 3, 4),
-            SeasonFixture.SPORT);
-        String fingerprint = previewService.preview(owner, s.getId(), change).fingerprint(); // preview stays allowed
-
-        assertThatThrownBy(() -> seasonService.apply(owner, s.getId(), change, fingerprint))
-            .isInstanceOfSatisfying(SystemRuntimeErrorException.class, e -> {
-                assertThat(e.getMessage()).isEqualTo("SEASON_BLOCK_DAYS_LOCKED");
-                assertThat(e.getStatus().value()).isEqualTo(409);
-            });
-    }
-
-    @Test
     void applyChangingSportWithRunningBlockPasses() {
         UUID owner = fixture.owner("season-lock-sport@test.local");
         trainPopulator.createActiveMeso(owner);

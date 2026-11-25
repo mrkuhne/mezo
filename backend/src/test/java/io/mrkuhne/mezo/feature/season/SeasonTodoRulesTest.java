@@ -36,6 +36,19 @@ class SeasonTodoRulesTest {
     }
 
     @Test
+    void aRunningBlockThatMovesWithTheAccept_isSaidSo_evenWhenTheCountStays() {
+        SeasonDraftJson from = draft(List.of(0, 1, 3, 4), List.of(TUE, THU), 12);
+        SeasonDraftJson to = draft(List.of(0, 2, 3, 5), List.of(TUE, THU), 12);
+        SeasonNumbersJson n = numbers(2440, 486, "22:09", 12, LocalDate.of(2027, 2, 14), 4);
+
+        List<Todo> todo = SeasonTodoRules.todo(n, n, from, to, null, true);
+
+        assertThat(todo).extracting(Todo::key).containsExactly("block");
+        assertThat(todo.get(0).body()).isEqualTo(
+            "A futó blokkod napjai az új edzésnapokra kerülnek, lent látod, melyik hova. Ezt is az Elfogadom teszi meg.");
+    }
+
+    @Test
     void identicalDraftsGiveAnEmptyList() {
         SeasonDraftJson d = draft(List.of(0, 1, 3, 4), List.of(TUE, THU), 12);
         SeasonNumbersJson n = numbers(2440, 486, "22:09", 12, LocalDate.of(2027, 2, 14), 4);

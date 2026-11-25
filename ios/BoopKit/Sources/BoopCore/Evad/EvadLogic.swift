@@ -379,11 +379,26 @@ public func evadCanAccept(previewOf: EvadDraft?, current: EvadDraft?) -> Bool {
     return previewOf == current
 }
 
-/// While the season's block runs, the gym days stay as they are: the block's weekdays are built on them.
-public func evadGymDaysLocked(_ o: EvadOverview) -> Bool { o.pillars.block.mesocycleId != nil }
-
-public let evadGymDaysLockedLine =
-    "Amíg fut az edzésblokk, az edzésnapok maradnak: a blokk napjai ezekhez igazodnak. Ha a blokk véget ér, átrendezheted."
+/// „A blokkod új hete" (mezo-r36n9.122): one row per gym day of the re-arranged block, then the days that leave it.
+public func evadBlockWeekRows(_ w: EvadBlockWeek) -> [(title: String, body: String)] {
+    let names = ["Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek", "Szombat", "Vasárnap"]
+    let on = ["hétfőn", "kedden", "szerdán", "csütörtökön", "pénteken", "szombaton", "vasárnap"]
+    let of = ["hétfői", "keddi", "szerdai", "csütörtöki", "pénteki", "szombati", "vasárnapi"]
+    func pick(_ list: [String], _ i: Int?) -> String? { i.flatMap { list.indices.contains($0) ? list[$0] : nil } }
+    let days = w.days.map { d -> (title: String, body: String) in
+        let body: String = switch d.change {
+        case "keep": "Marad a helyén."
+        case "add": pick(of, d.fromWeekday).map { "Új nap: a \($0) edzés még egyszer." } ?? "Új nap: egy meglévő edzés még egyszer."
+        default: pick(on, d.fromWeekday).map { "Eddig \($0) volt." } ?? "Új helyre kerül."
+        }
+        return ((pick(names, d.weekday) ?? "Új nap") + " · " + d.title, body)
+    }
+    let rest = "a blokk többi napja viszi tovább a hetet."
+    let dropped = w.dropped.map { d -> (title: String, body: String) in
+        ("Kimarad · " + d.title, pick(on, d.weekday).map { "Eddig \($0) volt, " + rest } ?? "Kimarad, " + rest)
+    }
+    return days + dropped
+}
 
 /// One Most | Utána line of „Ennyi változna".
 public struct EvadCompareRow: Equatable, Sendable {

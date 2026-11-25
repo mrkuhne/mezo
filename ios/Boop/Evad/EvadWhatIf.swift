@@ -3,8 +3,9 @@ import BoopCore
 import BoopDesign
 
 /// **Módosítás** (screens 08–09): the live consequence preview. He moves the sessions per week, the sport days or the
-/// weekly pace; 300 ms after he stops, the server's engine answers what would change (Most | Utána), what it warns
-/// about and what he would have to do. Nothing changes until *Elfogadom*; a preview that went stale in between is
+/// weekly pace; 300 ms after he stops, the server's engine answers what would change (Most | Utána), how the running
+/// block's week is re-arranged when the gym days move (mezo-r36n9.122), what it warns about and what he would have to
+/// do. One Elfogadom moves all of it together. Nothing changes until *Elfogadom*; a preview that went stale in between is
 /// recomputed once and said so.
 struct EvadWhatIf: View {
     let close: @MainActor @Sendable () -> Void
@@ -20,8 +21,6 @@ struct EvadWhatIf: View {
     private let weekdays = ["H", "K", "Sz", "Cs", "P", "Sz", "V"]
 
     private var changed: Bool { draft != nil && draft != base }
-    /// The season's block is running: its weekdays are built on the gym days, so those stay.
-    private var gymLocked: Bool { store?.overview.map(evadGymDaysLocked) ?? false }
     private var acceptable: Bool { evadCanAccept(previewOf: previewFor, current: draft) }
 
     var body: some View {
@@ -31,6 +30,11 @@ struct EvadWhatIf: View {
             if let draft {
                 settings(draft)
                 consequences
+                if changed, let week = preview?.block {
+                    NKBare("A blokkod új hete", hue: evadHue, glyph: "dumbbell-ink", trailing: week.title) {
+                        NKList(evadBlockWeekRows(week), hue: evadHue)
+                    }
+                }
                 if changed, let todo = preview?.todo, !todo.isEmpty {
                     NKBare("Ehhez ezt kell tenned", hue: evadHue, glyph: "check-ink") {
                         NKList(todo.map { (title: $0.title, body: $0.body) }, hue: evadHue)
@@ -72,7 +76,7 @@ struct EvadWhatIf: View {
         var edit = d
         #if DEBUG
         // Simulator review: `-evadSessions 5`, `-evadPace 0.6` pre-set the page (screens 08–09).
-        if let n = Int(UserDefaults.standard.string(forKey: "evadSessions") ?? ""), !gymLocked {
+        if let n = Int(UserDefaults.standard.string(forKey: "evadSessions") ?? "") {
             edit.gymDays = evadAdjustGymDays(edit.gymDays, to: n, avoiding: edit.sport.map(\.dayOfWeek))
         }
         if let pace = Double(UserDefaults.standard.string(forKey: "evadPace") ?? "") { edit.kgPerWeek = pace; edit.ratePctPerWeek = nil }
@@ -124,19 +128,9 @@ struct EvadWhatIf: View {
                 HStack {
                     Text("Edzések hetente").nkFont(15).foregroundStyle(.white.opacity(0.85))
                     Spacer()
-                    Group {
-                        EvadStepButton(plus: false, label: "Kevesebb edzés") { setSessions(d.gymDays.count - 1) }
-                        Text("\(d.gymDays.count)").font(.nkNumber(24)).foregroundStyle(.white).frame(width: 40)
-                        EvadStepButton(plus: true, label: "Több edzés") { setSessions(d.gymDays.count + 1) }
-                    }
-                    .disabled(gymLocked)
-                    .opacity(gymLocked ? 0.35 : 1)
-                }
-                if gymLocked {
-                    Text(evadGymDaysLockedLine).nkFont(13).foregroundStyle(.white.opacity(0.6))
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, -8)
+                    EvadStepButton(plus: false, label: "Kevesebb edzés") { setSessions(d.gymDays.count - 1) }
+                    Text("\(d.gymDays.count)").font(.nkNumber(24)).foregroundStyle(.white).frame(width: 40)
+                    EvadStepButton(plus: true, label: "Több edzés") { setSessions(d.gymDays.count + 1) }
                 }
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Sportnapok").nkFont(15).foregroundStyle(.white.opacity(0.85))
@@ -173,7 +167,7 @@ struct EvadWhatIf: View {
     }
 
     private func setSessions(_ n: Int) {
-        guard !gymLocked, let d = draft, (1...6).contains(n) else { return }
+        guard let d = draft, (1...6).contains(n) else { return }
         draft?.gymDays = evadAdjustGymDays(d.gymDays, to: n, avoiding: d.sport.map(\.dayOfWeek))
     }
 

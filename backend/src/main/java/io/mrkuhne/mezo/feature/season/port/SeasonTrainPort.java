@@ -62,6 +62,26 @@ public interface SeasonTrainPort {
 
     Optional<Block> activeMesocycle(UUID owner);
 
+    /** One day of a block's re-arranged week (mezo-r36n9.122): {@code change} keep | move | add | drop. */
+    record BlockDay(int weekday, String title, String change, Integer fromWeekday) {
+    }
+
+    /** A running block laid onto new gym days: the new week, and the days that leave it. */
+    record BlockWeek(UUID mesocycleId, String title, List<BlockDay> days, List<BlockDay> dropped) {
+    }
+
+    /**
+     * The block's week re-arranged onto {@code gymDays} (0 = hétfő), judged with the draft's sport days — the train
+     * feature's choice of which day moves, repeats or drops. Empty when nothing would change. No write.
+     */
+    Optional<BlockWeek> blockRearrangement(UUID owner, UUID mesocycleId, List<Integer> gymDays, Set<Integer> sportDays);
+
+    /** Writes the re-arrangement {@link #blockRearrangement} shows for the same state. */
+    void rearrangeBlock(UUID owner, UUID mesocycleId, List<Integer> gymDays, Set<Integer> sportDays);
+
+    /** The block's days and exercises as text, for the preview fingerprint. */
+    String blockState(UUID owner, UUID mesocycleId);
+
     Optional<Block> mesocycle(UUID owner, UUID mesocycleId);
 
     /** Starts an active block from a template on {@code startDate}; returns the new mesocycle id. */

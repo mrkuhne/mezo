@@ -97,11 +97,27 @@ struct EvadLogicTests {
         #expect(!evadCanAccept(previewOf: nil, current: moved), "no preview yet")
     }
 
-    @Test func gymDaysLockedWhenBlockRuns() {
-        #expect(evadGymDaysLocked(EvadFixtures.overview()), "the fixture season's block m1 is running")
-        let noBlock = EvadFixtures.overview(blockId: "null")
-        #expect(!evadGymDaysLocked(noBlock))
-        #expect(evadGymDaysLockedLine.hasPrefix("Amíg fut az edzésblokk, az edzésnapok maradnak"))
+    @Test func blockWeekRowsSayWhereEachDayGoes() {
+        let week = EvadBlockWeek(mesocycleId: "m1", title: "Felső-alsó", days: [
+            EvadBlockDay(weekday: 0, title: "Felső A", change: "keep", fromWeekday: nil),
+            EvadBlockDay(weekday: 2, title: "Alsó A", change: "move", fromWeekday: 1),
+            EvadBlockDay(weekday: 4, title: "Felső A", change: "add", fromWeekday: 0),
+        ], dropped: [EvadBlockDay(weekday: 3, title: "Felső B", change: "drop", fromWeekday: nil)])
+
+        let rows = evadBlockWeekRows(week)
+
+        #expect(rows.map(\.title) == ["Hétfő · Felső A", "Szerda · Alsó A", "Péntek · Felső A", "Kimarad · Felső B"])
+        #expect(rows.map(\.body) == ["Marad a helyén.", "Eddig kedden volt.", "Új nap: a hétfői edzés még egyszer.",
+                                      "Eddig csütörtökön volt, a blokk többi napja viszi tovább a hetet."])
+    }
+
+    @Test func blockWeekRowsSurviveADayWithoutAWeekday() {
+        let week = EvadBlockWeek(mesocycleId: "m1", title: "B", days: [
+            EvadBlockDay(weekday: 1, title: "Extra", change: "move", fromWeekday: nil),
+        ], dropped: [EvadBlockDay(weekday: -1, title: "Más", change: "drop", fromWeekday: nil)])
+
+        #expect(evadBlockWeekRows(week).map(\.body) == ["Új helyre kerül.",
+                                                         "Kimarad, a blokk többi napja viszi tovább a hetet."])
     }
 
     @Test func compareRowsCarryTheWeeklyTotal() {
