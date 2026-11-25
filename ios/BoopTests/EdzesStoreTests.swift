@@ -443,3 +443,50 @@ extension EdzesStoreTests {
         #expect(s.doneTodayTitle == "Pull")
     }
 }
+
+// MARK: - Review fixes (mezo-r36n9.163)
+
+extension EdzesStoreTests {
+    @Test func todaysDayDoneEarlierThisWeekIsDone() async throws {
+        // He did Wednesday's day on Monday from the sheet: Wednesday's own plan comes back with that completion.
+        let monday = NaploDays.week(containing: dayKey(Date())).from
+        let done = #"{"id":"\#(UUID())","templateSessionId":"\#(sessionId)","date":"\#(monday)","status":"completed","sets":[]}"#
+        transport.on("getTodayWorkout", 200,
+                     #"{"templateSessionId":"\#(sessionId)","dayLabel":"Hét","title":"Pull Day","exercises":[],"completedWorkout":\#(done),"weekDoneDates":["\#(monday)"]}"#)
+        let s = store()
+        await s.load()
+        #expect(s.doneToday)
+        #expect(!s.trainedToday || dayKey(Date()) == monday)
+    }
+
+    @Test func aRunningOtherDaysWorkoutIsReloadedAsThatDayAfterTheRoomIsRebuilt() async throws {
+        let folder = directory()
+        transport.on("getTodayWorkout") { _ in (200, tuesdayJSON) }
+        let first = EdzesStore(client: TrainClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: transport)),
+                               cache: nil, folder: folder)
+        _ = await first.pick(UUID(uuidString: tuesdayId))
+        _ = first.startWorkout(date: dayKey(Date()))
+        // The room closes and opens again: a fresh store, no pick in memory, the session on file.
+        let again = EdzesStore(client: TrainClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: transport)),
+                               cache: nil, folder: folder)
+        await again.load()
+        #expect(transport.pathsOf("getTodayWorkout").last?.contains("templateSessionId=\(tuesdayId)") == true)
+        #expect(again.today?.value.title == "Pull")
+    }
+
+    @Test func anOtherDaysPlanIsCachedUnderItsOwnKeyForTheOfflineGym() async throws {
+        let cache = ServerCache(directory: directory())
+        let folder = directory()
+        transport.on("getTodayWorkout") { _ in (200, tuesdayJSON) }
+        let first = EdzesStore(client: TrainClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: transport)),
+                               cache: cache, folder: folder)
+        _ = await first.pick(UUID(uuidString: tuesdayId))
+        _ = first.startWorkout(date: dayKey(Date()))
+        transport.on("getTodayWorkout") { _ in throw URLError(.notConnectedToInternet) }
+        let again = EdzesStore(client: TrainClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: transport)),
+                               cache: cache, folder: folder)
+        await again.load()
+        #expect(again.today?.value.title == "Pull")
+        #expect(await cache.get(TodayWorkout.self, endpoint: "train/today", date: dayKey(Date()), maxAge: 3600) == nil)
+    }
+}

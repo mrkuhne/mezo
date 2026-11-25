@@ -364,10 +364,17 @@ struct EdzesRoom: View {
     /// On a done day the card names what was done: another weekday's workout done today says its own title
     /// (mezo-r36n9.163); today's own keeps the brief's words.
     private func doneTitle(_ own: String) -> String {
-        guard let store, let other = store.doneTodayTemplate, let i = store.todayIndex,
-              let title = store.doneTodayTitle,
-              block?.days.first(where: { TrainWeekdays.index(of: $0.day) == i })?.id != other else { return own }
-        return title
+        guard let store, let i = store.todayIndex else { return own }
+        let todays = block?.days.first(where: { TrainWeekdays.index(of: $0.day) == i })?.id
+        if let other = store.doneTodayTemplate, let title = store.doneTodayTitle {
+            return other != todays ? title : own
+        }
+        // The history has not answered yet (just finished, or offline): the phone's own finished workout.
+        if store.finishedToday != nil, let other = store.finished?.session.templateSessionId, other != todays,
+           let day = block?.days.first(where: { $0.id == other }) {
+            return day.type
+        }
+        return own
     }
 
     /// The week's other open training days (mezo-r36n9.163), once the week's done days are known.
@@ -378,8 +385,7 @@ struct EdzesRoom: View {
 
     /// Offered while nothing runs, today is not done yet and no other day is picked — also on a rest day.
     private var canPickOtherDay: Bool {
-        guard let store, store.session == nil, store.pickedDay == nil, !(store.doneToday || brief?.day.session?.done == true)
-        else { return false }
+        guard let store, store.session == nil, store.pickedDay == nil, !store.trainedToday else { return false }
         if let w = workout, let i = store.todayIndex, isAnotherDay(w, todayIndex: i) { return false }
         return !otherDays.isEmpty
     }
@@ -614,6 +620,7 @@ struct EdzesRoom: View {
                 ritmus.sendNow()
             }
             await store.load(force: true)
+            await loadWeek()
             await morning?.load(date: Date())
         }
     }
