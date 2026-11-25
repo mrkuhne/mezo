@@ -302,7 +302,7 @@ struct PlanClientTests {
     @Test func yearPlanCallsUseTheContractPathsAndDecodeLeniently() async throws {
         let stub = StubTransport()
         stub.on("getActiveYearPlan", .json(404, PlanFixtures.noYearPlanJSON))
-        stub.on("getActiveYearPlan", .json(200, PlanFixtures.yearPlanJSON(unlinked: #"{"mesocycleId":"\#(PlanFixtures.blockId)","title":"V-forma","startDate":"2026-11-16"}"#)))
+        stub.on("getActiveYearPlan", .json(200, PlanFixtures.yearPlanJSON(unlinked: #"{"mesocycleId":"\#(PlanFixtures.blockId)","title":"V-forma","startDate":"2026-11-16","status":"planned"}"#, nextYearStart: #""2027-12-06""#)))
         stub.on("previewYearPlan", .json(200, PlanFixtures.yearPlanJSON(id: false)))
         stub.on("startMesoTemplate", .json(201, PlanFixtures.startedBlockJSON()))
         let c = PlanFixtures.planClient(stub)
@@ -310,6 +310,8 @@ struct PlanClientTests {
         let plan = try #require(try await c.activeYearPlan())
         #expect(plan.blocks.map(\.kind) == ["upper", "lower", "consolidation"] && plan.bufferWeeks == 1)
         #expect(plan.unlinkedRunning?.title == "V-forma" && plan.review.unfocused.count == 7)
+        #expect(plan.unlinkedRunning?.status == "planned" && plan.nextYearStart == "2027-12-06")
+        #expect(PlanFixtures.yearPlan.nextYearStart == nil, "absent on a preview / an older cached plan")
         #expect(plan.blocks[1].skipConsequence == ["quad"] && plan.blocks[0].mesocycleId == PlanFixtures.blockId)
         let preview = try await c.yearPlanPreview(WireYearPlanRequest(startDate: "2026-11-30"))
         #expect(preview.id == nil)

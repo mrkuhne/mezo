@@ -28,10 +28,25 @@ func evesMonth(_ ymd: String) -> String {
     return evesMonths[p.month - 1]
 }
 
-/// The unlinked-block banner's sentence: „Az „Erő alapozás” nov. 2-től fut, de egyik éves blokkhoz sincs kötve.”
+/// The unlinked-block banner's sentence: „Az „Erő alapozás” nov. 2-től fut, de egyik éves blokkhoz sincs kötve.” — a
+/// planned run „… nov. 2-től indul, …” (it does not run yet).
 func evesUnlinkedText(_ u: WireYearUnlinked) -> String {
     let article = evesArticle(u.title).capitalized
-    return "\(article) „\(u.title)” \(evesFrom(u.startDate)) fut, de egyik éves blokkhoz sincs kötve."
+    let verb = u.isPlanned ? "indul" : "fut"
+    return "\(article) „\(u.title)” \(evesFrom(u.startDate)) \(verb), de egyik éves blokkhoz sincs kötve."
+}
+
+/// The unlinked-block banner's title: „A futó blokkod …" only for a run that runs now.
+func evesUnlinkedTitle(_ u: WireYearUnlinked) -> String {
+    u.isPlanned ? "A tervezett blokkod nincs az éves tervben" : "A futó blokkod nincs az éves tervben"
+}
+
+/// A planned block already linked to a planned run: „Indul nov. 2-től. A blokkot a blokképítőben tudod módosítani."
+/// Its focus, length and place are the run's now (the server refuses those edits); only a skip is left on the sheet.
+/// nil for any other block.
+func evesLinkedPlannedText(_ b: WireYearBlock) -> String? {
+    guard b.status == "planned", b.mesocycleId != nil else { return nil }
+    return "Indul \(evesFrom(b.plannedStart)). A blokkot a blokképítőben tudod módosítani."
 }
 
 /// „dec. 14-től" — the date with the right „-tól / -től" for the day's number.
@@ -111,12 +126,10 @@ func evesAdding(days: Int, to ymd: String) -> String? {
 /// The Monday a week of the plan starts on (the strip's ticks).
 func evesMonday(week: Int, start: String) -> String { evesAdding(days: (week - 1) * 7, to: start) ?? start }
 
-/// „Jövő évi terv": the next plan starts the Monday after the consolidation's last day, never before the Monday on/after
-/// today.
+/// „Jövő évi terv": the server's start (the Monday after the plan's end and after a still-running consolidation). A
+/// plan cached before the server sent it falls back to the earliest start a new plan may have.
 func evesNextYearStart(_ plan: WireYearPlan, today: Date, calendar: Calendar = .current) -> String {
-    let after = evesAdding(days: 1, to: plan.endDate) ?? plan.endDate
-    let todayString = evesTodayMonday(today, calendar: calendar)
-    return after > todayString ? after : todayString
+    plan.nextYearStart ?? evesTodayMonday(today, calendar: calendar)
 }
 
 /// The Monday on/after today, `yyyy-MM-dd` (the earliest start a new plan may have).

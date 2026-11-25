@@ -154,7 +154,8 @@ enum PlanFixtures {
 
     /// Block 1 running (adopted), block 2 planned from 2027-01-11, the consolidation last; `warnings` and `next` as given.
     static func yearPlanJSON(id: Bool = true, status: String = "active", warnings: String = "[]",
-                             relaxed: String = "[]", block2Status: String = "planned", unlinked: String = "null") -> String {
+                             relaxed: String = "[]", block2Status: String = "planned", unlinked: String = "null",
+                             nextYearStart: String = "null") -> String {
         let pid = id ? #""id":"\#(yearPlanId)","# : ""
         func bid(_ v: String) -> String { id ? #""id":"\#(v)","# : "" }
         return #"""
@@ -172,7 +173,7 @@ enum PlanFixtures {
          "relaxed":\#(relaxed),"warnings":\#(warnings),
          "focusCount":{"chest":0,"back":1,"shoulder":0,"biceps":1,"triceps":0,"quad":1,"ham":0,"glute":0,"calf":0},
          "next":{"blockId":"\#(yearBlock2)","startsOn":"2027-01-11","reason":"last_week"},
-         "unlinkedRunning":\#(unlinked),
+         "unlinkedRunning":\#(unlinked),"nextYearStart":\#(nextYearStart),
          "review":{"blocksDone":0,"blocksSkipped":0,"focused":["back","biceps"],"unfocused":["chest","shoulder","triceps","quad","ham","glute","calf"]}}
         """#
     }

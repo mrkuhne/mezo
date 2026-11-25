@@ -9,16 +9,17 @@ struct EvesTervKitTests {
 
     private func plan(overrun: Int = 0, consolidationWeeks: Int = 2, consWeeks: Int = 2, buffer: Int = 2,
                       warnings: String = "[]", focusCount: String = #"{"chest":2,"back":2,"shoulder":2,"biceps":1,"triceps":1,"quad":2,"ham":2,"glute":2,"calf":1}"#,
-                      block2: String = "planned", currentWeek: String = "9") -> WireYearPlan {
+                      block2: String = "planned", currentWeek: String = "9", block2Meso: String = "null",
+                      nextYearStart: String = "null") -> WireYearPlan {
         let json = """
         {"id":"p","status":"active","startDate":"2026-09-21","endDate":"2027-09-19","blockWeeks":6,"consolidationWeeks":\(consolidationWeeks),
          "emphasis":[],"currentWeek":\(currentWeek),"loadingBlocks":2,"bufferWeeks":\(buffer),"bufferStart":"2027-08-23","overrunWeeks":\(overrun),
          "blocks":[
           {"id":"b1","ordinal":1,"kind":"upper","focus":["biceps","back"],"weeks":6,"plannedStart":"2026-09-21","lastDay":"2026-11-01","status":"done","adopted":true,"canMoveEarlier":false,"skipConsequence":[]},
-          {"id":"b2","ordinal":2,"kind":"lower","focus":["quad","glute"],"weeks":6,"plannedStart":"2026-11-02","lastDay":"2026-12-13","status":"\(block2)","currentWeek":3,"adopted":false,"canMoveEarlier":false,"skipConsequence":["glute"]},
+          {"id":"b2","ordinal":2,"kind":"lower","focus":["quad","glute"],"weeks":6,"plannedStart":"2026-11-02","lastDay":"2026-12-13","status":"\(block2)","mesocycleId":\(block2Meso),"currentWeek":3,"adopted":false,"canMoveEarlier":false,"skipConsequence":["glute"]},
           {"id":"c","ordinal":3,"kind":"consolidation","focus":[],"weeks":\(consWeeks),"plannedStart":"2027-09-06","lastDay":"2027-09-19","status":"planned","adopted":false,"canMoveEarlier":false,"skipConsequence":[]}],
          "relaxed":[],"warnings":\(warnings),"focusCount":\(focusCount),
-         "next":{"blockId":"c","startsOn":"2027-09-06","reason":"last_week"},
+         "next":{"blockId":"c","startsOn":"2027-09-06","reason":"last_week"},"nextYearStart":\(nextYearStart),
          "review":{"blocksDone":1,"blocksSkipped":0,"focused":["back"],"unfocused":["calf"]}}
         """
         return try! JSONDecoder().decode(WireYearPlan.self, from: Data(json.utf8))
@@ -125,20 +126,35 @@ struct EvesTervKitTests {
         #expect(evesRows(plan(buffer: 0)).count == 3)
     }
 
-    @Test func nextYearStartsTheMondayAfterTheEnd() {
+    /// „Jövő évi terv" starts where the server says (a late consolidation can outlast the plan's end), never the
+    /// plan's end + 1 computed here.
+    @Test func nextYearStartIsTheServers() {
         let cal = Calendar(identifier: .gregorian)
         let today = cal.date(from: DateComponents(year: 2027, month: 9, day: 10))!
-        #expect(evesNextYearStart(plan(), today: today, calendar: cal) == "2027-09-20")
-        let late = cal.date(from: DateComponents(year: 2027, month: 10, day: 6))!
-        #expect(evesNextYearStart(plan(), today: late, calendar: cal) == "2027-10-11")
+        #expect(evesNextYearStart(plan(nextYearStart: #""2027-09-27""#), today: today, calendar: cal) == "2027-09-27")
+        // An older cached plan without the field: the earliest start a new plan may have.
+        #expect(evesNextYearStart(plan(), today: today, calendar: cal) == "2027-09-13")
     }
 
     @Test func unlinkedBannerTakesTheTitlesArticle() {
-        func u(_ title: String) -> WireYearUnlinked {
-            try! JSONDecoder().decode(WireYearUnlinked.self, from: Data(#"{"mesocycleId":"m","title":"\#(title)","startDate":"2026-11-02"}"#.utf8))
+        func u(_ title: String, _ status: String = "active") -> WireYearUnlinked {
+            try! JSONDecoder().decode(WireYearUnlinked.self, from: Data(#"{"mesocycleId":"m","title":"\#(title)","startDate":"2026-11-02","status":"\#(status)"}"#.utf8))
         }
         #expect(evesUnlinkedText(u("Erő alapozás")) == "Az „Erő alapozás” nov. 2-től fut, de egyik éves blokkhoz sincs kötve.")
         #expect(evesUnlinkedText(u("Nyári blokk")) == "A „Nyári blokk” nov. 2-től fut, de egyik éves blokkhoz sincs kötve.")
+        // A planned run does not run yet: it starts on its day.
+        #expect(evesUnlinkedText(u("Erő alapozás", "planned")) == "Az „Erő alapozás” nov. 2-től indul, de egyik éves blokkhoz sincs kötve.")
+        #expect(evesUnlinkedTitle(u("Erő alapozás")) == "A futó blokkod nincs az éves tervben")
+        #expect(evesUnlinkedTitle(u("Erő alapozás", "planned")) == "A tervezett blokkod nincs az éves tervben")
+    }
+
+    /// A planned block already linked to a planned run is edited in the block builder; the sheet says so.
+    @Test func linkedPlannedBlockPointsToTheBuilder() {
+        let linked = plan(block2Meso: #""m2""#)
+        let b2 = linked.blocks[1]
+        #expect(evesLinkedPlannedText(b2) == "Indul nov. 2-től. A blokkot a blokképítőben tudod módosítani.")
+        #expect(evesLinkedPlannedText(plan().blocks[1]) == nil, "an unlinked planned block is edited here")
+        #expect(evesLinkedPlannedText(plan(block2: "skipped", block2Meso: #""m2""#).blocks[1]) == nil)
     }
 
     /// -tól/-től (and -ból/-ből) for every number 1…99, by how it ends when said aloud.

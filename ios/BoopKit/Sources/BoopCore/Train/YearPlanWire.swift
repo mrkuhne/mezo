@@ -33,11 +33,15 @@ public struct WireYearPlan: Codable, Equatable, Sendable {
     public let focusCount: [String: Int]
     public let next: WireYearNext?
     public let unlinkedRunning: WireYearUnlinked?
+    /// The Monday „Jövő évi terv" starts on (the server's; it knows a late consolidation outlasts the plan). Only on the
+    /// active plan; nil on a preview and on a plan cached before the server sent it.
+    public let nextYearStart: String?
     public let review: WireYearReview
 
     enum CodingKeys: String, CodingKey {
         case id, status, startDate, endDate, blockWeeks, consolidationWeeks, emphasis, currentWeek, loadingBlocks,
-             bufferWeeks, bufferStart, overrunWeeks, blocks, relaxed, warnings, focusCount, next, unlinkedRunning, review
+             bufferWeeks, bufferStart, overrunWeeks, blocks, relaxed, warnings, focusCount, next, unlinkedRunning,
+             nextYearStart, review
     }
 
     public init(from decoder: Decoder) throws {
@@ -60,6 +64,7 @@ public struct WireYearPlan: Codable, Equatable, Sendable {
         focusCount = try c.decodeIfPresent([String: Int].self, forKey: .focusCount) ?? [:]
         next = try c.decodeIfPresent(WireYearNext.self, forKey: .next)
         unlinkedRunning = try c.decodeIfPresent(WireYearUnlinked.self, forKey: .unlinkedRunning)
+        nextYearStart = try c.decodeIfPresent(String.self, forKey: .nextYearStart)
         review = try c.decodeIfPresent(WireYearReview.self, forKey: .review) ?? WireYearReview(blocksDone: 0, blocksSkipped: 0, focused: [], unfocused: [])
     }
 
@@ -134,11 +139,15 @@ public struct WireYearNext: Codable, Equatable, Sendable {
     public let reason: String
 }
 
-/// A running mesocycle that is linked to no block of the plan.
+/// A started (running or planned) mesocycle that is linked to no block of the plan.
 public struct WireYearUnlinked: Codable, Equatable, Sendable {
     public let mesocycleId: String
     public let title: String
     public let startDate: String
+    /// `active` (runs now) / `planned` (starts on `startDate`), read leniently; nil from an older cached plan.
+    public let status: String?
+
+    public var isPlanned: Bool { status == "planned" }
 }
 
 public struct WireYearReview: Codable, Equatable, Sendable {

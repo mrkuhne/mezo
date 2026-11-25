@@ -241,14 +241,15 @@ struct EvesTervTerkep: View {
 
     // MARK: additions
 
-    /// A running block that belongs to no block of the year: one tap makes it the next planned block.
+    /// A started block (running, or planned for a later day) that belongs to no block of the year: one tap makes it the
+    /// next planned block.
     private func unlinkedBanner(_ u: WireYearUnlinked, plan: WireYearPlan) -> some View {
         let target = plan.blocks.first { $0.status == "planned" && !$0.isConsolidation && $0.id != nil }
         return VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 10) {
                 PlanMark(.flag, color: planWarn, size: 18).padding(.top, 1)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("A futó blokkod nincs az éves tervben").nkFont(15, .semibold).foregroundStyle(planWarn)
+                    Text(evesUnlinkedTitle(u)).nkFont(15, .semibold).foregroundStyle(planWarn)
                         .fixedSize(horizontal: false, vertical: true)
                     Text(evesUnlinkedText(u))
                         .nkFont(13).foregroundStyle(.white.opacity(0.8)).fixedSize(horizontal: false, vertical: true)

@@ -28,13 +28,24 @@ enum EdzesTab: String, CaseIterable {
 }
 
 /// A sub-page of the room, opened from a card.
-enum EdzesPage: String, Identifiable {
+enum EdzesPage: Identifiable, Equatable {
     case blockLoad
     /// The block builder and the weekly review (mezo-r36n9.83, `ios/Boop/EdzesTerv/`).
     case builder, review
-    /// The new-block flow (mezo-r36n9.113, `ios/Boop/EdzesTerv/UjBlokk/`).
-    case newBlock
-    var id: String { rawValue }
+    /// The new-block flow (mezo-r36n9.113, `ios/Boop/EdzesTerv/UjBlokk/`). Its model rides on the item (as the year
+    /// cover's does): a model kept in separate state could be read as nil by a cover built in the same update.
+    case newBlock(NewBlockCover)
+
+    var id: String {
+        switch self {
+        case .blockLoad: "blockLoad"
+        case .builder: "builder"
+        case .review: "review"
+        case .newBlock(let cover): "newBlock-\(cover.id)"
+        }
+    }
+
+    static func == (a: EdzesPage, b: EdzesPage) -> Bool { a.id == b.id }
 }
 
 /// Edzés as its own app, the way Étel is: its own data, on the shared page.
@@ -59,8 +70,6 @@ struct EdzesRoom: View {
     @State private var weekReview: WeekReviewModel?
     /// The builder, loaded in the background when the room opens, so it opens without a spinner (owner, 2026-11-19).
     @State private var builder: BlockBuilderModel?
-    /// The new-block intake on screen.
-    @State private var newBlock: NewBlockModel?
     /// The Éves terv on screen (mezo-r36n9.113, `ios/Boop/EdzesTerv/EvesTerv/`): its own cover, the model riding on
     /// the item — a model kept in separate state was read as nil by a cover built in the same update.
     @State private var yearPlan: YearPlanCover?
@@ -139,9 +148,9 @@ struct EdzesRoom: View {
                     }
                     .navigationTransition(.zoom(sourceID: PlanZoom.builder, in: planZoom))
                 }
-            case .newBlock:
-                if let newBlock, let plan {
-                    UjBlokkFlow(model: newBlock,
+            case .newBlock(let cover):
+                if let plan {
+                    UjBlokkFlow(model: cover.model,
                                 onClose: { page = nil },
                                 onCreated: { minutes in
                                     // The builder re-reads and picks up the planned block; it may still be thrown away. The
@@ -255,8 +264,9 @@ struct EdzesRoom: View {
         guard let plan else { return }
         Task {
             await evad?.load()
-            newBlock = NewBlockModel(client: plan, seasonGymDays: evad?.overview?.pillars.block.gymDays, prefill: prefill)
-            page = .newBlock
+            page = .newBlock(NewBlockCover(model: NewBlockModel(client: plan,
+                                                                seasonGymDays: evad?.overview?.pillars.block.gymDays,
+                                                                prefill: prefill)))
         }
     }
 
@@ -880,6 +890,12 @@ private struct DayCard: View {
 struct YearPlanCover: Identifiable {
     let id = UUID()
     let model: YearPlanModel
+}
+
+/// The new-block flow's item (`EdzesPage.newBlock`): a fresh model per opening, carried by the page itself.
+struct NewBlockCover: Identifiable {
+    let id = UUID()
+    let model: NewBlockModel
 }
 
 // MARK: - Words

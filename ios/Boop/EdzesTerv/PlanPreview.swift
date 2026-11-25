@@ -63,7 +63,8 @@ enum PlanPreview {
 struct PlanPreviewRoot: View {
     @State private var page: EdzesPage? = {
         if UserDefaults.standard.bool(forKey: "previewUjBlokk") {
-            return UserDefaults.standard.string(forKey: "previewUjBlokkScreen") == "letrehozva" ? .builder : .newBlock
+            return UserDefaults.standard.string(forKey: "previewUjBlokkScreen") == "letrehozva"
+                ? .builder : .newBlock(NewBlockCover(model: PlanPreview.newBlockModel()))
         }
         switch UserDefaults.standard.string(forKey: "previewBlokkOpen") {
         case "epito": return .builder
@@ -79,7 +80,6 @@ struct PlanPreviewRoot: View {
         if d.string(forKey: "previewUjBlokkScreen") == "letrehozva" { m.justCreated = true; m.minutesTarget = 60 }
         return m
     }()
-    @State private var newBlock = PlanPreview.newBlockModel()
     @Namespace private var zoom
 
     var body: some View {
@@ -96,7 +96,7 @@ struct PlanPreviewRoot: View {
             case .builder:
                 BlockBuilderPage(model: builder,
                                  initialMode: BlockBuilderPage.Mode(rawValue: (UserDefaults.standard.string(forKey: "previewBlokkTab") ?? "").capitalized) ?? .izmok,
-                                 onNewBlock: { newBlock = PlanPreview.newBlockModel(screen: nil); page = .newBlock }) {
+                                 onNewBlock: { page = .newBlock(NewBlockCover(model: PlanPreview.newBlockModel(screen: nil))) }) {
                     page = nil
                     builder = BlockBuilderModel(client: PlanPreview.client)
                     Task { await builder.load() }
@@ -105,8 +105,8 @@ struct PlanPreviewRoot: View {
             case .review:
                 WeekReviewDeck(model: review) { page = nil; Task { await review.load() } }
                     .navigationTransition(.zoom(sourceID: PlanZoom.review, in: zoom))
-            case .newBlock:
-                UjBlokkFlow(model: newBlock, step: PlanPreview.initialStep, blocked: PlanPreview.initialBlocked,
+            case .newBlock(let cover):
+                UjBlokkFlow(model: cover.model, step: PlanPreview.initialStep, blocked: PlanPreview.initialBlocked,
                             onClose: { page = nil },
                             onCreated: { minutes in
                                 // The cover's content keeps the model it was built with: re-arm that one.

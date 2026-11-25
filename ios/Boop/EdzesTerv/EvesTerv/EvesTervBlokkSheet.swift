@@ -5,7 +5,8 @@ import BoopDesign
 // 6b · One block of the year (mezo-r36n9.113, the approved spike's screen 6b): change its focus, move it a week,
 // move it in the order (controller call 8: *Sorrend*), skip it — with what skipping costs (`skipConsequence`). Every
 // edit goes to the server, which answers with the whole re-dated plan; the sheet reads its block from that answer. A
-// running or finished block shows no edit controls.
+// running or finished block shows no edit controls; a planned block already linked to a planned run offers only the
+// skip (the block builder edits the run).
 
 struct EvesTervBlokkSheet: View {
     let model: YearPlanModel
@@ -53,6 +54,10 @@ struct EvesTervBlokkSheet: View {
                 Text(status == .done ? "Ez a blokk lezárult, már nem változik." : "Ez a blokk most fut, ezért nem módosítható. A fókuszát a blokk oldalán állíthatod.")
                     .nkFont(14).foregroundStyle(.white.opacity(0.7)).fixedSize(horizontal: false, vertical: true)
             } else if status == .skipped {
+                skip(block, status: status)
+            } else if let linked = evesLinkedPlannedText(block) {
+                // Linked to a planned run: its focus, length and place are the run's — the block builder changes them.
+                Text(linked).nkFont(14).foregroundStyle(.white.opacity(0.7)).fixedSize(horizontal: false, vertical: true)
                 skip(block, status: status)
             } else {
                 focus(block)
