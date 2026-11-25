@@ -1740,123 +1740,123 @@
     },
     "funkciok:meal-rogzites": {
       "page_id": "41e8968e-752b-81bb-a4b6-face14858bab",
-      "hash": "234824c32076"
+      "hash": "2ead53eea344"
     },
     "funkciok:meal-javitas-torles": {
       "page_id": "41e8968e-752b-8136-bea3-feb9597c9dc7",
-      "hash": "40550a5a6d65"
+      "hash": "def67532ec10"
     },
     "funkciok:meal-napi-keret": {
       "page_id": "41e8968e-752b-8143-87c4-d6e1a4874491",
-      "hash": "0c7ed9bde952"
+      "hash": "e21d9f8d219a"
     },
     "funkciok:meal-heti-kep": {
       "page_id": "41e8968e-752b-814b-96b4-e2db96cfa493",
-      "hash": "000d7de15ef7"
+      "hash": "b826d8b0b7c6"
     },
     "funkciok:meal-napi-terv-tipp": {
       "page_id": "41e8968e-752b-814d-899b-ffe806f99b17",
-      "hash": "03e5f0b895ee"
+      "hash": "1429e9684d56"
     },
     "funkciok:meal-szokasosak": {
       "page_id": "41e8968e-752b-8163-935a-e8e262416554",
-      "hash": "06aff3d3e7b8"
+      "hash": "4e7bd5e6207d"
     },
     "funkciok:meal-boop-ertekeles": {
       "page_id": "41e8968e-752b-81bd-9368-e75d6333ec39",
-      "hash": "ae298941ee29"
+      "hash": "c25c2df66dc6"
     },
     "funkciok:meal-ertekeles-hatterben": {
       "page_id": "41e8968e-752b-810c-9b8e-c52b416ca327",
-      "hash": "5475871c4fc1"
+      "hash": "80e23d0605cc"
     },
     "funkciok:meal-viz": {
       "page_id": "41e8968e-752b-8198-bbbd-fc05cf793032",
-      "hash": "70355fd3853c"
+      "hash": "6a1d1fc5c82b"
     },
     "funkciok:meal-etelfoto": {
       "page_id": "41e8968e-752b-8105-a4b7-faec954502c8",
-      "hash": "356e98d19d12"
+      "hash": "4af516b29b7e"
     },
     "funkciok:meal-osszes-foto-torles": {
       "page_id": "41e8968e-752b-817e-9e38-eeb4fc96dbb4",
-      "hash": "972fe6d53eaf"
+      "hash": "c011b15a9d9d"
     },
     "funkciok:meal-recept-elozmeny": {
       "page_id": "41e8968e-752b-8115-9606-da9d0f0708b7",
-      "hash": "45cc57ace989"
+      "hash": "00a08fe3ee42"
     },
     "funkciok:meal-ujraszamolas": {
       "page_id": "41e8968e-752b-8155-932f-f44c7940c49b",
-      "hash": "0dd0148f2c79"
+      "hash": "ec0db6aa8232"
     },
     "funkciok:nutrition-napi-cel": {
       "page_id": "41e8968e-752b-81c5-999d-d24f9f82b68f",
-      "hash": "e4fd258b38ca"
+      "hash": "b2656f864d0a"
     },
     "funkciok:nutrition-pontozas": {
       "page_id": "41e8968e-752b-8148-9c5d-e6c3ab9b235c",
-      "hash": "31ecb6531040"
+      "hash": "d4857958f1c0"
     },
     "funkciok:nutrition-etrendi-beallitasok": {
       "page_id": "41e8968e-752b-8116-9127-f1333a507481",
-      "hash": "b70fe1acd5dd"
+      "hash": "4080e1f6c3f9"
     },
     "funkciok:nutrition-erzekenyseg-profil": {
       "page_id": "41e8968e-752b-81ba-acb2-c93543c5e3f4",
-      "hash": "d92b00f85a1b"
+      "hash": "fa0e7d5e65cc"
     },
     "funkciok:nutrition-erzekenyseg-jelzes": {
       "page_id": "41e8968e-752b-8195-ae20-f5184baaec7d",
-      "hash": "d69c4bed99da"
+      "hash": "d04599e541f4"
     },
     "funkciok:nutrition-napi-terv-motor": {
       "page_id": "41e8968e-752b-812d-91f8-e0c7033b39a7",
-      "hash": "afde1d1593e6"
+      "hash": "48c66dd72c59"
     },
     "funkciok:fuel-etkezesi-ritmus": {
       "page_id": "41e8968e-752b-818d-abda-e0c61f4c0a68",
-      "hash": "37aa90bb857f"
+      "hash": "d576c32fe840"
     },
     "funkciok:fuel-stack-lista": {
       "page_id": "41e8968e-752b-81d8-92e9-c7be2be9ce54",
-      "hash": "faf675b29c30"
+      "hash": "3cb0a32224de"
     },
     "funkciok:fuel-bevetel": {
       "page_id": "41e8968e-752b-81e6-a8d2-ecba25d4e012",
-      "hash": "56fcda7673ce"
+      "hash": "0d9fca67735e"
     },
     "funkciok:fuel-elhelyezes": {
       "page_id": "41e8968e-752b-81e3-bda8-ff346e786e4d",
-      "hash": "388169da5879"
+      "hash": "4c957a3218ee"
     },
     "funkciok:fuel-kezi-athelyezes": {
       "page_id": "41e8968e-752b-818b-9928-ee1ca9e73e56",
-      "hash": "648b7650ccd8"
+      "hash": "74746c8b17ef"
     },
     "funkciok:fuel-idosav-sablon": {
       "page_id": "41e8968e-752b-8186-95d5-e1d11d811330",
-      "hash": "2a7b1050462b"
+      "hash": "d81f669fdfce"
     },
     "funkciok:fuel-sablon-ai-ertekeles": {
       "page_id": "41e8968e-752b-8134-a2e2-fab51b678c31",
-      "hash": "fe1e6dd146f7"
+      "hash": "bdf29a69d39e"
     },
     "funkciok:fuel-stack-indulo": {
       "page_id": "41e8968e-752b-81dc-8c87-e5f0888bf729",
-      "hash": "543c437effcf"
+      "hash": "bf5ad7b3e6d1"
     },
     "funkciok:recipe-konyvtar": {
       "page_id": "41e8968e-752b-81fb-aaca-ea81a9166189",
-      "hash": "a95516d9a431"
+      "hash": "b36a1ef51eaa"
     },
     "funkciok:recipe-javitas-torles": {
       "page_id": "41e8968e-752b-81cd-a7b5-ce29ea47a6f6",
-      "hash": "b2dc2cf19a07"
+      "hash": "e34ad3ba68d6"
     },
     "funkciok:recipe-behuzas-link": {
       "page_id": "41e8968e-752b-8155-8aa3-c9cf7617dd44",
-      "hash": "a6b54630e6d2"
+      "hash": "a51e91b7ce1a"
     },
     "funkciok:recipe-behuzas-szoveg-foto": {
       "page_id": "41e8968e-752b-81fe-bd6a-e7f07a29aef6",
