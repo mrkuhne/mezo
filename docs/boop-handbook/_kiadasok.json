@@ -932,5 +932,20 @@
     ],
     "mi_valtozott": "Az app sehol nem mutat bemelegítő sorozatot: a lejátszó az első munkasorozattal indul, a napszerkesztőből eltűnt a bemelegítő mező, a tervjelöltek nem beszélnek róla. Az edzés végi képen a három szám alatt ott a kalória: először a szerver becslése („kb. 380 kcal · becslés”, például), és ha az órád is rögzítette az edzést, az órád mérése („az órád mérte”). Ehhez a lezárás már a lezáró kép megnyílásakor felmegy a szerverre.",
     "ellenorzes": "Szerver: új kalória-teszt (becslés, órás szám, nincs adat, lezáráskor) és a meglévő edzéstesztek, architektúra-teszt zöld. iPhone: a mag 1050 + 85 tesztje és az app 521 tesztje zöld (közben megjavítva négy, már korábban is piros teszt). Szimulátorban: lejátszó bemelegítő nélkül, lezáró kép becsléssel és órás számmal, a legkisebb iPhone-on is. Független kódátnézés két találata javítva."
+  },
+  "2e2ed4080": {
+    "cim": "Éves terv: 52 hetes térkép, Következik kártya, az évad követi a blokkot",
+    "datum": "2026-11-25",
+    "verzio": "v3.39.0",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app",
+      "Háttérrendszer"
+    ],
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.113"
+    ],
+    "mi_valtozott": "Az Edzés oldalról elérhető az Éves terv. Boop javasol egy 52 hetes térképet: hathetes fókuszblokkok felváltva felsőtestre és lábra, mindegyik végén könnyítő héttel, tartalék hetekkel és a végén két hét könnyű szinten tartással. Minden izom legalább egyszer fókuszba kerül, amit te kiemelsz, kétszer; ha most készíted, a futó blokkod lesz az első. Egy blokk fókusza cserélhető, a blokk mozgatható, áthelyezhető vagy kihagyható — a szabályszegés figyelmeztetés, nem tiltás. Ha csúszol vagy kihagysz, a térkép átrendeződik (előbb a tartalék fogy, aztán rövidül a lezárás, végül kitolódik az év vége). A blokk utolsó hetén a Következik kártya előre kitöltve indítja a következő blokkot, a „Jövő hétfőn” kezdésű blokk a saját napján tényleg elindul, és az évad mindig a ténylegesen futó blokkot mutatja. Például: egy kihagyott vádliblokk után Boop szól, hogy a vádli idén nem kap fókuszt, és felajánlja egy későbbi blokkba."
   }
 }

@@ -1228,7 +1228,7 @@
     },
     "kezikonyv:07-edzes/16-blokk-epito": {
       "page_id": "41d8968e-752b-81cc-818e-dc11d0726e8f",
-      "hash": "e0b61b1e7a97"
+      "hash": "bb205fcabcd5"
     },
     "kiadasok:78e52679e": {
       "page_id": "41d8968e-752b-8127-9b15-d0288d125bd0",
@@ -1412,7 +1412,7 @@
     },
     "jegyek:mezo-r36n9.113": {
       "page_id": "41e8968e-752b-8145-b144-e62b83f8070b",
-      "hash": "9718db7072be"
+      "hash": "5694f8bb6887"
     },
     "dontesek:d-2026-11-20-csere-kimeles": {
       "page_id": "41e8968e-752b-8121-9368-ccaea7c1e215",
@@ -2804,7 +2804,7 @@
     },
     "kezikonyv:07-edzes/18-uj-blokk-tervjeloltek": {
       "page_id": "41f8968e-752b-81d6-a72c-c6ba650c00ef",
-      "hash": "157490111bc1"
+      "hash": "e493f9517f3d"
     },
     "jegyek:mezo-r36n9.133": {
       "page_id": "41f8968e-752b-81dc-b519-d11a0e55afb6",
@@ -3116,7 +3116,7 @@
     },
     "kezikonyv:07-edzes/19-masik-nap-ma": {
       "page_id": "4238968e-752b-8169-a28a-e04e16d8fea6",
-      "hash": "7988e6dff63c"
+      "hash": "b86a7affd0c9"
     },
     "kezikonyv:13-suly/00-attekintes": {
       "page_id": "4238968e-752b-81fa-80f1-cecc1e7e4f4b",
@@ -3153,6 +3153,42 @@
     "jegyek:mezo-r36n9.163": {
       "page_id": "4238968e-752b-8123-8cdb-e5ec0e43e932",
       "hash": "2c627b1e7377"
+    },
+    "dontesek:d-2026-11-21-tervezett-blokk-sajat-napjan": {
+      "page_id": "4238968e-752b-814d-b2f8-d1f423332090",
+      "hash": "f2016c0ad88f"
+    },
+    "dontesek:d-2026-11-21-evad-az-elindult-blokkot-koveti": {
+      "page_id": "4238968e-752b-81ce-8024-d794f5911dbb",
+      "hash": "aebb59c8fef1"
+    },
+    "dontesek:d-2026-11-21-kihagyott-tervezett-blokk-torlodik": {
+      "page_id": "4238968e-752b-811e-b6ad-ec62e94712e9",
+      "hash": "c67cf70326c9"
+    },
+    "dontesek:d-2026-11-21-elso-blokk-felso": {
+      "page_id": "4238968e-752b-8173-b381-f0e667f5be90",
+      "hash": "1a4ccd13c09c"
+    },
+    "dontesek:d-2026-11-21-fokusz-parok-tablazata": {
+      "page_id": "4238968e-752b-8119-85ea-ee32a4f5aaf1",
+      "hash": "672dd7377d2a"
+    },
+    "dontesek:d-2026-11-21-lezaras-minden-tartas": {
+      "page_id": "4238968e-752b-8161-a3a0-e3e06dee60cb",
+      "hash": "f0cfa0d10330"
+    },
+    "kiadasok:2e2ed4080": {
+      "page_id": "4238968e-752b-812b-9a46-f28ff6262ccf",
+      "hash": "ff4cc4c9643b"
+    },
+    "kezikonyv:07-edzes/19-eves-terv": {
+      "page_id": "4238968e-752b-813b-a01b-f5263571cc0c",
+      "hash": "f6daa32648f6"
+    },
+    "funkciok:train-eves-terv": {
+      "page_id": "4238968e-752b-819a-8797-d3a8583033cb",
+      "hash": "963596fe8c7d"
     }
   }
 }
