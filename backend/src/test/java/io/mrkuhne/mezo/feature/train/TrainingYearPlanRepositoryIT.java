@@ -29,6 +29,7 @@ class TrainingYearPlanRepositoryIT extends AbstractIntegrationTest {
     @Autowired TransactionTemplate tx;
     @Autowired io.mrkuhne.mezo.support.DatabasePopulator databasePopulator;
     @Autowired TrainPopulator trainPopulator;
+    @Autowired org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     private UUID owner() {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());
@@ -46,6 +47,40 @@ class TrainingYearPlanRepositoryIT extends AbstractIntegrationTest {
         assertThat(loaded.get(0).getKind()).isEqualTo("upper");
         assertThat(loaded.get(1).getFocus()).isEmpty();
         assertThat(plans.findByCreatedByAndStatusAndDeletedFalse(owner, "active")).isPresent();
+    }
+
+    @Test
+    void testFindLocked_shouldHoldTheRowUntilCommit() throws Exception {
+        UUID owner = owner();
+        var plan = populator.plan(owner, MONDAY, "back+biceps", "consolidation");
+        java.util.concurrent.CountDownLatch held = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch release = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.ExecutorService pool = java.util.concurrent.Executors.newSingleThreadExecutor();
+        try {
+            var holder = pool.submit(() -> tx.executeWithoutResult(s -> {
+                assertThat(plans.findLockedByCreatedByAndStatusAndDeletedFalse(owner, "active")).isPresent();
+                held.countDown();
+                try {
+                    release.await(10, java.util.concurrent.TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }));
+            assertThat(held.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+            // A second locker waits (NOWAIT-style probe: lock_timeout makes the wait fail fast instead of blocking).
+            assertThatThrownBy(() -> tx.executeWithoutResult(s -> {
+                jdbc.execute("set local lock_timeout = '200ms'");
+                plans.findLockedByIdAndCreatedByAndDeletedFalse(plan.getId(), owner);
+            })).isInstanceOf(RuntimeException.class);
+            release.countDown();
+            holder.get(10, java.util.concurrent.TimeUnit.SECONDS);
+            Boolean relocked = tx.execute(s -> plans.findLockedByIdAndCreatedByAndDeletedFalse(plan.getId(), owner)
+                .isPresent());
+            assertThat(relocked).isTrue();
+        } finally {
+            release.countDown();
+            pool.shutdownNow();
+        }
     }
 
     @Test

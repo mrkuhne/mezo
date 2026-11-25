@@ -26,6 +26,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -35,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -65,6 +67,8 @@ public class YearPlanService {
     private static final int MIN_LOADING_WEEKS = 4;
     private static final int MAX_LOADING_WEEKS = 8;
     private static final int MAX_CONSOLIDATION_WEEKS = 2;
+    private static final String ACTIVE_RUN = "active";
+    private static final String FLAT_PHASE = "MEV";
 
     private final TrainingYearPlanRepository plans;
     private final TrainingYearBlockRepository blocks;
@@ -94,6 +98,8 @@ public class YearPlanService {
             if (!Boolean.TRUE.equals(req.getReplaceActive())) {
                 throw error("TRAIN_YEAR_PLAN_ACTIVE_EXISTS", HttpStatus.CONFLICT);
             }
+            // Freeze the statuses reality gave the old blocks (as archive does) before it stops being reconciled.
+            reconcile(owner, blocks.findByPlanIdAndDeletedFalseOrderByOrdinalAsc(old.getId()));
             archiveEntity(old);
             plans.saveAndFlush(old);
         });
@@ -123,7 +129,8 @@ public class YearPlanService {
     public YearPlan patchBlock(UUID owner, UUID blockId, YearBlockPatch patch) {
         TrainingYearBlockEntity target = blocks.findByIdAndCreatedByAndDeletedFalse(blockId, owner)
             .orElseThrow(() -> error("RESOURCE_NOT_FOUND", HttpStatus.NOT_FOUND));
-        TrainingYearPlanEntity plan = plans.findByIdAndCreatedByAndDeletedFalse(target.getPlanId(), owner)
+        // The plan row lock serialises every write of one plan (edits, the start linker, the active read's re-dating).
+        TrainingYearPlanEntity plan = plans.findLockedByIdAndCreatedByAndDeletedFalse(target.getPlanId(), owner)
             .filter(TrainingYearPlanEntity::isActive)
             .orElseThrow(YearPlanService::locked);
         List<TrainingYearBlockEntity> all = blocks.findByPlanIdAndDeletedFalseOrderByOrdinalAsc(plan.getId());
@@ -131,6 +138,12 @@ public class YearPlanService {
         boolean consolidation = YearGenerator.CONSOLIDATION.equals(target.getKind());
 
         if (target.is(YearGenerator.RUNNING) || target.is(YearGenerator.DONE)) throw locked();
+        // A block linked to a run (a planned one, „indul …") is edited in the block builder; only a skip (which throws
+        // the never-started run away) is still possible here.
+        if (target.getMesocycleId() != null && (patch.getFocus() != null || patch.getWeeks() != null
+            || patch.getOrdinal() != null || patch.getShiftWeeks() != null)) {
+            throw locked();
+        }
         if (consolidation && (patch.getFocus() != null || patch.getOrdinal() != null
             || patch.getShiftWeeks() != null || patch.getSkip() != null)) {
             throw locked();
@@ -152,6 +165,11 @@ public class YearPlanService {
             // no report, no event) so the skip sticks — otherwise the reconciler would pull the block back to planned
             // and the starter would still activate the run on its day. A run with logs is running/done → locked above.
             discardService.discard(owner, target.getMesocycleId());
+            target.setMesocycleId(null);
+        }
+        if (Boolean.FALSE.equals(patch.getSkip()) && target.is(YearGenerator.SKIPPED) && target.getMesocycleId() != null) {
+            // Skipped by reality (its run closed with no logged session): let the run go, or the reconciler would pull
+            // the block straight back to skipped.
             target.setMesocycleId(null);
         }
         if (patch.getSkip() != null) target.setStatus(patch.getSkip() ? YearGenerator.SKIPPED : YearGenerator.PLANNED);
@@ -185,9 +203,12 @@ public class YearPlanService {
     /** The active plan and its blocks (ordinal order), reconciled against their mesocycles. */
     record Active(TrainingYearPlanEntity plan, List<TrainingYearBlockEntity> blocks) {}
 
-    /** The owner's active plan with its block statuses reconciled and saved; empty when there is none. */
+    /**
+     * The owner's active plan with its block statuses reconciled and saved; empty when there is none. Takes the plan
+     * row lock (the GET-active write path and the start linker), so two writers never re-date one plan at once.
+     */
     Optional<Active> reconciledActive(UUID owner) {
-        return plans.findByCreatedByAndStatusAndDeletedFalse(owner, TrainingYearPlanEntity.ACTIVE).map(plan -> {
+        return plans.findLockedByCreatedByAndStatusAndDeletedFalse(owner, TrainingYearPlanEntity.ACTIVE).map(plan -> {
             List<TrainingYearBlockEntity> all = blocks.findByPlanIdAndDeletedFalseOrderByOrdinalAsc(plan.getId());
             reconcile(owner, all);
             return new Active(plan, all);
@@ -252,8 +273,37 @@ public class YearPlanService {
         YearPlan dto = assembler.toDto(plan, all, layout, relaxed, today);
         dto.setNext(next(owner, all, layout, today));
         unlinkedRunning(owner, plan, all).ifPresent(m -> dto.setUnlinkedRunning(YearUnlinkedRunning.builder()
-            .mesocycleId(m.getId()).title(m.getTitle()).startDate(m.getStartDate()).build()));
+            .mesocycleId(m.getId()).title(m.getTitle()).startDate(m.getStartDate())
+            .status(ACTIVE_RUN.equals(m.getStatus())
+                ? YearUnlinkedRunning.StatusEnum.ACTIVE : YearUnlinkedRunning.StatusEnum.PLANNED)
+            .build()));
+        dto.setNextYearStart(nextYearStart(owner, layout, today));
         return dto;
+    }
+
+    /**
+     * „Jövő évi terv" starts on the Monday on/after the latest of: the day after the plan's end; the end of a running
+     * consolidation run (its {@code endDate} is the day after its last day — a late-started consolidation outlasts
+     * the plan); and today.
+     */
+    private LocalDate nextYearStart(UUID owner, Layout layout, LocalDate today) {
+        LocalDate after = layout.end();
+        for (MesocycleEntity m : mesocycles.findByCreatedByAndStatusAndDeletedFalse(owner, ACTIVE_RUN)) {
+            if (m.getEndDate() != null && m.getEndDate().isAfter(after) && consolidationRun(owner, m)) {
+                after = m.getEndDate();
+            }
+        }
+        if (today.isAfter(after)) after = today;
+        return mondayOnOrAfter(after);
+    }
+
+    /** A consolidation run: linked to a consolidation block, a flat all-MEV curve, or shorter than a loading block. */
+    private boolean consolidationRun(UUID owner, MesocycleEntity m) {
+        if (m.getWeeks() != null && m.getWeeks() < MIN_LOADING_WEEKS) return true;
+        List<String> curve = m.getPhaseCurve();
+        if (curve != null && !curve.isEmpty() && curve.stream().allMatch(FLAT_PHASE::equals)) return true;
+        return blocks.findByCreatedByAndMesocycleIdAndDeletedFalse(owner, m.getId()).stream()
+            .anyMatch(b -> YearGenerator.CONSOLIDATION.equals(b.getKind()));
     }
 
     /**
@@ -267,22 +317,36 @@ public class YearPlanService {
         List<TrainingYearBlockEntity> ordered = all.stream()
             .sorted(Comparator.comparingInt(TrainingYearBlockEntity::getOrdinal)).toList();
 
-        Optional<MesocycleEntity> active = mesocycles.findByCreatedByAndStatusAndDeletedFalse(owner, "active").stream()
+        Set<UUID> linked = new HashSet<>();
+        all.forEach(b -> {
+            if (b.getMesocycleId() != null) linked.add(b.getMesocycleId());
+        });
+
+        Optional<MesocycleEntity> active = mesocycles.findByCreatedByAndStatusAndDeletedFalse(owner, ACTIVE_RUN)
+            .stream()
             .filter(m -> m.getStartDate() != null)
             .max(Comparator.comparing(MesocycleEntity::getStartDate));
         if (active.isPresent()) {
             MesocycleEntity m = active.get();
             if (m.getEndDate() == null || today.isBefore(m.getEndDate().minusDays(7))) return null;
-            int after = ordered.stream().filter(b -> m.getId().equals(b.getMesocycleId()))
-                .mapToInt(TrainingYearBlockEntity::getOrdinal).findFirst().orElse(0);
-            return ordered.stream()
-                .filter(b -> b.getOrdinal() > after && !b.is(YearGenerator.SKIPPED))
-                .findFirst()
+            OptionalInt at = ordered.stream().filter(b -> m.getId().equals(b.getMesocycleId()))
+                .mapToInt(TrainingYearBlockEntity::getOrdinal).findFirst();
+            // Linked: the block right after it (a skipped one does not count). Unlinked: the plan's first planned block
+            // (block 1 may long be done).
+            Optional<TrainingYearBlockEntity> following = at.isPresent()
+                ? ordered.stream().filter(b -> b.getOrdinal() > at.getAsInt() && !b.is(YearGenerator.SKIPPED)).findFirst()
+                : ordered.stream().filter(b -> b.is(YearGenerator.PLANNED)).findFirst();
+            return following
                 .filter(b -> b.is(YearGenerator.PLANNED) && b.getMesocycleId() == null)
                 .map(b -> next(b, starts.get(b.getId()), YearNext.ReasonEnum.LAST_WEEK))
                 .orElse(null);
         }
-        if (!mesocycles.findByCreatedByAndStatusAndDeletedFalse(owner, "planned").isEmpty()) return null;
+        // Only a planned run queued for a block of this plan means the next block is already on its way; another one
+        // shows as unlinkedRunning and does not hide what comes next.
+        if (mesocycles.findByCreatedByAndStatusAndDeletedFalse(owner, "planned").stream()
+            .anyMatch(m -> linked.contains(m.getId()))) {
+            return null;
+        }
         // A due block (its day has come, within the tolerance the layout keeps it on) starts today: the phone's intake
         // offers „Ma" for it. A later one keeps its own (layout) day.
         return ordered.stream().filter(b -> b.is(YearGenerator.PLANNED)).findFirst()
@@ -362,20 +426,25 @@ public class YearPlanService {
     }
 
     /**
-     * The running block becomes block 1 only when it runs into the new plan ({@code start < endDate}); its focus is
-     * its Hangsúly groups in config order (possibly none).
+     * The running block becomes block 1 only when it runs into the new plan ({@code start < endDate}) and is a loading
+     * block — never a consolidation run ({@link #consolidationRun}: „Jövő évi terv" made while the old year's
+     * consolidation still runs must not start the new year with it). Its focus is its Hangsúly groups in config order
+     * (possibly none); a run longer than a loading block is adopted as an 8-week block (the strip still follows the
+     * run's real dates).
      */
     private YearGenerator.Adopted adoptable(UUID owner, LocalDate start) {
         List<String> order = new ArrayList<>(properties.kindGroups().getOrDefault(YearGenerator.UPPER, List.of()));
         order.addAll(properties.kindGroups().getOrDefault(YearGenerator.LOWER, List.of()));
-        return mesocycles.findByCreatedByAndStatusAndDeletedFalse(owner, "active").stream()
+        return mesocycles.findByCreatedByAndStatusAndDeletedFalse(owner, ACTIVE_RUN).stream()
             .filter(m -> m.getStartDate() != null && m.getEndDate() != null && m.getWeeks() != null)
             .filter(m -> start.isBefore(m.getEndDate()))
             .max(Comparator.comparing(MesocycleEntity::getStartDate))
+            .filter(m -> !consolidationRun(owner, m))
             .map(m -> {
                 Map<String, String> pr = m.getMusclePriorities() == null ? Map.of() : m.getMusclePriorities();
                 List<String> focus = order.stream().filter(g -> EMPHASIZE.equals(pr.get(g))).toList();
-                return new YearGenerator.Adopted(m.getId(), m.getStartDate(), m.getWeeks(), focus);
+                return new YearGenerator.Adopted(m.getId(), m.getStartDate(), Math.min(m.getWeeks(), MAX_LOADING_WEEKS),
+                    focus);
             })
             .orElse(null);
     }
@@ -387,14 +456,17 @@ public class YearPlanService {
     }
 
     /**
-     * One mesocycle is linked to at most one block: every other block holding it (e.g. in an archived plan) lets it
-     * go, and a {@code running} one becomes {@code planned} — never left running without a mesocycle.
+     * One mesocycle is linked to at most one block: every other block holding it lets it go. In the active plan a
+     * {@code running} one becomes {@code planned} — never left running without a mesocycle; an archived plan's block
+     * keeps the status it was frozen with (its history), only the link is cleared.
      */
     private void unlinkElsewhere(UUID owner, UUID mesocycleId, UUID keep) {
         for (TrainingYearBlockEntity old : blocks.findByCreatedByAndMesocycleIdAndDeletedFalse(owner, mesocycleId)) {
             if (old.getId().equals(keep)) continue;
             old.setMesocycleId(null);
-            if (old.is(YearGenerator.RUNNING)) old.setStatus(YearGenerator.PLANNED);
+            boolean activePlan = plans.findByIdAndCreatedByAndDeletedFalse(old.getPlanId(), owner)
+                .map(TrainingYearPlanEntity::isActive).orElse(false);
+            if (activePlan && old.is(YearGenerator.RUNNING)) old.setStatus(YearGenerator.PLANNED);
             blocks.saveAndFlush(old);
         }
     }
@@ -469,11 +541,18 @@ public class YearPlanService {
 
     private Layout layout(UUID owner, TrainingYearPlanEntity plan, List<TrainingYearBlockEntity> all,
                           LocalDate today) {
+        Map<UUID, MesocycleEntity> runs = new HashMap<>();
+        for (TrainingYearBlockEntity b : all) {
+            UUID id = b.getMesocycleId();
+            if (id != null && !runs.containsKey(id)) {
+                mesocycles.findByIdAndCreatedByAndDeletedFalse(id, owner).ifPresent(m -> runs.put(id, m));
+            }
+        }
         List<Slot> loading = new ArrayList<>();
         Slot consolidation = null;
         for (TrainingYearBlockEntity b : all) {
             Slot s = new Slot(b.getId(), b.getOrdinal(), b.getWeeks(), b.getGapWeeks(), b.getStatus(),
-                facts(owner, b.getMesocycleId()));
+                facts(runs.get(b.getMesocycleId()), runs));
             if (YearGenerator.CONSOLIDATION.equals(b.getKind())) consolidation = s;
             else loading.add(s);
         }
@@ -482,13 +561,26 @@ public class YearPlanService {
             properties);
     }
 
-    private MesoFacts facts(UUID owner, UUID mesocycleId) {
-        if (mesocycleId == null) return null;
-        return mesocycles.findByIdAndCreatedByAndDeletedFalse(mesocycleId, owner)
-            .filter(m -> m.getStartDate() != null && m.getWeeks() != null)
-            .map(m -> new MesoFacts(m.getStartDate(), m.getWeeks(),
-                m.getClosedAt() == null ? null : m.getClosedAt().atZone(ZONE).toLocalDate()))
-            .orElse(null);
+    /**
+     * The run's start, length and close day. An archived run with no {@code closedAt} (archived by a newer start, not
+     * closed) ends on the Monday on/before the next linked run's start, so two blocks never overlap on the strip.
+     */
+    private static MesoFacts facts(MesocycleEntity m, Map<UUID, MesocycleEntity> linkedRuns) {
+        if (m == null || m.getStartDate() == null || m.getWeeks() == null) return null;
+        LocalDate closedOn = m.getClosedAt() == null ? null : m.getClosedAt().atZone(ZONE).toLocalDate();
+        if (closedOn == null && "archived".equals(m.getStatus())) {
+            closedOn = linkedRuns.values().stream()
+                .map(MesocycleEntity::getStartDate)
+                .filter(s -> s != null && s.isAfter(m.getStartDate()))
+                .min(Comparator.naturalOrder())
+                .map(s -> s.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)))
+                .orElse(null);
+        }
+        return new MesoFacts(m.getStartDate(), m.getWeeks(), closedOn);
+    }
+
+    private static LocalDate mondayOnOrAfter(LocalDate d) {
+        return d.with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY));
     }
 
     private void writePlannedStarts(List<TrainingYearBlockEntity> all, Layout layout) {

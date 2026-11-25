@@ -15,6 +15,7 @@ import io.mrkuhne.mezo.feature.season.repository.SeasonRepository;
 import io.mrkuhne.mezo.feature.season.repository.SeasonRevisionRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.HashSet;
@@ -25,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -51,6 +53,7 @@ public class SeasonService {
     private final SeasonSleepPort sleepPort;
     private final MenuService menuService;
     private final SeasonExperimentRepository experimentRepository;
+    private final ObjectProvider<Clock> clock;
 
     public List<SeasonEntity> list(UUID owner) {
         return seasonRepository.findByCreatedByAndDeletedFalseOrderByStartDateDesc(owner);
@@ -271,7 +274,7 @@ public class SeasonService {
         SeasonDraftJson d = s.getDraft();
         if (d != null) {
             s.setDraft(d.withBlock(new SeasonDraftJson.Block("adopt", mesocycleId, null)));
-            s.setUpdatedAt(Instant.now());
+            s.setUpdatedAt(Instant.now(clock.getIfAvailable(Clock::systemUTC)));
             seasonRepository.save(s);
         }
     }

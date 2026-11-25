@@ -28,8 +28,11 @@ public class YearPlanLinker {
     private final YearPlanService yearPlans;
     private final YearPlanProperties properties;
 
-    /** Joins the stamp transaction; a no-op without an active plan or when the run is already linked. */
-    @Transactional
+    /**
+     * Joins the stamp transaction; a no-op without an active plan or when the run is already linked. A runtime error
+     * here never marks the start transaction rollback-only: the caller logs it and the run starts unlinked.
+     */
+    @Transactional(noRollbackFor = RuntimeException.class)
     public void linkStarted(UUID owner, MesocycleEntity m, UUID yearBlockId) {
         Optional<YearPlanService.Active> found = yearPlans.reconciledActive(owner);
         if (found.isEmpty()) return;

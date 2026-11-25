@@ -288,6 +288,20 @@ class YearPlanContractIT extends ApiIntegrationTest {
     }
 
     @Test
+    void reorderAcrossRunningBlock409() {
+        UUID owner = owner();
+        HttpHeaders auth = ownerAuthHeaders();
+        runningMeso(owner);
+        YearPlan plan = postForBody(PLANS, request(LocalDate.of(2026, 11, 23)), auth, HttpStatus.CREATED,
+            YearPlan.class);
+        assertThat(at(plan, 1).getStatus()).isEqualTo(YearBlock.StatusEnum.RUNNING);
+
+        String body = patchForBody(BLOCKS + at(plan, 3).getId(), Map.of("ordinal", 1), auth, HttpStatus.CONFLICT,
+            String.class);
+        assertHasRequestError(body, "TRAIN_YEAR_BLOCK_LOCKED");
+    }
+
+    @Test
     void patchConsolidationOrdinal409() {
         owner();
         HttpHeaders auth = ownerAuthHeaders();

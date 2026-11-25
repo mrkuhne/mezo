@@ -21,6 +21,7 @@ import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.port.SeasonGatePort;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleReportEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
+import io.mrkuhne.mezo.feature.train.entity.TrainingYearBlockEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.config.TrainProperties;
 import io.mrkuhne.mezo.feature.train.mapper.TrainMapper;
@@ -30,12 +31,15 @@ import io.mrkuhne.mezo.feature.train.repository.MesocycleReportRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.MuscleGroupVolumeLogRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
+import io.mrkuhne.mezo.feature.train.repository.TrainingYearBlockRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import io.mrkuhne.mezo.techcore.persistence.OwnershipGuard;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -48,6 +52,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -69,6 +74,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class TrainService {
+
+    private static final ZoneId ZONE = ZoneId.of("Europe/Budapest");
 
     /** 409 on a structural day save while that day's workout runs (mezo-r36n9.116). */
     public static final String TRAIN_DAY_WORKOUT_RUNNING = "TRAIN_DAY_WORKOUT_RUNNING";
@@ -99,6 +106,10 @@ public class TrainService {
     private final SeasonGatePort seasonGate;
     // Éves terv (mezo-r36n9.113): a started run joins its year block in the stamp transaction.
     private final YearPlanLinker yearPlanLinker;
+    /** Throws a superseded planned run away when a block starts now (mezo-r36n9.113). */
+    private final MesocycleDiscardService discardService;
+    private final TrainingYearBlockRepository yearBlockRepository;
+    private final ObjectProvider<Clock> clock;
 
     public List<MesocycleResponse> listMesocycles(UUID createdBy) {
         List<MesocycleEntity> mesos = mesocycleRepository.findByCreatedByAndDeletedFalseOrderByStartDateAsc(createdBy);
@@ -301,7 +312,18 @@ public class TrainService {
         if (active) {
             volumeLedger.sync(createdBy, saved.getId());
         }
-        yearPlanLinker.linkStarted(createdBy, saved, src.yearBlockId());
+        if (active) {
+            supersedePlannedRuns(createdBy, saved);
+        }
+        // linkStarted runs inside this start transaction and must never fail the start (controller call 6): an
+        // unexpected linker error is logged and the run starts unlinked (the plan then shows it as unlinkedRunning).
+        // A repository failure inside it would still mark this joined transaction rollback-only — same caveat as the
+        // week-1 challenge placement above.
+        try {
+            yearPlanLinker.linkStarted(createdBy, saved, src.yearBlockId());
+        } catch (RuntimeException ex) {
+            log.warn("year-plan link failed for run {}, starting it unlinked", saved.getId(), ex);
+        }
         // Only a block that actually starts (mezo-r36n9.113: the season always shows the running block): the season
         // follows it AFTER_COMMIT (SeasonBlockLinkListener). A planned run is followed when activateMesocycle starts it.
         if (active) {
@@ -341,7 +363,7 @@ public class TrainService {
             // A planned block reaching its day (PlannedBlockStarter) is a start too: the season follows it
             // (mezo-r36n9.113). It starts running today at the earliest — a re-activated old run must not claim the
             // season's weeks from its long-past start date.
-            LocalDate today = LocalDate.now();
+            LocalDate today = LocalDate.now(clock().withZone(ZONE));
             LocalDate runsFrom = target.getStartDate() == null || target.getStartDate().isBefore(today)
                 ? today : target.getStartDate();
             eventPublisher.publishEvent(new MesocycleStarted(createdBy, id, runsFrom));
@@ -350,6 +372,33 @@ public class TrainService {
         // backfills the volume log of a run that never had rows.
         volumeLedger.sync(createdBy, id);
         return assembleResponse(createdBy, target);
+    }
+
+    /**
+     * A block that starts now takes over (mezo-r36n9.113): every never-started planned run dated after it with no
+     * logged session is thrown away („Mégsem, eldobom" — soft delete, no report, no event), and its year block lets it
+     * go (back to planned). Otherwise the planned run, made earlier, would activate on its day and archive this one.
+     */
+    private void supersedePlannedRuns(UUID createdBy, MesocycleEntity started) {
+        LocalDate start = started.getStartDate();
+        for (MesocycleEntity planned : mesocycleRepository.findByCreatedByAndStatusAndDeletedFalse(createdBy, "planned")) {
+            if (planned.getStartDate() == null || !planned.getStartDate().isAfter(start)) continue;
+            if (workoutSessionRepository.existsByCreatedByAndMesocycleIdAndTemplateSessionIdIsNotNull(createdBy,
+                planned.getId())) {
+                continue;
+            }
+            for (TrainingYearBlockEntity b : yearBlockRepository.findByCreatedByAndMesocycleIdAndDeletedFalse(createdBy,
+                planned.getId())) {
+                b.setMesocycleId(null);
+                b.setStatus(YearGenerator.PLANNED);
+                yearBlockRepository.save(b);
+            }
+            discardService.discard(createdBy, planned.getId());
+        }
+    }
+
+    private Clock clock() {
+        return clock.getIfAvailable(Clock::systemUTC);
     }
 
     /** 409 {@code SEASON_REQUIRED} unless a season is active, or a planned one starts within 7 days of {@code start}. */
