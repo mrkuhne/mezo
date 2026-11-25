@@ -1,5 +1,7 @@
 package io.mrkuhne.mezo.feature.mail.config;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -48,7 +50,7 @@ public record MailProperties(
         @DefaultValue("10") @Min(0) @Max(1_440) int manualRunCooldownMinutes,
         @DefaultValue("imap.gmail.com") @NotBlank String imapHost,
         @DefaultValue("993") @Min(1) @Max(65_535) int imapPort,
-        @DefaultValue Google google) {
+        @DefaultValue @Valid Google google) {
 
     /**
      * Sign in with Google to the owner's own Gmail (mezo-r36n9.38, spec §12). The client id is PUBLIC (an iOS OAuth
@@ -69,6 +71,39 @@ public record MailProperties(
             @DefaultValue("https://gmail.googleapis.com/gmail/v1") @NotBlank String apiUrl) {
 
         private static final String ID_SUFFIX = ".apps.googleusercontent.com";
+        private static final String OAUTH_HOST = "oauth2.googleapis.com";
+        private static final String API_HOST = "gmail.googleapis.com";
+
+        /** Normalised once: the client id and the redirect override are trimmed; blank becomes null. */
+        public Google {
+            clientId = clientId == null || clientId.isBlank() ? null : clientId.strip();
+            redirectUri = redirectUri == null || redirectUri.isBlank() ? null : redirectUri.strip();
+        }
+
+        /**
+         * The outbound allow-list (spec §12.2): the three endpoints must be https on the two Google hosts, unless the
+         * host is loopback (a test stub). Fails the startup of an enabled mail feature otherwise.
+         */
+        @AssertTrue(message = "mezo.mail.google endpoints must be https on oauth2.googleapis.com / gmail.googleapis.com")
+        public boolean isEndpointsAllowed() {
+            return allowed(tokenUrl, OAUTH_HOST) && allowed(revokeUrl, OAUTH_HOST) && allowed(apiUrl, API_HOST);
+        }
+
+        private static boolean allowed(String url, String host) {
+            try {
+                java.net.URI u = java.net.URI.create(url);
+                String h = u.getHost();
+                if (h == null) {
+                    return false;
+                }
+                if ("localhost".equals(h) || "127.0.0.1".equals(h) || "[::1]".equals(h)) {
+                    return true;
+                }
+                return "https".equals(u.getScheme()) && host.equals(h) && u.getUserInfo() == null;
+            } catch (IllegalArgumentException e) {
+                return false;
+            }
+        }
 
         /** Production endpoints with the given client id (null/blank = not configured). */
         public static Google of(String clientId) {
@@ -77,7 +112,7 @@ public record MailProperties(
         }
 
         public boolean configured() {
-            return clientId != null && !clientId.isBlank();
+            return clientId != null;
         }
 
         /**
@@ -88,10 +123,10 @@ public record MailProperties(
             if (!configured()) {
                 return null;
             }
-            if (redirectUri != null && !redirectUri.isBlank()) {
+            if (redirectUri != null) {
                 return redirectUri;
             }
-            String id = clientId.strip();
+            String id = clientId;
             if (!id.endsWith(ID_SUFFIX) || id.length() == ID_SUFFIX.length()) {
                 return null;
             }

@@ -154,4 +154,24 @@ class GoogleOAuthClientTest {
             .withHeader("Content-Type", containing("application/x-www-form-urlencoded"))
             .withRequestBody(equalTo("token=rt-1")));
     }
+
+    @Test
+    void aClientIdWithTrailingWhitespaceStillMatchesTheAudience() {
+        MailProperties.Google google = new MailProperties.Google(CLIENT_ID + "\n", null, GOOGLE.baseUrl() + "/token",
+            GOOGLE.baseUrl() + "/revoke", GOOGLE.baseUrl() + "/gmail/v1");
+        GoogleOAuthClient padded = new GoogleOAuthClient(google, Clock.fixed(NOW, ZoneOffset.UTC));
+        stubToken(goodIdToken());
+        assertThat(padded.exchange("c", "v", "r").email()).isEqualTo("owner@gmail.example");
+    }
+
+    @Test
+    void configurationErrorsAreUnreachableNotASignInAgain() {
+        for (String error : new String[] {"invalid_client", "unauthorized_client", "invalid_request"}) {
+            GOOGLE.stubFor(post(urlPathEqualTo("/token")).willReturn(aResponse().withStatus(400)
+                .withBody("{\"error\":\"" + error + "\"}")));
+            assertThatThrownBy(() -> client.refresh("rt-1")).as(error).hasMessageContaining("MAIL_UNREACHABLE");
+            assertThatThrownBy(() -> client.exchange("c", "v", "r")).as(error)
+                .hasMessageContaining("MAIL_UNREACHABLE");
+        }
+    }
 }

@@ -57,8 +57,8 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(name = FeaturesConfiguration.MAIL_SWITCH, havingValue = "true")
 public class ImapMailReader implements MailReader {
 
-    public static final String AUTH_FAILED = "MAIL_AUTH_FAILED";
-    public static final String UNREACHABLE = "MAIL_UNREACHABLE";
+    public static final String AUTH_FAILED = io.mrkuhne.mezo.feature.mail.service.MailErrors.AUTH_FAILED;
+    public static final String UNREACHABLE = io.mrkuhne.mezo.feature.mail.service.MailErrors.UNREACHABLE;
 
     private static final String TIMEOUT_MS = "20000";
     private static final Duration FIRST_RUN_WINDOW = Duration.ofDays(7);

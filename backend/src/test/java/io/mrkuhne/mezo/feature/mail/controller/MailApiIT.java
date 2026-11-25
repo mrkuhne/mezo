@@ -419,6 +419,32 @@ class MailApiIT extends ApiIntegrationTest {
     }
 
     @Test
+    void replacingAGoogleMailboxRevokesTheOldGrantExceptForTheSameAccount() {
+        GOOGLE.resetAll();
+        GOOGLE.stubFor(post(urlPathEqualTo("/revoke")).willReturn(aResponse().withStatus(200)));
+        RegisteredUser u = registerUser("mail google replace");
+        stubGoogleExchange("first@gmail.example");
+        exchangeForBody(org.springframework.http.HttpMethod.POST, "/api/mail/mailbox/google", googleRequest(REDIRECT),
+            u.headers(), HttpStatus.OK, String.class);
+
+        // the same account again (re-consent): the old token is NOT revoked
+        exchangeForBody(org.springframework.http.HttpMethod.POST, "/api/mail/mailbox/google", googleRequest(REDIRECT),
+            u.headers(), HttpStatus.OK, String.class);
+        GOOGLE.verify(0, postRequestedFor(urlPathEqualTo("/revoke")));
+
+        // another Google account: the old grant is revoked
+        stubGoogleExchange("second@gmail.example");
+        exchangeForBody(org.springframework.http.HttpMethod.POST, "/api/mail/mailbox/google", googleRequest(REDIRECT),
+            u.headers(), HttpStatus.OK, String.class);
+        GOOGLE.verify(1, postRequestedFor(urlPathEqualTo("/revoke")).withRequestBody(equalTo("token=rt-secret-1")));
+
+        // Google to IMAP: the Google grant is revoked too
+        connect(u, freshAddress());
+        GOOGLE.verify(2, postRequestedFor(urlPathEqualTo("/revoke")));
+        assertThat(mailboxes.findByCreatedBy(u.id()).orElseThrow().getKind()).isEqualTo("imap");
+    }
+
+    @Test
     void anImapMailboxReportsKindImap() {
         RegisteredUser u = registerUser("mail kind imap");
         connect(u, freshAddress());

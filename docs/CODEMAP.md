@@ -839,7 +839,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   - **endpoints:** GET /api/mail/mailbox · PUT /api/mail/mailbox · DELETE /api/mail/mailbox ·
     POST /api/mail/mailbox/google · POST /api/mail/mailbox/run · GET /api/mail/digest ·
     POST /api/mail/items/{id}/feedback · GET /api/mail/rules · PUT /api/mail/rules
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/mail` — 10 IT + 12 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/mail` — 10 IT + 13 unit
   - **ITs:** `ImapMailReaderIT`, `MailApiIT`, `MailCostCapIT`, `MailDigestPipelineIT`, `MailGoogleUnconfiguredIT`,
     `MailIntakeGoogleIT`, `MailIntakeIT`, `MailJobEnabledIT`, `MailJobSwitchIT`, `MailSchemaIT`
   - **populators:** `DatabasePopulator`, `LlmLogPopulator`, `MailPopulator`, `UserPopulator`

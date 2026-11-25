@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.mail.service.google;
 
 import io.mrkuhne.mezo.feature.mail.config.MailProperties;
 import io.mrkuhne.mezo.feature.mail.service.MailErrors;
+import io.mrkuhne.mezo.feature.mail.service.MailIntakeService;
 import io.mrkuhne.mezo.feature.mail.service.imap.FetchedMail;
 import io.mrkuhne.mezo.feature.mail.service.imap.MimeMailExtractor;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -48,7 +49,6 @@ public class GmailApiReader {
     public record GmailBatch(long historyId, List<FetchedMail> mails) {
     }
 
-    public static final String SPAM_FOLDER = "[Gmail]/Spam";
     public static final String INBOX_FOLDER = "INBOX";
 
     private static final String INBOX = "INBOX";
@@ -91,6 +91,7 @@ public class GmailApiReader {
         return batch;
     }
 
+    /** Bounded by design: more than {@code max} mails per label in 7 days skips the oldest ones. */
     private GmailBatch fullSync(String token, int max) {
         long historyId = orUnreachable(get(token, uri -> uri.path("/users/me/profile").build()))
             .path("historyId").asLong(0); // read BEFORE listing, so nothing slips between (dupes are idempotent)
@@ -126,6 +127,7 @@ public class GmailApiReader {
         int[] taken = new int[2]; // inbox, spam
         long newest = since;
         long consumed = since;
+        long capRecord = since;
         boolean capped = false;
         String page = null;
         outer:
@@ -147,6 +149,7 @@ public class GmailApiReader {
                     int slot = SPAM.equals(label) ? 1 : 0;
                     if (taken[slot] >= max) {
                         capped = true;
+                        capRecord = id;
                         break outer;
                     }
                     if (ids.putIfAbsent(message.path("id").asString(), label) == null) {
@@ -157,7 +160,9 @@ public class GmailApiReader {
             }
             page = nextPage(body);
         } while (page != null);
-        long next = capped ? consumed : newest; // when capped, resume after the last fully taken record
+        // when capped, resume after the last fully taken record; if that is not past `since` (the very first record
+        // already overflows), skip past the overflowing record anyway, so the cursor never stalls
+        long next = capped ? (consumed > since ? consumed : capRecord) : newest;
         return new GmailBatch(Math.max(next, since), fetchAll(token, ids));
     }
 
@@ -222,7 +227,7 @@ public class GmailApiReader {
             LOG.warn("gmail message {} unreadable: {}", id, e.getClass().getSimpleName());
             return null; // one bad message never fails the run
         }
-        String folder = SPAM.equals(labelOf(body.path("labelIds"))) ? SPAM_FOLDER : INBOX_FOLDER;
+        String folder = SPAM.equals(labelOf(body.path("labelIds"))) ? MailIntakeService.SPAM_FOLDER : INBOX_FOLDER;
         Instant received = body.has("internalDate") ? Instant.ofEpochMilli(body.path("internalDate").asLong()) : null;
         Long gm = parseGmId(id);
         return MimeMailExtractor.toMail(folder, 0, 0, gm, mime, received, clock);
@@ -248,14 +253,41 @@ public class GmailApiReader {
             if (status == 404) {
                 return null;
             }
-            LOG.warn("gmail api answered {}", status);
-            if (status == 401 || status == 403) {
-                throw MailErrors.authFailed();
-            }
-            throw MailErrors.unreachable();
+            throw failure(status, e.getResponseBodyAsString());
         } catch (RestClientException | JacksonException e) {
             LOG.warn("gmail api unreachable: {}", e.getClass().getSimpleName());
             throw MailErrors.unreachable();
         }
+    }
+
+    /**
+     * 401 and a 403 for insufficient permission mean the grant is unusable (sign in again). Everything else is a
+     * transient or a server-side problem (rate limits, a Gmail API that is not enabled) and never asks the owner to
+     * sign in again.
+     */
+    private static RuntimeException failure(int status, String body) {
+        String reason = "";
+        String state = "";
+        try {
+            JsonNode error = JSON.readTree(body == null || body.isBlank() ? "{}" : body).path("error");
+            reason = error.path("errors").path(0).path("reason").asString("");
+            if (reason.isEmpty()) {
+                reason = error.path("details").path(0).path("reason").asString("");
+            }
+            state = error.path("status").asString("");
+        } catch (JacksonException e) {
+            // an unparsable error body is treated like an unknown reason
+        }
+        LOG.warn("gmail api answered {} ({}{})", status, reason, state.isEmpty() ? "" : "/" + state);
+        if (status == 401) {
+            return MailErrors.authFailed();
+        }
+        boolean transientReason = java.util.Set.of("rateLimitExceeded", "userRateLimitExceeded", "dailyLimitExceeded",
+            "accessNotConfigured", "SERVICE_DISABLED").contains(reason);
+        if (status == 403 && !transientReason
+            && ("insufficientPermissions".equals(reason) || "PERMISSION_DENIED".equals(state))) {
+            return MailErrors.authFailed();
+        }
+        return MailErrors.unreachable(); // 429, 5xx, rate limits, accessNotConfigured, unknown 403
     }
 }

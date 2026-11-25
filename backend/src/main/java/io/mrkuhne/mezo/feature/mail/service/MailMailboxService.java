@@ -58,7 +58,9 @@ public class MailMailboxService {
             }
             throw e;
         }
+        String oldGoogleToken = googleToken(store.find(owner)); // Google to IMAP: the old grant goes
         MailMailboxEntity m = store.connect(owner, address, cipher.seal(password));
+        revokeQuietly(oldGoogleToken);
         health.refresh();
         return view(owner, Optional.of(m));
     }
@@ -78,14 +80,22 @@ public class MailMailboxService {
             throw MailErrors.googleRedirectInvalid();
         }
         GoogleOAuthClient.Tokens tokens = google.exchange(code, codeVerifier, redirectUri);
+        Optional<MailMailboxEntity> before = store.find(owner);
+        String oldToken = googleToken(before);
+        String oldAddress = before.map(MailMailboxEntity::getAddress).orElse("");
         MailMailboxEntity m = store.connect(owner, MailIntakeStore.KIND_GOOGLE, tokens.email(),
             cipher.seal(tokens.refreshToken()));
+        // another Google account replaces the old grant: revoke it. The SAME account is only re-consented: Google may
+        // treat the old and new refresh tokens as one grant, so revoking the old one could kill the new one.
+        if (!tokens.email().equalsIgnoreCase(oldAddress)) {
+            revokeQuietly(oldToken);
+        }
         health.refresh();
         return view(owner, Optional.of(m));
     }
 
     public MailboxView disconnect(UUID owner) {
-        revokeAtGoogle(store.find(owner));
+        revokeQuietly(googleToken(store.find(owner)));
         Optional<MailMailboxEntity> m = store.disconnect(owner);
         health.refresh();
         return view(owner, m);
@@ -112,21 +122,33 @@ public class MailMailboxService {
         }
     }
 
-    /** A Google mailbox is revoked at Google before its token is nulled; best effort, a failure never blocks. */
-    private void revokeAtGoogle(Optional<MailMailboxEntity> mailbox) {
-        mailbox.filter(m -> MailIntakeStore.KIND_GOOGLE.equals(m.getKind()) && m.getSecretCipher() != null
-            && m.getSecretNonce() != null).ifPresent(m -> {
+    /** The opened refresh token of a Google mailbox with a stored secret; null for anything else or if unreadable. */
+    private String googleToken(Optional<MailMailboxEntity> mailbox) {
+        return mailbox.filter(m -> MailIntakeStore.KIND_GOOGLE.equals(m.getKind()) && m.getSecretCipher() != null
+            && m.getSecretNonce() != null).map(m -> {
                 try {
-                    google.revoke(cipher.open(new MailCredentialCipher.Sealed(m.getSecretCipher(),
-                        m.getSecretNonce())));
+                    return cipher.open(new MailCredentialCipher.Sealed(m.getSecretCipher(), m.getSecretNonce()));
                 } catch (RuntimeException e) {
-                    log.warn("Google revoke skipped for owner {}: {}", m.getCreatedBy(), e.getClass().getSimpleName());
+                    log.warn("Google token unreadable for owner {}: {}", m.getCreatedBy(), e.getClass().getSimpleName());
+                    return null;
                 }
-            });
+            }).orElse(null);
+    }
+
+    /** Revokes a grant at Google; best effort, a failure never blocks (null = nothing to revoke). */
+    private void revokeQuietly(String token) {
+        if (token == null) {
+            return;
+        }
+        try {
+            google.revoke(token);
+        } catch (RuntimeException e) {
+            log.warn("Google revoke skipped: {}", e.getClass().getSimpleName());
+        }
     }
 
     private MailboxView view(UUID owner, Optional<MailMailboxEntity> mailbox) {
-        String clientId = properties.google().configured() ? properties.google().clientId().strip() : null;
+        String clientId = properties.google().clientId();
         if (mailbox.isEmpty()) {
             return new MailboxView(null, "none", null, null, null, clientId);
         }

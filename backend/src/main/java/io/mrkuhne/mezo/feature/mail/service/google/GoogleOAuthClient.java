@@ -127,11 +127,18 @@ public class GoogleOAuthClient {
             return JSON.readTree(raw == null ? "{}" : raw);
         } catch (RestClientResponseException e) {
             int status = e.getStatusCode().value();
-            LOG.warn("google token endpoint answered {}", status);
+            String error = errorOf(e.getResponseBodyAsString());
+            LOG.warn("google token endpoint answered {} ({})", status, error);
             if (status == 429 || status >= 500) {
                 throw unreachable();
             }
-            throw MailErrors.authFailed(); // invalid_grant, invalid_client, redirect mismatch: the grant is unusable
+            if ("invalid_client".equals(error) || "unauthorized_client".equals(error)
+                || "invalid_request".equals(error)) {
+                // not the owner's grant: the server's own Google setup is wrong, so never ask him to sign in again
+                LOG.warn("Google OAuth configuration problem: {}", error);
+                throw unreachable();
+            }
+            throw MailErrors.authFailed(); // invalid_grant and the rest: the grant is unusable
         } catch (RestClientException | JacksonException e) {
             LOG.warn("google token endpoint unreachable: {}", e.getClass().getSimpleName());
             throw unreachable();
@@ -191,5 +198,13 @@ public class GoogleOAuthClient {
 
     private static SystemRuntimeErrorException unreachable() {
         return MailErrors.unreachable();
+    }
+
+    private static String errorOf(String body) {
+        try {
+            return JSON.readTree(body == null || body.isBlank() ? "{}" : body).path("error").asString("");
+        } catch (JacksonException e) {
+            return "";
+        }
     }
 }

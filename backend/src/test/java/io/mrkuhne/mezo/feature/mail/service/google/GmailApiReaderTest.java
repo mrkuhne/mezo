@@ -204,4 +204,49 @@ class GmailApiReaderTest {
         GMAIL.stubFor(get(urlPathEqualTo(BASE + "/profile")).willReturn(aResponse().withStatus(500)));
         assertThatThrownBy(() -> reader.read("at-1", 0, 200)).hasMessageContaining("MAIL_UNREACHABLE");
     }
+
+    private void stubProfileError(int status, String body) {
+        GMAIL.stubFor(get(urlPathEqualTo(BASE + "/profile")).willReturn(aResponse().withStatus(status).withBody(body)));
+    }
+
+    private static String err(String reason, String state) {
+        return "{\"error\":{\"code\":403,\"errors\":[{\"reason\":\"" + reason + "\"}],\"status\":\""
+            + state + "\"}}";
+    }
+
+    @Test
+    void rateLimitsAndAnUnenabledApiAreUnreachableNeverASignInAgain() {
+        for (String reason : new String[] {"rateLimitExceeded", "userRateLimitExceeded", "dailyLimitExceeded",
+            "accessNotConfigured"}) {
+            stubProfileError(403, err(reason, "PERMISSION_DENIED"));
+            assertThatThrownBy(() -> reader.read("at", 0, 200)).as(reason).hasMessageContaining("MAIL_UNREACHABLE");
+        }
+        stubProfileError(429, "{}");
+        assertThatThrownBy(() -> reader.read("at", 0, 200)).hasMessageContaining("MAIL_UNREACHABLE");
+        stubProfileError(403, "not json");
+        assertThatThrownBy(() -> reader.read("at", 0, 200)).hasMessageContaining("MAIL_UNREACHABLE");
+    }
+
+    @Test
+    void insufficientPermissionsAnd401AreAuthFailed() {
+        stubProfileError(403, err("insufficientPermissions", "PERMISSION_DENIED"));
+        assertThatThrownBy(() -> reader.read("at", 0, 200)).hasMessageContaining("MAIL_AUTH_FAILED");
+        stubProfileError(403, "{\"error\":{\"status\":\"PERMISSION_DENIED\"}}");
+        assertThatThrownBy(() -> reader.read("at", 0, 200)).hasMessageContaining("MAIL_AUTH_FAILED");
+        stubProfileError(401, "{}");
+        assertThatThrownBy(() -> reader.read("at", 0, 200)).hasMessageContaining("MAIL_AUTH_FAILED");
+    }
+
+    @Test
+    void aCapHitInTheFirstRecordStillAdvancesTheCursor() throws Exception {
+        GMAIL.stubFor(get(urlPathEqualTo(BASE + "/history")).willReturn(json("{\"history\":["
+            + "{\"id\":\"101\",\"messagesAdded\":[{\"message\":{\"id\":\"aa\",\"labelIds\":[\"INBOX\"]}},"
+            + "{\"message\":{\"id\":\"bb\",\"labelIds\":[\"INBOX\"]}}]}],\"historyId\":\"150\"}")));
+        stubMessage("aa", "\"INBOX\"", "1764064800000", raw("<a@example.test>", "Egy", "x"));
+
+        GmailBatch batch = reader.read("at", 100, 1);
+
+        assertThat(batch.mails()).hasSize(1);
+        assertThat(batch.historyId()).isEqualTo(101);
+    }
 }

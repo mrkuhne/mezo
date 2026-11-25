@@ -50,7 +50,7 @@ import org.springframework.stereotype.Service;
 @ConditionalOnProperty(name = FeaturesConfiguration.MAIL_SWITCH, havingValue = "true")
 public class MailIntakeService {
 
-    static final String SPAM_FOLDER = "[Gmail]/Spam";
+    public static final String SPAM_FOLDER = "[Gmail]/Spam";
     static final List<String> FOLDERS = List.of("INBOX", SPAM_FOLDER);
     static final int BATCH_MAX = 200;
 
