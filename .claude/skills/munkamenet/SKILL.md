@@ -21,12 +21,28 @@ to switch to **lezárás** mid-task — do that at the next safe point (tests gr
    `mezo-r36n9` with its `_jegyek.json` row (edit the source now; the Notion push waits for lezárás).
 3. **Memories, narrowly.** `bd memories <keyword>` for the 1–3 areas you will touch. No full list unless unsure.
 4. **Kész, ha…** Write the done-checklist into the issue (`bd update <id> --acceptance "..."`), per CLAUDE.md.
-5. Then the normal owner gates (brainstorm → spike → plan) or straight to work for a small fix.
+5. Then the flow below, or straight to work for a small fix.
+
+## The flow — superpowers inside the frame (mezo-dl3h3)
+
+1. `superpowers:brainstorming` — step 1 = `brainstorm-recon`; no Visual Companion for Boop (visual iteration is the
+   simulator's job).
+2. Spec in `docs/superpowers/specs/` → owner OK.
+3. Simulator spike → owner OK (only when something visible changes).
+4. `superpowers:writing-plans` (with the *Kész, ha…* list) → owner OK. At its execution choice, recommend inline.
+5. Execution: inline `superpowers:executing-plans` by default. `superpowers:subagent-driven-development` is opt-in,
+   only for a large plan with clearly independent tasks — then every dispatch passes `model: "sonnet"`, no per-task
+   reviewer agents unless the plan marks the task risky, and one final fresh-context review on the most capable model.
+6. `superpowers:verification-before-completion` — tick every *Kész, ha…* item with evidence.
+7. **Lezárás** (below). It replaces `superpowers:finishing-a-development-branch`: if that skill triggers, follow
+   lezárás instead — no PR, no discard menu; local `--no-ff` merge per CLAUDE.md §Git Workflow.
 
 Working rules while in the task: subagents on `model: "sonnet"` (most capable only for the final review / hard
 design); read narrowly (`sed -n`, `grep`, `tail` on long output); no Notion MCP calls in the main session.
 
 ## Lezárás — finish, or hand off
+
+Replaces `superpowers:finishing-a-development-branch` (no options menu, no PR, no discard).
 
 **A. The work is done** (gates green):
 1. Merge per CLAUDE.md §Git Workflow (rebase main → `--no-ff` merge → push → delete branch); deploy/install if the
