@@ -53,6 +53,8 @@ import io.mrkuhne.mezo.feature.nutrition.service.EnergyBase;
 import io.mrkuhne.mezo.feature.people.repository.MentionRepository;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
+import io.mrkuhne.mezo.feature.train.port.TrainDayAdjustmentPort;
+import io.mrkuhne.mezo.feature.train.service.EffectivePlanService;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseFeedbackEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
@@ -136,6 +138,7 @@ public class CharacterSignalReads {
     private final SleepLogRepository sleepLogRepository;
     private final MesocycleRepository mesocycleRepository;
     private final GymScheduleSlotRepository gymScheduleSlotRepository;
+    private final TrainDayAdjustmentPort dayAdjustments;
     private final WaterLogRepository waterLogRepository;
     private final GoalRepository goalRepository;
     private final NutritionTargetsProperties nutritionTargets;
@@ -717,8 +720,14 @@ public class CharacterSignalReads {
                 .collect(java.util.stream.Collectors.toSet());
         Set<LocalDate> doneDays = new HashSet<>(
                 workoutSessionRepository.findMesoDoneInstanceDates(owner, windowStart, day));
+        // The effective planned dates (B7 K3 final review, like the flags): a session the ledger moved away leaves
+        // its day, a moved-in day is planned — so a moved, done session never reads as a missed one.
+        Set<Integer> slotDows = plannedDays.stream().map(dow -> dow.getValue() - 1)
+                .collect(java.util.stream.Collectors.toSet());
+        Set<LocalDate> plannedDates = EffectivePlanService.plannedGymDates(slotDows,
+                dayAdjustments.effectiveSessions(owner, windowStart, day), windowStart, day);
         return new DetectorInput.MesoContext(meso.getTitle(), meso.getCurrentWeek(), meso.getWeeks(),
-                isDeloadPhase(meso), plannedDays, doneDays);
+                isDeloadPhase(meso), plannedDays, doneDays, plannedDates);
     }
 
     /** Mirrors {@code VolumeProgressionService.isDeloadPhase}: phaseCurve[currentWeek-1], bounds-checked. */

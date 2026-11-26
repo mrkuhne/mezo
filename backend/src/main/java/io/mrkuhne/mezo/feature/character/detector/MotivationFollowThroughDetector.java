@@ -106,7 +106,7 @@ public class MotivationFollowThroughDetector implements CharacterDetector {
             int planned = 0;
             int done = 0;
             if (in.meso() != null && firstGym != null && !d.isBefore(firstGym)
-                    && in.meso().plannedDays().contains(d.getDayOfWeek())) {
+                    && in.meso().planned(d)) {
                 planned++;
                 if (gymDates.contains(d)) {
                     done++;

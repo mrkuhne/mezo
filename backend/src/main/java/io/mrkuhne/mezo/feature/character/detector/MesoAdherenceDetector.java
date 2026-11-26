@@ -44,11 +44,11 @@ public class MesoAdherenceDetector implements CharacterDetector {
         int missed = 0;
         for (int i = 0; i < WINDOW_DAYS; i++) {
             LocalDate d = day.minusDays(i);
-            if (in.meso().plannedDays().contains(d.getDayOfWeek()) && !in.meso().doneDays().contains(d)) {
+            if (in.meso().planned(d) && !in.meso().doneDays().contains(d)) {
                 missed++;
             }
         }
-        boolean dayItselfMissed = in.meso().plannedDays().contains(day.getDayOfWeek())
+        boolean dayItselfMissed = in.meso().planned(day)
                 && !in.meso().doneDays().contains(day);
         boolean fires = missed >= MIN_MISSED && (DetectorGates.newGymData(in) || dayItselfMissed);
         if (!fires) {

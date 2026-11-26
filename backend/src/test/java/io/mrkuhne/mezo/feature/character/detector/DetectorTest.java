@@ -451,6 +451,23 @@ class DetectorTest {
     }
 
     @Test
+    void mesoAdherence_judgesTheEffectivePlannedDates() {
+        MesoAdherenceDetector d = new MesoAdherenceDetector();
+        // K3 final review finding 11: Monday + Thursday by the weekly slots, but the ledger moved Monday's session to
+        // Tuesday and it was done there — only Thursday (DAY) is missed: below the threshold, quiet.
+        LocalDate monday = DAY.minusDays(3);
+        LocalDate tuesday = DAY.minusDays(2);
+        DetectorInput.MesoContext meso = new DetectorInput.MesoContext("Hyper", 3, 6, false,
+                Set.of(DayOfWeek.MONDAY, DayOfWeek.THURSDAY), Set.of(tuesday), Set.of(tuesday, DAY));
+        List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
+                List.of(), List.of(), List.of(), List.of(), meso,
+                emptyTrend()));
+        assertThat(fired).isEmpty();
+        assertThat(meso.planned(monday)).isFalse();
+        assertThat(meso.planned(tuesday)).isTrue();
+    }
+
+    @Test
     void mesoAdherence_deloadSuppresses() {
         MesoAdherenceDetector d = new MesoAdherenceDetector();
         DetectorInput.MesoContext meso = new DetectorInput.MesoContext("Hyper", 3, 6, true,

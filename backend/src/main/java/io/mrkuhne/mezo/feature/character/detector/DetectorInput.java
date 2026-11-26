@@ -60,9 +60,25 @@ public record DetectorInput(LocalDate day,
      *  row's HH:mm clock strings parsed to LocalTime, null when absent or malformed (round 4). */
     public record SleepPoint(LocalDate date, Integer quality, BigDecimal durationH, Integer awakenings,
                              LocalTime bedtime, LocalTime wakeup) {}
-    /** Active mesocycle context; null when no active meso. plannedDays from gym schedule slots. */
+    /**
+     * Active mesocycle context; null when no active meso. {@code plannedDays} from gym schedule slots;
+     * {@code plannedDates} the window's effective planned gym dates (the day-adjustment ledger's moves applied,
+     * {@code EffectivePlanService.plannedGymDates} — the flags' rule, B7 K3), or null to judge by weekday alone.
+     */
     public record MesoContext(String title, int currentWeek, int totalWeeks, boolean deloadWeek,
-                              Set<DayOfWeek> plannedDays, Set<LocalDate> doneDays) {}
+                              Set<DayOfWeek> plannedDays, Set<LocalDate> doneDays, Set<LocalDate> plannedDates) {
+
+        /** The weekday-only shape (no ledger). */
+        public MesoContext(String title, int currentWeek, int totalWeeks, boolean deloadWeek,
+                           Set<DayOfWeek> plannedDays, Set<LocalDate> doneDays) {
+            this(title, currentWeek, totalWeeks, deloadWeek, plannedDays, doneDays, null);
+        }
+
+        /** Was a gym session planned on {@code d}: the effective dates when known, else the weekday slots. */
+        public boolean planned(LocalDate d) {
+            return plannedDates != null ? plannedDates.contains(d) : plannedDays.contains(d.getDayOfWeek());
+        }
+    }
     /** One day's meal aggregate. kcal/macros are sums over the day's meal item snapshots.
      *  {@code nova4KcalShare} is null ONLY when ZERO of the day's kcal carries a NOVA class —
      *  a share computed from nothing would be a fabrication. A non-null share therefore does NOT
