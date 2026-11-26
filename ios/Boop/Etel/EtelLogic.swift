@@ -363,13 +363,10 @@ func draftSourceTag(_ item: DraftItem) -> String {
     switch item.source {
     case .pantry:
         // an ingredient of a recipe logged ingredient by ingredient (mezo-r36n9.181) says whose part it is
-        if item.recipeId != nil {
-            let part = item.recipeName.map { "\($0) része" } ?? "recept része"
-            item.needsReview ? "\(part) · nézd át" : part
-        }
-        else { item.needsReview ? "kamra · nézd át" : "kamra" }
-    case .recipe: item.needsReview ? "recept · nézd át" : "recept"
-    case .estimate: item.needsReview || item.confidence < 0.6 ? "becslés · nézd át" : "becslés"
+        let base = item.recipeId == nil ? "kamra" : item.recipeName.map { "\($0) része" } ?? "recept része"
+        return item.needsReview ? "\(base) · nézd át" : base
+    case .recipe: return item.needsReview ? "recept · nézd át" : "recept"
+    case .estimate: return item.needsReview || item.confidence < 0.6 ? "becslés · nézd át" : "becslés"
     }
 }
 
