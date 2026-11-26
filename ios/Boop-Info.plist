@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Keys Xcode's generated Info.plist cannot emit from INFOPLIST_KEY_* build settings (merged with the generated ones). -->
+	<key>NSAlarmKitUsageDescription</key>
+	<string>A Boop az általad beállított ébresztőket így tudja megszólaltatni, akkor is, ha le van zárva a telefon.</string>
+</dict>
+</plist>

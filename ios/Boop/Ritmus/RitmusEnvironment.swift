@@ -49,6 +49,11 @@ final class RitmusEnvironment {
     @ObservationIgnored private let userDirectory: URL
     /// The signed-in user's folder name — keys anything per-user that lives outside the folder (UserDefaults).
     var userKey: String { userDirectory.lastPathComponent }
+    /// Which supplement groups were taken, per user (`supplements-taken.json` in the user's folder): the room, Ma and the
+    /// quick sheet read it; the sender (inside `RitmusClient`) writes the delivered intake ids into it.
+    @ObservationIgnored let supplementTaken: SupplementTakenStore
+    /// The signed-in user's reminders (a seam: tests hand in their own).
+    @ObservationIgnored var reminderStore: @MainActor () -> ReminderStore? = { ReminderHub.store }
     /// Lets the outbox's delivery listener reach the chat attached after it.
     @ObservationIgnored private let chatRef: ChatRef
     /// The Boop tab's chat (B3 Task 12); nil until `attachChat` (tests without a server leave it out).
@@ -83,6 +88,7 @@ final class RitmusEnvironment {
          naplo: (@Sendable (String, String) async throws -> [ServerDay])? = nil,
          journal: (@Sendable (String) async throws -> [JournalLineLite])? = nil,
          reminderCenter: ReminderCenter = SystemReminderCenter(),
+         supplementTaken: SupplementTakenStore? = nil,
          clock: @escaping @Sendable () -> Date = { Date() }, calendar: Calendar = .current) {
         let ledger = LedgerStore(directory: ledgerDirectory)
         self.ledger = ledger
@@ -99,6 +105,7 @@ final class RitmusEnvironment {
         self.outboxDirectory = outboxDirectory
         userDirectory = ledgerDirectory.deletingLastPathComponent()
         goalHistoryFile = userDirectory.appendingPathComponent("goal-history.json")
+        self.supplementTaken = supplementTaken ?? SupplementTakenStore(fileURL: userDirectory.appendingPathComponent("supplements-taken.json"))
         // A delivery clears the pending flag only when no newer version of the same id (a note sent after an
         // in-flight check-in) is still queued — that one clears it when it arrives.
         let queue = OutboxRef()
@@ -172,6 +179,7 @@ final class RitmusEnvironment {
     /// the last), the network watch ends, and the reminders it planned stay as they are.
     func retire() {
         retirement.retire()
+        SupplementTickHub.unbind(self)
         pathMonitor?.cancel()
         pathMonitor = nil
     }
@@ -235,6 +243,22 @@ final class RitmusEnvironment {
                                             payload: RitmusPayload.encode(WeightLogPayload(date: day, weightKg: rounded))),
                                  rollbackOnFailure: true)
         weightTick += 1
+        sendSoon()
+    }
+
+    /// A supplement group taken (the room, the quick sheet, the alarm): it counts as taken at once, the write is queued and
+    /// sent when the net allows, and that day's linked reminder will not ring. `day` = the reminder occurrence's day (a
+    /// notification cleared the next morning is yesterday's intake); nil = the day of `date`. Throws when the phone could
+    /// not keep it.
+    func captureSupplementTick(daypart: String, at date: Date, day: String? = nil) async throws {
+        let day = day ?? self.day(of: date)
+        // Already taken (the alarm after the room, or a double tap): nothing to send, the reminder is still done.
+        if supplementTaken.taken(day: day)[daypart] == nil {
+            try await outbox.enqueue(SupplementTickHub.item(day: day, daypart: daypart, capturedAt: date),
+                                     rollbackOnFailure: true)
+            supplementTaken.markTaken(day: day, daypart: daypart, ids: nil)
+        }
+        SupplementTickHub.tickLinkedReminder(daypart: daypart, day: day, store: reminderStore())
         sendSoon()
     }
 
@@ -347,11 +371,16 @@ final class RitmusEnvironment {
         chatRef.store = store
     }
 
+    /// The user's own folder, the parent of `ledger`, `outbox`, `cache` (and the reminders file).
+    static func userRoot(for userId: UUID, base: URL = .applicationSupportDirectory) -> URL {
+        base.appendingPathComponent("boop-ritmus", isDirectory: true)
+            .appendingPathComponent(userId.uuidString, isDirectory: true)
+    }
+
     /// Each signed-in user keeps their own days and queue: `<base>/boop-ritmus/<userId>/ledger|outbox`.
     static func directories(for userId: UUID,
                             base: URL = .applicationSupportDirectory) -> (ledger: URL, outbox: URL, cache: URL) {
-        let root = base.appendingPathComponent("boop-ritmus", isDirectory: true)
-            .appendingPathComponent(userId.uuidString, isDirectory: true)
+        let root = userRoot(for: userId, base: base)
         // `cache` is the last-known-good READ cache (`ServerCache`) — a third folder, per user like the other two,
         // and deliberately separate: everything in it is a disposable copy of something the server still has, so
         // clearing it can never lose one of the owner's own writes the way clearing `outbox` would.
@@ -366,9 +395,10 @@ final class RitmusEnvironment {
         let dirs = directories(for: userId)
         // The outbox directory doubles as the audio directory AND the meal-photo directory (`MealDraftSender` and
         // `FoodOutbox` look for `meal-<id>.jpg` there): all of them must stay the same folder.
+        let taken = SupplementTakenStore(fileURL: userRoot(for: userId).appendingPathComponent("supplements-taken.json"))
         let ritmus = RitmusClient(client: client, audioDirectory: dirs.outbox, train: train,
                                   penz: raw.map(PenzOutboxSender.init(raw:)),
-                                  kapacitas: raw.map(KapacitasOutboxSender.init(raw:)))
+                                  kapacitas: raw.map(KapacitasOutboxSender.init(raw:)), supplementTaken: taken)
         let snapshots = SnapshotBuilder(reader: health)
         let calendarReader = CalendarKitReader()
         let env = RitmusEnvironment(
@@ -382,7 +412,9 @@ final class RitmusEnvironment {
             closeLine: { date in try await ritmus.line(date) },
             transcribe: { file in try await ritmus.transcribe(file) },
             naplo: { from, to in try await ritmus.fetchNaplo(from: from, to: to) },
-            journal: { date in try await ritmus.journalLines(on: date) })
+            journal: { date in try await ritmus.journalLines(on: date) },
+            supplementTaken: taken)
+        SupplementTickHub.bind(env)
         env.attachChat(client: client)
         env.watchNetwork()
         // Records into the outbox folder, where the `voice` sender looks for the files.

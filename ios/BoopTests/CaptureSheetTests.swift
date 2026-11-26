@@ -7,7 +7,7 @@ import BoopCore
 struct CaptureSheetTests {
     @Test func theNineDoorsPlusTheExpense() {
         #expect(CaptureSheet.doors.map(\.title) == ["Víz", "Kiegészítők", "Edzés indítása", "Sport", "Súly", "Check-in",
-                                                    "Napló", "Alvás", "Kiadás"])
+                                                    "Napló", "Alvás", "Kiadás", "Emlékeztető"])
         #expect(CaptureSheet.foodChips.map(\.title) == ["Fotó", "Szöveg", "Vonalkód", "Recept", "Kamra", "Ital"])
     }
 
@@ -22,6 +22,7 @@ struct CaptureSheetTests {
         #expect(byTitle["Napló"] == .quick(.journal))
         #expect(byTitle["Alvás"] == .quick(.sleep))
         #expect(byTitle["Kiadás"] == .penzExpense)
+        #expect(byTitle["Emlékeztető"] == .reminder)
         #expect(Set(QuickLog.allCases).count == 6)
     }
 

@@ -105,7 +105,7 @@ final class EdzesStore {
     func attach(folder: URL?) {
         guard let folder, self.folder != folder else { return }
         self.folder = folder
-        if session == nil { session = Self.readSession(folder) }
+        if session == nil { session = Self.readSession(folder); if session != nil { signalRestEnd() } }
         if finished == nil { finished = Self.readFinished(folder) }
     }
 
@@ -302,6 +302,13 @@ final class EdzesStore {
     func update(_ session: WorkoutSession) {
         self.session = session
         saveSession()
+        signalRestEnd()
+    }
+
+    /// Re-arms (or clears) the "rest is over" signal for the session as it is now.
+    private func signalRestEnd() {
+        let s = session, now = clock()
+        Task { await ReminderHub.restEnd?.sessionChanged(s, now: now) }
     }
 
     /// The workout is over: the session leaves the phone's memory and its file — and stays, as the day's result,
@@ -334,6 +341,7 @@ final class EdzesStore {
         }
         session = nil
         if let sessionFile { try? FileManager.default.removeItem(at: sessionFile) }
+        signalRestEnd()
     }
 
     private func saveFinished() {

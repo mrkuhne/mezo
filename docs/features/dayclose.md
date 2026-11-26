@@ -2,7 +2,7 @@
 title: Day close — the Boop evening close record
 type: feature-domain
 status: done
-updated: 2026-11-25
+updated: 2026-11-26
 tags: [backend, ios, boop, dayclose, biometrics, data-layer]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/dayclose
@@ -15,6 +15,8 @@ related: [boop-ios, ritual, intention, journal, companion, today]
 ---
 
 > **2026-11-24 — Close catch-up from the Napló (Boop, `mezo-r36n9.159`).** No server change: a past day's close is `PUT /api/day-close/{date}` with `capturedAt` = that day 21:00 (the merged 20:00 check-in and `closedAt` follow it), inside the existing window; the day's goal comes from the ledger and Boop's plan goals from that day's brief (`getBoopBrief?date=`).
+
+> **2026-11-26:** `RitmusClient` also routes the new one-way `OutboxKind.supplementTick` (a supplement group taken on a day, `mezo-r36n9.172`); the day close is untouched — see [`boop-ios.md`](boop-ios.md) §2 *Emlékeztetők és ébresztők*.
 
 > **2026-11-24:** `RitmusClient` (the outbox's sender switch this doc lists as a key file) gained the quick log's weight and sleep senders (`mezo-r36n9.154`); nothing about the day close changed — see [`boop-ios.md`](boop-ios.md) §2.
 > **2026-11-25 — B7 K3 Task 19 (`mezo-r36n9.17`).** `RitmusClient` (the outbox sender this feature's close rides on) gained an optional `kapacitas: KapacitasOutboxSender?` for the new `OutboxKind.dayAdjustment` (an Átrendezés accept queued offline); the day-close path is unchanged. See [`capacity.md`](capacity.md).

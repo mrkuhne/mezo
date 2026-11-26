@@ -1,4 +1,3 @@
-import CryptoKit
 import Foundation
 import BoopDesign
 import BoopCore
@@ -212,13 +211,6 @@ func dimensionExplanation(_ d: ScoreDimension, coachNote: String?) -> DimensionE
 }
 
 // MARK: - Supplements
-
-/// A stable key for "this day's morning group": replaying the tap (after a lost answer, or after a relaunch that
-/// forgot it was done) repeats the same key, and the server dedupes.
-func supplementRef(day: String, daypart: String) -> UUID {
-    let d = Array(SHA256.hash(data: Data("etel-supplements|\(day)|\(daypart)".utf8)))
-    return UUID(uuid: (d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7], d[8], d[9], d[10], d[11], d[12], d[13], d[14], d[15]))
-}
 
 struct SupplementGroup: Equatable, Identifiable {
     let key: String

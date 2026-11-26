@@ -13,6 +13,9 @@ enum CapturePick: Equatable {
     case quick(QuickLog)
     /// An area to open — the "Edzés indítása" tile lands on the Edzés room, where today's workout starts.
     case area(Hue)
+    /// The Emlékeztetők page (the "Emlékeztető" door, `mezo-r36n9.172`): always reachable, even on a day with no reminder;
+    /// a new one is made with the page's own "+".
+    case reminder
 
     /// What the shell opens for a pick: the composer's start (nil for everything else).
     var mealStart: MealStart? {
@@ -78,9 +81,7 @@ struct CaptureSheet: View {
             }
             .padding(18).frame(maxWidth: .infinity, alignment: .leading).nkGlass()
 
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
-                ForEach(Self.doors, id: \.title) { door($0) }
-            }
+            doorGrid
 
             HStack(spacing: 10) {
                 TextField("", text: $text, prompt: Text("Mondd vagy írd: ebéd, csirke rizzsel…").foregroundStyle(.white.opacity(0.45)))
@@ -95,6 +96,22 @@ struct CaptureSheet: View {
             .padding(.horizontal, 18).frame(height: 54)
             .background(Capsule().fill(.white.opacity(0.08)))
             .overlay(Capsule().stroke(.white.opacity(0.12)))
+        }
+    }
+
+    /// The doors in rows of three; the last row, when it is short, sits in the middle.
+    private var doorGrid: some View {
+        let rows = stride(from: 0, to: Self.doors.count, by: 3).map { Array(Self.doors[$0..<min($0 + 3, Self.doors.count)]) }
+        return VStack(spacing: 10) {
+            ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+                HStack(spacing: 10) {
+                    // a lone last tile sits in the middle: an empty cell of its own width on each side
+                    if row.count == 1 { Color.clear.frame(maxWidth: .infinity, maxHeight: 1) }
+                    ForEach(row, id: \.title) { door($0) }
+                    if row.count == 1 { Color.clear.frame(maxWidth: .infinity, maxHeight: 1) }
+                }
+                .frame(maxWidth: .infinity)
+            }
         }
     }
 
@@ -117,6 +134,7 @@ struct CaptureSheet: View {
         ("book-sage", "Napló", "egy sor, bármikor", .quick(.journal)),
         ("moon-cream", "Alvás", "éjszaka kézzel", .quick(.sleep)),
         ("e-penz", "Kiadás", "készpénz", .penzExpense),
+        ("bell-cream", "Emlékeztető", "bármire", .reminder),
     ]
 
     private func chip(_ glyph: String, _ title: String, _ pick: CapturePick) -> some View {

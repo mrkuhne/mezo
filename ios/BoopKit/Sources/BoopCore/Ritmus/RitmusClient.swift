@@ -39,6 +39,9 @@ public struct RitmusClient: OutboxSender {
     private let penz: PenzOutboxSender?
     /// Sends the Átrendezés accepts queued offline (B7 K3); nil = such an item waits rather than being refused.
     private let kapacitas: KapacitasOutboxSender?
+    /// Where a delivered supplement tick writes the intake ids it got back (the room's undo reads them); nil = tests
+    /// that do not look.
+    private let supplementTaken: SupplementTakenStore?
 
     /// `audioDirectory`: where `VoicePayload.fileName` is resolved (the outbox directory by default).
     ///
@@ -46,8 +49,10 @@ public struct RitmusClient: OutboxSender {
     /// a queued set belongs to, and that memory is what the player's online calls (the swap) read: with two
     /// instances the queue learns the workout id and the player never sees it.
     public init(client: Client, audioDirectory: URL = Outbox.defaultDirectory(), train: TrainClient? = nil,
-                penz: PenzOutboxSender? = nil, kapacitas: KapacitasOutboxSender? = nil) {
+                penz: PenzOutboxSender? = nil, kapacitas: KapacitasOutboxSender? = nil,
+                supplementTaken: SupplementTakenStore? = nil) {
         self.client = client; self.audioDirectory = audioDirectory
+        self.supplementTaken = supplementTaken
         self.train = train ?? TrainClient(client: client)
         self.penz = penz
         self.kapacitas = kapacitas
@@ -86,6 +91,7 @@ public struct RitmusClient: OutboxSender {
             case .sleepLog: return try await sendSleep(item)
             case .dayAdjustment:
                 return await kapacitas?.send(item) ?? .retryLater
+            case .supplementTick: return try await sendSupplementTick(item)
             }
         } catch {
             // An answer whose body would not decode still carries its status; otherwise (no network, a timeout) the
@@ -225,6 +231,25 @@ public struct RitmusClient: OutboxSender {
         case .badRequest: return Self.map(400)
         case .unauthorized: return Self.map(401)
         case .undocumented(let code, _): return Self.map(code)
+        }
+    }
+
+    /// A supplement group taken: one intake per protocol item of the daypart, each keyed from `supplementRef`, so a
+    /// resend after a lost answer never duplicates. The returned intake ids go to the taken store for the room's undo.
+    private func sendSupplementTick(_ item: OutboxItem) async throws -> OutboxSendResult {
+        guard let p = RitmusPayload.decode(SupplementTickPayload.self, from: item.payload) else { return malformed("supplement tick") }
+        do {
+            let ids = try await FoodClient(client: client).tickGroupIntakes(
+                daypart: p.daypart, clientRef: supplementRef(day: p.day, daypart: p.daypart), capturedAt: item.capturedAt)
+            supplementTaken?.markTaken(day: p.day, daypart: p.daypart, ids: ids)
+            return .sent(nil)
+        } catch let e as FoodFetchError {
+            switch e {
+            case .offline: return .offline
+            case .rejected: return Self.map(400)
+            case .notFound: return Self.map(404)
+            case .unauthorized, .unavailable, .conflict, .server: return .retryLater
+            }
         }
     }
 

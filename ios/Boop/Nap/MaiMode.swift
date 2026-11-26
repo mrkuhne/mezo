@@ -72,6 +72,17 @@ func maiSky(evening: Bool, recovery: Bool) -> NKSky? {
 }
 
 /// The bedtime the reminder counts back from: the brief's target; in kímélő mód without one, the early 22:00 the path shows.
+/// What re-runs the bedtime reminder's refresh: the target, and its on/off and lead from the built-in settings — a change on
+/// the Emlékeztetők page (a full-screen cover over Ma) re-arms or cancels it at once.
+struct BedtimeRefreshKey: Hashable {
+    let target: String?
+    let enabled: Bool
+    let minutes: Int
+    init(target: String?, settings: BoopReminderSettings) {
+        self.target = target; enabled = settings.bedtimeEnabled; minutes = settings.bedtimeMinutesBefore
+    }
+}
+
 func reminderTarget(_ brief: Brief) -> String? {
     brief.day.bedtimeTarget ?? (brief.day.recovery != nil ? "22:00" : nil)
 }

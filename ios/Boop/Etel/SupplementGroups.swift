@@ -56,6 +56,8 @@ struct SupplementEditSheet: View {
                             rowView(row)
                             if k < rows.count - 1 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
                         }
+                        Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5)
+                        GroupReminderRow(group: group)
                     }
                 }
             }
@@ -142,5 +144,76 @@ struct SupplementEditSheet: View {
         let text = await store.addSupplement(name: newName, dose: newDose, slotKey: newSlot)
         message = text
         if text.hasSuffix("a listádon") { newName = ""; newDose = ""; adding = false }
+    }
+}
+
+// MARK: - Emlékeztess
+
+/// The „Emlékeztess" row of a group: a switch that creates, updates and deletes the group's linked reminder
+/// (`Reminder.link == .supplement(daypart:)`, daily, Ébresztő by default, a time by the daypart).
+private struct GroupReminderRow: View {
+    let group: SupplementGroup
+    private var calendar: Calendar { .current }
+    /// The time while the wheel turns: saved (and re-armed) once it rests.
+    @State private var shownTime: Date?
+    @State private var saver = Debouncer()
+
+    var body: some View {
+        if let store = ReminderHub.store {
+            let existing = store.reminder(linkedTo: group.key)
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 10) {
+                    NKGlyph("bell-cream", .white.opacity(0.9), size: 16)
+                    Text("Emlékeztess").nkFont(16, .medium).foregroundStyle(.white)
+                    Spacer(minLength: 6)
+                    Toggle("", isOn: Binding(get: { existing != nil }, set: { on in
+                        if on { create(store) } else if let existing { store.delete(existing.id) }
+                    }))
+                    .labelsHidden().tint(Hue.fuel.glow)
+                    .accessibilityLabel("\(group.label): emlékeztess")
+                }
+                if let existing {
+                    HStack(spacing: 12) {
+                        DatePicker("", selection: Binding(get: { shownTime ?? clock(existing) }, set: { d in
+                            shownTime = d
+                            let id = existing.id
+                            saver.submit {
+                                guard var n = store.file.reminders.first(where: { $0.id == id }) else { return }
+                                let c = calendar.dateComponents([.hour, .minute], from: d)
+                                n.hour = c.hour ?? n.hour; n.minute = c.minute ?? n.minute
+                                store.upsert(n)
+                                shownTime = nil
+                            }
+                        }), displayedComponents: .hourAndMinute)
+                        .labelsHidden().tint(Hue.fuel.glow).environment(\.locale, Locale(identifier: "hu_HU"))
+                        .accessibilityLabel("\(group.label): mikor")
+                        Button {
+                            var n = existing
+                            n.strength = n.strength == .alarm ? .notification : .alarm
+                            store.upsert(n)
+                        } label: {
+                            StrengthMark(strength: existing.strength, hue: .fuel).frame(minHeight: 44)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityHint("Átváltja ébresztő és értesítés között")
+                        Spacer(minLength: 0)
+                    }
+                    // the vitamin alarm's main door: a denied permission or a failed arming is told here too
+                    ReminderArmLine(state: reminderArmState(existing), reminder: existing)
+                }
+            }
+            .padding(.top, 11)
+            .onDisappear { saver.flush() }
+        }
+    }
+
+    private func create(_ store: ReminderStore) {
+        let t = ReminderLook.defaultTime(daypart: group.key)
+        store.upsert(Reminder(title: group.label, hour: t.hour, minute: t.minute, repeats: .daily, strength: .alarm,
+                              link: .supplement(daypart: group.key)))
+    }
+
+    private func clock(_ r: Reminder) -> Date {
+        calendar.date(bySettingHour: r.hour, minute: r.minute, second: 0, of: Date()) ?? Date()
     }
 }

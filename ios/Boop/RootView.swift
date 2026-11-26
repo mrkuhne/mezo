@@ -59,7 +59,9 @@ struct RootView: View {
             case .signedOut: AuthFlow()
             case .offline: OfflineView()
             case .needsOnboarding(let me): OnboardingFlow(me: me)
-            case .ready(let me): ShellView(me: me)
+            case .ready(let me):
+                let _ = ReminderHub.activate(for: me.id) // before the Ma tree: BedtimeReminder reads the store at creation
+                ShellView(me: me)
             }
         }
         .animation(.easeInOut(duration: 0.3), value: session.state)
@@ -79,6 +81,11 @@ struct RootView: View {
         .environment(kapacitasStore)
         .onChange(of: session.state, initial: true) { _, state in updateLink(state) }
         .background { if let link, case .ready = session.state { SyncTriggers(link: link) } }
+        .background {
+            if case .ready(let me) = session.state, let store = ReminderHub.store, let scheduler = ReminderHub.scheduler {
+                ReminderTriggers(store: store, scheduler: scheduler).id(me.id)
+            }
+        }
         .background { if let ritmus, case .ready = session.state { RitmusTriggers(env: ritmus, morning: morning) } }
         .background { if let ritmus, let penz, case .ready = session.state { PenzTriggers(env: ritmus, store: penz) } }
         .background {
@@ -95,6 +102,8 @@ struct RootView: View {
         }
         // The wall's waiting notifications belong to the account that made them.
         if let old = ritmus?.userKey, link?.userId != me?.id { WallNotifier.signedOut(userKey: old) }
+        // His own reminders belong to the account too: only a real sign-out cancels them (not .loading/.offline); another user gets his own store.
+        ReminderHub.apply(state)
         // Signed out, or another user: the old daily loop stops sending at once (its queue stays on disk for that user;
         // the session's client already carries another token, or none).
         guard let me else {
@@ -164,6 +173,30 @@ struct RootView: View {
     }
 }
 
+/// Keeps the user's own reminders armed: on open, on return to the foreground and on every edit (an edit may ask for the
+/// alarm permission). The HealthKit wake does the same through `ReminderHub.scheduler`.
+private struct ReminderTriggers: View {
+    let store: ReminderStore
+    let scheduler: ReminderScheduler
+    @Environment(\.scenePhase) private var scenePhase
+    /// The reminders as of the last change: a tick or a built-in setting never raises a permission prompt.
+    @State private var seen: [Reminder]?
+    var body: some View {
+        Color.clear
+            .task { seen = store.file.reminders; await scheduler.refresh(askPermission: false); await InstallExpiry.reschedule(center: SystemReminderCenter()) }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active {
+                    Task { await scheduler.refresh(askPermission: false); await InstallExpiry.reschedule(center: SystemReminderCenter()) }
+                }
+            }
+            .onChange(of: store.changes) {
+                let ask = shouldAskPermission(previous: seen, now: store.file.reminders)
+                seen = store.file.reminders
+                Task { await scheduler.refresh(askPermission: ask) }
+            }
+    }
+}
+
 /// Refresh on return to the foreground (10-minute debounce) and on calendar changes. Kept in its own
 /// invisible view: reading the scene phase on the root view itself stopped sheets and dialogs presenting.
 private struct SyncTriggers: View {
@@ -171,11 +204,22 @@ private struct SyncTriggers: View {
     @Environment(\.scenePhase) private var scenePhase
     var body: some View {
         Color.clear
-            .onChange(of: scenePhase) { _, phase in if phase == .active { Task { await link.syncIfStale() } } }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active { Task { await link.syncIfStale() } }
+                // The rest-end alarm sleeps while the app is open and wakes when it goes away (`.inactive` is a glance).
+                if phase != .inactive { let fg = phase == .active; Task { await ReminderHub.restEnd?.foregroundChanged(fg) } }
+            }
             .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged)) { _ in
                 Task { await link.calendarChanged() }
             }
     }
+}
+
+/// What re-plans the daily loop's reminders: the day's ledger, the bedtime target, a return to the foreground — and Boop's
+/// built-in reminder settings, so a switch or a time changed on the Emlékeztetők page re-arms at once.
+struct RitmusRefreshKey: Hashable {
+    let done: [String]; let closed: Bool; let target: String?; let saved: Bool; let day: String; let foregrounds: Int
+    let builtIn: BoopReminderSettings
 }
 
 /// The daily loop's app-wide upkeep, in an invisible view for the same reason as `SyncTriggers`: on return to the
@@ -188,14 +232,13 @@ private struct RitmusTriggers: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var foregrounds = 0
 
-    private struct Plan: Hashable { let done: [String]; let closed: Bool; let target: String?; let saved: Bool; let day: String; let foregrounds: Int }
     // saved = a check-in or the close is on the day: the moment the notification permission is first asked for
-
-    private var plan: Plan {
+    private var plan: RitmusRefreshKey {
         let day = env.today
         let ledger = env.ledger.ledger(for: day)
-        return Plan(done: ledger.checkIns.map(\.slot).sorted(), closed: ledger.close != nil,
-                    target: morning?.brief?.day.bedtimeTarget, saved: !ledger.checkIns.isEmpty || ledger.close != nil, day: day, foregrounds: foregrounds)
+        return RitmusRefreshKey(done: ledger.checkIns.map(\.slot).sorted(), closed: ledger.close != nil,
+                                target: morning?.brief?.day.bedtimeTarget, saved: !ledger.checkIns.isEmpty || ledger.close != nil, day: day,
+                                foregrounds: foregrounds, builtIn: ReminderHub.store?.file.builtIn ?? BoopReminderSettings())
     }
 
     var body: some View {

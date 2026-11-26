@@ -44,13 +44,17 @@ final class RitmusReminders {
     private let center: ReminderCenter
     private let calendar: Calendar
     private let clock: @Sendable () -> Date
+    /// The built-in reminder settings, read fresh on every refresh (the signed-in user's store, else the defaults).
+    private let settings: @MainActor () -> BoopReminderSettings
     /// The last bedtime target a brief gave: a refresh without one (a background wake) counts back from it.
     private var lastTarget: String?
     /// The refresh in flight; the next one waits for it, so two never interleave their cancel-and-add.
     private var inFlight: Task<Void, Never>?
 
-    init(center: ReminderCenter = SystemReminderCenter(), calendar: Calendar = .current, clock: @escaping @Sendable () -> Date = { Date() }) {
+    init(center: ReminderCenter = SystemReminderCenter(), calendar: Calendar = .current, clock: @escaping @Sendable () -> Date = { Date() },
+         settings: @escaping @MainActor () -> BoopReminderSettings = { ReminderHub.store?.file.builtIn ?? BoopReminderSettings() }) {
         self.center = center
+        self.settings = settings
         var greg = Calendar(identifier: .gregorian)
         greg.timeZone = calendar.timeZone
         greg.locale = Locale(identifier: "en_US_POSIX")
@@ -82,7 +86,7 @@ final class RitmusReminders {
         }
         guard !Task.isCancelled else { return }
         await clearFamily()
-        for p in plan(ledger: ledger, bedtimeTarget: lastTarget) {
+        for p in plan(ledger: ledger, bedtimeTarget: lastTarget, settings: settings()) {
             guard !Task.isCancelled else { return }
             do {
                 try await center.scheduleOnce(id: p.id, on: p.day, hour: p.hour, minute: p.minute, title: p.title, body: p.body, route: p.route)
@@ -105,7 +109,7 @@ final class RitmusReminders {
 
     // MARK: - What rings when (pure given the ledger and the clock)
 
-    func plan(ledger: LedgerStore, bedtimeTarget: String?) -> [Plan] {
+    func plan(ledger: LedgerStore, bedtimeTarget: String?, settings: BoopReminderSettings = BoopReminderSettings()) -> [Plan] {
         let now = clock()
         let today = calendar.startOfDay(for: now)
         var plans: [Plan] = []
@@ -113,13 +117,15 @@ final class RitmusReminders {
             guard let day = calendar.date(byAdding: .day, value: offset, to: today) else { continue }
             let dayKey = dayString(day)
             for moment in CheckInMoment.allCases {
-                let t = Self.checkInTime(moment)
-                guard rings(on: day, hour: t.hour, minute: t.minute, after: now),
+                let slot = Self.slot(moment, in: settings)
+                let t = (hour: slot.hour, minute: slot.minute)
+                guard slot.enabled, rings(on: day, hour: t.hour, minute: t.minute, after: now),
                       !ledger.ledger(for: dayKey).checkIns.contains(where: { $0.slot == moment.slotId }) else { continue }
                 plans.append(Plan(id: Self.checkInId(moment, day: dayKey), route: "boop://checkin", title: Self.checkInTitle(moment),
                                   body: Self.checkInBody, day: components(day), hour: t.hour, minute: t.minute))
             }
-            let t = Self.closeTime(bedtimeTarget: bedtimeTarget)
+            guard settings.closeEnabled else { continue }
+            let t = Self.closeTime(bedtimeTarget: bedtimeTarget, lead: settings.closeMinutesBeforeBed)
             // before 04:00 the evening still belongs to the day before
             let evening = t.hour < 4 ? calendar.date(byAdding: .day, value: -1, to: day) ?? day : day
             guard rings(on: day, hour: t.hour, minute: t.minute, after: now), ledger.ledger(for: dayString(evening)).close == nil else { continue }
@@ -147,6 +153,14 @@ final class RitmusReminders {
         }
     }
 
+    static func slot(_ moment: CheckInMoment, in settings: BoopReminderSettings) -> BoopReminderSettings.Slot {
+        switch moment {
+        case .reggel: settings.morning
+        case .delben: settings.noon
+        case .delutan: settings.afternoon
+        }
+    }
+
     static func checkInTitle(_ moment: CheckInMoment) -> String {
         switch moment {
         case .reggel: "Reggeli kitöltés"
@@ -156,11 +170,11 @@ final class RitmusReminders {
     }
 
     /// Bedtime target ("HH:mm") minus 75 minutes (a target after midnight rings the evening before), else 21:30.
-    static func closeTime(bedtimeTarget: String?) -> (hour: Int, minute: Int) {
+    static func closeTime(bedtimeTarget: String?, lead: Int = closeLead) -> (hour: Int, minute: Int) {
         guard let target = bedtimeTarget else { return closeFallback }
         let p = target.split(separator: ":")
         guard p.count == 2, let h = Int(p[0]), let m = Int(p[1]), (0..<24).contains(h), (0..<60).contains(m) else { return closeFallback }
-        let t = ((h * 60 + m - closeLead) % 1440 + 1440) % 1440
+        let t = ((h * 60 + m - lead) % 1440 + 1440) % 1440
         return (t / 60, t % 60)
     }
 }

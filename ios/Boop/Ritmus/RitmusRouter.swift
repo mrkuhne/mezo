@@ -32,6 +32,12 @@ final class RitmusRouter {
     func open(_ cover: RitmusCover) { self.cover = cover }
     func close() { cover = nil }
 
+    /// The Emlékeztetők page (a notification's body tap, Ma's „Mind”) or a new reminder's edit sheet (the "+" door);
+    /// the shell presents it at page level and clears it on close.
+    var reminders: ReminderRoute?
+    func openReminders() { reminders = .page }
+    func openNewReminder() { reminders = .new }
+
     /// An area the "+" sheet asks to open (its "Edzés indítása" tile, `mezo-r36n9.154`): the shell lands on Ma and
     /// the home screen's ring opens that room, from whichever place the bar was on.
     var room: Hue?

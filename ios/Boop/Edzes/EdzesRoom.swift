@@ -92,6 +92,8 @@ struct EdzesRoom: View {
     @State private var released: Set<UUID> = []
     /// „Mi van a termemben" (mezo-r36n9.66), from the Beállítások action. The workout player presents its own copy.
     @State private var showGym = false
+    /// „Pihenő vége" (what rings when the rest ends on a locked phone).
+    @State private var showRestEnd = false
     /// „Melyik napot csinálod ma?" (mezo-r36n9.163).
     @State private var showOtherDays = false
 
@@ -121,7 +123,8 @@ struct EdzesRoom: View {
                    photo: areaPhoto(hue), glyph: areaGlyph(hue),
                    tabs: tabs, selectedTab: $selected,
                    actions: [NKAreaAction(glyph: "search-ink", label: "Keresés") { toast = soonToast("Keresés · Edzés") },
-                             NKAreaAction(glyph: "repeat-deep", label: "Beállítások") { showGym = true }],
+                             NKAreaAction(glyph: "repeat-deep", label: "Beállítások") { showGym = true },
+                             NKAreaAction(glyph: "bell-cream", label: "Pihenő vége") { showRestEnd = true }],
                    onBack: { if let closeRoom { closeRoom() } else { dismiss() } },
                    onAsk: { openPlace(.boop) }) {
             content
@@ -130,6 +133,12 @@ struct EdzesRoom: View {
         .toolbar(.hidden, for: .navigationBar)
         .background(RoomSwipeBack().frame(width: 0, height: 0).accessibilityHidden(true))
         .nkToast($toast)
+        .sheet(isPresented: $showRestEnd) {
+            if let key = ReminderHub.userKey {
+                RestEndSheet(hue: hue, userKey: key, onChanged: { Task { await ReminderHub.restEnd?.modeChanged() } })
+                    .presentationBackground(NK.ground).presentationCornerRadius(34).presentationDragIndicator(.visible)
+            }
+        }
         .sheet(isPresented: $showGym) {
             if let store {
                 GymSheet(store: store, hue: hue)
@@ -280,6 +289,8 @@ struct EdzesRoom: View {
             #if DEBUG
             // `-previewEdzesGym YES` (mezo-r36n9.66): straight onto „Mi van a termemben".
             if UserDefaults.standard.bool(forKey: "previewEdzesGym") { showGym = true }
+            // `-previewEdzesRestEnd YES` (mezo-r36n9.172): straight onto „Pihenő vége".
+            if UserDefaults.standard.bool(forKey: "previewEdzesRestEnd") { showRestEnd = true }
             // `-previewOtherDay sheet|pick` (mezo-r36n9.163): „Melyik napot csinálod ma?" open, or its first day picked.
             switch UserDefaults.standard.string(forKey: "previewOtherDay") {
             case "sheet": await store?.loadBlock(); showOtherDays = true

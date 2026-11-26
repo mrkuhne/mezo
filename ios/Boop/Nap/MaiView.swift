@@ -185,7 +185,10 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
         .onDisappear { motion.stop(); setRoomOpen(false) }
         .onChange(of: phase) { _, p in shownPhase = p }
         // a new brief may move the bedtime: the reminder follows (and turns off if notifications were withdrawn)
-        .task(id: reminderTarget(brief)) { await reminder.refresh(target: reminderTarget(brief)) }
+        // … and so does a change of the bedtime switch or lead on the Emlékeztetők page
+        .task(id: BedtimeRefreshKey(target: reminderTarget(brief), settings: ReminderHub.store?.file.builtIn ?? BoopReminderSettings())) {
+            await reminder.refresh(target: reminderTarget(brief))
+        }
     }
 
     /// The title row, the day's date and the wordmark (the Élet spike's head, owner 2026-11-16).

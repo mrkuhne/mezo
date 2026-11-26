@@ -1493,6 +1493,102 @@
     "levaltotta": "—",
     "kovetkezmeny": "Nincs fókusz a lezárás alatt."
   },
+  "d-2026-11-25-d1-altalanos-emlekezteto": {
+    "cim": "Általános emlékeztetőlista, vitamin-kapcsolóval",
+    "datum": "2026-11-25",
+    "suly": "Nagy",
+    "terulet": [
+      "Alapok"
+    ],
+    "valasztas": "Egy lista bármiről (mint az Apple Emlékeztetők), plusz „Emlékeztess” kapcsoló a vitaminokon; a gomb „Bevettem”, és beírja a napba.",
+    "miert": "Egy hely minden emlékeztetőnek, és a vitamin valódi adatot ad.",
+    "levaltotta": "—",
+    "kovetkezmeny": "Minden emlékeztető a saját listában él; a vitamin ugyanide kerül."
+  },
+  "d-2026-11-25-d2-erosseg": {
+    "cim": "Minden emlékeztetőnek van erőssége: Ébresztő vagy Értesítés",
+    "datum": "2026-11-25",
+    "suly": "Közepes",
+    "terulet": [
+      "Alapok"
+    ],
+    "valasztas": "Az Ébresztő teljes képernyős, némítón és fókuszban is szól; az Értesítés hangos, hagyományos. A vitamin Ébresztő.",
+    "miert": "A vitamin nem maradhat ki egy némító kapcsoló miatt.",
+    "levaltotta": "—",
+    "kovetkezmeny": "Az Ébresztőhöz külön engedély kell."
+  },
+  "d-2026-11-25-d3-negy-widget": {
+    "cim": "Mind a négy widget kell",
+    "datum": "2026-11-25",
+    "suly": "Nagy",
+    "terulet": [
+      "Alapok"
+    ],
+    "valasztas": "Következő (kicsi), Mai nap (közepes, pipálható), Napközbeni kérdés (közepes), zárolt képernyős sor. Egyiken sincs 0–100 pontszám.",
+    "miert": "Az app megnyitása nélkül is lássa a napot.",
+    "levaltotta": "—",
+    "kovetkezmeny": "Második lépésben épül."
+  },
+  "d-2026-11-25-d4-edzeskartya": {
+    "cim": "Edzéskártya a zárolt képernyőn",
+    "datum": "2026-11-25",
+    "suly": "Nagy",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "Fejléc „EDZÉS · 7 / 16 sorozat”, gyakorlat, cél súly × ismétlés, pihenő visszaszámlálás sávval, gombok: Kész · +15 mp · Tovább; kicsi visszaszámláló a Dynamic Islanden. Más súly vagy ismétlés → az app nyílik.",
+    "miert": "Edzés közben ne kelljen a telefont feloldani.",
+    "levaltotta": "—",
+    "kovetkezmeny": "Második lépésben épül."
+  },
+  "d-2026-11-25-d5-pihenő-vege": {
+    "cim": "Pihenő végén rezgés és hang, kérésre ébresztő",
+    "datum": "2026-11-25",
+    "suly": "Közepes",
+    "terulet": [
+      "Edzés"
+    ],
+    "valasztas": "Alapból rezgés és rövid hang; egy beállítás ébresztő erősségre kapcsolja.",
+    "miert": "Zárolt telefonon is észrevehető, de nem tolakodó.",
+    "levaltotta": "—",
+    "kovetkezmeny": "Az ébresztő erősség engedélyt kér; ha nincs, marad a rezgés."
+  },
+  "d-2026-11-25-d6-ket-lepes": {
+    "cim": "Két lépésben épül: előbb emlékeztetők és ébresztők, aztán widgetek és edzéskártya",
+    "datum": "2026-11-25",
+    "suly": "Közepes",
+    "terulet": [
+      "Alapok"
+    ],
+    "valasztas": "1. lépés: emlékeztetők és ébresztők (az ingyenes fiókkal is megy). 2. lépés: widgetek és edzéskártya.",
+    "miert": "Az első lépés már használható, a második nem tartja fel.",
+    "levaltotta": "—",
+    "kovetkezmeny": "A widgetekre és az edzéskártyára még várni kell."
+  },
+  "d-2026-11-25-d7-ingyenes-fiok": {
+    "cim": "A fizetős fejlesztői fiók nem aktív, egy ideig nem is lesz",
+    "datum": "2026-11-25",
+    "suly": "Közepes",
+    "terulet": [
+      "Alapok"
+    ],
+    "valasztas": "Minden az ingyenes Apple-fiókkal készül.",
+    "miert": "Ma ez a valóság.",
+    "levaltotta": "—",
+    "kovetkezmeny": "A telepítés hét naponként lejár, újra kell telepíteni; erre külön figyelmeztetés szól."
+  },
+  "d-2026-11-25-d8-leallitas-csak-nema": {
+    "cim": "Az ébresztő leállítása csak elnémítás, nem pipa",
+    "datum": "2026-11-25",
+    "suly": "Nagy",
+    "terulet": [
+      "Alapok"
+    ],
+    "valasztas": "A „Leállítom” (és a lehúzás, oldalsó gomb) nem jelöli késznek; csak a „Kész” / „Bevettem” gomb számít. Az ébresztőn nincs szundi.",
+    "miert": "A Boop adata azt jelentse, hogy tényleg megtörtént — egy véletlen „bevettem” elrontaná a vitamin ↔ alvás/forma összevetést.",
+    "levaltotta": "—",
+    "kovetkezmeny": "Későbbi pipálás az appban, a widgeten vagy a Mából."
+  },
   "d-2026-11-25-level-google-belepes": {
     "datum": "2026-11-25",
     "terulet": [

@@ -62,6 +62,20 @@ final class EtelStore {
     var taken: Set<String> { Set(takenIds.keys) }
     private(set) var loading = false
 
+    /// The per-user file of taken groups, and the queued one-way tick; both default to the signed-in user's (`SupplementTickHub`).
+    @ObservationIgnored private let injectedTaken: SupplementTakenStore?
+    @ObservationIgnored private let injectedTick: (@MainActor (String, Date) async throws -> Void)?
+    private var takenStore: SupplementTakenStore? { injectedTaken ?? SupplementTickHub.taken }
+    private var tick: (@MainActor (String, Date) async throws -> Void)? { injectedTick ?? SupplementTickHub.capture }
+
+    @ObservationIgnored private let injectedReminders: (@MainActor () -> ReminderStore?)?
+    private var reminderStore: ReminderStore? { injectedReminders?() ?? ReminderHub.store }
+
+    init(taken: SupplementTakenStore? = nil, tick: (@MainActor (String, Date) async throws -> Void)? = nil,
+         reminders: (@MainActor () -> ReminderStore?)? = nil) {
+        injectedTaken = taken; injectedTick = tick; injectedReminders = reminders
+    }
+
     @ObservationIgnored private var food: FoodClient?
     var currentFood: FoodClient? { food }
     @ObservationIgnored private var now = Date()
@@ -104,6 +118,7 @@ final class EtelStore {
         switch await s {
         case .success(let (proto, stash)):
             applyProtocol(proto, stash: stash)
+            pruneLinkedReminders()
             groupsProblem = nil
         case .failure(let e): groupsProblem = e
         }
@@ -127,9 +142,20 @@ final class EtelStore {
 
     /// The taken groups of `day` as the phone last saved them (the room and Ma's rows share this key).
     private func syncTaken(day today: String) {
-        let saved = UserDefaults.standard.dictionary(forKey: "etel.takenIds.\(today)") as? [String: [String]] ?? [:]
-        takenIds = saved.mapValues { $0.compactMap(UUID.init(uuidString:)) }
+        if let store = takenStore {
+            store.migrateLegacy(day: today)
+            takenIds = store.taken(day: today)
+        } else if takenDay != today {
+            takenIds = [:]      // no per-user file yet (a preview, a test): the day's own memory only
+        }
         takenDay = today
+    }
+
+    /// A group the freshly read protocol no longer has takes its linked reminder with it (the page says so once). Only
+    /// after a successful read, and never on an empty list: offline or a momentary empty protocol must not delete the
+    /// vitamin alarm.
+    private func pruneLinkedReminders() {
+        reminderStore?.removeLinked(keeping: Set(groups.map(\.key)))
     }
 
     private func applyProtocol(_ proto: FoodProtocol, stash: [StashRow]) {
@@ -377,7 +403,8 @@ final class EtelStore {
     /// Reads the protocol and the stash again after an edit. Returns false when the read failed (the list keeps what it had).
     private func reloadSupplements(_ food: FoodClient) async -> Bool {
         switch await Self.attempt({ (try await food.protocol(), try await food.stash()) }) {
-        case .success(let (proto, stash)): applyProtocol(proto, stash: stash); groupsProblem = nil; groupsLoaded = true; return true
+        case .success(let (proto, stash)):
+            applyProtocol(proto, stash: stash); pruneLinkedReminders(); groupsProblem = nil; groupsLoaded = true; return true
         case .failure: return false
         }
     }
@@ -473,40 +500,96 @@ final class EtelStore {
     func isTaken(_ group: SupplementGroup) -> Bool { taken.contains(group.key) }
     func isBusy(_ group: SupplementGroup) -> Bool { busy.contains(group.key) }
 
-    /// One tap takes the whole group; a second tap on "Bevéve" undoes it (the server soft-deletes the entries).
+    /// One tap takes the whole group (queued: it counts as taken at once and goes out through the outbox); a second tap on
+    /// "Bevéve" undoes it (the server soft-deletes the entries) — once the server's ids are known.
     func toggle(_ group: SupplementGroup) async -> String {
         guard let food, !busy.contains(group.key) else { return "" }
         let key = group.key, dayKey = ymd
         busy.insert(key); defer { busy.remove(key) }
+        // The sender may have delivered since the last read: its ids are what an undo needs.
+        if takenIds[key]?.isEmpty == true, let ids = takenStore?.taken(day: dayKey)[key], !ids.isEmpty { takenIds[key] = ids }
         if let ids = takenIds[key] {
+            if ids.isEmpty { return "Még küldöm — utána visszavonhatod" }
             takenIds[key] = nil
             var left = ids
             do {
                 for id in ids { try await food.deleteIntake(id); left.removeFirst() }
-                persistTaken(dayKey)
+                takenStore?.undo(day: dayKey, daypart: key)
+                SupplementTickHub.untickLinkedReminder(daypart: key, day: dayKey, store: reminderStore)
                 return "Visszavontam"
             } catch {
                 takenIds[key] = left
-                persistTaken(dayKey)
+                takenStore?.markTaken(day: dayKey, daypart: key, ids: left)
                 return "Nem sikerült visszavonni — próbáld újra"
             }
         }
         takenIds[key] = []
         do {
-            let ids = try await food.tickGroupIntakes(daypart: key, clientRef: supplementRef(day: dayKey, daypart: key), capturedAt: Date())
-            takenIds[key] = ids
-            persistTaken(dayKey)
+            if let tick {
+                try await tick(key, Date())
+            } else {
+                // No queue wired (a preview): the direct write, as before.
+                let ids = try await food.tickGroupIntakes(daypart: key, clientRef: supplementRef(day: dayKey, daypart: key), capturedAt: Date())
+                takenIds[key] = ids
+                takenStore?.markTaken(day: dayKey, daypart: key, ids: ids)
+            }
             return "\(group.label): mind a \(group.count) bevéve"
         } catch {
             takenIds[key] = nil
             return "Nem sikerült elküldeni — próbáld újra"
         }
     }
+}
 
-    private func persistTaken(_ dayKey: String) {
-        UserDefaults.standard.set(takenIds.mapValues { $0.map(\.uuidString) }, forKey: "etel.takenIds.\(dayKey)")
+/// The signed-in user's supplement ticks, reachable from every `EtelStore` (the room, Ma, the quick sheet) without
+/// threading the environment through each view: set when the user's `RitmusEnvironment` is built, cleared when it retires.
+@MainActor
+enum SupplementTickHub {
+    private(set) static var taken: SupplementTakenStore?
+    private(set) static var capture: (@MainActor (String, Date) async throws -> Void)?
+    private static weak var owner: RitmusEnvironment?
+
+    static func bind(_ env: RitmusEnvironment) {
+        owner = env
+        taken = env.supplementTaken
+        capture = captureClosure(for: env)
+    }
+
+    /// The queued tick through `env`, held weakly. An env that is gone must not look like a success (a false "bevéve"
+    /// toast): the capture throws.
+    static func captureClosure(for env: RitmusEnvironment) -> @MainActor (String, Date) async throws -> Void {
+        { [weak env] daypart, date in
+            guard let env else { throw SupplementTickError.environmentGone }
+            try await env.captureSupplementTick(daypart: daypart, at: date)
+        }
+    }
+
+    static func unbind(_ env: RitmusEnvironment) {
+        guard owner === env else { return }
+        owner = nil; taken = nil; capture = nil
+    }
+
+    /// The one queued write of a taken group (the live capture and the headless alarm button build the same item).
+    nonisolated static func item(day: String, daypart: String, capturedAt: Date) -> OutboxItem {
+        OutboxItem(kind: .supplementTick, date: day, capturedAt: capturedAt,
+                   payload: RitmusPayload.encode(SupplementTickPayload(day: day, daypart: daypart)))
+    }
+
+    /// The group is un-taken for `day` (the room's undo): that day's linked reminder may ring again.
+    static func untickLinkedReminder(daypart: String, day: String, store: ReminderStore?) {
+        guard let store, let reminder = store.reminder(linkedTo: daypart) else { return }
+        store.untick("\(reminder.id.uuidString)|\(day)")
+    }
+
+    /// The reminder linked to `daypart` is done for `day`: that day's alarm will not ring (the scheduler refreshes on the
+    /// store's change).
+    static func tickLinkedReminder(daypart: String, day: String, store: ReminderStore?) {
+        guard let store, let reminder = store.reminder(linkedTo: daypart) else { return }
+        store.tick("\(reminder.id.uuidString)|\(day)")
     }
 }
+
+enum SupplementTickError: Error { case environmentGone }
 
 /// What an action of the room says back: whether it went through, and the sentence for the owner.
 struct EtelOutcome: Equatable {

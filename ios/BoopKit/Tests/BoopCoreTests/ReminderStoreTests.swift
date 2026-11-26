@@ -1,0 +1,197 @@
+import Foundation
+import Testing
+@testable import BoopCore
+
+@MainActor
+struct ReminderStoreTests {
+    func tempURL() -> URL {
+        FileManager.default.temporaryDirectory
+            .appendingPathComponent("rs-\(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent("reminders.json")
+    }
+
+    func dayString(_ offset: Int) -> String {
+        let cal = Calendar.current
+        let d = cal.date(byAdding: .day, value: offset, to: cal.startOfDay(for: Date()))!
+        let c = cal.dateComponents([.year, .month, .day], from: d)
+        return String(format: "%04d-%02d-%02d", c.year!, c.month!, c.day!)
+    }
+
+    func sample() -> Reminder { Reminder(title: "Vitamin", hour: 8, minute: 0, repeats: .daily) }
+
+    @Test func roundTripsThroughTheFile() {
+        let url = tempURL()
+        let r = sample()
+        let a = ReminderStore(fileURL: url)
+        a.upsert(r)
+        a.tick("\(r.id.uuidString)|\(dayString(0))")
+        var s = a.file.builtIn
+        s.morning.hour = 6
+        a.setBuiltIn(s)
+        let b = ReminderStore(fileURL: url)
+        #expect(b.file == a.file)
+        #expect(b.file.reminders == [r])
+        #expect(b.file.builtIn.morning.hour == 6)
+    }
+
+    @Test func tickIsIdempotent() {
+        let store = ReminderStore(fileURL: tempURL())
+        let key = "\(UUID().uuidString)|\(dayString(0))"
+        store.tick(key)
+        store.tick(key)
+        #expect(store.file.done == [key])
+        store.untick(key)
+        #expect(store.file.done.isEmpty)
+    }
+
+    @Test func oldDoneKeysArePruned() {
+        let store = ReminderStore(fileURL: tempURL())
+        let id = UUID().uuidString
+        store.tick("\(id)|\(dayString(-15))")
+        store.tick("garbage")
+        store.tick("\(id)|\(dayString(-1))")
+        #expect(store.file.done == ["\(id)|\(dayString(-1))"])
+    }
+
+    @Test func pruneKeepsExactlyFourteenDays() {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "UTC")!
+        let now = cal.date(from: DateComponents(year: 2026, month: 11, day: 26, hour: 12))!
+        let store = ReminderStore(fileURL: tempURL(), clock: { now }, calendar: cal)
+        let id = UUID().uuidString
+        store.tick("\(id)|2026-11-12") // exactly 14 days old: kept
+        store.tick("\(id)|2026-11-11") // 15 days old: pruned
+        #expect(store.file.done == ["\(id)|2026-11-12"])
+    }
+
+    @Test func reloadOfUnchangedContentDoesNotBump() {
+        let url = tempURL()
+        let store = ReminderStore(fileURL: url)
+        store.upsert(sample())
+        let before = store.changes
+        store.reload()
+        #expect(store.changes == before)
+    }
+
+    @Test func failedWriteDoesNotBump() throws {
+        let url = tempURL()
+        let dir = url.deletingLastPathComponent()
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true) // a folder where the file goes
+        let store = ReminderStore(fileURL: url)
+        let before = store.changes
+        store.upsert(sample())
+        #expect(store.changes == before)
+        #expect(store.file.reminders.count == 1)
+    }
+
+    @Test func missingFileStartsEmptyWithDefaults() {
+        let f = ReminderStore(fileURL: tempURL()).file
+        #expect(f.reminders.isEmpty && f.done.isEmpty)
+        #expect(f.builtIn.morning == .init(enabled: true, hour: 7, minute: 30))
+        #expect(f.builtIn.noon == .init(enabled: true, hour: 12, minute: 30))
+        #expect(f.builtIn.afternoon == .init(enabled: true, hour: 16, minute: 0))
+        #expect(f.builtIn.closeMinutesBeforeBed == 75)
+        #expect(f.builtIn.bedtimeMinutesBefore == 30)
+    }
+
+    @Test func corruptFileStartsFromDefaults() throws {
+        let url = tempURL()
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data("not json".utf8).write(to: url)
+        let store = ReminderStore(fileURL: url)
+        #expect(store.file == ReminderFile())
+        #expect(try Data(contentsOf: url) == Data("not json".utf8))
+    }
+
+    @Test func reloadSeesAnotherWriter() {
+        let url = tempURL()
+        let a = ReminderStore(fileURL: url)
+        let b = ReminderStore(fileURL: url)
+        let key = "\(UUID().uuidString)|\(dayString(0))"
+        a.tick(key)
+        #expect(b.file.done.isEmpty)
+        b.reload()
+        #expect(b.file.done == [key])
+    }
+
+    @Test func twoUsersNeverShareAFile() {
+        let a = ReminderStore(fileURL: tempURL())
+        let b = ReminderStore(fileURL: tempURL())
+        a.upsert(sample())
+        #expect(a.file.reminders.count == 1)
+        #expect(b.file.reminders.isEmpty)
+    }
+
+    @Test func deleteAndLinkedLookup() {
+        let store = ReminderStore(fileURL: tempURL())
+        let r = Reminder(title: "Reggeli", hour: 7, minute: 30, repeats: .daily, link: .supplement(daypart: "breakfast"))
+        store.upsert(r)
+        #expect(store.reminder(linkedTo: "breakfast")?.id == r.id)
+        #expect(store.reminder(linkedTo: "dinner") == nil)
+        let before = store.changes
+        store.delete(r.id)
+        #expect(store.file.reminders.isEmpty)
+        #expect(store.changes > before)
+    }
+
+    @Test func codableRoundTripCoversEveryCase() throws {
+        let rs = [
+            Reminder(title: "a", hour: 1, minute: 2, repeats: .weekdays([1, 3])),
+            Reminder(title: "b", hour: 3, minute: 4, repeats: .once("2026-12-02")),
+            Reminder(title: "c", hour: 5, minute: 6, repeats: .daily, link: .supplement(daypart: "breakfast")),
+        ]
+        let data = try JSONEncoder().encode(rs)
+        #expect(try JSONDecoder().decode([Reminder].self, from: data) == rs)
+    }
+
+    // MARK: an unreadable file (final review minor 3)
+
+    @Test func anUnreadableFileIsKeptAsideNeverOverwrittenSilently() throws {
+        let url = tempURL()
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let garbage = Data("{ not json".utf8)
+        try garbage.write(to: url)
+        let store = ReminderStore(fileURL: url)
+        let corrupt = url.appendingPathExtension("corrupt")
+        #expect(try Data(contentsOf: corrupt) == garbage)       // the owner's bytes survive
+        #expect(store.recoveredFromCorrupt)
+        store.upsert(Reminder(title: "Víz", hour: 9, minute: 0, repeats: .daily))
+        #expect(try Data(contentsOf: corrupt) == garbage)       // a new write does not touch the copy
+        #expect(ReminderStore(fileURL: url).file.reminders.count == 1)
+    }
+
+    @Test func aGoodFileLeavesNoCopy() {
+        let url = tempURL()
+        let a = ReminderStore(fileURL: url)
+        a.upsert(Reminder(title: "Víz", hour: 9, minute: 0, repeats: .daily))
+        let b = ReminderStore(fileURL: url)
+        #expect(!b.recoveredFromCorrupt)
+        #expect(!FileManager.default.fileExists(atPath: url.appendingPathExtension("corrupt").path))
+    }
+
+    // MARK: a supplement group that is gone (final review minor 1)
+
+    @Test func aGoneGroupTakesItsLinkedReminderAndSaysSoOnce() {
+        let store = ReminderStore(fileURL: tempURL())
+        let morning = Reminder(title: "Reggel", hour: 8, minute: 0, repeats: .daily, strength: .alarm, link: .supplement(daypart: "morning"))
+        let evening = Reminder(title: "Este", hour: 21, minute: 0, repeats: .daily, strength: .alarm, link: .supplement(daypart: "evening"))
+        let own = Reminder(title: "Víz", hour: 9, minute: 0, repeats: .daily)
+        [morning, evening, own].forEach { store.upsert($0) }
+        store.removeLinked(keeping: ["morning"])
+        #expect(store.file.reminders.map(\.id) == [morning.id, own.id])
+        #expect(store.file.notices == ["Este"])
+        store.clearNotices()
+        #expect(store.file.notices == nil)
+    }
+
+    @Test func anEmptyGroupListNeverDeletesTheVitaminAlarm() {
+        let store = ReminderStore(fileURL: tempURL())
+        let morning = Reminder(title: "Reggel", hour: 8, minute: 0, repeats: .daily, strength: .alarm, link: .supplement(daypart: "morning"))
+        store.upsert(morning)
+        let before = store.changes
+        store.removeLinked(keeping: [])
+        #expect(store.file.reminders == [morning])
+        #expect(store.changes == before)
+    }
+}
