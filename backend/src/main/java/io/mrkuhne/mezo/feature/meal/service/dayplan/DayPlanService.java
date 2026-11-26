@@ -17,6 +17,7 @@ import io.mrkuhne.mezo.feature.fuel.repository.FuelSettingsRepository;
 import io.mrkuhne.mezo.feature.fuel.repository.MealSlotTemplateRepository;
 import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
 import io.mrkuhne.mezo.feature.meal.entity.MealItemEntity;
+import io.mrkuhne.mezo.feature.meal.port.MealDayAdjustmentPort;
 import io.mrkuhne.mezo.feature.meal.port.SeasonMenuPort;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
 import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
@@ -111,6 +112,8 @@ public class DayPlanService {
     private final SensitivityService sensitivities;
     private final WearableProperties wearableProperties;
     private final SeasonMenuPort seasonMenu;
+    /** Boop B7 K3 (mezo-r36n9.17): energy the owner accepted to move between the day's meal slots. */
+    private final MealDayAdjustmentPort dayAdjustments;
 
     /** The plan on the wire, as of the owner's current wall clock. */
     @Transactional(readOnly = true)
@@ -135,10 +138,11 @@ public class DayPlanService {
         FuelDayResponse day = fuelDays.getDay(userId, date);
         boolean budgeted = day.getFuelMode() != FuelDayResponse.FuelModeEnum.GUIDANCE;
 
-        SleepAnchorPort.SleepAnchor anchor = sleepAnchor.resolve(userId);
+        SleepAnchorPort.SleepAnchor anchor = anchor(userId, date);
         List<TrainingBlock> blocks = blocks(userId, date);
         List<PlannedWindow> placed = placeWindows(userId, anchor, blocks);
-        List<Macros4> budgets = BudgetSplitter.split(dayBudget(day), placed, budgeted);
+        List<Macros4> budgets = moveEnergy(placed, BudgetSplitter.split(dayBudget(day), placed, budgeted),
+            dayAdjustments.slotSplit(userId, date));
 
         List<String> skipKeys = skipKeys(placed);
         Set<String> skipped = plannedSkips.mealSkipsOn(userId, date).stream()
@@ -186,6 +190,14 @@ public class DayPlanService {
         int wakeMin = minuteOf(anchor.wake());
         int bedMin = minuteOf(anchor.bed());
         return bedMin <= wakeMin ? null : bedMin;
+    }
+
+    /** The owner's wake/bed anchor, with the ledger's accepted bedtime for this night (Boop B7 K3) in place of bed. */
+    private SleepAnchorPort.SleepAnchor anchor(UUID userId, LocalDate date) {
+        SleepAnchorPort.SleepAnchor anchor = sleepAnchor.resolve(userId);
+        return dayAdjustments.bedtime(userId, date)
+            .map(bed -> new SleepAnchorPort.SleepAnchor(anchor.wake(), bed))
+            .orElse(anchor);
     }
 
     /** A window still waiting for the owner — the only kind that carries an offer. */
@@ -301,7 +313,7 @@ public class DayPlanService {
     public Skeleton skeleton(UUID userId, LocalDate date) {
         FuelDayResponse day = fuelDays.getDay(userId, date);
         boolean budgeted = day.getFuelMode() != FuelDayResponse.FuelModeEnum.GUIDANCE;
-        SleepAnchorPort.SleepAnchor anchor = sleepAnchor.resolve(userId);
+        SleepAnchorPort.SleepAnchor anchor = anchor(userId, date);
         List<WorkoutWindowQueryService.Window> sessions = workoutWindows.windowsFor(userId, date).stream()
             .filter(w -> w.start() != null && w.end() != null)
             .sorted(Comparator.comparing(WorkoutWindowQueryService.Window::start))
@@ -311,7 +323,8 @@ public class DayPlanService {
             .sorted(Comparator.comparingInt(TrainingBlock::startMin))
             .toList();
         List<PlannedWindow> placed = placeWindows(userId, anchor, blocks);
-        List<Macros4> budgets = BudgetSplitter.split(dayBudget(day), placed, budgeted);
+        List<Macros4> budgets = moveEnergy(placed, BudgetSplitter.split(dayBudget(day), placed, budgeted),
+            dayAdjustments.slotSplit(userId, date));
         Map<SlotKey, Integer> seen = new EnumMap<>(SlotKey.class);
         List<SkeletonWindow> windows = new ArrayList<>(placed.size());
         for (int i = 0; i < placed.size(); i++) {
@@ -320,6 +333,37 @@ public class DayPlanService {
             windows.add(new SkeletonWindow(w.slotKey(), n, w.label(), budgets.get(i), w.timeMin()));
         }
         return new Skeleton(date, List.copyOf(windows), sessions);
+    }
+
+    /**
+     * The ledger's meal-energy move (Boop B7 K3, mezo-r36n9.17): each slot's signed kcal delta lands on that slot's
+     * first budgeted window, carbs following at 4 kcal/g (every kcal delta lands in carbs — the fuel rule; a window
+     * never goes below 0 g). The day's kcal total never changes, so the move applies whole or not at all: when a slot
+     * has no budgeted window today, or a window's kcal would drop below zero, the split stays as computed.
+     */
+    static List<Macros4> moveEnergy(List<PlannedWindow> placed, List<Macros4> budgets, Map<String, Integer> slotKcal) {
+        if (slotKcal == null || slotKcal.isEmpty()) {
+            return budgets;
+        }
+        List<Macros4> out = new ArrayList<>(budgets);
+        for (Map.Entry<String, Integer> move : slotKcal.entrySet()) {
+            SlotKey slot = SlotKey.fromWire(move.getKey());
+            int i = 0;
+            while (i < placed.size() && (placed.get(i).slotKey() != slot || out.get(i) == null)) {
+                i++;
+            }
+            if (slot == null || i == placed.size()) {
+                return budgets;
+            }
+            Macros4 b = out.get(i);
+            int kcal = b.kcal() + move.getValue();
+            if (kcal < 0) {
+                return budgets;
+            }
+            int carbs = Math.max(0, b.c() + Math.round(move.getValue() / 4f));
+            out.set(i, new Macros4(kcal, b.p(), carbs, b.f()));
+        }
+        return out;
     }
 
     /** One window of {@link #skeleton}: owner-zone minutes since midnight; {@code budget} null on a kímélő day. */

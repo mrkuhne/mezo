@@ -38,19 +38,17 @@ import io.mrkuhne.mezo.feature.medication.repository.MedicationRepository;
 import io.mrkuhne.mezo.feature.medication.service.MedicationCycleService;
 import io.mrkuhne.mezo.feature.medication.service.dto.MedicationCycle;
 import io.mrkuhne.mezo.feature.ritual.service.RitualService;
-import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity;
 import io.mrkuhne.mezo.feature.train.entity.RecoveryPeriodEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
-import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.RunSessionLogRepository;
 import io.mrkuhne.mezo.feature.train.repository.RunningBlockRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
-import io.mrkuhne.mezo.feature.train.repository.WorkoutDayAdjustmentRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
+import io.mrkuhne.mezo.feature.train.service.EffectivePlanService;
 import io.mrkuhne.mezo.feature.train.service.GymScheduleService;
 import io.mrkuhne.mezo.feature.train.service.RecoveryPeriodService;
 import io.mrkuhne.mezo.feature.train.service.RecoveryReturnPolicy;
@@ -112,13 +110,10 @@ public class ContextSnapshotAssembler {
     // Kihagyás S1 (mezo-q4xt2.1, review I2): the central RUN skip read — runPart drops a skipped
     // prescribed run, the same filter TrainTools#dayContentLine applies.
     private final PlannedSkipService plannedSkipService;
-    private final WorkoutService workoutService;
+    /** The day's effective planned session: the per-date lighten overlay (mezo-d58h.5 — the AI must not contradict
+     *  the "lighten tomorrow" card) and, since Boop B7 K3 (mezo-r36n9.17), the ledger's move + lighten. */
+    private final EffectivePlanService effectivePlan;
     private final WorkoutSessionRepository workoutSessionRepository;
-    private final ExerciseRepository exerciseRepository;
-    // mezo-d58h.5: the per-date lighten overlay — dayLine renders "Holnap (terv)" straight from the
-    // template's raw workingSets (not through WorkoutService.getToday), so it must apply this itself
-    // or the AI contradicts the "lighten tomorrow" card the user just tapped (see TrainTools' twin).
-    private final WorkoutDayAdjustmentRepository workoutDayAdjustmentRepository;
     private final SportSessionRepository sportSessionRepository;
     private final RunSessionLogRepository runSessionLogRepository;
     private final RunningBlockRepository runningBlockRepository;
@@ -472,25 +467,19 @@ public class ContextSnapshotAssembler {
             List<SportScheduleSlotResponse> sport) {
         int dow = date.getDayOfWeek().getValue() - 1; // 0=Hét..6=Vas (schedule-slot convention)
         List<String> parts = new ArrayList<>();
-        Optional<WorkoutSessionEntity> template = workoutService.findPlannedTemplateForDateUnlessSkipped(userId, date);
-        List<ExerciseEntity> exercises = template.map(t -> exerciseRepository
-                .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(userId, List.of(t.getId())))
-                .orElse(List.of());
-        // mezo-d58h.5: per-date lighten overlay, looked up once for this date and applied to each
-        // exercise's raw template workingSets — same floor as WorkoutService.getToday.
-        int dayDelta = workoutDayAdjustmentRepository.findByCreatedByAndDateAndDeletedFalse(userId, date)
-                .map(a -> (int) a.getSetDelta())
-                .orElse(0);
+        // The effective plan (B7 K3, mezo-r36n9.17): a moved session on its new day, the per-date lighten overlay
+        // (mezo-d58h.5, same floor as WorkoutService.getToday) and then the ledger's accepted lighten. An empty
+        // template day reads as a rest day, as before.
         // mezo-4qu: the gym half comes from the SHARED ToolText.gymLine, the same way the sport half
         // comes from ToolText.sportLine — the criterion that a present-but-EMPTY meso template day
         // is a REST day (the mezo-650a weekend-training hallucination) now lives in ONE place, so
         // this renderer and TrainTools#dayContentLine cannot drift apart again.
+        Optional<EffectivePlanService.PlannedSession> planned = effectivePlan.plannedSession(userId, date);
         parts.add(ToolText.gymLine(
-                template.map(WorkoutSessionEntity::getDayLabel).orElse(null),
-                exercises.stream()
-                        .map(e -> ToolText.exerciseLine(e.getName(), Math.max(1, e.getWorkingSets() + dayDelta),
-                                e.getRepMin(), e.getRepMax()))
-                        .toList()));
+                planned.map(EffectivePlanService.PlannedSession::label).orElse(null),
+                planned.map(p -> p.exercises().stream()
+                        .map(e -> ToolText.exerciseLine(e.getName(), p.sets(e), e.getRepMin(), e.getRepMax()))
+                        .toList()).orElse(List.of())));
         sport.stream()
                 .filter(s -> s.getDayOfWeek() != null && s.getDayOfWeek() == dow)
                 .filter(s -> !sportSlotSkipService.isSkipped(userId, dow, s.getTime(), date))

@@ -18,13 +18,9 @@ import io.mrkuhne.mezo.feature.companion.tools.ToolText;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
 import io.mrkuhne.mezo.feature.intention.service.IntentionService;
 import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
-import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
-import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
-import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
-import io.mrkuhne.mezo.feature.train.service.GymScheduleService;
 import io.mrkuhne.mezo.feature.train.service.SportService;
 import io.mrkuhne.mezo.feature.train.service.SportSlotSkipService;
-import io.mrkuhne.mezo.feature.train.service.WorkoutService;
+import io.mrkuhne.mezo.feature.train.service.EffectivePlanService;
 import io.mrkuhne.mezo.feature.wearable.entity.CalendarEventEntity;
 import io.mrkuhne.mezo.feature.wearable.entity.DailyMetricEntity;
 import io.mrkuhne.mezo.feature.wearable.repository.CalendarEventRepository;
@@ -101,9 +97,7 @@ public class BoopDayContext {
     private final CheckInRepository checkIns;
     private final CheckInSnapshotRepository checkInSnapshots;
     private final ObjectProvider<IntentionService> intentions;
-    private final WorkoutService workoutService;
-    private final ExerciseRepository exercises;
-    private final GymScheduleService gymSchedule;
+    private final EffectivePlanService effectivePlan;
     private final SportService sportService;
     private final SportSlotSkipService sportSlotSkips;
     private final FuelDayService fuelDays;
@@ -413,21 +407,13 @@ public class BoopDayContext {
     private List<Session> sessions(UUID owner, LocalDate date) {
         int dow = date.getDayOfWeek().getValue() - 1; // 0=Hét..6=Vas (schedule-slot convention)
         List<Session> out = new ArrayList<>();
-        Optional<WorkoutSessionEntity> template = workoutService.findPlannedTemplateForDateUnlessSkipped(owner, date);
-        if (template.isPresent()) {
-            List<ExerciseEntity> planned = exercises.findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(
-                owner, List.of(template.get().getId()));
-            if (!planned.isEmpty()) { // an empty template day is a rest day (ToolText.gymLine's criterion)
-                LocalTime scheduled = gymSchedule.getSchedule(owner).stream()
-                    .filter(s -> s.getDayOfWeek() != null && s.getDayOfWeek() == dow && s.getTime() != null)
-                    .map(s -> LocalTime.parse(s.getTime()))
-                    .sorted().findFirst().orElse(null);
-                SessionTimeOverrideSource overrides = sessionTimeOverrides.getIfAvailable();
-                LocalTime time = overrides == null ? scheduled : overrides.movedTime(owner, date).orElse(scheduled);
-                out.add(new Session("Edzés", "edzés", time, template.get().getDurationEst(),
-                    template.get().getDayLabel()));
-            }
-        }
+        // The effective plan (B7 K3): a moved session on its new day at its plan day's slot time; the ledger's time
+        // shift wins over the Boop one-day override; minutes follow a shorten — the brief's own helper.
+        effectivePlan.plannedSession(owner, date).ifPresent(p -> {
+            SessionTimeOverrideSource overrides = sessionTimeOverrides.getIfAvailable();
+            LocalTime time = p.time(overrides == null ? Optional.empty() : overrides.movedTime(owner, date));
+            out.add(new Session("Edzés", "edzés", time, p.minutes(), p.label()));
+        });
         for (SportScheduleSlotResponse s : sportService.getSchedule(owner)) {
             if (s.getDayOfWeek() == null || s.getDayOfWeek() != dow
                 || sportSlotSkips.isSkipped(owner, dow, s.getTime(), date)) {

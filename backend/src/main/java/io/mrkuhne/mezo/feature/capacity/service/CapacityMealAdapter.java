@@ -22,7 +22,8 @@ public class CapacityMealAdapter implements CapacityMealPort {
         FuelDayResponse r = fuelDays.getDay(owner, date);
         BigDecimal kcal = r.getConsumed() == null ? null : r.getConsumed().getKcal();
         Integer logged = kcal != null && kcal.signum() > 0 ? round(kcal) : null;
-        return new FuelDay(date, logged, r.getTargets() == null ? 0 : round(r.getTargets().getKcal()));
+        Integer pending = r.getEnergy() == null ? null : r.getEnergy().getPendingMovementKcal();
+        return new FuelDay(date, logged, r.getTargets() == null ? 0 : round(r.getTargets().getKcal()), pending);
     }
 
     private static int round(BigDecimal v) {

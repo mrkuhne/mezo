@@ -288,6 +288,11 @@ Head status: `no_data` with fewer than 4 weigh-in days in the last 21 (or no tre
 
 ### 3.7 Adherence — the single source of day judgement (S2, spec §5.6)
 
+**Moved sessions (Boop B7 K3, `mezo-r36n9.17`).** The plan the adherence judges has the capacity ledger's accepted
+moves applied (`SeasonAdjustmentPort.movedSessions` → `AdherenceService.withMoves`). A gym session moved to another day
+of its week leaves its old day and is planned on its new one. It counts once: not missed on the old day, not doubled
+on the new one. Details: [`capacity.md`](capacity.md) §4.
+
 `AdherenceService.range(owner, from, to)` (`GET /api/seasons/adherence`) judges every day, **with or without a
 season** (without one the food budget is simply the goal's served target). The food side reads
 `SeasonMealPort.foodDays` → `FuelDayService.getWeek` — the same rollup the Étel Hét tab renders, so target, consumed
@@ -715,6 +720,8 @@ the server's kímélő day and judged flag win, a day the server did not answer 
 - **Experiment `finishedOn` is the day after the window**, not the day the pass ran, so the list call and the job agree.
 - Deferred: the guided recipe-seeding chat (#23);
   `mezo-r36n9.123` — the *Korábbi évadok* page and the current weight in Új évad step 1.
+- **2026-11-25 (B7 K3 Task 20):** `MaWall.swift` also registers the day-capacity `kapacitas` source (rank 0.85, above
+  the Évad correction's 0.8); the `evad` source and its taps are unchanged. See [`capacity.md`](capacity.md) §4.
 
 ## 10. Key files
 

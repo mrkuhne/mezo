@@ -12,4 +12,7 @@ public interface CapacitySleepPort {
 
     /** His nightly need: the sleep goal (or the default) plus the weekly-session increment, via the season's rule. */
     int needMinutes(UUID owner, int gymPerWeek, int sportPerWeek);
+
+    /** His usual bedtime: the sleep goal's anchor pair (config default when he has none), never the ledger. */
+    java.time.LocalTime usualBedtime(UUID owner);
 }

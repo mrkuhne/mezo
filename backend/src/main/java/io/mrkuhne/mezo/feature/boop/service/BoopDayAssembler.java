@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.boop.service;
 
+import io.mrkuhne.mezo.feature.boop.port.BoopDayAdjustmentPort;
 import io.mrkuhne.mezo.feature.boop.port.SeasonContextPort;
 import io.mrkuhne.mezo.api.dto.CheckInResponse;
 import io.mrkuhne.mezo.api.dto.FuelDayResponse;
@@ -24,13 +25,9 @@ import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
 import io.mrkuhne.mezo.feature.meal.service.dayplan.DayPlanService;
 import io.mrkuhne.mezo.feature.nutrition.service.dayplan.DayPlanWindow;
 import io.mrkuhne.mezo.feature.nutrition.service.dayplan.WindowState;
-import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity;
 import io.mrkuhne.mezo.feature.train.entity.RecoveryPeriodEntity;
-import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
-import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
-import io.mrkuhne.mezo.feature.train.repository.WorkoutDayAdjustmentRepository;
-import io.mrkuhne.mezo.feature.train.service.GymScheduleService;
+import io.mrkuhne.mezo.feature.train.service.EffectivePlanService;
 import io.mrkuhne.mezo.feature.train.service.LoggedSession;
 import io.mrkuhne.mezo.feature.train.service.LoggedSessionReadPort;
 import io.mrkuhne.mezo.feature.train.service.RecoveryPeriodService;
@@ -73,7 +70,7 @@ import org.springframework.stereotype.Service;
  * already own the data. READ-ONLY by contract: no {@code @Transactional} here (the read-path
  * isolation rule), and it never calls {@link WorkoutService#getToday} — that one writes (closes
  * stale instances); the planned session is resolved through
- * {@link WorkoutService#findPlannedTemplateForDateUnlessSkipped}, as the context snapshot does.
+ * {@link EffectivePlanService#plannedSession} (skip- and ledger-aware), as the chat context does.
  *
  * <p>The day is always the client's LOCAL date passed in — never {@code LocalDate.now()}: a brief
  * asked for at 00:30 Budapest must describe the new day although the server's UTC clock still
@@ -101,10 +98,6 @@ public class BoopDayAssembler {
     private final WearableProperties wearableProperties;
     private final LoggedSessionReadPort loggedSessions;
     private final WorkoutReconciler reconciler;
-    private final WorkoutService workoutService;
-    private final ExerciseRepository exercises;
-    private final WorkoutDayAdjustmentRepository dayAdjustments;
-    private final GymScheduleService gymSchedule;
     private final WorkoutTimeOverrideRepository timeOverrides;
     private final FuelDayService fuelDays;
     private final DayPlanService dayPlans;
@@ -117,6 +110,9 @@ public class BoopDayAssembler {
     private final WeightTrendQuery weightTrend;
     /** Boop B6 Évad S2 (mezo-r36n9.16): the season's rules for the brief. */
     private final SeasonContextPort seasonContext;
+    /** Boop B7 K3 (mezo-r36n9.17): the ledger's one-night bedtime, and the effective planned session. */
+    private final BoopDayAdjustmentPort dayAdjustmentLedger;
+    private final EffectivePlanService effectivePlan;
 
     public BoopDay assemble(UUID user, LocalDate date) {
         ZoneId zone = ZoneId.of(wearableProperties.zone());
@@ -152,7 +148,7 @@ public class BoopDayAssembler {
             date,
             sleep,
             sleepTargetMin,
-            sleepAnchor.resolve(user).bed(),
+            dayAdjustmentLedger.bedtime(user, date).orElseGet(() -> sleepAnchor.resolve(user).bed()),
             (int) nights.stream().map(SleepLogEntity::getDate).distinct().count(),
             deepWeek,
             restingWeek,
@@ -242,32 +238,19 @@ public class BoopDayAssembler {
     /** The planned session of the day (override applied); null on a rest day. Also the 404 check of
      *  {@link SessionTimeService}. */
     BoopDay.Session session(UUID user, LocalDate date) {
-        Optional<WorkoutSessionEntity> template = workoutService.findPlannedTemplateForDateUnlessSkipped(user, date);
-        if (template.isEmpty()) {
+        // The effective plan (B7 K3): a moved session on its new day at its plan day's slot time; the ledger's time
+        // shift wins over the older one-day override (both read, no migration); sets / minutes follow lighten /
+        // shorten on top of the per-date lighten overlay — the same helper the chat context uses.
+        Optional<EffectivePlanService.PlannedSession> planned = effectivePlan.plannedSession(user, date);
+        if (planned.isEmpty()) {
             return null;
         }
-        List<ExerciseEntity> planned = exercises.findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(
-            user, List.of(template.get().getId()));
-        if (planned.isEmpty()) {
-            return null; // an empty template day is a rest day (ToolText.gymLine's criterion)
-        }
-        // Same per-date lighten overlay and floor as WorkoutService.getToday / the context snapshot.
-        int delta = dayAdjustments.findByCreatedByAndDateAndDeletedFalse(user, date)
-            .map(a -> (int) a.getSetDelta()).orElse(0);
-        List<BoopDay.Exercise> lines = planned.stream()
-            .map(e -> new BoopDay.Exercise(e.getName(),
-                Math.max(1, (e.getWorkingSets() == null ? 0 : e.getWorkingSets()) + delta)))
+        EffectivePlanService.PlannedSession p = planned.get();
+        List<BoopDay.Exercise> lines = p.exercises().stream()
+            .map(e -> new BoopDay.Exercise(e.getName(), p.sets(e)))
             .toList();
-        int dow = date.getDayOfWeek().getValue() - 1; // 0=Hét..6=Vas (schedule-slot convention)
-        LocalTime plannedTime = gymSchedule.getSchedule(user).stream()
-            .filter(s -> s.getDayOfWeek() != null && s.getDayOfWeek() == dow && s.getTime() != null)
-            .map(s -> LocalTime.parse(s.getTime()))
-            .sorted()
-            .findFirst().orElse(null);
-        LocalTime time = timeOverrides.findByCreatedByAndDate(user, date)
-            .map(o -> o.getTime()).orElse(plannedTime);
-        return new BoopDay.Session(template.get().getType(), time, plannedTime,
-            template.get().getDurationEst(), lines);
+        LocalTime time = p.time(timeOverrides.findByCreatedByAndDate(user, date).map(o -> o.getTime()));
+        return new BoopDay.Session(p.template().getType(), time, p.plannedTime(), p.minutes(), lines);
     }
 
     /** Minimum wearable workout length that counts as the planned session being done. */

@@ -123,6 +123,8 @@ final class RitmusEnvironment {
             // A workout's start or finish landed: Edzés and the brief re-read, so Ma says „megvolt" and not „Indítás"
             // (mezo-r36n9.147).
             if item.kind == .workoutFinish || item.kind == .workoutStart { await me.env?.edzesChanged() }
+            // An Átrendezés accept queued offline reached the server: the open week re-reads.
+            if item.kind == .dayAdjustment { await me.env?.kapacitasChanged() }
             // The evening's line arrived after its relink went out (a retried recording): link it again.
             if let box = queue.outbox { await Self.relinkIfNeeded(item, ledger: ledger, outbox: box) }
             if await queue.outbox?.isQueued(item.id) == true { return }
@@ -195,6 +197,10 @@ final class RitmusEnvironment {
 
     /// Send what is queued now, backoff ignored — for a write the owner is waiting on (a workout's finish).
     func sendNow() { sendSoon() }
+
+    /// Bumped when a queued Átrendezés accept reaches the server (B7 K3).
+    private(set) var kapacitasTick = 0
+    func kapacitasChanged() { kapacitasTick += 1 }
 
     /// Queues a cash expense typed on the phone (`OutboxKind.penzExpense`) and sends it at once if the net allows.
     /// Throws when the phone could not keep it — the capture then says so instead of pretending.
@@ -361,7 +367,8 @@ final class RitmusEnvironment {
         // The outbox directory doubles as the audio directory AND the meal-photo directory (`MealDraftSender` and
         // `FoodOutbox` look for `meal-<id>.jpg` there): all of them must stay the same folder.
         let ritmus = RitmusClient(client: client, audioDirectory: dirs.outbox, train: train,
-                                  penz: raw.map(PenzOutboxSender.init(raw:)))
+                                  penz: raw.map(PenzOutboxSender.init(raw:)),
+                                  kapacitas: raw.map(KapacitasOutboxSender.init(raw:)))
         let snapshots = SnapshotBuilder(reader: health)
         let calendarReader = CalendarKitReader()
         let env = RitmusEnvironment(

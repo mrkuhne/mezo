@@ -2,7 +2,7 @@
 title: Boop — native iOS app
 type: feature-domain
 status: in-progress
-updated: 2026-11-25
+updated: 2026-11-26
 tags: [ios, level, l1-l2-level, evad, b6-evad, season, penz, l5-penz, blokk-epito, heti-atnezes, kezdolap, area-kit, l0, elo-fal, l0b, b4-etel, food, barcode, meal-photos, sensitivities, b3-napi-ritmus, offline-first, outbox, dayclose, b1-adatalap, health-samples, apns, swiftui, boop, napkelte, lagy, auth, onboarding, healthkit, eventkit, wearable, morning-brief, energy-curve, voice]
 key_files:
   - ios/Boop
@@ -17,6 +17,8 @@ related: [season, penz, mail, fuel, pantry, recipe, dayclose, intention, journal
 ---
 
 # Boop — native iOS app — Feature Documentation
+
+> **2026-11-26 — K3 final review (`mezo-r36n9.17`).** `clockSublative` reads minutes ending in 3, 6, 8 with „-ra” (három, hat, nyolc); the contract copy was re-synced after each rebase (`sync-openapi.sh`, `check-ios-contract.mjs` green). Étel's skip undo answers a capacity-owned skip (409) with „Ezt az Átrendezés oldalon tudod visszavonni” instead of a retry message (`EtelSettingsTests.aCapacityOwnedSkipPointsToTheAtrendezesPage`).
 
 > **2026-11-25 — Évad: one accept moves the running block too (`mezo-r36n9.122`, spec §5.12-1).** Módosítás no longer locks the gym days while a block runs: the preview shows **A blokkod új hete** and *Elfogadom* re-arranges the block (same count = days move in order; more = the evaluator's best repeat; fewer = the day whose loss the evaluator minds least) with the goal, slots and sleep need in one transaction — see the Módosítás entry in §2 and [`season.md`](season.md).
 
@@ -34,6 +36,15 @@ related: [season, penz, mail, fuel, pantry, recipe, dayclose, intention, journal
 > morning post (four groups, scored deals, a learned taste, the mirror-Gmail setup in Fiókok — replaced 2026-11-25 by Google sign-in) and the **first wall source
 > from a life area** — and the wall's ring (`WallNotifier`) is built for the first time, for every `.expires` source. See
 > **Levél** in §2 and [`mail.md`](mail.md); deploy and the phone install pending at the time of writing.
+> **2026-11-21 — Boop B7 K3 Task 17 (`mezo-r36n9.17`, server only).** The synced `BoopAPI/openapi.yaml` gained the Átrendezés operations (`getCapacityWeek`, accept / decline / regenerate); the phone does not call them yet (the Kapacitás client is hand-written; Task 19 builds the page). See [`capacity.md`](capacity.md) §4.
+> **2026-11-25 — Boop B7 K3 Task 20 (`mezo-r36n9.17`).** The Ma wall gains the `kapacitas` source (`WallSources.kapacitas`, hue `.pulzus`, `BoopCore/Kapacitas/KapacitasWall.swift`): while the current week has an open proposal, one `.improves` card `kapacitas-het` (rank 0.85, the spike's KapMaPreview copy — „A csütörtök *túl sok* lenne. Négy dolgot tennék át a héten.", sub the moves in brief, „Megnézem"); an open proposal about today while today's session (the brief's) is under three hours away replaces it with `.expires` `kapacitas-ma-<id>` (deadline = the session start; the wall's two-a-day cap applies). Offline-queued accepts are not counted. `MaWall` reads the week on appear (`.task` on its non-empty body) and on return to the foreground; a tap opens Átrendezés, presented by `NapView`'s page-level sheets (`\.openAtrendezes`, crumb „Ma"). The server's live loop may add a today-proposal meanwhile (see [`capacity.md`](capacity.md) §4). Screenshot `docs/superpowers/specs/assets/kapacitas/built/k3-ma-wall-440.png`.
+> **2026-11-25 — Boop B7 K3 Task 20 (`mezo-r36n9.17`).** The Ma wall gains the `kapacitas` source (`WallSources.kapacitas`, hue `.pulzus`, `BoopCore/Kapacitas/KapacitasWall.swift`): while the current week has an open proposal, one `.improves` card `kapacitas-het-<hash of the open proposal ids>` (rank 0.85, the spike's KapMaPreview copy — „A csütörtök *túl sok* lenne. Négy dolgot tennék át a héten.", sub the moves in brief, „Megnézem" · „Most nem"; a new open proposal is a new id, so it comes back after he settled the old one); an open proposal about today while today's session (the brief's) is under three hours away replaces it with `.expires` `kapacitas-ma-<id>` (deadline = the session start; the wall's two-a-day cap applies). Offline-queued accepts are not counted. `MaWall` reads the week on appear (`.task` on its non-empty body) and on return to the foreground; „Most nem" settles the card for the day and opens nothing (the pressed label now reaches `MaWall.act`; `NKWallRows` shows a card's secondary as a quiet link — only `.improves`/`.happened` cards are rows, and none of the others has one); „Megnézem" opens Átrendezés, presented by `NapView`'s page-level sheets (`\.openAtrendezes`, crumb „Ma"). The server's live loop may add a today-proposal meanwhile (see [`capacity.md`](capacity.md) §4). Screenshot `docs/superpowers/specs/assets/kapacitas/built/k3-ma-wall-440.png`.
+>
+> **2026-11-25 — K3 Task 19 fix round 1.** *Ha mindet jóváhagyod* draws the server's `CapacityWeek.allEffects` (≥ 2 open proposals); *Megbeszélem Boop-pal* closes the page and opens the Boop place (`openPlace(.boop)`, the Pénz pattern); *Minden hatása* gains *Ha jóváhagyod, itt látod* (`kapacitasWhereYouSee`: fixed words per step kind naming the days from the step payload, never the kcal target). A replay refused with `CAPACITY_DAY_STARTED` / `TRAIN_DAY_WORKOUT_RUNNING` says the day started; a stale one runs the same refresh as an online stale accept. „vissza” on an accept the outbox is sending right now waits (disabled, one line). `kapacitasMonday(for:)` is always Gregorian in the given zone.
+>
+> **2026-11-25 — Boop B7 K3 Task 19 (`mezo-r36n9.17`).** The Átrendezés page (`Boop/Kapacitas/AtrendezesPage.swift`, hue `.pulzus`) and *Minden hatása* (`MindenHatasaPage.swift`) are built: `KapacitasClient` gained `week` / `regenerate` / `accept` / `decline` / `undo`; `KapacitasStore` holds the weeks by Monday (`ServerCache` key `kapacitas/week`, cached week shown with its age offline). An offline accept goes into the outbox as `OutboxKind.dayAdjustment` (`DayAdjustmentPayload {proposalId, clientRef}`, the item id = the clientRef, sent by `KapacitasOutboxSender`); a replay refused with 409 is dropped and the week refreshed. A 409 `CAPACITY_PROPOSAL_STALE` refreshes the week (regenerates when that day has no open card) with one quiet line. Entry points: the day page's *Mit tennél át?* (presented by `DaySheet`) and Évad's *A jövő heted* (`EvadSub.atrendezes`, only while the next week has open proposals). *Ha mindet jóváhagyod* is left out (no server figures) and *Ebből tanulok* waits for patterns (K4). Review: `-previewKapacitas YES -kapOpen atrendezes|hatas -kapState full|settled|empty|offline [-kapStale YES]`.
+>
+> **2026-11-21 — Boop B7 K3 Task 17 (`mezo-r36n9.17`, server only).** The synced `BoopAPI/openapi.yaml` gained the Átrendezés operations (`getCapacityWeek`, accept / decline / regenerate); the phone does not call them yet (the Kapacitás client is hand-written; Task 19 builds the page). Fix round 1: `upsertPlannedSkip` documents a 409 `TRAIN_SKIP_CAPACITY_OWNED` (a capacity skip cannot be re-reasoned from the skip sheet); the stale-card rule means a week read may return a proposal as `expired`. See [`capacity.md`](capacity.md) §4.
 
 > **2026-11-21 — Boop B6 Évad S4 (`mezo-r36n9.16`).** The Évad page's **Hatás** tab is live: Boop's one open
 > experiment proposal (*Indulhat* / *Most nem*), the running experiment (day X / L, *Ma megvolt*, overlaps, *Leállítom*),
@@ -1310,6 +1321,16 @@ Wearable workouts are display + AI context only (no calorie-target effect). Chan
 | `setSessionTime` | `PUT /api/boop/session-time` `{date, time HH:mm}` → `SessionTime{date,time,plannedTime}` | upsert into `workout_time_override`, last write wins; 404 `BOOP_NO_PLANNED_SESSION`; 400 on a bad time |
 | `clearSessionTime` | `DELETE /api/boop/session-time?date=` → 204 | soft-deletes the override; the planned time is back |
 
+**The capacity ledger in the brief (B7 K3, `mezo-r36n9.17`).** The brief's day follows what the owner accepted:
+- The session is the one moved onto the day, never the one moved away from it (train's ledger-aware resolution).
+- Its planned time comes from the plan day's gym slot.
+- An accepted time shift wins over a `workout_time_override` for the same day. Both are read, with no migration.
+- Sets and minutes follow an accepted lighten or shorten.
+- `day.bedtimeTarget` is the night's accepted bedtime (`BoopDayAdjustmentPort`), else the sleep goal's.
+- These session reads all go through train's `EffectivePlanService.plannedSession`, the same helper the chat context uses.
+
+Details: [`capacity.md`](capacity.md) §4.
+
 iOS also uses the existing `decidePattern` for the observation swipes. `BoopBrief` carries `date`, `generatedAt`, `state`
 (`good|okay|tired|learning`), `nightsKnown`, `metrics[5]` (`forma|alvas|mozgas|fuel|pulzus`: nullable `score`, `display`, `caption`,
 `headline`, `sentence`, `trendUp`), `brief[]` (text + link), `energy{hourly[19], dipHour}`, `tonightTip`, `nextMealTip`, `conflict`,
@@ -1481,6 +1502,7 @@ New API call: add the operationId to the generator config, run `sync-openapi.sh`
 - **Ten `async let`s abort the app (2026-11-24, `mezo-r36n9.153`).** `PenzStore.read` fired its ten reads as `async let`s awaited in two tuples; built with Xcode 26.3 (Swift 6.2, iOS 26.3) that aborts the process — `swift_task_dealloc` fatal error in `asyncLet_finish_after_task_completion` — the moment the store loads: in the simulator (the Pénz room, the "+" Kiadás sheet, and now the home ring) and natively (every Pénz client suite exited with signal 6). Rewritten as ten unstructured `Task`s awaited by `.value`: the 11 Pénz suites (114 tests) pass natively, the app launches. `LevelStore` (two async lets) and `BlockBuilderModel` do not trip it; prefer `Task {}` handles or a task group over long `async let` fan-outs.
 - **"learning" is about Forma alone (2026-11-24, `mezo-r36n9.152`).** `BoopScores.stateOf` says `learning` whenever Forma is null (last night missing, or fewer nights than `nights-needed`); the app used to nil every metric's score in that state, so the whole ring and every hero read "–" while Alvás, Étel, Edzés and Energia had numbers. `visibleScore` keeps the four.
 
+- **Capacity reason guard moved (B7 K3).** `BoopVerdictWriter.acceptReason` now delegates to the shared `techcore/text/DigitGuard` (same rule: the model's capacity reason is kept only if it brings no new digit run); the proposal wording in capacity uses the same guard. Behaviour unchanged (`BoopCapacityReasonTest`).
 - **Contract copy re-synced after the web-only areas left (2026-11-19, `mezo-r36n9.97.4`).** `openapi.yaml` lost the tutorial, telemetry and admin hub operations (none in the filter); `node scripts/check-ios-contract.mjs` (in the cheap gates) proves all 121 filter operations are still in `api/openapi.yml`.
 - **Contract copy re-synced after the XP world left (2026-11-19, `mezo-r36n9.97.5`).** `openapi.yaml` lost the gamification, quest, progression and activity operations (none in the filter) and their schemas; the optional `levelUp`/`medals` on `WorkoutInstanceResponse` stay (the app never reads them, and the server no longer fills `levelUp`). `check-ios-contract.mjs` still finds all 121 filter operations.
 - **Contract copy re-synced after browser web push left (2026-11-19, `mezo-r36n9.97.7`).** `openapi.yaml` lost the web push subscription/test/pref/schedule operations and schemas (none in the filter); `registerApnsDevice`/`unregisterApnsDevice` and the server's `apns_device` registration are unchanged (`DeviceRegistrationStillWorksIT`). `check-ios-contract.mjs` still finds all 121 filter operations.

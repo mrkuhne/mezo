@@ -197,4 +197,13 @@ struct EtelSettingsTests {
         let failed = await undoSkipWindow(p.windows[0], in: p, food: f)
         #expect(!failed.ok && failed.text.contains("Nem sikerült"))
     }
+
+    @Test func aCapacityOwnedSkipPointsToTheAtrendezesPage() async throws {
+        let f = food
+        let p = plan()
+        transport.on("listPlannedSkips", 200, #"[{"id":"33349a7e-d8f9-44c4-9a7e-93b03cd0c12e","date":"2026-11-13","kind":"MEAL","sessionKey":"dinner#1","reasonCategory":"NONE","source":"USER","serious":false,"freePass":false,"excused":false}]"#)
+        transport.on("undoPlannedSkip", 409, #"[{"code":"TRAIN_SKIP_CAPACITY_OWNED","type":"REQUEST"}]"#)
+        let out = await undoSkipWindow(p.windows[3], in: p, food: f)
+        #expect(!out.ok && out.text == "Ezt az Átrendezés oldalon tudod visszavonni")
+    }
 }

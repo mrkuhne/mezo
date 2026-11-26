@@ -54,12 +54,23 @@ figyel.
 ## Adattáblák
 | Tábla | Mit tárol |
 |---|---|
-| (épül) `calendar_event_score` | Programonként a fárasztás címkéi |
-| (épül) `day_adjustment` | A jóváhagyott heti áttételek (ez az, amit az app mindenhol olvas) |
-| (épül) `capacity_proposal` | Minden javaslat, a döntésed és hogyan sült el |
+| `calendar_event_score` | Programonként a fárasztás címkéi |
+| `day_adjustment` | A jóváhagyott heti áttételek (ez az, amit az app mindenhol olvas) |
+| `capacity_proposal` | Minden javaslat és a döntésed (hogy hogyan sült el, azt az előrejelzés lépés tölti) |
 
 ## Mi jön még
-Négy lépésben épül: alap (címkézés és becslés), reggel és Évad, Átrendezés, előrejelzés. Az első kettő kész: a Ma oldal reggeli sorában ott a nap szava és az oka, a napod oldalán a „Mennyit bírsz ma”, a „Mi visz el ma energiát” (egy programot megjelölhetsz: merít, semleges vagy feltölt, és ez újraindítás után is látszik) és az „Amiből gazdálkodsz” rész, az Évad oldalon a heti teher és pihenés képe, és Boop beszélgetés közben is tudja, milyen napod lesz. Az Átrendezés oldal és a vasárnapi előrejelzés még hátravan.
+Négy lépésben épül: alap (címkézés és becslés), reggel és Évad, Átrendezés, előrejelzés. Az első három kész:
+- a Ma oldal reggeli sorában a nap szava és az oka, a napod oldalán a „Mennyit bírsz ma”, a „Mi visz el ma energiát”
+  és az „Amiből gazdálkodsz” rész, az Évad oldalon a heti teher és pihenés képe;
+- **Átrendezés:** ha egy nap túl sok, a Ma oldalon megjelenik egy kártya, ami az Átrendezés oldalra visz. Ott minden
+  javaslatnál látod a hatásait („Minden hatása”), egyenként jóváhagyhatod, visszavonhatod, vagy azt mondhatod: „Most
+  nem”. Egy jóváhagyott edzés-áttétel a Ma oldalon, a napod oldalán, az Edzésnél, az Ételnél és az Évad „Hogy megy”
+  részén is az új napon látszik, egyszer számolva. Egy megbeszélés áttétele teendő lesz, ami magától „kész”, amikor a
+  naptáradban átkerült.
+- Ha közben az Évad oldalon módosítod az edzésnapjaidat, vagy új blokk indul, a terv nyer: a már nem illő áttételek
+  lejárnak, a már letolt edzések viszont megmaradnak a múltban.
+
+Hátravan: a vasárnapi előrejelzés, és hogy a Boop a korábbi áttételekből tanuljon („Korábban áttettük”, „Ebből tanulok”).
 
 ## Mi marad ki
 - A Boop nem ír a naptáradba, és nem mond le helyetted megbeszélést.

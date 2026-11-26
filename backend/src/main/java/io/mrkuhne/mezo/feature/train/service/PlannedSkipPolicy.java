@@ -75,9 +75,10 @@ public final class PlannedSkipPolicy {
                 adviceBacked, recoveryBacked, null);
         }
 
-        /** Excused without a pass and out of the pass race: advice twin or a recovery-protected date. */
+        /** Excused without a pass and out of the pass race: advice twin, a recovery-protected date, or a skip the
+         *  owner accepted from a Boop capacity proposal (reason {@code KAPACITAS}, Boop B7 K3) — Boop's advice too. */
         boolean backed() {
-            return adviceBacked || recoveryBacked;
+            return adviceBacked || recoveryBacked || reason == PlannedSkipEntity.Reason.KAPACITAS;
         }
     }
 
@@ -120,6 +121,8 @@ public final class PlannedSkipPolicy {
      *       pass, and out of the week's pass race.</li>
      *   <li>An advice-backed USER row ({@link Row#adviceBacked}) is judged like its ADVICE twin:
      *       always excused, never a free pass, and it does not consume the week's pass.</li>
+     *   <li>A {@code KAPACITAS} USER row (an accepted Boop capacity proposal, B7 K3) is judged like advice:
+     *       always excused, never a free pass, out of the week's pass race.</li>
      *   <li>A MEAL skip (Kihagyás S3) is neutral: always excused, never a free pass, out of the
      *       week's pass race — skipping a meal never spends the pass that protects a training day.</li>
      *   <li>Output order matches input order.</li>

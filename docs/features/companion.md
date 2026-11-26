@@ -3354,6 +3354,7 @@ its own) and stays reviewable in isolation. S1 was a pure refactor of the origin
   `sleep-debt.min-nights` inside its window) but the nights that ARE logged average at least
   `logging-gap.sleep-suspicion-deficit-hours` of deficit, the payload attaches that observed
   deficit instead of staying silent about it too.
+- **Ledger moves re-date the planned gym days (Boop B7 K3, `mezo-r36n9.17`).** `MissedWorkoutsRule` and `MomentumAtRiskRule` judge `EffectivePlanService.plannedGymDates`, which is the slot weekdays with the capacity ledger's accepted moves applied. A session moved away from a day makes that day no miss; the day it was moved to is planned. The chat context also follows the effective plan: `BoopDayContext` sessions, `ContextSnapshotAssembler.dayLine` and its twin `TrainTools.dayContentLine` (the `get_training_plan` tool) read `EffectivePlanService.plannedSession`, which gives the moved session with its shifted time, shortened minutes, lightened sets and actual weekday label. See [`capacity.md`](capacity.md) §4.
 - **`MissedWorkoutsRule`** (spec §4 row 3) — raises when `≥ missed-workouts.min-consecutive-missed`
   most-recent PLANNED gym days in a row (`gym_schedule_slot.day_of_week`, over the trailing
   `missed-workouts.window-days`) have no completed workout instance. "Consecutive" counts through

@@ -7,8 +7,10 @@ import io.mrkuhne.mezo.feature.goal.engine.service.DietPreferencesPort;
 import io.mrkuhne.mezo.feature.meal.repository.WaterLogRepository;
 import io.mrkuhne.mezo.feature.proactive.config.ProactiveProperties;
 import io.mrkuhne.mezo.feature.train.entity.GymScheduleSlotEntity;
+import io.mrkuhne.mezo.feature.train.port.TrainDayAdjustmentPort;
 import io.mrkuhne.mezo.feature.train.repository.GymScheduleSlotRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
+import io.mrkuhne.mezo.feature.train.service.EffectivePlanService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -58,6 +60,8 @@ public class HydrationShortfallProbe {
     private final WorkoutSessionRepository workoutSessionRepository;
     private final MetricSeriesService metricSeriesService;
     private final LogFreshnessProbe logFreshnessProbe;
+    /** Boop B7 K3 (mezo-r36n9.17): a session moved onto a day makes it a planned training day. */
+    private final TrainDayAdjustmentPort dayAdjustments;
 
     /** Empty whenever the honest answer is "not enough to say anything" — see the gates inline. */
     @Transactional(readOnly = true)
@@ -93,12 +97,15 @@ public class HydrationShortfallProbe {
      *  the planned arm is load-bearing: hydration matters BEFORE the session, so a metric-only
      *  test would stay silent all morning on exactly the day that needs the signal. */
     private boolean isTrainingDay(UUID userId, LocalDate date) {
-        // gym_schedule_slot.day_of_week is 0=Monday..6=Sunday (the entity's own comment).
-        int dow = date.getDayOfWeek().getValue() - 1;
-        boolean planned = gymScheduleSlotRepository
+        // gym_schedule_slot.day_of_week is 0=Monday..6=Sunday (the entity's own comment); the ledger's moves
+        // re-date the planned day (B7 K3).
+        java.util.Set<Integer> dows = gymScheduleSlotRepository
                 .findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId).stream()
                 .map(GymScheduleSlotEntity::getDayOfWeek)
-                .anyMatch(d -> d != null && d == dow);
+                .filter(java.util.Objects::nonNull)
+                .collect(java.util.stream.Collectors.toSet());
+        boolean planned = EffectivePlanService.plannedGymDates(dows,
+                dayAdjustments.effectiveSessions(userId, date, date), date, date).contains(date);
         if (planned) {
             return true;
         }

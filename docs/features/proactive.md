@@ -2591,6 +2591,7 @@ water cannot be caught up at 22:00 — so it is allowed to speak from an incompl
   precedent): three numbers and one sentence from `mezo.proactive.hydration.checkpoint-template`.
   A model call would add a fake-LLM marker mirror, a `ProseNumberGuard` surface and a paid call on
   a job that runs every day, for a line that must never drift in tone.
+- **A moved session moves the training day (Boop B7 K3, `mezo-r36n9.17`).** The probe's planned arm reads the gym slot weekdays with the capacity ledger's accepted moves applied (`EffectivePlanService.plannedGymDates`). A day a session was moved onto is a training day; the day it left is not, unless it has a logged workout or load. See [`capacity.md`](capacity.md) §4.
 - **Four silence gates, each with its own IT** (`HydrationShortfallProbeIT`): not a training day
   (planned gym slot today, OR a completed instance today, OR `COMBINED_LOAD_MIN > 0` — the planned
   arm is load-bearing, hydration matters *before* the session); the clock is at or before the wake

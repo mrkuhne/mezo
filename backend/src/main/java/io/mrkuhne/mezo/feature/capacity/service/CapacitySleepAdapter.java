@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.capacity.service;
 import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepGoalRepository;
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
+import io.mrkuhne.mezo.feature.biometrics.sleep.service.SleepAnchorPort;
 import io.mrkuhne.mezo.feature.capacity.port.CapacitySleepPort;
 import io.mrkuhne.mezo.feature.season.service.SleepNeedRule;
 import java.math.BigDecimal;
@@ -21,6 +22,7 @@ public class CapacitySleepAdapter implements CapacitySleepPort {
 
     private final SleepLogRepository sleepLogs;
     private final SleepGoalRepository sleepGoals;
+    private final SleepAnchorPort sleepAnchor;
 
     @Override
     public Map<LocalDate, Integer> sleepMinutes(UUID owner, LocalDate from, LocalDate to) {
@@ -38,5 +40,10 @@ public class CapacitySleepAdapter implements CapacitySleepPort {
     public int needMinutes(UUID owner, int gymPerWeek, int sportPerWeek) {
         Integer goal = sleepGoals.findByCreatedByAndDeletedFalse(owner).map(g -> g.getTargetMinutes()).orElse(null);
         return SleepNeedRule.sleepNeedMinutes(SleepNeedRule.base(goal), gymPerWeek, sportPerWeek);
+    }
+
+    @Override
+    public java.time.LocalTime usualBedtime(UUID owner) {
+        return sleepAnchor.resolve(owner).bed();
     }
 }

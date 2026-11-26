@@ -1774,5 +1774,35 @@
     ],
     "mit_kapsz": "Belső rendrakás, neked nem látszik: a telefon szerződésmásolata egyezik a szerverével.",
     "szulo": "mezo-r36n9.16"
+  },
+  "mezo-r36n9.173": {
+    "cim": "Ma fal: az Étel „Kihagyom” és az Edzés „Ma kihagyom” gomb a fő gomb műveletét futtatja",
+    "tipus": "Hiba",
+    "szakasz": "B7 Napi kapacitás",
+    "terulet": [
+      "Ma"
+    ],
+    "mit_kapsz": "A kihagyás gombja tényleg kihagyást indít, nem a kártya fő műveletét.",
+    "szulo": "mezo-r36n9.17"
+  },
+  "mezo-r36n9.178": {
+    "cim": "Évad Módosítás: az átrendezés üres pihenőnapot is edzésnapra tehet",
+    "tipus": "Hiba",
+    "szakasz": "B6 A Terv",
+    "terulet": [
+      "Terv"
+    ],
+    "mit_kapsz": "Ha az Évadban több edzésnapot választasz, minden edzésnapra valódi edzés kerül, nem egy üres pihenőnap — így nem jelez elmaradt edzést ott, ahol nem is volt mit csinálni.",
+    "szulo": "mezo-r36n9.17"
+  },
+  "mezo-r36n9.179": {
+    "cim": "Átrendezés: egy lezárt áttétel elrejthet egy később betervezett edzést",
+    "tipus": "Karbantartás",
+    "szakasz": "B7 Napi kapacitás",
+    "terulet": [
+      "Ma"
+    ],
+    "mit_kapsz": "Ritka eset: ha egy már lezárt áttétel célnapjára később új edzés kerül, az az edzés is látszani fog.",
+    "szulo": "mezo-r36n9.17"
   }
 }

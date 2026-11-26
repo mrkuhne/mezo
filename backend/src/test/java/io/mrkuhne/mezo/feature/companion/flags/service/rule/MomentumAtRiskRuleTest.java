@@ -43,8 +43,10 @@ class MomentumAtRiskRuleTest {
     private final GymScheduleSlotRepository gymSlots = mock(GymScheduleSlotRepository.class);
     private final WorkoutSessionRepository workouts = mock(WorkoutSessionRepository.class);
     private final PlannedSkipService plannedSkips = mock(PlannedSkipService.class);
+    private final io.mrkuhne.mezo.feature.train.port.TrainDayAdjustmentPort dayAdjustments =
+        mock(io.mrkuhne.mezo.feature.train.port.TrainDayAdjustmentPort.class);
     private final MomentumAtRiskRule rule =
-        new MomentumAtRiskRule(metrics, properties, gymSlots, workouts, plannedSkips);
+        new MomentumAtRiskRule(metrics, properties, gymSlots, workouts, plannedSkips, dayAdjustments);
 
     private final LocalDate recentTo = TODAY.minusDays(1);
     private final LocalDate recentFrom = recentTo.minusDays(WINDOW - 1L);
@@ -88,5 +90,19 @@ class MomentumAtRiskRuleTest {
         assertThat(verdict.outcome()).isEqualTo(FlagOutcome.RAISED);
         assertThat(verdict.payload().momentumAtRisk().missedGymDays())
             .containsExactly(recentFrom.toString(), recentFrom.plusDays(1).toString());
+    }
+
+    @Test
+    void testEvaluate_shouldNotCountAMovedAwayDay_whenTheLedgerMovedItsSession() {
+        // Boop B7 K3: the session of recentFrom was moved to a day outside the window (only the old day is in range).
+        when(plannedSkips.excusedDates(USER, Kind.GYM, recentFrom, recentTo)).thenReturn(Set.of());
+        when(dayAdjustments.effectiveSessions(USER, recentFrom, recentTo)).thenReturn(Map.of(recentFrom,
+            new io.mrkuhne.mezo.feature.train.port.TrainDayAdjustmentPort.EffectiveSession(
+                null, null, TODAY, null, null, null)));
+
+        FlagVerdict verdict = rule.evaluate(USER, TODAY);
+
+        assertThat(verdict.payload().momentumAtRisk().missedGymDays())
+            .containsExactly(recentFrom.plusDays(1).toString(), recentTo.toString());
     }
 }

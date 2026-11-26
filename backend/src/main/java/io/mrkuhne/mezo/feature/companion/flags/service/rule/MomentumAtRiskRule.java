@@ -10,8 +10,10 @@ import io.mrkuhne.mezo.feature.companion.service.MetricKey;
 import io.mrkuhne.mezo.feature.companion.service.MetricSeriesService;
 import io.mrkuhne.mezo.feature.train.entity.GymScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity.Kind;
+import io.mrkuhne.mezo.feature.train.port.TrainDayAdjustmentPort;
 import io.mrkuhne.mezo.feature.train.repository.GymScheduleSlotRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
+import io.mrkuhne.mezo.feature.train.service.EffectivePlanService;
 import io.mrkuhne.mezo.feature.train.service.PlannedSkipService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
@@ -35,6 +37,8 @@ public class MomentumAtRiskRule implements FlagRule {
     private final GymScheduleSlotRepository gymScheduleSlotRepository;
     private final WorkoutSessionRepository workoutSessionRepository;
     private final PlannedSkipService plannedSkipService;
+    /** Boop B7 K3 (mezo-r36n9.17): an accepted move re-dates a planned gym day. */
+    private final TrainDayAdjustmentPort dayAdjustments;
 
     /**
      * Habit completions in the recent window vs the baseline window before it, AND at least one
@@ -102,11 +106,12 @@ public class MomentumAtRiskRule implements FlagRule {
         }
         Set<LocalDate> trained = Set.copyOf(workoutSessionRepository.findDoneInstanceDates(userId, from, to));
         Set<LocalDate> excused = plannedSkipService.excusedDates(userId, Kind.GYM, from, to);
+        // The effective planned days (B7 K3): a session moved away leaves its day, a moved-in day is planned.
+        Set<LocalDate> planned = EffectivePlanService.plannedGymDates(plannedDows,
+            dayAdjustments.effectiveSessions(userId, from, to), from, to);
         List<String> missed = new ArrayList<>();
         for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
-            // gym_schedule_slot.day_of_week is 0=Monday..6=Sunday (the entity's own comment)
-            int dow = day.getDayOfWeek().getValue() - 1;
-            if (plannedDows.contains(dow) && !trained.contains(day) && !excused.contains(day)) {
+            if (planned.contains(day) && !trained.contains(day) && !excused.contains(day)) {
                 missed.add(day.toString());
             }
         }

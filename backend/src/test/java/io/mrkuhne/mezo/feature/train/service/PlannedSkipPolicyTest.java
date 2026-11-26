@@ -334,4 +334,21 @@ class PlannedSkipPolicyTest {
         assertThat(v.excused()).isTrue();
         assertThat(v.freePass()).isFalse();
     }
+
+    /** Boop B7 K3: a KAPACITAS skip is Boop's advice the owner accepted — excused, no pass, and the week's pass
+     *  still goes to the next soft skip. */
+    @Test
+    void kapacitasSkipIsExcusedAndKeepsThePass() {
+        Row kapacitas = new Row(ID_1, LocalDate.of(2026, 9, 28), Kind.GYM, null, null, null, Reason.KAPACITAS, null,
+            Source.USER, Instant.parse("2026-09-28T10:00:00Z"));
+        Row soft = new Row(ID_2, LocalDate.of(2026, 9, 30), Kind.GYM, null, null, null, Reason.NONE, null,
+            Source.USER, Instant.parse("2026-09-29T10:00:00Z"));
+
+        List<Verdict> verdicts = PlannedSkipPolicy.judge(List.of(kapacitas, soft));
+
+        assertThat(verdicts.get(0).excused()).isTrue();
+        assertThat(verdicts.get(0).freePass()).isFalse();
+        assertThat(verdicts.get(0).serious()).isFalse();
+        assertThat(verdicts.get(1).freePass()).isTrue();
+    }
 }

@@ -131,6 +131,10 @@ struct DaySheet: View {
     let close: () -> Void
     /// One tap on "Áttolom" only, even before the sheet has finished closing.
     @State private var moveTapped = false
+    /// B7 K3: *Mit tennél át?* opens the Átrendezés page — presented here, at the page's level (boop-ios.md §9).
+    @State private var atrendezes = false
+    @Environment(KapacitasStore.self) private var kapacitasStore: KapacitasStore?
+    @Environment(\.openPlace) private var openPlace
 
     private var state: DayConflict {
         let s = brief.day.session
@@ -168,7 +172,8 @@ struct DaySheet: View {
             }
             // B7: what the day asks against what he can carry (spike screen 06); absent without a capacity block
             if let capacity = brief.capacity {
-                DayCapacityBlocks(capacity: capacity) { Task { await store.load(date: ctx.now) } }
+                DayCapacityBlocks(capacity: capacity, onLabelled: { Task { await store.load(date: ctx.now) } },
+                                  openAtrendezes: kapacitasStore == nil ? nil : { atrendezes = true })
                     .padding(.top, 6)
             }
             if st.showCard, let c = brief.conflict { conflictCard(c).transition(.opacity.combined(with: .scale(scale: 0.96))) }
@@ -181,6 +186,11 @@ struct DaySheet: View {
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: st.showCard)
         .defaultScrollAnchor(previewBottom ? .bottom : nil)
+        .fullScreenCover(isPresented: $atrendezes) {
+            AtrendezesPage(monday: kapacitasMonday(of: brief.date), crumb: "A napod", close: { atrendezes = false },
+                           ask: { atrendezes = false; close(); openPlace(.boop) })
+                .environment(kapacitasStore)
+        }
         .onAppear {
             #if DEBUG
             // Simulator review: `-previewKept YES` opens the sheet as if "Marad így" had been tapped.

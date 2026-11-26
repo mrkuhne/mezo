@@ -2,7 +2,7 @@
 title: Language (Hungarian + English)
 type: feature-platform
 status: mixed
-updated: 2026-11-25
+updated: 2026-11-26
 tags: [platform, frontend, backend, auth, ai, boop, b4-etel]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/auth/service/UserLanguage.java
@@ -13,6 +13,8 @@ key_files:
 related: [_platform-auth-security, _platform-design-system, companion, settings, _platform-api-backend]
 ---
 
+> **2026-11-26 — reviewed after the K3 final review (`mezo-r36n9.17`, no language-layer change).** One new code in both catalogs: `TRAIN_AS_PLANNED_MOVED` („Ezt az edzést áttetted egy másik napra — azon a napon pótold.” / „This session was moved to another day — catch it up on that day.”).
+
 > **2026-11-25 — reviewed after Boop Levél Google sign-in (`mezo-r36n9.38`/`.39`, no language-layer change).** Two mail keys (`MAIL_GOOGLE_NOT_CONFIGURED`, `MAIL_GOOGLE_REDIRECT_INVALID`) added to both `messages_hu` and `messages_en` (parity kept); the `MAIL_AUTH_FAILED` text made neutral (password or Google).
 
 > **Exercise SPE palettes (`mezo-eiux9`).** `TRAIN_TECHNIQUE_NOT_ALLOWED` was added to both message bundles; it includes the exercise name. Boop's selection copy describes the specific movement. No language-layer mechanism changed. See [`train.md`](train.md) §4.
@@ -21,6 +23,10 @@ related: [_platform-auth-security, _platform-design-system, companion, settings,
 > **2026-11-21 — reviewed after the Levél final review (`mezo-r36n9.39`, no language-layer change).** The dummy mail key moved from `application.yml` to the test properties; no message keys changed.
 
 > **2026-11-21 — reviewed after Boop Levél L1+L2 (`mezo-r36n9.38/.39`, no language-layer change).** Mail error keys (`MAIL_AUTH_FAILED`, `MAIL_UNREACHABLE`, `MAIL_RUN_COOLDOWN`, `MAIL_NOT_CONNECTED`, `MAIL_ITEM_NOT_FOUND`, `MAIL_INTAKE_ERROR`, `MAIL_SECRET_UNREADABLE`) added to both bundles; the phone's Levél copy is Hungarian-only like the rest of Boop.
+> **2026-11-21 — reviewed after Boop B7 K3 Task 17 (`mezo-r36n9.17`, no language-layer change).** One new capacity key in both `messages_hu` and `messages_en` (parity kept): `CAPACITY_CLIENT_REF_REUSED`. See [`capacity.md`](capacity.md) §4.
+> **2026-11-25 — reviewed after Boop B7 K3 Task 20 (`mezo-r36n9.17`, no language-layer change).** Only a new capacity migration landed under `backend/src/main/resources`; no message key changed. See [`capacity.md`](capacity.md) §4.
+>
+> **2026-11-21 — reviewed after Boop B7 K3 Task 17 (`mezo-r36n9.17`, no language-layer change).** New keys in both `messages_hu` and `messages_en` (parity kept): `CAPACITY_CLIENT_REF_REUSED`, `TRAIN_SKIP_CAPACITY_OWNED`. See [`capacity.md`](capacity.md) §4.
 
 > **2026-11-21 — reviewed after Boop B6 Évad S4 (`mezo-r36n9.16`).** Five `EXPERIMENT_*` keys added to both `messages_hu` and `messages_en` (parity kept); the experiment copy on the phone is Hungarian-only like the rest of Boop. No language mechanism changed. See [`season.md`](season.md) §3.14.
 
@@ -291,6 +297,7 @@ The five rules:
 
 ## 4. Data model & API
 
+- B7 K3 (day-adjustment ledger) needed no new message keys; it uses the five K1 keys below. Its only resources change is the `planned_skip` `KAPACITAS` reason migration.
 - B7 K1 added five `CAPACITY_*` error keys (stale proposal, move onto an occupied day, move to another week, day already started, adjustment not undoable) to both `messages_hu.properties` and `messages_en.properties`; the K1 brief reason line is server-written Hungarian ([`capacity.md`](capacity.md)).
 
 - **Table:** `app_user.language varchar(2) NOT NULL DEFAULT 'hu'`, `ck_app_user_language CHECK (language IN ('hu','en'))` — `backend/src/main/resources/db/changelog/1.1.0/script/202610111200_mezo-n4wf5.11_app_user_language.sql`. Every existing account is `hu`.

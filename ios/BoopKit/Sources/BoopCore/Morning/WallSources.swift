@@ -15,6 +15,8 @@ public enum WallSources {
     public static let evad = "evad"
     /// Levél (mezo-r36n9.39): its candidates are `levelWallCandidates` below.
     public static let level = "level"
+    /// Day capacity (B7 K3, `mezo-r36n9.17`): the Átrendezés card, `kapacitasWallCandidates` in `BoopCore/Kapacitas/KapacitasWall.swift`.
+    public static let kapacitas = "kapacitas"
 }
 
 // MARK: - Étel

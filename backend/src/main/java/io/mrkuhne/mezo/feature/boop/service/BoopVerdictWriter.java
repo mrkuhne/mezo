@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.techcore.security.LlmActorContext;
+import io.mrkuhne.mezo.techcore.text.DigitGuard;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -185,26 +186,17 @@ public class BoopVerdictWriter {
             acceptReason(str(answer.get("capacityReason")), fallback.capacityReason()));
     }
 
-    private static final java.util.regex.Pattern DIGITS = java.util.regex.Pattern.compile("\\d+");
-
     /**
      * The model may rephrase the capacity reason but never bring a number: it is accepted only if every digit run
-     * in it also appears in the rule text {@code facts}; otherwise (or when blank) the rule text stays.
+     * in it also appears in the rule text {@code facts}; otherwise (or when blank) the rule text stays. The guard is
+     * the shared {@link DigitGuard} (the proposal wording uses the same one).
      */
     static String acceptReason(String modelReason, String facts) {
-        if (modelReason == null || modelReason.isBlank()) {
-            return facts;
-        }
-        Set<String> allowed = new java.util.HashSet<>();
-        if (facts != null) {
-            DIGITS.matcher(facts).results().forEach(m -> allowed.add(m.group()));
-        }
-        boolean invented = DIGITS.matcher(modelReason).results().anyMatch(m -> !allowed.contains(m.group()));
-        if (invented) {
+        String accepted = DigitGuard.acceptOrFacts(modelReason, facts);
+        if (modelReason != null && !modelReason.isBlank() && !DigitGuard.onlyKnownDigits(modelReason, facts)) {
             log.warn("Boop brief capacity reason had a number the rules did not give, using the rule reason");
-            return facts;
         }
-        return modelReason;
+        return accepted;
     }
 
     /** The JSON object inside the answer, or null. */

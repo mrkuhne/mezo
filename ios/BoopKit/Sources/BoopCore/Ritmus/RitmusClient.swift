@@ -37,6 +37,8 @@ public struct RitmusClient: OutboxSender {
     /// Sends the Pénz cash expenses (L5) over the hand-written JSON caller; nil = this client has none (tests that
     /// never queue one) — such an item waits rather than being refused.
     private let penz: PenzOutboxSender?
+    /// Sends the Átrendezés accepts queued offline (B7 K3); nil = such an item waits rather than being refused.
+    private let kapacitas: KapacitasOutboxSender?
 
     /// `audioDirectory`: where `VoicePayload.fileName` is resolved (the outbox directory by default).
     ///
@@ -44,10 +46,11 @@ public struct RitmusClient: OutboxSender {
     /// a queued set belongs to, and that memory is what the player's online calls (the swap) read: with two
     /// instances the queue learns the workout id and the player never sees it.
     public init(client: Client, audioDirectory: URL = Outbox.defaultDirectory(), train: TrainClient? = nil,
-                penz: PenzOutboxSender? = nil) {
+                penz: PenzOutboxSender? = nil, kapacitas: KapacitasOutboxSender? = nil) {
         self.client = client; self.audioDirectory = audioDirectory
         self.train = train ?? TrainClient(client: client)
         self.penz = penz
+        self.kapacitas = kapacitas
     }
 
     /// Work a retry must not repeat while the app runs: a transcript already paid for, a conversation already created.
@@ -81,6 +84,8 @@ public struct RitmusClient: OutboxSender {
                 return await penz?.send(item) ?? .retryLater
             case .weightLog: return try await sendWeight(item)
             case .sleepLog: return try await sendSleep(item)
+            case .dayAdjustment:
+                return await kapacitas?.send(item) ?? .retryLater
             }
         } catch {
             // An answer whose body would not decode still carries its status; otherwise (no network, a timeout) the

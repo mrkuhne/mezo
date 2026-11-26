@@ -54,13 +54,16 @@ struct MaVerdictRow: View {
 }
 
 /// The capacity blocks under the day page's curve: *Mennyit bírsz ma*, *Mi visz el ma energiát* (a tap on an event
-/// asks how it felt), *Amiből gazdálkodsz*, then the learning note. *Mit tennél át?* comes with K3.
+/// asks how it felt), *Amiből gazdálkodsz*, the learning note, then *Mit tennél át?* (K3: the Átrendezés page, which
+/// the day page presents).
 struct DayCapacityBlocks: View {
     let capacity: Components.Schemas.BoopCapacity
     /// After labels are stored: the page reloads the brief once (the server re-scored the events). Debounced through
     /// `KapacitasReloadGate`: when the label sheet has stayed closed a moment, or when the page goes away — never once
     /// per tap, so a run of labels costs one brief regeneration.
     var onLabelled: @MainActor () -> Void = {}
+    /// *Mit tennél át?*: the day page opens the Átrendezés page (nil = not signed in, no action).
+    var openAtrendezes: (@MainActor @Sendable () -> Void)? = nil
 
     @Environment(\.kapacitasClient) private var client
     /// What he said this session, by event key (the row shows it at once, before the reload brings the server's).
@@ -92,7 +95,10 @@ struct DayCapacityBlocks: View {
             if let learning = verdictLine(capacity).learning {
                 NKNote(learning + " Az esti „milyen volt a nap?” válaszaidból tudom meg, mennyire találtam el.", hue: kapacitasHue)
             }
-            // „Mit tennél át?" stays hidden until the proposals ship (K3).
+            if let openAtrendezes {
+                NKActions([NKAction(glyph: "repeat-deep", title: "Mit tennél át?", primary: true, action: openAtrendezes)],
+                          hue: kapacitasHue)
+            }
         }
         .onAppear {
             #if DEBUG

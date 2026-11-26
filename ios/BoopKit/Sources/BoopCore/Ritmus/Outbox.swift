@@ -18,6 +18,9 @@ public enum OutboxKind: String, Codable, CaseIterable, Sendable {
     /// A past template day booked as planned (`mezo-r36n9.161`): `POST /api/train/workouts/as-planned`, idempotent on the
     /// item id as `clientRef`. **Never rename.**
     case workoutAsPlanned
+    /// An Átrendezés proposal accepted without the net (B7 K3): `POST /api/capacity/proposals/{id}/accept`, idempotent
+    /// on the payload's `clientRef`. **Never rename** — persisted like the others.
+    case dayAdjustment
 }
 
 /// One pending write. `id` is the client ref the server keys idempotency on, so a resend never duplicates.
@@ -237,6 +240,8 @@ public actor Outbox {
         case .sleepLog: ("sleep|\(item.id.uuidString)", false)
         // A booked workout stands alone: one refused booking never holds another back.
         case .workoutAsPlanned: ("workout|\(item.id.uuidString)", false)
+        // Every accepted proposal stands alone (the server checks each against the week as it is then).
+        case .dayAdjustment: ("kapacitas|\(item.id.uuidString)", false)
         }
     }
 

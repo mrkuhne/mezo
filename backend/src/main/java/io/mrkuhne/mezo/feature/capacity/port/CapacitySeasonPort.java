@@ -13,4 +13,7 @@ public interface CapacitySeasonPort {
 
     /** The owner's one active season, empty when there is none. */
     Optional<SeasonFrame> active(UUID owner);
+
+    /** The active season's target date (its goal's), empty when there is no season or no dated goal. Read only. */
+    Optional<LocalDate> targetDate(UUID owner);
 }

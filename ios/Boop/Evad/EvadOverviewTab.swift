@@ -34,7 +34,7 @@ struct EvadOverviewTab: View {
                     .nkFont(13).foregroundStyle(.white.opacity(0.55)).fixedSize(horizontal: false, vertical: true)
             }
         }
-        EvadTeher()
+        EvadTeher(openAtrendezes: { open(.atrendezes) })
         if !o.insights.isEmpty {
             NKBare("Amit Boop észrevett", hue: evadHue, glyph: "spark-cream") {
                 NKList(o.insights.prefix(3).map { (title: $0.title, body: $0.body) }, hue: evadHue)
@@ -55,6 +55,8 @@ struct EvadOverviewTab: View {
                    NKAction(glyph: "plus-ink", title: "Új évad", action: { open(.uj) })], hue: evadHue)
         // a launch read that failed or found no net is retried when the tab is opened (cheap, idempotent)
         .task { await kapacitas?.load() }
+        // B7 K3: the next week's proposals for *A jövő heted* (generated on the server's first read)
+        .task { await kapacitas?.loadWeek(monday: kapacitasNextMonday(after: kapacitasMonday(for: Date()))) }
     }
 
     // MARK: Súly

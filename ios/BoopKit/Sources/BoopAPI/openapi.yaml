@@ -1213,6 +1213,72 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/mesocycles/{id}/coverage':
+    post:
+      tags:
+        - Train
+      operationId: getBlockCoverage
+      summary: >-
+        Missing complementary movements in a training block's draft week, each
+        with one proposed exercise (mezo-r36n9.114)
+      description: >-
+        The block builder's coverage hints (spec
+        2026-11-25-boop-hianyjelzes-design). The phone sends its current draft
+        week; a fixed rules table, per coarse muscle group over the catalogue
+        movement patterns of the draft rows, finds a missing complementary
+        movement (e.g. the hamstrings trained only with hip hinges, no leg
+        curl). At most one finding per group, at most three overall, in the
+        table's priority order; silent for groups at Tartás (the block's stored
+        muscle priorities) and for groups the draft does not train;
+        user-authored rows (no pattern) never create or close a gap. Each
+        finding carries fixed Hungarian verdict/why phrases and, when the gym,
+        the discomfort history and the draft allow, ONE proposed catalogue
+        exercise of the missing pattern on a named draft day with the block
+        style's prescription. Advice only — read-only, never blocks a save.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlockCoverageRequest'
+      responses:
+        '200':
+          description: Ordered findings (0..3)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlockCoverageResponse'
+        '400':
+          description: 'Validation error (missing days, a dayIndex outside 0..6)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Block not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: The block is archived
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/train/mesocycles/{id}/evaluation':
     get:
       tags:
@@ -3890,14 +3956,22 @@ paths:
         '400':
           description: >-
             Missing field, bad target (TRAIN_SKIP_TARGET_INVALID), reason not
-            allowed for the kind (TRAIN_SKIP_REASON_INVALID) or date outside the
-            window (TRAIN_SKIP_DATE_OUT_OF_WINDOW)
+            allowed for the kind or KAPACITAS (TRAIN_SKIP_REASON_INVALID) or
+            date outside the window (TRAIN_SKIP_DATE_OUT_OF_WINDOW)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
         '401':
           description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            The target's skip belongs to an accepted capacity rearrangement
+            (TRAIN_SKIP_CAPACITY_OWNED)
           content:
             application/json:
               schema:
@@ -3926,6 +4000,15 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: No live skip with this id for the caller (TRAIN_SKIP_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            The skip belongs to an accepted capacity rearrangement
+            (TRAIN_SKIP_CAPACITY_OWNED) — it is taken back from the Átrendezés
+            page
           content:
             application/json:
               schema:
@@ -16910,10 +16993,10 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '409':
           description: >-
-            SEASON_PREVIEW_STALE, SEASON_NOT_EDITABLE, or
-            SEASON_BLOCK_DAYS_LOCKED (the gym days differ from the season's
-            while its block is running — the block's weekdays would no longer
-            match; changes once the block can be re-arranged)
+            SEASON_PREVIEW_STALE (fingerprint moved — it covers the running
+            block's days too), SEASON_NOT_EDITABLE, SEASON_BLOCK_NEEDS_GYM_DAY
+            (no gym day left while the block runs), or TRAIN_DAY_WORKOUT_RUNNING
+            (a block day that would be dropped has a workout running)
           content:
             application/json:
               schema:
@@ -17846,6 +17929,285 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/capacity/adjustments:
+    get:
+      tags:
+        - Capacity
+      operationId: listCapacityAdjustments
+      summary: The accepted day adjustments that change a day of the range
+      description: >
+        Every ledger row (any state) that changes a day of from..to — a moved
+        session counts on both of its days. Read-only. The range is at most 62
+        days.
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: 'The rows, by day'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CapacityAdjustment'
+        '400':
+          description: Inverted or too long range
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/capacity/adjustments/{id}':
+    delete:
+      tags:
+        - Capacity
+      operationId: undoCapacityAdjustment
+      summary: Take back an accepted change (its whole bundle)
+      description: >
+        Undoes every live step of the bundle the row belongs to (a skipped
+        session comes back) and marks the proposal undone. Allowed while none of
+        the bundle's days has started in the owner's zone (a day starts at
+        midnight, or earlier for today's session once it is running or done).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Undone
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No such adjustment for the caller
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            Already settled (CAPACITY_ADJUSTMENT_NOT_UNDOABLE) or its day has
+            started (CAPACITY_DAY_STARTED)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/capacity/week:
+    get:
+      tags:
+        - Capacity
+      operationId: getCapacityWeek
+      summary: >-
+        The Átrendezés page's week — day verdicts, proposals, accepted changes,
+        patterns
+      description: >
+        Settles stale ledger rows first (a move whose target gained a session
+        expires, a passed one is done). Returns the seven days (Monday first,
+        his zone) with the load model's verdict, the stored proposals of the
+        week, every ledger row touching the week and the learned patterns (empty
+        until K4). For the current or the next week, a week with no proposal yet
+        gets them generated and stored on this read (rule-built words; a
+        background rephrase may later reword the title, effect and why lines
+        without changing a number). Past and later weeks are read-only. Never
+        waits for a model.
+      parameters:
+        - name: monday
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: The week
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CapacityWeek'
+        '400':
+          description: The date is not a Monday
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/capacity/proposals/regenerate:
+    post:
+      tags:
+        - Capacity
+      operationId: regenerateCapacityProposals
+      summary: Ask for new proposals for the week ("Kérek más javaslatot")
+      description: >
+        Replaces the week's open proposals (they become ignored) with freshly
+        generated ones; accepted and declined proposals stay. A declined
+        proposal's kind is not proposed again for the same day. Only the current
+        or the next week. Returns the week as GET /api/capacity/week does.
+      parameters:
+        - name: monday
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: The week with the new proposals
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CapacityWeek'
+        '400':
+          description: 'Not a Monday, or not the current or the next week'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/capacity/proposals/{id}/accept':
+    post:
+      tags:
+        - Capacity
+      operationId: acceptCapacityProposal
+      summary: Accept a proposal — its steps go into the day-adjustment ledger together
+      description: >
+        Writes every step of the proposal (one bundle) and marks it accepted.
+        The same clientRef again returns the rows already written (an offline
+        replay never moves twice); a clientRef already used for another proposal
+        is 409. 409 CAPACITY_PROPOSAL_STALE when the proposal is no longer open
+        or the week it was built from changed (plan, calendar or accepted
+        changes of a day it touches).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CapacityProposalAcceptRequest'
+      responses:
+        '200':
+          description: The ledger rows of the bundle
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CapacityAdjustment'
+        '400':
+          description: Missing clientRef
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No such proposal for the caller
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >
+            Stale proposal (CAPACITY_PROPOSAL_STALE), a day already started
+            (CAPACITY_DAY_STARTED), a running session
+            (TRAIN_DAY_WORKOUT_RUNNING) or a clientRef used for another proposal
+            (CAPACITY_CLIENT_REF_REUSED)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '422':
+          description: >-
+            The target day is no longer empty (CAPACITY_MOVE_NOT_EMPTY_DAY) or
+            in another week
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/capacity/proposals/{id}/decline':
+    post:
+      tags:
+        - Capacity
+      operationId: declineCapacityProposal
+      summary: Decline a proposal ("Most nem")
+      description: >
+        Marks the proposal declined; nothing moves. Its kind is not proposed
+        again for the same day when the week is regenerated. Declining a
+        declined proposal is a no-op; any other settled state is 409.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The declined proposal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CapacityProposal'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No such proposal for the caller
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: 'Already accepted, undone or expired (CAPACITY_PROPOSAL_STALE)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/mail/mailbox:
     get:
       tags:
@@ -17920,8 +18282,9 @@ paths:
         - Mail
       operationId: deleteMailMailbox
       summary: >-
-        Disconnect — the state becomes `disconnected` and both secret columns
-        are emptied; the row stays
+        Disconnect — a Google mailbox is first revoked at Google (best effort);
+        the state becomes `disconnected` and both secret columns are emptied;
+        the row stays
       responses:
         '200':
           description: The disconnected mailbox
@@ -17931,6 +18294,64 @@ paths:
                 $ref: '#/components/schemas/MailMailboxResponse'
         '401':
           description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/mail/mailbox/google:
+    post:
+      tags:
+        - Mail
+      operationId: connectMailGoogle
+      summary: >-
+        Connect the owner's own Gmail with Google sign-in — the phone sends the
+        one-time code once; the server exchanges it, seals the refresh token and
+        never returns it
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MailGoogleConnectRequest'
+      responses:
+        '200':
+          description: >-
+            Connected (kind `google`, address = the Google account's verified
+            email)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailMailboxResponse'
+        '400':
+          description: >-
+            Validation failure, or MAIL_GOOGLE_REDIRECT_INVALID — the redirect
+            is not the iOS client one
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            MAIL_GOOGLE_NOT_CONFIGURED — the server has no Google client id;
+            nothing was stored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '422':
+          description: MAIL_AUTH_FAILED — Google refused the exchange; nothing was stored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '502':
+          description: MAIL_UNREACHABLE — Google cannot be reached; nothing was stored
           content:
             application/json:
               schema:
@@ -21421,6 +21842,147 @@ components:
           items:
             type: string
             format: uuid
+    BlockCoverageRequest:
+      type: object
+      required:
+        - days
+      properties:
+        days:
+          type: array
+          description: 'The builder''s current draft week, one entry per training day'
+          items:
+            $ref: '#/components/schemas/CoverageDraftDay'
+    CoverageDraftDay:
+      type: object
+      required:
+        - dayIndex
+        - catalogIds
+      properties:
+        dayIndex:
+          type: integer
+          minimum: 0
+          maximum: 6
+          description: 'Weekday, 0 = Monday (Hét) … 6 = Sunday (Vas)'
+        catalogIds:
+          type: array
+          description: >-
+            Catalogue ids of the day's exercises in the draft (user-authored ids
+            included; rows without a catalogue id are left out). Unknown ids are
+            ignored.
+          items:
+            type: string
+            format: uuid
+        minutesEstimate:
+          type: integer
+          nullable: true
+          description: >-
+            The day's estimated session minutes (as the evaluation shows them);
+            picks the proposal's day. Null sorts last.
+    BlockCoverageResponse:
+      type: object
+      required:
+        - findings
+      properties:
+        findings:
+          type: array
+          description: 'Ordered by the rules table''s priority, 0..3, at most one per group'
+          items:
+            $ref: '#/components/schemas/CoverageFinding'
+    CoverageFinding:
+      type: object
+      required:
+        - group
+        - code
+        - missingPattern
+        - muscles
+        - verdictText
+        - whyText
+      properties:
+        group:
+          type: string
+          description: >-
+            Coarse muscle group key (ham, quad, back, biceps, triceps, shoulder,
+            chest)
+        code:
+          type: string
+          enum:
+            - HAM_NO_KNEE_FLEXION
+            - HAM_NO_HINGE
+            - QUAD_NO_KNEE_EXTENSION
+            - BACK_NO_HORIZONTAL_PULL
+            - BACK_NO_VERTICAL_PULL
+            - BICEPS_NO_ELBOW_FLEXION
+            - TRICEPS_NO_ELBOW_EXTENSION
+            - SHOULDER_NO_SIDE_RAISE
+            - CHEST_NO_FLY
+          description: Stable rule code (one per row of the rules table)
+        missingPattern:
+          type: string
+          description: >-
+            The catalogue movement pattern the week lacks (knee-flexion, hinge,
+            knee-extension, …)
+        muscles:
+          type: array
+          description: >-
+            The fine catalogue tokens the missing movement trains (e.g.
+            [shoulder-side] for the raise rule, [ham] for the leg curl) — what
+            „Mást választok" pre-picks in the add sheet
+          items:
+            type: string
+        verdictText:
+          type: string
+          description: >-
+            One fixed Hungarian sentence naming what is missing, ending with a
+            full stop
+        whyText:
+          type: string
+          description: One or two fixed Hungarian sentences explaining why it matters
+        proposal:
+          nullable: true
+          description: >-
+            The one proposed exercise; null when no catalogue row of the pattern
+            is available
+          allOf:
+            - $ref: '#/components/schemas/CoverageProposal'
+    CoverageProposal:
+      type: object
+      required:
+        - exercise
+        - reasonText
+        - signals
+        - dayIndex
+      properties:
+        exercise:
+          $ref: '#/components/schemas/ExerciseCatalogItem'
+        reasonText:
+          type: string
+          description: >-
+            One fixed-phrase Hungarian sentence (the add suggestions' wording),
+            ending with a full stop
+        signals:
+          type: array
+          description: Stable signal codes behind the reason
+          items:
+            type: string
+        lastTopSet:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/LastTopSet'
+        prescription:
+          nullable: true
+          description: >-
+            The block style's prescription for the new row; null on an unstyled
+            block or a plyo row
+          allOf:
+            - $ref: '#/components/schemas/SuggestionPrescription'
+        dayIndex:
+          type: integer
+          minimum: 0
+          maximum: 6
+          description: >-
+            The draft day to add it to: among the days already training the
+            group the one with the lowest minutesEstimate (ties → earliest),
+            else the lowest-minutes training day
     BlockSuggestionOutgoing:
       type: object
       required:
@@ -23664,6 +24226,10 @@ components:
         - NOT_HUNGRY
         - OTHER
         - NONE
+        - KAPACITAS
+      description: >-
+        KAPACITAS is written only by an accepted Boop rearrangement proposal
+        (excused, never the weekly pass)
     PlannedSkipRequest:
       type: object
       required:
@@ -40753,6 +41319,66 @@ components:
         fingerprint:
           type: string
           description: Send back with applySeason; empty for a draft preview
+        block:
+          allOf:
+            - $ref: '#/components/schemas/SeasonBlockWeek'
+          nullable: true
+          description: >-
+            The running block's re-arranged week when the draft moves the gym
+            days (mezo-r36n9.122) — applied with the same accept; null when the
+            block does not change
+    SeasonBlockWeek:
+      type: object
+      required:
+        - mesocycleId
+        - title
+        - days
+        - dropped
+      properties:
+        mesocycleId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/SeasonBlockDay'
+        dropped:
+          type: array
+          items:
+            $ref: '#/components/schemas/SeasonBlockDay'
+          description: >-
+            Days that leave the block (change = drop, weekday = their old
+            weekday)
+    SeasonBlockDay:
+      type: object
+      required:
+        - weekday
+        - title
+        - change
+      properties:
+        weekday:
+          type: integer
+          description: >-
+            0 = hétfő … 6 = vasárnap; for a dropped day its old weekday, -1 when
+            its label is not a weekday
+        title:
+          type: string
+          description: The block day's name
+        change:
+          type: string
+          enum:
+            - keep
+            - move
+            - add
+            - drop
+        fromWeekday:
+          type: integer
+          nullable: true
+          description: >-
+            move: the weekday it came from; add: the weekday of the day it
+            repeats
     SeasonOverviewHead:
       type: object
       required:
@@ -41827,6 +42453,10 @@ components:
             - deload
             - kimelo
             - season
+            - other
+          description: >-
+            other = another change he logged himself inside the window (a new
+            supplement in the stack, a journal line saying he started something)
         date:
           type: string
           format: date
@@ -41958,6 +42588,274 @@ components:
         movesGood:
           type: integer
           description: Accepted proposals whose recorded outcome was good
+    CapacityAdjustment:
+      type: object
+      required:
+        - id
+        - date
+        - kind
+        - payload
+        - bundleId
+        - state
+      properties:
+        id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+          description: 'The day the row is filed under (a move: its from-day)'
+        kind:
+          type: string
+          enum:
+            - MOVE_SESSION_DAY
+            - SHIFT_SESSION_TIME
+            - SHORTEN_SESSION
+            - LIGHTEN_SESSION
+            - SWAP_SESSION_KIND
+            - SKIP_SESSION
+            - SHIFT_BEDTIME
+            - MOVE_MEAL_ENERGY
+            - CALENDAR_TODO
+        payload:
+          type: object
+          additionalProperties: true
+          description: >
+            Kind-specific: MOVE_SESSION_DAY {templateSessionId, fromDate,
+            toDate}; SHIFT_SESSION_TIME {date, time}; SHORTEN_SESSION {date,
+            minutes}; LIGHTEN_SESSION {date, setsFactor}; SWAP_SESSION_KIND
+            {date, to}; SKIP_SESSION {date, skipId}; SHIFT_BEDTIME {night,
+            bedtime}; MOVE_MEAL_ENERGY {date, slotKcal (signed deltas summing to
+            0)}; CALENDAR_TODO {date, eventKey, action, toStart, toEnd}
+        bundleId:
+          type: string
+          format: uuid
+          description: Steps accepted together share it
+        proposalId:
+          type: string
+          format: uuid
+          nullable: true
+        state:
+          type: string
+          enum:
+            - active
+            - undone
+            - waiting
+            - done
+            - expired
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+    CapacityWeek:
+      type: object
+      required:
+        - monday
+        - days
+        - proposals
+        - adjustments
+        - patterns
+      properties:
+        monday:
+          type: string
+          format: date
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/CapacityWeekDay'
+        proposals:
+          type: array
+          items:
+            $ref: '#/components/schemas/CapacityProposal'
+        adjustments:
+          type: array
+          items:
+            $ref: '#/components/schemas/CapacityAdjustment'
+        patterns:
+          type: array
+          items:
+            $ref: '#/components/schemas/CapacityPattern'
+        allEffects:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/CapacityCompareLine'
+          description: >
+            "Ha mindet jóváhagyod" — the week's compare lines (Most → Utána)
+            with ALL open proposals' steps applied together through the same
+            engines as a proposal's effects (load model on the draft week, fuel
+            expected extras, SleepNeedRule, week totals). Absent when fewer than
+            two proposals are open.
+    CapacityWeekDay:
+      type: object
+      required:
+        - date
+        - verdict
+        - label
+        - ratio
+        - calendarKnown
+      properties:
+        date:
+          type: string
+          format: date
+        verdict:
+          type: string
+          enum:
+            - laza
+            - rendben
+            - szoros
+            - tulSok
+        label:
+          type: string
+          description: 'The verdict word as shown ("laza", "rendben", "szoros", "túl sok")'
+        ratio:
+          type: number
+          format: double
+          description: Day load / capacity
+        calendarKnown:
+          type: boolean
+          description: False when no calendar rows arrived lately
+    CapacityProposal:
+      type: object
+      required:
+        - id
+        - kind
+        - status
+        - title
+        - move
+        - effectLines
+        - why
+        - effects
+        - steps
+        - touchedDays
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum:
+            - MOVE_SESSION_DAY
+            - SHIFT_SESSION_TIME
+            - SHORTEN_SESSION
+            - LIGHTEN_SESSION
+            - SWAP_SESSION_KIND
+            - SKIP_SESSION
+            - SHIFT_BEDTIME
+            - MOVE_MEAL_ENERGY
+            - CALENDAR_TODO
+        day:
+          type: string
+          format: date
+          nullable: true
+          description: The day the proposal is about
+        status:
+          type: string
+          enum:
+            - open
+            - accepted
+            - declined
+            - ignored
+            - undone
+            - expired
+        title:
+          type: string
+        move:
+          type: string
+          description: The from → to line
+        effectLines:
+          type: array
+          items:
+            type: string
+          description: Three or four short cross-effect lines
+        why:
+          type: array
+          items:
+            type: string
+          description: The "Miért javaslom" lines
+        effects:
+          type: array
+          items:
+            $ref: '#/components/schemas/CapacityCompareLine'
+          description: >-
+            The "Minden hatása" compare lines (Most → Utána); every figure comes
+            from an engine
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/CapacityProposalStep'
+        touchedDays:
+          type: array
+          items:
+            type: string
+            format: date
+        decidedAt:
+          type: string
+          format: date-time
+          nullable: true
+    CapacityProposalStep:
+      type: object
+      required:
+        - kind
+        - payload
+      properties:
+        kind:
+          type: string
+          enum:
+            - MOVE_SESSION_DAY
+            - SHIFT_SESSION_TIME
+            - SHORTEN_SESSION
+            - LIGHTEN_SESSION
+            - SWAP_SESSION_KIND
+            - SKIP_SESSION
+            - SHIFT_BEDTIME
+            - MOVE_MEAL_ENERGY
+            - CALENDAR_TODO
+        payload:
+          type: object
+          additionalProperties: true
+          description: 'The step''s payload, the same shape as CapacityAdjustment.payload'
+    CapacityCompareLine:
+      type: object
+      required:
+        - label
+        - before
+        - after
+        - favours
+      properties:
+        label:
+          type: string
+        before:
+          type: string
+          description: '"–" when unknown'
+        after:
+          type: string
+          description: '"–" when unknown'
+        favours:
+          type: integer
+          description: '1 = the change helps, -1 = it costs, 0 = neutral'
+    CapacityPattern:
+      type: object
+      required:
+        - key
+        - line
+        - evidence
+      properties:
+        key:
+          type: string
+        line:
+          type: string
+        evidence:
+          type: integer
+    CapacityProposalAcceptRequest:
+      type: object
+      required:
+        - clientRef
+      properties:
+        clientRef:
+          type: string
+          format: uuid
+          description: The phone's idempotency key for this accept
     MailMailboxRequest:
       type: object
       required:
@@ -41976,11 +42874,48 @@ components:
           description: >-
             The Gmail app password. Never returned, logged or echoed in an
             error.
+    MailGoogleConnectRequest:
+      type: object
+      required:
+        - code
+        - codeVerifier
+        - redirectUri
+      properties:
+        code:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 2048
+          description: >-
+            The one-time authorization code from the Google sign-in (PKCE).
+            Never logged or echoed.
+        codeVerifier:
+          type: string
+          writeOnly: true
+          minLength: 43
+          maxLength: 128
+          description: The PKCE code verifier. Never logged or echoed.
+        redirectUri:
+          type: string
+          maxLength: 512
+          description: >-
+            Must equal com.googleusercontent.apps.<client id
+            prefix>:/oauth2redirect
     MailMailboxResponse:
       type: object
       required:
         - state
       properties:
+        kind:
+          type: string
+          nullable: true
+          description: imap | google; null when no mailbox row exists
+        googleClientId:
+          type: string
+          nullable: true
+          description: >-
+            The public iOS OAuth client id for Google sign-in; null when the
+            server has none configured
         address:
           type: string
           nullable: true

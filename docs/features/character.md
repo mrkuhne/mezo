@@ -2,7 +2,7 @@
 title: Karakter (user character dossier)
 type: feature-domain
 status: shipped
-updated: 2026-11-25
+updated: 2026-11-26
 tags: [character, karakter, ai, llm, backend, frontend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/character
@@ -13,7 +13,12 @@ key_files:
 related: [companion, proactive, insights, me, _platform-api-backend]
 ---
 
+> **2026-11-26 — Meso adherence follows the ledger (Boop B7 K3 final review, `mezo-r36n9.17`).** `CharacterSignalReads.gatherMeso` passes the effective planned gym dates over the whole trend window (`trendStart..day`, 8 weeks — the motivation detector asks for every check-in day back to `trendStart`; K3 re-review) (`EffectivePlanService.plannedGymDates` over `TrainDayAdjustmentPort.effectiveSessions`, the flags' rule) as `MesoContext.plannedDates`; `MesoAdherenceDetector` and `MotivationFollowThroughDetector` ask `MesoContext.planned(date)`, so a moved session done on its new day is never a miss. Test: `DetectorTest.mesoAdherence_judgesTheEffectivePlannedDates`.
+
 > **2026-11-24 — reviewed after `mezo-r36n9.161` (no change).** The day's changeset folder gained `202611241400_mezo-r36n9.161_workout_session_client_ref.sql`; nothing of the character slice is affected.
+> **2026-11-25 — reviewed after Boop B7 K3 Task 20 (`mezo-r36n9.17`).** The shared changelog folder gained `202611251400_mezo-r36n9.17_capacity_live_state.sql` (the capacity live loop's memory); nothing in character changed.
+>
+> **2026-11-21 — reviewed after Boop B7 K3 Task 17 (`mezo-r36n9.17`).** The shared changelog folder gained `202611251300_mezo-r36n9.17_capacity_proposal_fingerprint.sql`; nothing in character changed.
 
 > **2026-11-21 — reviewed after Boop B6 Évad S4 (`mezo-r36n9.16`).** The shared changelog folder gained `season_experiment` (the season's experiments); nothing in character changed.
 
@@ -68,6 +73,8 @@ related: [companion, proactive, insights, me, _platform-api-backend]
 > **2026-10-06 — `mezo-lhqw7` (no character change).** The 1.1.0 changelog gained `weekly_review.went_well`/`watch_out` (proactive-owned, [`proactive.md`](proactive.md) weekly review); the character feature reads neither.
 
 > **2026-09-30 — Kihagyás S2 (`mezo-q4xt2.2`).** No character-detector change; the 1.1.0 changelog folder gained the `recovery_period`/`recovery_day_release` migration (see [`train.md`](train.md) §2 "Kihagyás S2").
+
+> **2026-11-21 — Boop B7 K3 (`mezo-r36n9.17`).** No character change. The migration that adds `KAPACITAS` to the `planned_skip` reason check (`202611251200_mezo-r36n9.17_planned_skip_kapacitas.sql`) lives in the shared `1.1.0` folder, so this doc's key_file shows it.
 
 > **2026-09-29 — Kihagyás S1 (`mezo-q4xt2.1`).** No character-detector change — the new `planned_skip` table lives in the same `1.1.0` changelog folder as `character`'s own S1 migration, which is why this doc's key_file directory shows commits it doesn't otherwise concern (the table and its follow-up `idx_` index rename). See [`train.md`](train.md) "Kihagyás (S1)".
 

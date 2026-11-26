@@ -264,10 +264,15 @@ public class BoopBriefService {
 
     /**
      * Also covers the capacity verdict, demand units (0.1), the load ratio (0.05), the factors (key + effect) and each
-     * demand item's level (so an event label regenerates), so a changed day regenerates.
+     * demand item's level (so an event label regenerates), so a changed day regenerates. Every field an accepted
+     * day adjustment can change is in it too (B7 K3 final review): the bedtime target (SHIFT_BEDTIME), the session's
+     * time, minutes and per-exercise sets (SHIFT_SESSION_TIME / SHORTEN / LIGHTEN), its presence (MOVE / SKIP) and
+     * each meal window's kcal (MOVE_MEAL_ENERGY) — so Ma shows the accepted change at once, not when the time bucket
+     * rolls (one extra generation per accept).
      */
     static String inputHash(BoopDay d, LocalTime localNow, BoopCapacityPort.View capacity) {
-        StringBuilder b = new StringBuilder("v2|").append(d.date()).append("|t:").append(timeBucket(localNow));
+        StringBuilder b = new StringBuilder("v3|").append(d.date()).append("|t:").append(timeBucket(localNow));
+        b.append("|bed:").append(d.bedtimeTarget());
         BoopDay.Sleep s = d.sleep();
         b.append("|night:");
         if (s != null) {
@@ -283,6 +288,9 @@ public class BoopBriefService {
         }
         b.append("|meals:").append(d.meals().size()).append(',')
             .append(d.meals().stream().filter(BoopDay.Meal::logged).count());
+        for (BoopDay.Meal m : d.meals()) {
+            b.append(';').append(m.slot()).append(',').append(m.kcal());
+        }
         b.append("|weight:");
         if (d.weight() != null) {
             b.append(d.weight().kg()).append(',').append(d.weight().trendKg());
@@ -290,7 +298,12 @@ public class BoopBriefService {
         b.append("|session:");
         if (d.session() != null) {
             b.append(d.session().title()).append(',').append(d.session().time()).append(',')
-                .append(d.session().done());
+                .append(d.session().done()).append(',').append(d.session().minutes());
+            if (d.session().exercises() != null) {
+                for (BoopDay.Exercise e : d.session().exercises()) {
+                    b.append(';').append(e.name()).append('=').append(e.sets());
+                }
+            }
         }
         b.append("|recovery:");
         if (d.recovery() != null) {
