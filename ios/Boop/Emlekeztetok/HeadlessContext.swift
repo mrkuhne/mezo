@@ -22,21 +22,24 @@ enum HeadlessContext {
         let taken: SupplementTakenStore
         let calendar: Calendar
 
-        /// A supplement group taken: counts as taken at once and is queued (same item as `captureSupplementTick`).
-        /// Already taken (the room before the alarm, a double tap) queues nothing more. Returns false when the phone could
-        /// not keep it.
+        /// A supplement group taken on the occurrence's day: counts as taken at once and is queued (same item as
+        /// `captureSupplementTick`), and that day's linked reminder — only that day's — is done. Already taken (the room
+        /// before the alarm, a double tap) queues nothing more. Returns false when the phone could not keep it.
         @discardableResult
-        func tick(daypart: String, at date: Date) async -> Bool {
-            let day = HeadlessContext.day(of: date, calendar: calendar)
-            guard taken.taken(day: day)[daypart] == nil else { return true }
-            do {
-                try await outbox.enqueue(SupplementTickHub.item(day: day, daypart: daypart, capturedAt: date), rollbackOnFailure: true)
-                taken.markTaken(day: day, daypart: daypart, ids: nil)
-                return true
-            } catch {
-                HeadlessContext.log.error("could not queue the supplement tick: \(error.localizedDescription, privacy: .public)")
-                return false
+        func tick(_ press: SupplementPress) async -> Bool {
+            let day = press.day, daypart = press.daypart
+            if taken.taken(day: day)[daypart] == nil {
+                do {
+                    try await outbox.enqueue(SupplementTickHub.item(day: day, daypart: daypart, capturedAt: press.capturedAt),
+                                             rollbackOnFailure: true)
+                    taken.markTaken(day: day, daypart: daypart, ids: nil)
+                } catch {
+                    HeadlessContext.log.error("could not queue the supplement tick: \(error.localizedDescription, privacy: .public)")
+                    return false
+                }
             }
+            SupplementTickHub.tickLinkedReminder(daypart: daypart, day: day, store: store)
+            return true
         }
     }
 

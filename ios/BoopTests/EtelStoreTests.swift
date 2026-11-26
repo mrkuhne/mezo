@@ -205,6 +205,27 @@ struct EtelStoreTests {
         #expect(await env.outbox.pending.filter { $0.kind == .supplementTick }.count == 1)
     }
 
+    @Test func alarmTickOnAnEarlierDayFilesItThereAndLeavesTodaysRing() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("etel-day-\(UUID().uuidString)")
+        let now = Date(timeIntervalSince1970: 1_795_089_600)
+        let env = RitmusEnvironment(ledgerDirectory: root.appendingPathComponent("ledger"),
+                                    outboxDirectory: root.appendingPathComponent("outbox"),
+                                    sender: RetryingSender(), line: { _, _ in "" },
+                                    snapshot: { _ in CheckInSnapshotValue(hrBpm: 78, hrvMs: 38, hrvUsualMs: 50) }, plans: nil,
+                                    clock: { now }, calendar: .current)
+        let reminders = ReminderStore(fileURL: root.appendingPathComponent("reminders.json"))
+        let linked = Reminder(title: "Reggeli", hour: 8, minute: 0, repeats: .daily, strength: .alarm, link: .supplement(daypart: "morning"))
+        reminders.upsert(linked)
+        env.reminderStore = { reminders }
+        let yesterday = env.day(of: now.addingTimeInterval(-86_400))
+        try await env.captureSupplementTick(daypart: "morning", at: now.addingTimeInterval(-86_400), day: yesterday)
+        let queued = await env.outbox.pending.filter { $0.kind == .supplementTick }
+        #expect(queued.map(\.date) == [yesterday])
+        #expect(env.supplementTaken.taken(day: yesterday) == ["morning": []])
+        #expect(env.supplementTaken.taken(day: env.day(of: now)).isEmpty)
+        #expect(reminders.file.done == ["\(linked.id.uuidString)|\(yesterday)"])   // today's alarm still rings
+    }
+
     @Test func undoUnticksTheLinkedReminder() async {
         script(meals: [])
         let taken = SupplementTakenStore(fileURL: tempFile())

@@ -151,7 +151,7 @@ struct ReminderPresentationTests {
         var taken: [String] = []
         var refreshed = 0
         // the page's tick runs `ReminderActions.done` (the alarm button's path): tick + supplement + snooze cancel + re-arm
-        await ReminderActions.done(key: "\(r.id.uuidString)|2026-11-26", store: store, supplement: { daypart, _ in taken.append(daypart) },
+        await ReminderActions.done(key: "\(r.id.uuidString)|2026-11-26", store: store, supplement: { taken.append($0.daypart) },
                                    center: center, refresh: { refreshed += 1 })
         #expect(store.file.done.contains("\(r.id.uuidString)|2026-11-26"))
         #expect(taken == ["breakfast"])

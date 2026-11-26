@@ -45,17 +45,60 @@ struct ReminderActionsTests {
         p.store.upsert(r)
         let day = HeadlessContext.day(of: now, calendar: p.calendar)
         await ReminderActions.done(key: "\(r.id.uuidString)|\(day)", store: p.store,
-                                   supplement: { daypart, at in await p.tick(daypart: daypart, at: at) }, refresh: {}, now: now)
+                                   supplement: { press in await p.tick(press) }, refresh: {}, now: now)
         let pending = await p.outbox.pending
         #expect(pending.map(\.kind) == [.supplementTick])
         #expect(p.taken.taken(day: day) == ["morning": []])
         // the same press again (or the room first): nothing more is queued
         await ReminderActions.done(key: "\(r.id.uuidString)|\(day)", store: p.store,
-                                   supplement: { daypart, at in await p.tick(daypart: daypart, at: at) }, refresh: {}, now: now)
+                                   supplement: { press in await p.tick(press) }, refresh: {}, now: now)
         #expect(await p.outbox.pending.count == 1)
         // a freshly built context sees the same files (what the next launch reads)
         #expect(await parts().outbox.pending.count == 1)
         #expect(parts().store.file.done.contains("\(r.id.uuidString)|\(day)"))
+    }
+
+    // MARK: the day comes from the occurrence, not from the press (final review I7)
+
+    @Test func doneOnYesterdaysNotificationTakesYesterdaysSupplement() async {
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = .current
+        let p = parts()
+        let r = Reminder(title: "Reggeli", hour: 8, minute: 0, repeats: .daily, strength: .notification, link: .supplement(daypart: "morning"))
+        p.store.upsert(r)
+        let morning = cal.date(from: DateComponents(year: 2026, month: 11, day: 27, hour: 7, minute: 10))!   // next morning
+        var got: [SupplementPress] = []
+        await ReminderActions.done(key: "\(r.id.uuidString)|2026-11-26", store: p.store, supplement: { got.append($0) },
+                                   refresh: {}, now: morning, calendar: cal)
+        #expect(got.count == 1)
+        #expect(got.first?.day == "2026-11-26")
+        // logged at yesterday's ring, not at this morning's press
+        #expect(got.first?.capturedAt == cal.date(from: DateComponents(year: 2026, month: 11, day: 26, hour: 8)))
+        #expect(p.store.file.done == ["\(r.id.uuidString)|2026-11-26"])     // today's ring still rings
+    }
+
+    @Test func doneOnTodaysRingIsLoggedAtThePress() async {
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = .current
+        let p = parts()
+        let r = Reminder(title: "Reggeli", hour: 8, minute: 0, repeats: .daily, strength: .alarm, link: .supplement(daypart: "morning"))
+        p.store.upsert(r)
+        let press = cal.date(from: DateComponents(year: 2026, month: 11, day: 26, hour: 8, minute: 3))!
+        var got: [SupplementPress] = []
+        await ReminderActions.done(key: "\(r.id.uuidString)|2026-11-26", store: p.store, supplement: { got.append($0) },
+                                   refresh: {}, now: press, calendar: cal)
+        #expect(got == [SupplementPress(daypart: "morning", day: "2026-11-26", capturedAt: press)])
+    }
+
+    @Test func headlessTickFilesTheIntakeOnTheOccurrencesDay() async {
+        let p = parts()
+        let r = Reminder(title: "Reggeli", hour: 8, minute: 0, repeats: .daily, strength: .alarm, link: .supplement(daypart: "morning"))
+        p.store.upsert(r)
+        let at = Date(timeIntervalSince1970: 1_795_089_600)
+        #expect(await p.tick(SupplementPress(daypart: "morning", day: "2026-11-20", capturedAt: at)))
+        let pending = await p.outbox.pending
+        #expect(pending.map(\.date) == ["2026-11-20"])
+        #expect(p.taken.taken(day: "2026-11-20") == ["morning": []])
+        // only that day's linked occurrence is done
+        #expect(p.store.file.done == ["\(r.id.uuidString)|2026-11-20"])
     }
 
     @Test func silenceNeverTicks() async throws {

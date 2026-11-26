@@ -241,9 +241,11 @@ final class RitmusEnvironment {
     }
 
     /// A supplement group taken (the room, the quick sheet, the alarm): it counts as taken at once, the write is queued and
-    /// sent when the net allows, and that day's linked reminder will not ring. Throws when the phone could not keep it.
-    func captureSupplementTick(daypart: String, at date: Date) async throws {
-        let day = self.day(of: date)
+    /// sent when the net allows, and that day's linked reminder will not ring. `day` = the reminder occurrence's day (a
+    /// notification cleared the next morning is yesterday's intake); nil = the day of `date`. Throws when the phone could
+    /// not keep it.
+    func captureSupplementTick(daypart: String, at date: Date, day: String? = nil) async throws {
+        let day = day ?? self.day(of: date)
         // Already taken (the alarm after the room, or a double tap): nothing to send, the reminder is still done.
         if supplementTaken.taken(day: day)[daypart] == nil {
             try await outbox.enqueue(SupplementTickHub.item(day: day, daypart: daypart, capturedAt: date),
