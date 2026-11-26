@@ -103,11 +103,28 @@ struct ReminderPresentationTests {
     @Test func footerLines() {
         let expiry = cal.date(from: DateComponents(year: 2026, month: 12, day: 3, hour: 14))!
         let until = cal.date(from: DateComponents(year: 2026, month: 12, day: 2, hour: 9))!
-        let f = ReminderFooter.build(expiry: expiry, armedUntil: until, now: now, calendar: cal)
+        let f = ReminderFooter.build(expiry: expiry, horizon: ArmHorizon(alarms: until, notifications: nil), now: now, calendar: cal)
         #expect(f.lines == ["Az ébresztők néma módban és fókuszban is szólnak.",
                             "A telepítés dec. 3-án lejár — előtte egy nappal szólok.",
                             "Előre beállítva: dec. 2-ig"])
-        #expect(ReminderFooter.build(expiry: nil, armedUntil: nil, now: now, calendar: cal).lines.count == 1)
+        #expect(ReminderFooter.build(expiry: nil, horizon: ArmHorizon(), now: now, calendar: cal).lines.count == 1)
+    }
+
+    // MARK: an honest horizon and the cap (final review I5)
+
+    @Test func alarmsAndNotificationsTellTheirOwnHorizon() {
+        let alarms = cal.date(from: DateComponents(year: 2026, month: 12, day: 2, hour: 8))!
+        let notes = cal.date(from: DateComponents(year: 2026, month: 11, day: 28, hour: 9))!
+        let f = ReminderFooter.build(expiry: nil, horizon: ArmHorizon(alarms: alarms, notifications: notes), now: now, calendar: cal)
+        #expect(f.lines.last == "Előre beállítva: az ébresztők dec. 2-ig, az értesítések nov. 28-ig")
+        let onlyNotes = ReminderFooter.build(expiry: nil, horizon: ArmHorizon(alarms: nil, notifications: notes), now: now, calendar: cal)
+        #expect(onlyNotes.lines.last == "Előre beállítva: nov. 28-ig")
+    }
+
+    @Test func todaysOverflowIsSaidOnThePage() {
+        let f = ReminderFooter.build(expiry: nil, horizon: ArmHorizon(), todayOverflow: true, now: now, calendar: cal)
+        #expect(f.warning == ReminderFooter.overflowWarning)
+        #expect(ReminderFooter.build(expiry: nil, horizon: ArmHorizon(), now: now, calendar: cal).warning == nil)
     }
 
     @Test func draftRoundTripsAndValidates() {

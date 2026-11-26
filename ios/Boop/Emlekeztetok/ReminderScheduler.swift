@@ -11,6 +11,13 @@ enum ArmState: Equatable {
     case notificationsDenied
 }
 
+/// How far ahead each kind is set right now: alarms reach 7 days, notifications 3 (less when the cap bites). nil = none of
+/// that kind is armed.
+struct ArmHorizon: Equatable {
+    var alarms: Date?
+    var notifications: Date?
+}
+
 /// The one owner of "what is armed" for the user's own reminders: clears and re-adds the whole `boop.rem.` family
 /// (alarms for the next 7 days, dated notifications for the next 3), serialized through a task chain like
 /// `RitmusReminders.refresh`.
@@ -21,6 +28,10 @@ final class ReminderScheduler {
     private static let log = Logger(subsystem: "hu.mezo.boop", category: "ReminderScheduler")
 
     private(set) var state: [UUID: ArmState] = [:]
+    /// The last ring armed per kind (the page's "Előre beállítva" line).
+    private(set) var horizon = ArmHorizon()
+    /// Today's notifications alone exceed the cap: the page warns that the late ones will not ring.
+    private(set) var todayOverflow = false
 
     @ObservationIgnored private let store: ReminderStore
     @ObservationIgnored private let alarms: AlarmScheduling
@@ -77,7 +88,7 @@ final class ReminderScheduler {
     /// Sign-out / user switch: retires and cancels every alarm and notification of the family.
     func signedOut() async {
         retire()
-        await enqueue { await $0.clearAll(); $0.state = [:] }.value
+        await enqueue { await $0.clearAll(); $0.state = [:]; $0.horizon = ArmHorizon(); $0.todayOverflow = false }.value
     }
 
     private func enqueue(_ work: @escaping @MainActor (ReminderScheduler) async -> Void) -> Task<Void, Never> {
@@ -208,6 +219,14 @@ final class ReminderScheduler {
             }
         }
 
+        // the cap: a reminder whose ring today was cut is told so; one left with nothing armed by it, too
+        if notificationsAllowed {
+            for rid in plan.cut where failed[rid] == nil {
+                if plan.cutToday.contains(rid) { failed[rid] = "Ma már nem fér több értesítés" }
+                else if notifUntil[rid] == nil { failed[rid] = "Most nem fér több értesítés" }
+            }
+        }
+
         var next: [UUID: ArmState] = [:]
         for r in reminders {
             if let why = failed[r.id] { next[r.id] = .failed(why); continue }
@@ -222,5 +241,7 @@ final class ReminderScheduler {
             }
         }
         state = next
+        horizon = ArmHorizon(alarms: alarmUntil.values.max(), notifications: notifUntil.values.max())
+        todayOverflow = notificationsAllowed && plan.todayOverflow
     }
 }

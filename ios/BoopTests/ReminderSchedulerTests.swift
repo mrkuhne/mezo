@@ -316,6 +316,30 @@ struct ReminderSchedulerTests {
         #expect(a.scheduled.count == 7)
     }
 
+    // MARK: the 24-request cap (final review I5)
+
+    @Test func remindersTheCapCutTodayAreToldAndTheOverflowIsKept() async {
+        let s = store(), a = FakeAlarms(), c = SchedCenter()
+        let many = (0..<30).map { Reminder(title: "R\($0)", hour: 9, minute: 0, repeats: .daily) }
+        many.forEach { s.upsert($0) }
+        let sch = scheduler(s, a, c)
+        await sch.refresh(askPermission: false)
+        let failedToday = many.filter { sch.state[$0.id] == .failed("Ma már nem fér több értesítés") }
+        #expect(failedToday.count == 6)
+        #expect(sch.todayOverflow)
+        #expect(c.requests.count == 24)
+    }
+
+    @Test func theHorizonIsKeptPerKind() async {
+        let s = store(), a = FakeAlarms(), c = SchedCenter()
+        s.upsert(alarmReminder()); s.upsert(noteReminder())
+        let sch = scheduler(s, a, c)
+        await sch.refresh(askPermission: false)
+        #expect(sch.horizon.alarms == cal.date(from: DateComponents(year: 2026, month: 12, day: 2, hour: 8)))
+        #expect(sch.horizon.notifications == cal.date(from: DateComponents(year: 2026, month: 11, day: 28, hour: 9)))
+        #expect(!sch.todayOverflow)
+    }
+
     @Test func unreadableSystemListDoesNotFailRows() async {
         let s = store(), a = FakeAlarms(), c = SchedCenter()
         a.unreadable = true

@@ -191,9 +191,12 @@ struct EmlekeztetokPage: View {
     // MARK: footer
 
     private func footer(_ store: ReminderStore, now: Date) -> some View {
-        let until = armedUntil(now: now)
-        let f = ReminderFooter.build(expiry: expiry, armedUntil: until, now: now, calendar: calendar)
+        let f = ReminderFooter.build(expiry: expiry, horizon: armedHorizon(now: now),
+                                     todayOverflow: ReminderHub.scheduler?.todayOverflow ?? false, now: now, calendar: calendar)
         return VStack(alignment: .leading, spacing: 6) {
+            if let warning = f.warning {
+                Text(warning).nkFont(13).foregroundStyle(NK.gold.opacity(0.9)).fixedSize(horizontal: false, vertical: true)
+            }
             ForEach(f.lines, id: \.self) { line in
                 Text(line).nkFont(13).foregroundStyle(.white.opacity(0.5)).fixedSize(horizontal: false, vertical: true)
             }
@@ -201,16 +204,14 @@ struct EmlekeztetokPage: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// The furthest ring that is set right now.
-    private func armedUntil(now: Date) -> Date? {
+    /// How far ahead alarms and notifications are set right now (each kind its own day).
+    private func armedHorizon(now: Date) -> ArmHorizon {
         #if DEBUG
         if UserDefaults.standard.string(forKey: "reminders") != nil || UserDefaults.standard.bool(forKey: "previewMaReminders") {
-            return calendar.date(byAdding: .day, value: 6, to: now)
+            return ArmHorizon(alarms: calendar.date(byAdding: .day, value: 6, to: now), notifications: nil)
         }
         #endif
-        guard let state = ReminderHub.scheduler?.state else { return nil }
-        let dates = state.values.compactMap { s -> Date? in if case .armed(let until) = s { until } else { nil } }
-        return dates.max()
+        return ReminderHub.scheduler?.horizon ?? ArmHorizon()
     }
 
     // MARK: helpers

@@ -21,11 +21,18 @@ public struct ReminderPlan: Equatable, Sendable {
     public var notifications: [ReminderOccurrence]
     /// True when today's notifications alone exceed the cap (the tail of today will not ring).
     public var todayOverflow: Bool
+    /// The reminders that lost at least one in-window notification to the cap.
+    public var cut: Set<UUID>
+    /// The reminders whose ring today was cut by the cap (today's will not ring).
+    public var cutToday: Set<UUID>
 
-    public init(alarms: [ReminderOccurrence], notifications: [ReminderOccurrence], todayOverflow: Bool) {
+    public init(alarms: [ReminderOccurrence], notifications: [ReminderOccurrence], todayOverflow: Bool,
+                cut: Set<UUID> = [], cutToday: Set<UUID> = []) {
         self.alarms = alarms
         self.notifications = notifications
         self.todayOverflow = todayOverflow
+        self.cut = cut
+        self.cutToday = cutToday
     }
 }
 
@@ -54,9 +61,14 @@ public enum ReminderPlanner {
         }
         alarms.sort { ($0.fireAt, $0.key) < ($1.fireAt, $1.key) }
         notifications.sort { ($0.fireAt, $0.key) < ($1.fireAt, $1.key) }
+        let cap = max(notificationCap, 0)
+        let dropped = notifications.dropFirst(cap)
+        let todayKey = dayString(today, calendar: calendar)
         return ReminderPlan(alarms: alarms,
-                            notifications: Array(notifications.prefix(max(notificationCap, 0))),
-                            todayOverflow: todayNotifications > notificationCap)
+                            notifications: Array(notifications.prefix(cap)),
+                            todayOverflow: todayNotifications > notificationCap,
+                            cut: Set(dropped.map(\.reminderId)),
+                            cutToday: Set(dropped.filter { $0.day == todayKey }.map(\.reminderId)))
     }
 
     /// Every enabled reminder's occurrence on that local day (ignores done / now).

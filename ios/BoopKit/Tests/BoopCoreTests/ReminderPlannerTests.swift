@@ -115,4 +115,25 @@ struct ReminderPlannerTests {
         #expect(p.todayOverflow)
         #expect(p.notifications.count == 24)
     }
+
+    // MARK: what the cap cut (final review I5)
+
+    @Test func theCapSaysWhichRemindersLostARing() {
+        // ten daily notifications at 08:00…17:00 from 00:01: 30 rings in the window, 24 fit — day 3 loses its last six
+        let ten = (0..<10).map { reminder(8 + $0, 0, .daily, .notification) }
+        let p = plan(ten, now: at("2026-11-25", 0, 1))
+        #expect(p.cut == Set(ten[4...].map(\.id)))
+        #expect(p.cutToday.isEmpty)
+        // thirty at 09:00 today: six of today's are cut
+        let thirty = (0..<30).map { _ in reminder(9, 0, .daily, .notification) }
+        let q = plan(thirty, now: at("2026-11-25", 7))
+        let todayKept = Set(q.notifications.filter { $0.day == "2026-11-25" }.map(\.reminderId))
+        #expect(q.cutToday == Set(thirty.map(\.id)).subtracting(todayKept))
+        #expect(q.cutToday.count == 6)
+    }
+
+    @Test func nothingCutWhenItFits() {
+        let p = plan([reminder(9, 0, .daily, .notification)], now: at("2026-11-25", 7))
+        #expect(p.cut.isEmpty && p.cutToday.isEmpty)
+    }
 }

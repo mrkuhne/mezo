@@ -126,14 +126,26 @@ func reminderSentence(_ s: ReminderSections) -> String {
 /// The lines under the sections: alarms ring through silent, the install's expiry, how far ahead everything is set.
 struct ReminderFooter: Equatable {
     var lines: [String]
+    /// Said above the footer when today's notifications do not all fit (the 24-request cap).
+    var warning: String?
 
-    static func build(expiry: Date?, armedUntil: Date?, now: Date, calendar: Calendar) -> ReminderFooter {
+    static let overflowWarning = "Mára több értesítésed van, mint amennyit az iPhone előre beállít — a nap végiek nem szólnak."
+
+    /// `horizon`: alarms and notifications reach different days, so each is told (one date when only one kind is armed).
+    static func build(expiry: Date?, horizon: ArmHorizon, todayOverflow: Bool = false, now: Date, calendar: Calendar) -> ReminderFooter {
         var lines = ["Az ébresztők néma módban és fókuszban is szólnak."]
         if let expiry, expiry > now {
             lines.append("A telepítés \(dateWithSuffix(expiry, calendar: calendar)) lejár — előtte egy nappal szólok.")
         }
-        if let armedUntil { lines.append("Előre beállítva: \(shortDateLabel(armedUntil, calendar: calendar).dropLast())-ig") }
-        return ReminderFooter(lines: lines)
+        func until(_ d: Date) -> String { "\(shortDateLabel(d, calendar: calendar).dropLast())-ig" }
+        switch (horizon.alarms, horizon.notifications) {
+        case let (a?, n?) where calendar.isDate(a, inSameDayAs: n): lines.append("Előre beállítva: \(until(a))")
+        case let (a?, n?): lines.append("Előre beállítva: az ébresztők \(until(a)), az értesítések \(until(n))")
+        case let (a?, nil): lines.append("Előre beállítva: \(until(a))")
+        case let (nil, n?): lines.append("Előre beállítva: \(until(n))")
+        case (nil, nil): break
+        }
+        return ReminderFooter(lines: lines, warning: todayOverflow ? overflowWarning : nil)
     }
 }
 
