@@ -40,10 +40,22 @@ enum HeadlessContext {
         }
     }
 
-    /// nil when nobody is remembered as signed in.
+    private static var cached: (userId: UUID, base: URL, parts: Parts)?
+
+    /// Forget the cached parts (sign-out); a user change is noticed by the cache key itself.
+    static func invalidate() { cached = nil }
+
+    /// nil when nobody is remembered as signed in. One `Outbox` actor per user (back-to-back presses share it).
     static func parts(userId: UUID? = BackgroundSyncHost.lastUserId, base: URL = .applicationSupportDirectory,
                       calendar: Calendar = .current) -> Parts? {
         guard let userId else { return nil }
+        if let c = cached, c.userId == userId, c.base == base { return c.parts }
+        let p = build(userId: userId, base: base, calendar: calendar)
+        cached = (userId, base, p)
+        return p
+    }
+
+    private static func build(userId: UUID, base: URL, calendar: Calendar) -> Parts {
         let root = RitmusEnvironment.userRoot(for: userId, base: base)
         let dirs = RitmusEnvironment.directories(for: userId, base: base)
         return Parts(userId: userId,

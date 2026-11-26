@@ -66,6 +66,7 @@ enum ReminderHub {
 
     /// Sign-out: cancels the family and forgets the store.
     static func deactivate() {
+        HeadlessContext.invalidate()
         if let old = scheduler { Task { await old.signedOut() } }
         store = nil
         scheduler = nil

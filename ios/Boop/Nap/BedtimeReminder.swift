@@ -62,7 +62,7 @@ struct SystemReminderCenter: ReminderCenter {
         content.sound = .default                // no badge: a quiet nudge
         content.userInfo = ["route": route]
         // Boop's own reminders (`boop.rem.…`): the Kész / 10 perc múlva buttons and the occurrence they act on.
-        if let key = Self.reminderKey(id: id, day: day) {
+        if let key = Self.reminderKey(id: id, day: day, route: route) {
             content.categoryIdentifier = ReminderPresenter.category
             content.userInfo["key"] = key
         }
@@ -75,10 +75,14 @@ struct SystemReminderCenter: ReminderCenter {
 
     /// `<uuid>|<yyyy-MM-dd>` for `boop.rem.<uuid>.<day>` and `boop.rem.snooze.<uuid>` (the snooze takes the day it is set
     /// for); nil for every other id.
-    static func reminderKey(id: String, day: DateComponents) -> String? {
+    static func reminderKey(id: String, day: DateComponents, route: String = "") -> String? {
         guard id.hasPrefix(ReminderScheduler.prefix) else { return nil }
         var rest = String(id.dropFirst(ReminderScheduler.prefix.count))
-        if rest.hasPrefix("snooze.") { rest = String(rest.dropFirst("snooze.".count)) }
+        if rest.hasPrefix("snooze.") {
+            // a snooze acts on the occurrence it came from, carried in the route
+            if let carried = ReminderActions.key(inRoute: route) { return carried }
+            rest = String(rest.dropFirst("snooze.".count))
+        }
         guard rest.count >= 36, let uuid = UUID(uuidString: String(rest.prefix(36))) else { return nil }
         let tail = rest.dropFirst(36).dropFirst()
         let ymd = tail.count == 10 ? String(tail)
@@ -147,7 +151,7 @@ final class ReminderPresenter: NSObject, UNUserNotificationCenterDelegate, Senda
             if let key { await ReminderActions.done(key: key) }
         case Self.snoozeAction:
             if let key, let id = ReminderActions.reminderId(ofKey: key) {
-                await ReminderActions.snooze(reminderId: id, title: content.title, center: SystemReminderCenter(), now: Date())
+                await ReminderActions.snooze(reminderId: id, key: key, title: content.title, center: SystemReminderCenter(), now: Date())
             }
         default: break
         }
