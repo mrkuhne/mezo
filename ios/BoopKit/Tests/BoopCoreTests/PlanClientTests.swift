@@ -283,7 +283,7 @@ struct PlanClientTests {
         #expect(stub.sent[0].path == "/api/train/meso-templates/\(PlanFixtures.templateId)/start")
         let body = try JSONSerialization.jsonObject(with: Data(try #require(stub.sent[0].body).utf8)) as? [String: String]
         #expect(body == ["startDate": "2026-11-23", "status": "planned"])
-        try await c.closeBlock(id: PlanFixtures.newBlockId)
+        _ = try await c.closeBlock(id: PlanFixtures.newBlockId, selfEval: nil)
         #expect(stub.sent[1].path == "/api/train/mesocycles/\(PlanFixtures.newBlockId)/close")
     }
 
