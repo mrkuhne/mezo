@@ -160,7 +160,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Boop.entitlements;
-				INFOPLIST_KEY_NSAlarmKitUsageDescription = "A Boop az általad beállított ébresztőket így tudja megszólaltatni, akkor is, ha le van zárva a telefon.";
+				INFOPLIST_FILE = "Boop-Info.plist";
 				INFOPLIST_KEY_NSCameraUsageDescription = "A Boop a kamerával lefotózza az étkezésedet, a termék címkéjét vagy a vonalkódját, hogy ki tudja számolni, mit ettél. A képet a Boop elemzi, és a naplódban marad.";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "A Boop a naptáradból látja, mennyi időd marad edzésre és evésre.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "A Boop az alvásodból, a mozgásodból, a pulzusodból, a testsúlyodból és a hangulatodból mondja meg, milyen napod lesz.";
@@ -187,7 +187,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Boop.entitlements;
-				INFOPLIST_KEY_NSAlarmKitUsageDescription = "A Boop az általad beállított ébresztőket így tudja megszólaltatni, akkor is, ha le van zárva a telefon.";
+				INFOPLIST_FILE = "Boop-Info.plist";
 				INFOPLIST_KEY_NSCameraUsageDescription = "A Boop a kamerával lefotózza az étkezésedet, a termék címkéjét vagy a vonalkódját, hogy ki tudja számolni, mit ettél. A képet a Boop elemzi, és a naplódban marad.";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "A Boop a naptáradból látja, mennyi időd marad edzésre és evésre.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "A Boop az alvásodból, a mozgásodból, a pulzusodból, a testsúlyodból és a hangulatodból mondja meg, milyen napod lesz.";
