@@ -31,7 +31,7 @@ final class EvadExperimentPreviewModel: @unchecked Sendable {
                                 status: "running", watched: ["sleep_min", "deep_min", "resting_hr"])
         r["startDate"] = Self.day(-8); r["endDate"] = Self.day(5); r["dayIndex"] = 9
         r["markedDays"] = (-8 ... -1).map(Self.day)
-        r["overlaps"] = [["kind": "mesocycle", "date": Self.day(-3), "text": "Közben új edzésblokk indult"]]
+        r["overlaps"] = [["kind": "mesocycle", "date": Self.day(-3), "text": "Közben új mezociklus indult"]]
         running = r
 
         var walk = Self.experiment(id: "ex000000-0000-4000-8000-000000000003", kind: "habit", title: "Reggeli séta",

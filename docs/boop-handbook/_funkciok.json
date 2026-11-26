@@ -453,25 +453,31 @@
     "csomag": "train"
   },
   "train-sablonok-futamok": {
-    "cim": "Sablonok, blokk indítása és újrafuttatása",
+    "cim": "Sablonok, mezociklus indítása és újrafuttatása",
     "terulet": "Edzés",
-    "app": "Tervben",
+    "app": "Kész",
     "mit_tud": "A terveket sablonként menti, egy sablonból új blokkot indít, egy régi blokkot újrafuttat vagy aktivál.",
-    "app_megjegyzes": "Döntés szerint a teljes blokképítő a telefonra jön, a sablonok a későbbi lépések között vannak.",
-    "jegyek": [],
+    "app_megjegyzes": "Az appban: a Mezociklusaim oldal (sablonok, indítás, újrafuttatás, újraindítás, mentés sablonba, sablon szerkesztése).",
+    "jegyek": [
+      "mezo-r36n9.177"
+    ],
     "kezikonyv": [
+      "07-edzes/20-mezociklusaim",
       "07-edzes/02-mezociklus-terv"
     ],
     "csomag": "train"
   },
   "train-blokk-lezaras-jelentes": {
-    "cim": "Blokk lezárása és zárójelentés AI-értékeléssel",
+    "cim": "Mezociklus lezárása és zárójelentés AI-értékeléssel",
     "terulet": "Edzés",
-    "app": "Tervben",
+    "app": "Kész",
     "mit_tud": "Lezárja a blokkot, elkészít egy megfagyasztott zárójelentést (haladás, rekordok, volumen), és AI-val szöveges értékelést ír hozzá.",
-    "app_megjegyzes": "A telefonon még nincs lezárás és zárójelentés; a döntés szerint a blokképítő későbbi lépése.",
-    "jegyek": [],
+    "app_megjegyzes": "Az appban: lezárás a „Hogy sikerült?” lappal, grafikus zárójelentés, Boop értékelése percekkel később.",
+    "jegyek": [
+      "mezo-r36n9.177"
+    ],
     "kezikonyv": [
+      "07-edzes/20-mezociklusaim",
       "07-edzes/06-gyakorlatok-elozmenyek"
     ],
     "csomag": "train"

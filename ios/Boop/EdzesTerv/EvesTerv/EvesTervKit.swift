@@ -33,20 +33,20 @@ func evesMonth(_ ymd: String) -> String {
 func evesUnlinkedText(_ u: WireYearUnlinked) -> String {
     let article = evesArticle(u.title).capitalized
     let verb = u.isPlanned ? "indul" : "fut"
-    return "\(article) „\(u.title)” \(evesFrom(u.startDate)) \(verb), de egyik éves blokkhoz sincs kötve."
+    return "\(article) „\(u.title)” \(evesFrom(u.startDate)) \(verb), de egyik éves mezociklushoz sincs kötve."
 }
 
 /// The unlinked-block banner's title: „A futó blokkod …" only for a run that runs now.
 func evesUnlinkedTitle(_ u: WireYearUnlinked) -> String {
-    u.isPlanned ? "A tervezett blokkod nincs az éves tervben" : "A futó blokkod nincs az éves tervben"
+    u.isPlanned ? "A tervezett mezociklusod nincs az éves tervben" : "A futó mezociklusod nincs az éves tervben"
 }
 
-/// A planned block already linked to a planned run: „Indul nov. 2-től. A blokkot a blokképítőben tudod módosítani."
+/// A planned block already linked to a planned run: „Indul nov. 2-től. A mezociklust a mezociklus-építőben tudod módosítani."
 /// Its focus, length and place are the run's now (the server refuses those edits); only a skip is left on the sheet.
 /// nil for any other block.
 func evesLinkedPlannedText(_ b: WireYearBlock) -> String? {
     guard b.status == "planned", b.mesocycleId != nil else { return nil }
-    return "Indul \(evesFrom(b.plannedStart)). A blokkot a blokképítőben tudod módosítani."
+    return "Indul \(evesFrom(b.plannedStart)). A mezociklust a mezociklus-építőben tudod módosítani."
 }
 
 /// „dec. 14-től" — the date with the right „-tól / -től" for the day's number.
@@ -229,10 +229,10 @@ func evesNoteText(_ n: WireYearNote) -> String? {
     switch n.code {
     case "emphasis_once": return muscle.map { "\($0): csak egyszer tudtam fókuszba tenni." }
     case "no_focus": return muscle.map { "\($0) idén nem kap fókuszt." }
-    case "pair_relaxed": return n.ordinal.map { "\(evesNumArticle($0).capitalized) \($0). blokkban szokatlan párt raktam össze, másképp nem jött ki." }
-    case "focus_consecutive": return muscle.map { "\($0) két egymást követő blokkban is fókuszban van." }
-    case "pair_unusual": return n.ordinal.map { "\(evesNumArticle($0).capitalized) \($0). blokk fókusza szokatlan pár." }
-    case "mixed_focus": return n.ordinal.map { "\(evesNumArticle($0).capitalized) \($0). blokk fókusza felsőtest- és lábizmot is vegyít." }
+    case "pair_relaxed": return n.ordinal.map { "\(evesNumArticle($0).capitalized) \($0). mezociklusban szokatlan párt raktam össze, másképp nem jött ki." }
+    case "focus_consecutive": return muscle.map { "\($0) két egymást követő mezociklusban is fókuszban van." }
+    case "pair_unusual": return n.ordinal.map { "\(evesNumArticle($0).capitalized) \($0). mezociklus fókusza szokatlan pár." }
+    case "mixed_focus": return n.ordinal.map { "\(evesNumArticle($0).capitalized) \($0). mezociklus fókusza felsőtest- és lábizmot is vegyít." }
     default: return nil
     }
 }
@@ -243,7 +243,7 @@ func evesNoFocusTitle(_ n: WireYearNote) -> String? { n.group.map { "\(evesMuscl
 /// `no_focus_this_year`: the suggestion's button — „Áttehetem a 8. blokkba a bicepsz helyére"; nil without a suggestion.
 func evesNoFocusAction(_ n: WireYearNote, plan: WireYearPlan) -> String? {
     guard let id = n.blockId, let target = plan.block(id) else { return nil }
-    let into = "Áttehetem \(evesNumArticle(target.ordinal)) \(target.ordinal). blokkba"
+    let into = "Áttehetem \(evesNumArticle(target.ordinal)) \(target.ordinal). mezociklusba"
     guard let r = n.replaces else { return into }
     return "\(into) \(evesArticle(evesMuscleLower(r))) \(evesMuscleLower(r)) helyére"
 }
@@ -293,7 +293,7 @@ func evesMapLines(_ plan: WireYearPlan) -> [EvesLine] {
         }
     }
     if !plan.warnings.contains(where: { $0.code == "focus_consecutive" }) {
-        out.append(EvesLine(tone: .good, text: "Egy izom sosem kerül fókuszba két egymást követő blokkban."))
+        out.append(EvesLine(tone: .good, text: "Egy izom sosem kerül fókuszba két egymást követő mezociklusban."))
     }
     let consolidation = plan.blocks.last(where: \.isConsolidation)
     let c = consolidation?.weeks ?? plan.consolidationWeeks
@@ -325,7 +325,7 @@ func evesHeadSentence(_ plan: WireYearPlan) -> String {
             parts.append("Most a lezárás fut: minden izom könnyű szinten tartáson.")
         } else {
             let t = evesFocusTitle(running)
-            parts.append("Most \(evesArticle(t)) \(t) blokk fut.")
+            parts.append("Most \(evesArticle(t)) \(t) mezociklus fut.")
         }
     }
     if let next = plan.next, let b = plan.block(next.blockId) {
@@ -346,7 +346,7 @@ func evesHeadTitle(_ plan: WireYearPlan) -> String {
 }
 
 /// The year-review card's numbers line: „7 blokk kész, 1 kihagyva".
-func evesReviewLine(_ r: WireYearReview) -> String { "\(r.blocksDone) blokk kész, \(r.blocksSkipped) kihagyva" }
+func evesReviewLine(_ r: WireYearReview) -> String { "\(r.blocksDone) mezociklus kész, \(r.blocksSkipped) kihagyva" }
 
 /// The year's last weeks: the consolidation is running (or the year is past its end) — the review card shows.
 func evesInClosing(_ plan: WireYearPlan) -> Bool {
@@ -359,8 +359,8 @@ func evesInClosing(_ plan: WireYearPlan) -> Bool {
 func evesErrorText(_ error: PlanFetchError) -> String {
     switch error {
     case .conflict("TRAIN_YEAR_PLAN_ACTIVE_EXISTS"): "Már van éves terved. Előbb zárd le, vagy a végén készíts jövő évit."
-    case .conflict("TRAIN_YEAR_BLOCK_LOCKED"): "Ez a blokk már fut vagy lezárult, ezért nem változhat."
-    case .conflict("TRAIN_YEAR_NOTHING_TO_LINK"): "Most nincs futó blokk, amit hozzáköthetnék."
+    case .conflict("TRAIN_YEAR_BLOCK_LOCKED"): "Ez a mezociklus már fut vagy lezárult, ezért nem változhat."
+    case .conflict("TRAIN_YEAR_NOTHING_TO_LINK"): "Most nincs futó mezociklus, amit hozzáköthetnék."
     case .notFound: "Ezt az éves tervet már nem találom."
     default: planErrorText(error)
     }

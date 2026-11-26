@@ -67,12 +67,23 @@ public final class BlockBuilderModel {
     /// Set while the model itself swaps the draft (a re-read): that swap asks for one evaluation, not two.
     private var replacing = false
 
-    public init(client: PlanClient, debounce: Duration = .milliseconds(300), lockedDay: LockedDay? = nil,
-                coverageHints: Bool = true) {
+    /// What the builder edits (mezo-r36n9.177): the running block, one named run (a planned one), or a template —
+    /// a template is saved with one `updateMesoTemplate` and never touches a run.
+    public enum Source: Equatable, Sendable { case running, run(id: String), template(id: String) }
+    public let source: Source
+    public var isTemplate: Bool { if case .template = source { true } else { false } }
+    /// The template as the server last sent it — the save base (fields the builder does not edit ride along).
+    private var templateBase: WireTemplate?
+    /// The running block's id, for the add / swap suggestions while a template is edited (nil: none runs).
+    private var suggestBlockId: String?
+
+    public init(client: PlanClient, source: Source = .running, debounce: Duration = .milliseconds(300),
+                lockedDay: LockedDay? = nil, coverageHints: Bool = true) {
         self.client = client
+        self.source = source
         self.debounce = debounce
-        self.lockedDay = lockedDay
-        self.coverageHints = coverageHints
+        self.lockedDay = source == .running ? lockedDay : nil
+        if case .template = source { self.coverageHints = false } else { self.coverageHints = coverageHints }
     }
 
     /// Today's open workout's template day: its id, else its weekday label (`Hét`…`Vas`).
@@ -99,12 +110,13 @@ public final class BlockBuilderModel {
     private func performLoad() async {
         phase = .loading
         do {
-            async let block = client.runningBlock()
+            async let block = fetchBlock()
             async let items = client.catalog()
             guard let b = try await block else { phase = .noBlock; return }
             catalog = (try? await items) ?? []
+            if isTemplate { suggestBlockId = try? await client.runningBlock()?.id }
             // Best effort: the AI's sentences ride on the week's proposal; no proposal or no net is simply no sentence.
-            if let proposals = try? await client.weekProposals(blockId: b.id) {
+            if !isTemplate, let proposals = try? await client.weekProposals(blockId: b.id) {
                 aiNotes = proposals.flatMap(\.lines).reduce(into: [:]) { out, line in
                     if let note = line.note?.trimmingCharacters(in: .whitespacesAndNewlines), !note.isEmpty { out[line.exerciseId] = note }
                 }
@@ -122,6 +134,85 @@ public final class BlockBuilderModel {
         } catch {
             phase = .failed(.server)
         }
+    }
+
+    /// The block the source names; a template becomes a block-shaped draft base (status `template`, week 0, row ids
+    /// `t<day>-<row>` that never leave the phone).
+    private func fetchBlock() async throws(PlanFetchError) -> WireBlock? {
+        switch source {
+        case .running:
+            return try await client.runningBlock()
+        case .run(let id):
+            guard let b = try await client.allBlocks().first(where: { $0.id == id }) else { throw .notFound }
+            return b
+        case .template(let id):
+            guard let t = try await client.templates().first(where: { $0.id == id }) else { throw .notFound }
+            templateBase = t
+            return try Self.block(of: t)
+        }
+    }
+
+    static func block(of t: WireTemplate) throws(PlanFetchError) -> WireBlock {
+        guard case .object(var o) = t.json else { throw .server }
+        let days = (o["days"]?.array ?? []).enumerated().map { di, day -> WireJSON in
+            guard case .object(var d) = day else { return day }
+            d["id"] = .string("t\(di)")
+            d["exercises"] = .array((d["exercises"]?.array ?? []).enumerated().map { ei, ex -> WireJSON in
+                guard case .object(var e) = ex else { return ex }
+                e["id"] = .string("t\(di)-\(ei)")
+                return .object(e)
+            })
+            return .object(d)
+        }
+        o["days"] = .array(days)
+        o["id"] = .string(t.id ?? "template")
+        o["status"] = .string("template")
+        o["currentWeek"] = .int(0)
+        if o["weeks"] == nil { o["weeks"] = .int(t.weeks) }
+        do {
+            return try JSONDecoder().decode(WireBlock.self, from: JSONEncoder().encode(WireJSON.object(o)))
+        } catch {
+            throw .server
+        }
+    }
+
+    /// The template save body: the base with the edited days, tiers, sport groups, style and techniques switch;
+    /// server-owned keys dropped. Each row starts from its stored JSON (so carried fields survive the full replace)
+    /// unless it is a new identity.
+    static func templateBody(base: WireTemplate, draft: BlockDraft) -> WireTemplate {
+        guard case .object(var o) = base.json else { return base }
+        for key in ["id", "runCount", "createdAt", "updatedAt"] { o.removeValue(forKey: key) }
+        let stored = o["days"]?.array ?? []
+        func json<T: Encodable>(_ v: T) -> WireJSON {
+            (try? JSONDecoder().decode(WireJSON.self, from: JSONEncoder().encode(v))) ?? .null
+        }
+        o["days"] = .array(draft.days.map { day -> WireJSON in
+            guard case .object(var d) = json(draft.dayInput(day, forSave: false)) else { return .null }
+            let dayIndex = Int(day.id.dropFirst()).flatMap { stored.indices.contains($0) ? $0 : nil }
+            if let i = dayIndex, case .object(let sd) = stored[i] {
+                d = sd.merging(d) { _, new in new }
+                d.removeValue(forKey: "id")
+            }
+            d["exercises"] = .array(day.exercises.map { e -> WireJSON in
+                guard case .object(let input) = json(draft.exerciseInput(e, forSave: false)) else { return .null }
+                var row: [String: WireJSON] = [:]
+                let parts = e.id.dropFirst().split(separator: "-").compactMap { Int($0) }
+                if e.id.hasPrefix("t"), !e.identityChanged, parts.count == 2, stored.indices.contains(parts[0]),
+                   let rows = stored[parts[0]]["exercises"]?.array, rows.indices.contains(parts[1]),
+                   case .object(let sr) = rows[parts[1]] {
+                    row = sr
+                }
+                row.merge(input) { _, new in new }
+                row.removeValue(forKey: "id")
+                return .object(row)
+            })
+            return .object(d)
+        })
+        o["musclePriorities"] = json(draft.prioritiesWire)
+        o["sportGroups"] = json(draft.sportGroups)
+        o["trainingStyle"] = draft.style.map { .string($0.rawValue) } ?? .null
+        o["techniquesEnabled"] = .bool(draft.techniquesEnabled)
+        return WireTemplate(json: .object(o))
     }
 
     // MARK: the day editor (mezo-r36n9.116)
@@ -175,13 +266,22 @@ public final class BlockBuilderModel {
     public func suggest(mode: String, day: Int, outgoing: DraftExercise? = nil, muscle: String? = nil,
                         muscles: Set<String>? = nil) async throws(PlanFetchError) -> WireSuggestions {
         guard let draft, draft.days.indices.contains(day) else { throw .server }
+        let blockId: String
+        if isTemplate {
+            guard let running = suggestBlockId else {
+                return try! JSONDecoder().decode(WireSuggestions.self, from: Data(#"{"suggestions":[]}"#.utf8))
+            }
+            blockId = running
+        } else {
+            blockId = draft.blockId
+        }
         let d = draft.days[day]
         let request = WireSuggestionsRequest(
             mode: mode, dayIndex: d.weekdayIndex ?? day,
             outgoing: outgoing.map { WireSuggestionOutgoing(catalogId: $0.catalogId?.lowercased(), name: $0.name, muscle: $0.muscleKey, type: $0.type) },
             muscle: muscle, muscles: muscles.map(SubMuscles.ordered),
             dayCatalogIds: d.exercises.compactMap { $0.catalogId?.lowercased() })
-        return try await client.suggestions(blockId: draft.blockId, request)
+        return try await client.suggestions(blockId: blockId, request)
     }
 
     // MARK: evaluation
@@ -410,7 +510,7 @@ public final class BlockBuilderModel {
     /// set. Returns true when the block is gone.
     @discardableResult
     public func discard() async -> Bool {
-        guard let blockId = draft?.blockId ?? original?.blockId else { return false }
+        guard !isTemplate, let blockId = draft?.blockId ?? original?.blockId else { return false }
         do {
             try await client.discardBlock(id: blockId)
         } catch {
@@ -476,6 +576,17 @@ public final class BlockBuilderModel {
         saveState = .saving
         // The re-read after the save evaluates; a pending debounced evaluation of the pre-save draft is moot.
         evaluationTask?.cancel()
+        if case .template(let id) = source, let base = templateBase {
+            do {
+                _ = try await client.updateTemplate(id: id, Self.templateBody(base: base, draft: draft))
+                saveState = .saved
+                await reload(keeping: nil)
+            } catch {
+                saveState = .failed(saved: [], error: error)
+                await reload(keeping: (draft, original))
+            }
+            return
+        }
         var saved: [String] = []
         var working = draft
         var base = original
@@ -517,7 +628,7 @@ public final class BlockBuilderModel {
     /// Re-read the block so the next edit starts from what the server holds (a day save may re-mint ids). With
     /// `keeping`, the edits that did not reach the server are carried onto the fresh read.
     private func reload(keeping: (draft: BlockDraft, original: BlockDraft)?) async {
-        guard let block = try? await client.runningBlock() else { return }
+        guard let block = try? await fetchBlock() else { return }
         let fresh = BlockDraft(block: block, catalog: catalog)
         replacing = true
         original = fresh

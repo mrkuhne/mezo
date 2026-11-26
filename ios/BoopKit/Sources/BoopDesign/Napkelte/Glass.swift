@@ -65,7 +65,7 @@ public struct Trend: View {
 /// `mic` (voice) and `offline` (a cloud with a slash, "nincs net"; B3, spike `RMicGlyph` / `ROfflineGlyph`).
 public struct NKGlyph: View {
     static let outlined: Set<String> = ["check-ink", "clock-ink", "camera-ink", "book-sage", "mic", "offline", "e-penz", "e-level",
-                                        "body-cream", "cup-cream"]
+                                        "body-cream", "cup-cream", "cycle-ink"]
     let name: String, color: Color, size: CGFloat
     public init(_ name: String, _ color: Color, size: CGFloat = 18) { self.name = name; self.color = color; self.size = size }
 
@@ -83,6 +83,15 @@ public struct NKGlyph: View {
                     case "clock-ink":
                         ctx.stroke(P { $0.addEllipse(in: CGRect(x: 9, y: 9, width: 46, height: 46)) }, with: .color(color), style: st)
                         ctx.stroke(P { $0.move(to: CGPoint(x: 32, y: 20)); $0.addLine(to: CGPoint(x: 32, y: 32)); $0.addLine(to: CGPoint(x: 40, y: 37)) }, with: .color(color), style: st)
+                    case "cycle-ink":
+                        // The mezociklus (mezo-r36n9.177): a ring that turns back on itself, and three weeks climbing inside it.
+                        ctx.stroke(P { $0.addArc(center: CGPoint(x: 32, y: 32), radius: 23, startAngle: .degrees(-60), endAngle: .degrees(250), clockwise: false) }, with: .color(color), style: st)
+                        ctx.stroke(P { $0.move(to: CGPoint(x: 43, y: 8)); $0.addLine(to: CGPoint(x: 44, y: 13)); $0.addLine(to: CGPoint(x: 38, y: 15)) }, with: .color(color), style: st)
+                        ctx.stroke(P {
+                            $0.move(to: CGPoint(x: 23, y: 42)); $0.addLine(to: CGPoint(x: 23, y: 36))
+                            $0.move(to: CGPoint(x: 32, y: 42)); $0.addLine(to: CGPoint(x: 32, y: 30))
+                            $0.move(to: CGPoint(x: 41, y: 42)); $0.addLine(to: CGPoint(x: 41, y: 24))
+                        }, with: .color(color), style: st)
                     case "body-cream":
                         // A standing figure: the head, and the shoulders narrowing to the waist and out to the hips.
                         ctx.stroke(P { $0.addEllipse(in: CGRect(x: 24, y: 6, width: 16, height: 16)) }, with: .color(color), style: st)

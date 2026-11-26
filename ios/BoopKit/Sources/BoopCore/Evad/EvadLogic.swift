@@ -393,7 +393,7 @@ public func evadBlockWeekRows(_ w: EvadBlockWeek) -> [(title: String, body: Stri
         }
         return ((pick(names, d.weekday) ?? "Új nap") + " · " + d.title, body)
     }
-    let rest = "a blokk többi napja viszi tovább a hetet."
+    let rest = "a mezociklus többi napja viszi tovább a hetet."
     let dropped = w.dropped.map { d -> (title: String, body: String) in
         ("Kimarad · " + d.title, pick(on, d.weekday).map { "Eddig \($0) volt, " + rest } ?? "Kimarad, " + rest)
     }

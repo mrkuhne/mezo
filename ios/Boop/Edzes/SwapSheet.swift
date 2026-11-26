@@ -57,7 +57,7 @@ struct SwapSheet: View {
 
     var body: some View {
         NKSheetFrame(hue: hue, eyebrow: outgoing?.name ?? "Gyakorlat",
-                     title: wholeBlock ? "Mire cseréljük a blokk végéig?" : "Mit csinálsz ma helyette?") {
+                     title: wholeBlock ? "Mire cseréljük a mezociklus végéig?" : "Mit csinálsz ma helyette?") {
             VStack(alignment: .leading, spacing: 12) {
                 // The chips need the outgoing exercise's catalogue row; a custom exercise has none, and then
                 // neither chip has anything true to say.
@@ -71,8 +71,8 @@ struct SwapSheet: View {
                 if let problem { problemBox(problem) }
                 suggestions
                 fullList
-                Text(wholeBlock ? "A csere a blokk végéig szól: a nap minden további alkalmán ez lesz. A döntés a tiéd — a teljes listából bármit választhatsz."
-                                : "A csere csak a mai edzésre szól, a blokkod nem változik. A döntés a tiéd — a teljes listából bármit választhatsz.")
+                Text(wholeBlock ? "A csere a mezociklus végéig szól: a nap minden további alkalmán ez lesz. A döntés a tiéd — a teljes listából bármit választhatsz."
+                                : "A csere csak a mai edzésre szól, a mezociklusod nem változik. A döntés a tiéd — a teljes listából bármit választhatsz.")
                     .nkFont(12).foregroundStyle(.white.opacity(0.45))
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)

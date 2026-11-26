@@ -34,7 +34,7 @@ struct KitGallery: View {
                            NKStat(value: nil, label: "tonnázs")], hue: hue)
             }
 
-            NKBare("A blokk nyolc hete", hue: hue) {
+            NKBare("A mezociklus nyolc hete", hue: hue) {
                 NKSteppedBars([NKStepBar(label: "1", value: 0.5), NKStepBar(label: "2", value: 0.62),
                                NKStepBar(label: "3", value: 0.74), NKStepBar(label: "4", value: 0.3, dimmed: true, note: "levezető hét"),
                                NKStepBar(label: "5", value: 0.68), NKStepBar(label: "6", value: 0.8),
@@ -116,8 +116,8 @@ struct KitGallery: View {
             }
             .nkStale(NKStale(age: "frissítve 20 perce"))
 
-            NKBare("Két blokk egymás mellett", hue: hue) {
-                NKCompareColumns(leftTitle: "Tavaszi blokk", rightTitle: "Mostani blokk",
+            NKBare("Két mezociklus egymás mellett", hue: hue) {
+                NKCompareColumns(leftTitle: "Tavaszi mezociklus", rightTitle: "Mostani mezociklus",
                                  lines: [NKCompareLine(label: "Edzések", left: "21", right: "18", favours: -1),
                                          NKCompareLine(label: "Heti volumen", left: "11", right: "14", favours: 1),
                                          NKCompareLine(label: "Rekordok", left: "3", right: "5", favours: 1)],
@@ -148,7 +148,7 @@ struct KitGallery: View {
                 }
             }
 
-            NKMenuGrid([NKMenuItem(glyph: "plus-ink", name: "Újat kezdenék", sub: "Új blokk vagy egyedi edzés", badge: 2) { note = "Új" },
+            NKMenuGrid([NKMenuItem(glyph: "plus-ink", name: "Újat kezdenék", sub: "Új mezociklus vagy egyedi edzés", badge: 2) { note = "Új" },
                         NKMenuItem(glyph: "repeat-deep", name: "Megismétlem", sub: "A legutóbbi edzés újra") { note = "Ismét" },
                         NKMenuItem(glyph: "medal-sun", name: "Rekordjaim", sub: "Amit idén megdöntöttél") { note = "Rekordok" },
                         NKMenuItem(glyph: "book-sage", name: "Sablonok", sub: "Elmentett edzéseid") { note = "Sablonok" }],

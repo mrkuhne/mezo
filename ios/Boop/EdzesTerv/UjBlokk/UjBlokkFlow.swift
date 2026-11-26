@@ -65,7 +65,7 @@ struct UjBlokkFlow: View {
             NK.ground.opacity(0.82).ignoresSafeArea()
             VStack(spacing: 14) {
                 ProgressView().tint(.white).controlSize(.large)
-                Text("Összerakom a blokkot").nkFont(22, design: .serif).foregroundStyle(.white)
+                Text("Összerakom a mezociklust").nkFont(22, design: .serif).foregroundStyle(.white)
                 Text("Kiválasztom a gyakorlatokat, és elindítom.").nkFont(14).foregroundStyle(.white.opacity(0.7))
                     .multilineTextAlignment(.center)
             }

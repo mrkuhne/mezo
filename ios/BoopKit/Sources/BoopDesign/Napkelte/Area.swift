@@ -371,7 +371,8 @@ public struct NKAreaBar: View {
         case "Figyelt": "search-ink"
         case "Szabályok": "scale-ink"
         case "Fiókok": "repeat-deep"
-        case "Napirend", "Terv", "Blokk", "Tervezett": "clock-ink"
+        case "Napirend", "Terv", "Tervezett": "clock-ink"
+        case "Mezociklus": "cycle-ink"
         case "Mi hat rá": "bolt-ink"
         case "Hét", "Előzmények", "Minták": "chart-deep"
         // The Súly room (`mezo-r36n9.158`): the body for Test (owner: its own mark), the book for a log of days.
@@ -485,6 +486,8 @@ public struct NKAreaSubPage<Content: View>: View {
                         VStack(alignment: .leading, spacing: 8) {
                             NKMono(eyebrow.uppercased())
                             Text(title).nkFont(34, design: .serif).foregroundStyle(.white)
+                                // Past accessibility1 a long Hungarian word („mezociklus,”) breaks mid-word.
+                                .dynamicTypeSize(...DynamicTypeSize.accessibility1)
                                 .fixedSize(horizontal: false, vertical: true).minimumScaleFactor(0.7)
                             if !sentence.isEmpty { NKHueText(sentence, hue: hue, size: 15) }
                         }

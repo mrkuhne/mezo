@@ -283,7 +283,7 @@ public func evadMeaning(_ e: EvadExperiment) -> [(title: String, body: String)] 
 /// The overlaps in one or two sentences, or that nothing else changed in the window.
 public func evadOverlapSentence(_ e: EvadExperiment) -> String {
     guard !e.overlaps.isEmpty else {
-        return "\(evadWindowDuring(e.lengthDays)) más nem változott: nem volt új blokk, kímélő időszak vagy évadmódosítás."
+        return "\(evadWindowDuring(e.lengthDays)) más nem változott: nem volt új mezociklus, kímélő időszak vagy évadmódosítás."
     }
     let lines = e.overlaps.map { o -> String in
         let t = o.text.trimmingCharacters(in: .whitespaces)

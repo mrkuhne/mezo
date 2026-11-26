@@ -13,6 +13,8 @@ key_files:
 related: [_platform-auth-security, _platform-design-system, companion, settings, _platform-api-backend]
 ---
 
+> **2026-11-26 — reviewed after Boop Mezociklus kezelés (`mezo-r36n9.177`, no language-layer change).** One new code in both catalogs: `TRAIN_MESO_NOT_ACTIVE` (409 — restart / save-to-template of a mesocycle that is not the running one), parity kept.
+
 > **2026-11-26 — reviewed after the K3 final review (`mezo-r36n9.17`, no language-layer change).** One new code in both catalogs: `TRAIN_AS_PLANNED_MOVED` („Ezt az edzést áttetted egy másik napra — azon a napon pótold.” / „This session was moved to another day — catch it up on that day.”).
 
 > **2026-11-25 — reviewed after Boop Levél Google sign-in (`mezo-r36n9.38`/`.39`, no language-layer change).** Two mail keys (`MAIL_GOOGLE_NOT_CONFIGURED`, `MAIL_GOOGLE_REDIRECT_INVALID`) added to both `messages_hu` and `messages_en` (parity kept); the `MAIL_AUTH_FAILED` text made neutral (password or Google).

@@ -89,9 +89,61 @@ public struct PlanClient: Sendable {
                            body: WireTemplateStart(startDate: startDate, status: status, yearBlockId: yearBlockId))
     }
 
-    /// Closes (archives) a block — idempotent on the server.
-    public func closeBlock(id: String) async throws(PlanFetchError) {
-        _ = try await raw.sendRaw(.post, "/api/train/mesocycles/\(id)/close", operationID: "closeMesocycle")
+    // MARK: the mezociklus lifecycle (mezo-r36n9.177)
+
+    /// Every run he made — running, planned and closed — as the server lists them.
+    public func allBlocks() async throws(PlanFetchError) -> [WireBlock] {
+        try await raw.get("/api/train/mesocycles", operationID: "listMesocycles")
+    }
+
+    /// His saved templates (the reusable plans), each with its run count.
+    public func templates() async throws(PlanFetchError) -> [WireTemplate] {
+        try await raw.get("/api/train/meso-templates", operationID: "listMesoTemplates")
+    }
+
+    /// Makes a planned run the active one (the server closes nothing; a running one must be closed first).
+    public func activate(id: String) async throws(PlanFetchError) -> WireBlock {
+        try await raw.decodeBody(try await raw.sendRaw(.post, "/api/train/mesocycles/\(id)/activate", operationID: "activateMesocycle"))
+    }
+
+    /// Closes (archives) a run with his optional own evaluation — the server freezes the report. Idempotent.
+    public func closeBlock(id: String, selfEval: String?) async throws(PlanFetchError) -> WireBlock {
+        let path = "/api/train/mesocycles/\(id)/close"
+        if let selfEval {
+            return try await raw.send(.post, path, operationID: "closeMesocycle", body: WireCloseRequest(selfEval: selfEval))
+        }
+        return try await raw.decodeBody(try await raw.sendRaw(.post, path, operationID: "closeMesocycle"))
+    }
+
+    /// The template a closed run came from (materialized for a legacy run) — start it with `startTemplate`.
+    public func rerun(id: String) async throws(PlanFetchError) -> String {
+        let r: WireTemplateRef = try await raw.decodeBody(
+            try await raw.sendRaw(.post, "/api/train/mesocycles/\(id)/rerun", operationID: "rerunMesocycle"))
+        return r.templateId
+    }
+
+    /// One server step: closes the running run (with its report) and starts it again today from week 1 with every
+    /// phone edit; `updateTemplate` also overwrites its template. 409 `TRAIN_MESO_NOT_ACTIVE` / `SEASON_REQUIRED`.
+    public func restart(id: String, updateTemplate: Bool) async throws(PlanFetchError) -> WireBlock {
+        try await raw.send(.post, "/api/train/mesocycles/\(id)/restart", operationID: "restartMesocycle",
+                           body: WireRestartRequest(updateTemplate: updateTemplate))
+    }
+
+    /// Overwrites the run's template with its current state (creates and links one for a legacy run); the template id.
+    public func saveToTemplate(id: String) async throws(PlanFetchError) -> String {
+        let r: WireTemplateRef = try await raw.decodeBody(
+            try await raw.sendRaw(.post, "/api/train/mesocycles/\(id)/save-to-template", operationID: "saveMesocycleToTemplate"))
+        return r.templateId
+    }
+
+    /// The closed run's report; `aiEvalStatus` `pending` means Boop's evaluation is still being written.
+    public func report(id: String) async throws(PlanFetchError) -> WireReport {
+        try await raw.get("/api/train/mesocycles/\(id)/report", operationID: "getMesocycleReport")
+    }
+
+    /// Replaces a template (the builder's template mode); a running run made from it is not touched.
+    public func updateTemplate(id: String, _ template: WireTemplate) async throws(PlanFetchError) -> WireTemplate {
+        try await raw.send(.put, "/api/train/meso-templates/\(id)", operationID: "updateMesoTemplate", body: template)
     }
 
     /// Throws away a block that was never trained, with the template it came from when nothing else used it — no
@@ -132,3 +184,7 @@ public struct PlanClient: Sendable {
         try await raw.decodeBody(try await raw.sendRaw(.post, "/api/train/year-plans/\(id)/archive", operationID: "archiveYearPlan"))
     }
 }
+
+struct WireCloseRequest: Encodable { let selfEval: String }
+struct WireRestartRequest: Encodable { let updateTemplate: Bool }
+struct WireTemplateRef: Decodable { let templateId: String }

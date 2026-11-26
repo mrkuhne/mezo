@@ -38,6 +38,7 @@ import io.mrkuhne.mezo.api.dto.MesoTemplateUpsertRequest;
 import io.mrkuhne.mezo.api.dto.MesocycleCloseRequest;
 import io.mrkuhne.mezo.api.dto.MesocycleReportResponse;
 import io.mrkuhne.mezo.api.dto.MesocycleResponse;
+import io.mrkuhne.mezo.api.dto.MesocycleRestartRequest;
 import io.mrkuhne.mezo.api.dto.MesocycleSettingsUpdateRequest;
 import io.mrkuhne.mezo.api.dto.MesocycleVolumeArcResponse;
 import io.mrkuhne.mezo.api.dto.MusclePrioritiesUpdateRequest;
@@ -226,6 +227,18 @@ public class TrainController implements TrainApi {
     @Override
     public MesoRerunResponse rerunMesocycle(UUID id) {
         return mesoTemplateService.rerun(currentUserId.get(), id);
+    }
+
+    @Override
+    public MesocycleResponse restartMesocycle(UUID id, MesocycleRestartRequest mesocycleRestartRequest) {
+        // The body is optional: no body = restart without touching the template.
+        return mesoTemplateService.restart(currentUserId.get(), id,
+            mesocycleRestartRequest != null && Boolean.TRUE.equals(mesocycleRestartRequest.getUpdateTemplate()));
+    }
+
+    @Override
+    public MesoRerunResponse saveMesocycleToTemplate(UUID id) {
+        return mesoTemplateService.saveToTemplate(currentUserId.get(), id);
     }
 
     @Override

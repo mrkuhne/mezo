@@ -14,7 +14,7 @@ Az Edzés szoba a Boop „teljes edzőterme” — nem lecsupaszított oldal, ha
 (tulajdonosi döntés, 2026-11-11). Négy belső füle lesz:
 
 - **Ma** — a mai edzés: eligazítás, indítás, sorozatról sorozatra vezetés előírt súllyal, ismétléssel és tartalékkal (RIR).
-- **Terv** — a mezociklus (több hetes edzésblokk), a tervgenerátor varázsló, sablonok, saját edzések, heti beosztás, sport és futás.
+- **Mezociklus** — a mezociklus (több hetes edzés-ciklus), a Mezociklusaim oldal (futó, tervezett, sablonok, lezártak), a tervgenerátor varázsló, sablonok, saját edzések, heti beosztás, sport és futás.
 - **Gyakorlatok** — a gyakorlat-katalógus videóval és képekkel, rekordok.
 - **Előzmények** — lezárt edzések, mezociklus-zárójelentés AI-értékeléssel, két futam összehasonlítása, izomterhelés-térkép.
 

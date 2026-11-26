@@ -143,7 +143,7 @@ struct EvadEmpty: View {
                    headline: "Indítsunk egy évadot",
                    sentence: "Egy évad *néhány hétig tart*: benne van a célod, az edzésed, az étkezésed és az alvásod, és mindegyik a többihez igazodik.",
                    glyph: "link-deep") {
-            NKNote("A mostani súlycélodból és edzésblokkodból már összeállítottam egy javaslatot. Csak akkor indul el, ha jóváhagyod.", hue: evadHue)
+            NKNote("A mostani súlycélodból és mezociklusodból már összeállítottam egy javaslatot. Csak akkor indul el, ha jóváhagyod.", hue: evadHue)
             NKActions([NKAction(glyph: "plus-ink", title: "Megnézem", primary: true, action: start)], hue: evadHue)
         }
     }

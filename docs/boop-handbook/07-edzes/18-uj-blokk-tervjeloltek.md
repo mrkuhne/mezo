@@ -10,7 +10,7 @@ osszefoglalo: Új blokkot a telefonon indítasz: megadod, meddig tarthat egy edz
 ---
 
 ## Mit csinál
-Ha nincs futó blokkod, az Edzés → Blokk fülön megjelenik az **Új blokk** gomb. Két lépés van:
+Ha nincs futó blokkod, az Edzés → Mezociklus fülön megjelenik az **Új blokk** gomb. Két lépés van:
 
 **1. Alapok.** Három dolgot adsz meg, a többit Boop számolja:
 - **Hány hetes** legyen a blokk (4–8 hét);

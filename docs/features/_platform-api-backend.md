@@ -13,6 +13,8 @@ key_files:
 related: [_platform-data-layer, _platform-auth-security, _platform-notifications, train, today, fuel, ritual, companion]
 ---
 
+> **2026-11-26 — reviewed after Boop Mezociklus kezelés (`mezo-r36n9.177`, no API-layer change).** `TRAIN_MESO_NOT_ACTIVE` (409) added to the message catalogs for the new `restartMesocycle` / `saveMesocycleToTemplate` endpoints (see [`train.md`](train.md)); the error envelope is unchanged.
+
 > **2026-11-26 — reviewed after the K3 final review (`mezo-r36n9.17`, additive contract, no platform change).** `train-skip.yml` documents 409 `TRAIN_SKIP_CAPACITY_OWNED` on `DELETE /api/train/skips/{id}`; `api/openapi.yml` regenerated.
 
 > **2026-11-25 — reviewed after Boop Levél Google sign-in (`mezo-r36n9.38`/`.39`, additive contract, no platform change).** `api/feature/mail/mail.yml` gains `POST /api/mail/mailbox/google` and `kind` / `googleClientId` on the mailbox GET; two message keys (`MAIL_GOOGLE_NOT_CONFIGURED`, `MAIL_GOOGLE_REDIRECT_INVALID`) in both bundles. See [`mail.md`](mail.md) §3.10.

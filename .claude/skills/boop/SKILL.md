@@ -33,6 +33,10 @@ Hungarian, business language** (CLAUDE.md §Communication) — no file names, no
 
 ## 2. Owner decisions — do not re-litigate
 
+- **No plain text-and-list pages** (2026-11-26, `mezo-r36n9.177`, owner: „puritán és béna”). Every screen needs
+  visual hierarchy and its own graphics: a hero element, glass cards, a mini graphic showing the thing's shape
+  (week curve, ring, body map, time strip), carousels. All-rows lists only for search/settings-like pages. Applies
+  from the FIRST spike round. Anything he can start or overwrite opens for review first; actions sit at the bottom.
 - **Standalone, not a port** (2026-11-11). Boop reuses the backend's engines (goal engine, gym progression,
   meal scoring + AI draft, check-in, journal, sleep log, chat platform) and **hides** the web clutter
   (gamification, quests, titles, habits, needs rings, activity, medication (the supplement stack is kept, simplified), life goals, tutorial,

@@ -186,3 +186,45 @@ enum PlanFixtures {
         PlanClient(raw: RawJSONClient(transport: stub, baseURL: URL(string: "https://example.test")!, token: { "tok" }))
     }
 }
+
+// MARK: - The mezociklus lifecycle (mezo-r36n9.177) — invented runs and templates, the server's shapes
+
+extension PlanFixtures {
+    static let plannedId = "b10c0000-0000-4000-8000-0000000000a2"
+    static let closedA = "b10c0000-0000-4000-8000-0000000000c1"
+    static let closedB = "b10c0000-0000-4000-8000-0000000000c2"
+    static let templateA = "7e000000-0000-4000-8000-00000000000a"
+    static let templateB = "7e000000-0000-4000-8000-00000000000b"
+
+    private static func run(_ id: String, _ title: String, _ status: String, start: String, end: String,
+                            closedAt: String? = nil, template: String? = templateA, report: Bool = false,
+                            currentWeek: Int = 1, days: String = "[]") -> String {
+        let c = closedAt.map { "\"\($0)\"" } ?? "null"
+        let t = template.map { "\"\($0)\"" } ?? "null"
+        return #"{"id":"\#(id)","title":"\#(title)","status":"\#(status)","weeks":6,"currentWeek":\#(currentWeek),"phaseCurve":["MEV","MAV","MAV","MAV","MRV","Deload"],"split":"upper-lower","goal":"hypertrophy","startDate":"\#(start)","endDate":"\#(end)","closedAt":\#(c),"templateId":\#(t),"hasReport":\#(report),"days":\#(days)}"#
+    }
+
+    static let mezoDaysJSON = #"[{"id":"d1","day":"Hét","type":"Felső","muscle":"back","exercises":[{"name":"Chest Supported Row","muscle":"back","workingSets":4},{"name":"Bench Press","muscle":"chest","workingSets":2}]},{"id":"d2","day":"Csü","type":"Alsó","muscle":"quad","exercises":[{"name":"Squat","muscle":"quad","workingSets":4},{"name":"Row","muscle":"back","workingSets":4}]}]"#
+
+    /// Out of order on purpose: the older closed run first, then the running one, the planned one, the newer closed one.
+    static func mezoBlocksJSON() -> String {
+        "[" + [
+            run(closedB, "Tavaszi erő", "archived", start: "2026-04-06", end: "2026-05-17", closedAt: "2026-05-17T18:00:00Z",
+                template: templateB, report: true),
+            run(blockId, "V-forma és kar", "active", start: "2026-11-16", end: "2026-12-27", currentWeek: 2, days: mezoDaysJSON),
+            run(plannedId, "Téli alap", "planned", start: "2027-01-04", end: "2027-02-14"),
+            run(closedA, "Nyári tömeg", "archived", start: "2026-07-07", end: "2026-08-17", closedAt: "2026-08-17T18:00:00Z",
+                report: true),
+        ].joined(separator: ",") + "]"
+    }
+
+    static func templatesJSON() -> String {
+        #"[{"id":"\#(templateA)","title":"Felső-alsó","weeks":6,"phaseCurve":["MEV","MAV","MAV","MAV","MRV","Deload"],"split":"upper-lower","runCount":3,"trainingStyle":"balanced","createdAt":"2026-06-01T10:00:00Z","updatedAt":"2026-06-01T10:00:00Z","days":\#(mezoDaysJSON)},{"id":"\#(templateB)","title":"Tavaszi erő","weeks":4,"phaseCurve":["MEV","MAV","MRV","Deload"],"split":"full-body","runCount":1,"days":[]}]"#
+    }
+
+    static func reportJSON(aiStatus: String, volume: Bool) -> String {
+        let ai = aiStatus == "ready" ? #""Erős hat hét volt.""# : "null"
+        let v = volume ? #"{"mesocycleId":"\#(closedA)","title":"Nyári tömeg","currentWeek":6,"weeks":6,"startDate":"2026-07-07","endDate":"2026-08-17","status":"archived","phaseCurve":["MEV","MAV"],"muscles":[{"muscle":"back","region":"upper","mrv":22,"weeks":[{"week":1,"phase":"MEV","planned":12,"actual":11,"isCurrent":false},{"week":2,"phase":"MAV","planned":14,"actual":null,"isCurrent":false}]}]}"# : "null"
+        return #"{"mesocycleId":"\#(closedA)","templateId":null,"title":"Nyári tömeg","startDate":"2026-07-07","endDate":"2026-08-17","closedAt":"2026-08-17T18:00:00Z","weeks":6,"selfEval":"Jól ment.","aiEval":\#(ai),"aiEvalStatus":"\#(aiStatus)","aiEvalEnabled":true,"adherence":{"plannedSessions":24,"completedSessions":20,"plannedWeeks":6,"completedWeeks":5,"completionPct":83},"volume":\#(v),"strength":[{"exerciseName":"Bench Press","muscle":"chest","firstWeek":1,"lastWeek":6,"firstTopKg":80,"firstTopReps":8,"lastTopKg":85,"lastTopReps":8,"deltaKg":5}],"records":{"medalCount":2,"top":[{"exerciseName":"Bench Press","kind":"weight","date":"2026-08-10","value":85}]},"context":null}"#
+    }
+}

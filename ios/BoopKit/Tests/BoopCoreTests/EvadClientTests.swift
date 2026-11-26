@@ -139,7 +139,7 @@ struct EvadClientTests {
         #expect(evadErrorText(.conflict("SEASON_PROFILE_REQUIRED"))
                 == "Az évad számaihoz előbb a testadataid kellenek (magasság, születési dátum, nem).")
         #expect(evadErrorText(.conflict("SEASON_BLOCK_NEEDS_GYM_DAY"))
-                == "Amíg fut az edzésblokk, legalább egy edzésnap kell.")
+                == "Amíg fut a mezociklus, legalább egy edzésnap kell.")
     }
 
     @Test func previewDecodesTheBlocksNewWeek() throws {

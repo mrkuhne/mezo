@@ -188,6 +188,13 @@ A tömörítés nem átadás: elveszíti a részleteket, és drága marad.
 ### UX/UI — minden képernyőn, minden alkalommal
 - **Napkelte világ:** sötét üveg, festett ég, színt csak az ég és a gömbök kapnak, a kiválasztott gömb lencse.
   A közös elemkészletből építünk, nem egyedileg.
+- **Soha nem puritán szöveg + lista** (tulajdonos, 2026-11-26, `mezo-r36n9.177`): minden oldalnak legyen vizuális
+  rangsora és saját grafikája — üvegkártyák, a dolog alakját mutató mini-grafikon (hetek íve, gyűrű, izomtérkép,
+  idősáv), egy kiemelt „hős” elem felül, lapozható kártyasorok. Egy csupa-sor lista csak keresés- vagy
+  beállításszerű oldalon elfogadható. A próbaváltozat első köre is így készül, nem utólag szépítve.
+- **Előbb megnézi, aztán dönt:** amit elindíthat vagy felülírhat (sablon, terv, mezociklus), azt előbb meg tudja
+  nyitni átnézésre, és a döntés gombjai (Indítás · Szerkesztés) ott vannak alul — koppintás soha nem indít el
+  azonnal semmit.
 - **Minden állapot megtervezve:** üres, töltődik, hiba, offline, első használat, sok adat.
 - **Egy pillantás alatt érthető:** egy fő cselekvés képernyőnként, egyhüvelykujjas elérés, legalább ujjnyi
   érintési felület.

@@ -38,8 +38,8 @@ struct EdzesStoreTests {
     }
 
     @Test func fourTabsInOrder() {
-        // The owner's labels, and the one place they live: „Terv" became „Blokk" on 2026-11-16.
-        #expect(EdzesTab.allCases.map(\.rawValue) == ["Ma", "Blokk", "Gyakorlatok", "Előzmények"])
+        // The owner's labels, and the one place they live: „Terv" became „Blokk" on 2026-11-16, then „Mezociklus" on 2026-11-26.
+        #expect(EdzesTab.allCases.map(\.rawValue) == ["Ma", "Mezociklus", "Gyakorlatok", "Előzmények"])
     }
 
     @Test func todaysPlanIsReadAndCached() async throws {

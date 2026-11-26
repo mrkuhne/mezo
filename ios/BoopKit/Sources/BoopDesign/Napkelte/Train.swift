@@ -105,9 +105,9 @@ public struct NKBlockTimeline: View {
 
     private var label: String {
         guard let current = weeks.first(where: { $0.state == .current }) else {
-            return "A blokk hetei"
+            return "A mezociklus hetei"
         }
-        return "\(weeks.count) hetes blokk, a \(current.week). héten jársz: \(current.phase)"
+        return "\(weeks.count) hetes mezociklus, a \(current.week). héten jársz: \(current.phase)"
     }
 }
 

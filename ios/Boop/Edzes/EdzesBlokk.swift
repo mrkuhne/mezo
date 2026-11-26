@@ -35,7 +35,7 @@ struct BlockLoadPage: View {
 
     var body: some View {
         let summary = blockWeekSummary(bands)
-        NKAreaSubPage(hue: hue, crumb: "Edzés · Blokk", eyebrow: "A blokk terhelése · \(block.currentWeek). hét",
+        NKAreaSubPage(hue: hue, crumb: "Edzés · Mezociklus", eyebrow: "A mezociklus terhelése · \(block.currentWeek). hét",
                       title: "\(summary.muscles) izomcsoportot edzel ezen a héten",
                       sentence: "\(summary.stateLine) \(summary.deltaLine)".trimmingCharacters(in: .whitespaces),
                       onBack: onBack) {
@@ -151,7 +151,7 @@ private struct MuscleWeeksPage: View {
     let onBack: () -> Void
 
     var body: some View {
-        NKAreaSubPage(hue: hue, crumb: "Edzés · A blokk terhelése",
+        NKAreaSubPage(hue: hue, crumb: "Edzés · A mezociklus terhelése",
                       eyebrow: "\(muscleName(band.muscle)) · \(band.tier.hungarian.lowercased())",
                       title: muscleName(band.muscle).capitalizedFirst,
                       sentence: sentence, onBack: onBack) {
@@ -183,7 +183,7 @@ private struct MuscleWeeksPage: View {
 
     private var sentence: String {
         let tierLine = switch band.tier {
-        case .emphasize: "Ez egy kiemelt izom ebben a blokkban: a terv a legtöbbig viszi."
+        case .emphasize: "Ez egy kiemelt izom ebben a mezociklusban: a terv a legtöbbig viszi."
         case .grow: "Ezt építi a terv."
         case .maintain: "Ezt a terv most csak szinten tartja."
         }
