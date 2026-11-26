@@ -6,20 +6,20 @@ allapot: Részben kész
 hol: [iPhone app, Háttérrendszer, AI]
 szulo: 00-attekintes
 szakasz: [B5]
-osszefoglalo: Néhány kérdés után Boop összerak egy több hetes edzésblokkot, amit átszabhatsz, sablonként elmenthetsz és újraindíthatsz.
+osszefoglalo: Néhány kérdés után Boop összerak egy több hetes edzés-mezociklust, amit átszabhatsz, sablonként elmenthetsz és újraindíthatsz.
 ---
 
 ## Mit csinál
 
-**A Blokk fül (B5, 2026-11-17 — ez már él):**
+**A Mezociklus fül (B5, 2026-11-17 — ez már él; a fül neve 2026-11-26 óta „Mezociklus”, részletek: [Mezociklusaim](20-mezociklusaim.md)):**
 
-- **A blokk terhelése:** a blokk hetei egy sorban (idő balra-jobbra, magasság = mennyit kér a hét), alatta a hét
-  összes sorozata. Rákoppintva megnyílik **A blokk terhelése** oldal, és ott az áll, amit tudni akarsz:
+- **A mezociklus terhelése:** a mezociklus hetei egy sorban (idő balra-jobbra, magasság = mennyit kér a hét), alatta a hét
+  összes sorozata. Rákoppintva megnyílik **A mezociklus terhelése** oldal, és ott az áll, amit tudni akarsz:
   - egy mondat arról, hány izomcsoportot edzel ezen a héten, hányban van még hova nőni, hány érte el a felső
     értékét, és mennyivel több vagy kevesebb ez a múlt hétnél;
   - a hét **összes sorozata egy nagy számként**, mellette a **test**, amin minden izom annyira van kitöltve,
     amennyire a saját felső értékéhez képest áll;
-  - **izomcsoportonként egy sor, abban a sorrendben, ahogy még hely van bennük**: a szerepe ebben a blokkban
+  - **izomcsoportonként egy sor, abban a sorrendben, ahogy még hely van bennük**: a szerepe ebben a mezociklusban
     (Hangsúly · Építés · Tartás), egy **mondat** („Még 3 szett fér bele" / „Elérte a felső értéket ebben a
     tervben"), egy sáv, aminek a vége ennek a tervnek a felső értéke, benne jelölve az a szint, ami alatt már nem
     fejlődik — és a szettszám.
@@ -29,7 +29,7 @@ osszefoglalo: Néhány kérdés után Boop összerak egy több hetes edzésblokk
   **Amin az egész áll:** egy izom felső értéke **nem az, amennyit elbír**, hanem az, ameddig *ez a terv* viszi — a
   szerepe szerint. Egy szinten tartott izomnak azt mondani, hogy „még 8 szett fér bele", olyan ígéret lenne, amit
   a terv soha nem tett.
-- **A heted:** a blokk napjai lapozható kártyákon (hétfőtől vasárnapig), mindegyiken a nap típusa, mely
+- **A heted:** a mezociklus napjai lapozható kártyákon (hétfőtől vasárnapig), mindegyiken a nap típusa, mely
   izomcsoportokat dolgoztatja és hány gyakorlat. A mai nap meg van jelölve, a már megcsinált napok ki vannak
   pipálva. (Korábban ez a Ma oldalon volt; a Ma a mai napról szól, a hét a blokk dolga — 2026-11-17.)
 
