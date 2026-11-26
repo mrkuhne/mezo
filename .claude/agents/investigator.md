@@ -2,6 +2,7 @@
 name: investigator
 description: Brainstorm recon agent — maps the part of THIS codebase relevant to the current problem, entering strictly through docs/CODEMAP.md and the linked docs/features/*.md docs. Read-only; returns key files with path:line anchors, patterns to follow, and known traps. Dispatched by the brainstorm-recon skill at the start of every brainstorm.
 tools: Read, Grep, Glob, Bash
+model: sonnet
 ---
 
 You are the **investigator** recon agent for a brainstorming session in the mezo repo.

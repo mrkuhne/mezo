@@ -118,7 +118,8 @@ Hungarian, business language** (CLAUDE.md §Communication) — no file names, no
 
 - Every slice opens with a short brainstorm (`superpowers:brainstorming` + `brainstorm-recon`; the research report
   for the area is the recon's head start), a **simulator spike** when anything new is seen, then a plan in
-  `docs/superpowers/plans/` with a *Kész, ha…* list (owner OK) → execute (inline or subagents).
+  `docs/superpowers/plans/` with a *Kész, ha…* list (owner OK) → execute (inline or subagents; implementer,
+  spec-check and lookup subagents run on `model: "sonnet"`, see CLAUDE.md §Token diet).
 - TDD for logic (`BoopCore` models with `StubTransport`, builders as pure functions); screens build from the
   Napkelte kit in `BoopDesign/Napkelte/` and the approved spike. Logic that lives only in the web frontend moves to
   the backend when more than Boop's display needs it (spec §4), otherwise to Swift — never duplicate it in both.
@@ -133,10 +134,12 @@ Hungarian, business language** (CLAUDE.md §Communication) — no file names, no
   (driver: the `boop-notion` skill). When you **claim** an issue: add/refresh its row in
   `docs/boop-handbook/_jegyek.json` (Hungarian title, *mit kapsz*, `munkamenet` = your session name) and sync, so
   the board shows it as *Épül*. When it moves to review / waits for deploy / waits on the owner: `bd label add <id>
-  allapot:ellenorzes|elesitesre-var|var-rad` and sync. **At report time:** close/relabel the issue, add the merge to
+  allapot:ellenorzes|elesitesre-var|var-rad` (it rides the next push). **Push at most twice per session** — once
+  after the claim, once at report time — and always through a fresh `sonnet` worker, never Notion MCP calls in the
+  main session (`boop-notion` §2; token diet, mezo-hsc75). **At report time:** close/relabel the issue, add the merge to
   `_kiadasok.json`, any owner decision to `_dontesek.json`, update the handbook pages of every feature you added,
-  changed or cut (state, how it works, settings, data tables), then `node scripts/boop-notion-sync.mjs plan` →
-  apply → `check` exits 0, and commit `_notion-state.json` with the slice. No Notion tools in the session → file a
+  changed or cut (state, how it works, settings, data tables), then dispatch the sync worker (plan → apply →
+  `check` exits 0), and commit `_notion-state.json` with the slice. No Notion tools in the session → file a
   `notion-sync` bd issue under the epic instead of skipping silently.
 - Report to the owner in Hungarian: what he can now do, what was checked, what is not done.
 
