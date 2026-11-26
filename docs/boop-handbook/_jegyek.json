@@ -1804,5 +1804,16 @@
     ],
     "mit_kapsz": "Ritka eset: ha egy már lezárt áttétel célnapjára később új edzés kerül, az az edzés is látszani fog.",
     "szulo": "mezo-r36n9.17"
+  },
+  "mezo-r36n9.177": {
+    "cim": "Mezociklusaim: minden mezociklusod egy helyen — indítás, lezárás, újraindítás, sablonok",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Az Edzés „Mezociklus” fülén látod a futó mezociklusodat, és egy koppintással szerkeszted, újraindítod az 1. héttől (a módosításaiddal együtt) vagy lezárod zárójelentéssel. A Mezociklusaim oldalon ott van minden sablonod, a következő és a lezárt mezociklusaid — mindegyiket előbb megnézed, aztán döntesz. A sablonokat is szerkesztheted. A „blokk” szó mindenhol „mezociklus” lett.",
+    "szulo": "mezo-r36n9",
+    "munkamenet": "mezociklus-kezeles"
   }
 }

@@ -1,7 +1,8 @@
 # Boop — Mezociklus fül és mezociklus-kezelés (design)
 
 - **Issue:** `mezo-r36n9.177` (epic `mezo-r36n9`)
-- **Date:** 2026-11-26 · **Status:** draft → owner OK pending · owner choices: B layout, A clean-slate restart, A atomic server restart keeping edits, + save-to-template
+- **Date:** 2026-11-26 · **Status:** approved (spec OK; spike round 2 accepted as the visual direction 2026-11-26) · owner choices: B layout, A clean-slate restart, A atomic server restart keeping edits, + save-to-template, A template editing in this slice
+- **Spike:** throwaway branch `spike/boop-mezociklus` (`ios/Boop/Edzes/MezociklusSpike*.swift`), screens `ios/build/mezociklus-spike-2.png`
 - **Type:** server feature into the app (playbook §6) + new screens (§4). Owner gates: spec ① → simulator spike ② → plan ③.
 
 ## 1. Intent — why
@@ -19,31 +20,41 @@ the whole lifecycle, with its own new icon.
 **Goals**
 1. Edzés room tab „Blokk” → **„Mezociklus”**, with a **new glyph** (a cycle / circular arrow, drawn in the Napkelte glyph
    style — final look decided in the spike).
-2. On the tab, a **current-mezociklus card** at the top: title, „N. hét a M-ból”, progress, and three actions:
-   **Szerkesztés** (opens the existing builder), **Újraindítás**, **Lezárás**.
-3. A row **„Összes mezociklusom ›”** on the tab, opening a new page with three groups: **Most fut**, **Következik**
-   (planned runs), **Lezártak** (archived runs, newest first).
+2. On the tab, a **current-mezociklus card** („A MEZOCIKLUSOD”, cycle glyph) at the top: title, „N. hét a M-ból · split”,
+   a level bar, and three pill actions: **Szerkesztés** (primary, opens the existing builder), **Újraindítás**,
+   **Lezárás**; a „…” (*Továbbiak*) menu holds **Mentés a sablonba**.
+3. Under the week carousel, **two tiles side by side**: **Mezociklusaim** (a ring of the running one's progress, how many
+   closed / templates) and **Éves terv** (replaces the old year-plan row). *Mezociklusaim* opens the new page (§5.2).
 4. **Újraindítás** = clean slate (owner choice A): the **current state of the running mezociklus, with every edit he
    made on the phone**, starts again **today, from week 1**, as a new run; the old run is closed (with its frozen
    report) and stays among *Lezártak* with its logged workouts. **One atomic server step** (owner, 2026-11-26): either
    all of it happens or nothing changes. The confirmation shows „N. hét a M-ból, eddig K edzés kész” (missed count only
    if reliably computable) and offers a toggle **„A sablont is frissítem a módosításokkal”** (default off).
-4b. **Mentés a sablonba** (owner, 2026-11-26): from the current-mezociklus card (secondary action, e.g. in a „Továbbiak”
-   menu next to the three buttons) he can overwrite the run's template with the run's current state, so future starts
+4b. **Mentés a sablonba** (owner, 2026-11-26): from the current-mezociklus card's „…” menu he can overwrite the run's template with the run's current state, so future starts
    from that template carry his edits. Confirmation: „A „X” sablon felülíródik a mostani állapottal.” A legacy run
    without a template gets one created.
 5. **Lezárás**: a sheet with an optional own evaluation („Hogy sikerült? (nem kötelező)”), a red *Lezárás* button,
    then the **zárójelentés** (frozen report: adherence, strength, records, volume) with the AI evaluation arriving
    later (pending state while it is generated; hidden when the feature is off).
-6. **Indítás** of a planned run or **Újrafuttatás** of a closed one: if another run is active, the confirmation says
-   that one will be closed first. Start date = today (planned runs: their own date, or today).
-7. A closed mezociklus opens its **zárójelentés**; from there **Újrafuttatás**.
+6. **Look first, then decide** (owner, after spike round 2): tapping any template, planned or closed mezociklus opens
+   its **detail page** — it never starts anything. The bottom bar carries **Indítás** (template / planned) or
+   **Újrafuttatás** (closed) and **Szerkesztés**. Starting: if another run is active, the confirmation says that one
+   will be closed first (see §5.3). Start date = today (planned runs: their own date, or today).
+7. A closed mezociklus's detail page shows a report teaser; the full **zárójelentés** is a graphic page (§5.4).
+7b. **Template editing in this slice** (owner decision A, 2026-11-26): *Szerkesztés* on a template's detail page opens
+   the existing builder in a **template mode** that saves through `updateMesoTemplate` (full replace). Running-run
+   editing is unchanged.
+7c. The duplicate **„Blokk szerkesztése”** button in the week-review entrance is removed — editing lives on the
+   current-mezociklus card.
+7d. **UX rule** (owner, recorded in playbook §9 + boop skill §2): no page is a plain text-and-list page — every page
+   here leads with a graphic (timeline, ring, curve, body map); and anything startable opens for review first.
 8. Every visible „blokk” string (all inflections) reads naturally as „mezociklus” (mezociklusod, mezociklusban, …),
    incl. the year plan, Évad, the player, swap sheet, error texts.
 
 **Non-goals (this issue)**
 - „Continue with a shifted calendar” restart (owner choice B) — needs a new server endpoint; later if missed.
-- Comparing two runs, deleting or renaming templates, editing a template directly.
+- Comparing two runs, deleting or renaming templates, creating a brand-new template from scratch on the phone
+  (new ones come from *Mentés a sablonba* or the existing *Új mezociklus* flow).
 - Backend changes beyond the two endpoints in §5.5.
 
 **Anti-goals** (failure even if it works)
@@ -73,31 +84,50 @@ Restart semantics: **A) clean slate** ✔ (server-ready: rerun → start) vs B) 
 ## 5. Design
 
 ### 5.1 Mezociklus tab (was Blokk)
-Order: heti átnézés entrance (unchanged) → **current-mezociklus card** (new) → terhelés card (renamed „A
-MEZOCIKLUS TERHELÉSE”) → A heted → **„Összes mezociklusom ›”** row (new) → Az éves terv row → ask-Boop row.
+Order: **current-mezociklus card** (new) → heti átnézés entrance (its „Blokk szerkesztése” button removed) →
+terhelés card (renamed „A MEZOCIKLUS TERHELÉSE”) → A heted → **two tiles: Mezociklusaim · Éves terv** (new; the
+year-plan row goes) → ask-Boop row.
 
 - No running mezociklus: the empty state (renamed) keeps *Új mezociklus*; if a planned run exists, the card shows it
-  with **Indítás**; the „Összes mezociklusom” row is always present.
-- Unreachable server, no cache: existing „nem érem el” state, the list row still opens (the page has its own states).
+  with **Indítás** (opening its detail page first); the two tiles are always present.
+- Unreachable server, no cache: existing „nem érem el” state, the tiles still open (the page has its own states).
 
-### 5.2 Összes mezociklusom page
-Full-screen sub-page (same pattern as the year plan / builder covers). Groups: *Most fut* (0–1), *Következik*,
-*Lezártak*, and *Sablonjaim* (my call — he thinks in „templates → start”; each template row shows how many times it
-ran and has **Indítás**, which starts it today as active, with the „X lezárul” warning if one runs). Row: title, date range, „N hét · split”, report chip if `hasReport`. Tap: running → back to the tab /
-its card; planned → a detail with **Indítás**; closed → **zárójelentés** with **Újrafuttatás**. States: loading
-(cached first), empty („Még nincs mezociklusod — indíts egyet”), error, offline (cached + age).
+### 5.2 Mezociklusaim page
+Full-screen sub-page (same pattern as the year plan / builder covers), every section graphic:
+- **Hero card** for the running one („MOST FUT”): title, week timeline, progress ring, body map of the muscles it
+  trains. Tap → back to the tab.
+- **Következik**: date cards for planned runs (start date prominent). Tap → detail page.
+- **Sablonjaim** (count trailing): a horizontal carousel of cards — body map, mini weekly curve, „N×” badge (how many
+  times it ran). Tap → detail page (never starts it).
+- **Lezártak** (newest first): ring cards (adherence ring, date range, tags such as split / weeks / report). Tap →
+  detail page.
+States: loading (cached first), empty („Még nincs mezociklusod — indíts egyet”), error, offline (cached + age).
+
+### 5.2b Detail page — look first, then decide
+One page for a template, a planned run or a closed run: header (title, „N hét · split”, kind), **A hetek íve** (the
+weekly volume / phase curve), **Hogy sikerült** report teaser (closed runs only; opens the zárójelentés), **A hét
+napjai** (a day carousel: each day's focus and exercise count), **Mit kapnak az izmok** (body map). Bottom bar:
+**Indítás** (template / planned) or **Újrafuttatás** (closed) + **Szerkesztés** (template → builder template mode;
+planned run → builder on that run; closed run → its template in template mode). Starting confirms per §5.3.
 
 ### 5.3 Confirmations (all `confirmationDialog`-style, attached to the screen, not to a list row)
 - **Újraindítás:** „Újrakezded ma az 1. héttől? A mostani futam (N. hét a M-ból) lezárul és megmarad a lezártak között.”
 - **Lezárás:** sheet (optional own evaluation) → red *Lezárás* → report.
 - **Indítás / Újrafuttatás while one runs:** „A most futó „X” lezárul.”
 
-### 5.4 Zárójelentés view
-Read-only frozen report from the server: adherence, strength changes, records, volume; own evaluation; AI evaluation
-with pending / ready / off states (poll while pending, modest interval, stop on leave).
+### 5.4 Zárójelentés view (graphic)
+Read-only frozen report from the server, as graphics, not a list: **A hetek: terv és valóság** (planned vs done per
+week, bars), adherence ring, **Erő** (strength changes, up/down per lift with records marked), volume; own evaluation;
+**Boop értékelése** with pending / ready / off states (poll while pending, modest interval, stop on leave).
+
+### 5.7 Builder template mode
+The builder (`BlockBuilderPage` / `BlockBuilderModel`) gains a source: *run* (today) or *template*. In template mode
+it loads the template's plan, edits the same days / exercises / settings / priorities in memory, and saves once with
+`updateMesoTemplate` (full replace of the template's plan). Header says „Sablon szerkesztése”; nothing about the
+running run changes. Fields the template does not carry are hidden.
 
 ### 5.5 Server calls
-Existing: `listMesocycles`, `listMesoTemplates`, `activateMesocycle` (planned → Indítás, keeps its plan),
+Existing: `listMesocycles`, `listMesoTemplates`, `updateMesoTemplate` (template mode), `activateMesocycle` (planned → Indítás, keeps its plan),
 `closeMesocycle {selfEval?}`, `rerunMesocycle` → `startMesoTemplate {startDate: today, status: active}` (closed run →
 Újrafuttatás from its template), `getMesocycleReport`.
 
