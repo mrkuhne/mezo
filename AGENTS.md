@@ -20,6 +20,7 @@ bd close <id>         # Complete work
 
 - Use `bd` for ALL task tracking — do NOT use any harness-local todo/task tool or markdown TODO lists
 - Run `bd prime` for detailed command reference and session close protocol
+- Persistent memories are NOT injected by `bd prime` any more (`.beads/PRIME.md` keeps it compact, mezo-hsc75) — search them with `bd memories <keyword>` before working on an area.
 - Use `bd remember` for persistent knowledge — do NOT use MEMORY.md files
 
 ## Git Workflow

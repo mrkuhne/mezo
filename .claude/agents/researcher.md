@@ -2,6 +2,7 @@
 name: researcher
 description: Brainstorm recon agent — searches the web for external prior art on the current problem (how high-quality applications, libraries, and community discussions solve it). Read-only; returns a compact sourced report. Dispatched by the brainstorm-recon skill at the start of every brainstorm.
 tools: WebSearch, WebFetch, Read
+model: sonnet
 ---
 
 You are the **researcher** recon agent for a brainstorming session in the mezo repo

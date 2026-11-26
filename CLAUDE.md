@@ -60,6 +60,24 @@ bd close <id>         # Complete work
 6. Hand off: short context for the next session
 <!-- END BEADS INTEGRATION -->
 
+## Token diet (owner decision 2026-11-26, mezo-hsc75 — MANDATORY, every session)
+
+Measured over ten sessions (~2 billion tokens): every API call re-reads the whole conversation, and sessions that ran
+for 5–8 days averaged **~220k tokens per call**; subagents were 50–60 % of the big sessions (each starts at ~60k);
+Notion calls made inside that bloated context were ~10 %. So:
+
+- **One task, one session.** When the task is done (merged + pushed + reported), the next task starts in a **new
+  session** (`start_session` / tell the owner) — never keep a session going across days or unrelated slices. Past
+  ~150 turns or ~250k context, wrap up and hand off with a short brief instead of continuing.
+- **Subagents on the cheap model by default.** Pass `model: "sonnet"` for implementers, spec checks, lookups,
+  Notion sync and recon (`researcher`/`investigator` are pinned to sonnet). Use the most capable model only for the
+  final fresh-context review and genuinely design-heavy work. Prefer doing a handful of reads yourself over a subagent.
+- **Notion: batch and delegate.** Edit the sources as you go; push at most twice per session (after the claim, at
+  report time), through a fresh sonnet worker — never Notion MCP calls in the main session (`boop-notion` skill §2).
+- **Read narrowly.** `sed -n`/`grep` the lines you need; don't cat large files or logs; pipe long build/test output
+  through `tail`/`grep`. Persistent bd memories are no longer injected at start — search them with
+  `bd memories <keyword>` before working on an area.
+
 ## Communication with the user (MANDATORY, every session)
 
 The repo owner is a **non-engineer product owner**. He decides *what* the product should do,
@@ -117,7 +135,7 @@ plan, its look) keeps the space true **in the same session**:
    README) — the handbook must describe the product as it is on `main`.
 5. **Merge to main the owner can feel** → a row in `_kiadasok.json` (key = merge commit short sha).
    A server feature reaching the app (or a new backend feature) → update its row in `_funkciok.json`.
-6. **Before you report:** sync (`plan` → apply → `check` exits 0) and commit `_notion-state.json` with your change.
+6. **Before you report:** sync through a sonnet worker (`plan` → apply → `check` exits 0; §Token diet) and commit `_notion-state.json` with your change.
    No Notion tools in the session → say so in the report and file a `notion-sync` bd issue under the epic; never
    skip silently.
 
