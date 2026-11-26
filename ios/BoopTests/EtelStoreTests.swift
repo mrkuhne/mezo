@@ -39,6 +39,11 @@ final class ScriptedTransport: ClientTransport, @unchecked Sendable {
     }
 }
 
+/// A sender that never delivers: the queued item stays.
+private struct RetryingSender: OutboxSender {
+    func send(_ item: OutboxItem) async -> OutboxSendResult { .offline }
+}
+
 @MainActor
 struct EtelStoreTests {
     let transport = ScriptedTransport()
@@ -81,19 +86,18 @@ struct EtelStoreTests {
         script(meals: [meal(mealA, photo: true)])
         let food = FoodClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: transport))
         let now = Date()
-        let key = "etel.takenIds.\(food.ymd(now))"
-        UserDefaults.standard.removeObject(forKey: key)
-        defer { UserDefaults.standard.removeObject(forKey: key) }
-        let store = EtelStore()
+        let day = food.ymd(now)
+        let taken = SupplementTakenStore(fileURL: tempFile())
+        let store = EtelStore(taken: taken)
         await store.load(food: food, now: now, extras: false)
         #expect(transport.count("getFuelDay") == 0 && transport.count("getMealCoachForDay") == 0 && transport.count("getMealPhoto") == 0)
         #expect(store.plan != nil && store.groups.count == 1 && store.taken.isEmpty)
-        // the room (another store) ticks the group: it lands in UserDefaults; Ma's next light read must see it
-        UserDefaults.standard.set(["morning": [UUID().uuidString]], forKey: key)
+        // the room (another store) ticks the group: it lands in the user's file; Ma's next light read must see it
+        taken.markTaken(day: day, daypart: "morning", ids: [UUID()])
         await store.load(food: food, now: now, extras: false)
         #expect(store.taken == ["morning"])
         // and an untick there
-        UserDefaults.standard.removeObject(forKey: key)
+        taken.undo(day: day, daypart: "morning")
         await store.load(food: food, now: now, extras: false)
         #expect(store.taken.isEmpty)
     }
@@ -140,10 +144,9 @@ struct EtelStoreTests {
             var cal = Calendar(identifier: .gregorian); cal.timeZone = .current
             return cal.date(from: DateComponents(year: 2031, month: 3, day: day, hour: 12))!
         }
-        for d in 4...5 { UserDefaults.standard.removeObject(forKey: String(format: "etel.takenIds.2031-03-%02d", d)) }
         script(meals: [])
         let food = FoodClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: transport))
-        let store = EtelStore()
+        let store = EtelStore(taken: SupplementTakenStore(fileURL: tempFile()))
         await store.load(food: food, now: at(4))
         let group = SupplementGroup(key: "morning", label: "Reggel", count: 1, summary: "D3")
         transport.on("logIntake", 201, #"{"id":"\#(intake1)","pantryItemId":"\#(pantry)","takenAt":"2031-03-04T07:30:00Z","takenDate":"2031-03-04"}"#)
@@ -155,7 +158,51 @@ struct EtelStoreTests {
         #expect(!store.isTaken(group))
         await store.load(food: food, now: at(4))                 // back on the first day its saved ids return
         #expect(store.isTaken(group))
-        UserDefaults.standard.removeObject(forKey: "etel.takenIds.2031-03-04")
+    }
+
+    private func tempFile() -> URL {
+        FileManager.default.temporaryDirectory.appendingPathComponent("etel-taken-\(UUID().uuidString)/supplements-taken.json")
+    }
+
+    @Test func roomUndoOfUnknownIdsSaysStillSending() async {
+        script(meals: [])
+        let taken = SupplementTakenStore(fileURL: tempFile())
+        // the queued tick marks the group taken at once, with no ids yet
+        let store = EtelStore(taken: taken, tick: { daypart, date in taken.markTaken(day: "2026-11-13", daypart: daypart, ids: nil) })
+        await store.load(food: FoodClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: transport)), now: Date())
+        let group = SupplementGroup(key: "morning", label: "Reggel", count: 3, summary: "D3")
+        #expect(await store.toggle(group) == "Reggel: mind a 3 bevéve")
+        #expect(store.isTaken(group) && transport.count("logIntake") == 0)       // went through the queue, not the client
+        #expect(await store.toggle(group) == "Még küldöm — utána visszavonhatod")
+        #expect(store.isTaken(group) && transport.count("deleteIntake") == 0)    // changes nothing
+        // once the sender has filled the ids in, the same tap undoes
+        taken.markTaken(day: store.ymd, daypart: "morning", ids: [UUID(uuidString: intake1)!])
+        transport.on("deleteIntake", 204)
+        #expect(await store.toggle(group) == "Visszavontam")
+        #expect(!store.isTaken(group) && taken.taken(day: store.ymd).isEmpty)
+    }
+
+    @Test func roomTickAlsoTicksTheLinkedReminder() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("etel-tick-\(UUID().uuidString)")
+        let now = Date(timeIntervalSince1970: 1_795_089_600)
+        let env = RitmusEnvironment(ledgerDirectory: root.appendingPathComponent("ledger"),
+                                    outboxDirectory: root.appendingPathComponent("outbox"),
+                                    sender: RetryingSender(), line: { _, _ in "" },
+                                    snapshot: { _ in CheckInSnapshotValue(hrBpm: 78, hrvMs: 38, hrvUsualMs: 50) }, plans: nil,
+                                    clock: { now }, calendar: .current)
+        let reminders = ReminderStore(fileURL: root.appendingPathComponent("reminders.json"))
+        let linked = Reminder(title: "Reggeli kiegészítők", hour: 8, minute: 0, repeats: .daily, strength: .alarm,
+                              link: .supplement(daypart: "morning"))
+        let other = Reminder(title: "Este", hour: 21, minute: 0, repeats: .daily, link: .supplement(daypart: "evening"))
+        reminders.upsert(linked); reminders.upsert(other)
+        env.reminderStore = { reminders }
+        let day = env.day(of: now)
+        try await env.captureSupplementTick(daypart: "morning", at: now)
+        #expect(reminders.file.done == ["\(linked.id.uuidString)|\(day)"])
+        #expect(env.supplementTaken.taken(day: day) == ["morning": []])
+        // a second tick of the same group queues nothing more
+        try await env.captureSupplementTick(daypart: "morning", at: now)
+        #expect(await env.outbox.pending.filter { $0.kind == .supplementTick }.count == 1)
     }
 
     @Test func takingASupplementGroupRollsBackOnFailureAndUndoesOnSecondTap() async {

@@ -62,6 +62,16 @@ final class EtelStore {
     var taken: Set<String> { Set(takenIds.keys) }
     private(set) var loading = false
 
+    /// The per-user file of taken groups, and the queued one-way tick; both default to the signed-in user's (`SupplementTickHub`).
+    @ObservationIgnored private let injectedTaken: SupplementTakenStore?
+    @ObservationIgnored private let injectedTick: (@MainActor (String, Date) async throws -> Void)?
+    private var takenStore: SupplementTakenStore? { injectedTaken ?? SupplementTickHub.taken }
+    private var tick: (@MainActor (String, Date) async throws -> Void)? { injectedTick ?? SupplementTickHub.capture }
+
+    init(taken: SupplementTakenStore? = nil, tick: (@MainActor (String, Date) async throws -> Void)? = nil) {
+        injectedTaken = taken; injectedTick = tick
+    }
+
     @ObservationIgnored private var food: FoodClient?
     var currentFood: FoodClient? { food }
     @ObservationIgnored private var now = Date()
@@ -127,8 +137,12 @@ final class EtelStore {
 
     /// The taken groups of `day` as the phone last saved them (the room and Ma's rows share this key).
     private func syncTaken(day today: String) {
-        let saved = UserDefaults.standard.dictionary(forKey: "etel.takenIds.\(today)") as? [String: [String]] ?? [:]
-        takenIds = saved.mapValues { $0.compactMap(UUID.init(uuidString:)) }
+        if let store = takenStore {
+            store.migrateLegacy(day: today)
+            takenIds = store.taken(day: today)
+        } else if takenDay != today {
+            takenIds = [:]      // no per-user file yet (a preview, a test): the day's own memory only
+        }
         takenDay = today
     }
 
@@ -473,38 +487,70 @@ final class EtelStore {
     func isTaken(_ group: SupplementGroup) -> Bool { taken.contains(group.key) }
     func isBusy(_ group: SupplementGroup) -> Bool { busy.contains(group.key) }
 
-    /// One tap takes the whole group; a second tap on "Bevéve" undoes it (the server soft-deletes the entries).
+    /// One tap takes the whole group (queued: it counts as taken at once and goes out through the outbox); a second tap on
+    /// "Bevéve" undoes it (the server soft-deletes the entries) — once the server's ids are known.
     func toggle(_ group: SupplementGroup) async -> String {
         guard let food, !busy.contains(group.key) else { return "" }
         let key = group.key, dayKey = ymd
         busy.insert(key); defer { busy.remove(key) }
+        // The sender may have delivered since the last read: its ids are what an undo needs.
+        if takenIds[key]?.isEmpty == true, let ids = takenStore?.taken(day: dayKey)[key], !ids.isEmpty { takenIds[key] = ids }
         if let ids = takenIds[key] {
+            if ids.isEmpty { return "Még küldöm — utána visszavonhatod" }
             takenIds[key] = nil
             var left = ids
             do {
                 for id in ids { try await food.deleteIntake(id); left.removeFirst() }
-                persistTaken(dayKey)
+                takenStore?.undo(day: dayKey, daypart: key)
                 return "Visszavontam"
             } catch {
                 takenIds[key] = left
-                persistTaken(dayKey)
+                takenStore?.markTaken(day: dayKey, daypart: key, ids: left)
                 return "Nem sikerült visszavonni — próbáld újra"
             }
         }
         takenIds[key] = []
         do {
-            let ids = try await food.tickGroupIntakes(daypart: key, clientRef: supplementRef(day: dayKey, daypart: key), capturedAt: Date())
-            takenIds[key] = ids
-            persistTaken(dayKey)
+            if let tick {
+                try await tick(key, Date())
+            } else {
+                // No queue wired (a preview): the direct write, as before.
+                let ids = try await food.tickGroupIntakes(daypart: key, clientRef: supplementRef(day: dayKey, daypart: key), capturedAt: Date())
+                takenIds[key] = ids
+                takenStore?.markTaken(day: dayKey, daypart: key, ids: ids)
+            }
             return "\(group.label): mind a \(group.count) bevéve"
         } catch {
             takenIds[key] = nil
             return "Nem sikerült elküldeni — próbáld újra"
         }
     }
+}
 
-    private func persistTaken(_ dayKey: String) {
-        UserDefaults.standard.set(takenIds.mapValues { $0.map(\.uuidString) }, forKey: "etel.takenIds.\(dayKey)")
+/// The signed-in user's supplement ticks, reachable from every `EtelStore` (the room, Ma, the quick sheet) without
+/// threading the environment through each view: set when the user's `RitmusEnvironment` is built, cleared when it retires.
+@MainActor
+enum SupplementTickHub {
+    private(set) static var taken: SupplementTakenStore?
+    private(set) static var capture: (@MainActor (String, Date) async throws -> Void)?
+    private static weak var owner: RitmusEnvironment?
+
+    static func bind(_ env: RitmusEnvironment) {
+        owner = env
+        taken = env.supplementTaken
+        capture = { [weak env] daypart, date in try await env?.captureSupplementTick(daypart: daypart, at: date) }
+    }
+
+    static func unbind(_ env: RitmusEnvironment) {
+        guard owner === env else { return }
+        owner = nil; taken = nil; capture = nil
+    }
+
+    /// The reminder linked to `daypart` is done for `day`: that day's alarm will not ring (the scheduler refreshes on the
+    /// store's change).
+    static func tickLinkedReminder(daypart: String, day: String, store: ReminderStore?) {
+        guard let store, let reminder = store.reminder(linkedTo: daypart) else { return }
+        store.tick("\(reminder.id.uuidString)|\(day)")
     }
 }
 

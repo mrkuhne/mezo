@@ -18,6 +18,9 @@ public enum OutboxKind: String, Codable, CaseIterable, Sendable {
     /// A past template day booked as planned (`mezo-r36n9.161`): `POST /api/train/workouts/as-planned`, idempotent on the
     /// item id as `clientRef`. **Never rename.**
     case workoutAsPlanned
+    /// A supplement daypart group taken (the room, the quick sheet, the alarm): `FoodClient.tickGroupIntakes` with the
+    /// derived `supplementRef` as the key. **Never rename.**
+    case supplementTick
 }
 
 /// One pending write. `id` is the client ref the server keys idempotency on, so a resend never duplicates.
@@ -237,6 +240,13 @@ public actor Outbox {
         case .sleepLog: ("sleep|\(item.id.uuidString)", false)
         // A booked workout stands alone: one refused booking never holds another back.
         case .workoutAsPlanned: ("workout|\(item.id.uuidString)", false)
+        // One group of one day is one chain; a second tick of it would be the same write anyway.
+        case .supplementTick:
+            if let p = RitmusPayload.decode(SupplementTickPayload.self, from: item.payload) {
+                ("supplement|\(item.date)|\(p.daypart)", false)
+            } else {
+                ("supplement|\(item.id.uuidString)", false)
+            }
         }
     }
 
