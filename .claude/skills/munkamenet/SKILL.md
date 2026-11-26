@@ -78,3 +78,10 @@ Replaces `superpowers:finishing-a-development-branch` (no options menu, no PR, n
    lezárható ones. Never archive a coordinating session whose child still has unmerged work (archiving a parent
    takes its idle children with it). Sessions of other projects are not yours — leave them.
 4. Report what was archived and what is left; verify the befejezendő branches still exist.
+
+## Feladattípusok — the playbook
+
+`playbook.md` (next to this file, Hungarian) holds the per-type flow for Boop: §2 small change, §3 bug, §4 new
+screen / UI, §5 long slice (B6/B7/B8-size: slice map, one step per session, handoff template), §6 server feature into
+the app, §7 research / refactor, §8 scouting before building, §9 the UX/UI + performance bar, §10 token rules.
+At kezdés, pick the type from its §1 table and read **only that section plus §9** (`sed -n` by heading).
