@@ -965,7 +965,7 @@
   "435f2e444": {
     "cim": "Hiányjelzés a blokképítőben: a kimaradt kiegészítő mozgás egy koppintással pótolható",
     "datum": "2026-11-26",
-    "verzio": "",
+    "verzio": "v3.41.0",
     "tipus": "Új funkció",
     "hova": [
       "iPhone app",
