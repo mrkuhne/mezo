@@ -91,7 +91,7 @@ struct MezociklusokPage: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("MOST FUT").nkFont(10.5, .semibold, design: .monospaced).tracking(1.4).foregroundStyle(hue.glow)
                     Text(m.title).nkFont(26, design: .serif).foregroundStyle(.white)
-                    Text("\(m.currentWeek). hét a \(m.weeks)-ból\(m.split.map { " · \($0)" } ?? "")")
+                    Text("\(m.currentWeek). hét \(mezoOf(m.weeks))\(m.split.map { " · \($0)" } ?? "")")
                         .nkFont(13).foregroundStyle(.white.opacity(0.65))
                 }
                 HStack(alignment: .bottom, spacing: 14) {
@@ -112,7 +112,7 @@ struct MezociklusokPage: View {
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Most fut: \(m.title), \(m.currentWeek). hét a \(m.weeks)-ból")
+        .accessibilityLabel("Most fut: \(m.title), \(m.currentWeek). hét \(mezoOf(m.weeks))")
         .accessibilityHint("Vissza a Mezociklus fülre")
         .accessibilityAddTraits(.isButton)
     }

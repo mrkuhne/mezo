@@ -24,7 +24,7 @@ struct MezoCurrentCard: View {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(title).nkFont(22, .semibold).foregroundStyle(.white)
-                        Text("\(week). hét a \(weeks)-ból · \(split)")
+                        Text("\(week). hét \(mezoOf(weeks)) · \(split)")
                             .nkFont(13).foregroundStyle(.white.opacity(0.65))
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)

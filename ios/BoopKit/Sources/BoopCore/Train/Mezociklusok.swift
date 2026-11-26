@@ -37,6 +37,8 @@ public struct MezoCard: Identifiable, Equatable, Sendable {
     public let templateId: String?
     public let blockId: String?
     public let days: [MezoDayPeek]
+    /// yyyy-MM-dd; nil for a template.
+    public var startDate: String? = nil
 }
 
 public struct MezoGroups: Equatable, Sendable {
@@ -84,7 +86,8 @@ private func card(block b: WireBlock, kind: MezoCard.Kind) -> MezoCard {
                     currentWeek: b.currentWeek, loads: mezoLoads(b.phaseCurve), phases: mezoPhases(b.phaseCurve),
                     heat: mezoHeat(days.flatMap { $0.exercises.map { (muscle: $0.muscle, sets: $0.workingSets) } }),
                     runCount: 0, hasReport: b.hasReport ?? false, adherence: nil, templateId: b.templateId, blockId: b.id,
-                    days: days.map { MezoDayPeek(name: $0.day, focus: $0.type, exerciseCount: $0.exercises.count) })
+                    days: days.map { MezoDayPeek(name: $0.day, focus: $0.type, exerciseCount: $0.exercises.count) },
+                    startDate: b.startDate)
 }
 
 func mezoLoads(_ curve: [String]) -> [Double] {
@@ -159,6 +162,8 @@ public final class MezociklusokModel {
     @ObservationIgnored private let cache: ServerCache?
     @ObservationIgnored private let clock: () -> Date
     @ObservationIgnored private var closedButNotStarted: String?
+    /// When the list last came fresh from the server: a later failed refresh shows the kept list with this age.
+    @ObservationIgnored private var freshAt: Date?
 
     public init(client: PlanClient, cache: ServerCache?, clock: @escaping () -> Date = Date.init) {
         self.client = client
@@ -180,11 +185,17 @@ public final class MezociklusokModel {
             let snap = Snapshot(blocks: blocks, templates: templates)
             apply(snap)
             ageText = nil
+            freshAt = clock()
             phase = .ready
             try? await cache?.put(snap, endpoint: Self.cacheEndpoint, date: Self.cacheKey)
             await loadReports()
         } catch {
-            if phase != .ready { phase = .failed(error) }
+            if phase != .ready {
+                phase = .failed(error)
+            } else if ageText == nil, let freshAt {
+                // A refresh after a good load failed: keep the list, but say how old it is and lock the actions.
+                ageText = YearPlanModel.ageText(max(0, clock().timeIntervalSince(freshAt)))
+            }
         }
     }
 
@@ -305,6 +316,21 @@ public final class MezociklusokModel {
     /// logged data — the list does not carry it, so it is nil rather than a guess.
     public nonisolated static func restartStats(running: MezoCard) -> (week: Int, of: Int, done: Int?) {
         (running.currentWeek, running.weeks, nil)
+    }
+
+    /// The planned ones a restart today throws away: the server discards a planned run (with no logged session) that
+    /// starts after today and before the restarted run's end — the new run lands on its weeks.
+    public nonisolated static func restartDrops(running: MezoCard, upcoming: [MezoCard], today: Date) -> [MezoCard] {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "Europe/Budapest") ?? .current
+        let start = cal.startOfDay(for: today)
+        guard let end = cal.date(byAdding: .day, value: running.weeks * 7, to: start) else { return [] }
+        let f = DateFormatter()
+        f.calendar = cal; f.timeZone = cal.timeZone; f.locale = Locale(identifier: "en_US_POSIX"); f.dateFormat = "yyyy-MM-dd"
+        return upcoming.filter { c in
+            guard c.kind == .planned, let d = c.startDate.flatMap(f.date(from:)) else { return false }
+            return d > start && d < end
+        }
     }
 
     public nonisolated static func message(_ error: PlanFetchError) -> String {

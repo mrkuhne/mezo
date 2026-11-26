@@ -21,7 +21,7 @@ struct MezoCloseSheet: View {
                 Text("Lezárod a „\(card.title)” mezociklust?").nkFont(24, .semibold).foregroundStyle(.white)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityAddTraits(.isHeader)
-                Text("Most a \(card.currentWeek). hétnél tartasz a \(card.weeks)-ból. A zárójelentés a mostani állapotot rögzíti, Boop pár perc múlva hozzáírja az értékelését.")
+                Text("Most a \(card.currentWeek). hétnél tartasz \(mezoOf(card.weeks)). A zárójelentés a mostani állapotot rögzíti, Boop pár perc múlva hozzáírja az értékelését.")
                     .nkFont(15).foregroundStyle(.white.opacity(0.75)).fixedSize(horizontal: false, vertical: true)
                 VStack(alignment: .leading, spacing: 8) {
                     Text("SAJÁT ÉRTÉKELÉS · NEM KÖTELEZŐ").nkFont(11, .semibold, design: .monospaced).foregroundStyle(.white.opacity(0.55))

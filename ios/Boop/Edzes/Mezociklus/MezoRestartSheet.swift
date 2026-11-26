@@ -20,9 +20,12 @@ struct MezoRestartSheet: View {
                     .accessibilityHidden(true)
                 Text("Újrakezded ma az 1. héttől?").nkFont(24, .semibold).foregroundStyle(.white)
                     .accessibilityAddTraits(.isHeader)
-                Text("A „\(card.title)” a mostani állapotával, minden módosításoddal együtt indul újra. A mostani futam (\(stats.week). hét a \(stats.of)-ból) lezárul, és zárójelentéssel megmarad a lezártak között.")
+                Text("A „\(card.title)” a mostani állapotával, minden módosításoddal együtt indul újra. A mostani futam (\(stats.week). hét \(mezoOf(stats.of))) lezárul, és zárójelentéssel megmarad a lezártak között.")
                     .nkFont(15).foregroundStyle(.white.opacity(0.75)).fixedSize(horizontal: false, vertical: true)
                 NKStatRow(statsRow(stats), hue: hue)
+                ForEach(MezociklusokModel.restartDrops(running: card, upcoming: model.groups.upcoming, today: Date())) { p in
+                    NKNote("A tervezett „\(p.title)” (\(p.dateText)) ezzel elmarad: az újraindított futam az ő heteire esik.", hue: hue)
+                }
                 Toggle(isOn: $updateTemplate) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("A sablont is frissítem").nkFont(15, .semibold).foregroundStyle(.white)

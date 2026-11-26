@@ -122,7 +122,7 @@ struct MezoReportPage: View {
                     }
                     .frame(maxWidth: .infinity)
                     .accessibilityElement(children: .ignore)
-                    .accessibilityLabel("\(w.week). hét: \(w.actual) sorozat a tervezett \(w.planned)-ból")
+                    .accessibilityLabel("\(w.week). hét: \(w.actual) sorozat a tervezett \(w.planned)-\(evesBolBol(w.planned))")
                 }
             }
             HStack(spacing: 14) {

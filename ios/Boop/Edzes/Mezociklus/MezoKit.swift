@@ -258,3 +258,6 @@ private struct MezoFlowModifier: ViewModifier {
             }
     }
 }
+
+/// „a 6-ból", „az 5-ből", „a 4-ből" — the article and the suffix follow the number's sound.
+func mezoOf(_ n: Int) -> String { "\(evesNumArticle(n)) \(n)-\(evesBolBol(n))" }

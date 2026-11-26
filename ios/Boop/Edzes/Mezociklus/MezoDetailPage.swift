@@ -119,7 +119,7 @@ struct MezoDetailPage: View {
     private var teaserLine: String {
         guard let r = card.blockId.flatMap({ model.reports[$0] }) else { return "Nézd meg, hogy ment" }
         let medals = r.records?.medalCount ?? 0
-        let done = r.adherence.flatMap { a in a.completedSessions.flatMap { c in a.plannedSessions.map { "\(c) edzés a \($0)-ból" } } }
+        let done = r.adherence.flatMap { a in a.completedSessions.flatMap { c in a.plannedSessions.map { "\(c) edzés \(mezoOf($0))" } } }
         return [done, medals > 0 ? "\(medals) új rekord" : nil].compactMap { $0 }.joined(separator: " · ")
             .nonEmpty ?? "Nézd meg, hogy ment"
     }

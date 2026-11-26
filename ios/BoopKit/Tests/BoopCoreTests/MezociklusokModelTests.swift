@@ -71,6 +71,20 @@ struct MezociklusokModelTests {
         #expect(mezoFromText("2026-03-05") == "márc. 5-től")
     }
 
+    @Test func restartDropsOnlyThePlannedInsideTheNewWeeks() {
+        let g = mezoCards(blocks: blocks, templates: templates)
+        guard let running = g.running, let planned = g.upcoming.first, let start = planned.startDate else {
+            Issue.record("fixture needs a running and a planned run"); return
+        }
+        let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX"); f.dateFormat = "yyyy-MM-dd"
+        f.timeZone = TimeZone(identifier: "Europe/Budapest")
+        let plannedDay = f.date(from: start)!
+        let inside = plannedDay.addingTimeInterval(-Double(running.weeks * 7 - 2) * 86_400)
+        let before = plannedDay.addingTimeInterval(-Double(running.weeks * 7 + 2) * 86_400)
+        #expect(MezociklusokModel.restartDrops(running: running, upcoming: g.upcoming, today: inside).map(\.id) == [planned.id])
+        #expect(MezociklusokModel.restartDrops(running: running, upcoming: g.upcoming, today: before).isEmpty)
+    }
+
     // MARK: load
 
     @Test func loadFillsGroupsAndAdherence() async {
@@ -99,6 +113,22 @@ struct MezociklusokModelTests {
         await m.load()
         #expect(m.phase == .ready)
         #expect(m.ageText == "2 napos adat")
+        #expect(m.offline)
+        #expect(m.groups.running?.blockId == PlanFixtures.blockId)
+    }
+
+    @Test func failedRefreshAfterGoodLoadGoesOffline() async {
+        let stub = StubTransport()
+        scriptList(stub)
+        nonisolated(unsafe) var now = Self.now
+        let m = model(stub, clock: { now })
+        await m.load()
+        #expect(!m.offline)
+
+        now = Self.now.addingTimeInterval(3 * 3600)
+        stub.on("listMesocycles", .fail(URLError(.notConnectedToInternet)))
+        await m.load()
+        #expect(m.phase == .ready)
         #expect(m.offline)
         #expect(m.groups.running?.blockId == PlanFixtures.blockId)
     }

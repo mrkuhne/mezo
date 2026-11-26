@@ -14,10 +14,17 @@ import io.mrkuhne.mezo.api.dto.MesocycleSettingsUpdateRequest;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.train.entity.MesoTemplateEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
+import io.mrkuhne.mezo.feature.train.entity.TrainingYearBlockEntity;
+import io.mrkuhne.mezo.feature.train.entity.TrainingYearPlanEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
+import io.mrkuhne.mezo.feature.train.repository.TrainingYearBlockRepository;
+import io.mrkuhne.mezo.feature.train.service.YearGenerator;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.MesoTemplatePopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
+import io.mrkuhne.mezo.support.populator.TrainingYearPlanPopulator;
+import java.time.DayOfWeek;
+import java.time.temporal.TemporalAdjusters;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
@@ -40,6 +47,8 @@ class MesoRestartIT extends ApiIntegrationTest {
     @Autowired private OwnerProperties ownerProperties;
     @Autowired private MesoTemplatePopulator mesoTemplatePopulator;
     @Autowired private TrainPopulator trainPopulator;
+    @Autowired private TrainingYearPlanPopulator yearPlanPopulator;
+    @Autowired private TrainingYearBlockRepository yearBlockRepository;
 
     private UUID ownerId() {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());
@@ -226,5 +235,39 @@ class MesoRestartIT extends ApiIntegrationTest {
             HttpStatus.CONFLICT, String.class);
 
         assertHasRequestError(body, "TRAIN_MESO_NOT_ACTIVE");
+    }
+
+    /**
+     * Review Focus (Task 2 ruling): the restarted run keeps the old run's year block, even when the NEXT planned block
+     * starts nearer to today than the old block did (5 weeks into a 6-week block, the next starts in a week).
+     */
+    @Test
+    void testRestart_shouldRelinkSameYearBlock_whenNextBlockIsNearer() {
+        UUID owner = ownerId();
+        MesoTemplateEntity template = mesoTemplatePopulator.template(owner);
+        HttpHeaders auth = ownerAuthHeaders();
+        LocalDate today = LocalDate.now(ZoneId.of("Europe/Budapest"));
+        LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).minusWeeks(5);
+        TrainingYearPlanEntity plan = yearPlanPopulator.plan(owner, monday, "back+biceps", "quad+glute");
+        List<TrainingYearBlockEntity> blocks = yearBlockRepository.findByPlanIdAndDeletedFalseOrderByOrdinalAsc(plan.getId());
+        MesocycleResponse old = postForBody(TEMPLATES + "/" + template.getId() + "/start",
+            MesoTemplateStartRequest.builder().startDate(monday).status(MesoTemplateStartRequest.StatusEnum.ACTIVE).build(),
+            auth, HttpStatus.OK, MesocycleResponse.class);
+        // The state of a run that was linked when it started 5 weeks ago (a start in the past is not linked).
+        TrainingYearBlockEntity linked = yearBlockRepository.findById(blocks.get(0).getId()).orElseThrow();
+        linked.setMesocycleId(old.getId());
+        linked.setStatus(YearGenerator.RUNNING);
+        yearBlockRepository.saveAndFlush(linked);
+
+        MesocycleResponse fresh = postForBody(MESOCYCLES + "/" + old.getId() + "/restart", null, auth,
+            HttpStatus.OK, MesocycleResponse.class);
+
+        TrainingYearBlockEntity first = yearBlockRepository.findById(blocks.get(0).getId()).orElseThrow();
+        TrainingYearBlockEntity next = yearBlockRepository.findById(blocks.get(1).getId()).orElseThrow();
+        assertThat(first.getMesocycleId()).isEqualTo(fresh.getId());
+        assertThat(first.getStatus()).isEqualTo(YearGenerator.RUNNING);
+        assertThat(next.getMesocycleId()).isNull();
+        assertThat(next.getStatus()).isEqualTo(YearGenerator.PLANNED);
+        assertThat(yearBlockRepository.findByCreatedByAndMesocycleIdAndDeletedFalse(owner, old.getId())).isEmpty();
     }
 }
