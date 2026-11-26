@@ -456,51 +456,51 @@
     },
     "kezikonyv:01-alapok/ertesitesek": {
       "page_id": "4168968e-752b-8165-9906-caa506eee81f",
-      "hash": "69a610497a4d"
+      "hash": "ea5bda061858"
     },
     "kezikonyv:01-alapok/fiok-es-belepes": {
       "page_id": "4168968e-752b-813a-8bb9-cbce770f5a64",
-      "hash": "397587b22e0e"
+      "hash": "fae7ecf245dc"
     },
     "kezikonyv:01-alapok/fiok-lap": {
       "page_id": "4168968e-752b-819b-b550-d0428e95081e",
-      "hash": "dc645c4365f8"
+      "hash": "54a250dce9ae"
     },
     "kezikonyv:01-alapok/fizetos-apple-fiok": {
       "page_id": "4168968e-752b-8155-a95b-cdab453c6b60",
-      "hash": "9ccf71e2fc15"
+      "hash": "b533b2f48cab"
     },
     "kezikonyv:01-alapok/gyors-rogzites": {
       "page_id": "4168968e-752b-81eb-833a-d4a89c813fb9",
-      "hash": "9bd8b6c830fe"
+      "hash": "84214400e422"
     },
     "kezikonyv:01-alapok/kepek": {
       "page_id": "4178968e-752b-8106-9d11-eeb4865798e8",
-      "hash": "cb820d059514"
+      "hash": "77385adec950"
     },
     "kezikonyv:01-alapok/kezdolap": {
       "page_id": "41a8968e-752b-812f-87dd-e3a938084198",
-      "hash": "0b9752192af0"
+      "hash": "bba95a92d670"
     },
     "kezikonyv:01-alapok/napkelte-kinezet": {
       "page_id": "4168968e-752b-812a-9b5f-fd8f477ccda4",
-      "hash": "355e992d5f7e"
+      "hash": "c309f17df34e"
     },
     "kezikonyv:01-alapok/navigacio": {
       "page_id": "4168968e-752b-81f1-a428-f1eff627e50a",
-      "hash": "59eb8c171641"
+      "hash": "a6dbcb1f253e"
     },
     "kezikonyv:01-alapok/net-nelkul": {
       "page_id": "4168968e-752b-815c-bee7-c4032ca1468f",
-      "hash": "83ebaef80643"
+      "hash": "8fc80571f282"
     },
     "kezikonyv:01-alapok/telepites-a-telefonra": {
       "page_id": "4168968e-752b-8185-b34c-c477fe6deb9b",
-      "hash": "27ac382769f0"
+      "hash": "9c32018e2089"
     },
     "kezikonyv:01-alapok/terulet-vaz": {
       "page_id": "41a8968e-752b-8155-94b9-d2ecc92c2f61",
-      "hash": "176cd089acb1"
+      "hash": "57c38396a580"
     },
     "kezikonyv:02-ma/00-attekintes": {
       "page_id": "4168968e-752b-81e7-9587-d27ec99c8ca4",
@@ -676,7 +676,7 @@
     },
     "kezikonyv:06-etel/02-etkezes-rogzitese": {
       "page_id": "4168968e-752b-8164-b1d7-d8aa78d82e63",
-      "hash": "0ce434437150"
+      "hash": "f167d5badf9c"
     },
     "kezikonyv:06-etel/03-etkezes-ertekelese": {
       "page_id": "4168968e-752b-81ee-b603-ce33a392a527",
@@ -724,7 +724,7 @@
     },
     "kezikonyv:07-edzes/03-edzeslejatszo": {
       "page_id": "4168968e-752b-8153-a900-cd5b2e535717",
-      "hash": "b2938c62d6e3"
+      "hash": "894e41a67925"
     },
     "kezikonyv:07-edzes/04-progresszio-motor": {
       "page_id": "4168968e-752b-819d-94a9-cbea5d321e46",
@@ -3104,7 +3104,7 @@
     },
     "kezikonyv:01-alapok/lapok-bezarasa": {
       "page_id": "4238968e-752b-8141-a471-fbe38783b294",
-      "hash": "7a1dd3d6000c"
+      "hash": "ca8b902971ac"
     },
     "kezikonyv:06-etel/11-italok": {
       "page_id": "4238968e-752b-813b-b3b4-d7e91aa05173",
@@ -3229,6 +3229,62 @@
     "kiadasok:c8a8ef330": {
       "page_id": "4248968e-752b-8189-8071-e6b0ff4f0444",
       "hash": "578ff6a19dd5"
+    },
+    "jegyek:mezo-r36n9.182": {
+      "page_id": "4248968e-752b-81e5-950e-d01b9a259365",
+      "hash": "f889fd5a0c42"
+    },
+    "jegyek:mezo-r36n9.181": {
+      "page_id": "4248968e-752b-8163-b2e0-ea26d44db26d",
+      "hash": "c1649c2d54b4"
+    },
+    "jegyek:mezo-r36n9.172": {
+      "page_id": "4248968e-752b-81f0-a207-e1d8dbfcb380",
+      "hash": "fde884c52168"
+    },
+    "dontesek:d-2026-11-25-d1-altalanos-emlekezteto": {
+      "page_id": "4248968e-752b-8125-9293-f4349abd13aa",
+      "hash": "f8d6deef8e19"
+    },
+    "dontesek:d-2026-11-25-d2-erosseg": {
+      "page_id": "4248968e-752b-81a6-b671-db8ecfb5b703",
+      "hash": "5fa28bf83e8e"
+    },
+    "dontesek:d-2026-11-25-d3-negy-widget": {
+      "page_id": "4248968e-752b-8176-9b43-d48da172a908",
+      "hash": "26df0896ff68"
+    },
+    "dontesek:d-2026-11-25-d4-edzeskartya": {
+      "page_id": "4248968e-752b-81b4-b714-c45685309b83",
+      "hash": "2d4db0a87435"
+    },
+    "dontesek:d-2026-11-25-d5-pihenő-vege": {
+      "page_id": "4248968e-752b-816f-8cae-fb6053408d8a",
+      "hash": "9e7b8e1c231f"
+    },
+    "dontesek:d-2026-11-25-d6-ket-lepes": {
+      "page_id": "4248968e-752b-8152-af1f-e846f21b6d37",
+      "hash": "fd7631edee06"
+    },
+    "dontesek:d-2026-11-25-d7-ingyenes-fiok": {
+      "page_id": "4248968e-752b-817b-bf94-e1c30fd60517",
+      "hash": "13bdab3fe427"
+    },
+    "dontesek:d-2026-11-25-d8-leallitas-csak-nema": {
+      "page_id": "4248968e-752b-81cb-a4b8-ca435b515128",
+      "hash": "f49f298f4203"
+    },
+    "kiadasok:18f7c673a": {
+      "page_id": "4248968e-752b-8102-a92f-fbcbd7abb770",
+      "hash": "e5f3c45fc231"
+    },
+    "kiadasok:9a960b2b2": {
+      "page_id": "4248968e-752b-81ab-9f7f-fb5699865c8a",
+      "hash": "a4614bd5b2ae"
+    },
+    "kezikonyv:01-alapok/emlekeztetok-es-ebresztok": {
+      "page_id": "4248968e-752b-8157-8726-eec50a383206",
+      "hash": "83d51ddf88ec"
     }
   }
 }
