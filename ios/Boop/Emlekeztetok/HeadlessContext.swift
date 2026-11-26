@@ -41,9 +41,27 @@ enum HeadlessContext {
     }
 
     private static var cached: (userId: UUID, base: URL, parts: Parts)?
+    /// The one scheduler of the cached parts: back-to-back presses (two alarms in the same minute, an alarm and a
+    /// notification) queue on one chain instead of re-arming side by side.
+    private static var cachedScheduler: (userId: UUID, scheduler: ReminderScheduler)?
 
-    /// Forget the cached parts (sign-out); a user change is noticed by the cache key itself.
-    static func invalidate() { cached = nil }
+    /// Forget the cached parts (sign-out); a user change is noticed by the cache key itself. Returns the retired headless
+    /// scheduler's last queued work, for whoever clears after it.
+    @discardableResult
+    static func invalidate() -> Task<Void, Never>? {
+        cached = nil
+        return handOver()
+    }
+
+    /// The live scheduler takes over: the headless one is retired (its queued work still finishes) and its last queued
+    /// work is returned so the live one starts after it.
+    @discardableResult
+    static func handOver() -> Task<Void, Never>? {
+        guard let c = cachedScheduler else { return nil }
+        cachedScheduler = nil
+        c.scheduler.retire()
+        return c.scheduler.tail
+    }
 
     /// nil when nobody is remembered as signed in. One `Outbox` actor per user (back-to-back presses share it).
     static func parts(userId: UUID? = BackgroundSyncHost.lastUserId, base: URL = .applicationSupportDirectory,
@@ -52,6 +70,7 @@ enum HeadlessContext {
         if let c = cached, c.userId == userId, c.base == base { return c.parts }
         let p = build(userId: userId, base: base, calendar: calendar)
         cached = (userId, base, p)
+        if let s = cachedScheduler, s.userId != userId { handOver() }
         return p
     }
 
@@ -69,10 +88,25 @@ enum HeadlessContext {
     /// The same per-user queue file the UI's outbox uses; nil when signed out.
     static func outbox() -> Outbox? { parts()?.outbox }
 
-    /// A scheduler over the real alarm and notification centres, for a process with no `ReminderHub`.
-    static func scheduler(for parts: Parts) -> ReminderScheduler {
-        ReminderScheduler(store: parts.store, alarms: SystemAlarmScheduler(), center: SystemReminderCenter(),
-                          book: AlarmIdBook(userKey: parts.userId.uuidString))
+    /// The one scheduler for a process with no `ReminderHub` (over the real alarm and notification centres unless a test
+    /// hands in its own); built once per user and reused by every headless press and background wake.
+    static func scheduler(for parts: Parts, alarms: AlarmScheduling? = nil, center: ReminderCenter? = nil,
+                          book: AlarmIdBook? = nil) -> ReminderScheduler {
+        if let c = cachedScheduler, c.userId == parts.userId { return c.scheduler }
+        let s = ReminderScheduler(store: parts.store, alarms: alarms ?? SystemAlarmScheduler(), center: center ?? SystemReminderCenter(),
+                                  book: book ?? AlarmIdBook(userKey: parts.userId.uuidString))
+        cachedScheduler = (parts.userId, s)
+        return s
+    }
+
+    /// Who keeps the reminders armed right now: the live scheduler, else (a cold background launch, an alarm button with
+    /// the app killed) the headless one over the files of the last signed-in user, re-read first. nil when nobody is signed in.
+    static func activeScheduler(userId: UUID? = BackgroundSyncHost.lastUserId,
+                                base: URL = .applicationSupportDirectory) -> ReminderScheduler? {
+        if let live = ReminderHub.scheduler { return live }
+        guard let p = parts(userId: userId, base: base) else { return nil }
+        p.store.reload()
+        return scheduler(for: p)
     }
 
     nonisolated static func day(of date: Date, calendar: Calendar) -> String {

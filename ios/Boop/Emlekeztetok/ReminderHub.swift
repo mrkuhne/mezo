@@ -50,8 +50,12 @@ enum ReminderHub {
     /// Test seam: the parts of one user's reminders.
     static func activate(for id: UUID, make: (UUID) -> Parts) {
         if userId == id, store != nil { return }
+        // A headless scheduler (an alarm button pressed before the UI came up, a cold background wake) may still be
+        // re-arming: it is retired, and everything below starts after its queued work.
+        let headless = HeadlessContext.handOver()
         // A switch: the old family is cleared first; the new scheduler's first refresh queues behind that clear.
-        let handoff = scheduler.map { old in Task { await old.signedOut() } }
+        scheduler?.retire()
+        let handoff: Task<Void, Never>? = scheduler.map { old in Task { await headless?.value; await old.signedOut() } } ?? headless
         let p = make(id)
         let (s, alarms, center) = (p.store, p.alarms, p.center)
         store = s
@@ -83,8 +87,10 @@ enum ReminderHub {
 
     /// Sign-out: cancels the family and forgets the store.
     static func deactivate() {
-        HeadlessContext.invalidate()
-        if let old = scheduler { Task { await old.signedOut() } }
+        let headless = HeadlessContext.invalidate()
+        // retired at once: a refresh queued later by anyone still holding it (a press, a trigger) arms nothing
+        scheduler?.retire()
+        if let old = scheduler { Task { await headless?.value; await old.signedOut() } }
         if let old = restEnd { Task { await old.signedOut() } }
         restEnd = nil
         store = nil

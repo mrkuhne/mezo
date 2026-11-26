@@ -86,15 +86,15 @@ struct ReminderActionsTests {
         let id = UUID()
         let key = "\(id.uuidString)|2026-11-26"
         let center = SnoozeCenter()
-        await ReminderActions.snooze(reminderId: id, key: key, title: "Víz", center: center, now: late, calendar: cal)
+        let p = parts()
+        let r = Reminder(id: id, title: "Víz", hour: 23, minute: 55, repeats: .daily)
+        p.store.upsert(r)
+        await ReminderActions.snooze(reminderId: id, key: key, title: "Víz", store: p.store, center: center, now: late, calendar: cal)
         let q = center.requests[0]
         #expect(q.day.day == 27 && q.hour == 0 && q.minute == 5)       // fires after midnight
         // what the centre stores for that notification is the ORIGINATING key
         #expect(SystemReminderCenter.reminderKey(id: q.id, day: q.day, route: q.route) == key)
         // "Kész" on it ticks yesterday's occurrence, not tomorrow's
-        let p = parts()
-        let r = Reminder(id: id, title: "Víz", hour: 23, minute: 55, repeats: .daily)
-        p.store.upsert(r)
         await ReminderActions.done(key: key, store: p.store, supplement: nil, refresh: {}, now: late)
         #expect(p.store.file.done == [key])
         #expect(!p.store.file.done.contains("\(id.uuidString)|2026-11-27"))
@@ -102,8 +102,11 @@ struct ReminderActionsTests {
 
     @Test func snoozeSchedulesTenMinutesLater() async {
         let center = SnoozeCenter()
-        let id = UUID()
-        await ReminderActions.snooze(reminderId: id, key: "\(id.uuidString)|2026-11-26", title: "Víz", center: center, now: now)
+        let p = parts()
+        let r = Reminder(title: "Víz", hour: 10, minute: 0, repeats: .daily)
+        p.store.upsert(r)
+        let id = r.id
+        await ReminderActions.snooze(reminderId: id, key: "\(id.uuidString)|2026-11-26", title: "Víz", store: p.store, center: center, now: now)
         let at = now.addingTimeInterval(600)
         let c = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: at)
         #expect(center.requests.count == 1)
@@ -112,6 +115,31 @@ struct ReminderActionsTests {
         #expect(q.day.year == c.year && q.day.month == c.month && q.day.day == c.day)
         #expect(q.hour == c.hour && q.minute == c.minute)
         #expect(q.title == "Víz")
+    }
+
+    // MARK: nobody (or somebody else) signed in (final review I3)
+
+    @Test func snoozeWithNobodySignedInSchedulesNothing() async {
+        let center = SnoozeCenter()
+        let id = UUID()
+        await ReminderActions.snooze(reminderId: id, key: "\(id.uuidString)|2026-11-26", title: "Víz", store: nil, center: center, now: now)
+        #expect(center.requests.isEmpty)
+    }
+
+    @Test func snoozeOfAnotherAccountsReminderSchedulesNothing() async {
+        let center = SnoozeCenter()
+        let p = parts()                                   // signed in, but this reminder is not his
+        let id = UUID()
+        await ReminderActions.snooze(reminderId: id, key: "\(id.uuidString)|2026-11-26", title: "Víz", store: p.store, center: center, now: now)
+        #expect(center.requests.isEmpty)
+    }
+
+    @Test func doneOfAnotherAccountsReminderTicksNothing() async {
+        let p = parts()
+        var refreshed = 0
+        await ReminderActions.done(key: "\(UUID().uuidString)|2026-11-26", store: p.store, supplement: nil, refresh: { refreshed += 1 }, now: now)
+        #expect(p.store.file.done.isEmpty)
+        #expect(refreshed == 0)
     }
 
     @Test func headlessWithNoUserDoesNothing() {

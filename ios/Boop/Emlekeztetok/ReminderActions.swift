@@ -47,7 +47,7 @@ enum ReminderActions {
         } else {
             supplement = nil
         }
-        let scheduler = ReminderHub.scheduler ?? parts.map { HeadlessContext.scheduler(for: $0) }
+        let scheduler = ReminderHub.scheduler ?? parts.map { HeadlessContext.scheduler(for: $0) }  // the one cached headless chain
         await done(key: key, store: store, supplement: supplement, center: SystemReminderCenter(),
                    refresh: { await scheduler?.refresh(askPermission: false) })
     }
@@ -61,19 +61,30 @@ enum ReminderActions {
     /// Tick, cancel a pending snooze of the reminder, then the supplement tick if linked to a group, then the refresh.
     static func done(key: String, store: ReminderStore, supplement: ((String, Date) async -> Void)?,
                      center: ReminderCenter? = nil, refresh: () async -> Void, now: Date = Date()) async {
+        // Only the signed-in user's own reminder: a notification left by another account ticks nothing.
+        guard let rid = reminderId(ofKey: key), store.file.reminders.contains(where: { $0.id == rid }) else { return }
         store.tick(key)
-        if let id = reminderId(ofKey: key) {
-            center?.cancel(id: "\(snoozePrefix)\(id.uuidString)")
-            if let r = store.file.reminders.first(where: { $0.id == id }), case .supplement(let daypart) = r.link {
-                await supplement?(daypart, now)
-            }
+        center?.cancel(id: "\(snoozePrefix)\(rid.uuidString)")
+        if let r = store.file.reminders.first(where: { $0.id == rid }), case .supplement(let daypart) = r.link {
+            await supplement?(daypart, now)
         }
         await refresh()
     }
 
+    /// The signed-in user's reminder store (live, else re-read from the files of the last signed-in user); nil when nobody is.
+    static func currentStore() -> ReminderStore? {
+        if let live = ReminderHub.store { return live }
+        guard let p = HeadlessContext.parts() else { return nil }
+        p.store.reload()
+        return p.store
+    }
+
     /// „10 perc múlva”: one more notification at now + 600 s, carrying the same title, category and occurrence key
-    /// (the originating key rides in the route's query).
-    static func snooze(reminderId: UUID, key: String, title: String, center: ReminderCenter, now: Date, calendar: Calendar = .current) async {
+    /// (the originating key rides in the route's query). Only for a reminder of the signed-in user (`store`): with nobody
+    /// signed in, or another account's notification, nothing rings again (it would show the old account's title).
+    static func snooze(reminderId: UUID, key: String, title: String, store: ReminderStore?, center: ReminderCenter, now: Date,
+                       calendar: Calendar = .current) async {
+        guard let store, store.file.reminders.contains(where: { $0.id == reminderId }) else { return }
         let at = now.addingTimeInterval(TimeInterval(snoozeSeconds))
         let c = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: at)
         try? await center.scheduleOnce(id: "\(snoozePrefix)\(reminderId.uuidString)",

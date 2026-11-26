@@ -31,6 +31,11 @@ final class ReminderScheduler {
     /// nil = follow the device: a fresh calendar in the current time zone for every run (travel is respected).
     @ObservationIgnored private let injectedCalendar: Calendar?
     @ObservationIgnored private var inFlight: Task<Void, Never>?
+    /// Signed out (or handed over): no refresh arms anything any more; only the clear still runs.
+    @ObservationIgnored private(set) var retired = false
+
+    /// The work queued last (a scheduler that takes over waits for it).
+    var tail: Task<Void, Never>? { inFlight }
 
     init(store: ReminderStore, alarms: AlarmScheduling, center: ReminderCenter, book: AlarmIdBook? = nil,
          clock: @escaping @Sendable () -> Date = { Date() }, calendar: Calendar? = nil,
@@ -55,15 +60,27 @@ final class ReminderScheduler {
     /// Puts what is armed in line with the store. `askPermission`: the system prompts may appear (after an edit);
     /// otherwise nothing is requested. Queued behind a refresh already running.
     func refresh(askPermission: Bool) async {
-        await enqueue { await $0.run(askPermission: askPermission) }
+        let task = scheduleRefresh(askPermission: askPermission)
+        await withTaskCancellationHandler { await task.value } onCancel: { task.cancel() }
     }
 
-    /// Sign-out / user switch: cancels every alarm and notification of the family.
+    /// The same refresh, queued at once (synchronously) — a scheduler that takes over sees it as `tail`.
+    @discardableResult
+    func scheduleRefresh(askPermission: Bool) -> Task<Void, Never> {
+        enqueue { await $0.run(askPermission: askPermission) }
+    }
+
+    /// From now on nothing is armed by this instance (sign-out, a headless scheduler handing over to the live one). Synchronous,
+    /// so a refresh queued a moment later by someone still holding the instance is already a no-op.
+    func retire() { retired = true }
+
+    /// Sign-out / user switch: retires and cancels every alarm and notification of the family.
     func signedOut() async {
-        await enqueue { await $0.clearAll(); $0.state = [:] }
+        retire()
+        await enqueue { await $0.clearAll(); $0.state = [:] }.value
     }
 
-    private func enqueue(_ work: @escaping @MainActor (ReminderScheduler) async -> Void) async {
+    private func enqueue(_ work: @escaping @MainActor (ReminderScheduler) async -> Void) -> Task<Void, Never> {
         let previous = inFlight
         let task = Task { [weak self] in
             await previous?.value
@@ -71,7 +88,7 @@ final class ReminderScheduler {
             await work(self)
         }
         inFlight = task
-        await withTaskCancellationHandler { await task.value } onCancel: { task.cancel() }
+        return task
     }
 
     /// Sign-out: every alarm and notification of the family goes (a ringing one too: it belongs to the account that left),
@@ -95,6 +112,7 @@ final class ReminderScheduler {
     }
 
     private func run(askPermission: Bool) async {
+        guard !retired else { return }
         let calendar = makeCalendar()
         let reminders = store.file.reminders.filter(\.enabled)
         let byId = Dictionary(reminders.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
@@ -113,7 +131,7 @@ final class ReminderScheduler {
             notifStatus = await center.request() ? .allowed : .denied
         }
         let notificationsAllowed = notifStatus == .allowed
-        guard !Task.isCancelled else { return }
+        guard !Task.isCancelled, !retired else { return }
 
         // From here on the run finishes arming even if its caller is cancelled.
         // Alarms: what already stands as planned stays; everything else of ours goes — except an alarm ringing right now

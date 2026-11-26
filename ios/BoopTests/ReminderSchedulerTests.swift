@@ -58,6 +58,7 @@ fileprivate final class SchedCenter: ReminderCenter, @unchecked Sendable {
     var requests: [(id: String, day: DateComponents, hour: Int, minute: Int, route: String)] = []
     var cancelled: [String] = []
     var pending: Set<String> = []
+    var removedDeliveredPrefixes: [String] = []
     init(_ p: ReminderPermission = .allowed) { permission = p }
     func status() async -> ReminderPermission { permission }
     func request() async -> Bool { permission = .allowed; return true }
@@ -70,6 +71,7 @@ fileprivate final class SchedCenter: ReminderCenter, @unchecked Sendable {
     func isPending(id: String) async -> Bool { pending.contains(id) }
     func pendingIds(withPrefix prefix: String) async -> [String] { pending.filter { $0.hasPrefix(prefix) }.sorted() }
     func removeDelivered(ids: [String]) {}
+    func removeDelivered(withPrefix prefix: String) { removedDeliveredPrefixes.append(prefix) }
 }
 
 @MainActor
@@ -189,6 +191,35 @@ struct ReminderSchedulerTests {
         #expect(a.scheduled.isEmpty)
         #expect(c.pending == ["other.keep"])
         #expect(sch.state.isEmpty)
+        #expect(c.removedDeliveredPrefixes == ["boop.rem."])   // what already rang leaves Notification Center too
+    }
+
+    // MARK: after sign-out (final review I3)
+
+    @Test func aSignedOutSchedulerNeverArmsAgain() async {
+        let s = store(), a = FakeAlarms(), c = SchedCenter()
+        s.upsert(alarmReminder()); s.upsert(noteReminder())
+        let sch = scheduler(s, a, c)
+        await sch.refresh(askPermission: false)
+        await sch.signedOut()
+        // a press or a trigger that still holds the old instance
+        await sch.refresh(askPermission: false)
+        #expect(a.scheduled.isEmpty)
+        #expect(a.scheduleCalls == 7)
+        #expect(c.pending.isEmpty)
+    }
+
+    @Test func aRefreshAlreadyQueuedBehindTheSignOutDoesNothing() async {
+        let s = store(), a = FakeAlarms(), c = SchedCenter()
+        a.delay = .milliseconds(3)
+        s.upsert(alarmReminder())
+        let sch = scheduler(s, a, c)
+        await sch.refresh(askPermission: false)
+        sch.retire()                                  // what the hub does at once on sign-out
+        let late = sch.scheduleRefresh(askPermission: false)
+        await sch.signedOut()
+        await late.value
+        #expect(a.scheduled.isEmpty)
     }
 
     @Test func refreshesNeverOverlap() async {
@@ -335,5 +366,86 @@ struct ReminderHubTests {
         ReminderHub.apply(.signedOut)
         #expect(ReminderHub.scheduler == nil)
         ReminderHub.deactivate()
+    }
+
+    // MARK: one headless scheduler, chained before the live one (final review I4, I6)
+
+    func headlessParts(_ id: UUID) -> HeadlessContext.Parts {
+        HeadlessContext.parts(userId: id, base: FileManager.default.temporaryDirectory.appendingPathComponent("hub-headless-\(UUID().uuidString)"))!
+    }
+
+    @Test func headlessPressesShareOneScheduler() {
+        ReminderHub.deactivate()
+        let p = headlessParts(a)
+        let one = HeadlessContext.scheduler(for: p, alarms: FakeAlarms(), center: SchedCenter(), book: .inMemory())
+        let two = HeadlessContext.scheduler(for: p, alarms: FakeAlarms(), center: SchedCenter(), book: .inMemory())
+        #expect(one === two)
+        HeadlessContext.invalidate()
+    }
+
+    @Test func theLiveSchedulerStartsAfterTheHeadlessOnesWork() async {
+        ReminderHub.deactivate()
+        let alarms = FakeAlarms()          // the same system alarms for both: an overlap would show here
+        alarms.delay = .milliseconds(3)
+        let center = SchedCenter()
+        let p = headlessParts(a)
+        p.store.upsert(Reminder(title: "x", hour: 23, minute: 59, repeats: .daily, strength: .alarm))
+        let headless = HeadlessContext.scheduler(for: p, alarms: alarms, center: center, book: .inMemory())
+        let pressed = headless.scheduleRefresh(askPermission: false)      // an alarm's „Kész” still re-arming
+        ReminderHub.activate(for: a) { _ in
+            ReminderHub.Parts(store: p.store, alarms: alarms, center: center, book: .inMemory())
+        }
+        await ReminderHub.scheduler!.refresh(askPermission: false)
+        await pressed.value
+        #expect(!alarms.overlapped)
+        ReminderHub.deactivate()
+    }
+
+    @Test func aColdWakeRefreshesThroughTheHeadlessScheduler() async {
+        ReminderHub.deactivate()
+        let base = FileManager.default.temporaryDirectory.appendingPathComponent("hub-wake-\(UUID().uuidString)")
+        let p = HeadlessContext.parts(userId: a, base: base)!
+        let cached = HeadlessContext.scheduler(for: p, alarms: FakeAlarms(), center: SchedCenter(), book: .inMemory())
+        #expect(HeadlessContext.activeScheduler(userId: a, base: base) === cached)
+        #expect(HeadlessContext.activeScheduler(userId: nil, base: base) == nil)   // nobody signed in: nothing
+        HeadlessContext.invalidate()
+    }
+
+    @Test func signOutRetiresTheOldScheduler() async {
+        ReminderHub.deactivate()
+        let alarms = FakeAlarms()
+        func make(_ id: UUID) -> ReminderHub.Parts {
+            let st = ReminderStore(fileURL: FileManager.default.temporaryDirectory
+                .appendingPathComponent("hub-retire-\(UUID().uuidString)/reminders.json"))
+            st.upsert(Reminder(title: "x", hour: 23, minute: 59, repeats: .daily, strength: .alarm))
+            return ReminderHub.Parts(store: st, alarms: alarms, center: SchedCenter(), book: .inMemory())
+        }
+        ReminderHub.activate(for: a, make: make)
+        let old = ReminderHub.scheduler!
+        await old.refresh(askPermission: false)
+        let armed = alarms.scheduleCalls
+        alarms.held = [:]                             // as if the sign-out's clear had already run
+        ReminderHub.deactivate()
+        await old.refresh(askPermission: false)      // e.g. ReminderActions.done captured it before the sign-out
+        #expect(alarms.scheduleCalls == armed)
+        #expect(alarms.scheduled.isEmpty)
+    }
+}
+
+@MainActor
+struct AlarmIdBookTests {
+    @Test func theOldListIsMigratedAndKept() {
+        let suite = "alarm-book-\(UUID().uuidString)"
+        let d = UserDefaults(suiteName: suite)!
+        defer { d.removePersistentDomain(forName: suite) }
+        d.set(["A", "B"], forKey: "boop.rem.alarmIds.u1")
+        let book = AlarmIdBook(userKey: "u1", defaults: d)
+        #expect(book.entries == ["A": "", "B": ""])
+        #expect(d.object(forKey: "boop.rem.alarmIds.u1") == nil)
+        // two books over the same user see each other's changes at once
+        let other = AlarmIdBook(userKey: "u1", defaults: d)
+        other.remember("C", fingerprint: "x")
+        book.forget("A")
+        #expect(other.entries == ["B": "", "C": "x"])
     }
 }

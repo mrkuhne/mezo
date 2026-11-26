@@ -185,7 +185,8 @@ final class ReminderPresenter: NSObject, UNUserNotificationCenterDelegate, Senda
             if let key { await ReminderActions.done(key: key) }
         case Self.snoozeAction:
             if let key, let id = ReminderActions.reminderId(ofKey: key) {
-                await ReminderActions.snooze(reminderId: id, key: key, title: content.title, center: SystemReminderCenter(), now: Date())
+                await ReminderActions.snooze(reminderId: id, key: key, title: content.title, store: ReminderActions.currentStore(),
+                                             center: SystemReminderCenter(), now: Date())
             }
         default: break
         }
