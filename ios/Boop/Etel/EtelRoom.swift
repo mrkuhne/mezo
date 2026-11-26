@@ -68,8 +68,12 @@ final class EtelStore {
     private var takenStore: SupplementTakenStore? { injectedTaken ?? SupplementTickHub.taken }
     private var tick: (@MainActor (String, Date) async throws -> Void)? { injectedTick ?? SupplementTickHub.capture }
 
-    init(taken: SupplementTakenStore? = nil, tick: (@MainActor (String, Date) async throws -> Void)? = nil) {
-        injectedTaken = taken; injectedTick = tick
+    @ObservationIgnored private let injectedReminders: (@MainActor () -> ReminderStore?)?
+    private var reminderStore: ReminderStore? { injectedReminders?() ?? ReminderHub.store }
+
+    init(taken: SupplementTakenStore? = nil, tick: (@MainActor (String, Date) async throws -> Void)? = nil,
+         reminders: (@MainActor () -> ReminderStore?)? = nil) {
+        injectedTaken = taken; injectedTick = tick; injectedReminders = reminders
     }
 
     @ObservationIgnored private var food: FoodClient?
@@ -502,6 +506,7 @@ final class EtelStore {
             do {
                 for id in ids { try await food.deleteIntake(id); left.removeFirst() }
                 takenStore?.undo(day: dayKey, daypart: key)
+                SupplementTickHub.untickLinkedReminder(daypart: key, day: dayKey, store: reminderStore)
                 return "Visszavontam"
             } catch {
                 takenIds[key] = left
@@ -538,12 +543,33 @@ enum SupplementTickHub {
     static func bind(_ env: RitmusEnvironment) {
         owner = env
         taken = env.supplementTaken
-        capture = { [weak env] daypart, date in try await env?.captureSupplementTick(daypart: daypart, at: date) }
+        capture = captureClosure(for: env)
+    }
+
+    /// The queued tick through `env`, held weakly. An env that is gone must not look like a success (a false "bevéve"
+    /// toast): the capture throws.
+    static func captureClosure(for env: RitmusEnvironment) -> @MainActor (String, Date) async throws -> Void {
+        { [weak env] daypart, date in
+            guard let env else { throw SupplementTickError.environmentGone }
+            try await env.captureSupplementTick(daypart: daypart, at: date)
+        }
     }
 
     static func unbind(_ env: RitmusEnvironment) {
         guard owner === env else { return }
         owner = nil; taken = nil; capture = nil
+    }
+
+    /// The one queued write of a taken group (the live capture and the headless alarm button build the same item).
+    nonisolated static func item(day: String, daypart: String, capturedAt: Date) -> OutboxItem {
+        OutboxItem(kind: .supplementTick, date: day, capturedAt: capturedAt,
+                   payload: RitmusPayload.encode(SupplementTickPayload(day: day, daypart: daypart)))
+    }
+
+    /// The group is un-taken for `day` (the room's undo): that day's linked reminder may ring again.
+    static func untickLinkedReminder(daypart: String, day: String, store: ReminderStore?) {
+        guard let store, let reminder = store.reminder(linkedTo: daypart) else { return }
+        store.untick("\(reminder.id.uuidString)|\(day)")
     }
 
     /// The reminder linked to `daypart` is done for `day`: that day's alarm will not ring (the scheduler refreshes on the
@@ -553,6 +579,8 @@ enum SupplementTickHub {
         store.tick("\(reminder.id.uuidString)|\(day)")
     }
 }
+
+enum SupplementTickError: Error { case environmentGone }
 
 /// What an action of the room says back: whether it went through, and the sentence for the owner.
 struct EtelOutcome: Equatable {

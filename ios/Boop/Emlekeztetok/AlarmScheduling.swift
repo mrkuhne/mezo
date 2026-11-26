@@ -57,9 +57,8 @@ struct SystemAlarmScheduler: AlarmScheduling {
             secondaryButton: AlarmButton(text: LocalizedStringResource(stringLiteral: secondaryTitle), textColor: .white, systemImageName: "checkmark"),
             secondaryButtonBehavior: .custom)
         let attrs = AlarmAttributes<ReminderAlarmMetadata>(presentation: AlarmPresentation(alert: alert), metadata: nil, tintColor: .orange)
-        // Task 7 wires the intents (stopIntent / secondaryIntent).
         let config = AlarmManager.AlarmConfiguration<ReminderAlarmMetadata>.alarm(
-            schedule: .fixed(o.fireAt), attributes: attrs, stopIntent: nil, secondaryIntent: nil)
+            schedule: .fixed(o.fireAt), attributes: attrs, stopIntent: ReminderSilenceIntent(), secondaryIntent: ReminderDoneIntent(key: o.key))
         let id = o.alarmId
         remember(id.uuidString)
         do {

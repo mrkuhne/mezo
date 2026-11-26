@@ -246,8 +246,7 @@ final class RitmusEnvironment {
         let day = self.day(of: date)
         // Already taken (the alarm after the room, or a double tap): nothing to send, the reminder is still done.
         if supplementTaken.taken(day: day)[daypart] == nil {
-            try await outbox.enqueue(OutboxItem(kind: .supplementTick, date: day, capturedAt: date,
-                                                payload: RitmusPayload.encode(SupplementTickPayload(day: day, daypart: daypart))),
+            try await outbox.enqueue(SupplementTickHub.item(day: day, daypart: daypart, capturedAt: date),
                                      rollbackOnFailure: true)
             supplementTaken.markTaken(day: day, daypart: daypart, ids: nil)
         }

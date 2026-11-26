@@ -16,8 +16,8 @@ enum ArmState: Equatable {
 /// `RitmusReminders.refresh`.
 @MainActor @Observable
 final class ReminderScheduler {
-    static let prefix = "boop.rem."
-    static let route = "boop://emlekeztetok"
+    nonisolated static let prefix = "boop.rem."
+    nonisolated static let route = "boop://emlekeztetok"
     private static let log = Logger(subsystem: "hu.mezo.boop", category: "ReminderScheduler")
 
     private(set) var state: [UUID: ArmState] = [:]
@@ -65,9 +65,12 @@ final class ReminderScheduler {
         await withTaskCancellationHandler { await task.value } onCancel: { task.cancel() }
     }
 
-    private func clearAll() async {
+    /// `keepSnoozes`: a refresh re-arms the plan but leaves the owner's „10 perc múlva” one-offs standing.
+    private func clearAll(keepSnoozes: Bool = false) async {
         await alarms.cancelAll(prefix: Self.prefix)
-        for id in await center.pendingIds(withPrefix: Self.prefix) { center.cancel(id: id) }
+        for id in await center.pendingIds(withPrefix: Self.prefix) where !(keepSnoozes && id.hasPrefix(ReminderActions.snoozePrefix)) {
+            center.cancel(id: id)
+        }
     }
 
     private func run(askPermission: Bool) async {
@@ -90,7 +93,7 @@ final class ReminderScheduler {
         let notificationsAllowed = notifStatus == .allowed
         guard !Task.isCancelled else { return }
 
-        await clearAll() // from here on the run finishes arming even if its caller is cancelled
+        await clearAll(keepSnoozes: true) // from here on the run finishes arming even if its caller is cancelled
 
         // alarms
         var failed: [UUID: String] = [:]

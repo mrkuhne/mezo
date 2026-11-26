@@ -59,13 +59,31 @@ struct SystemReminderCenter: ReminderCenter {
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = body
-        content.sound = .default                // no badge, no category: a quiet nudge
+        content.sound = .default                // no badge: a quiet nudge
         content.userInfo = ["route": route]
+        // Boop's own reminders (`boop.rem.…`): the Kész / 10 perc múlva buttons and the occurrence they act on.
+        if let key = Self.reminderKey(id: id, day: day) {
+            content.categoryIdentifier = ReminderPresenter.category
+            content.userInfo["key"] = key
+        }
         var when = DateComponents(year: day.year, month: day.month, day: day.day, hour: hour, minute: minute)
         when.calendar = .current
         let request = UNNotificationRequest(identifier: id, content: content,
                                             trigger: UNCalendarNotificationTrigger(dateMatching: when, repeats: false))
         try await UNUserNotificationCenter.current().add(request)
+    }
+
+    /// `<uuid>|<yyyy-MM-dd>` for `boop.rem.<uuid>.<day>` and `boop.rem.snooze.<uuid>` (the snooze takes the day it is set
+    /// for); nil for every other id.
+    static func reminderKey(id: String, day: DateComponents) -> String? {
+        guard id.hasPrefix(ReminderScheduler.prefix) else { return nil }
+        var rest = String(id.dropFirst(ReminderScheduler.prefix.count))
+        if rest.hasPrefix("snooze.") { rest = String(rest.dropFirst("snooze.".count)) }
+        guard rest.count >= 36, let uuid = UUID(uuidString: String(rest.prefix(36))) else { return nil }
+        let tail = rest.dropFirst(36).dropFirst()
+        let ymd = tail.count == 10 ? String(tail)
+            : String(format: "%04d-%02d-%02d", day.year ?? 0, day.month ?? 0, day.day ?? 0)
+        return "\(uuid.uuidString)|\(ymd)"
     }
 
     /// A repeating local clock time: crossing midnight and DST need no date arithmetic, and it holds after a relaunch.
@@ -97,7 +115,19 @@ final class ReminderPresenter: NSObject, UNUserNotificationCenterDelegate, Senda
     static let shared = ReminderPresenter()
     static let foregroundOptions: UNNotificationPresentationOptions = [.banner, .sound]
 
-    static func install() { UNUserNotificationCenter.current().delegate = shared }
+    /// The category Boop's own reminders carry, and its two buttons (neither opens the app).
+    static let category = "boop.rem"
+    static let doneAction = "done", snoozeAction = "snooze"
+
+    static func install() {
+        let center = UNUserNotificationCenter.current()
+        center.delegate = shared
+        center.setNotificationCategories([UNNotificationCategory(
+            identifier: category,
+            actions: [UNNotificationAction(identifier: doneAction, title: "Kész", options: []),
+                      UNNotificationAction(identifier: snoozeAction, title: "10 perc múlva", options: [])],
+            intentIdentifiers: [], options: [])])
+    }
 
     /// What to show while the app is open: nothing for the daily loop's reminders, a banner for the rest.
     static func presentation(for id: String) -> UNNotificationPresentationOptions {
@@ -108,8 +138,19 @@ final class ReminderPresenter: NSObject, UNUserNotificationCenterDelegate, Senda
         -> UNNotificationPresentationOptions { Self.presentation(for: notification.request.identifier) }
 
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
-        guard response.actionIdentifier == UNNotificationDefaultActionIdentifier else { return }
-        await handleTap(route: response.notification.request.content.userInfo["route"] as? String)
+        let content = response.notification.request.content
+        let key = content.userInfo["key"] as? String
+        switch response.actionIdentifier {
+        case UNNotificationDefaultActionIdentifier:
+            await handleTap(route: content.userInfo["route"] as? String)
+        case Self.doneAction:
+            if let key { await ReminderActions.done(key: key) }
+        case Self.snoozeAction:
+            if let key, let id = ReminderActions.reminderId(ofKey: key) {
+                await ReminderActions.snooze(reminderId: id, title: content.title, center: SystemReminderCenter(), now: Date())
+            }
+        default: break
+        }
     }
 
     /// A tap on the notification body: a daily-loop route opens its cover. On a cold launch the router holds it until

@@ -205,6 +205,39 @@ struct EtelStoreTests {
         #expect(await env.outbox.pending.filter { $0.kind == .supplementTick }.count == 1)
     }
 
+    @Test func undoUnticksTheLinkedReminder() async {
+        script(meals: [])
+        let taken = SupplementTakenStore(fileURL: tempFile())
+        let reminders = ReminderStore(fileURL: FileManager.default.temporaryDirectory.appendingPathComponent("etel-undo-\(UUID().uuidString)/reminders.json"))
+        let linked = Reminder(title: "Reggeli", hour: 8, minute: 0, repeats: .daily, strength: .alarm, link: .supplement(daypart: "morning"))
+        reminders.upsert(linked)
+        let store = EtelStore(taken: taken, tick: { daypart, _ in taken.markTaken(day: "2026-11-13", daypart: daypart, ids: nil) },
+                              reminders: { reminders })
+        await store.load(food: FoodClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: transport)), now: Date())
+        let group = SupplementGroup(key: "morning", label: "Reggel", count: 1, summary: "D3")
+        let key = "\(linked.id.uuidString)|\(store.ymd)"
+        reminders.tick(key)                                    // the alarm was done
+        _ = await store.toggle(group)
+        taken.markTaken(day: store.ymd, daypart: "morning", ids: [UUID(uuidString: intake1)!])
+        transport.on("deleteIntake", 204)
+        #expect(await store.toggle(group) == "Visszavontam")
+        #expect(!reminders.file.done.contains(key))            // the alarm may ring again
+    }
+
+    @Test func captureWithoutEnvThrows() async {
+        func make() -> RitmusEnvironment {
+            let root = FileManager.default.temporaryDirectory.appendingPathComponent("etel-gone-\(UUID().uuidString)")
+            return RitmusEnvironment(ledgerDirectory: root.appendingPathComponent("ledger"),
+                                     outboxDirectory: root.appendingPathComponent("outbox"),
+                                     sender: RetryingSender(), line: { _, _ in "" },
+                                     snapshot: { _ in CheckInSnapshotValue(hrBpm: 78, hrvMs: 38, hrvUsualMs: 50) }, plans: nil)
+        }
+        var env: RitmusEnvironment? = make()
+        let capture = SupplementTickHub.captureClosure(for: env!)   // not bound: the hub is process-global
+        env = nil
+        await #expect(throws: SupplementTickError.self) { try await capture("morning", Date()) }
+    }
+
     @Test func takingASupplementGroupRollsBackOnFailureAndUndoesOnSecondTap() async {
         let store = await loaded()
         let group = SupplementGroup(key: "morning", label: "Reggel", count: 1, summary: "D3")
