@@ -675,6 +675,8 @@ public struct FoodClient: Sendable {
                 switch try await client.undoPlannedSkip(path: .init(id: id)) {
                 case .noContent: return
                 case .notFound: throw FoodFetchError.notFound
+                // a capacity-owned skip (TRAIN_SKIP_CAPACITY_OWNED) is taken back from the Átrendezés page, never here
+                case .conflict: throw FoodFetchError.conflict
                 case .unauthorized: throw FoodFetchError.unauthorized
                 case .undocumented: throw FoodFetchError.server
                 }
