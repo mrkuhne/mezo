@@ -15,6 +15,8 @@ struct MezoDetailPage: View {
     @State private var showReport = false
     @State private var editor: MezoEditorCover?
     @State private var openingEditor = false
+    /// The day cards grow with the text size, so a large Dynamic Type never cuts the day's name.
+    @ScaledMetric(relativeTo: .body) private var dayCardHeight: CGFloat = 150
 
     var body: some View {
         NKAreaSubPage(hue: hue, crumb: "Mezociklusaim", eyebrow: eyebrow, title: card.title, sentence: sentence, onBack: onBack) {
@@ -27,7 +29,7 @@ struct MezoDetailPage: View {
             if !card.days.isEmpty {
                 NKBare("A HÉT NAPJAI", hue: hue, glyph: "dumbbell-ink") {
                     NKCarousel(card.days.enumerated().map { MezoDayItem(index: $0.offset, day: $0.element) }, hue: hue,
-                               height: 150, widthFraction: 0.46) { item in dayCard(item.day) }
+                               height: min(dayCardHeight, 360), widthFraction: 0.46) { item in dayCard(item.day) }
                 }
             }
             if !card.heat.isEmpty {

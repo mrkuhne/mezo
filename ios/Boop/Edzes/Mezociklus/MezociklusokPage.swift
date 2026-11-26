@@ -13,6 +13,7 @@ struct MezociklusokPage: View {
     /// A mezociklus started from a detail page: the whole stack closes back to the tab with this line.
     let onStarted: (String) -> Void
     @State private var open: MezoCard?
+    @ScaledMetric(relativeTo: .body) private var templateCardHeight: CGFloat = 236
 
     private var g: MezoGroups { model.groups }
 
@@ -42,7 +43,7 @@ struct MezociklusokPage: View {
                 }
                 if g.isEmpty {
                     NKNotLiveYet(hue: hue, title: "Még nincs mezociklusod — indíts egyet",
-                                 line: "Az Új mezociklus gombbal a Mezociklus fülön indíthatsz egyet; utána itt lesz minden futó, lezárt és sablon.")
+                                 line: "Az Új mezociklus gombbal a Mezociklus fülön indíthatsz egyet; utána itt lesz minden futó, lezárt és sablon.", eyebrow: "MÉG ÜRES")
                 } else {
                     sections
                 }
@@ -73,7 +74,7 @@ struct MezociklusokPage: View {
         }
         if !g.templates.isEmpty {
             NKBare("SABLONJAIM", hue: hue, glyph: "book-sage", trailing: "\(g.templates.count)") {
-                NKCarousel(g.templates, hue: hue, height: 236, widthFraction: 0.62) { templateCard($0) }
+                NKCarousel(g.templates, hue: hue, height: min(templateCardHeight, 480), widthFraction: 0.62) { templateCard($0) }
             }
         }
         if !g.closed.isEmpty {

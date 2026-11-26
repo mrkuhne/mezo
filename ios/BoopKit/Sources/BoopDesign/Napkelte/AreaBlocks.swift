@@ -1014,13 +1014,13 @@ public struct NKInfoRow: View {
 /// **What an area says while it has nothing to say yet** — a tab that exists in the design but whose data is not
 /// built. Never a fake number: the line says what will be here and what has to happen first.
 public struct NKNotLiveYet: View {
-    let hue: Hue, title: String, line: String
-    public init(hue: Hue, title: String, line: String) { self.hue = hue; self.title = title; self.line = line }
+    let hue: Hue, title: String, line: String, eyebrow: String
+    public init(hue: Hue, title: String, line: String, eyebrow: String = "MÉG NEM ÉL") { self.hue = hue; self.title = title; self.line = line; self.eyebrow = eyebrow }
     public var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 9) {
                 StillOrb(palette: hue.orb, size: 22, level: 0.35)
-                NKMono("MÉG NEM ÉL")
+                NKMono(eyebrow)
                 Spacer(minLength: 0)
             }
             Text(title).nkFont(19, design: .serif).foregroundStyle(.white)

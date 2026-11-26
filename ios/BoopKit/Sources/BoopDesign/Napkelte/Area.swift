@@ -486,6 +486,8 @@ public struct NKAreaSubPage<Content: View>: View {
                         VStack(alignment: .leading, spacing: 8) {
                             NKMono(eyebrow.uppercased())
                             Text(title).nkFont(34, design: .serif).foregroundStyle(.white)
+                                // Past accessibility1 a long Hungarian word („mezociklus,”) breaks mid-word.
+                                .dynamicTypeSize(...DynamicTypeSize.accessibility1)
                                 .fixedSize(horizontal: false, vertical: true).minimumScaleFactor(0.7)
                             if !sentence.isEmpty { NKHueText(sentence, hue: hue, size: 15) }
                         }
