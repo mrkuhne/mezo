@@ -68,6 +68,8 @@ final class MealComposerModel {
     private var parkedPhotoRef: UUID?
     private(set) var recipes: [Recipe]?
     private(set) var shelf: [PantryRow]?
+    /// A recipe pick is waiting for the shelf (`useRecipe`); further taps are ignored until it lands.
+    private(set) var pickingRecipe = false
     /// The owner's usual meals, ranked by the server (the fifth entrance).
     private(set) var usuals: [UsualMeal]?
     /// The chips above the words in drink mode: the drink bucket only, kept apart from the Szokásos page's full list.
@@ -359,9 +361,16 @@ final class MealComposerModel {
     /// shelf is read (once) for the ingredients' numbers; when it cannot be read, or an ingredient cannot be a gram line,
     /// the recipe goes in as the single "1 adag" line, as before.
     func useRecipe(_ recipe: Recipe) async {
+        // One pick at a time: a second tap while the shelf is still loading must not replace the plate being built.
+        guard !pickingRecipe else { return }
+        pickingRecipe = true
+        defer { pickingRecipe = false }
+        let addingTo = adding && draft != nil
         if shelf == nil, let lists { shelf = try? await lists.shelf() }
+        // the owner left the recipe list while the shelf loaded: nothing to put on the plate
+        guard stage == .recipes else { return }
         guard let lines = DraftItem.ingredientLines(of: recipe, shelf: shelf ?? []) else { use(DraftItem(recipe: recipe)); return }
-        if adding, draft != nil {
+        if addingTo, draft != nil {
             draft?.items.append(contentsOf: lines)
             adding = false; stage = .draft
             return
