@@ -27,6 +27,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -48,6 +49,7 @@ import org.springframework.transaction.annotation.Transactional;
  *   <li>Undo takes back the whole bundle while none of its days has started.</li>
  * </ul>
  */
+@Slf4j
 @Service
 public class DayAdjustmentService {
 
@@ -294,36 +296,68 @@ public class DayAdjustmentService {
     }
 
     /**
-     * A new block became the active mesocycle (a planned block starting mid-week, or a manual activation): the plan
-     * wins (K3 final review ruling). A live move whose session is not a template day of the new block would leave
-     * that session nowhere — so it expires; a session time shift or shortening still ahead was decided for the old
-     * block's session of that day — it expires too. Settled ({@code done}) rows and past days stay as history; every
-     * other kind (bedtime, meal energy, calendar to-dos, lighten, skip) is not about which template the day holds.
+     * The plan under the ledger changed — a block started running ({@code newBlock}: a planned block reaching its day,
+     * a manual activation, a template start) or the gym week was re-written (the season's Módosítás re-arranging the
+     * running block's days, a new gym schedule). The plan wins (K3 final review rulings), but past days stay history:
+     * <ol>
+     *   <li>the staleness sweep runs first ({@link #expireStale}), so a move already trained on its new day, or whose
+     *   target day passed, settles {@code done} instead of being undone onto a day that is behind him;</li>
+     *   <li>a live move still fits only while its session still stands on its old day (or, once that day passed, is
+     *   still a template day of the running block) and its target day did not gain a session — else it expires;</li>
+     *   <li>on a new block a session time shift or shortening from today on was decided for the old block's session:
+     *   today's settles {@code done} when today's session is already trained, every other one expires.</li>
+     * </ol>
+     * Every other kind (bedtime, meal energy, calendar to-dos, lighten, skip) is not about which template the day
+     * holds. Runs inside the caller's transaction (the same request reads the ledger right after) and never marks it
+     * rollback-only: a row that cannot be judged is skipped and logged.
      *
-     * @return the rows that expired
+     * @return the rows whose state changed
      */
-    @Transactional
-    public List<DayAdjustmentView> expireForNewBlock(UUID owner, UUID mesocycleId) {
-        lock.lock(owner);
+    @Transactional(noRollbackFor = RuntimeException.class)
+    public List<DayAdjustmentView> settleForPlanChange(UUID owner, boolean newBlock) {
         LocalDate today = today();
+        List<DayAdjustmentView> settled = new ArrayList<>(expireStale(owner, today));
         Instant now = clock().instant();
         List<DayAdjustmentEntity> changed = new ArrayList<>();
         for (DayAdjustmentEntity e : rows.findByCreatedByAndStateInAndDeletedFalse(owner,
                 List.of(AdjustmentState.ACTIVE.wire()))) {
-            AdjustmentPayload p = view(e).payload();
-            boolean expire = switch (p) {
-                case MoveSessionDay m -> !train.templateInBlock(owner, m.templateSessionId(), mesocycleId);
-                case AdjustmentPayload.ShiftSessionTime s -> !s.date().isBefore(today);
-                case AdjustmentPayload.ShortenSession s -> !s.date().isBefore(today);
-                default -> false;
-            };
-            if (expire) {
-                e.setState(AdjustmentState.EXPIRED.wire());
+            AdjustmentState next;
+            try {
+                next = switch (view(e).payload()) {
+                    case MoveSessionDay m -> moveStillFits(owner, m, today) ? null : AdjustmentState.EXPIRED;
+                    case AdjustmentPayload.ShiftSessionTime s when newBlock -> oldBlockSessionChange(owner, s.date(),
+                        today);
+                    case AdjustmentPayload.ShortenSession s when newBlock -> oldBlockSessionChange(owner, s.date(),
+                        today);
+                    default -> null;
+                };
+            } catch (RuntimeException ex) {
+                log.warn("Day adjustment {} could not be judged against the changed plan; left as it is", e.getId(),
+                    ex);
+                continue;
+            }
+            if (next != null) {
+                e.setState(next.wire());
                 e.setUpdatedAt(now);
                 changed.add(e);
             }
         }
-        return rows.saveAll(changed).stream().map(DayAdjustmentService::view).toList();
+        settled.addAll(rows.saveAll(changed).stream().map(DayAdjustmentService::view).toList());
+        return settled;
+    }
+
+    private boolean moveStillFits(UUID owner, MoveSessionDay m, LocalDate today) {
+        boolean sessionStands = m.fromDate().isBefore(today)
+            ? train.templateInActiveBlock(owner, m.templateSessionId())
+            : train.plannedTemplate(owner, m.fromDate()).filter(m.templateSessionId()::equals).isPresent();
+        return sessionStands && !train.gymPlanned(owner, m.toDate());
+    }
+
+    private AdjustmentState oldBlockSessionChange(UUID owner, LocalDate date, LocalDate today) {
+        if (date.isBefore(today)) {
+            return null;
+        }
+        return date.equals(today) && train.gymDoneOn(owner, today) ? AdjustmentState.DONE : AdjustmentState.EXPIRED;
     }
 
     // ── reads ─────────────────────────────────────────────────────────────────

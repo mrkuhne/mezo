@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.train.service;
 
 import io.mrkuhne.mezo.api.dto.GymScheduleSlotInput;
 import io.mrkuhne.mezo.api.dto.GymScheduleSlotResponse;
+import io.mrkuhne.mezo.feature.train.GymWeekChanged;
 import io.mrkuhne.mezo.feature.train.entity.GymScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.mapper.TrainMapper;
 import io.mrkuhne.mezo.feature.train.repository.GymScheduleSlotRepository;
@@ -10,6 +11,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +29,7 @@ public class GymScheduleService {
     private final GymScheduleSlotRepository slotRepository;
     private final TrainMapper mapper;
     private final GoalRecomputePort goalRecomputePort;
+    private final ApplicationEventPublisher events;
 
     public List<GymScheduleSlotResponse> getSchedule(UUID createdBy) {
         return slotRepository.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(createdBy)
@@ -52,6 +55,8 @@ public class GymScheduleService {
         // The weekly EAT is schedule-derived → a schedule edit must recompute the prescription
         // (G5 trigger, mezo-3g5w). Graceful when no goal is active.
         goalRecomputePort.recomputeActiveGoal(createdBy);
+        // The day-adjustment ledger (B7 K3) settles moves that no longer fit the new week, in this transaction.
+        events.publishEvent(new GymWeekChanged(createdBy));
         return fresh.stream().map(mapper::toGymSlotResponse).toList();
     }
 }

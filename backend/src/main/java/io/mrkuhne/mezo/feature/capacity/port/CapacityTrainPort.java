@@ -64,4 +64,7 @@ public interface CapacityTrainPort {
 
     /** {@code templateSessionId} is a template day of the owner's mesocycle {@code mesocycleId}. */
     boolean templateInBlock(UUID owner, UUID templateSessionId, UUID mesocycleId);
+
+    /** {@code templateSessionId} is a template day of the owner's active mesocycle (false when none runs). */
+    boolean templateInActiveBlock(UUID owner, UUID templateSessionId);
 }

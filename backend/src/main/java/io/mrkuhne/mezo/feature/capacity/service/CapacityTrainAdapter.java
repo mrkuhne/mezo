@@ -125,4 +125,11 @@ public class CapacityTrainAdapter implements CapacityTrainPort {
             .filter(s -> mesocycleId.equals(s.getMesocycleId()))
             .isPresent();
     }
+
+    @Override
+    public boolean templateInActiveBlock(UUID owner, UUID templateSessionId) {
+        return mesocycles.findByCreatedByAndStatusAndDeletedFalse(owner, "active").stream().findFirst()
+            .map(meso -> templateInBlock(owner, templateSessionId, meso.getId()))
+            .orElse(false);
+    }
 }

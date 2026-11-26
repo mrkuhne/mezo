@@ -36,6 +36,8 @@ func skipWindow(_ window: PlanWindow, in plan: FuelPlan, reason: SkipReason?, te
 func undoSkipWindow(_ window: PlanWindow, in plan: FuelPlan, food: FoodClient) async -> EtelOutcome {
     do { try await food.undoSkip(window: window, in: plan) }
     catch FoodFetchError.offline { return EtelOutcome(ok: false, text: "Nincs net — ehhez kell") }
+    // the skip belongs to an accepted Átrendezés change: retrying here can never work
+    catch FoodFetchError.conflict { return EtelOutcome(ok: false, text: "Ezt az Átrendezés oldalon tudod visszavonni") }
     catch { return EtelOutcome(ok: false, text: "Nem sikerült visszavonni — próbáld újra") }
     return EtelOutcome(ok: true, text: "\(window.label) újra a tervedben")
 }

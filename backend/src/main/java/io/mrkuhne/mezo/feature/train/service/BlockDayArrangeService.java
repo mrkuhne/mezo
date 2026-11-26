@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.train.service;
 
 import io.mrkuhne.mezo.api.dto.GymExerciseInput;
+import io.mrkuhne.mezo.feature.train.GymWeekChanged;
 import io.mrkuhne.mezo.feature.train.config.TrainTechniqueProperties;
 import io.mrkuhne.mezo.feature.train.config.VolumeProperties;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
@@ -21,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,6 +54,7 @@ public class BlockDayArrangeService {
     private final TrainService trainService;
     private final TrainMapper mapper;
     private final VolumeLedger volumeLedger;
+    private final ApplicationEventPublisher events;
 
     /** The block's days as they stand, read once. */
     private record Read(MesocycleEntity run, List<WorkoutSessionEntity> days, Map<UUID, List<ExerciseEntity>> rows) {
@@ -144,6 +147,8 @@ public class BlockDayArrangeService {
         }
         workoutSessionRepository.flush();
         volumeLedger.sync(owner, mesoId);
+        // The day-adjustment ledger (B7 K3) settles moves that no longer fit the re-arranged week, in this transaction.
+        events.publishEvent(new GymWeekChanged(owner));
         return plan;
     }
 

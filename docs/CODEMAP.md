@@ -1387,10 +1387,10 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `TimingProperties`, `TrainProperties`, `TrainStyleProperties`, `TrainSubstituteProperties`,
     `TrainTechniqueProperties`, `VolumeProperties`, `YearPlanProperties`
   - **events/listeners:** `MesocycleClosed`
-  - **other:** `ClosingBlockGate`, `ExerciseCatalogLoader`, `GymExerciseJson`, `HypertrophyDriveGate`,
-    `MesoContextJson`, `MesoDayJson`, `MesoReportJson`, `MesoReviewGate`, `MesocycleActivated`, `MesocycleStarted`,
-    `ProvenanceEnvelope`, `RestoreEntryJson`, `RunningBlockStructure`, `RunningSeedData`, `SeasonGatePort`,
-    `TrainDayAdjustmentPort`, `TrainSeedData`, `VolumeAmountMigrationRunner`, `VolumeBaselineJson`,
+  - **other:** `ClosingBlockGate`, `ExerciseCatalogLoader`, `GymExerciseJson`, `GymWeekChanged`,
+    `HypertrophyDriveGate`, `MesoContextJson`, `MesoDayJson`, `MesoReportJson`, `MesoReviewGate`, `MesocycleActivated`,
+    `MesocycleStarted`, `ProvenanceEnvelope`, `RestoreEntryJson`, `RunningBlockStructure`, `RunningSeedData`,
+    `SeasonGatePort`, `TrainDayAdjustmentPort`, `TrainSeedData`, `VolumeAmountMigrationRunner`, `VolumeBaselineJson`,
     `VolumeProgressionGate`, `VolumeRecomputeJson`, `WeekProposalGroupJson`, `WeekProposalLineJson`
 - **Contract** `api/feature/train/train-readiness.yml` — 3 operations
   - **endpoints:** GET /api/train/readiness/today · POST /api/train/readiness/today ·
