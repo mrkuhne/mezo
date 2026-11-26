@@ -19,8 +19,21 @@ public struct BoopReminderSettings: Codable, Equatable, Sendable {
     public var afternoon = Slot(enabled: true, hour: 16, minute: 0)
     public var closeEnabled = true
     public var closeMinutesBeforeBed = 75
-    public var bedtimeEnabled = true
+    public var bedtimeEnabled = false
     public var bedtimeMinutesBefore = 30
 
     public init() {}
+
+    /// A file written before a key existed decodes with that key's default (bedtime stays opt-in).
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let d = BoopReminderSettings()
+        morning = try c.decodeIfPresent(Slot.self, forKey: .morning) ?? d.morning
+        noon = try c.decodeIfPresent(Slot.self, forKey: .noon) ?? d.noon
+        afternoon = try c.decodeIfPresent(Slot.self, forKey: .afternoon) ?? d.afternoon
+        closeEnabled = try c.decodeIfPresent(Bool.self, forKey: .closeEnabled) ?? d.closeEnabled
+        closeMinutesBeforeBed = try c.decodeIfPresent(Int.self, forKey: .closeMinutesBeforeBed) ?? d.closeMinutesBeforeBed
+        bedtimeEnabled = try c.decodeIfPresent(Bool.self, forKey: .bedtimeEnabled) ?? d.bedtimeEnabled
+        bedtimeMinutesBefore = try c.decodeIfPresent(Int.self, forKey: .bedtimeMinutesBefore) ?? d.bedtimeMinutesBefore
+    }
 }

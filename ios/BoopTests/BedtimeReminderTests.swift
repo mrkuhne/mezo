@@ -205,8 +205,11 @@ struct BedtimeReminderTests {
         let center = FakeCenter(.allowed)
         var settings = BoopReminderSettings()
         let r = BedtimeReminder(center: center, defaults: defaults(), settings: { settings }, saveSettings: { settings = $0 }, hasStore: { true })
-        _ = await r.toggle(target: "22:30")
-        #expect(r.isOn && settings.bedtimeEnabled)
+        settings.bedtimeEnabled = true
+        _ = await r.toggle(target: "22:30")      // on from settings: the tap turns it off
+        settings.bedtimeEnabled = true
+        await r.refresh(target: "22:30")
+        #expect(r.isOn)
         settings.bedtimeEnabled = false      // switched off in the reminder settings
         await r.refresh(target: "22:30")
         #expect(!r.isOn)
@@ -229,5 +232,38 @@ struct BedtimeReminderTests {
         let r = BedtimeReminder(center: center, defaults: defaults(), settings: { settings }, saveSettings: { settings = $0 }, hasStore: { true })
         _ = await r.toggle(target: "23:00")
         #expect(r.time == "22:15")
+    }
+
+    @Test func enablingFromSettingsSchedulesWithoutTheMaToggle() async {
+        let center = FakeCenter(.allowed)
+        var settings = BoopReminderSettings()
+        let r = BedtimeReminder(center: center, defaults: defaults(), settings: { settings }, saveSettings: { settings = $0 }, hasStore: { true })
+        await r.refresh(target: "22:30")
+        #expect(center.scheduled.isEmpty)
+        settings.bedtimeEnabled = true
+        await r.refresh(target: "22:30")
+        #expect(r.isOn)
+        #expect(center.scheduled.last?.id == BedtimeReminder.id && center.scheduled.last?.hour == 22 && center.scheduled.last?.minute == 0)
+    }
+
+    @Test func defaultIsOffWithAStore() {
+        var settings = BoopReminderSettings()
+        let r = BedtimeReminder(center: FakeCenter(.allowed), defaults: defaults(), settings: { settings }, saveSettings: { settings = $0 }, hasStore: { true })
+        #expect(!r.isOn)
+        #expect(!BoopReminderSettings().bedtimeEnabled)
+    }
+
+    @Test func migratedTrueTurnsItOn() async {
+        let store = defaults()
+        store.set(true, forKey: "bedtimeReminder.on")
+        var settings = BoopReminderSettings()
+        var hasStore = false
+        let center = FakeCenter(.allowed)
+        let r = BedtimeReminder(center: center, defaults: store, settings: { settings }, saveSettings: { settings = $0 }, hasStore: { hasStore })
+        hasStore = true      // the store appears after the reminder was made
+        await r.refresh(target: "22:30")
+        #expect(settings.bedtimeEnabled && r.isOn)
+        #expect(store.object(forKey: "bedtimeReminder.on") == nil)
+        #expect(center.scheduled.last?.hour == 22 && center.scheduled.last?.minute == 0)
     }
 }

@@ -201,18 +201,23 @@ final class BedtimeReminder {
         self.settings = settings
         self.saveSettings = saveSettings
         self.hasStore = hasStore
-        // One-time migration: the old on/off key moves into the settings once a store exists.
-        if hasStore(), defaults.object(forKey: Self.onKey) != nil {
-            var s = settings()
-            s.bedtimeEnabled = defaults.bool(forKey: Self.onKey)
-            saveSettings(s)
-            defaults.removeObject(forKey: Self.onKey)
-        }
-        let storedTime = defaults.string(forKey: Self.timeKey)
-        time = storedTime
-        // the settings default is "on", but it only rings once the owner asked for it (a time was scheduled)
-        isOn = hasStore() ? settings().bedtimeEnabled && storedTime != nil : defaults.bool(forKey: Self.onKey)
+        time = defaults.string(forKey: Self.timeKey)
+        // with a store the settings' bedtimeEnabled is the single source of truth
+        isOn = hasStore() ? settings().bedtimeEnabled : defaults.bool(forKey: Self.onKey)
         target = defaults.string(forKey: Self.targetKey)
+        migrateLegacy()
+        if hasStore() { isOn = settings().bedtimeEnabled }
+    }
+
+    /// One-time migration: the old on/off key moves into the settings once a store exists (true turns it on; false/absent leaves it off).
+    private func migrateLegacy() {
+        guard hasStore(), defaults.object(forKey: Self.onKey) != nil else { return }
+        if defaults.bool(forKey: Self.onKey) {
+            var s = settings()
+            s.bedtimeEnabled = true
+            saveSettings(s)
+        }
+        defaults.removeObject(forKey: Self.onKey)
     }
 
     /// The pill or the card was tapped. Returns the toast to show; nil = ignored (the previous tap is still running).
@@ -220,6 +225,8 @@ final class BedtimeReminder {
         guard !busy else { return nil }
         busy = true
         defer { busy = false }
+        migrateLegacy()
+        if hasStore() { isOn = settings().bedtimeEnabled }
         if isOn {
             center.cancel(id: Self.id)
             set(on: false, time: nil, target: nil)
@@ -241,13 +248,19 @@ final class BedtimeReminder {
     /// On launch and with every brief: follow a changed target (none = keep the last known one), put back a request
     /// the system dropped, and turn off if notifications were withdrawn in Settings.
     func refresh(target: String?) async {
-        guard isOn, !busy else { return }
+        migrateLegacy()
+        guard !busy else { return }
         busy = true
         defer { busy = false }
-        // switched off in the reminder settings: cancel and follow
-        if hasStore(), !settings().bedtimeEnabled {
-            center.cancel(id: Self.id)
-            set(on: false, time: nil, target: nil)
+        if hasStore() {
+            // the settings decide: off cancels, on (re)schedules from the target below
+            if !settings().bedtimeEnabled {
+                if isOn || time != nil { center.cancel(id: Self.id) }
+                set(on: false, time: nil, target: nil)
+                return
+            }
+            isOn = true
+        } else if !isOn {
             return
         }
         if await center.status() != .allowed { set(on: false, time: nil, target: nil); return }

@@ -160,6 +160,14 @@ final class RitmusRemindersTests {
         #expect(center.request(Self.id(.reggel, 12)) != nil)
     }
 
+    @Test func closeLeadFollowsSettings() async throws {
+        var s = BoopReminderSettings(); s.closeMinutesBeforeBed = 60
+        let (r, ledger) = reminders(now: Self.at(9, 0), settings: s)
+        await r.refresh(ledger: ledger, bedtimeTarget: "23:00", askPermission: false)
+        let close = try #require(center.request(Self.close(12)))
+        #expect(close.hour == 22 && close.minute == 0)
+    }
+
     // MARK: - The close
 
     @Test func closeAtBedtimeMinus75() async throws {
