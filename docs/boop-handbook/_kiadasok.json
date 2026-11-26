@@ -991,5 +991,20 @@
       "mezo-r36n9.122"
     ],
     "mi_valtozott": "Az Évad Módosítás oldalán már futó edzésblokk mellett is átállíthatod, hány edzésed legyen és mely napokon. Az előnézetben megjelenik „A blokkod új hete”: napról napra látod, melyik edzés marad, melyik költözik, melyik nap új (egy meglévő edzés ismétlése) és melyik marad ki. Egyetlen „Elfogadom” egyszerre állítja át a kalóriát, az alvásigényt, a heti napokat és a blokkot — sosincs olyan pillanat, amikor a kalória már 5 edzéssel számol, a blokk még 4-gyel. Hogy melyik nap ismétlődjön vagy maradjon ki, azt ugyanaz a kiértékelő dönti el, mint a blokképítőben."
+  },
+  "c8a8ef330": {
+    "cim": "Napi bírás: Átrendezés — Boop megmutatja, mit tenne át a héten, és jóváhagyás után mindenhol átkerül",
+    "datum": "2026-11-26",
+    "verzio": "3.43.0",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app",
+      "Háttérrendszer"
+    ],
+    "szakasz": "B7 Napi kapacitás",
+    "jegyek": [
+      "mezo-r36n9.17"
+    ],
+    "mi_valtozott": "Ha egy nap túl sok lenne, a Ma oldalon megjelenik egy kártya, ami az új Átrendezés oldalra visz. Boop ott javasol: egy edzést a hét egy üres napjára, rövidebb vagy könnyebb edzést, másik lefekvési időt, más ételelosztást, vagy egy megbeszélés áttételét (ez utóbbit teendőként, a naptáradba nem ír). Minden javaslatnál látod az összes hatását (kalória, alvás, heti edzésszám), egyenként jóváhagyod, visszavonhatod, vagy mondhatod, hogy „Most nem”. Egy jóváhagyott áttétel a Ma oldalon, a napod oldalán, az Edzésnél, az Ételnél és az Évad „Hogy megy” részén is az új napon látszik, egyszer számolva; az Évad terve közben nem változik. Ha az Évadban módosítod az edzésnapjaidat vagy új blokk indul, a terv nyer: a már nem illő áttételek lejárnak, a letolt edzések megmaradnak."
   }
 }
