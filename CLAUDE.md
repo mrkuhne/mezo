@@ -69,7 +69,9 @@ Notion calls made inside that bloated context were ~10 %. So:
 - **Flow: the `munkamenet` skill** — *kezdés* (one task in a fresh session), *lezárás* (merge, Notion once, report,
   archive the session or hand off), *takarítás* (weekly cleanup). The `session-length-guard` hook
   (`scripts/hooks/`, context > 250k tokens or session > 24h) tells you when to switch to *lezárás* — obey it at the
-  next safe point.
+  next safe point. Generic copy for every other project (owner's machine, outside the repo): `~/.claude/skills/dev-flow`
+  + `~/.claude/hooks/session-length-guard.mjs` (generated from `scripts/hooks/`, skipped where a project has its own;
+  re-copy it when the repo script changes).
 - **One task, one session.** When the task is done (merged + pushed + reported), the next task starts in a **new
   session** (`start_session` / tell the owner) — never keep a session going across days or unrelated slices. Past
   ~150 turns or ~250k context, wrap up and hand off with a short brief instead of continuing.
@@ -185,6 +187,9 @@ invisible server fix skips the spike.
 Before writing code, write the checklist into the bd issue (`bd update <id> --acceptance "..."`) and
 the plan; every item is checkable with evidence. It always covers:
 
+- **UX/UI + performance bar** (playbook §9): Dynamic Type at the largest sizes and VoiceOver labels on every
+  touched control; smooth scroll/animation on the heaviest touched screen (Instruments when it is list- or
+  chart-heavy); cached content shows instantly, fresh data loads behind it; no heavy work at app launch.
 - **What the owner sees:** each screen of the approved spike, empty / loading / error / offline
   states, smallest iPhone width, reduced motion; never emoji, never "Mezo" in a visible string.
 - **Parity:** every control and data field of each touched screen still present; no behaviour

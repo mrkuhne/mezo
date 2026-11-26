@@ -116,6 +116,9 @@ Hungarian, business language** (CLAUDE.md §Communication) — no file names, no
 
 ## 5. How work is done
 
+- **Flow = `munkamenet` skill + its `playbook.md`.** A B-slice (B5–B8 size) follows playbook §5: one slice map
+  (owner OK once), then one step per fresh session, each merged, with the handoff in the next step's bd notes — never
+  one multi-day session or a long-lived coordinator session. Bugs §3, new screens §4, server-into-app §6.
 - Every slice opens with a short brainstorm (`superpowers:brainstorming` + `brainstorm-recon`; the research report
   for the area is the recon's head start), a **simulator spike** when anything new is seen, then a plan in
   `docs/superpowers/plans/` with a *Kész, ha…* list (owner OK) → execute inline (`superpowers:executing-plans`;
