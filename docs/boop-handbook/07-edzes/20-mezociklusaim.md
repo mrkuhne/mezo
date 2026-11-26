@@ -2,7 +2,7 @@
 cim: Mezociklusaim
 szint: Funkció
 terulet: Edzés
-allapot: Ellenőrzés
+allapot: Élesben
 hol: [iPhone app, Háttérrendszer, AI]
 szulo: 00-attekintes
 szakasz: [B5]
