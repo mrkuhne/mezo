@@ -24,7 +24,7 @@ import BoopDesign
 /// Which tab of the room is open. The labels are the owner's (`Terv` became **`Blokk`** on
 /// 2026-11-16) and they live **here, once**: `AreaRoom`'s tab set reads the same constants.
 enum EdzesTab: String, CaseIterable {
-    case ma = "Ma", blokk = "Blokk", gyakorlatok = "Gyakorlatok", elozmenyek = "Előzmények"
+    case ma = "Ma", blokk = "Mezociklus", gyakorlatok = "Gyakorlatok", elozmenyek = "Előzmények"
 }
 
 /// A sub-page of the room, opened from a card.
@@ -94,6 +94,11 @@ struct EdzesRoom: View {
     @State private var showGym = false
     /// „Melyik napot csinálod ma?" (mezo-r36n9.163).
     @State private var showOtherDays = false
+    /// SPIKE mezo-r36n9.177.
+    enum MezoSpike: String, Identifiable { case list, restart, close, report, reportPending; var id: String { rawValue } }
+    @State private var mezoSheet: MezoSpike?
+    @State private var mezoCover: MezoSpike?
+    @State private var mezoSaveConfirm = false
 
     /// `hidden` is not „no workout": the session may well be running, minimised.
     private enum WorkoutPhase { case hidden, briefing, playing, ceremony, result }
@@ -181,6 +186,39 @@ struct EdzesRoom: View {
                     WeekReviewDeck(model: weekReview) { page = nil; Task { await weekReview.load() } }
                         .navigationTransition(.zoom(sourceID: PlanZoom.review, in: planZoom))
                 }
+            }
+        }
+        .sheet(item: $mezoSheet) { which in
+            if let block {
+                Group {
+                    if which == .restart { MezoRestartSheetSpike(block: block, hue: hue) { mezoSheet = nil; toast = "Újraindítva · 1. hét" } }
+                    else { MezoCloseSheetSpike(block: block, hue: hue, onClosed: { mezoSheet = nil; mezoCover = .reportPending }, onCancel: { mezoSheet = nil }) }
+                }
+                .presentationDetents([.large]).presentationBackground(NK.ground).presentationCornerRadius(34).presentationDragIndicator(.visible)
+            }
+        }
+        .fullScreenCover(item: $mezoCover) { which in
+            switch which {
+            case .report, .reportPending:
+                MezoReportSpike(run: SpikeRun(title: block?.title ?? "Hipertrófia · Ősz", dates: "okt. 13. – nov. 26.", line: ""),
+                                hue: hue, onBack: { mezoCover = nil }, pending: which == .reportPending)
+            default:
+                MezociklusokPageSpike(hue: hue, running: block) { mezoCover = nil }
+            }
+        }
+        .confirmationDialog("Felülírod a sablont?", isPresented: $mezoSaveConfirm, titleVisibility: .visible) {
+            Button("Mentés a sablonba") { toast = "A sablon frissült" }
+            Button("Mégse", role: .cancel) {}
+        } message: { Text("A „\(block?.title ?? "")\" sablon a mostani állapottal íródik felül. A későbbi indítások már így jönnek.") }
+        .onAppear {
+            switch UserDefaults.standard.string(forKey: "previewMezo") {
+            case "list": mezoCover = .list
+            case "report": mezoCover = .report
+            case "pending": mezoCover = .reportPending
+            case "restart": mezoSheet = .restart
+            case "close": mezoSheet = .close
+            case "save": mezoSaveConfirm = true
+            default: break
             }
         }
         .fullScreenCover(item: $yearPlan) { cover in
@@ -789,13 +827,16 @@ struct EdzesRoom: View {
 
     @ViewBuilder private var blokk: some View {
         if let b = block {
+            MezoCurrentCardSpike(block: b, hue: hue, onEdit: { page = .builder }, onRestart: { mezoSheet = .restart },
+                                 onClose: { mezoSheet = .close }, onSaveTemplate: { mezoSaveConfirm = true })
             if let weekReview, plan != nil {
                 WeekReviewEntrance(model: weekReview, hue: hue, zoom: planZoom,
                                    openReview: { page = .review }, openBuilder: { page = .builder })
             }
             blockLoadCard(b)
-            yearPlanRow
             weekCarousel(b)
+            MezoAllRowSpike(hue: hue) { mezoCover = .list }
+            yearPlanRow
             NKAskRow(hue: hue, text: "Kérdezd meg Boopot az edzéstervedről") { openPlace(.boop) }
         } else if store?.blockProblem != nil {
             NKBare("A BLOKKOD", hue: hue) { NKNoFreshData("A blokkodat most nem érem el") }
@@ -821,11 +862,11 @@ struct EdzesRoom: View {
     /// The whole block's load in one card: the weeks, and what the muscles get. Tapping it
     /// opens the page that breaks it down muscle by muscle.
     private func blockLoadCard(_ b: BlockPlan) -> some View {
-        NKBare("A BLOKK TERHELÉSE", hue: hue, trailing: store?.blockAgeText) {
+        NKBare("A MEZOCIKLUS TERHELÉSE", hue: hue, trailing: store?.blockAgeText) {
             Button { page = .blockLoad } label: {
                 VStack(alignment: .leading, spacing: 14) {
                     NKBlockTimeline(edzesTimeline(b), hue: hue,
-                                    caption: "\(b.weeks) hetes blokk · \(b.currentWeek). hét · \(b.split)")
+                                    caption: "\(b.weeks) hetes mezociklus · \(b.currentWeek). hét · \(b.split)")
                     HStack(spacing: 10) {
                         Text(muscleSummary(b))
                             .nkFont(13).foregroundStyle(.white.opacity(0.7))
@@ -847,7 +888,7 @@ struct EdzesRoom: View {
             NKBare("AZ ÉVES TERV", hue: hue) {
                 Button { openYearPlan() } label: {
                     HStack(spacing: 10) {
-                        Text("Melyik blokk mikor jön, és mire figyel")
+                        Text("Melyik mezociklus mikor jön, és mire figyel")
                             .nkFont(13).foregroundStyle(.white.opacity(0.7))
                             .frame(maxWidth: .infinity, alignment: .leading)
                         Image(systemName: "chevron.right")
