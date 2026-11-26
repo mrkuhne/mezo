@@ -8,6 +8,8 @@ private let intentLog = Logger(subsystem: "hu.mezo.boop", category: "ReminderInt
 struct ReminderDoneIntent: LiveActivityIntent {
     static let title: LocalizedStringResource = "Kész"
     static let openAppWhenRun = false
+    /// Only the alarm runs it: not offered in Shortcuts or Spotlight.
+    static let isDiscoverable = false
 
     @Parameter(title: "Alkalom") var key: String
 
@@ -24,6 +26,8 @@ struct ReminderDoneIntent: LiveActivityIntent {
 struct ReminderSilenceIntent: LiveActivityIntent {
     static let title: LocalizedStringResource = "Leállítom"
     static let openAppWhenRun = false
+    /// Only the alarm runs it: not offered in Shortcuts or Spotlight.
+    static let isDiscoverable = false
 
     init() {}
 

@@ -114,3 +114,32 @@ enum ReminderActions {
                                        title: title, body: "", route: snoozeRoute(key: key))
     }
 }
+
+/// Runs only the last of a burst of changes, after a pause (a time wheel spun through many values re-arms once).
+@MainActor
+final class Debouncer {
+    private let delay: Duration
+    private var pending: Task<Void, Never>?
+    private var work: (@MainActor () -> Void)?
+
+    init(delay: Duration = .milliseconds(600)) { self.delay = delay }
+
+    func submit(_ work: @escaping @MainActor () -> Void) {
+        self.work = work
+        pending?.cancel()
+        pending = Task { [weak self, delay] in
+            try? await Task.sleep(for: delay)
+            guard !Task.isCancelled else { return }
+            self?.flush()
+        }
+    }
+
+    /// Runs what is pending now (the view goes away).
+    func flush() {
+        pending?.cancel()
+        pending = nil
+        let w = work
+        work = nil
+        w?()
+    }
+}

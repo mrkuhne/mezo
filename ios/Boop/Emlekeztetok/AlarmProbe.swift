@@ -10,6 +10,8 @@ nonisolated struct ProbeMetadata: AlarmMetadata {}
 struct ProbeDoneIntent: LiveActivityIntent {
     static let title: LocalizedStringResource = "Kész"
     static let openAppWhenRun = false
+    /// Only the alarm runs it: not offered in Shortcuts or Spotlight.
+    static let isDiscoverable = false
     func perform() async throws -> some IntentResult {
         UserDefaults.standard.set(Date(), forKey: "probe.doneAt")
         return .result()

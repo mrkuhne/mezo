@@ -185,6 +185,23 @@ struct ReminderActionsTests {
         #expect(refreshed == 0)
     }
 
+    @Test func theIntentsStayOutOfShortcuts() {
+        #expect(ReminderDoneIntent.isDiscoverable == false)
+        #expect(ReminderSilenceIntent.isDiscoverable == false)
+        #expect(ProbeDoneIntent.isDiscoverable == false)
+    }
+
+    @Test func aBurstOfTimeChangesSavesOnce() async {
+        var saved: [Int] = []
+        let d = Debouncer(delay: .milliseconds(60))
+        for v in 1...5 { d.submit { saved.append(v) } }
+        try? await Task.sleep(for: .milliseconds(250))
+        #expect(saved == [5])
+        d.submit { saved.append(6) }
+        d.flush()                                           // closing the sheet saves what is pending at once
+        #expect(saved == [5, 6])
+    }
+
     @Test func headlessWithNoUserDoesNothing() {
         #expect(HeadlessContext.parts(userId: nil, base: base) == nil)
     }

@@ -154,6 +154,9 @@ struct SupplementEditSheet: View {
 private struct GroupReminderRow: View {
     let group: SupplementGroup
     private var calendar: Calendar { .current }
+    /// The time while the wheel turns: saved (and re-armed) once it rests.
+    @State private var shownTime: Date?
+    @State private var saver = Debouncer()
 
     var body: some View {
         if let store = ReminderHub.store {
@@ -171,11 +174,16 @@ private struct GroupReminderRow: View {
                 }
                 if let existing {
                     HStack(spacing: 12) {
-                        DatePicker("", selection: Binding(get: { clock(existing) }, set: { d in
-                            var n = existing
-                            let c = calendar.dateComponents([.hour, .minute], from: d)
-                            n.hour = c.hour ?? n.hour; n.minute = c.minute ?? n.minute
-                            store.upsert(n)
+                        DatePicker("", selection: Binding(get: { shownTime ?? clock(existing) }, set: { d in
+                            shownTime = d
+                            let id = existing.id
+                            saver.submit {
+                                guard var n = store.file.reminders.first(where: { $0.id == id }) else { return }
+                                let c = calendar.dateComponents([.hour, .minute], from: d)
+                                n.hour = c.hour ?? n.hour; n.minute = c.minute ?? n.minute
+                                store.upsert(n)
+                                shownTime = nil
+                            }
                         }), displayedComponents: .hourAndMinute)
                         .labelsHidden().tint(Hue.fuel.glow).environment(\.locale, Locale(identifier: "hu_HU"))
                         .accessibilityLabel("\(group.label): mikor")
@@ -190,9 +198,12 @@ private struct GroupReminderRow: View {
                         .accessibilityHint("Átváltja ébresztő és értesítés között")
                         Spacer(minLength: 0)
                     }
+                    // the vitamin alarm's main door: a denied permission or a failed arming is told here too
+                    ReminderArmLine(state: reminderArmState(existing), reminder: existing)
                 }
             }
             .padding(.top, 11)
+            .onDisappear { saver.flush() }
         }
     }
 
