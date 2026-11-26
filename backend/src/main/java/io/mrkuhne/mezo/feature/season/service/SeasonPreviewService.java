@@ -52,8 +52,9 @@ public class SeasonPreviewService {
     public record Warning(String key, String text) {
     }
 
+    /** {@code block} = the running block's re-arranged week when the draft moves the gym days, else null. */
     public record Preview(SeasonNumbersJson before, SeasonNumbersJson after, List<Todo> todo, List<Warning> warnings,
-                          String fingerprint) {
+                          String fingerprint, SeasonTrainPort.BlockWeek block) {
     }
 
     /** One draft's numbers, its guard warnings and the goal it would write. */
@@ -69,9 +70,47 @@ public class SeasonPreviewService {
         Computed after = compute(owner, season, draft);
         Integer refitFrom = SeasonEntity.STATUS_ACTIVE.equals(season.getStatus())
             ? menuService.refitFromDow(owner, java.time.LocalDate.now()) : null;
+        List<Warning> warnings = new ArrayList<>(after.warnings());
+        Optional<SeasonTrainPort.Block> moving = blockToMove(owner, season, current, draft);
+        SeasonTrainPort.BlockWeek block = null;
+        if (moving.isPresent() && draft.gymDaysOrEmpty().isEmpty()) {
+            warnings.add(new Warning("block_no_day", BLOCK_NO_DAY));
+        } else if (moving.isPresent()) {
+            block = trainPort.blockRearrangement(owner, moving.get().id(), draft.gymDaysOrEmpty(), sportDays(draft),
+                    deficit(draft)).orElse(null);
+        }
         return new Preview(before.numbers(), after.numbers(),
-            SeasonTodoRules.todo(before.numbers(), after.numbers(), current, draft, refitFrom),
-            after.warnings(), fingerprint(owner, season));
+            SeasonTodoRules.todo(before.numbers(), after.numbers(), current, draft, refitFrom, block != null),
+            warnings, fingerprint(owner, season), block);
+    }
+
+    static final String BLOCK_NO_DAY = "Amíg fut az edzésblokk, legalább egy edzésnap kell: a blokk napjai ezekre"
+        + " kerülnek.";
+
+    /**
+     * Spec §5.12-1 (mezo-r36n9.122): the running block whose days must follow the draft — present when the season is
+     * active, a block runs, and the draft's gym days (as a set) differ from the season's current ones. One accept then
+     * moves the block with the slots, so the kcal and the block never disagree on the sessions.
+     */
+    public Optional<SeasonTrainPort.Block> blockToMove(UUID owner, SeasonEntity season, SeasonDraftJson current,
+                                                       SeasonDraftJson draft) {
+        if (!SeasonEntity.STATUS_ACTIVE.equals(season.getStatus())
+            || new java.util.HashSet<>(current.gymDaysOrEmpty()).equals(new java.util.HashSet<>(draft.gymDaysOrEmpty()))) {
+            return Optional.empty();
+        }
+        return trainPort.activeMesocycle(owner);
+    }
+
+    /** The block's week is judged under the draft's trajectory: a cut is the evaluator's deficit. */
+    public static boolean deficit(SeasonDraftJson draft) {
+        return "cut".equals(draft.trajectory());
+    }
+
+    /** The draft's sport weekdays (the block's week is judged against them). */
+    public static java.util.Set<Integer> sportDays(SeasonDraftJson draft) {
+        java.util.Set<Integer> days = new java.util.TreeSet<>();
+        draft.sportOrEmpty().forEach(sp -> days.add(sp.dayOfWeek()));
+        return days;
     }
 
     /** No season yet (the new-season summary): before = the live goal, the current slots and the sleep goal. */
@@ -102,7 +141,7 @@ public class SeasonPreviewService {
         Computed after = compute(owner, null, draft);
         return new Preview(before.numbers(), after.numbers(),
             SeasonTodoRules.todo(before.numbers(), after.numbers(), liveSchedule, draft, null),
-            after.warnings(), "");
+            after.warnings(), "", null);
     }
 
     /** The numbers of {@code draft} for {@code season} (null = no season yet). Read-only. */
@@ -141,8 +180,9 @@ public class SeasonPreviewService {
         List<UUID> linked = goalPort.linkedMesocycles(owner, season.getGoalId());
         Optional<SeasonTrainPort.Block> block = trainPort.activeMesocycle(owner)
             .or(() -> linked.isEmpty() ? Optional.empty() : trainPort.mesocycle(owner, linked.get(linked.size() - 1)));
+        String blockState = block.map(b -> trainPort.blockState(owner, b.id())).orElse("-");
         return SeasonFingerprint.of(season, goal, trainPort.currentSchedule(owner), metricsPort.trend(owner), weighIn,
-            sleepPort.get(owner), block);
+            sleepPort.get(owner), block, blockState);
     }
 
     /** The sleep rule's base: the active season's stored base, else his own sleep goal, else 7 h 30. */

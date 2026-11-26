@@ -138,8 +138,24 @@ struct EvadClientTests {
     @Test func seasonRefusalsSayWhatToDo() {
         #expect(evadErrorText(.conflict("SEASON_PROFILE_REQUIRED"))
                 == "Az évad számaihoz előbb a testadataid kellenek (magasság, születési dátum, nem).")
-        #expect(evadErrorText(.conflict("SEASON_BLOCK_DAYS_LOCKED"))
-                == "Amíg fut az edzésblokk, az edzésnapok nem változhatnak.")
+        #expect(evadErrorText(.conflict("SEASON_BLOCK_NEEDS_GYM_DAY"))
+                == "Amíg fut az edzésblokk, legalább egy edzésnap kell.")
+    }
+
+    @Test func previewDecodesTheBlocksNewWeek() throws {
+        let json = EvadFixtures.previewJSON.replacingOccurrences(of: #""fingerprint":"fp-1"}"#, with: #"""
+        "fingerprint":"fp-1","block":{"mesocycleId":"m1","title":"Felső-alsó","days":[
+         {"weekday":0,"title":"Felső A","change":"keep","fromWeekday":null},
+         {"weekday":2,"title":"Alsó A","change":"move","fromWeekday":1},
+         {"weekday":4,"title":"Felső A","change":"add","fromWeekday":0}],
+         "dropped":[{"weekday":3,"title":"Felső B","change":"drop","fromWeekday":null}]}}
+        """#)
+        let p = try JSONDecoder().decode(EvadPreview.self, from: Data(json.utf8))
+        #expect(p.block?.title == "Felső-alsó" && p.block?.days.count == 3)
+        #expect(p.block?.days[1] == EvadBlockDay(weekday: 2, title: "Alsó A", change: "move", fromWeekday: 1))
+        #expect(p.block?.dropped.first?.title == "Felső B")
+        #expect(try JSONDecoder().decode(EvadPreview.self, from: Data(EvadFixtures.previewJSON.utf8)).block == nil,
+                "no block week = the block does not change")
     }
 
     @Test func weekKcalAndAMissingMenuDayDecode() throws {

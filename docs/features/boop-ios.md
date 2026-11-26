@@ -18,6 +18,8 @@ related: [season, penz, mail, fuel, pantry, recipe, dayclose, intention, journal
 
 # Boop — native iOS app — Feature Documentation
 
+> **2026-11-25 — Évad: one accept moves the running block too (`mezo-r36n9.122`, spec §5.12-1).** Módosítás no longer locks the gym days while a block runs: the preview shows **A blokkod új hete** and *Elfogadom* re-arranges the block (same count = days move in order; more = the evaluator's best repeat; fewer = the day whose loss the evaluator minds least) with the goal, slots and sleep need in one transaction — see the Módosítás entry in §2 and [`season.md`](season.md).
+
 > **2026-11-25 — Levél: Google sign-in to his own Gmail (`mezo-r36n9.38`/`.39`, owner 2026-11-25: no mirror mailbox, „Belépés Google-lel”; spec §12).** *Fiókok* is now one **Google button** (states *not connected · unconfigured · connected · auth_failed*), signing in through `ASWebAuthenticationSession` + PKCE (`BoopCore/Level/GooglePKCE.swift`, `ios/Boop/Level/GoogleSignIn`) with **no Google SDK**; the six-step mirror guide and app-password fields are gone from the app. Server side: [`mail.md`](mail.md) §3.10.
 
 > **2026-11-25 — No warm-ups in the app; kcal at the end of a workout (`mezo-r36n9.170`, owner 2026-11-25: „vegyük ki mindenhonnan a bemelegítő szettek mutatását… becslés, utána óra").** **Warm-ups:** `PlannedExercise.init` drops every `kind == .warmup` prescribed set (wire, cache and preview alike), keeping only `warmupCount` so a swap (`EdzesStore.swapExercise`) hands the server's count back untouched; `WorkoutSession.init` ignores logged warm-ups of an open instance from an older build; the player's „BEMELEGÍTŐ n/m" step line, the day-edit sheet's „Bemelegítő sorozat" stepper and the `more_warmups` candidate reason are gone, and the Új blokk minutes copy no longer says „bemelegítéssel". The server still prescribes warm-ups (its minutes model counts them) — only the app hides them. **kcal:** `WorkoutInstance.energy` (`WorkoutEnergy {kcal, source estimate|watch}`, from the new optional `WorkoutInstanceResponse.energy`) is read off today's `completedWorkout`; `EdzesStore.energy(for:)` accepts it only for today's completed instance of the same template day. To have it while the ceremony is open, `EdzesRoom` now **sends the finish when the ceremony opens** (`sendFinish`, guarded by `finishSent`), not on its „Kész"; closing the ceremony any way ends the workout locally. `WorkoutCeremony(energy:)` shows a glass line under the three counters — „kb. N kcal · becslés · az órád pontosítja" or „N kcal · az órád mérte" — fading in when it arrives, absent when unknown (nothing is computed on the phone). Server side: [`train.md`](train.md).
@@ -647,9 +649,11 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     target is base + that day's movement + the goal balance, so a 5th session does **not** change the training-day
     kcal — it changes *Heti összesen*, the sleep need and the bedtime. *Elfogadom* only accepts the draft the preview
     on screen was made for (`evadCanAccept`); a 409 `SEASON_PREVIEW_STALE` re-previews with „Közben változott valami,
-    újraszámoltam." **While the season's block runs the gym days are locked** (`evadGymDaysLocked`: the *Edzések hetente*
-    stepper is disabled, `evadGymDaysLockedLine` explains — „Amíg fut az edzésblokk, az edzésnapok maradnak…");
-    sport days, pace and gym time stay editable; the server enforces the same with 409 `SEASON_BLOCK_DAYS_LOCKED`.
+    újraszámoltam." **A gym-day change moves the running block in the same accept** (`mezo-r36n9.122`, 2026-11-25,
+    replaced S1's lock): the preview's `block` (`EvadBlockWeek`) renders as **A blokkod új hete** (`NKBare` +
+    `NKList` of `evadBlockWeekRows`: „Szerda · Alsó A — Eddig kedden volt.", „Új nap: a hétfői edzés még egyszer.",
+    „Kimarad · Felső B …"); refusals `SEASON_BLOCK_NEEDS_GYM_DAY` and the shared `.dayWorkoutRunning` are worded in
+    `evadErrorText`. Server side: [`season.md`](season.md) §apply.
   - **Szabályok** (`EvadRules`): switches „Csak kevéssé feldolgozott ételek" (NOVA max), „Vasárnap este kérem a jövő
     heti menüt", „Könnyebb edzéshéten ne fogyjak", „A valódi égetésemmel számoljon", „Ajánljon kísérletet, ha valami
     újat kezdek" → `PUT …/rules`; read-only rows *Kiválasztott receptek*, *Blokk*, *Alvásigény* („az edzésből
