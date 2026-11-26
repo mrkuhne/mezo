@@ -2,7 +2,7 @@
 title: Platform · API Contract & Backend Architecture
 type: feature-platform
 status: done
-updated: 2026-11-25
+updated: 2026-11-26
 tags: [platform, backend, data-layer, frontend, boop, b4-etel, idempotency]
 key_files:
   - api/openapi.yml
@@ -26,6 +26,8 @@ related: [_platform-data-layer, _platform-auth-security, _platform-notifications
 > **2026-11-21 — Boop Pénz weekly long-horizon review (`mezo-r36n9.120`, additive contract).** A new fragment `api/feature/penz/penz-weekly.yml` (tag **`PenzWeekly`** → `PenzWeeklyApi`, thin `PenzWeeklyController`) appended to `api/generate/merge.yml`: `GET /api/penz/weekly-review?week=` (`getPenzWeeklyReview`) → `PenzWeeklyReviewResponse` / `PenzWeeklySection` / `PenzWeeklyStory` / `PenzWeeklySource`; `api/openapi.yml` regenerated (no web client; the iOS synced contract is untouched here). New table `penz_weekly_review` (changeset `1.1.0/script/202611211600_mezo-r36n9.120_penz_weekly_review.sql`, added to `ResetDatabase`). New payload-free LLM feature tag `penz_weekly` (`LlmCallContext.FEATURE_PENZ_WEEKLY`). No new error code, no techcore mechanism changed. See [`penz.md`](penz.md) §3.14.
 
 > **2026-11-21 — Boop Pénz investment ↔ money account (`mezo-r36n9.119`, additive contract).** `penz-portfolio.yml`: `PenzInvestTxnRequest` gains optional `accountId` / `accountAmountMinor` / `linkTransactionId`, `PenzInvestTxnResponse` gains `accountId` / `transactionId`, new op `GET /api/penz/invest-transactions/sms-candidates` (`listPenzInvestSmsCandidates`, returns the shared `PenzTransactionResponse` from `penz.yml` — fragments reference each other's schemas by `#/components/schemas/…`, resolved after the merge); `penz.yml` documents a 409 on transaction `PUT`/`DELETE`; `penz-sms.yml` documents the ingest reason `invest_buy_linked`; `api/openapi.yml` regenerated. Two new codes in both bundles: `PENZ_SMS_LINK_MISMATCH` (409), `PENZ_TRANSACTION_INVEST_LINKED` (409). Changeset `1.1.0/script/202611211400_mezo-r36n9.119_penz_invest_account_link.sql` adds the nullable FK `penz_invest_txn.transaction_id` with a partial unique index over live rows (one link per money row; no new table, `ResetDatabase` unchanged). No techcore mechanism changed. See [`penz.md`](penz.md) §3.6.
+
+> **2026-11-26 — reviewed after Évad's block re-arrangement (`mezo-r36n9.122`, no platform change).** `SEASON_BLOCK_DAYS_LOCKED` is renamed to `SEASON_BLOCK_NEEDS_GYM_DAY` in both bundles (409: no gym day left while the block runs; parity and key count unchanged); `SeasonPreview` gains `block` (`SeasonBlockWeek` / `SeasonBlockDay`), `api/openapi.yml` regenerated. See [`season.md`](season.md).
 
 > **2026-11-20 — reviewed after the Boop block day editor (`mezo-r36n9.116`, no platform change).** Two new train error keys in both `messages_hu` and `messages_en` (parity kept, bundles now 313 keys each): `TRAIN_SUGGESTIONS_REQUEST_INVALID` (400, the day-suggestions request) and `TRAIN_DAY_WORKOUT_RUNNING` (409, a day with a running workout cannot be edited). Mechanics unchanged. See [`train.md`](train.md).
 
