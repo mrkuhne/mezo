@@ -530,7 +530,9 @@ class LedgerReadersIT extends AbstractIntegrationTest {
 
     private WorkoutAsPlannedRequest booking(WorkoutSessionEntity template, LocalDate date) {
         return WorkoutAsPlannedRequest.builder().templateSessionId(template.getId()).date(date)
-            .startedAt(date.atTime(18, 0).atZone(ZoneId.systemDefault()).toOffsetDateTime())
+            // never in the future: today's booking starts at 00:01 (the catch-up refuses a start after now)
+            .startedAt(date.atTime(date.equals(today) ? LocalTime.of(0, 1) : LocalTime.of(18, 0))
+                .atZone(ZoneId.systemDefault()).toOffsetDateTime())
             .clientRef(UUID.randomUUID()).overrides(List.of()).build();
     }
 
