@@ -26,21 +26,27 @@ final class ReminderScheduler {
     @ObservationIgnored private let alarms: AlarmScheduling
     @ObservationIgnored private let center: ReminderCenter
     @ObservationIgnored private let clock: @Sendable () -> Date
-    @ObservationIgnored private let calendar: Calendar
+    /// nil = follow the device: a fresh calendar in the current time zone for every run (travel is respected).
+    @ObservationIgnored private let injectedCalendar: Calendar?
     @ObservationIgnored private var inFlight: Task<Void, Never>?
 
     init(store: ReminderStore, alarms: AlarmScheduling, center: ReminderCenter,
-         clock: @escaping @Sendable () -> Date = { Date() }, calendar: Calendar = .current,
+         clock: @escaping @Sendable () -> Date = { Date() }, calendar: Calendar? = nil,
          startingAfter: Task<Void, Never>? = nil) {
         self.inFlight = startingAfter
         self.store = store
         self.alarms = alarms
         self.center = center
         self.clock = clock
+        self.injectedCalendar = calendar
+    }
+
+    /// Gregorian in the zone the phone is in right now (or the injected calendar's zone).
+    private func makeCalendar() -> Calendar {
         var greg = Calendar(identifier: .gregorian)
-        greg.timeZone = calendar.timeZone
+        greg.timeZone = injectedCalendar?.timeZone ?? TimeZone.autoupdatingCurrent
         greg.locale = Locale(identifier: "en_US_POSIX")
-        self.calendar = greg
+        return greg
     }
 
     /// Puts what is armed in line with the store. `askPermission`: the system prompts may appear (after an edit);
@@ -74,6 +80,7 @@ final class ReminderScheduler {
     }
 
     private func run(askPermission: Bool) async {
+        let calendar = makeCalendar()
         let reminders = store.file.reminders.filter(\.enabled)
         let byId = Dictionary(reminders.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
 
@@ -103,7 +110,7 @@ final class ReminderScheduler {
             guard failed[occ.reminderId] == nil, let r = byId[occ.reminderId] else { continue }
             let secondary: String = { if case .supplement = r.link { return "Bevettem" } else { return "Kész" } }()
             do {
-                try await alarms.schedule(occ, title: r.title, secondaryTitle: secondary)
+                try await alarms.schedule(occ, title: r.title, secondaryTitle: secondary, tint: ReminderLook.hue(r).glow)
                 alarmUntil[occ.reminderId] = occ.fireAt
                 expectedAlarmIds[occ.reminderId, default: []].insert(occ.alarmId.uuidString)
             } catch AlarmArmError.limit {

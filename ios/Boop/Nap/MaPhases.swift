@@ -221,6 +221,7 @@ struct MaBelow: View {
                    onCheckIn: { router?.open(.checkin) },
                    onMeal: { openMeal(MealStart()) },
                    onEtelRoom: { onDrill(.fuel) })
+            MaReminders(now: ctx.now)
             reggel.phaseAnchor(.reggel)
             napod
             notices

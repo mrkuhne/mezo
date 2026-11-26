@@ -56,6 +56,10 @@ struct ShellView: View {
     @State private var router = RitmusRouter.shared
     /// The cover the "+" sheet asked for; it opens once the sheet has gone (two presentations never overlap).
     @State private var coverAfterCapture: RitmusCover?
+    /// The Emlékeztető door the "+" sheet asked for (opens once that sheet has gone).
+    @State private var reminderAfterCapture = false
+    /// A reminder's notification tapped while a sheet was up: the page opens after that sheet has gone.
+    @State private var reminderPageAfterSheet = false
     /// The meal composer the "+" sheet asked for (opens once the sheet has gone), and the one on screen.
     @State private var mealAfterCapture: MealStart?
     @State private var meal: MealStart?
@@ -93,6 +97,7 @@ struct ShellView: View {
             case .penzExpense: penzAfterCapture = true
             case .quick(let kind): quickAfterCapture = kind
             case .area(let hue): areaAfterCapture = hue
+            case .reminder: reminderAfterCapture = true
             }
         } else {
             switch pick {
@@ -101,6 +106,7 @@ struct ShellView: View {
             case .penzExpense: penzCapture = true
             case .quick(let kind): quick = kind
             case .area(let hue): select(.ma); router.openRoom(hue)
+            case .reminder: router.openNewReminder()
             }
         }
     }
@@ -112,6 +118,8 @@ struct ShellView: View {
         if penzAfterCapture { penzAfterCapture = false; penzCapture = true }
         if let q = quickAfterCapture { quickAfterCapture = nil; quick = q }
         if let hue = areaAfterCapture { areaAfterCapture = nil; select(.ma); router.openRoom(hue) }
+        if reminderAfterCapture { reminderAfterCapture = false; router.openNewReminder() }
+        if reminderPageAfterSheet { reminderPageAfterSheet = false; router.openReminders() }
     }
 
     /// The quick log's own sheets (`mezo-r36n9.154`); each closes itself with the toast to show.
@@ -163,7 +171,7 @@ struct ShellView: View {
                 handle(pick, afterSheet: true)
                 capturing = false
             }
-                .presentationDetents([.height(650), .large])
+                .presentationDetents([.height(760), .large])
                 .presentationBackground(NK.ground)
                 .presentationCornerRadius(34)
                 .presentationDragIndicator(.visible)
@@ -221,6 +229,19 @@ struct ShellView: View {
                 }
             }
         }
+        // The Emlékeztetők page (a reminder's notification, Ma's „Mind”) and the new-reminder sheet (the "+" door).
+        .fullScreenCover(isPresented: Binding(get: { [r = router.reminders] in r == .page }, set: { if !$0 { router.reminders = nil } })) {
+            EmlekeztetokPage { router.reminders = nil }
+        }
+        .sheet(isPresented: Binding(get: { [r = router.reminders] in r == .new }, set: { if !$0 { router.reminders = nil } })) {
+            if let store = ReminderHub.store {
+                ReminderEditSheet(draft: ReminderDraft(), store: store) { router.reminders = nil }
+                    .presentationDetents([.large])
+                    .presentationBackground(NK.ground)
+                    .presentationCornerRadius(34)
+                    .presentationDragIndicator(.visible)
+            }
+        }
         // A notification tap while the "+" or account sheet is up: the sheet goes first, then the cover (two
         // presentations never overlap).
         .onChange(of: router.cover) { _, asked in
@@ -230,11 +251,23 @@ struct ShellView: View {
             capturing = false
             account = false
         }
+        .onChange(of: router.reminders) { _, asked in
+            guard asked == .page, capturing || account else { return }
+            router.reminders = nil
+            capturing = false
+            account = false
+            reminderPageAfterSheet = true
+        }
         .onAppear {
             fromTab = tab
             #if DEBUG
             // Simulator review: `-previewTab ma|terv|naplo|boop` opens that place, `-previewOpen capture|account` a sheet,
             // `-previewOpen checkin|checkinDone` the check-in (its first item / its payoff), `-previewOpen este` the close.
+            // `-reminders page|edit|edit-linked|denied`, `-previewMaReminders YES`: the Emlékeztetők screens on sample reminders.
+            if ReminderPreviewSeed.wanted {
+                ReminderPreviewSeed.seed()
+                if ReminderPreviewSeed.opensPage { router.openReminders() }
+            }
             if let t = UserDefaults.standard.string(forKey: "previewTab").flatMap(ShellTab.init(key:)) { tabKey = t.storageKey; fromTab = t }
             switch UserDefaults.standard.string(forKey: "previewOpen") {
             case "capture": capturing = true
@@ -249,6 +282,7 @@ struct ShellView: View {
             // `-previewOpen water|supplements|sport|weight|sleep|journal`: one quick-log sheet.
             case let raw? where QuickLog(rawValue: raw) != nil: quick = QuickLog(rawValue: raw)
             case "checkin", "checkinDone": router.open(.checkin)
+            case "reminderNew": router.openNewReminder()
             case "este", "esteDone": router.open(.este)
             default: break
             }

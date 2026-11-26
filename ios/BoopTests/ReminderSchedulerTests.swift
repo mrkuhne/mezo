@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import Testing
 import BoopCore
 @testable import Boop
@@ -23,7 +24,7 @@ fileprivate final class FakeAlarms: AlarmScheduling, @unchecked Sendable {
         auth = grants ? .allowed : .denied
         return auth
     }
-    func schedule(_ o: ReminderOccurrence, title: String, secondaryTitle: String) async throws {
+    func schedule(_ o: ReminderOccurrence, title: String, secondaryTitle: String, tint: Color) async throws {
         active += 1
         if active > 1 { overlapped = true }
         defer { active -= 1 }

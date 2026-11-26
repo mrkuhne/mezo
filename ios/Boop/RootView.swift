@@ -175,9 +175,11 @@ private struct ReminderTriggers: View {
     @Environment(\.scenePhase) private var scenePhase
     var body: some View {
         Color.clear
-            .task { await scheduler.refresh(askPermission: false) }
+            .task { await scheduler.refresh(askPermission: false); await InstallExpiry.reschedule(center: SystemReminderCenter()) }
             .onChange(of: scenePhase) { _, phase in
-                if phase == .active { Task { await scheduler.refresh(askPermission: false) } }
+                if phase == .active {
+                    Task { await scheduler.refresh(askPermission: false); await InstallExpiry.reschedule(center: SystemReminderCenter()) }
+                }
             }
             .onChange(of: store.changes) { Task { await scheduler.refresh(askPermission: true) } }
     }

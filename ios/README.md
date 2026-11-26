@@ -58,6 +58,8 @@ exercise rows and numbers are invented, and no workout is saved.
 | `-previewRecovery YES` | kímélő mód, day 2 of a cold: calm grey-blue sky, the banner, no session |
 | `-previewScroll 850` | tab pages open scrolled to that offset |
 | `-previewOpen capture\|account` | opens the "+" capture sheet (the nine quick-log doors + the meal chips) or the account sheet |
+| `-reminders page\|edit\|edit-linked\|denied` | seeds six sample reminders (invented; nothing reaches AlarmKit or notifications) and opens the Emlékeztetők page (`mezo-r36n9.172`): `edit` also opens a new reminder's edit sheet filled as in the spike, `edit-linked` the supplement-linked reminder's sheet, `denied` shows the row states „Ébresztő helyett értesítés” / „Nem sikerült beállítani” / notifications off; `-previewOpen reminderNew` opens the blank edit sheet (the "+" door) |
+| `-previewMaReminders YES` | same sample reminders; with `-previewHome nap` Ma shows its „Emlékeztetők” fold under the wall |
 | `-previewOpen water\|supplements\|sport\|weight\|sleep\|journal` | opens one quick-log sheet of the "+" (víz · kiegészítők · sport · súly · alvás · napló) |
 | `-previewLearning YES` | the brief is "learning" (Forma unknown, 9/14 nights): the ring blanks Forma alone, the other orbs keep their numbers |
 | `-previewHome suly -sulyTab Ma\|Test\|Napló` | the Súly area (`mezo-r36n9.158`) on invented figures from `Suly/SulyPreview.swift` (the Évad preview's season: 84,1 kg → 82, planned −0,4 kg a week, the ring says 84); `-sulyState full\|noseason\|empty\|offline\|error` (no active season · no weigh-ins and no trend · no net, cache primed five hours old · the server failing) |

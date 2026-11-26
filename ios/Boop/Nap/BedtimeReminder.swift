@@ -160,8 +160,9 @@ final class ReminderPresenter: NSObject, UNUserNotificationCenterDelegate, Senda
     /// A tap on the notification body: a daily-loop route opens its cover. On a cold launch the router holds it until
     /// the shell appears and presents it.
     @MainActor func handleTap(route: String?) {
-        guard let route, let cover = RitmusCover(route: route) else { return }
-        RitmusRouter.shared.open(cover)
+        guard let route else { return }
+        if let cover = RitmusCover(route: route) { RitmusRouter.shared.open(cover) }
+        else if ReminderRoute(route: route) != nil { RitmusRouter.shared.openReminders() }
     }
 }
 

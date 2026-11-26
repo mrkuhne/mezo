@@ -18,7 +18,7 @@ protocol AlarmScheduling: Sendable {
     func authorization() async -> AlarmAuth
     /// Shows the system prompt (once); the resulting state.
     func requestAuthorization() async -> AlarmAuth
-    func schedule(_ o: ReminderOccurrence, title: String, secondaryTitle: String) async throws
+    func schedule(_ o: ReminderOccurrence, title: String, secondaryTitle: String, tint: Color) async throws
     /// Cancels every alarm Boop scheduled for this user (AlarmKit ids carry no prefix, so we remember ours).
     func cancelAll(prefix: String) async
     /// The ids (`UUID` strings of `ReminderOccurrence.alarmId`) of the alarms the system currently holds.
@@ -50,13 +50,13 @@ struct SystemAlarmScheduler: AlarmScheduling {
         return Self.map(state)
     }
 
-    func schedule(_ o: ReminderOccurrence, title: String, secondaryTitle: String) async throws {
+    func schedule(_ o: ReminderOccurrence, title: String, secondaryTitle: String, tint: Color) async throws {
         let alert = AlarmPresentation.Alert(
             title: LocalizedStringResource(stringLiteral: title),
             stopButton: AlarmButton(text: "Leállítom", textColor: .white, systemImageName: "stop.fill"),
             secondaryButton: AlarmButton(text: LocalizedStringResource(stringLiteral: secondaryTitle), textColor: .white, systemImageName: "checkmark"),
             secondaryButtonBehavior: .custom)
-        let attrs = AlarmAttributes<ReminderAlarmMetadata>(presentation: AlarmPresentation(alert: alert), metadata: nil, tintColor: .orange)
+        let attrs = AlarmAttributes<ReminderAlarmMetadata>(presentation: AlarmPresentation(alert: alert), metadata: nil, tintColor: tint)
         let config = AlarmManager.AlarmConfiguration<ReminderAlarmMetadata>.alarm(
             schedule: .fixed(o.fireAt), attributes: attrs, stopIntent: ReminderSilenceIntent(), secondaryIntent: ReminderDoneIntent(key: o.key))
         let id = o.alarmId
@@ -103,7 +103,7 @@ struct SystemAlarmScheduler: AlarmScheduling {
 struct NoAlarmScheduler: AlarmScheduling {
     func authorization() async -> AlarmAuth { .denied }
     func requestAuthorization() async -> AlarmAuth { .denied }
-    func schedule(_ o: ReminderOccurrence, title: String, secondaryTitle: String) async throws {}
+    func schedule(_ o: ReminderOccurrence, title: String, secondaryTitle: String, tint: Color) async throws {}
     func cancelAll(prefix: String) async {}
     func scheduledIds() async -> Set<String>? { [] }
 }
