@@ -95,7 +95,7 @@ struct EdzesRoom: View {
     /// „Melyik napot csinálod ma?" (mezo-r36n9.163).
     @State private var showOtherDays = false
     /// SPIKE mezo-r36n9.177.
-    enum MezoSpike: String, Identifiable { case list, restart, close, report, reportPending; var id: String { rawValue } }
+    enum MezoSpike: String, Identifiable { case list, restart, close, report, reportPending, detail, detailClosed; var id: String { rawValue } }
     @State private var mezoSheet: MezoSpike?
     @State private var mezoCover: MezoSpike?
     @State private var mezoSaveConfirm = false
@@ -200,8 +200,11 @@ struct EdzesRoom: View {
         .fullScreenCover(item: $mezoCover) { which in
             switch which {
             case .report, .reportPending:
-                MezoReportSpike(run: SpikeRun(title: block?.title ?? "Hipertrófia · Ősz", dates: "okt. 13. – nov. 26.", line: ""),
-                                hue: hue, onBack: { mezoCover = nil }, pending: which == .reportPending)
+                MezoReportSpike(mezo: block.map(spikeRunning) ?? spikeMezos[1], hue: hue, onBack: { mezoCover = nil }, pending: which == .reportPending)
+            case .detail:
+                MezoDetailSpike(mezo: spikeMezos[4], hue: hue, running: block) { mezoCover = nil }
+            case .detailClosed:
+                MezoDetailSpike(mezo: spikeMezos[1], hue: hue, running: block) { mezoCover = nil }
             default:
                 MezociklusokPageSpike(hue: hue, running: block) { mezoCover = nil }
             }
@@ -218,6 +221,8 @@ struct EdzesRoom: View {
             case "restart": mezoSheet = .restart
             case "close": mezoSheet = .close
             case "save": mezoSaveConfirm = true
+            case "detail": mezoCover = .detail
+            case "detailClosed": mezoCover = .detailClosed
             default: break
             }
         }
@@ -835,8 +840,7 @@ struct EdzesRoom: View {
             }
             blockLoadCard(b)
             weekCarousel(b)
-            MezoAllRowSpike(hue: hue) { mezoCover = .list }
-            yearPlanRow
+            MezoTilesSpike(hue: hue, current: b, onAll: { mezoCover = .list }, onYear: { openYearPlan() })
             NKAskRow(hue: hue, text: "Kérdezd meg Boopot az edzéstervedről") { openPlace(.boop) }
         } else if store?.blockProblem != nil {
             NKBare("A BLOKKOD", hue: hue) { NKNoFreshData("A blokkodat most nem érem el") }
