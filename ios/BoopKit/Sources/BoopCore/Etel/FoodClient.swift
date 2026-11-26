@@ -1102,7 +1102,7 @@ extension FoodClient {
     static func map(_ r: Components.Schemas.MealResponse) -> Meal {
         Meal(id: UUID(uuidString: r.id) ?? UUID(), slot: r.slot, loggedAt: r.loggedAt, mealDate: r.mealDate, title: r.title,
              macros: map(r.macros), score: r.score.value,
-             items: r.items.map { MealItem(name: $0.name, source: $0.source, amount: $0.amount, unit: $0.unit, contribution: map($0.contribution), nova: $0.nova) },
+             items: r.items.map { MealItem(name: $0.name, source: $0.source, amount: $0.amount, unit: $0.unit, contribution: map($0.contribution), nova: $0.nova, recipeId: $0.recipeId.flatMap(UUID.init(uuidString:)), recipeName: $0.recipeName) },
              hasPhoto: r.hasPhoto ?? false, breakdown: r.score.breakdown.map { map($0.value1) })
     }
 

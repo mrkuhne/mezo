@@ -130,6 +130,44 @@ public extension DraftItem {
     }
 }
 
+public extension DraftItem {
+    /// One serving of a recipe as its ingredients (`mezo-r36n9.181`): one shelf line per ingredient, its grams being the
+    /// recipe's amount ÷ servings, each carrying the recipe's id and name as the "part of recipe" marker. The numbers
+    /// come from the shelf row (the server snapshots the same row when it saves).
+    ///
+    /// Nil — the caller falls back to the single "1 adag" line — when an ingredient cannot be one honest gram line: its
+    /// shelf row is gone, it has no numbers, or it is measured in something other than mass/volume of the row's basis.
+    static func ingredientLines(of recipe: Recipe, shelf: [PantryRow]) -> [DraftItem]? {
+        guard !recipe.ingredients.isEmpty else { return nil }
+        let servings = Double(max(recipe.servings, 1))
+        var lines: [DraftItem] = []
+        for ing in recipe.ingredients {
+            guard let row = shelf.first(where: { $0.id == ing.pantryItemId }), let base = DraftItem(pantry: row),
+                  let grams = massAmount(ing.amount, unit: ing.unit, basis: base.basisUnit) else { return nil }
+            let perServing = grams / servings
+            guard perServing > 0 else { continue }
+            var line = base
+            line.amount = perServing >= 10 ? perServing.rounded() : (perServing * 10).rounded() / 10
+            line.recipeId = recipe.id
+            line.recipeName = recipe.name
+            lines.append(line)
+        }
+        return lines.isEmpty ? nil : lines
+    }
+
+    /// The recipe line's amount in the shelf row's basis unit (g or ml; kg and l scaled), nil when they do not match.
+    private static func massAmount(_ amount: Double, unit: String, basis: String) -> Double? {
+        let u = unit.trimmingCharacters(in: .whitespaces).lowercased(), b = basis.trimmingCharacters(in: .whitespaces).lowercased()
+        let (value, norm): (Double, String) = switch u {
+        case "kg": (amount * 1000, "g")
+        case "l": (amount * 1000, "ml")
+        default: (amount, u)
+        }
+        guard norm == "g" || norm == "ml" else { return nil }
+        return norm == b ? value : nil
+    }
+}
+
 public extension MealDraft {
     var total: Macros {
         items.reduce(Macros(kcal: 0, p: 0, c: 0, f: 0)) { acc, i in

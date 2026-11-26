@@ -355,6 +355,22 @@ final class MealComposerModel {
         stage = .draft
     }
 
+    /// A recipe as one serving of its ingredients, gram by gram, each marked as part of the recipe (`mezo-r36n9.181`). The
+    /// shelf is read (once) for the ingredients' numbers; when it cannot be read, or an ingredient cannot be a gram line,
+    /// the recipe goes in as the single "1 adag" line, as before.
+    func useRecipe(_ recipe: Recipe) async {
+        if shelf == nil, let lists { shelf = try? await lists.shelf() }
+        guard let lines = DraftItem.ingredientLines(of: recipe, shelf: shelf ?? []) else { use(DraftItem(recipe: recipe)); return }
+        if adding, draft != nil {
+            draft?.items.append(contentsOf: lines)
+            adding = false; stage = .draft
+            return
+        }
+        capturedAt = stamp()
+        draft = MealDraft(date: dayString(capturedAt), slot: slot(at: capturedAt), title: recipe.name, items: lines)
+        stage = .draft
+    }
+
     /// One of the usual meals. With its latest occurrence's own lines the draft IS that meal (no model call, no re-estimate);
     /// without them the name goes through the ordinary draft like typed words and the draft says plainly that it is a
     /// re-estimate, not a copy. Either way nothing is saved without the owner's tap.
@@ -921,7 +937,7 @@ private struct MealComposerHost: View {
     /// (a stepper, the number typeable); its macros and the way to take it off. Flags that matter to him close it.
     private func line(_ i: Int, _ item: DraftItem) -> some View {
         let badges = draftBadges(for: item, profile: model.profile)
-        let glyph = switch item.source { case .recipe: "book-sage"; case .pantry: "bowl-sage"; case .estimate: "spark-cream" }
+        let glyph = switch item.source { case .recipe: "book-sage"; case .pantry: item.recipeId != nil ? "book-sage" : "bowl-sage"; case .estimate: "spark-cream" }
         let doubt = sourceTag(item).contains("nézd át")
         let c = item.contribution
         // grams and millilitres move by ten, servings and pieces by a half
@@ -1023,7 +1039,7 @@ private struct MealComposerHost: View {
                     else { recipeFinder(recipes) }
                     ForEach(filterRecipes(recipes, query: listQuery).filter { listFilter == nil || $0.category == listFilter }) { r in
                         row(r.name, "\(huInt(Int((r.macros.kcal / Double(max(r.servings, 1))).rounded()))) kcal · \(Int(r.perServing.p.rounded())) g fehérje adagonként",
-                            glyph: "book-sage", points: etelPoints(r.fit)) { model.use(DraftItem(recipe: r)) }
+                            glyph: "book-sage", points: etelPoints(r.fit)) { Task { await model.useRecipe(r) } }
                     }
                 } else { loadingRow }
             } else if model.stage == .usuals {

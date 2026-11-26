@@ -70,6 +70,10 @@ public struct MealItem: Equatable, Sendable {
     public var unit: String
     public var contribution: Macros
     public var nova: Int?
+    /// On an ingredient of a recipe logged ingredient by ingredient (`mezo-r36n9.181`): the recipe it is part of, and
+    /// its name as it was at log time. Nil on every other line.
+    public var recipeId: UUID? = nil
+    public var recipeName: String? = nil
 }
 
 public struct Meal: Equatable, Sendable, Identifiable {
@@ -255,12 +259,15 @@ public struct DraftItem: Codable, Equatable, Sendable {
     public var needsReview: Bool
     /// What the product label said (from a barcode scan); an absent key means no information.
     public var allergens: [String: AllergenState]
+    /// A shelf line that is one ingredient of a recipe (`mezo-r36n9.181`): `recipeId` then marks the recipe it is part of
+    /// and this is that recipe's name, for the "X receptből" label. Nil on every other line.
+    public var recipeName: String?
 
     public init(source: DraftSource, pantryItemId: UUID? = nil, recipeId: UUID? = nil, name: String, amount: Double, unit: String,
                 per: Double, basisUnit: String, kcal: Double, proteinG: Double, carbsG: Double, fatG: Double, nova: Int? = nil,
                 fiberG: Double? = nil, sugarG: Double? = nil, saltG: Double? = nil, saturatedFatG: Double? = nil,
-                confidence: Double = 1, needsReview: Bool = false, allergens: [String: AllergenState] = [:]) {
-        self.source = source; self.pantryItemId = pantryItemId; self.recipeId = recipeId; self.name = name
+                confidence: Double = 1, needsReview: Bool = false, allergens: [String: AllergenState] = [:], recipeName: String? = nil) {
+        self.source = source; self.pantryItemId = pantryItemId; self.recipeId = recipeId; self.name = name; self.recipeName = recipeName
         self.amount = amount; self.unit = unit; self.per = per; self.basisUnit = basisUnit
         self.kcal = kcal; self.proteinG = proteinG; self.carbsG = carbsG; self.fatG = fatG; self.nova = nova
         self.fiberG = fiberG; self.sugarG = sugarG; self.saltG = saltG; self.saturatedFatG = saturatedFatG

@@ -219,25 +219,40 @@ public class MealService {
     // Annotated by exception: walks item.getMeal() (LAZY) with open-in-view false (spring_patterns.md).
     @Transactional(readOnly = true)
     public List<RecipeLogResponse> recipeLogs(UUID userId, UUID recipeId) {
-        return mealItemRepository
-            .findByRecipeIdAndCreatedByAndDeletedFalseOrderByMeal_LoggedAtDesc(recipeId, userId).stream()
-            .map(item -> {
-                BigDecimal per = item.getSnapshotPer() == null || item.getSnapshotPer().signum() == 0
-                    ? BigDecimal.ONE : item.getSnapshotPer();
-                BigDecimal factor = item.getAmount().divide(per, 6, RoundingMode.HALF_UP);
+        // One row per MEAL (mezo-r36n9.181): a recipe logged ingredient by ingredient is several
+        // marker lines in one meal, and they read as one log of the recipe, their contributions summed.
+        Map<UUID, List<MealItemEntity>> byMeal = new LinkedHashMap<>();
+        for (MealItemEntity item : mealItemRepository
+            .findByRecipeIdAndCreatedByAndDeletedFalseOrderByMeal_LoggedAtDesc(recipeId, userId)) {
+            byMeal.computeIfAbsent(item.getMeal().getId(), k -> new ArrayList<>()).add(item);
+        }
+        return byMeal.values().stream()
+            .map(items -> {
+                MealEntity meal = items.get(0).getMeal();
+                BigDecimal kcal = BigDecimal.ZERO, p = BigDecimal.ZERO, c = BigDecimal.ZERO, f = BigDecimal.ZERO;
+                for (MealItemEntity item : items) {
+                    BigDecimal per = item.getSnapshotPer() == null || item.getSnapshotPer().signum() == 0
+                        ? BigDecimal.ONE : item.getSnapshotPer();
+                    BigDecimal factor = item.getAmount().divide(per, 6, RoundingMode.HALF_UP);
+                    kcal = kcal.add(orDefault(item.getSnapshotKcal(), BigDecimal.ZERO).multiply(factor));
+                    p = p.add(orDefault(item.getSnapshotProteinG(), BigDecimal.ZERO).multiply(factor));
+                    c = c.add(orDefault(item.getSnapshotCarbsG(), BigDecimal.ZERO).multiply(factor));
+                    f = f.add(orDefault(item.getSnapshotFatG(), BigDecimal.ZERO).multiply(factor));
+                }
                 return RecipeLogResponse.builder()
-                    .mealId(item.getMeal().getId())
-                    .slot(item.getMeal().getSlot())
-                    .score(item.getMeal().getScore()) // null for pre-scoring rows (FE sparkle)
-                    .loggedAt(item.getMeal().getLoggedAt().atOffset(ZoneOffset.UTC))
-                    .kcal(scaled(item.getSnapshotKcal(), factor))
-                    .p(scaled(item.getSnapshotProteinG(), factor))
-                    .c(scaled(item.getSnapshotCarbsG(), factor))
-                    .f(scaled(item.getSnapshotFatG(), factor))
+                    .mealId(meal.getId())
+                    .slot(meal.getSlot())
+                    .score(meal.getScore()) // null for pre-scoring rows (FE sparkle)
+                    .loggedAt(meal.getLoggedAt().atOffset(ZoneOffset.UTC))
+                    .kcal(scaled(kcal, BigDecimal.ONE))
+                    .p(scaled(p, BigDecimal.ONE))
+                    .c(scaled(c, BigDecimal.ONE))
+                    .f(scaled(f, BigDecimal.ONE))
                     .build();
             })
             .toList();
     }
+
 
     /** Per-line contribution scalar: snapshot × factor, whole-number HALF_UP (cf. RecipeMapper). */
     private static BigDecimal scaled(BigDecimal base, BigDecimal factor) {
@@ -516,6 +531,17 @@ public class MealService {
             PantryItemEntity p = resolvePantry(userId, req.getPantryItemId());
             PantryCatalogEntity c = p.getCatalog();
             item.setPantryItemId(p.getId());
+            // "Part of recipe" marker (mezo-r36n9.181): a recipe logged ingredient by ingredient sends
+            // each ingredient as a pantry line carrying the recipe's id. The marker is a label, not a
+            // source — a recipe deleted since (a usual meal re-logged weeks later) just drops it
+            // instead of refusing the whole meal.
+            if (req.getRecipeId() != null) {
+                recipeRepository.findByIdAndCreatedByAndDeletedFalse(req.getRecipeId(), userId)
+                    .ifPresent(r -> {
+                        item.setRecipeId(r.getId());
+                        item.setRecipeSnapshotName(r.getName());
+                    });
+            }
             item.setSnapshotName(c.getName());
             item.setSnapshotPer(orDefault(c.getServingAmount(), BigDecimal.ONE));
             item.setSnapshotBasisUnit(c.getServingUnit() == null ? "unit" : c.getServingUnit());

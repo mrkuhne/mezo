@@ -1816,5 +1816,15 @@
     ],
     "mit_kapsz": "Ritka eset: ha egy már lezárt áttétel célnapjára később új edzés kerül, az az edzés is látszani fog.",
     "szulo": "mezo-r36n9.17"
+  },
+  "mezo-r36n9.181": {
+    "cim": "Recept logolása összetevőnként, grammban, a recept jelölésével",
+    "tipus": "Funkció",
+    "szakasz": "Kezdőlap",
+    "terulet": [
+      "Étel"
+    ],
+    "mit_kapsz": "Ha receptet rögzítesz, az étkezésbe nem egyetlen „1 adag” sor kerül, hanem minden hozzávaló külön, egy adagra jutó grammal (például rizs 80 g, csirkemell 150 g) — mentés előtt egyenként átírhatod őket. Minden ilyen soron ott a jelölés: „Csirkés rizs része”, az elmentett étkezés kártyáján pedig „Csirkés rizs receptből” cím alatt látod a hozzávalókat.",
+    "munkamenet": "recept-osszetevonkent"
   }
 }

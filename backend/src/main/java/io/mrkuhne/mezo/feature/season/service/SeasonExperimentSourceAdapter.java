@@ -74,12 +74,17 @@ public class SeasonExperimentSourceAdapter implements SeasonExperimentSourcePort
         Map<UUID, String> names = new HashMap<>();
         for (MealEntity m : mealRepository.findWithItemsBetween(owner, firstFrom, to)) {
             for (MealItemEntity i : m.getItems()) {
-                UUID ref = recipes.contains(i.getRecipeId()) ? i.getRecipeId()
-                    : "pantry".equals(i.getSource()) && foods.contains(i.getPantryItemId()) ? i.getPantryItemId() : null;
+                // A pantry line carrying a recipe id is an ingredient of a recipe logged ingredient by
+                // ingredient (mezo-r36n9.181): it counts for the recipe, under the recipe's name.
+                boolean asRecipe = recipes.contains(i.getRecipeId());
+                UUID ref = asRecipe ? i.getRecipeId()
+                    : "pantry".equals(i.getSource()) && i.getRecipeId() == null && foods.contains(i.getPantryItemId())
+                        ? i.getPantryItemId() : null;
                 if (ref != null) {
                     days.computeIfAbsent(ref, k -> new TreeSet<>()).add(m.getMealDate());
-                    if (i.getSnapshotName() != null && !i.getSnapshotName().isBlank()) {
-                        names.putIfAbsent(ref, i.getSnapshotName().strip());
+                    String name = asRecipe && i.getRecipeSnapshotName() != null ? i.getRecipeSnapshotName() : i.getSnapshotName();
+                    if (name != null && !name.isBlank()) {
+                        names.putIfAbsent(ref, name.strip());
                     }
                 }
             }
