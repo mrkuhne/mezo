@@ -14,9 +14,14 @@ private final class FakeCenter: ReminderCenter, @unchecked Sendable {
     var pending: Set<String> = []
     /// Holds the permission prompt open this long (a second tap lands while it is up).
     var promptDelay: Duration = .zero
+    /// Holds the status read this long (a settings change lands while a refresh runs).
+    var statusDelay: Duration = .zero
     init(_ permission: ReminderPermission = .notDetermined, grants: Bool = true) { self.permission = permission; self.grants = grants }
 
-    func status() async -> ReminderPermission { permission }
+    func status() async -> ReminderPermission {
+        if statusDelay > .zero { try? await Task.sleep(for: statusDelay) }
+        return permission
+    }
     func request() async -> Bool {
         requests += 1
         if promptDelay > .zero { try? await Task.sleep(for: promptDelay) }
@@ -265,5 +270,47 @@ struct BedtimeReminderTests {
         #expect(settings.bedtimeEnabled && r.isOn)
         #expect(store.object(forKey: "bedtimeReminder.on") == nil)
         #expect(center.scheduled.last?.hour == 22 && center.scheduled.last?.minute == 0)
+    }
+}
+
+/// Changing Boop's built-in reminders on the Emlékeztetők page re-arms them at once (final review I2): both refreshes are
+/// keyed on the settings, so a change re-runs them while the page is still open.
+@MainActor
+struct BuiltInRefreshKeyTests {
+    @Test func theBedtimeRefreshFollowsTheSettings() {
+        var s = BoopReminderSettings()
+        let before = BedtimeRefreshKey(target: "22:45", settings: s)
+        s.bedtimeEnabled.toggle()
+        #expect(BedtimeRefreshKey(target: "22:45", settings: s) != before)
+        var t = BoopReminderSettings()
+        t.bedtimeMinutesBefore = 45
+        #expect(BedtimeRefreshKey(target: "22:45", settings: t) != before)
+        #expect(BedtimeRefreshKey(target: "22:45", settings: BoopReminderSettings()) == before)
+    }
+
+    @Test func aLeadChangedWhileARefreshRunsIsNotLost() async {
+        let center = FakeCenter(.allowed)
+        center.statusDelay = .milliseconds(100)
+        var settings = BoopReminderSettings(); settings.bedtimeEnabled = true
+        let r = BedtimeReminder(center: center, defaults: UserDefaults(suiteName: "bedtime-key-\(UUID().uuidString)")!,
+                                settings: { settings }, saveSettings: { settings = $0 }, hasStore: { true })
+        async let first: Void = r.refresh(target: "23:00")
+        try? await Task.sleep(for: .milliseconds(20))
+        settings.bedtimeMinutesBefore = 60                       // the stepper on the page, mid-refresh
+        await r.refresh(target: "23:00")
+        _ = await first
+        #expect(r.time == "22:00")
+        #expect(center.scheduled.last?.hour == 22 && center.scheduled.last?.minute == 0)
+    }
+
+    @Test func theDailyLoopRefreshFollowsTheSettings() {
+        let base = RitmusRefreshKey(done: [], closed: false, target: nil, saved: false, day: "2026-11-26", foregrounds: 0,
+                                    builtIn: BoopReminderSettings())
+        var off = BoopReminderSettings()
+        off.morning.enabled = false
+        #expect(RitmusRefreshKey(done: [], closed: false, target: nil, saved: false, day: "2026-11-26", foregrounds: 0, builtIn: off) != base)
+        var moved = BoopReminderSettings()
+        moved.closeMinutesBeforeBed = 90
+        #expect(RitmusRefreshKey(done: [], closed: false, target: nil, saved: false, day: "2026-11-26", foregrounds: 0, builtIn: moved) != base)
     }
 }

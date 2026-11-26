@@ -1,8 +1,8 @@
 import Foundation
 
-/// Settings of the built-in (non-user) reminders: the three supplement dayparts, the day close and bedtime nudges.
-public struct BoopReminderSettings: Codable, Equatable, Sendable {
-    public struct Slot: Codable, Equatable, Sendable {
+/// Settings of the built-in (non-user) reminders: the three check-ins, the day close and bedtime nudges.
+public struct BoopReminderSettings: Codable, Hashable, Sendable {
+    public struct Slot: Codable, Hashable, Sendable {
         public var enabled: Bool
         public var hour: Int
         public var minute: Int

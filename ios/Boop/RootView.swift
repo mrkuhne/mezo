@@ -209,6 +209,13 @@ private struct SyncTriggers: View {
     }
 }
 
+/// What re-plans the daily loop's reminders: the day's ledger, the bedtime target, a return to the foreground — and Boop's
+/// built-in reminder settings, so a switch or a time changed on the Emlékeztetők page re-arms at once.
+struct RitmusRefreshKey: Hashable {
+    let done: [String]; let closed: Bool; let target: String?; let saved: Bool; let day: String; let foregrounds: Int
+    let builtIn: BoopReminderSettings
+}
+
 /// The daily loop's app-wide upkeep, in an invisible view for the same reason as `SyncTriggers`: on return to the
 /// foreground the outbox is flushed (backoff ignored) and the reminders are re-planned; every ledger change (a check-in
 /// or close saved here, or merged from the server), a new bedtime target or a new day re-plans them too. The first
@@ -219,14 +226,13 @@ private struct RitmusTriggers: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var foregrounds = 0
 
-    private struct Plan: Hashable { let done: [String]; let closed: Bool; let target: String?; let saved: Bool; let day: String; let foregrounds: Int }
     // saved = a check-in or the close is on the day: the moment the notification permission is first asked for
-
-    private var plan: Plan {
+    private var plan: RitmusRefreshKey {
         let day = env.today
         let ledger = env.ledger.ledger(for: day)
-        return Plan(done: ledger.checkIns.map(\.slot).sorted(), closed: ledger.close != nil,
-                    target: morning?.brief?.day.bedtimeTarget, saved: !ledger.checkIns.isEmpty || ledger.close != nil, day: day, foregrounds: foregrounds)
+        return RitmusRefreshKey(done: ledger.checkIns.map(\.slot).sorted(), closed: ledger.close != nil,
+                                target: morning?.brief?.day.bedtimeTarget, saved: !ledger.checkIns.isEmpty || ledger.close != nil, day: day,
+                                foregrounds: foregrounds, builtIn: ReminderHub.store?.file.builtIn ?? BoopReminderSettings())
     }
 
     var body: some View {

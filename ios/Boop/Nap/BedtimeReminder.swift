@@ -265,6 +265,8 @@ final class BedtimeReminder {
     @ObservationIgnored private var target: String?
     /// A tap is being handled (the permission prompt may be up): further taps are ignored.
     @ObservationIgnored private var busy = false
+    /// A refresh asked for while one was running (a setting changed mid-way): the running one goes round once more.
+    @ObservationIgnored private var rerun: (target: String?, asked: Bool) = (nil, false)
     @ObservationIgnored private let center: ReminderCenter
     @ObservationIgnored private let defaults: UserDefaults
     /// The built-in reminder settings (on/off and lead come from here) and where a change is written back.
@@ -330,9 +332,19 @@ final class BedtimeReminder {
     /// the system dropped, and turn off if notifications were withdrawn in Settings.
     func refresh(target: String?) async {
         migrateLegacy()
-        guard !busy else { return }
+        guard !busy else { rerun = (target, true); return }
         busy = true
         defer { busy = false }
+        var target = target
+        while true {
+            await refreshOnce(target: target)
+            guard rerun.asked else { return }
+            target = rerun.target
+            rerun = (nil, false)
+        }
+    }
+
+    private func refreshOnce(target: String?) async {
         if hasStore() {
             // the settings decide: off cancels, on (re)schedules from the target below
             if !settings().bedtimeEnabled {
