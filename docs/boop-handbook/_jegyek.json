@@ -1858,5 +1858,25 @@
     "szulo": "mezo-r36n9",
     "munkamenet": "mezociklus-kezeles",
     "szakasz": "B5 Edzés + Watch"
+  },
+  "mezo-r36n9.180": {
+    "cim": "Egy időnként elbukó ellenőrző teszt a reggeli áttételnél",
+    "tipus": "Hiba",
+    "szakasz": "B3 Napi ritmus",
+    "terulet": [
+      "Ma"
+    ],
+    "mit_kapsz": "Az app egyik ellenőrző tesztje terhelés alatt néha ok nélkül elbukik; javítás után megbízhatóan zöld lesz, így a kiadások nem akadnak meg miatta.",
+    "szulo": "mezo-r36n9"
+  },
+  "mezo-r36n9.176": {
+    "cim": "Emlékeztetők: apró pótlások az első lépés után",
+    "tipus": "Apróságok",
+    "szakasz": "B3 Napi ritmus",
+    "terulet": [
+      "Ma"
+    ],
+    "mit_kapsz": "Az emlékeztetők és ébresztők első lépése utáni apró javítások: a lefekvés-kapcsoló megmondja, miért kapcsol vissza, időzóna-váltásnál az ébresztők azonnal igazodnak, és néhány ritka hiba megszűnik.",
+    "szulo": "mezo-r36n9"
   }
 }

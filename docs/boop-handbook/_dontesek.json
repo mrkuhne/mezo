@@ -1622,7 +1622,8 @@
     "suly": "Nagy",
     "valasztas": "Az Újraindítás a futó mezociklust a mostani állapotában — minden telefonos módosításoddal — ma, az 1. héttől indítja újra. A régi futam zárójelentéssel lezárul és megmarad. Vagy minden megtörténik, vagy semmi. Kérésre a sablont is frissíti.",
     "miert": "A konkrét eset: eltelt egy hét, kimaradt három edzés, előröl akarod kezdeni. Az eltolt naptárú folytatást nem választottad.",
-    "kovetkezmeny": "Ha egyszer mégis kellene a „folytatás eltolt naptárral”, az új szerverfunkció lenne."
+    "kovetkezmeny": "Ha egyszer mégis kellene a „folytatás eltolt naptárral”, az új szerverfunkció lenne.",
+    "levaltotta": "Eddig nem lehetett újraindítani: a futó mezociklust csak lezárni és egy újat indítani lehetett, a telefonos módosítások elvesztek."
   },
   "d-2026-11-26-mentes-a-sablonba": {
     "datum": "2026-11-26",
@@ -1633,7 +1634,8 @@
     "suly": "Közepes",
     "valasztas": "A futó mezociklus kártyáján a „…” menüben a Mentés a sablonba felülírja a sablont a mostani állapottal, így a későbbi indítások már a módosításaiddal jönnek.",
     "miert": "Hogy a telefonon csiszolt mezociklus ne vesszen el a következő indításnál.",
-    "kovetkezmeny": "Ha a futamnak nincs sablonja, létrejön egy."
+    "kovetkezmeny": "Ha a futamnak nincs sablonja, létrejön egy.",
+    "levaltotta": "Eddig a futó mezociklus módosításai nem kerültek vissza a sablonba; a következő indítás a régi sablonból indult."
   },
   "d-2026-11-26-elobb-nezd-meg": {
     "datum": "2026-11-26",
@@ -1644,7 +1646,8 @@
     "suly": "Nagy",
     "valasztas": "Egy sablonra, tervezett vagy lezárt mezociklusra koppintva soha nem indul el semmi: előbb egy grafikus részletoldal nyílik (a hetek íve, a napok, az izmok, lezártnál a jelentés), alul az Indítás vagy Újrafuttatás és a Szerkesztés gombbal.",
     "miert": "„Ha rányomok egy sablonra, ne induljon el.”",
-    "kovetkezmeny": "Szabály lett az egész appra: nincs puszta szöveg-és-lista oldal, és minden indítható dolog előbb megnézhető."
+    "kovetkezmeny": "Szabály lett az egész appra: nincs puszta szöveg-és-lista oldal, és minden indítható dolog előbb megnézhető.",
+    "levaltotta": "Eddig egy sablonra koppintva rögtön elindult a mezociklus, előnézet nélkül."
   },
   "d-2026-11-26-mezociklusaim-kinezet": {
     "datum": "2026-11-26",
@@ -1655,7 +1658,8 @@
     "suly": "Közepes",
     "valasztas": "A fülön felül a futó mezociklus kártyája (Szerkesztés · Újraindítás · Lezárás), lent két csempe: Mezociklusaim és Éves terv. A Mezociklusaim oldalon: a futó nagy kártyája, Következik, a Sablonjaim lapozható kártyái, a Lezártak gyűrűs kártyái; a zárójelentés grafikus.",
     "miert": "A második kör tervét elfogadtad mint irányt.",
-    "kovetkezmeny": "A heti átnézés dupla „Blokk szerkesztése” gombja megszűnik."
+    "kovetkezmeny": "A heti átnézés dupla „Blokk szerkesztése” gombja megszűnik.",
+    "levaltotta": "A régi „Blokk” fül egyetlen éves-terv sorral, és a heti átnézés dupla „Blokk szerkesztése” gombja."
   },
   "d-2026-11-26-sablon-szerkesztes": {
     "datum": "2026-11-26",
@@ -1666,6 +1670,7 @@
     "suly": "Közepes",
     "valasztas": "A sablon részletoldalán a Szerkesztés ugyanazt a mezociklus-szerkesztőt nyitja „sablon” módban; a mentés a sablont írja felül, a futó mezociklushoz nem nyúl.",
     "miert": "Az A lehetőséget választottad: ne kelljen külön körre várni.",
-    "kovetkezmeny": "Kicsit nagyobb ez a kör; új sablont a semmiből továbbra sem a telefonon csinálsz."
+    "kovetkezmeny": "Kicsit nagyobb ez a kör; új sablont a semmiből továbbra sem a telefonon csinálsz.",
+    "levaltotta": "Az eredeti terv, amely a sablonok szerkesztését egy későbbi körre hagyta."
   }
 }
