@@ -118,8 +118,9 @@ Hungarian, business language** (CLAUDE.md §Communication) — no file names, no
 
 - Every slice opens with a short brainstorm (`superpowers:brainstorming` + `brainstorm-recon`; the research report
   for the area is the recon's head start), a **simulator spike** when anything new is seen, then a plan in
-  `docs/superpowers/plans/` with a *Kész, ha…* list (owner OK) → execute (inline or subagents; implementer,
-  spec-check and lookup subagents run on `model: "sonnet"`, see CLAUDE.md §Token diet).
+  `docs/superpowers/plans/` with a *Kész, ha…* list (owner OK) → execute inline (`superpowers:executing-plans`;
+  subagent-driven only opt-in for a large plan of independent tasks — sonnet dispatches, no per-task reviewers;
+  flow in the `munkamenet` skill, CLAUDE.md §Token diet).
 - TDD for logic (`BoopCore` models with `StubTransport`, builders as pure functions); screens build from the
   Napkelte kit in `BoopDesign/Napkelte/` and the approved spike. Logic that lives only in the web frontend moves to
   the backend when more than Boop's display needs it (spec §4), otherwise to Swift — never duplicate it in both.

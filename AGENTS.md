@@ -31,6 +31,7 @@ bd close <id>         # Complete work
 - **Optional pre-merge cloud check** for risky/large changes (schema migrations, contract changes, cross-cutting refactors): the old self-PR + `gh workflow run premerge.yml -f pr=<n>` flow still works when you want a green light BEFORE the merge. Historical traps of that flow (stale merge ref, conflicting PR = zero checks): mezo-mxrc, mezo-l4am, mezo-x57b.
 - Conventional commit subjects carrying the driving bd id: `feat(api): ... (mezo-ej0)`.
 - `git pull --rebase` on main **before** merging the feature branch — rebasing *after* the merge flattens the `--no-ff` merge commit; push directly after merging. From a worktree, merge via detached HEAD: `git checkout --detach origin/main && git merge --no-ff <branch> && git push origin HEAD:main`.
+- **Process skills sit inside the `munkamenet` frame** (mezo-dl3h3): plans execute inline by default (subagent-driven only opt-in, cheap model, one final review); any "finishing a branch" skill is replaced by munkamenet *lezárás* — no PR, no discard menu, local `--no-ff` merge as above.
 
 ## Session Completion
 

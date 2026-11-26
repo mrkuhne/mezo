@@ -223,9 +223,13 @@ kubectl exec -n mezo postgres-0 -- psql -U mezo -d mezo -c "SELECT ..."
 
 ## Claude-specific notes
 
-- Superpowers process skills (brainstorming → writing-plans → executing-plans, TDD,
-  verification-before-completion) drive the workflow; the `knowledge-base` skill is the
-  operating manual for `docs/features/` + `docs/research/`.
+- Superpowers process skills drive the workflow inside the **`munkamenet` frame**: kezdés →
+  brainstorming (+ `brainstorm-recon`, no Visual Companion for Boop) → spec OK → spike OK
+  (when visible) → writing-plans OK → inline `executing-plans` (subagent-driven only opt-in for
+  large independent plans: sonnet dispatches, no per-task reviewers, one final most-capable
+  review) → verification-before-completion → lezárás. **If `finishing-a-development-branch`
+  triggers, follow munkamenet lezárás instead** — no PR, no discard menu, local `--no-ff` merge.
+  The `knowledge-base` skill is the operating manual for `docs/features/` + `docs/research/`.
 - In this repo, brainstorming's step 1 ("Explore project context") means invoking the
   `brainstorm-recon` skill: it dispatches the `researcher` and `investigator` sub-agents
   in parallel and feeds the mandatory *Prior art* / *Codebase terrain* spec sections.
