@@ -95,4 +95,24 @@ struct ReminderPlannerTests {
         #expect(p.alarms.first?.day == "2026-11-26")
         #expect(p.alarms.first?.fireAt == at("2026-11-26", 0, 10))
     }
+
+    @Test func onceTodayInFutureIsEmitted() {
+        let p = plan([reminder(9, 0, .once("2026-11-25"))], now: at("2026-11-25", 7))
+        #expect(p.alarms.map(\.day) == ["2026-11-25"])
+    }
+
+    @Test func alarmAndNotificationWindowsAreIndependent() {
+        let p = plan([reminder(8, 0, .daily, .alarm), reminder(9, 0, .daily, .notification)], now: at("2026-11-25", 7))
+        #expect(p.alarms.count == 7)
+        #expect(p.notifications.count == 3)
+    }
+
+    @Test func capBoundaryTwentyFourFitsTwentyFiveOverflows() {
+        let fit = (0..<24).map { _ in reminder(9, 0, .once("2026-11-25"), .notification) }
+        #expect(!plan(fit, now: at("2026-11-25", 7)).todayOverflow)
+        let over = (0..<25).map { _ in reminder(9, 0, .once("2026-11-25"), .notification) }
+        let p = plan(over, now: at("2026-11-25", 7))
+        #expect(p.todayOverflow)
+        #expect(p.notifications.count == 24)
+    }
 }

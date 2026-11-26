@@ -52,8 +52,8 @@ public enum ReminderPlanner {
                 }
             }
         }
-        alarms.sort { $0.fireAt < $1.fireAt }
-        notifications.sort { $0.fireAt < $1.fireAt }
+        alarms.sort { ($0.fireAt, $0.key) < ($1.fireAt, $1.key) }
+        notifications.sort { ($0.fireAt, $0.key) < ($1.fireAt, $1.key) }
         return ReminderPlan(alarms: alarms,
                             notifications: Array(notifications.prefix(max(notificationCap, 0))),
                             todayOverflow: todayNotifications > notificationCap)
