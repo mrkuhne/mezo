@@ -107,11 +107,13 @@ struct RootView: View {
         // Signed out, or another user: the old daily loop stops sending at once (its queue stays on disk for that user;
         // the session's client already carries another token, or none).
         guard let me else {
+            Task { await WorkoutLiveActions.activities.endAll() }     // a workout card never outlives the account
             ritmus?.retire(); link = nil; morning = nil; ritmus = nil; food = nil; train = nil; cache = nil; workoutFolder = nil
             penz = nil; level = nil; evad = nil; suly = nil; kapacitas = nil; kapacitasStore = nil
             BackgroundSyncHost.ritmus = nil; return
         }
         if link?.userId != me.id {
+            if link != nil { Task { await WorkoutLiveActions.activities.endAll() } }   // another account: the old card goes
             ritmus?.retire()
             let signOut: @MainActor () -> Void = { [session] in session.signOut() }
             #if DEBUG
@@ -168,6 +170,10 @@ struct RootView: View {
             Task { await liveKap.load() }
             workoutFolder = RitmusEnvironment.directories(for: me.id).outbox
             BackgroundSyncHost.ritmus = ritmus
+            // A card left by a workout that is no longer on the phone (finished on another launch, file gone) is ended.
+            if let folder = workoutFolder, !FileManager.default.fileExists(atPath: EdzesStore.sessionFile(in: folder).path) {
+                Task { await WorkoutLiveActions.activities.endAll() }
+            }
         }
         if case .ready = state { Task { await link?.syncIfStale() } }
     }

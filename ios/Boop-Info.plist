@@ -5,5 +5,7 @@
 	<!-- Keys Xcode's generated Info.plist cannot emit from INFOPLIST_KEY_* build settings (merged with the generated ones). -->
 	<key>NSAlarmKitUsageDescription</key>
 	<string>A Boop az általad beállított ébresztőket így tudja megszólaltatni, akkor is, ha le van zárva a telefon.</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 </dict>
 </plist>

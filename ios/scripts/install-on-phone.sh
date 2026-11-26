@@ -41,7 +41,7 @@ fi
 # The free Personal Team refuses the Push Notifications capability, so it signs without it.
 extra=()
 if [[ -f "$HOME/.config/boop/paid" ]]; then
-  extra+=(CODE_SIGN_ENTITLEMENTS=Boop-Paid.entitlements)
+  extra+=(BOOP_APP_ENTITLEMENTS=Boop-Paid.entitlements)   # the app target only, never the widget extension
 fi
 
 mkdir -p "$root/ios/build"
