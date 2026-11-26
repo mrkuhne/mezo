@@ -191,15 +191,24 @@ struct ReminderActionsTests {
         #expect(ProbeDoneIntent.isDiscoverable == false)
     }
 
-    @Test func aBurstOfTimeChangesSavesOnce() async {
+    @Test func aBurstOfTimeChangesSavesOnce() {
         var saved: [Int] = []
-        let d = Debouncer(delay: .milliseconds(60))
+        let d = Debouncer(delay: .seconds(30))              // never elapses here: only the burst rule is under test
         for v in 1...5 { d.submit { saved.append(v) } }
-        try? await Task.sleep(for: .milliseconds(250))
-        #expect(saved == [5])
-        d.submit { saved.append(6) }
+        #expect(saved.isEmpty)
         d.flush()                                           // closing the sheet saves what is pending at once
-        #expect(saved == [5, 6])
+        #expect(saved == [5])
+        d.flush()                                           // nothing left
+        #expect(saved == [5])
+    }
+
+    @Test func aPauseSavesOnItsOwn() async {
+        var saved: [Int] = []
+        let d = Debouncer(delay: .milliseconds(10))
+        d.submit { saved.append(1) }
+        d.submit { saved.append(2) }
+        for _ in 0..<500 where saved.isEmpty { try? await Task.sleep(for: .milliseconds(10)) }
+        #expect(saved == [2])
     }
 
     @Test func headlessWithNoUserDoesNothing() {
