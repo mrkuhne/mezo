@@ -173,15 +173,21 @@ private struct ReminderTriggers: View {
     let store: ReminderStore
     let scheduler: ReminderScheduler
     @Environment(\.scenePhase) private var scenePhase
+    /// The reminders as of the last change: a tick or a built-in setting never raises a permission prompt.
+    @State private var seen: [Reminder]?
     var body: some View {
         Color.clear
-            .task { await scheduler.refresh(askPermission: false); await InstallExpiry.reschedule(center: SystemReminderCenter()) }
+            .task { seen = store.file.reminders; await scheduler.refresh(askPermission: false); await InstallExpiry.reschedule(center: SystemReminderCenter()) }
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active {
                     Task { await scheduler.refresh(askPermission: false); await InstallExpiry.reschedule(center: SystemReminderCenter()) }
                 }
             }
-            .onChange(of: store.changes) { Task { await scheduler.refresh(askPermission: true) } }
+            .onChange(of: store.changes) {
+                let ask = shouldAskPermission(previous: seen, now: store.file.reminders)
+                seen = store.file.reminders
+                Task { await scheduler.refresh(askPermission: ask) }
+            }
     }
 }
 

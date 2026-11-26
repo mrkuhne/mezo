@@ -64,7 +64,7 @@ struct EmlekeztetokPage: View {
                 ForEach(Array(s.today.enumerated()), id: \.element.id) { i, row in
                     if i > 0 { hairline }
                     ReminderTodayRow(row: row, today: today, arm: reminderArmState(row.reminder), onTick: {
-                        if row.done { store.untick(row.key) } else { store.tick(row.key) }
+                        ReminderActions.toggleTick(row, store: store)
                     }, onOpen: { edit(row.reminder) })
                 }
             }
@@ -99,20 +99,8 @@ struct EmlekeztetokPage: View {
         return VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 10) {
                 Button { edit(r) } label: {
-                    HStack(spacing: 12) {
-                        Text(clockLabel(hour: r.hour, minute: r.minute)).font(.nkNumber(27)).monospacedDigit()
-                            .foregroundStyle(.white.opacity(0.92))
-                            .frame(width: 74, alignment: .leading)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(r.title).nkFont(17, .medium).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
-                            Text(reminderSubtitle(r, today: today)).nkFont(12.5).foregroundStyle(.white.opacity(0.5))
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        Spacer(minLength: 4)
-                        StrengthMark(strength: r.strength, hue: rowHue)
-                    }
-                    .opacity(r.enabled ? 1 : 0.42)
-                    .contentShape(Rectangle())
+                    ReminderLine(reminder: r, sub: reminderSubtitle(r, today: today), dim: !r.enabled)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 Toggle("", isOn: Binding(get: { r.enabled }, set: { on in var n = r; n.enabled = on; store.upsert(n) }))

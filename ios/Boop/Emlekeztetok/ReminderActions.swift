@@ -52,6 +52,12 @@ enum ReminderActions {
                    refresh: { await scheduler?.refresh(askPermission: false) })
     }
 
+    /// A tick from the page or Ma's fold: a done row opens again (reminder only), an open one goes through the same path
+    /// as the alarm's „Kész” / „Bevettem” (tick, supplement intake for a linked reminder, snooze cancelled, re-armed).
+    static func toggleTick(_ row: TodayRow, store: ReminderStore) {
+        if row.done { store.untick(row.key) } else { Task { await done(key: row.key) } }
+    }
+
     /// Tick, cancel a pending snooze of the reminder, then the supplement tick if linked to a group, then the refresh.
     static func done(key: String, store: ReminderStore, supplement: ((String, Date) async -> Void)?,
                      center: ReminderCenter? = nil, refresh: () async -> Void, now: Date = Date()) async {

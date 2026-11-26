@@ -19,7 +19,7 @@ struct MaReminders: View {
                         ForEach(Array(sections.today.enumerated()), id: \.element.id) { i, row in
                             if i > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
                             ReminderTodayRow(row: row, today: today, arm: reminderArmState(row.reminder), onTick: {
-                                if row.done { store.untick(row.key) } else { store.tick(row.key) }
+                                ReminderActions.toggleTick(row, store: store)
                             }, onOpen: { router?.openReminders() })
                         }
                         Button { router?.openReminders() } label: {

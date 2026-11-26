@@ -66,22 +66,8 @@ struct ReminderTodayRow: View {
             HStack(spacing: 8) {
                 ReminderTick(done: row.done, hue: hue, action: onTick)
                 Button(action: onOpen) {
-                    HStack(spacing: 12) {
-                        Text(clockLabel(hour: r.hour, minute: r.minute))
-                            .font(.nkNumber(27)).monospacedDigit()
-                            .foregroundStyle(.white.opacity(row.done ? 0.4 : 0.92))
-                            .frame(width: 74, alignment: .leading)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(r.title).nkFont(17, .medium).foregroundStyle(.white.opacity(row.done ? 0.45 : 1))
-                                .strikethrough(row.done, color: .white.opacity(0.5))
-                                .fixedSize(horizontal: false, vertical: true)
-                            Text(reminderSubtitle(r, today: today, inToday: true)).nkFont(12.5).foregroundStyle(.white.opacity(0.5))
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        Spacer(minLength: 4)
-                        StrengthMark(strength: r.strength, hue: hue).opacity(row.done ? 0.5 : 1)
-                    }
-                    .contentShape(Rectangle())
+                    ReminderLine(reminder: r, sub: reminderSubtitle(r, today: today, inToday: true), done: row.done)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
@@ -89,6 +75,55 @@ struct ReminderTodayRow: View {
         }
         .padding(.vertical, 6)
         .accessibilityElement(children: .contain)
+    }
+}
+
+/// time · title and its second line · strength mark. When the title would not fit beside the mark (a narrow phone), the
+/// mark drops under the title instead of squeezing it into three lines.
+struct ReminderLine: View {
+    let reminder: Reminder
+    let sub: String
+    var done = false
+    var dim = false
+
+    var body: some View {
+        let hue = ReminderLook.hue(reminder)
+        let ink = done ? 0.45 : 1.0
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 10) {
+                time
+                VStack(alignment: .leading, spacing: 2) { title(ink).lineLimit(1).fixedSize(horizontal: true, vertical: false); subLine }
+                Spacer(minLength: 4)
+                StrengthMark(strength: reminder.strength, hue: hue).opacity(done ? 0.5 : 1)
+            }
+            HStack(alignment: .top, spacing: 10) {
+                time
+                VStack(alignment: .leading, spacing: 4) {
+                    title(ink).fixedSize(horizontal: false, vertical: true)
+                    subLine
+                    StrengthMark(strength: reminder.strength, hue: hue).opacity(done ? 0.5 : 1)
+                }
+                Spacer(minLength: 0)
+            }
+        }
+        .opacity(dim ? 0.42 : 1)
+    }
+
+    private var time: some View {
+        Text(clockLabel(hour: reminder.hour, minute: reminder.minute))
+            .font(.nkNumber(23)).monospacedDigit()
+            .lineLimit(1).minimumScaleFactor(0.8)
+            .foregroundStyle(.white.opacity(done ? 0.4 : 0.92))
+            .frame(width: 62, alignment: .leading)
+    }
+
+    private func title(_ ink: Double) -> some View {
+        Text(reminder.title).nkFont(17, .medium).foregroundStyle(.white.opacity(ink))
+            .strikethrough(done, color: .white.opacity(0.5))
+    }
+
+    private var subLine: some View {
+        Text(sub).nkFont(12.5).foregroundStyle(.white.opacity(0.5)).fixedSize(horizontal: false, vertical: true)
     }
 }
 

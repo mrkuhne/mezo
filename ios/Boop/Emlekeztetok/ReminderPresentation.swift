@@ -238,3 +238,10 @@ enum ReminderRoute: Identifiable, Equatable {
         self = .page
     }
 }
+
+/// The system's permission prompts may appear only when the owner changed a reminder (a save, a switch, a delete) —
+/// never for a tick or a built-in setting.
+func shouldAskPermission(previous: [Reminder]?, now: [Reminder]) -> Bool {
+    guard let previous else { return false }
+    return previous != now
+}

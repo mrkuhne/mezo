@@ -3,6 +3,19 @@ import Testing
 import BoopCore
 @testable import Boop
 
+fileprivate final class CancelCenter: ReminderCenter, @unchecked Sendable {
+    var cancelled: [String] = []
+    func status() async -> ReminderPermission { .allowed }
+    func request() async -> Bool { true }
+    func schedule(id: String, hour: Int, minute: Int, title: String, body: String) async throws {}
+    func scheduleOnce(id: String, on day: DateComponents, hour: Int, minute: Int, title: String, body: String, route: String) async throws {}
+    func cancel(id: String) { cancelled.append(id) }
+    func isPending(id: String) async -> Bool { false }
+    func pendingIds(withPrefix prefix: String) async -> [String] { [] }
+    func removeDelivered(ids: [String]) {}
+}
+
+@MainActor
 struct ReminderPresentationTests {
     private var cal: Calendar {
         var c = Calendar(identifier: .gregorian)
@@ -128,5 +141,35 @@ struct ReminderPresentationTests {
         #expect(ReminderRoute(route: "boop://emlekeztetok") == .page)
         #expect(ReminderRoute(route: "boop://emlekeztetok?key=abc|2026-11-26") == .page)
         #expect(ReminderRoute(route: "boop://este") == nil)
+    }
+
+    @Test func pageTickOfALinkedReminderAlsoTakesTheSupplement() async {
+        let store = ReminderStore(fileURL: FileManager.default.temporaryDirectory.appendingPathComponent("rpt-\(UUID().uuidString)/r.json"))
+        let r = Reminder(title: "Reggel", hour: 8, minute: 0, repeats: .daily, strength: .alarm, link: .supplement(daypart: "breakfast"))
+        store.upsert(r)
+        let center = CancelCenter()
+        var taken: [String] = []
+        var refreshed = 0
+        // the page's tick runs `ReminderActions.done` (the alarm button's path): tick + supplement + snooze cancel + re-arm
+        await ReminderActions.done(key: "\(r.id.uuidString)|2026-11-26", store: store, supplement: { daypart, _ in taken.append(daypart) },
+                                   center: center, refresh: { refreshed += 1 })
+        #expect(store.file.done.contains("\(r.id.uuidString)|2026-11-26"))
+        #expect(taken == ["breakfast"])
+        #expect(center.cancelled == ["\(ReminderActions.snoozePrefix)\(r.id.uuidString)"])
+        #expect(refreshed == 1)
+        // an open-again tap stays reminder-only
+        let row = TodayRow(reminder: r, key: "\(r.id.uuidString)|2026-11-26", done: true)
+        ReminderActions.toggleTick(row, store: store)
+        #expect(store.file.done.isEmpty && taken.count == 1)
+    }
+
+    @Test func onlyAReminderChangeMayAskForPermission() {
+        let a = Reminder(title: "A", hour: 8, minute: 0, repeats: .daily)
+        var b = a
+        b.strength = .alarm
+        #expect(shouldAskPermission(previous: [a], now: [a]) == false)   // a tick or a built-in setting
+        #expect(shouldAskPermission(previous: [a], now: [b]))
+        #expect(shouldAskPermission(previous: [], now: [a]))
+        #expect(shouldAskPermission(previous: nil, now: [a]) == false)
     }
 }
