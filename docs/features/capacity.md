@@ -2,7 +2,7 @@
 title: Capacity (day load vs. what the owner can carry)
 type: feature-domain
 status: in-progress
-updated: 2026-11-25
+updated: 2026-11-26
 tags: [capacity, boop, b7-kapacitas, backend, ai, calendar, energy-curve, wearable]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/capacity
@@ -17,6 +17,8 @@ related: [boop-ios, companion, _platform-language, train]
 ---
 
 # Capacity — how much the day demands vs. how much he can carry
+
+> **2026-11-26 — K3 final review fixes (`mezo-r36n9.17`).** (1) The raw-plan checks (`CapacityTrainAdapter.plannedTemplate` → `gymPlanned`, `WeekPicture.rawGymDays`, the proposal fingerprint, `expireStale`) apply the rest-day rule: a template day with **no exercises is not a session** (production keeps empty Saturday/Sunday templates; counting them blocked every move). (2) A new active block (`MesocycleActivated`, e.g. `PlannedBlockStarter` mid-week) — `NewBlockListener` → `DayAdjustmentService.expireForNewBlock`, synchronous in the activating transaction: live `MOVE_SESSION_DAY` rows whose template is not in the new block, and `SHIFT_SESSION_TIME`/`SHORTEN_SESSION` rows still ahead, become `expired` — the plan wins (`CapacityTrainPort.templateInBlock`). (3) `expireStale` and `undo` take the owner's `CapacityLock`; a move whose **old day has passed** settles `done`, never `expired`. (4) `ProposalService.allEffects` catches, logs and leaves the „Ha mindet jóváhagyod” block out — never a 500. (5) The ledger's skip undo uses train's trusted `PlannedSkipService.undoForCapacity`; the public `DELETE /api/train/skips/{id}` refuses a `KAPACITAS` skip (409 `TRAIN_SKIP_CAPACITY_OWNED`). (6) The brief's `inputHash` covers the bedtime target, session minutes, per-exercise sets and meal kcal (`BoopBriefHashTest`); the compare lines join „kcal” with a no-break space. Tests: `CapacityApiIT`, `DayAdjustmentServiceIT`, `LedgerReadersIT`, `ProposalAllEffectsFailureIT`, `ProposalCompareLinesTest`.
 
 > **2026-11-25 — reviewed after the workout-end kcal (`mezo-r36n9.170`, no capacity change).** `feature/wearable` gained `WatchWorkoutEnergyAdapter`, train's port for a gym session's watch kcal (the same `WorkoutReconciler` match the day load uses); capacity's own reads are unchanged.
 

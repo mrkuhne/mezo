@@ -2,7 +2,7 @@
 title: Language (Hungarian + English)
 type: feature-platform
 status: mixed
-updated: 2026-11-25
+updated: 2026-11-26
 tags: [platform, frontend, backend, auth, ai, boop, b4-etel]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/auth/service/UserLanguage.java
@@ -12,6 +12,8 @@ key_files:
   - backend/src/main/resources/messages_en.properties
 related: [_platform-auth-security, _platform-design-system, companion, settings, _platform-api-backend]
 ---
+
+> **2026-11-26 — reviewed after the K3 final review (`mezo-r36n9.17`, no language-layer change).** One new code in both catalogs: `TRAIN_AS_PLANNED_MOVED` („Ezt az edzést áttetted egy másik napra — azon a napon pótold.” / „This session was moved to another day — catch it up on that day.”).
 
 > **2026-11-25 — reviewed after Boop Levél Google sign-in (`mezo-r36n9.38`/`.39`, no language-layer change).** Two mail keys (`MAIL_GOOGLE_NOT_CONFIGURED`, `MAIL_GOOGLE_REDIRECT_INVALID`) added to both `messages_hu` and `messages_en` (parity kept); the `MAIL_AUTH_FAILED` text made neutral (password or Google).
 

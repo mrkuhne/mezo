@@ -2,7 +2,7 @@
 title: Train
 type: feature-domain
 status: done
-updated: 2026-11-25
+updated: 2026-11-26
 tags: [train, season, running, sport, frontend, backend, data-layer, progression, hypertrophy]
 key_files:
   - api/feature/train/train.yml
@@ -13,6 +13,8 @@ key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/train
 related: [season, _platform-data-layer, _platform-design-system, today, fuel, me, companion, ../research/concepts/personalized-exercise-selection.md]
 ---
+
+> **2026-11-26 — Ledger-aware catch-up and skip undo (Boop B7 K3 final review, `mezo-r36n9.17`).** `completeAsPlanned` refuses a template the day-adjustment ledger moved to another day of the date's Mon–Sun week: 409 `TRAIN_AS_PLANNED_MOVED` („Ezt az edzést áttetted egy másik napra — azon a napon pótold.”); booked on its effective day it carries that day's label (`newInstance` is an instance method again and labels by the instance's own date). `PlannedSkipService.undo` (public `DELETE /api/train/skips/{id}`) refuses a `KAPACITAS` skip with 409 `TRAIN_SKIP_CAPACITY_OWNED` (contract updated); capacity's undo goes through `undoForCapacity`. A new active block expires the old block's live session changes in capacity (`MesocycleActivated` listener, see [`capacity.md`](capacity.md)). Tests: `LedgerReadersIT`, `CapacityApiIT`.
 
 > **2026-11-25 — A workout's energy on the instance (`mezo-r36n9.170`).** `WorkoutInstanceResponse` gains optional nullable `energy` (`WorkoutEnergy {kcal ≥ 1, source estimate|watch}`), filled only on a completed instance and only on `getTodayWorkout.completedWorkout` and the `finishWorkout` answer (`WorkoutService.withEnergy`, decorative — a failure logs and answers without it). `WorkoutEnergyService`: the watch's figure first, through the consumer-owned `WatchWorkoutEnergyPort` implemented in wearable (`WatchWorkoutEnergyAdapter`: the day's Health workouts with kcal run through `WorkoutReconciler` against the session; the **largest** match wins, never the sum — Health often holds one workout twice); else the net estimate `ActivityEnergyModel.netKcal("gym", …)` over `WorkoutWindowQueryService.gymMinutes(instance, default)` — the very minutes rule the day's food budget uses, now a shared static. No table, no migration, no error code. The iPhone app also stops showing warm-up sets (they are still prescribed). Test: `WorkoutEnergyServiceIT`.
 

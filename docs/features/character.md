@@ -2,7 +2,7 @@
 title: Karakter (user character dossier)
 type: feature-domain
 status: shipped
-updated: 2026-11-25
+updated: 2026-11-26
 tags: [character, karakter, ai, llm, backend, frontend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/character
@@ -12,6 +12,8 @@ key_files:
   - backend/src/main/resources/db/changelog/1.1.0/script/202609262200_mezo-a9bo7.11_character_maturity_week.sql
 related: [companion, proactive, insights, me, _platform-api-backend]
 ---
+
+> **2026-11-26 — Meso adherence follows the ledger (Boop B7 K3 final review, `mezo-r36n9.17`).** `CharacterSignalReads.gatherMeso` passes the window's effective planned gym dates (`EffectivePlanService.plannedGymDates` over `TrainDayAdjustmentPort.effectiveSessions`, the flags' rule) as `MesoContext.plannedDates`; `MesoAdherenceDetector` and `MotivationFollowThroughDetector` ask `MesoContext.planned(date)`, so a moved session done on its new day is never a miss. Test: `DetectorTest.mesoAdherence_judgesTheEffectivePlannedDates`.
 
 > **2026-11-24 — reviewed after `mezo-r36n9.161` (no change).** The day's changeset folder gained `202611241400_mezo-r36n9.161_workout_session_client_ref.sql`; nothing of the character slice is affected.
 > **2026-11-25 — reviewed after Boop B7 K3 Task 20 (`mezo-r36n9.17`).** The shared changelog folder gained `202611251400_mezo-r36n9.17_capacity_live_state.sql` (the capacity live loop's memory); nothing in character changed.

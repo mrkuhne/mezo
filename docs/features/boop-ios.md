@@ -2,7 +2,7 @@
 title: Boop — native iOS app
 type: feature-domain
 status: in-progress
-updated: 2026-11-25
+updated: 2026-11-26
 tags: [ios, level, l1-l2-level, evad, b6-evad, season, penz, l5-penz, blokk-epito, heti-atnezes, kezdolap, area-kit, l0, elo-fal, l0b, b4-etel, food, barcode, meal-photos, sensitivities, b3-napi-ritmus, offline-first, outbox, dayclose, b1-adatalap, health-samples, apns, swiftui, boop, napkelte, lagy, auth, onboarding, healthkit, eventkit, wearable, morning-brief, energy-curve, voice]
 key_files:
   - ios/Boop
@@ -17,6 +17,8 @@ related: [season, penz, mail, fuel, pantry, recipe, dayclose, intention, journal
 ---
 
 # Boop — native iOS app — Feature Documentation
+
+> **2026-11-26 — K3 final review (`mezo-r36n9.17`).** `clockSublative` reads minutes ending in 3, 6, 8 with „-ra” (három, hat, nyolc); the contract copy was re-synced after the rebase (`sync-openapi.sh`, `check-ios-contract.mjs` green).
 
 > **2026-11-25 — Évad: one accept moves the running block too (`mezo-r36n9.122`, spec §5.12-1).** Módosítás no longer locks the gym days while a block runs: the preview shows **A blokkod új hete** and *Elfogadom* re-arranges the block (same count = days move in order; more = the evaluator's best repeat; fewer = the day whose loss the evaluator minds least) with the goal, slots and sleep need in one transaction — see the Módosítás entry in §2 and [`season.md`](season.md).
 

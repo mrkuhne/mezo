@@ -13,6 +13,8 @@ key_files:
 related: [_platform-data-layer, _platform-auth-security, _platform-notifications, train, today, fuel, ritual, companion]
 ---
 
+> **2026-11-26 — reviewed after the K3 final review (`mezo-r36n9.17`, additive contract, no platform change).** `train-skip.yml` documents 409 `TRAIN_SKIP_CAPACITY_OWNED` on `DELETE /api/train/skips/{id}`; `api/openapi.yml` regenerated.
+
 > **2026-11-25 — reviewed after Boop Levél Google sign-in (`mezo-r36n9.38`/`.39`, additive contract, no platform change).** `api/feature/mail/mail.yml` gains `POST /api/mail/mailbox/google` and `kind` / `googleClientId` on the mailbox GET; two message keys (`MAIL_GOOGLE_NOT_CONFIGURED`, `MAIL_GOOGLE_REDIRECT_INVALID`) in both bundles. See [`mail.md`](mail.md) §3.10.
 
 > **Exercise SPE palettes (`mezo-eiux9`).** The additive Train contract returns `ExerciseCatalogItem.allowedTechniques` and optional `PrescribedSet.topHoldSec`; `top_pause` extends the technique enum. `TRAIN_TECHNIQUE_NOT_ALLOWED` is localized in both message bundles and replaces the old stability refusal for manual picks. See [`train.md`](train.md) §4 *Intensity techniques*.
