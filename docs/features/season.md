@@ -598,7 +598,7 @@ S3's Liquibase file is `202611231000_mezo-r36n9.16_season_menu.sql`. S2 adds no 
   skeleton and recipe candidates, the sensitivity profile, recipe lines with their catalog item.
 - **meal → season** (S3): `meal/port/SeasonMenuPort` ← `SeasonMenuAdapter` (allowed recipes, approved meals).
 - **→ biometrics / wearable / check-in / fuel / meal / journal** (S4): `SeasonMetricsPort.experimentSignals`,
-  `SeasonExperimentSourcePort` ← `SeasonExperimentSourceAdapter` (stack, meals, journal); `SeasonTrainPort.trainEvents`.
+  `SeasonExperimentSourcePort` ← `SeasonExperimentSourceAdapter` (stack, meals, journal); `SeasonTrainPort.trainEvents`. A pantry meal line that carries a `recipeId` (an ingredient of a recipe logged ingredient by ingredient, `mezo-r36n9.181`) counts for the recipe under `recipeSnapshotName`, never as a new food.
 
 ## 6. How to use it (consume)
 
