@@ -13,7 +13,8 @@ enum CapturePick: Equatable {
     case quick(QuickLog)
     /// An area to open — the "Edzés indítása" tile lands on the Edzés room, where today's workout starts.
     case area(Hue)
-    /// A new reminder's edit sheet (the "Emlékeztető" door, `mezo-r36n9.172`).
+    /// The Emlékeztetők page (the "Emlékeztető" door, `mezo-r36n9.172`): always reachable, even on a day with no reminder;
+    /// a new one is made with the page's own "+".
     case reminder
 
     /// What the shell opens for a pick: the composer's start (nil for everything else).

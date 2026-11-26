@@ -14,7 +14,7 @@ osszefoglalo: Bármire állíthatsz emlékeztetőt, a vitaminhoz igazi ébreszt�
 - **Két erősség.** Az **Ébresztő** teljes képernyőn szól, némítón és fókusz módban is. Az **Értesítés** egy hangos, hagyományos értesítés. A vitamin emlékeztetője mindig Ébresztő.
 - **Vitamin-emlékeztetés.** A kiegészítők listáján minden sornál van egy „Emlékeztess” kapcsoló: bekapcsolva a vitamin bekerül ugyanebbe a listába, és az ébresztő gombja **„Bevettem”** — ez a mai napba is beírja, hogy bevetted.
 - **Kész gombok.** Az értesítésen **Kész** és **10 perc múlva** gomb van, az ébresztőn **Leállítom** és **Kész** (vitaminnál **Bevettem**). Mindez az app megnyitása nélkül működik.
-- **Ma oldalon** egy „Emlékeztetők” rész mutatja a mai tételeket, itt is pipálhatod őket. A „+” lapon új, tizedik kapu nyit új emlékeztetőt.
+- **Ma oldalon** egy „Emlékeztetők” rész mutatja a mai tételeket, itt is pipálhatod őket. A „+” lap tizedik kapuja, az „Emlékeztető”, az Emlékeztetők oldalt nyitja meg — akkor is, ha mára nincs egy sem —, új emlékeztetőt ott, a jobb felső „+” gombbal veszel fel.
 - **Pihenő vége.** Edzés közben, ha a telefon zárolva van, a pihenő végén rezeg és rövid hang szól. Beállítható, hogy ébresztő erősségű legyen.
 - **Telepítés lejárta.** Az ingyenes fejlesztői fiókkal telepített app hét nap után nem nyílik meg, és az ébresztők is leállnak vele. A Boop egy nappal előtte, délelőtt tízkor szól: „Holnap lejár a Boop telepítése”.
 

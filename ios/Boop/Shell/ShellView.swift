@@ -56,9 +56,8 @@ struct ShellView: View {
     @State private var router = RitmusRouter.shared
     /// The cover the "+" sheet asked for; it opens once the sheet has gone (two presentations never overlap).
     @State private var coverAfterCapture: RitmusCover?
-    /// The Emlékeztető door the "+" sheet asked for (opens once that sheet has gone).
-    @State private var reminderAfterCapture = false
-    /// A reminder's notification tapped while a sheet was up: the page opens after that sheet has gone.
+    /// The Emlékeztetők page asked for while a sheet was up (the "+" sheet's Emlékeztető door, a reminder's notification
+    /// tapped): it opens after that sheet has gone.
     @State private var reminderPageAfterSheet = false
     /// The meal composer the "+" sheet asked for (opens once the sheet has gone), and the one on screen.
     @State private var mealAfterCapture: MealStart?
@@ -97,7 +96,7 @@ struct ShellView: View {
             case .penzExpense: penzAfterCapture = true
             case .quick(let kind): quickAfterCapture = kind
             case .area(let hue): areaAfterCapture = hue
-            case .reminder: reminderAfterCapture = true
+            case .reminder: reminderPageAfterSheet = true
             }
         } else {
             switch pick {
@@ -106,7 +105,7 @@ struct ShellView: View {
             case .penzExpense: penzCapture = true
             case .quick(let kind): quick = kind
             case .area(let hue): select(.ma); router.openRoom(hue)
-            case .reminder: router.openNewReminder()
+            case .reminder: router.openReminders()
             }
         }
     }
@@ -118,7 +117,6 @@ struct ShellView: View {
         if penzAfterCapture { penzAfterCapture = false; penzCapture = true }
         if let q = quickAfterCapture { quickAfterCapture = nil; quick = q }
         if let hue = areaAfterCapture { areaAfterCapture = nil; select(.ma); router.openRoom(hue) }
-        if reminderAfterCapture { reminderAfterCapture = false; router.openNewReminder() }
         if reminderPageAfterSheet { reminderPageAfterSheet = false; router.openReminders() }
     }
 

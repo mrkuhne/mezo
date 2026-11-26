@@ -17,7 +17,7 @@ struct ReminderDoneIntent: LiveActivityIntent {
     init(key: String) { self.key = key }
 
     func perform() async throws -> some IntentResult {
-        await ReminderActions.done(key: key)
+        await ReminderActions.alarmDone(key: key, alarms: SystemAlarmScheduler(), done: { await ReminderActions.done(key: $0) })
         return .result()
     }
 }

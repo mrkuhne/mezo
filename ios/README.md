@@ -44,7 +44,6 @@ exercise rows and numbers are invented, and no workout is saved.
 |---|---|
 | `-previewNotify checkin\|este` | rings the real check-in / close reminder at the next whole minute (background the app; a tap opens the cover) |
 | `-preview shell` / `-preview onboarding` | signs in a local preview user; the brief and Health endpoints answer from `PreviewTransport` |
-| `-probeAlarm YES` | all configurations: every launch prints the stored `probe.doneAt` / `probe.scheduledAt` (log prefix `PROBE`), asks for AlarmKit authorization and schedules one alarm 120 s ahead whose secondary button writes `probe.doneAt` — the free-team check of AlarmKit + button intents (`AlarmProbe.swift`, `mezo-r36n9.172`) |
 | `-previewEdzesRestEnd YES` | the Edzés room opens on the „Pihenő vége” sheet (rest-end signal setting, mezo-r36n9.172); reach the room with `-previewDrill mozgas` (the Ma launch ignores it in some builds — tapping the Edzés orb works) |
 | `-previewEmpty YES` | Nap shows the empty states instead of the brief |
 | `-previewTab ma\|terv\|naplo\|boop` | opens that place of the spine (`terv` is the Évad place since B6 S1; the key kept its old name) |
@@ -60,7 +59,7 @@ exercise rows and numbers are invented, and no workout is saved.
 | `-previewRecovery YES` | kímélő mód, day 2 of a cold: calm grey-blue sky, the banner, no session |
 | `-previewScroll 850` | tab pages open scrolled to that offset |
 | `-previewOpen capture\|account` | opens the "+" capture sheet (the nine quick-log doors + the meal chips) or the account sheet |
-| `-reminders page\|edit\|edit-linked\|denied` | seeds six sample reminders (invented; nothing reaches AlarmKit or notifications) and opens the Emlékeztetők page (`mezo-r36n9.172`): `edit` also opens a new reminder's edit sheet filled as in the spike, `edit-linked` the supplement-linked reminder's sheet, `denied` shows the row states „Ébresztő helyett értesítés” / „Nem sikerült beállítani” / notifications off; `-previewOpen reminderNew` opens the blank edit sheet (the "+" door); the supplement list sheet with its „Emlékeztess” rows is `-previewHome etel -etelSheet supplements` |
+| `-reminders page\|edit\|edit-linked\|denied` | seeds six sample reminders (invented; nothing reaches AlarmKit or notifications) and opens the Emlékeztetők page (`mezo-r36n9.172`): `edit` also opens a new reminder's edit sheet filled as in the spike, `edit-linked` the supplement-linked reminder's sheet, `denied` shows the row states „Ébresztő helyett értesítés” / „Nem sikerült beállítani” / notifications off; `-previewOpen reminderNew` opens the blank edit sheet (the page's own "+"; the "+" sheet's door opens the page); the supplement list sheet with its „Emlékeztess” rows is `-previewHome etel -etelSheet supplements` |
 | `-previewMaReminders YES` | same sample reminders; with `-previewHome nap` Ma shows its „Emlékeztetők” fold under the wall |
 | `-previewOpen water\|supplements\|sport\|weight\|sleep\|journal` | opens one quick-log sheet of the "+" (víz · kiegészítők · sport · súly · alvás · napló) |
 | `-previewLearning YES` | the brief is "learning" (Forma unknown, 9/14 nights): the ring blanks Forma alone, the other orbs keep their numbers |

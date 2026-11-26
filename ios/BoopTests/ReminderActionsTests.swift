@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import Testing
 import BoopCore
 @testable import Boop
@@ -18,8 +19,36 @@ fileprivate final class SnoozeCenter: ReminderCenter, @unchecked Sendable {
     func removeDelivered(ids: [String]) {}
 }
 
+fileprivate final class StopAlarms: AlarmScheduling, @unchecked Sendable {
+    var events: [String] = []
+    func authorization() async -> AlarmAuth { .allowed }
+    func requestAuthorization() async -> AlarmAuth { .allowed }
+    func schedule(_ o: ReminderOccurrence, title: String, secondaryTitle: String, tint: Color) async throws {}
+    func cancel(id: String) async { events.append("cancel \(id)") }
+    func stop(id: String) async { events.append("stop \(id)") }
+    func scheduledIds() async -> Set<String>? { [] }
+    func alertingIds() async -> Set<String> { [] }
+}
+
 @MainActor
 struct ReminderActionsTests {
+    // MARK: the alarm's „Kész” / „Bevettem” also ends the ringing alert (on-phone probe 2026-11-26)
+
+    @Test func alarmDoneStopsTheRingingAlarmBeforeTicking() async {
+        let alarms = StopAlarms()
+        let r = Reminder(title: "Víz", hour: 10, minute: 0, repeats: .daily, strength: .alarm)
+        let key = "\(r.id.uuidString)|2026-11-26"
+        let ringing = ReminderOccurrence(reminderId: r.id, day: "2026-11-26", fireAt: now)
+        await ReminderActions.alarmDone(key: key, alarms: alarms, done: { alarms.events.append("done \($0)") })
+        #expect(alarms.events == ["stop \(ringing.alarmId.uuidString)", "done \(key)"])
+    }
+
+    @Test func alarmDoneStopsEvenWhenNothingIsLeftToTick() async {
+        let alarms = StopAlarms()
+        await ReminderActions.alarmDone(key: "garbage", alarms: alarms, done: { _ in })
+        #expect(alarms.events == ["stop \(ReminderOccurrence.alarmId(forKey: "garbage").uuidString)"])
+    }
+
     let base = FileManager.default.temporaryDirectory.appendingPathComponent("ractions-\(UUID().uuidString)")
     let now = Date(timeIntervalSince1970: 1_795_089_600)
     let userId = UUID()
@@ -188,7 +217,6 @@ struct ReminderActionsTests {
     @Test func theIntentsStayOutOfShortcuts() {
         #expect(ReminderDoneIntent.isDiscoverable == false)
         #expect(ReminderSilenceIntent.isDiscoverable == false)
-        #expect(ProbeDoneIntent.isDiscoverable == false)
     }
 
     @Test func aBurstOfTimeChangesSavesOnce() {

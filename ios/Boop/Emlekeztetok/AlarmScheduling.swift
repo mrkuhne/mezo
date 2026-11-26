@@ -22,6 +22,9 @@ protocol AlarmScheduling: Sendable {
     /// Cancels one alarm by its id (`UUID` string). Which ids are Boop's is remembered by `AlarmIdBook` (AlarmKit ids
     /// carry no prefix).
     func cancel(id: String) async
+    /// Ends a ringing alarm (its full-screen alert goes away). The alarm's own „Kész” / „Bevettem” button runs in the
+    /// background and does not dismiss the alert by itself: its intent calls this.
+    func stop(id: String) async
     /// The ids (`UUID` strings of `ReminderOccurrence.alarmId`) of the alarms the system currently holds.
     /// nil when the system's list could not be read (an error is not an empty list).
     func scheduledIds() async -> Set<String>?
@@ -34,13 +37,17 @@ protocol AlarmScheduling: Sendable {
 }
 
 extension AlarmScheduling {
+    func stop(id: String) async {}
     func scheduleRest(at: Date, title: String, tint: Color) async throws {}
     func cancelRest() async {}
 }
 
 extension ReminderOccurrence {
     /// A stable AlarmKit id for this dated ring (same derivation style as `supplementRef`).
-    var alarmId: UUID {
+    var alarmId: UUID { Self.alarmId(forKey: key) }
+
+    /// The AlarmKit id of the ring with this occurrence key (what the alarm's button carries).
+    static func alarmId(forKey key: String) -> UUID {
         let d = Array(SHA256.hash(data: Data("boop.rem|\(key)".utf8)))
         return UUID(uuid: (d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7], d[8], d[9], d[10], d[11], d[12], d[13], d[14], d[15]))
     }
@@ -101,6 +108,11 @@ struct SystemAlarmScheduler: AlarmScheduling {
 
     func cancel(id: String) async {
         if let id = UUID(uuidString: id) { try? AlarmManager.shared.cancel(id: id) }
+    }
+
+    func stop(id: String) async {
+        guard let id = UUID(uuidString: id) else { return }
+        do { try AlarmManager.shared.stop(id: id) } catch { try? AlarmManager.shared.cancel(id: id) }
     }
 
     func scheduledIds() async -> Set<String>? {

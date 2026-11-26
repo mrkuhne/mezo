@@ -60,6 +60,14 @@ enum ReminderActions {
                    refresh: { await scheduler?.refresh(askPermission: false) })
     }
 
+    /// The alarm's „Kész” / „Bevettem”: first the ringing alert goes away (a `.custom` secondary button runs its intent
+    /// in the background and leaves the alert on screen), then the same done as everywhere else. Stopped whatever the
+    /// key: the owner pressed a button, the alarm must not keep ringing even when nothing is left to tick.
+    static func alarmDone(key: String, alarms: AlarmScheduling, done: (String) async -> Void) async {
+        await alarms.stop(id: ReminderOccurrence.alarmId(forKey: key).uuidString)
+        await done(key)
+    }
+
     /// A tick from the page or Ma's fold: a done row opens again (reminder only), an open one goes through the same path
     /// as the alarm's „Kész” / „Bevettem” (tick, supplement intake for a linked reminder, snooze cancelled, re-armed).
     static func toggleTick(_ row: TodayRow, store: ReminderStore) {
