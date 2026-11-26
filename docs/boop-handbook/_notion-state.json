@@ -712,7 +712,7 @@
     },
     "kezikonyv:07-edzes/00-attekintes": {
       "page_id": "4168968e-752b-8183-8a33-c40bbe3d84e0",
-      "hash": "64a9af107709"
+      "hash": "b94f9babe82a"
     },
     "kezikonyv:07-edzes/01-mozgas-szoba-ma": {
       "page_id": "4168968e-752b-81b1-add3-c4f79e1b44e6",
@@ -720,7 +720,7 @@
     },
     "kezikonyv:07-edzes/02-mezociklus-terv": {
       "page_id": "4168968e-752b-81c0-9ca3-e89afff341e8",
-      "hash": "900b4a042d32"
+      "hash": "398e910ef6a7"
     },
     "kezikonyv:07-edzes/03-edzeslejatszo": {
       "page_id": "4168968e-752b-8153-a900-cd5b2e535717",
@@ -1228,7 +1228,7 @@
     },
     "kezikonyv:07-edzes/16-blokk-epito": {
       "page_id": "41d8968e-752b-81cc-818e-dc11d0726e8f",
-      "hash": "47d27a6546bf"
+      "hash": "9fb45031411b"
     },
     "kiadasok:78e52679e": {
       "page_id": "41d8968e-752b-8127-9b15-d0288d125bd0",
@@ -1668,11 +1668,11 @@
     },
     "funkciok:train-sablonok-futamok": {
       "page_id": "41e8968e-752b-816c-b794-c034436fc310",
-      "hash": "9d7fed469efe"
+      "hash": "ed1f4a0c2146"
     },
     "funkciok:train-blokk-lezaras-jelentes": {
       "page_id": "41e8968e-752b-8118-a32e-f486f1792e33",
-      "hash": "d94a7232c6fc"
+      "hash": "fc542789a5d0"
     },
     "funkciok:train-heti-beosztas": {
       "page_id": "41e8968e-752b-81d8-9413-c4b019f8560c",
@@ -2804,7 +2804,7 @@
     },
     "kezikonyv:07-edzes/18-uj-blokk-tervjeloltek": {
       "page_id": "41f8968e-752b-81d6-a72c-c6ba650c00ef",
-      "hash": "e493f9517f3d"
+      "hash": "35ae8d047a2e"
     },
     "jegyek:mezo-r36n9.133": {
       "page_id": "41f8968e-752b-81dc-b519-d11a0e55afb6",
@@ -3285,6 +3285,54 @@
     "kezikonyv:01-alapok/emlekeztetok-es-ebresztok": {
       "page_id": "4248968e-752b-8157-8726-eec50a383206",
       "hash": "83d51ddf88ec"
+    },
+    "jegyek:mezo-r36n9.183": {
+      "page_id": "4248968e-752b-81c2-9b81-f7f2a9ae48a6",
+      "hash": "5e81954069e3"
+    },
+    "jegyek:mezo-r36n9.177": {
+      "page_id": "4248968e-752b-8140-b473-cd0130e99bae",
+      "hash": "c21ffc45c4b0"
+    },
+    "jegyek:mezo-r36n9.180": {
+      "page_id": "4248968e-752b-81a7-bd3e-cb740bf8157f",
+      "hash": "a7a0a3a44667"
+    },
+    "jegyek:mezo-r36n9.176": {
+      "page_id": "4248968e-752b-81c9-a13e-eb2889706be5",
+      "hash": "642ebcbf3da9"
+    },
+    "dontesek:d-2026-11-26-mezociklus-nev": {
+      "page_id": "4248968e-752b-8130-8f40-e22c5d21d91e",
+      "hash": "a518a5f7ca7e"
+    },
+    "dontesek:d-2026-11-26-mezociklus-ujrainditas": {
+      "page_id": "4248968e-752b-8111-84df-de8f19a6ecb4",
+      "hash": "66155c64d0ef"
+    },
+    "dontesek:d-2026-11-26-mentes-a-sablonba": {
+      "page_id": "4248968e-752b-81af-99fd-d32eea58da9a",
+      "hash": "612bce27923d"
+    },
+    "dontesek:d-2026-11-26-elobb-nezd-meg": {
+      "page_id": "4248968e-752b-8101-a19b-fe9fefb67cd1",
+      "hash": "becca55b4f94"
+    },
+    "dontesek:d-2026-11-26-mezociklusaim-kinezet": {
+      "page_id": "4248968e-752b-81c0-8940-f6dedeafc7f1",
+      "hash": "361f4e33b841"
+    },
+    "dontesek:d-2026-11-26-sablon-szerkesztes": {
+      "page_id": "4248968e-752b-818d-b9be-ef3509ae90b2",
+      "hash": "ed6c710349b1"
+    },
+    "kiadasok:e11d2839f": {
+      "page_id": "4248968e-752b-81be-af70-c3ebf3a410b2",
+      "hash": "d573c21c6e28"
+    },
+    "kezikonyv:07-edzes/20-mezociklusaim": {
+      "page_id": "4248968e-752b-81d6-9999-cd970298e62b",
+      "hash": "bbfc275960b2"
     }
   }
 }
