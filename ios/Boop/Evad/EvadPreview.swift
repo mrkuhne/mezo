@@ -128,7 +128,6 @@ final class EvadPreviewModel: @unchecked Sendable {
         let a = numbers(draft), b = numbers(new)
         let tempo = (new["kgPerWeek"] as? Double) ?? 0
         let sessions = (new["gymDays"] as? [Int])?.count ?? 0
-        let oldSessions = (draft["gymDays"] as? [Int])?.count ?? 0
         var warnings: [[String: Any]] = []
         let pct = tempo / weight * 100
         if new["trajectory"] as? String == "cut" {
@@ -145,8 +144,24 @@ final class EvadPreviewModel: @unchecked Sendable {
         if (b["sleepNeedMin"] as! Int) > (a["sleepNeedMin"] as! Int) {
             todo.append(["key": "bedtime", "title": "Korábbi lefekvés", "body": "\(b["bedtime"] as! String) körül feküdj le. Az esti emlékeztetőt is ehhez igazítom."])
         }
-        if sessions != oldSessions {
-            todo.append(["key": "block", "title": "Az edzésblokk", "body": "A blokkot át kell tenni heti \(sessions) napra. Az Edzés → Blokk részben megmutatom a javaslatot, és te döntesz."])
+        let oldDays = ((draft["gymDays"] as? [Int]) ?? []).sorted(), newDays = ((new["gymDays"] as? [Int]) ?? []).sorted()
+        var block: Any = NSNull()
+        if Set(oldDays) != Set(newDays), !newDays.isEmpty {
+            // the running block follows (mezo-r36n9.122): its days in order onto the new weekdays, extras repeat
+            let titles = ["Felső A", "Alsó A", "Felső B", "Alsó B", "Felső C", "Alsó C"]
+            let days: [[String: Any]] = newDays.enumerated().map { i, wd in
+                if i < oldDays.count {
+                    let from = oldDays[i]
+                    return ["weekday": wd, "title": titles[i], "change": from == wd ? "keep" : "move",
+                            "fromWeekday": from == wd ? NSNull() : from]
+                }
+                let src = (i - oldDays.count) % max(oldDays.count, 1)
+                return ["weekday": wd, "title": titles[src], "change": "add", "fromWeekday": oldDays.isEmpty ? NSNull() : oldDays[src]]
+            }
+            let dropped: [[String: Any]] = oldDays.count > newDays.count
+                ? (newDays.count..<oldDays.count).map { ["weekday": oldDays[$0], "title": titles[$0], "change": "drop"] } : []
+            block = ["mesocycleId": "m1", "title": "Felső-alsó blokk", "days": days, "dropped": dropped]
+            todo.append(["key": "block", "title": "Az edzésblokk", "body": "A futó blokkod napjai az új edzésnapokra kerülnek, lent látod, melyik hova. Ezt is az Elfogadom teszi meg."])
         }
         if let wa = a["weeksToTarget"] as? Int, let wb = b["weeksToTarget"] as? Int, wa != wb, let date = b["targetDate"] as? String {
             todo.append(["key": "length", "title": "Az évad hossza", "body": "Az évad \(wb > wa ? "hosszabb" : "rövidebb") lesz, a célt \(evadShortDate(date)) körül éred el."])
@@ -156,7 +171,7 @@ final class EvadPreviewModel: @unchecked Sendable {
         if oldSport != newSport {
             todo.append(["key": "sport", "title": "Sportnapok", "body": "Sportnap reggelén több szénhidrát lesz a menüben, és a pihenőnapok is máshova kerülnek."])
         }
-        return ["before": a, "after": b, "todo": todo, "warnings": warnings, "fingerprint": fingerprint]
+        return ["before": a, "after": b, "todo": todo, "warnings": warnings, "fingerprint": fingerprint, "block": block]
     }
 
     var fingerprint: String { "fp-\(abs(String(describing: draft["gymDays"] ?? "").hashValue % 10_000))" }

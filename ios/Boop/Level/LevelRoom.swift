@@ -56,11 +56,11 @@ struct LevelRoom: View {
         .toolbar(.hidden, for: .navigationBar)
         .background(RoomSwipeBack().frame(width: 0, height: 0).accessibilityHidden(true))
         .nkToast($toast)
-        .confirmationDialog("Lecsatolod a postafiókot?", isPresented: $confirmDetach, titleVisibility: .visible) {
+        .confirmationDialog("Lecsatolod a Google-fiókot?", isPresented: $confirmDetach, titleVisibility: .visible) {
             Button("Lecsatolás", role: .destructive) { Task { await detach() } }
             Button("Mégse", role: .cancel) {}
         } message: {
-            Text("A tárolt alkalmazásjelszó törlődik, és a Boop többé nem lát leveleket. A már átnézett levelek összefoglalói megmaradnak.")
+            Text(levelDetachMessage)
         }
         .task { await store?.refresh() }
         // The rules are read when their tab is on screen.
@@ -93,7 +93,7 @@ struct LevelRoom: View {
     private func detach() async {
         guard let store else { return }
         switch await store.disconnect() {
-        case .done: toast = "Lecsatoltam a postafiókot"
+        case .done: toast = "Lecsatoltam a Google-fiókot"
         case .failed(let e): toast = levelErrorText(e)
         default: break
         }

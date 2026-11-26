@@ -88,7 +88,7 @@ paths:
         '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '409': { description: 'SEASON_PREVIEW_STALE, SEASON_NOT_EDITABLE, or SEASON_BLOCK_DAYS_LOCKED (the gym days differ from the season''s while its block is running — the block''s weekdays would no longer match; changes once the block can be re-arranged)', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '409': { description: 'SEASON_PREVIEW_STALE (fingerprint moved — it covers the running block''s days too), SEASON_NOT_EDITABLE, SEASON_BLOCK_NEEDS_GYM_DAY (no gym day left while the block runs), or TRAIN_DAY_WORKOUT_RUNNING (a block day that would be dropped has a workout running)', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/seasons/{id}/activate:
     parameters:
       - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
@@ -487,6 +487,26 @@ components:
         todo: { type: array, items: { $ref: '#/components/schemas/SeasonTodo' } }
         warnings: { type: array, items: { $ref: '#/components/schemas/SeasonWarning' } }
         fingerprint: { type: string, description: 'Send back with applySeason; empty for a draft preview' }
+        block:
+          allOf: [{ $ref: '#/components/schemas/SeasonBlockWeek' }]
+          nullable: true
+          description: 'The running block''s re-arranged week when the draft moves the gym days (mezo-r36n9.122) — applied with the same accept; null when the block does not change'
+    SeasonBlockWeek:
+      type: object
+      required: [mesocycleId, title, days, dropped]
+      properties:
+        mesocycleId: { type: string, format: uuid }
+        title: { type: string }
+        days: { type: array, items: { $ref: '#/components/schemas/SeasonBlockDay' } }
+        dropped: { type: array, items: { $ref: '#/components/schemas/SeasonBlockDay' }, description: 'Days that leave the block (change = drop, weekday = their old weekday)' }
+    SeasonBlockDay:
+      type: object
+      required: [weekday, title, change]
+      properties:
+        weekday: { type: integer, description: '0 = hétfő … 6 = vasárnap; for a dropped day its old weekday, -1 when its label is not a weekday' }
+        title: { type: string, description: 'The block day''s name' }
+        change: { type: string, enum: [keep, move, add, drop] }
+        fromWeekday: { type: integer, nullable: true, description: 'move: the weekday it came from; add: the weekday of the day it repeats' }
     SeasonOverviewHead:
       type: object
       required: [title, week, weeks, status, trajectory]
@@ -859,7 +879,7 @@ components:
       type: object
       required: [kind, date, text]
       properties:
-        kind: { type: string, enum: [mesocycle, deload, kimelo, season] }
+        kind: { type: string, enum: [mesocycle, deload, kimelo, season, other], description: 'other = another change he logged himself inside the window (a new supplement in the stack, a journal line saying he started something)' }
         date: { type: string, format: date }
         text: { type: string, description: 'One Hungarian line („Közben új edzésblokk indult”)' }
     SeasonExperimentCreate:

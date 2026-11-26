@@ -52,7 +52,8 @@ class ExperimentServiceTest {
         when(experiments.findBySeasonIdOrderByCreatedAtDesc(any())).thenReturn(List.of());
         when(txManager.getTransaction(any())).thenAnswer(i -> new SimpleTransactionStatus());
         service = new ExperimentService(seasons, mock(SeasonRevisionRepository.class), experiments,
-            mock(SeasonMetricsPort.class), mock(SeasonTrainPort.class), detector, null, txManager);
+            mock(SeasonMetricsPort.class), mock(SeasonTrainPort.class), detector,
+            mock(io.mrkuhne.mezo.feature.season.port.SeasonExperimentSourcePort.class), null, txManager);
     }
 
     private static DataIntegrityViolationException clash(String index) {

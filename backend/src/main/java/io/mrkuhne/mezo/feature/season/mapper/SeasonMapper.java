@@ -14,6 +14,8 @@ import io.mrkuhne.mezo.api.dto.SeasonExperimentSignal;
 import io.mrkuhne.mezo.api.dto.SeasonExperimentSignalKey;
 import io.mrkuhne.mezo.api.dto.SeasonExperiments;
 import io.mrkuhne.mezo.api.dto.SeasonNumbers;
+import io.mrkuhne.mezo.api.dto.SeasonBlockDay;
+import io.mrkuhne.mezo.api.dto.SeasonBlockWeek;
 import io.mrkuhne.mezo.api.dto.SeasonPreview;
 import io.mrkuhne.mezo.api.dto.SeasonResponse;
 import io.mrkuhne.mezo.api.dto.SeasonRules;
@@ -112,7 +114,18 @@ public class SeasonMapper {
             .warnings(new ArrayList<>(p.warnings().stream()
                 .map(w -> SeasonWarning.builder().key(w.key()).text(w.text()).build()).toList()))
             .fingerprint(p.fingerprint())
+            .block(p.block() == null ? null : SeasonBlockWeek.builder()
+                .mesocycleId(p.block().mesocycleId())
+                .title(p.block().title())
+                .days(new ArrayList<>(p.block().days().stream().map(SeasonMapper::blockDay).toList()))
+                .dropped(new ArrayList<>(p.block().dropped().stream().map(SeasonMapper::blockDay).toList()))
+                .build())
             .build();
+    }
+
+    private static SeasonBlockDay blockDay(io.mrkuhne.mezo.feature.season.port.SeasonTrainPort.BlockDay d) {
+        return SeasonBlockDay.builder().weekday(d.weekday()).title(d.title())
+            .change(SeasonBlockDay.ChangeEnum.fromValue(d.change())).fromWeekday(d.fromWeekday()).build();
     }
 
     /** {@code current} = the season as it stands (live slots once active); {@code mesocycleId} = its block. */

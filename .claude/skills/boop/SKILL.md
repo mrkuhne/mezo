@@ -116,9 +116,14 @@ Hungarian, business language** (CLAUDE.md §Communication) — no file names, no
 
 ## 5. How work is done
 
+- **Flow = `munkamenet` skill + its `playbook.md`.** A B-slice (B5–B8 size) follows playbook §5: one slice map
+  (owner OK once), then one step per fresh session, each merged, with the handoff in the next step's bd notes — never
+  one multi-day session or a long-lived coordinator session. Bugs §3, new screens §4, server-into-app §6.
 - Every slice opens with a short brainstorm (`superpowers:brainstorming` + `brainstorm-recon`; the research report
   for the area is the recon's head start), a **simulator spike** when anything new is seen, then a plan in
-  `docs/superpowers/plans/` with a *Kész, ha…* list (owner OK) → execute (inline or subagents).
+  `docs/superpowers/plans/` with a *Kész, ha…* list (owner OK) → execute inline (`superpowers:executing-plans`;
+  subagent-driven only opt-in for a large plan of independent tasks — sonnet dispatches, no per-task reviewers;
+  flow in the `munkamenet` skill, CLAUDE.md §Token diet).
 - TDD for logic (`BoopCore` models with `StubTransport`, builders as pure functions); screens build from the
   Napkelte kit in `BoopDesign/Napkelte/` and the approved spike. Logic that lives only in the web frontend moves to
   the backend when more than Boop's display needs it (spec §4), otherwise to Swift — never duplicate it in both.
@@ -133,10 +138,12 @@ Hungarian, business language** (CLAUDE.md §Communication) — no file names, no
   (driver: the `boop-notion` skill). When you **claim** an issue: add/refresh its row in
   `docs/boop-handbook/_jegyek.json` (Hungarian title, *mit kapsz*, `munkamenet` = your session name) and sync, so
   the board shows it as *Épül*. When it moves to review / waits for deploy / waits on the owner: `bd label add <id>
-  allapot:ellenorzes|elesitesre-var|var-rad` and sync. **At report time:** close/relabel the issue, add the merge to
+  allapot:ellenorzes|elesitesre-var|var-rad` (it rides the next push). **Push at most twice per session** — once
+  after the claim, once at report time — and always through a fresh `sonnet` worker, never Notion MCP calls in the
+  main session (`boop-notion` §2; token diet, mezo-hsc75). **At report time:** close/relabel the issue, add the merge to
   `_kiadasok.json`, any owner decision to `_dontesek.json`, update the handbook pages of every feature you added,
-  changed or cut (state, how it works, settings, data tables), then `node scripts/boop-notion-sync.mjs plan` →
-  apply → `check` exits 0, and commit `_notion-state.json` with the slice. No Notion tools in the session → file a
+  changed or cut (state, how it works, settings, data tables), then dispatch the sync worker (plan → apply →
+  `check` exits 0), and commit `_notion-state.json` with the slice. No Notion tools in the session → file a
   `notion-sync` bd issue under the epic instead of skipping silently.
 - Report to the owner in Hungarian: what he can now do, what was checked, what is not done.
 
@@ -186,7 +193,7 @@ never ask him for a password.
 | **A területek saját oldalai** — rebuilt against the Élet spike after the owner rejected v1: every area has **its own bottom bar** (`NKAreaBar`) with the spike's tab set and badges, the spike's left-aligned head, and the spike's blocks (`NKList`, `NKNote`, `NKActions`, `NKInfoRow`, `NKNotLiveYet` added to the kit). Pénz and Levél have pages with no data (`Hue.penz`, `Hue.level`). Code: `Nap/AreaRoom.swift` (replaces `MaDrill`) | `mezo-r36n9.57` | **shipped 2026-11-16** | next: `.58` the B4→B8 review against the new look |
 | **A nap oldala** — the day page = the Élet spike's Ma (one scroll: Mai nap curve with the day's pins · Most · folds · Amit ma észrevettem · Este); no orb ribbon, no phase tabs, no big rising orb (owner, 2026-11-16). Pins: `BoopCore/Morning/DayMoments.swift`, `EnergyCurveCard(events:)` | `mezo-r36n9.56` | **shipped 2026-11-16** | next: `.57` every area's own page from the same spike, then `.58` the B4→B8 review against the new look |
 | L0/b Ma · az élő fal | `mezo-r36n9.45` | **shipped 2026-11-16** | three fixed roles (#34), only `.expires` may ring twice a day (#35), areas join via `WallRegistry`. Engine `BoopCore/Morning/{Wall,WallSources}.swift`, weights `BoopDesign/Napkelte/Wall.swift`, wiring `ios/Boop/Nap/MaWall.swift`. `-previewWallEmpty YES` shows the quiet wall |
-| L1 Levél · alap — IMAP intake, redaction, schedule, no AI | `mezo-r36n9.38` | **built 2026-11-21, one release with L2** (branch `feat/level-posta`; deploy + phone install pending at time of writing; `docs/features/mail.md`) | server `backend/.../feature/mail/` (`MailRunner`/`MailJob` 08:00+15:00, `service/{imap,redact,rules}`, read-only IMAP of the owner's mirror Gmail, AES-GCM credential, tables `mail_*`), contract `api/feature/mail/mail.yml`; switches `mezo.mail.enabled` + `mezo.techcore.cron.mail-job.enabled` (both OFF until deploy), env `MEZO_MAIL_SECRET_KEY` |
+| L1 Levél · alap — IMAP intake, redaction, schedule, no AI | `mezo-r36n9.38` | **built 2026-11-21, one release with L2** (branch `feat/level-posta`; deploy + phone install pending at time of writing; `docs/features/mail.md`) | server `backend/.../feature/mail/` (`MailRunner`/`MailJob` 08:00+15:00, `service/{imap,redact,rules}`, read-only IMAP of a mirror Gmail — since 2026-11-25 the mailbox is reached via Google sign-in to his own Gmail (Gmail API, `service/google/`), IMAP kept but unused; AES-GCM credential, tables `mail_*`), contract `api/feature/mail/mail.yml`; switches `mezo.mail.enabled` + `mezo.techcore.cron.mail-job.enabled` (both OFF until deploy), env `MEZO_MAIL_SECRET_KEY` |
 | L2 Levél · összefoglaló — the daily digest with 1–10 scores | `mezo-r36n9.39` | **built 2026-11-21, one release with L1** (same branch) | server `MailDigestService`/`MailDigestQuery`/`MailLearning` (rules → cheap model, three slugs, per-day cap 0.15 USD, fail-closed screen); phone `ios/Boop/Level/` + `BoopCore/Level/`, the first wall source from a life area (`levelWallCandidates`) and the wall's ring `ios/Boop/Nap/WallNotifier.swift` (cap 2 per fire day, 08:00–21:00, scheduled only at app open until the paid team's server push `mezo-r36n9.19`) |
 | L3 Levél · figyelt termékek és árellenőrzés | `mezo-r36n9.40` | open | **Can start** (L1+L2 are built; wait for their deploy to have real deals): the price check builds on `PenzHttpFetcher` (the SSRF-guarded, allow-listed fetcher, `docs/features/penz.md` §3.8) and on `mail_item` deals; **10 checks a day is already decided** (owner 2026-11-21, do not re-ask); the *Figyelt* tab is still `NKNotLiveYet` and the Ma highlight must not claim a price comparison until L3 ships |
 | L4 Pénz · adatalap — allowance engine, bank-SMS capture, amount guard | `mezo-r36n9.102` | **shipped 2026-11-19** (backend only, `docs/features/penz.md`) | done |

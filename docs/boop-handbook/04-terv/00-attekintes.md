@@ -71,7 +71,6 @@ Az egyes funkcióoldalak tartalmazzák (`mezo.season.*`, `mezo.goal.*`).
 
 ## Mi jön még
 - Az évad 3–4. szakasza (lásd fent).
-- Egy elfogadással az edzésblokk napjai is átrendeződnek, ha az edzésnapok változnak (addig futó blokk alatt az edzésnapok zárolva).
 - **Testösszetétel:** a Test kártya és a Health-testzsír a motorban.
 
 ## Mi marad ki

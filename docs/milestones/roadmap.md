@@ -63,6 +63,7 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-11-25 — Boop Évad: one accept moves the running block too (`mezo-r36n9.122`).** Spec §5.12-1 delivered: Módosítás previews the block's re-arranged week and *Elfogadom* moves goal, slots, sleep need and block in one transaction (evaluator-chosen repeat / drop, fingerprint covers the block); S1's gym-day lock removed. [`season.md`](../features/season.md).
 - **2026-11-25 — Boop Éves terv S3 + S4: the year map and following it (`mezo-r36n9.113`).**
   Server (S3): `training_year_plan` / `training_year_block`, the pure `YearGenerator` (alternating upper/lower focus blocks,
   first one upper, every group a focus ≥ 1× and the emphasised ones 2×, pair table, relaxations reported as notes) and

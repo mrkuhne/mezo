@@ -392,6 +392,8 @@ struct ExercisePickCard: View {
     let last: String?
     let first: Bool
     let hue: Hue
+    /// Replaces the last-top-set line (the block builder's coverage hint: „csütörtök · 3 × 10–15").
+    var footnote: String? = nil
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
@@ -402,7 +404,9 @@ struct ExercisePickCard: View {
                 Text(role).nkFont(10, design: .monospaced).foregroundStyle(.white.opacity(0.5)).lineLimit(1)
                 Text(reason).nkFont(14).foregroundStyle(.white.opacity(0.82))
                     .fixedSize(horizontal: false, vertical: true).padding(.top, 2)
-                if let last {
+                if let footnote {
+                    Text(footnote).nkFont(12, design: .monospaced).foregroundStyle(hue.glow)
+                } else if let last {
                     Text("Legutóbb: \(last)").nkFont(12, design: .monospaced).foregroundStyle(hue.glow)
                 } else {
                     Text("Ezt még nem csináltad").nkFont(12, design: .monospaced).foregroundStyle(.white.opacity(0.4))

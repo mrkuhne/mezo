@@ -335,3 +335,60 @@ file a bug).
   three taps) as tunable constants.
 - The heat-strip slot width; the folded-category names.
 - Whether manual refresh is limited to once per 10 minutes or similar.
+
+## 12. Change 2026-11-25 — Google sign-in to his own Gmail (supersedes decisions 2, 7 and 8)
+
+**Owner decision (2026-11-25):** no mirror mailbox — *"nem gyűjtőfiókot szeretnék, adok hozzáférést a gmailemhez"* —
+and, offered an app password for his real Gmail vs a **„Belépés Google-lel”** button, he chose **Google sign-in**.
+The shipped L1+L2 release (v3.33.0, merge `004f571c1`) stays; only how the mailbox is reached changes.
+
+**What made it painless (recon 2026-11-25):** Google Cloud's **Personal user type** — an OAuth app that only the
+account that created it can authorise is *"not subject to the OAuth user cap or 7-day test user token expiration, and
+do not display the unverified app screen"*, and needs no verification
+([Google Cloud help 15549945](https://support.google.com/cloud/answer/15549945#user-type-personal)). So no weekly
+re-login and no CASA. Chosen only at project creation; another account gets `client_user_mismatch`.
+
+### 12.1 What he sees
+- **Fiókok, not connected:** one button **„Belépés Google-lel”** and two lines: what Boop will see (Beérkezett + Spam,
+  read-only) and what it never does (send, delete, mark read). Google's consent screen says *"View your email messages
+  and settings"* (`gmail.readonly`).
+- **Connected:** his address, last run, state in words; **„Lecsatolás”** revokes the token at Google and deletes it.
+- **When Google withdraws access** (he revokes it, changes his Google password, or 6 months unused): state
+  `auth_failed` → Fiókok says „A Google visszavonta a hozzáférést — lépj be újra” with the button; the Levél head points
+  there. No ring for it (not a deadline).
+- **iCloud:** not read directly any more. Fiókok carries one optional line: „Ha az iCloud-leveleidet is látni
+  szeretnéd, állítsd be az iCloudban, hogy továbbítson a Gmailedbe.”
+- **One-time setup he does himself** (guided in Fiókok and in chat, ~10 minutes): create a Google Cloud project in
+  **Personal** mode, enable the Gmail API, create an **iOS OAuth client** for Boop's bundle id, and tell Claude the
+  client id (a public identifier, not a secret).
+
+### 12.2 How it works
+- **Gmail REST API with `gmail.readonly`, not IMAP** — IMAP over OAuth needs `https://mail.google.com/` (read, send,
+  permanently delete); the REST API gives read-only by Google's guarantee.
+- **Sign-in on the phone:** `ASWebAuthenticationSession` + PKCE against the iOS client (redirect
+  `com.googleusercontent.apps.<id>:/oauth2redirect`), scopes `gmail.readonly` + `openid email`. No Google SDK, no new
+  package, no project-file edit. The phone sends `{code, codeVerifier, redirectUri}` once to
+  `POST /api/mail/mailbox/google`; the **server** exchanges it (iOS client id, no secret), seals the **refresh token**
+  with the existing AES-GCM cipher (same columns as the app password), reads his address from the ID token, and never
+  returns the token. The phone never stores it.
+  *Call (Claude): server-side refresh with the iOS client id. Google documents the serverAuthCode + Web-client pattern
+  instead, which needs a client secret in the cluster; with a Personal app only his account can ever authorise, so the
+  public-client refresh adds no exposure beyond the sealed refresh token itself. Fallback if Google refuses the
+  exchange: Web client + sealed secret.*
+- **New reader `GmailApiReader`** beside the IMAP one, chosen by `mail_mailbox.kind` (`imap|google`, new changeset —
+  the v3.33.0 changeset is in production and is never edited). Each run: refresh the access token; first run
+  `messages.list q="newer_than:7d" labelIds INBOX / SPAM`; later runs `history.list startHistoryId` (`messageAdded`),
+  **404 → bounded full sync** (last 7 days). The cursor stores the `historyId`. `messages.get format=raw` → the same
+  MIME parsing as IMAP, so redaction, rules, pipeline, digest and screens are untouched. `gm_msgid` = the API id.
+- Revoke on Lecsatolás: `POST https://oauth2.googleapis.com/revoke`. `invalid_grant` on refresh → `auth_failed` (the
+  existing health gauge and alert cover it).
+- Outbound calls only to `oauth2.googleapis.com` and `gmail.googleapis.com` (allow-listed). The IMAP path stays in the
+  code, unused by the app.
+
+### 12.3 Kész, ha…
+- He connects with the Google button on his phone; a manual run fills the four groups from his real Gmail; the
+  prod DB shows `mail_message` / `mail_item` rows (counts only).
+- Lecsatolás revokes at Google and nulls the token; a revoked token shows the re-login state.
+- Tests: token exchange + refresh + `invalid_grant` + revoke against a stub Google; history sync + 404 fallback +
+  INBOX/SPAM labels; PKCE + callback parsing on iOS; Fiókok states. Gates as §11 / the plan.
+- Docs, handbook, `_dontesek.json`, Notion, release row updated; the six-step mirror guide removed from Fiókok.

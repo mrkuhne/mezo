@@ -10,6 +10,8 @@ import io.mrkuhne.mezo.api.dto.CatalogVideoRequest;
 import io.mrkuhne.mezo.api.dto.CustomWorkoutResponse;
 import io.mrkuhne.mezo.api.dto.CustomWorkoutUpsertRequest;
 import io.mrkuhne.mezo.api.dto.ExerciseCatalogItem;
+import io.mrkuhne.mezo.api.dto.BlockCoverageRequest;
+import io.mrkuhne.mezo.api.dto.BlockCoverageResponse;
 import io.mrkuhne.mezo.api.dto.BlockExerciseSuggestionsRequest;
 import io.mrkuhne.mezo.api.dto.ExerciseSubstitutesResponse;
 import io.mrkuhne.mezo.api.dto.ExerciseNoteRequest;
@@ -72,6 +74,7 @@ import io.mrkuhne.mezo.feature.train.service.MesocycleDiscardService;
 import io.mrkuhne.mezo.feature.train.service.ExerciseDiscomfortService;
 import io.mrkuhne.mezo.feature.train.service.ExerciseSubstituteService;
 import io.mrkuhne.mezo.feature.train.service.BlockSuggestionService;
+import io.mrkuhne.mezo.feature.train.service.CoverageService;
 import io.mrkuhne.mezo.feature.train.service.ExerciseCatalogService;
 import io.mrkuhne.mezo.feature.train.service.ExerciseRecordService;
 import io.mrkuhne.mezo.feature.train.service.GymProfileService;
@@ -121,6 +124,7 @@ public class TrainController implements TrainApi {
     private final ExerciseDiscomfortService exerciseDiscomfortService;
     private final ExerciseSubstituteService exerciseSubstituteService;
     private final BlockSuggestionService blockSuggestionService;
+    private final CoverageService coverageService;
     private final ExerciseCatalogService exerciseCatalogService;
     private final ExerciseRecordService exerciseRecordService;
     private final MedalService medalService;
@@ -310,6 +314,11 @@ public class TrainController implements TrainApi {
     public ExerciseSubstitutesResponse getBlockExerciseSuggestions(UUID id,
                                                                    BlockExerciseSuggestionsRequest request) {
         return blockSuggestionService.suggestions(currentUser.get(), id, request);
+    }
+
+    @Override
+    public BlockCoverageResponse getBlockCoverage(UUID id, BlockCoverageRequest request) {
+        return coverageService.coverage(currentUser.get(), id, request);
     }
 
     @Override

@@ -14,7 +14,7 @@ struct BlockBuilderEditorTests {
         stub.on("getExerciseCatalog", .json(200, PlanFixtures.catalogJSON))
         stub.on("listWeekProposals", .json(200, proposals))
         stub.on("evaluateMesoPlan", .json(200, evaluation ?? PlanFixtures.evaluationJSON))
-        let m = BlockBuilderModel(client: PlanFixtures.planClient(stub), debounce: .seconds(30), lockedDay: lockedDay)
+        let m = BlockBuilderModel(client: PlanFixtures.planClient(stub), debounce: .seconds(30), lockedDay: lockedDay, coverageHints: false)
         await m.load()
         return m
     }

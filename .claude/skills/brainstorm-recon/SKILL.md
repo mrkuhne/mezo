@@ -48,3 +48,8 @@ The design doc (docs/superpowers/specs/) MUST include these two sections:
 
 If an agent came back empty or failed, the section says so in one line — it never
 silently disappears.
+
+## Recency (2026-11-26)
+
+Tell the researcher the target is the native iOS/watchOS app and to bring the **newest** official approach (current
+Apple docs/WWDC/HIG) plus how the best apps make it feel — UX/UI and performance, not only function.

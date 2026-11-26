@@ -308,7 +308,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   [docs/features/dayclose.md](features/dayclose.md) (updated 2026-11-26, done) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-11-24, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-11-19, in-progress) ·
-  [docs/features/mail.md](features/mail.md) (updated 2026-11-21, done) ·
+  [docs/features/mail.md](features/mail.md) (updated 2026-11-25, done) ·
   [docs/features/me.md](features/me.md) (updated 2026-11-25, mixed) ·
   [docs/features/penz.md](features/penz.md) (updated 2026-11-21, done) ·
   [docs/features/today.md](features/today.md) (updated 2026-11-19, mixed) ·
@@ -816,7 +816,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### mail
 
-*BE + API* · read next: [docs/features/mail.md](features/mail.md) (updated 2026-11-21, done)
+*BE + API* · read next: [docs/features/mail.md](features/mail.md) (updated 2026-11-25, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/mail`
   - **entities→tables:** `MailFeedbackEntity`→`mail_feedback`, `MailFolderCursorEntity`→`mail_folder_cursor`,
@@ -831,17 +831,17 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   - **controllers→contract:** `MailController`→`MailApi`
   - **mappers:** `MailMapper`
   - **config:** `MailAsyncConfig`, `MailProperties`
-  - **other:** `BulkDetector`, `CarrierRules`, `ClassifiedMail`, `ClassifyPrompt`, `FetchedMail`, `Group`,
-    `ImapMailReader`, `JsonLdReader`, `MailFence`, `MailHeaders`, `MailOutputValidator`, `MailReader`, `MailRedactor`,
-    `MailRules`, `ParcelState`, `RedactedMail`, `RuleVerdict`, `ScorePrompt`, `ScoredDeal`, `ScreenPrompt`,
-    `ScreenVerdict`, `SenderPrior`, `SenderRule`, `SensitiveSeed`
-- **Contract** `api/feature/mail/mail.yml` — 8 operations
+  - **other:** `BulkDetector`, `CarrierRules`, `ClassifiedMail`, `ClassifyPrompt`, `FetchedMail`, `GmailApiReader`,
+    `GoogleOAuthClient`, `Group`, `ImapMailReader`, `JsonLdReader`, `MailFence`, `MailHeaders`, `MailOutputValidator`,
+    `MailReader`, `MailRedactor`, `MailRules`, `MimeMailExtractor`, `ParcelState`, `RedactedMail`, `RuleVerdict`,
+    `ScorePrompt`, `ScoredDeal`, `ScreenPrompt`, `ScreenVerdict`, `SenderPrior`, `SenderRule`, `SensitiveSeed`
+- **Contract** `api/feature/mail/mail.yml` — 9 operations
   - **endpoints:** GET /api/mail/mailbox · PUT /api/mail/mailbox · DELETE /api/mail/mailbox ·
-    POST /api/mail/mailbox/run · GET /api/mail/digest · POST /api/mail/items/{id}/feedback · GET /api/mail/rules ·
-    PUT /api/mail/rules
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/mail` — 8 IT + 10 unit
-  - **ITs:** `ImapMailReaderIT`, `MailApiIT`, `MailCostCapIT`, `MailDigestPipelineIT`, `MailIntakeIT`,
-    `MailJobEnabledIT`, `MailJobSwitchIT`, `MailSchemaIT`
+    POST /api/mail/mailbox/google · POST /api/mail/mailbox/run · GET /api/mail/digest ·
+    POST /api/mail/items/{id}/feedback · GET /api/mail/rules · PUT /api/mail/rules
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/mail` — 10 IT + 13 unit
+  - **ITs:** `ImapMailReaderIT`, `MailApiIT`, `MailCostCapIT`, `MailDigestPipelineIT`, `MailGoogleUnconfiguredIT`,
+    `MailIntakeGoogleIT`, `MailIntakeIT`, `MailJobEnabledIT`, `MailJobSwitchIT`, `MailSchemaIT`
   - **populators:** `DatabasePopulator`, `LlmLogPopulator`, `MailPopulator`, `UserPopulator`
 
 ### meal
@@ -1299,10 +1299,11 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     GET /api/seasons/experiments · POST /api/seasons/experiments · POST /api/seasons/experiments/{id}/start ·
     PUT /api/seasons/experiments/{id}/days · POST /api/seasons/experiments/{id}/dismiss ·
     POST /api/seasons/experiments/{id}/keep
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/season` — 14 IT + 9 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/season` — 16 IT + 9 unit
   - **ITs:** `AdherenceServiceIT`, `ExperimentApiIT`, `ExperimentServiceIT`, `MenuServiceIT`, `MesocycleGateIT`,
-    `SeasonApiIT`, `SeasonBlockRelinkIT`, `SeasonInsightsIT`, `SeasonMenuApiIT`, `SeasonOverviewIT`, `SeasonPortsIT`,
-    `SeasonPreviewIT`, `SeasonRepositoryIT`, `SeasonServiceIT`
+    `SeasonApiIT`, `SeasonBlockRearrangeIT`, `SeasonBlockRelinkIT`, `SeasonContextExperimentFaultIT`,
+    `SeasonInsightsIT`, `SeasonMenuApiIT`, `SeasonOverviewIT`, `SeasonPortsIT`, `SeasonPreviewIT`,
+    `SeasonRepositoryIT`, `SeasonServiceIT`
   - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPopulator`, `JournalPopulator`,
     `MealPopulator`, `MesoTemplatePopulator`, `PantryItemPopulator`, `PlannedSkipPopulator`, `ProtocolPopulator`,
     `RecipePopulator`, `RecoveryPeriodPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`, `TrainPopulator`,
@@ -1338,31 +1339,32 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `RunningBlockRepository`, `SportEventRepository`, `SportScheduleSlotRepository`, `SportSessionRepository`,
     `SportSlotSkipRepository`, `TrainingYearBlockRepository`, `TrainingYearPlanRepository`,
     `WorkoutDayAdjustmentRepository`, `WorkoutSessionRepository`, `WorkoutTimingProfileRepository`
-  - **services:** `ActivityEnergyModel`, `AthleteBodyPort`, `BlockSuggestionService`, `CandidateRanker`,
-    `CatalogAttributes`, `CatalogMediaResolver`, `ClosingBlockService`, `ComebackRamp`, `DayCheckInPort`,
-    `DiscomfortHistory`, `E1rmSeries`, `EffortRamp`, `EnergyBalancePort`, `EvaluatorTechniques`, `EwmaEstimator`,
-    `ExerciseCatalogService`, `ExerciseClass`, `ExerciseDiscomfortService`, `ExerciseHistoryResolver`,
-    `ExerciseRecordService`, `ExerciseStyler`, `ExerciseSubstituteRanker`, `ExerciseSubstituteService`,
-    `ExerciseTechniqueService`, `GoalRecomputePort`, `GrindRule`, `GymAvailability`, `GymProfileService`,
-    `GymScheduleService`, `LegacySetDistribution`, `LoadLinePreview`, `LoggedSession`, `LoggedSessionReadPort`,
-    `MedalEvaluator`, `MedalService`, `MesoPlanCandidatesService`, `MesoPlanEvaluateService`, `MesoPlanFiller`,
-    `MesoPlanGeneratorService`, `MesoPlanLlm`, `MesoPlanMerger`, `MesoPlanSkeleton`, `MesoTemplateDays`,
-    `MesoTemplateService`, `MesoWeeks`, `MesoWeeksGuard`, `MesocycleDiscardService`, `MesocycleReportService`,
-    `MuscleGroup`, `MuscleProgressReader`, `MuscleStallDetector`, `OneRepMax`, `PainJointMap`, `PainLevel`,
-    `PainRegionMap`, `PartialsBest`, `PlanEvaluator`, `PlannedBlockStarter`, `PlannedSkipLock`, `PlannedSkipPolicy`,
-    `PlannedSkipService`, `Prescription`, `PriorityGuard`, `PriorityTier`, `ProgressionDecider`, `ReadinessAssessor`,
-    `ReadinessService`, `RecoveryFuelMode`, `RecoveryPeriodService`, `RecoveryReturnPolicy`, `RecoveryReturnService`,
-    `RunningService`, `SessionExerciseAssembler`, `SessionTimingCalculator`, `SetLegService`,
-    `SetRecommendationService`, `SetSlots`, `SetTonnage`, `SplitCatalog`, `SportGroups`, `SportService`,
-    `SportSessionLoggedEvent`, `SportSlotSkipService`, `StallOffers`, `StyleContext`, `StyleStamper`, `StyleTable`,
-    `SubstituteReads`, `SubstituteReason`, `Technique`, `TechniqueAiRefiner`, `TechniqueGuard`, `TechniqueLines`,
-    `TechniqueLlm`, `TechniqueMerger`, `TechniquePlanService`, `TechniquePlanner`, `TechniquePrescriber`,
-    `TechniqueRecommender`, `TechniqueRefineRequested`, `TechniqueRules`, `TechniqueWeights`, `TemplatePlan`,
-    `TierBudget`, `TierChangeProposalService`, `TimingObservation`, `TimingObservationExtractor`,
-    `TimingProfileListener`, `TimingProfileService`, `TrainService`, `TrainingStyle`, `VolumeArcService`,
-    `VolumeBands`, `VolumeDecider`, `VolumeLedger`, `VolumePath`, `VolumeProgressionService`, `WarmupRule`,
-    `WatchWorkoutEnergyPort`, `WeekProposalDecisionService`, `WeekProposalQueryService`, `WeekProposalService`,
-    `WeeklyPin`, `WeeklyScheduledActivityService`, `WeeklySignalReader`, `WeightGapService`, `WeightSnapper`,
+  - **services:** `ActivityEnergyModel`, `AthleteBodyPort`, `BlockDayArrangeService`, `BlockDayArrangement`,
+    `BlockSuggestionService`, `CandidateRanker`, `CatalogAttributes`, `CatalogMediaResolver`, `ClosingBlockService`,
+    `ComebackRamp`, `CoverageRules`, `CoverageService`, `DayCheckInPort`, `DiscomfortHistory`, `E1rmSeries`,
+    `EffortRamp`, `EnergyBalancePort`, `EvaluatorTechniques`, `EwmaEstimator`, `ExerciseCatalogService`,
+    `ExerciseClass`, `ExerciseDiscomfortService`, `ExerciseHistoryResolver`, `ExerciseRecordService`, `ExerciseStyler`,
+    `ExerciseSubstituteRanker`, `ExerciseSubstituteService`, `ExerciseTechniqueService`, `GoalRecomputePort`,
+    `GrindRule`, `GymAvailability`, `GymProfileService`, `GymScheduleService`, `LegacySetDistribution`,
+    `LoadLinePreview`, `LoggedSession`, `LoggedSessionReadPort`, `MedalEvaluator`, `MedalService`,
+    `MesoPlanCandidatesService`, `MesoPlanEvaluateService`, `MesoPlanFiller`, `MesoPlanGeneratorService`,
+    `MesoPlanLlm`, `MesoPlanMerger`, `MesoPlanSkeleton`, `MesoTemplateDays`, `MesoTemplateService`, `MesoWeeks`,
+    `MesoWeeksGuard`, `MesocycleDiscardService`, `MesocycleReportService`, `MuscleGroup`, `MuscleProgressReader`,
+    `MuscleStallDetector`, `OneRepMax`, `PainJointMap`, `PainLevel`, `PainRegionMap`, `PartialsBest`, `PlanEvaluator`,
+    `PlannedBlockStarter`, `PlannedSkipLock`, `PlannedSkipPolicy`, `PlannedSkipService`, `Prescription`,
+    `PriorityGuard`, `PriorityTier`, `ProgressionDecider`, `ReadinessAssessor`, `ReadinessService`, `RecoveryFuelMode`,
+    `RecoveryPeriodService`, `RecoveryReturnPolicy`, `RecoveryReturnService`, `RunningService`,
+    `SessionExerciseAssembler`, `SessionTimingCalculator`, `SetLegService`, `SetRecommendationService`, `SetSlots`,
+    `SetTonnage`, `SplitCatalog`, `SportGroups`, `SportService`, `SportSessionLoggedEvent`, `SportSlotSkipService`,
+    `StallOffers`, `StyleContext`, `StyleStamper`, `StyleTable`, `SubstituteReads`, `SubstituteReason`, `Technique`,
+    `TechniqueAiRefiner`, `TechniqueGuard`, `TechniqueLines`, `TechniqueLlm`, `TechniqueMerger`,
+    `TechniquePlanService`, `TechniquePlanner`, `TechniquePrescriber`, `TechniqueRecommender`,
+    `TechniqueRefineRequested`, `TechniqueRules`, `TechniqueWeights`, `TemplatePlan`, `TierBudget`,
+    `TierChangeProposalService`, `TimingObservation`, `TimingObservationExtractor`, `TimingProfileListener`,
+    `TimingProfileService`, `TrainService`, `TrainingStyle`, `VolumeArcService`, `VolumeBands`, `VolumeDecider`,
+    `VolumeLedger`, `VolumePath`, `VolumeProgressionService`, `WarmupRule`, `WatchWorkoutEnergyPort`,
+    `WeekProposalDecisionService`, `WeekProposalQueryService`, `WeekProposalService`, `WeeklyPin`,
+    `WeeklyScheduledActivityService`, `WeeklySignalReader`, `WeightGapService`, `WeightSnapper`,
     `WorkoutAutoCloseService`, `WorkoutEnergyService`, `WorkoutExerciseChangeService`, `WorkoutFinishedEvent`,
     `WorkoutService`, `WorkoutWindowQueryService`, `YearGenerator`, `YearPlanAssembler`, `YearPlanLinker`,
     `YearPlanService`, `YearReconciler`, `YearRules`, `YearSchedule`
@@ -1391,13 +1393,14 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 - **Contract** `api/feature/train/train-week-proposal.yml` — 2 operations
   - **endpoints:** GET /api/train/mesocycles/{id}/week-proposals ·
     POST /api/train/mesocycles/{id}/week-proposals/{proposalId}/decisions
-- **Contract** `api/feature/train/train.yml` — 78 operations
+- **Contract** `api/feature/train/train.yml` — 79 operations
   - **endpoints:** GET /api/train/mesocycles · POST /api/train/mesocycles/{id}/activate ·
     POST /api/train/mesocycles/{id}/close · POST /api/train/mesocycles/{id}/discard ·
     PUT /api/train/mesocycles/{id}/muscle-priorities · PUT /api/train/mesocycles/{id}/settings ·
     GET /api/train/mesocycles/{id}/report · POST /api/train/mesocycles/{id}/report/regenerate ·
     GET /api/train/mesocycles/{id}/volume-arc · POST /api/train/mesocycles/{id}/exercise-suggestions ·
-    GET /api/train/mesocycles/{id}/evaluation · PUT /api/train/mesocycles/{id}/exercises/{exerciseId}/technique ·
+    POST /api/train/mesocycles/{id}/coverage · GET /api/train/mesocycles/{id}/evaluation ·
+    PUT /api/train/mesocycles/{id}/exercises/{exerciseId}/technique ·
     PUT /api/train/mesocycles/{id}/days/{dayId}/exercises · POST /api/train/mesocycles/{id}/rerun ·
     POST /api/train/meso-plans/generate · POST /api/train/meso-plans/evaluate · POST /api/train/meso-plans/candidates ·
     GET /api/train/meso-templates · POST /api/train/meso-templates · PUT /api/train/meso-templates/{id} ·
@@ -1423,30 +1426,31 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     GET /api/train/run-sessions · POST /api/train/run-sessions · GET /api/train/timing-profile ·
     POST /api/train/year-plans/preview · POST /api/train/year-plans · GET /api/train/year-plans/active ·
     PATCH /api/train/year-plans/blocks/{blockId} · POST /api/train/year-plans/{id}/archive
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 145 IT + 61 unit
-  - **ITs:** `BlockExerciseSuggestionsIT`, `CatalogMediaResolutionIT`, `CatalogWriteContractIT`, `ClosingBlockIT`,
-    `ClosingBlockSwitchOffIT`, `ClosingBlockVolumeFlagIT`, `ComebackTodayIT`, `CrossDayWorkoutIT`, `CustomWorkoutIT`,
-    `ExerciseCatalogContractIT`, `ExerciseCatalogLoaderIT`, `ExerciseCatalogPermissionIT`, `ExerciseCatalogSlugRaceIT`,
-    `ExerciseCatalogSoftDeleteIT`, `ExerciseDiscomfortIT`, `ExerciseHistoryResolverRangeIT`, `ExerciseImagesIT`,
-    `ExerciseRecordContractIT`, `ExerciseRecordServiceIT`, `ExerciseSetLegRepositoryIT`, `ExerciseSubstitutesIT`,
-    `ExerciseTechniqueApiIT`, `ExerciseVolumeFlagIT`, `FailingWeeklyEngineIT`, `GoalPresetBackfillSqlIT`,
-    `GoalPresetCarryIT`, `GymProfileIT`, `GymScheduleContractIT`, `HypertrophyPropertiesIT`, `MedalApiIT`,
-    `MesoPlanCandidatesContractIT`, `MesoPlanEvaluateContractIT`, `MesoPlanEvaluateTechniqueIT`,
-    `MesoPlanGenerateAiIT`, `MesoPlanGenerateContractIT`, `MesoPlanGenerateFallbackIT`, `MesoPlanGenerateUnstyledIT`,
-    `MesoPlanPropertiesBindingIT`, `MesoReviewSwitchOffIT`, `MesoTemplateIT`, `MesoTemplateSportGroupsIT`,
-    `MesoTemplateStyleIT`, `MesoTemplateTechniqueIT`, `MesoTemplateVolumeBackfillSqlIT`, `MesoTemplateVolumeFlagIT`,
-    `MesoWeekProposalRepositoryIT`, `MesocycleCloseReportIT`, `MesocycleDiscardIT`, `MesocycleSettingsApiIT`,
-    `MusclePrioritiesCarryIT`, `MuscleProgressReaderIT`, `PartialsBestIT`, `PlannedBlockStarterIT`,
-    `PlannedSkipConsumersIT`, `PlannedSkipContractIT`, `PlannedSkipPersistenceIT`, `PrescribedSetsFoundationIT`,
-    `ProvenanceRoundTripIT`, `ReadinessContractIT`, `ReadinessLightenIT`, `ReadinessServiceIT`, `RecoveryApiIT`,
-    `RecoveryCentralReadIT`, `RecoveryFuelDaysIT`, `RecoveryPeriodPersistenceIT`,
-    `ReplaceDayExercisesRunningWorkoutIT`, `RunSessionNoLevelUpApiIT`, `RunningContractIT`, `ScheduleGoalRecomputeIT`,
-    `SetLegLogIT`, `SetRecommendationServiceIT`, `SportContractIT`, `SportEventContractIT`, `SportServiceIT`,
-    `SportSessionRangeIT`, `SportSlotSkipContractIT`, `SportSlotSkipPersistenceIT`, `TechniqueAiRefinerIT`,
-    `TechniqueExclusionIT`, `TechniquePlanServiceIT`, `TimingProfileIT`, `TimingProfileSwitchOffIT`, `TrainContractIT`,
-    `TrainSeedDataIT`, `TrainServiceIT`, `TrainStylePropertiesIT`, `TrainTechniquePropertiesIT`,
-    `TrainingYearPlanRepositoryIT`, `VolumeAmountMigrationRunnerIT`, `VolumeArcContractIT`, `VolumeArcVolumeFlagIT`,
-    `VolumeLedgerIT`, `VolumeLedgerSwitchOffIT`, `VolumeProgressionTierIT`, `VolumePropertiesIT`, `WarmupExclusionIT`,
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 146 IT + 64 unit
+  - **ITs:** `BlockCoverageIT`, `BlockExerciseSuggestionsIT`, `CatalogMediaResolutionIT`, `CatalogWriteContractIT`,
+    `ClosingBlockIT`, `ClosingBlockSwitchOffIT`, `ClosingBlockVolumeFlagIT`, `ComebackTodayIT`, `CrossDayWorkoutIT`,
+    `CustomWorkoutIT`, `ExerciseCatalogContractIT`, `ExerciseCatalogLoaderIT`, `ExerciseCatalogPermissionIT`,
+    `ExerciseCatalogSlugRaceIT`, `ExerciseCatalogSoftDeleteIT`, `ExerciseDiscomfortIT`,
+    `ExerciseHistoryResolverRangeIT`, `ExerciseImagesIT`, `ExerciseRecordContractIT`, `ExerciseRecordServiceIT`,
+    `ExerciseSetLegRepositoryIT`, `ExerciseSubstitutesIT`, `ExerciseTechniqueApiIT`, `ExerciseVolumeFlagIT`,
+    `FailingWeeklyEngineIT`, `GoalPresetBackfillSqlIT`, `GoalPresetCarryIT`, `GymProfileIT`, `GymScheduleContractIT`,
+    `HypertrophyPropertiesIT`, `MedalApiIT`, `MesoPlanCandidatesContractIT`, `MesoPlanEvaluateContractIT`,
+    `MesoPlanEvaluateTechniqueIT`, `MesoPlanGenerateAiIT`, `MesoPlanGenerateContractIT`, `MesoPlanGenerateFallbackIT`,
+    `MesoPlanGenerateUnstyledIT`, `MesoPlanPropertiesBindingIT`, `MesoReviewSwitchOffIT`, `MesoTemplateIT`,
+    `MesoTemplateSportGroupsIT`, `MesoTemplateStyleIT`, `MesoTemplateTechniqueIT`, `MesoTemplateVolumeBackfillSqlIT`,
+    `MesoTemplateVolumeFlagIT`, `MesoWeekProposalRepositoryIT`, `MesocycleCloseReportIT`, `MesocycleDiscardIT`,
+    `MesocycleSettingsApiIT`, `MusclePrioritiesCarryIT`, `MuscleProgressReaderIT`, `PartialsBestIT`,
+    `PlannedBlockStarterIT`, `PlannedSkipConsumersIT`, `PlannedSkipContractIT`, `PlannedSkipPersistenceIT`,
+    `PrescribedSetsFoundationIT`, `ProvenanceRoundTripIT`, `ReadinessContractIT`, `ReadinessLightenIT`,
+    `ReadinessServiceIT`, `RecoveryApiIT`, `RecoveryCentralReadIT`, `RecoveryFuelDaysIT`,
+    `RecoveryPeriodPersistenceIT`, `ReplaceDayExercisesRunningWorkoutIT`, `RunSessionNoLevelUpApiIT`,
+    `RunningContractIT`, `ScheduleGoalRecomputeIT`, `SetLegLogIT`, `SetRecommendationServiceIT`, `SportContractIT`,
+    `SportEventContractIT`, `SportServiceIT`, `SportSessionRangeIT`, `SportSlotSkipContractIT`,
+    `SportSlotSkipPersistenceIT`, `TechniqueAiRefinerIT`, `TechniqueExclusionIT`, `TechniquePlanServiceIT`,
+    `TimingProfileIT`, `TimingProfileSwitchOffIT`, `TrainContractIT`, `TrainSeedDataIT`, `TrainServiceIT`,
+    `TrainStylePropertiesIT`, `TrainTechniquePropertiesIT`, `TrainingYearPlanRepositoryIT`,
+    `VolumeAmountMigrationRunnerIT`, `VolumeArcContractIT`, `VolumeArcVolumeFlagIT`, `VolumeLedgerIT`,
+    `VolumeLedgerSwitchOffIT`, `VolumeProgressionTierIT`, `VolumePropertiesIT`, `WarmupExclusionIT`,
     `WeekProposalApiAutoIT`, `WeekProposalApiIT`, `WeekProposalAutoIT`, `WeekProposalAutoSwitchOffIT`,
     `WeekProposalDaySaveIT`, `WeekProposalLoadLinesIT`, `WeekProposalLoadLinesSwitchOffIT`, `WeekProposalManualIT`,
     `WeekProposalRunModeIT`, `WeekProposalStallFailureIT`, `WeekProposalStallIT`, `WeekProposalTechniqueIT`,

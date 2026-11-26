@@ -60,17 +60,17 @@ func levelHeadWords(tab: LevelTab, mailbox: LevelMailbox?, digest: LevelDigest?,
     case .szabalyok:
         return LevelHeadWords(verdict: "Te döntöd el, mibe nézek bele", sentence: "Bankot, hivatalt és belépőkódot gép soha nem olvas.")
     case .fiokok:
-        return LevelHeadWords(verdict: "Egy külön postafiók a Boopnak", sentence: levelFiokokSentence(mailbox, now: now))
+        return LevelHeadWords(verdict: "A saját Gmailed, csak olvasásra", sentence: levelFiokokSentence(mailbox, now: now))
     case .ma:
         break
     }
     switch levelMailboxMode(mailbox) {
     case .needsConnect:
         return LevelHeadWords(verdict: "Még nincs postafiókod",
-                              sentence: "Kösd össze a Boop postafiókját, és reggelente itt találod a rendezett levelekedet.")
+                              sentence: "Lépj be a Google-fiókoddal, és reggelente itt találod a rendezett levelekedet.")
     case .authFailed:
-        return LevelHeadWords(verdict: "A postafiók nem enged be",
-                              sentence: "Az alkalmazásjelszót visszavonták vagy lejárt. Kösd össze újra a Fiókok oldalon.")
+        return LevelHeadWords(verdict: "A Google nem enged be",
+                              sentence: "A Google visszavonta a hozzáférést. Lépj be újra a Fiókok oldalon.")
     default:
         break
     }
@@ -89,7 +89,7 @@ func levelHeadWords(tab: LevelTab, mailbox: LevelMailbox?, digest: LevelDigest?,
 
 func levelFiokokSentence(_ m: LevelMailbox?, now: Date) -> String {
     switch levelMailboxMode(m) {
-    case .needsConnect, .authFailed: return "Hat lépés, és a levelek maguktól jönnek."
+    case .needsConnect, .authFailed: return "Egy gombnyomás, és a levelek maguktól jönnek."
     case .connected, .unknown:
         guard let m, m.lastRunAt != nil else { return "Még nem néztem át a postát." }
         return "Utolsó átnézés \(levelLastRunWhen(m.lastRunAt, now: now) ?? "ma")-kor volt."
@@ -350,27 +350,43 @@ func levelTimesWord(_ n: Int) -> String {
 
 // MARK: - Fiókok
 
-let levelCredentialError = "Nem sikerült belépni — ellenőrizd a címet és az alkalmazásjelszót."
 let levelCooldownLine = "Most néztem át — pár perc múlva újra próbálhatod."
+let levelGoogleRefusedLine = "A Google nem engedte a belépést"
+let levelGoogleUnconfiguredLine = "A Google-belépés még nincs beállítva a szerveren."
+let levelGoogleRevokedLine = "A Google visszavonta a hozzáférést — lépj be újra."
+let levelReadOnlyLine = "Boop csak olvas: a Beérkezett leveleket és a Spam mappát látja."
+let levelNeverLine = "Soha nem küld a nevedben, nem töröl, és nem jelöl olvasottnak semmit."
+let levelICloudLine = "Ha az iCloud-leveleidet is látni szeretnéd, állítsd be az iCloudban, hogy továbbítson a Gmailedbe."
+let levelDetachMessage = "A Google-hozzáférést visszavonom, és a Boop többé nem lát leveleket. A már átnézett levelek összefoglalói megmaradnak."
 
-/// What the connect form says when it fails. A refused login is the fixed sentence; nothing the user typed, and no
-/// password, is ever put in it.
-func levelConnectError(_ e: PlanFetchError) -> String {
-    switch e {
-    case .rejected: return levelCredentialError
-    case .conflict(let code) where code == "MAIL_AUTH_FAILED": return levelCredentialError
-    default: return levelErrorText(e)
+/// What the Fiókok tab shows for the mailbox. `canSignIn` is false while the server has no Google client id.
+enum LevelFiokokView: Equatable {
+    case unknown
+    case signIn(canSignIn: Bool)
+    case revoked(canSignIn: Bool)
+    case connected(silent: Bool)
+}
+
+func levelFiokokView(_ m: LevelMailbox?) -> LevelFiokokView {
+    let can = !(m?.googleClientId ?? "").isEmpty
+    switch levelMailboxMode(m) {
+    case .unknown: return .unknown
+    case .needsConnect: return .signIn(canSignIn: can)
+    case .authFailed: return .revoked(canSignIn: can)
+    case .connected(let silent): return .connected(silent: silent)
     }
 }
 
-let levelGuideSteps: [(title: String, body: String)] = [
-    ("Új Gmail-fiók csak Boopnak", "Hozz létre egy teljesen új Gmail-fiókot. A saját fiókodhoz ne nyúlj."),
-    ("Kétlépcsős azonosítás", "A Google-fiók biztonsági beállításaiban kapcsold be."),
-    ("Alkalmazásjelszó", "Ugyanott kérj egy alkalmazásjelszót. Ez az, amit alább beírsz — nem a fiók jelszava."),
-    ("Továbbítás a Gmailből", "A saját Gmailedben állítsd be, hogy a levelek az új fiókba is menjenek."),
-    ("Továbbítás az iCloudból", "Az iCloud-levelezésnél ugyanez, ha használod."),
-    ("A Boop-fiók hozzáadása a Gmail-apphoz", "Így a „Megnyitás a Gmailben” gomb egyenesen a levelet nyitja meg."),
-]
+/// What a failed sign-in says under the button. Nothing from Google (code, token) is ever put in it.
+func levelGoogleOutcomeLine(_ o: LevelGoogleOutcome) -> String? {
+    switch o {
+    case .connected: return nil
+    case .refused: return levelGoogleRefusedLine
+    case .notConfigured: return levelGoogleUnconfiguredLine
+    case .offline: return levelErrorText(.offline)
+    case .failed(let e): return levelErrorText(e)
+    }
+}
 
 // MARK: - "A többi" folds
 

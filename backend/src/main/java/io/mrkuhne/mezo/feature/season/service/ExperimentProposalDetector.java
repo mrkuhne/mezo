@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
  * Boop's experiment idea (Boop B6 Évad S4, spec §5.9): at most one proposal per run, only when the active season's
  * „Boop is javasol kísérletet” is on and there is neither an open proposal nor a running experiment. Candidates of the
  * last {@link #LOOKBACK_DAYS} days, newest first, skipping a subject this season already had an experiment about (any
- * status): a supplement newly in the stack, a recipe / food eaten for the first time and again within a week, a
+ * status; a journal subject by its normalised title, {@link #key}): a supplement newly in the stack, a recipe / food eaten for the first time and again within a week, a
  * journal line saying he started something („elkezdtem”, „mostantól”). The reason is one Hungarian sentence and never
  * carries a health value.
  *
@@ -126,7 +126,10 @@ public class ExperimentProposalDetector {
         return t.length() <= TITLE_MAX ? t : t.substring(0, TITLE_MAX - 1).strip() + "…";
     }
 
-    private static String key(String title) {
-        return title == null ? "" : title.strip().toLowerCase(Locale.ROOT);
+    /** A title as a dedup key: lowercase, whitespace collapsed, trimmed, trailing punctuation dropped — so an edited
+     *  journal line („Elkezdtem olvasni;” → „elkezdtem  olvasni”) is the same subject. */
+    static String key(String title) {
+        return title == null ? ""
+            : title.toLowerCase(Locale.ROOT).replaceAll("\\s+", " ").replaceAll("[\\p{P}\\s]+$", "").strip();
     }
 }

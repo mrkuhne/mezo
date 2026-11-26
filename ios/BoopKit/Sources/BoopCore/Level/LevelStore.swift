@@ -17,6 +17,17 @@ public enum LevelOutcome: Equatable, Sendable {
     case failed(PlanFetchError)
 }
 
+/// What the Google sign-in came to after the browser step.
+public enum LevelGoogleOutcome: Equatable, Sendable {
+    case connected
+    /// Google (or the server's exchange) refused: "A Google nem engedte a belépést".
+    case refused
+    /// The server has no Google client id (409 `MAIL_GOOGLE_NOT_CONFIGURED`).
+    case notConfigured
+    case offline
+    case failed(PlanFetchError)
+}
+
 /// The Levél area's data (mezo-r36n9.39): the mailbox, one day's post and the sender rules, each loaded on its own so
 /// a rules fault never takes the post with it.
 ///
@@ -151,6 +162,25 @@ public final class LevelStore {
             return .done
         case .failure(let e):
             return .failed(e)
+        }
+    }
+
+    /// Connects through Google. The code and verifier are parameters that go straight to the server — no token, code or
+    /// verifier is ever kept on the phone.
+    public func connectGoogle(code: String, codeVerifier: String, redirectUri: String) async -> LevelGoogleOutcome {
+        guard let client else { return .failed(.unauthorized) }
+        switch await Self.attempt({ try await client.connectGoogle(code: code, codeVerifier: codeVerifier, redirectUri: redirectUri) }) {
+        case .success(let m):
+            // The answer carries the client id too, but keep the one we already knew if the answer lacks it.
+            var m = m
+            if m.googleClientId == nil { m.googleClientId = mailbox?.googleClientId }
+            mailbox = m; mailboxState = .loaded; mailboxIsStale = false
+            try? await cache?.put(m, endpoint: Self.mailboxEndpoint, date: Self.mailboxKey)
+            return .connected
+        case .failure(.offline): return .offline
+        case .failure(.rejected("MAIL_AUTH_FAILED")), .failure(.conflict("MAIL_AUTH_FAILED")): return .refused
+        case .failure(.conflict("MAIL_GOOGLE_NOT_CONFIGURED")), .failure(.rejected("MAIL_GOOGLE_NOT_CONFIGURED")): return .notConfigured
+        case .failure(let e): return .failed(e)
         }
     }
 

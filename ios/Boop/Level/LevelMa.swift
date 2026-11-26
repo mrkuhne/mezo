@@ -59,7 +59,7 @@ struct LevelMa: View {
         Group {
             VStack(alignment: .leading, spacing: 12) {
                 Text("A Boop még nem lát postát").nkFont(23, design: .serif).foregroundStyle(.white)
-                Text("Egy külön Gmail-fiókba továbbítod a leveleidet, a Boop onnan olvas. A jelszavadat soha nem kérem.")
+                Text("Lépj be a Google-fiókoddal: a Boop csak olvas, soha nem küld, nem töröl, és a jelszavadat nem kapja meg.")
                     .nkFont(14.5).lineSpacing(4).foregroundStyle(.white.opacity(0.8))
                     .fixedSize(horizontal: false, vertical: true)
                 Button(action: onFiokok) {

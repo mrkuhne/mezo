@@ -51,7 +51,7 @@ struct PlanClientTests {
             of: #""kind":"reps","from":12,"to":13,"reasons":["reserve_left"]"#,
             with: #""kind":"reps","from":12,"to":13,"reasons":["ai_suggested"],"note":"A bicepsz itt gyorsan regenerálódik.""#)))
         stub.on("evaluateMesoPlan", .json(200, PlanFixtures.evaluationJSON))
-        let m = BlockBuilderModel(client: PlanFixtures.planClient(stub), debounce: .milliseconds(20))
+        let m = BlockBuilderModel(client: PlanFixtures.planClient(stub), debounce: .milliseconds(20), coverageHints: false)
         await m.load()
         return m
     }
@@ -74,7 +74,7 @@ struct PlanClientTests {
         let withRecs = PlanFixtures.evaluationJSON.replacingOccurrences(of: #""techniqueWarnings":[]"#,
             with: #""techniqueWarnings":[],"recommendations":[{"dayIndex":0,"exerciseIndex":1,"technique":"partials","reason":"lengthened_safe","challengeFit":true},{"dayIndex":0,"exerciseIndex":0,"technique":"future_thing","reason":"x"}]"#)
         stub.on("evaluateMesoPlan", .json(200, withRecs))
-        let m = BlockBuilderModel(client: PlanFixtures.planClient(stub))
+        let m = BlockBuilderModel(client: PlanFixtures.planClient(stub), coverageHints: false)
         await m.load()
         #expect(m.aiNotes[PlanFixtures.rowB] == "A bicepsz itt gyorsan regenerálódik.")
         let r = try #require(m.recommendation(day: 0, exercise: 1))
@@ -86,7 +86,7 @@ struct PlanClientTests {
         let stub = StubTransport()
         stub.on("listMesocycles", .json(200, "[]"))
         stub.on("getExerciseCatalog", .json(200, "[]"))
-        let m = BlockBuilderModel(client: PlanFixtures.planClient(stub))
+        let m = BlockBuilderModel(client: PlanFixtures.planClient(stub), coverageHints: false)
         await m.load()
         #expect(m.phase == .noBlock)
     }
@@ -95,7 +95,7 @@ struct PlanClientTests {
         let stub = StubTransport()
         stub.on("listMesocycles", .fail(URLError(.notConnectedToInternet)))
         stub.on("getExerciseCatalog", .fail(URLError(.notConnectedToInternet)))
-        let m = BlockBuilderModel(client: PlanFixtures.planClient(stub))
+        let m = BlockBuilderModel(client: PlanFixtures.planClient(stub), coverageHints: false)
         await m.load()
         #expect(m.phase == .failed(.offline))
     }

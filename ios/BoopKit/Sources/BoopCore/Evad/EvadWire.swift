@@ -183,6 +183,9 @@ public struct EvadPreview: Codable, Equatable, Sendable {
     public let todo: [EvadTodo]
     public let warnings: [EvadWarning]
     public let fingerprint: String
+    /// The running block's re-arranged week when the draft moves the gym days (mezo-r36n9.122) — the same
+    /// Elfogadom applies it; nil when the block does not change.
+    public let block: EvadBlockWeek?
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -191,6 +194,36 @@ public struct EvadPreview: Codable, Equatable, Sendable {
         todo = try c.decodeIfPresent([EvadTodo].self, forKey: .todo) ?? []
         warnings = try c.decodeIfPresent([EvadWarning].self, forKey: .warnings) ?? []
         fingerprint = try c.decodeIfPresent(String.self, forKey: .fingerprint) ?? ""
+        block = try c.decodeIfPresent(EvadBlockWeek.self, forKey: .block)
+    }
+}
+
+/// One day of the block's new week: `change` keep | move | add | drop; `weekday` 0 = hétfő (−1 = not a weekday);
+/// `fromWeekday` = where a moved day came from, or which day an added one repeats.
+public struct EvadBlockDay: Codable, Equatable, Sendable {
+    public let weekday: Int
+    public let title: String
+    public let change: String
+    public let fromWeekday: Int?
+    public init(weekday: Int, title: String, change: String, fromWeekday: Int?) {
+        self.weekday = weekday; self.title = title; self.change = change; self.fromWeekday = fromWeekday
+    }
+}
+
+public struct EvadBlockWeek: Codable, Equatable, Sendable {
+    public let mesocycleId: String
+    public let title: String
+    public let days: [EvadBlockDay]
+    public let dropped: [EvadBlockDay]
+    public init(mesocycleId: String, title: String, days: [EvadBlockDay], dropped: [EvadBlockDay]) {
+        self.mesocycleId = mesocycleId; self.title = title; self.days = days; self.dropped = dropped
+    }
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        mesocycleId = try c.decode(String.self, forKey: .mesocycleId)
+        title = try c.decodeIfPresent(String.self, forKey: .title) ?? ""
+        days = try c.decodeIfPresent([EvadBlockDay].self, forKey: .days) ?? []
+        dropped = try c.decodeIfPresent([EvadBlockDay].self, forKey: .dropped) ?? []
     }
 }
 

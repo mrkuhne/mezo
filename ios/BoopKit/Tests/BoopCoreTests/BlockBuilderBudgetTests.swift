@@ -14,7 +14,7 @@ struct BlockBuilderBudgetTests {
         stub.on("getExerciseCatalog", .json(200, PlanFixtures.catalogJSON))
         stub.on("listWeekProposals", .json(200, "[]"))
         stub.on("evaluateMesoPlan", .json(200, evaluation))
-        let m = BlockBuilderModel(client: PlanFixtures.planClient(stub), debounce: .milliseconds(20))
+        let m = BlockBuilderModel(client: PlanFixtures.planClient(stub), debounce: .milliseconds(20), coverageHints: false)
         m.minutesTarget = minutes
         await m.load()
         return m
@@ -68,7 +68,7 @@ struct BlockBuilderBudgetTests {
         stub.on("getExerciseCatalog", .json(200, PlanFixtures.catalogJSON))
         stub.on("listWeekProposals", .json(200, "[]"))
         stub.on("evaluateMesoPlan", .json(200, PlanFixtures.evaluationJSON))
-        let m = BlockBuilderModel(client: PlanFixtures.planClient(stub), debounce: .milliseconds(20))
+        let m = BlockBuilderModel(client: PlanFixtures.planClient(stub), debounce: .milliseconds(20), coverageHints: false)
         // The create path and the page's own task both ask: the second waits for the first.
         async let a: Void = m.load()
         async let b: Void = m.load()

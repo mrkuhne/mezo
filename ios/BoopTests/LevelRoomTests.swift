@@ -38,11 +38,10 @@ struct LevelRoomTests {
         #expect(levelMailboxMode(LevelMailbox(state: .authFailed)) == .authFailed)
         #expect(levelMailboxMode(LevelMailbox(state: .silent)) == .connected(silent: true))
         #expect(levelMailboxMode(nil) == .unknown)
-        #expect(levelGuideSteps.count == 6)
         let w = levelHeadWords(tab: .ma, mailbox: LevelMailbox(state: .none), digest: nil, digestState: .idle)
         #expect(w.verdict == "Még nincs postafiókod")
         let revoked = levelHeadWords(tab: .ma, mailbox: LevelMailbox(state: .authFailed), digest: nil, digestState: .idle)
-        #expect(revoked.verdict == "A postafiók nem enged be")
+        #expect(revoked.verdict == "A Google nem enged be")
         let failed = levelHeadWords(tab: .ma, mailbox: LevelMailbox(state: .connected), digest: nil, digestState: .failed(.offline))
         #expect(failed.verdict == "Most nem érem el a postát" && failed.sentence.contains("Nincs net"))
         let loading = levelHeadWords(tab: .ma, mailbox: LevelMailbox(state: .connected), digest: nil, digestState: .loading)
@@ -156,11 +155,23 @@ struct LevelRoomTests {
         #expect(levelRulesRemoving(rules, .silent, pattern: "divat")?.silent.isEmpty == true, "removal matches like add: case-insensitive")
     }
 
-    @Test func connectErrorNeverCarriesWhatHeTyped() {
-        #expect(levelConnectError(.rejected("MAIL_AUTH_FAILED")) == levelCredentialError)
-        #expect(levelConnectError(.rejected(nil)) == levelCredentialError)
-        #expect(levelConnectError(.offline) == levelErrorText(.offline))
-        #expect(levelCredentialError == "Nem sikerült belépni — ellenőrizd a címet és az alkalmazásjelszót.")
+    @Test func fiokokStatesFollowTheMailboxAndTheClientId() {
+        let id = "1-a.apps.googleusercontent.com"
+        #expect(levelFiokokView(nil) == .unknown)
+        #expect(levelFiokokView(LevelMailbox(state: .none, googleClientId: id)) == .signIn(canSignIn: true))
+        #expect(levelFiokokView(LevelMailbox(state: .none, googleClientId: nil)) == .signIn(canSignIn: false))
+        #expect(levelFiokokView(LevelMailbox(state: .disconnected, googleClientId: "")) == .signIn(canSignIn: false))
+        #expect(levelFiokokView(LevelMailbox(state: .authFailed, kind: .google, googleClientId: id)) == .revoked(canSignIn: true))
+        #expect(levelFiokokView(LevelMailbox(address: "a@b.hu", state: .connected, kind: .google)) == .connected(silent: false))
+        #expect(levelFiokokView(LevelMailbox(address: "a@b.hu", state: .silent, kind: .google)) == .connected(silent: true))
+    }
+
+    @Test func googleOutcomesHaveFixedWords() {
+        #expect(levelGoogleOutcomeLine(.connected) == nil)
+        #expect(levelGoogleOutcomeLine(.refused) == "A Google nem engedte a belépést")
+        #expect(levelGoogleOutcomeLine(.notConfigured) == "A Google-belépés még nincs beállítva a szerveren.")
+        #expect(levelGoogleOutcomeLine(.offline) == levelErrorText(.offline))
+        #expect(levelDetachMessage.contains("visszavonom"))
     }
 
     @Test func lastRunLineIsCountedFromTheServersFigures() {
@@ -212,7 +223,8 @@ struct LevelRoomTests {
     }
 
     @Test func noEmojiAndNoMezoInAnyFixedLine() {
-        let lines = [levelCredentialError, levelCooldownLine] + levelGuideSteps.flatMap { [$0.title, $0.body] }
+        let lines = [levelCooldownLine, levelGoogleRefusedLine, levelGoogleUnconfiguredLine, levelGoogleRevokedLine, levelReadOnlyLine,
+                     levelNeverLine, levelICloudLine, levelDetachMessage]
         for l in lines {
             #expect(!l.lowercased().contains("mezo"))
             #expect(l.unicodeScalars.allSatisfy { !$0.properties.isEmojiPresentation })

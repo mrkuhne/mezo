@@ -188,11 +188,23 @@ accepted adaptive correction or a concurrent accept between preview and accept t
   activated, the slots are replaced, the sleep need (+ anchor) written, the block attached (`adopt` the running one /
   `rerun` / `template` → started through the gate and linked via `goal_plan_link`), and a `season_revision` row.
 - **apply** (`PUT …/{id}`) — fingerprint check, then goal update + slots + sleep need + block in one transaction, plus a
-  revision. **While a training block is running (active season + an active mesocycle) the gym days are locked:** a
-  draft whose `gymDays` (as a set) differ from the current ones → **409 `SEASON_BLOCK_DAYS_LOCKED`** (previews stay
-  allowed; the phone disables the control) (the block's weekdays would no longer match). Sport
-  days, pace and gym time stay editable. The full "one accept moves the block too" (spec §5.12-1) waits for the
-  in-block day editor — follow-up `mezo-r36n9.122` (depends on `mezo-r36n9.116`).
+  revision. **One accept moves the running block too** (spec §5.12-1, `mezo-r36n9.122`, 2026-11-25): when the season is
+  active, a block runs and the draft's `gymDays` (as a set) differ from the current ones, the preview carries the
+  block's re-arranged week (`SeasonPreview.block`: each new gym day with `keep|move|add` + `fromWeekday`, and the
+  `dropped` days) and the *Ehhez ezt kell tenned* `block` line says the accept does it; apply then calls
+  `SeasonTrainPort.rearrangeBlock` right after `replaceSlots`, in the same transaction. The train side is
+  `train/service/BlockDayArrangeService` over the pure `BlockDayArrangement`: the days keep their rotation order
+  (sorted by weekday label) and are laid onto the new weekdays — same count = each day moves to the weekday at its
+  place (row and history kept, only `day_label` + `order_index` change); more days = one copy at a time, the
+  (source day, place) pair the **plan evaluator** likes best (muscles outside their band ×1000, heavy back-to-back days
+  ×10, total band distance; ties repeat the first day at the end) is inserted, written as a new template day through the
+  day editor's own `TrainService.replaceDayExercises`; fewer days = the kept subset (order kept) the evaluator likes
+  best (ties drop the last days), the dropped template day soft-deleted with its exercises. The draft's sport days are
+  the evaluator's sport weekdays. Refusals: no gym day left while the block runs → preview warning `block_no_day` +
+  apply **409 `SEASON_BLOCK_NEEDS_GYM_DAY`**; a day to drop whose workout is running → **409
+  `TRAIN_DAY_WORKOUT_RUNNING`** (nothing written). The fingerprint covers the block's days and exercises
+  (`blockState`: day id, label, place, each exercise's id / muscle / working sets), so a day-editor save between the
+  preview and the accept is a `SEASON_PREVIEW_STALE`. (S1's `SEASON_BLOCK_DAYS_LOCKED` lock is gone.)
 - **The season follows a newly started block** (Éves terv, `mezo-r36n9.113`). The season always shows the **running** block, so only a
   block that actually starts publishes train's `MesocycleStarted` — `TrainService.stampRun` for an **active** stamp
   (template start, re-run, the season's own start) and `activateMesocycle` on a real activation (a planned block
@@ -483,10 +495,14 @@ recipe names with „×n" when used n times. `amountText`: g / ml rounded **up**
 - **Overlaps** (`SeasonTrainPort.trainEvents` + `season_revision`): a block started, a deload week, kímélő days, a season
   change (the first revision — the activation — is skipped) inside the window (a deload week counts when
   `[week, week+6]` touches it, dated `max(week, from)`), each with a Hungarian line; shown live on
-  the running card and stored on the result.
+  the running card and stored on the result. Kind `other` is another change he logged himself inside the window
+  (through `SeasonExperimentSourcePort`: a supplement newly in the stack, or a journal line matching the detector's
+  „elkezdtem|mostantól" pattern, quoted ≤ 60 characters), never the experiment's own subject (same `subject_ref` /
+  normalised title), at most one per day and three in all, earliest first.
 - **Proposals** (`ExperimentProposalDetector`, through `SeasonExperimentSourcePort`): only with the season's
   `propose_experiments` on, no open proposal and nothing running; at most one per run; candidates of the last 3 days,
-  newest first, skipping any subject this season already had: a supplement newly in the stack (`protocol_item`; a row
+  newest first, skipping any subject this season already had (a journal subject by its normalised title — lowercase,
+  whitespace collapsed, trailing punctuation dropped — so an edited entry does not re-propose a dismissed one): a supplement newly in the stack (`protocol_item`; a row
   removed earlier still counts as "already in the stack"), a recipe or food eaten for the first time and again within 7
   days (`meal_item`), a journal line with „elkezdtem|mostantól" at a word start. The reason is one Hungarian sentence, no
   health value. **Isolated:** the list call and the daily pass are not one transaction — finishing commits first, the
@@ -494,7 +510,9 @@ recipe names with „×n" when used n times. `amountText`: g / ml rounded **up**
   listing is read.
 - **Keep-as-habit.** `keepExperiment` (done only, else 409 `EXPERIMENT_NOT_DONE`) sets `kept`; `SeasonContextRenderer`
   then adds `[Évad] Szokás (kísérletből megtartva): <title>` to every AI context; while one runs it adds
-  `[Évad] Kísérlet fut: <title> (<n>. nap / <length>)`.
+  `[Évad] Kísérlet fut: <title> (<n>. nap / <length>)`. Both are read in their own read-only `REQUIRES_NEW`
+  transaction inside a catch, so a failing read drops only these lines and never marks Boop's reply transaction
+  rollback-only.
 - **The old job is off** (spec §5.12-2): `mezo.techcore.cron.experiment-job.enabled: false`; the proactive experiment
   table stays readable, nothing proposes there any more.
 - **The wall** (iOS `evadCandidates(…, experiments:)`): the proposal is an `.improves` card („Indítsunk róla
@@ -513,7 +531,7 @@ Contract fragment [`api/feature/season/season.yml`](../../api/feature/season/sea
 | `getFirstSeasonDraft` | GET `/api/seasons/draft` | — | the first-season draft |
 | `previewSeasonDraft` | POST `/api/seasons/draft/preview` | — | no fingerprint |
 | `getSeasonOverview` | GET `/api/seasons/active/overview` | — | 404 = no active season |
-| `applySeason` | PUT `/api/seasons/{id}` | goal, slots, sleep, block, revision | body `SeasonApply {draft, fingerprint}`; 409 `SEASON_PREVIEW_STALE` / `SEASON_NOT_EDITABLE` / `SEASON_BLOCK_DAYS_LOCKED` |
+| `applySeason` | PUT `/api/seasons/{id}` | goal, slots, sleep, block, revision | body `SeasonApply {draft, fingerprint}`; 409 `SEASON_PREVIEW_STALE` / `SEASON_NOT_EDITABLE` / `SEASON_BLOCK_NEEDS_GYM_DAY` / `TRAIN_DAY_WORKOUT_RUNNING`; preview carries `block` |
 | `activateSeason` | POST `/api/seasons/{id}/activate` | see §3.3 | 409 `SEASON_NOT_EDITABLE` |
 | `closeSeason` | POST `/api/seasons/{id}/close` | status, summary, sleep base back | |
 | `previewSeason` | POST `/api/seasons/{id}/preview` | — | `{before, after, todo, warnings, fingerprint}` |
@@ -529,7 +547,7 @@ Contract fragment [`api/feature/season/season.yml`](../../api/feature/season/sea
 | `getAdherence` (S2) | GET `/api/seasons/adherence?from&to` | — | `SeasonAdherenceResponse {days[SeasonAdherenceDay], summary SeasonAdherence}`; with or without a season; 400 `VALIDATION_INVALID_VALUE` when `to < from` or > 62 days (§3.7) |
 
 Error codes (`messages_hu/en`): `SEASON_REQUIRED`, `SEASON_PREVIEW_STALE`, `SEASON_NOT_EDITABLE`,
-`SEASON_PROFILE_REQUIRED`, `SEASON_BLOCK_DAYS_LOCKED`, and `SEASON_ACTIVE_EXISTS` (reserved, not thrown — §3.3). Ownership always from the principal;
+`SEASON_PROFILE_REQUIRED`, `SEASON_BLOCK_NEEDS_GYM_DAY`, and `SEASON_ACTIVE_EXISTS` (reserved, not thrown — §3.3). Ownership always from the principal;
 another owner's id is 404.
 
 **Tables** (Liquibase `1.1.0/script/202611211000_mezo-r36n9.16_season.sql`, all in `ResetDatabase`):
@@ -636,6 +654,8 @@ Backend (`./mvnw test -Dtest='Season*IT,Season*Test,MesocycleGateIT,GoalPrescrip
   (`get_season` registered), `BoopPromptsTest`, `MealCoachPromptTest` (the season block present / absent).
 - `SeasonApiIT` (full HTTP flow incl. `getAdherence` and its 400, incoherent live goal still activates, another owner 404), `SeasonPortsIT`,
   `SeasonRepositoryIT` (one-active index, planned coexist, allowed recipes), `SeasonTodoRulesTest`,
+  `SeasonBlockRearrangeIT` + `BlockDayArrangementTest` (`mezo-r36n9.122`: the block week in the preview, more / fewer /
+  moved days on apply, the fingerprint covering the block, the running-workout and no-gym-day refusals),
   `SleepNeedRuleTest`, `GoalPrescriptionDraftIT`, `WeeklyScheduledActivityDraftTest`.
 
 S3: `MenuPlannerTest` (training day > rest day, scaled portions, 3-day dinner rule, repeats with few recipes, seeding,
@@ -665,8 +685,9 @@ the server's kímélő day and judged flag win, a day the server did not answer 
 - **No invented number**: a link or pillar without a computation is null and the phone says so.
 - **Adding a session does not raise the training-day kcal** (served-target model) — see §3.1; the owner sees it in
   *Heti összesen*, the sleep need and the bedtime. Do not "fix" this by adding movement to the train-day target.
-- **Gym days locked while the block runs** (409 `SEASON_BLOCK_DAYS_LOCKED`, the phone disables the controls) until the
-  in-block day editor lets one accept move the block too — `mezo-r36n9.122` (after `mezo-r36n9.116`).
+- **A gym-day change re-arranges the running block in the same accept** (`mezo-r36n9.122`, replaced S1's
+  `SEASON_BLOCK_DAYS_LOCKED` lock). An added day is a **repeat** of an existing day (the evaluator picks which and
+  where) — never a freshly generated session; a dropped day's exercises leave the block (its past workouts stay).
 - **Adapters season-side** to avoid feature cycles (§3); **ThreadLocal draft energy** in the goal calculator —
   `mezo-r36n9.124`.
 - **Gate off in tests**: a new block-starting IT needs no season; a test of the gate must opt in like `MesocycleGateIT`.

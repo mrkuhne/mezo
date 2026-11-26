@@ -30,6 +30,10 @@ public class MailMailboxEntity extends OwnedEntity {
     @Column(name = "address", nullable = false, length = 254)
     private String address;
 
+    /** How it is read: {@code imap} (app password) or {@code google} (sealed OAuth refresh token). */
+    @Column(name = "kind", nullable = false, length = 8)
+    private String kind = "imap";
+
     @Column(name = "secret_cipher")
     private byte[] secretCipher;
 

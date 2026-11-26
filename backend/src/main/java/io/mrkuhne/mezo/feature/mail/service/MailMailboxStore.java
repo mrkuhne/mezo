@@ -46,15 +46,26 @@ public class MailMailboxStore {
      */
     @Transactional
     public MailMailboxEntity connect(UUID owner, String address, MailCredentialCipher.Sealed sealed) {
+        return connect(owner, MailIntakeStore.KIND_IMAP, address, sealed);
+    }
+
+    /**
+     * As above for either kind; a Google connect always starts its cursors over (a fresh grant, a bounded 7-day
+     * first run), and switching the kind drops the old cursors too.
+     */
+    @Transactional
+    public MailMailboxEntity connect(UUID owner, String kind, String address, MailCredentialCipher.Sealed sealed) {
         MailMailboxEntity m = mailboxes.findByCreatedBy(owner).orElseGet(() -> {
             MailMailboxEntity e = new MailMailboxEntity();
             e.setCreatedBy(owner);
             return e;
         });
-        if (m.getId() != null && !address.equalsIgnoreCase(m.getAddress())) {
+        boolean google = MailIntakeStore.KIND_GOOGLE.equals(kind);
+        if (m.getId() != null && (google || !kind.equals(m.getKind()) || !address.equalsIgnoreCase(m.getAddress()))) {
             cursors.deleteAll(cursors.findByMailboxId(m.getId()));
             m.setLastRunAt(null);
         }
+        m.setKind(kind);
         m.setAddress(address);
         m.setSecretCipher(sealed.cipher());
         m.setSecretNonce(sealed.nonce());

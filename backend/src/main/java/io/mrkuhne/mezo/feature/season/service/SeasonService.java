@@ -23,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -117,9 +118,15 @@ public class SeasonService {
     @Transactional
     public SeasonEntity apply(UUID owner, UUID id, SeasonDraftJson draft, String fingerprint) {
         SeasonEntity s = previewService.requireEditable(owner, id);
-        requireBlockDaysUnchanged(owner, s, draft);
         if (fingerprint == null || !fingerprint.equals(previewService.fingerprint(owner, s))) {
             throw new SystemRuntimeErrorException(SystemMessage.error("SEASON_PREVIEW_STALE").build(), HttpStatus.CONFLICT);
+        }
+        // the block to move is decided before any write: the live slots are the "current" side
+        Optional<SeasonTrainPort.Block> moving = previewService.blockToMove(owner, s,
+            previewService.currentDraft(owner, s), draft);
+        if (moving.isPresent() && draft.gymDaysOrEmpty().isEmpty()) {
+            throw new SystemRuntimeErrorException(SystemMessage.error("SEASON_BLOCK_NEEDS_GYM_DAY").build(),
+                HttpStatus.CONFLICT);
         }
         SeasonPreviewService.Preview preview = previewService.preview(owner, id, draft);
         SeasonPreviewService.Computed after = previewService.compute(owner, s, draft);
@@ -130,6 +137,9 @@ public class SeasonService {
         if (SeasonEntity.STATUS_ACTIVE.equals(s.getStatus())) {
             // replaceSlots recomputes the (active) goal, so the updated pace lands in the prescription too.
             trainPort.replaceSlots(owner, draft);
+            // spec §5.12-1: the running block follows the new gym days in the same transaction
+            moving.ifPresent(b -> trainPort.rearrangeBlock(owner, b.id(), draft.gymDaysOrEmpty(),
+                SeasonPreviewService.sportDays(draft), SeasonPreviewService.deficit(draft)));
             writeSleep(owner, draft, preview.after().sleepNeedMin());
             s.setSleepNeedMin(preview.after().sleepNeedMin());
             if (draft.block() != null && !draft.block().equals(heldBlock)) {
@@ -302,22 +312,6 @@ public class SeasonService {
         // From now on the season holds that block: a later accept compares against "adopt <id>", never re-starts it.
         SeasonDraftJson d = s.getDraft();
         s.setDraft(d.withBlock(new SeasonDraftJson.Block("adopt", mesoId, null)));
-    }
-
-    /**
-     * Spec §5.12-1: while the season's block runs, its weekdays are the gym slots' — the gym DAYS are locked (409
-     * {@code SEASON_BLOCK_DAYS_LOCKED}); the gym time, sport, pace, target and length stay changeable. Previews stay
-     * allowed (the phone disables the control).
-     */
-    private void requireBlockDaysUnchanged(UUID owner, SeasonEntity s, SeasonDraftJson draft) {
-        if (!SeasonEntity.STATUS_ACTIVE.equals(s.getStatus()) || trainPort.activeMesocycle(owner).isEmpty()) {
-            return;
-        }
-        Set<Integer> now = new HashSet<>(previewService.currentDraft(owner, s).gymDaysOrEmpty());
-        if (!now.equals(new HashSet<>(draft.gymDaysOrEmpty()))) {
-            throw new SystemRuntimeErrorException(SystemMessage.error("SEASON_BLOCK_DAYS_LOCKED").build(),
-                HttpStatus.CONFLICT);
-        }
     }
 
     private void restoreSleepBase(UUID owner, SeasonEntity s) {

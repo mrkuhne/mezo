@@ -18,6 +18,10 @@ related: [season, penz, mail, fuel, pantry, recipe, dayclose, intention, journal
 
 # Boop — native iOS app — Feature Documentation
 
+> **2026-11-25 — Évad: one accept moves the running block too (`mezo-r36n9.122`, spec §5.12-1).** Módosítás no longer locks the gym days while a block runs: the preview shows **A blokkod új hete** and *Elfogadom* re-arranges the block (same count = days move in order; more = the evaluator's best repeat; fewer = the day whose loss the evaluator minds least) with the goal, slots and sleep need in one transaction — see the Módosítás entry in §2 and [`season.md`](season.md).
+
+> **2026-11-25 — Levél: Google sign-in to his own Gmail (`mezo-r36n9.38`/`.39`, owner 2026-11-25: no mirror mailbox, „Belépés Google-lel”; spec §12).** *Fiókok* is now one **Google button** (states *not connected · unconfigured · connected · auth_failed*), signing in through `ASWebAuthenticationSession` + PKCE (`BoopCore/Level/GooglePKCE.swift`, `ios/Boop/Level/GoogleSignIn`) with **no Google SDK**; the six-step mirror guide and app-password fields are gone from the app. Server side: [`mail.md`](mail.md) §3.10.
+
 > **2026-11-25 — No warm-ups in the app; kcal at the end of a workout (`mezo-r36n9.170`, owner 2026-11-25: „vegyük ki mindenhonnan a bemelegítő szettek mutatását… becslés, utána óra").** **Warm-ups:** `PlannedExercise.init` drops every `kind == .warmup` prescribed set (wire, cache and preview alike), keeping only `warmupCount` so a swap (`EdzesStore.swapExercise`) hands the server's count back untouched; `WorkoutSession.init` ignores logged warm-ups of an open instance from an older build; the player's „BEMELEGÍTŐ n/m" step line, the day-edit sheet's „Bemelegítő sorozat" stepper and the `more_warmups` candidate reason are gone, and the Új blokk minutes copy no longer says „bemelegítéssel". The server still prescribes warm-ups (its minutes model counts them) — only the app hides them. **kcal:** `WorkoutInstance.energy` (`WorkoutEnergy {kcal, source estimate|watch}`, from the new optional `WorkoutInstanceResponse.energy`) is read off today's `completedWorkout`; `EdzesStore.energy(for:)` accepts it only for today's completed instance of the same template day. To have it while the ceremony is open, `EdzesRoom` now **sends the finish when the ceremony opens** (`sendFinish`, guarded by `finishSent`), not on its „Kész"; closing the ceremony any way ends the workout locally. `WorkoutCeremony(energy:)` shows a glass line under the three counters — „kb. N kcal · becslés · az órád pontosítja" or „N kcal · az órád mérte" — fading in when it arrives, absent when unknown (nothing is computed on the phone). Server side: [`train.md`](train.md).
 
 > **2026-11-25 — Another day of the week, started today (`mezo-r36n9.163`, owner 2026-11-25: Tuesday's gym day was missed, Wednesday he does it live without the week slipping; approach 1 of three — not shifting the week, not only marking it missed; screenshots `docs/superpowers/specs/assets/masik-nap/`).** Under the Ma card a quiet row **„Másik napot csinálok ma"** (while nothing runs, today is not done and no other day is on the card — also on a rest day) opens `Edzes/OtherDaySheet.swift` „Melyik napot csinálod ma?": BoopCore `otherDayChoices` (`Train/OtherDay.swift`) lists the block's days with an id and at least one exercise that are not today's weekday and not done this week — missed first, the most recent first („KEDD · KIMARADT"), then the later ones („KÉSŐBB"). A pick → `EdzesStore.pick(_:)` reads `todayWorkout(templateSessionId:)` (the server's cross-day read, `mezo-p7rp`) and keeps `pickedDay` for every later `load` (never written to the offline cache as today's plan; offline → „Most nem érem el a szervert, a másik nap tervét nem tudom letölteni."); the card turns **PÓTLÁS** with „keddi nap, ma pótolod · …" (`isAnotherDay`: the plan's `dayLabel` is not today's weekday — also true after a relaunch while that day runs), Indítás starts it through the usual briefing and player, **„Mégis a mai napot csinálom"** goes back (`pick(nil)`). `EdzesStore.loadWeek(queued:)` reads the Mon–Sun history (`weekDoneTemplates`: completed instances of the week by template day + queued Napló bookings + a finished session on the phone), so **A heted ticks the template day done, not the date** (a Tuesday done on Wednesday ticked Wednesday before), and a done card names the workout actually done today (`doneTodayTitle`) when it was another weekday's. No server change. Preview: `-previewOtherDay sheet|pick`; the preview block now carries `weeklyReviewMode` (it had stopped decoding, so the preview's Blokk tab and the week were empty). App-target tests (`EdzesStoreTests` additions) run on the Xcode Mac (`mezo-r36n9.150`).
@@ -27,7 +31,7 @@ related: [season, penz, mail, fuel, pantry, recipe, dayclose, intention, journal
 > **2026-11-21 — Levél final review.** Signing out (or switching account) cancels every pending `wall.*` notification and clears the notifier's stored state (`WallNotifier.signedOut`, called from `RootView`).
 
 > **2026-11-21 — Boop Levél L1 + L2 (`mezo-r36n9.38` + `.39`), built on `feat/level-posta`.** The Levél area is real: the
-> morning post (four groups, scored deals, a learned taste, the mirror-Gmail setup in Fiókok) and the **first wall source
+> morning post (four groups, scored deals, a learned taste, the mirror-Gmail setup in Fiókok — replaced 2026-11-25 by Google sign-in) and the **first wall source
 > from a life area** — and the wall's ring (`WallNotifier`) is built for the first time, for every `.expires` source. See
 > **Levél** in §2 and [`mail.md`](mail.md); deploy and the phone install pending at the time of writing.
 
@@ -372,11 +376,18 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   - **Szabályok** (`LevelSzabalyok.swift`): *Amit gép soha nem olvas* (seed + own senders, add / remove), *Amit mindig
     megmutatok*, *Amit csendben eltészek*, the proposal row (*Igen, tedd félre*), one sentence on when the phone rings.
     Edits go through `LevelRules.ownerRequest` → `store.saveRules`; removal matches case-insensitively.
-  - **Fiókok** (`LevelFiokok.swift`): not connected → the six-step guide (`levelGuideSteps`) and the address +
-    app-password fields (a wrong password → 422 inline and the field is cleared; the password is only a parameter,
-    never in state or cache); connected → address, last run, count, state in words; *Frissítés most* (a 429 shows
-    "Most néztem át — pár perc múlva újra próbálhatod."); **Lecsatolás** behind a confirmation dialog presented at
-    page level in `LevelRoom` (§9 rule: no dialog inside scroll content).
+  - **Fiókok** (`LevelFiokok.swift`, rewritten 2026-11-25 for Google sign-in): **not connected** → the **„Belépés Google-lel”**
+    button, two lines (what Boop sees — Beérkezett + Spam, read-only — and what it never does: send, delete, mark read)
+    and the optional iCloud-forwarding line; **unconfigured** (`GET` returns `googleClientId: null`) → a plain note that
+    setup is pending, no button; **connected** → address, last run, count, state in words; *Frissítés most* (a 429 shows
+    "Most néztem át — pár perc múlva újra próbálhatod."); **auth_failed** → „A Google visszavonta a hozzáférést — lépj be
+    újra” with the button (the Levél head points there, no ring). Sign-in is `GoogleSignIn` (`ASWebAuthenticationSession`,
+    PKCE from `GooglePKCE`/`GoogleAuth` in BoopCore, redirect `com.googleusercontent.apps.<id>:/oauth2redirect`, scopes
+    `gmail.readonly openid email`, **no SDK, no new package**); the phone posts `{code, codeVerifier, redirectUri}` once via
+    `LevelStore.connectGoogle` (outcomes connected / refused / notConfigured / offline / failed) and never stores a token.
+    **Lecsatolás** (revokes at Google) sits behind a confirmation dialog presented at page level in `LevelRoom` (§9 rule: no
+    dialog inside scroll content). The old six-step mirror guide (`levelGuideSteps`) is removed; the legacy `PUT` connect
+    stays in the client/store, unused by the UI. Preview states: `googleNone|googleUnconfigured|connected|authFailed`.
   - **Data layer** (`BoopCore/Level/`): `LevelWire` (lenient — every enum has an `.unknown`, item arrays decode per
     element, ISO dates with or without fractions), `LevelClient` over `RawJSONClient` (not the generator),
     `LevelStore` (`@MainActor @Observable`, `ServerCache` `level/digest` per Budapest day read back today / yesterday /
@@ -652,9 +663,11 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     target is base + that day's movement + the goal balance, so a 5th session does **not** change the training-day
     kcal — it changes *Heti összesen*, the sleep need and the bedtime. *Elfogadom* only accepts the draft the preview
     on screen was made for (`evadCanAccept`); a 409 `SEASON_PREVIEW_STALE` re-previews with „Közben változott valami,
-    újraszámoltam." **While the season's block runs the gym days are locked** (`evadGymDaysLocked`: the *Edzések hetente*
-    stepper is disabled, `evadGymDaysLockedLine` explains — „Amíg fut az edzésblokk, az edzésnapok maradnak…");
-    sport days, pace and gym time stay editable; the server enforces the same with 409 `SEASON_BLOCK_DAYS_LOCKED`.
+    újraszámoltam." **A gym-day change moves the running block in the same accept** (`mezo-r36n9.122`, 2026-11-25,
+    replaced S1's lock): the preview's `block` (`EvadBlockWeek`) renders as **A blokkod új hete** (`NKBare` +
+    `NKList` of `evadBlockWeekRows`: „Szerda · Alsó A — Eddig kedden volt.", „Új nap: a hétfői edzés még egyszer.",
+    „Kimarad · Felső B …"); refusals `SEASON_BLOCK_NEEDS_GYM_DAY` and the shared `.dayWorkoutRunning` are worded in
+    `evadErrorText`. Server side: [`season.md`](season.md) §apply.
   - **Szabályok** (`EvadRules`): switches „Csak kevéssé feldolgozott ételek" (NOVA max), „Vasárnap este kérem a jövő
     heti menüt", „Könnyebb edzéshéten ne fogyjak", „A valódi égetésemmel számoljon", „Ajánljon kísérletet, ha valami
     újat kezdek" → `PUT …/rules`; read-only rows *Kiválasztott receptek*, *Blokk*, *Alvásigény* („az edzésből
@@ -949,6 +962,32 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
     row's small ismétlés / tartalék editor; *add*: two sub-muscles picked,
     *addOpen*: the dropdown open, *addEmpty*: nothing picked), `-previewBlokkDay N` (day page),
     `-previewBlokkSuggest fail` (suggestions 503 → the full list with its one-line note).
+  - **Coverage hints on the Izmok tab (`mezo-r36n9.114`, 2026-11-25; spec
+    [`2026-11-25-boop-hianyjelzes-design.md`](../superpowers/specs/2026-11-25-boop-hianyjelzes-design.md), look: spike
+    `spike/boop-hianyjelzes`, owner decision #59)** — after every successful evaluation `BlockBuilderModel` asks
+    `PlanClient.coverage(blockId:days:)` (`POST /api/train/mesocycles/{id}/coverage`, `getBlockCoverage`, on the lenient
+    `RawJSONClient`; `WireCoverage` drops an unreadable finding, a broken `lastTopSet` / `prescription` reads as absent) with
+    each non-empty draft day as its weekday (0 = Monday), its catalogue ids lower-cased and the evaluator's
+    `minutesEstimate`. The findings are keyed by group; between two answers only the **touched** groups hide (`weekday:catalogId`
+    counts compared with the answer's basis — a set step or a reorder touches nothing; an added / removed / swapped row
+    hides its own coarse group, a back row also the biceps, a chest / shoulder row also the triceps), the rest stay, and the
+    glance keeps its room while the last answer has findings (no 176 → 200 → 176 jump); a failed read is silent (no
+    findings, never an error). `coverageFinding(_:)` also hides a finding while the row taken with Hozzáadom is still on the
+    draft (deleted by hand → the hint returns; stale undo entries are dropped on the next answer) and one whose proposal
+    lands on the locked day; Tartás / untrained groups are the server's silence
+    (not re-filtered). Screens (`BlockBuilderPage`): the glance line under the body map *„N hiányzó kiegészítő mozgás ›"*
+    (steps to the next hinted card; the map shrinks to 176 pt while it shows), a hollow ring in the dot strip (amber when the
+    muscle is also outside its band), and `CoverageHintBox` on `BuilderMuscleCard` after the band proposal: hairline outline,
+    *KIEGÉSZÍTŐ MOZGÁS*, *miért?* (chevron toggle, the server's `whyText`), the verdict (head before „ — " white, the rest
+    quieter), the proposal as `ExercisePickCard` with `footnote` *„csütörtök · 3 × 10–15"* (prescription, else
+    `Prescription.fallback`), **Hozzáadom** (`acceptCoverage` → `BlockDraft.add(day:catalog:prescription:)` on the draft day of
+    the proposal's weekday; the box becomes *„Hozzáadva csütörtökhöz · visszavonom"*, `undoCoverage` removes that row; a
+    successful save clears the undo lines) and **Mást választok** (`DayEditSheet.add(day, muscles: finding.muscles)` on
+    `coverageOtherDay` — the proposal's day, else the first open day training the group). No proposal → *„Ehhez most nem
+    találtam olyan gyakorlatot, ami a termedben megvan…"* and only Mást választok. Never enables *Igazítsd a sávba*. DEBUG
+    (with `-previewBlokk YES -previewBlokkOpen epito`): `-previewBlokkHiany list|why|added|none` — the fixture week's
+    hamstrings hinge only (Építés) and its back rows only: Combhajlító + Hát hints, Mell silent (Tartás); *why*: the „miért?"
+    open and the card scrolled to it, *added*: the leg curl taken, *none*: no hint (`PlanPreviewTransport.coverage`).
   - **Új blokk — the new-block flow and the plan recommender (`mezo-r36n9.113`, S1 + S2, 2026-11-21; spec
     [`2026-11-20-boop-eves-terv-design.md`](../superpowers/specs/2026-11-20-boop-eves-terv-design.md) §5, plan
     [`2026-11-21-boop-eves-terv-s1-s2.md`](../superpowers/plans/2026-11-21-boop-eves-terv-s1-s2.md))** — the no-block state of

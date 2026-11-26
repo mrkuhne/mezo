@@ -22,6 +22,9 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * The season's rules as a short Hungarian block for every AI context (spec §5.10) — the chat snapshot
@@ -35,7 +38,9 @@ import org.springframework.stereotype.Service;
  * the number lines are left out, never guessed. {@link #overview}: week, course, last week's adherence, insights.
  *
  * <p>Never throws: a context renderer must not break a chat turn, so a failure logs and renders nothing. Not
- * transactional on purpose — it joins the caller's transaction and calls no proxied method that throws by design.
+ * transactional on purpose — it joins the caller's transaction and calls no proxied method that throws by design;
+ * the experiment lines are read in their own read-only {@code REQUIRES_NEW} transaction, so a repository fault there
+ * leaves those lines out without marking the caller's (Boop's reply) transaction rollback-only.
  */
 @Slf4j
 @Service
@@ -52,6 +57,7 @@ public class SeasonContextRenderer {
     private final SeasonPreviewService previewService;
     private final SeasonOverviewService overviewService;
     private final SeasonExperimentRepository experimentRepository;
+    private final PlatformTransactionManager transactionManager;
 
     /** The season's rules; {@code ""} without an active season. */
     public String render(UUID owner, LocalDate today) {
@@ -105,23 +111,31 @@ public class SeasonContextRenderer {
     }
 
     /** Évad S4: each kept experiment as a habit rule, and the running one with its day (never throws: a failure
-     *  leaves the lines out). */
+     *  leaves the lines out; its own read-only transaction keeps a fault away from the caller's). */
     private List<String> experiments(UUID owner, SeasonEntity s, LocalDate today) {
         try {
-            List<String> out = new ArrayList<>();
-            for (SeasonExperimentEntity e : experimentRepository.findBySeasonIdAndKeptTrueOrderByCreatedAtAsc(s.getId())) {
-                out.add("Szokás (kísérletből megtartva): " + title(e.getTitle()));
-            }
-            experimentRepository.findBySeasonIdAndStatus(s.getId(), SeasonExperimentEntity.STATUS_RUNNING).stream()
-                .filter(e -> e.getStartDate() != null)
-                .findFirst()
-                .ifPresent(e -> out.add("Kísérlet fut: " + title(e.getTitle()) + " (" + ExperimentService.dayIndex(e, today)
-                    + ". nap / " + e.getLengthDays() + ")"));
-            return out;
+            TransactionTemplate own = new TransactionTemplate(transactionManager);
+            own.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            own.setReadOnly(true);
+            List<String> lines = own.execute(st -> experimentLines(s, today));
+            return lines == null ? List.of() : lines;
         } catch (RuntimeException e) {
             log.warn("Season context: experiments unavailable for {}", owner, e);
             return List.of();
         }
+    }
+
+    private List<String> experimentLines(SeasonEntity s, LocalDate today) {
+        List<String> out = new ArrayList<>();
+        for (SeasonExperimentEntity e : experimentRepository.findBySeasonIdAndKeptTrueOrderByCreatedAtAsc(s.getId())) {
+            out.add("Szokás (kísérletből megtartva): " + title(e.getTitle()));
+        }
+        experimentRepository.findBySeasonIdAndStatus(s.getId(), SeasonExperimentEntity.STATUS_RUNNING).stream()
+            .filter(e -> e.getStartDate() != null)
+            .findFirst()
+            .ifPresent(e -> out.add("Kísérlet fut: " + title(e.getTitle()) + " (" + ExperimentService.dayIndex(e, today)
+                + ". nap / " + e.getLengthDays() + ")"));
+        return out;
     }
 
     private Optional<SeasonPreviewService.Computed> compute(UUID owner, SeasonEntity s, SeasonDraftJson draft) {

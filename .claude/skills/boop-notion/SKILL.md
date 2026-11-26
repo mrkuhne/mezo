@@ -29,7 +29,21 @@ live under *Adatbázisok (ne nyúlj hozzá)*; the dashboard pages (Jegyek, Kézi
 
 Privacy: no personal health values, ever. Examples are invented and marked „például”.
 
-## 2. Push to Notion
+## 2. Push to Notion — once, in a small worker (token diet, mezo-hsc75)
+
+Every Notion call made in the main session re-reads the whole (often 200k+ token) conversation — measured at ~10%
+of all tokens across ten sessions. So:
+
+- **Batch.** Editing the sources (§1) is cheap — do it as things happen. **Push once**, at the end of the session
+  (or before the Hungarian report), not after every ticket change. The start-of-session `check` stays in the main
+  session (one command, no MCP calls); a lagging Notion found there is pushed by the same worker.
+- **Delegate.** The main session never calls the Notion MCP tools itself. Dispatch one fresh subagent:
+  `Agent(subagent_type: "general-purpose", model: "sonnet", description: "Boop Notion sync", prompt: "Follow
+  .claude/skills/boop-notion/SKILL.md §2 in <worktree path>: plan → apply → record until check exits 0. Do not edit
+  sources, do not commit. Report: ops applied, final check output.")`. Then commit `_notion-state.json` yourself (§3).
+  A worker that stalls is resumed with `SendMessage`, not re-dispatched.
+
+The worker's loop:
 
 ```bash
 node scripts/boop-notion-sync.mjs plan          # what is pending (writes docs/boop-handbook/.last-plan.json)
@@ -46,8 +60,7 @@ For each pending op:
 
 `<db>` is one of `jegyek`, `dontesek`, `kiadasok`, `kezikonyv`, `funkciok`. Create in that order (tickets first, so relations
 resolve). Rows created in the same pass carry their relations on the **next** `plan` as updates — repeat
-`plan → apply → record` until `node scripts/boop-notion-sync.mjs check` exits 0. Large passes (the whole handbook)
-go to a subagent with this skill as its brief.
+`plan → apply → record` until `node scripts/boop-notion-sync.mjs check` exits 0.
 
 `plan` also warns about bd issues missing an overlay row and about orphans (rows in Notion whose source is gone:
 archive them in Notion, then delete the record from `_notion-state.json`).

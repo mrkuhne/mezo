@@ -19,6 +19,9 @@ import BoopDesign
 //   -previewBlokkDay N                     the Napok tab's day page (0 = the first day)
 //   -previewBlokkMinutes 60                the builder's session-minutes target (the heti keret line under the head)
 //   -previewBlokkWhy back                  the builder opens that muscle's „miért?" sheet
+//   -previewBlokkHiany list|why|added|none the Izmok tab's coverage hints (mezo-r36n9.114) on a week whose hamstrings
+//                                          only hinge and whose back only rows: Combhajlító + Hát hints, Mell silent
+//                                          (Tartás); why: the „miért?" open, added: the leg curl taken, none: no hint
 //   -previewUjBlokk YES                    the new-block flow (mezo-r36n9.113) on season days H·K·Cs·P
 //   -previewUjBlokkScreen alapok|tele|jeloltek|nemfer|letrehozva   one state of it (letrehozva: the builder on the
 //                                          block just created, with „Mégsem, eldobom")
@@ -168,6 +171,7 @@ final class PlanPreviewTransport: ClientTransport, @unchecked Sendable {
             case "closeMesocycle": return block
             case "discardMesocycle": return [String: Any]()
             case "getBlockExerciseSuggestions": return Self.suggestions(sent ?? [:])
+            case "getBlockCoverage": return Self.coverage(sent ?? [:])
             case "previewYearPlan", "createYearPlan", "getActiveYearPlan", "patchYearBlock", "archiveYearPlan":
                 return EvesTervPreviewServer.answer(operationID, path: request.path, sent: sent)
             case "listWeekProposals": return state == "empty" ? [] : [proposal()]
@@ -224,6 +228,67 @@ final class PlanPreviewTransport: ClientTransport, @unchecked Sendable {
     }
 
     static func initialBlock() -> [String: Any] {
+        UserDefaults.standard.string(forKey: "previewBlokkHiany") == nil ? baseBlock() : hianyBlock()
+    }
+
+    /// `-previewBlokkHiany`: the hamstrings at Építés trained only with hip hinges (Kedd 4, Csütörtök 2), the back only
+    /// with rows (no pulldown on Monday) — the two gaps the coverage fixture reports.
+    private static func hianyBlock() -> [String: Any] {
+        var b = baseBlock()
+        var tiers = b["musclePriorities"] as? [String: String] ?? [:]
+        tiers["ham"] = "grow"
+        b["musclePriorities"] = tiers
+        var days = b["days"] as? [[String: Any]] ?? []
+        func edit(_ id: String, _ change: (inout [[String: Any]]) -> Void) {
+            guard let i = days.firstIndex(where: { $0["id"] as? String == id }) else { return }
+            var list = days[i]["exercises"] as? [[String: Any]] ?? []
+            change(&list)
+            days[i]["exercises"] = list
+        }
+        edit("d-h") { $0.removeAll { $0["id"] as? String == "h2" } }
+        edit("d-k") { list in
+            if let i = list.firstIndex(where: { $0["id"] as? String == "k2" }) {
+                list[i] = ex("k2", "Romanian Deadlift", "ham", 4, cat: "c-free-compound")
+            }
+        }
+        edit("d-c") { $0.insert(ex("c5", "45° Back Extension", "ham", 2, type: "isolation", cat: "c-stable"), at: 3) }
+        b["days"] = days
+        return b
+    }
+
+    /// FIXTURE for the coverage read (mezo-r36n9.114): the server's fixed phrases (`CoverageRules`), one proposal each
+    /// from the fixture catalogue. A gap closes once its proposed exercise is in the sent week.
+    static func coverage(_ req: [String: Any]) -> [String: Any] {
+        guard UserDefaults.standard.string(forKey: "previewBlokkHiany") != "none" else { return ["findings": []] }
+        let days = req["days"] as? [[String: Any]] ?? []
+        let ids = Set(days.flatMap { ($0["catalogIds"] as? [String]) ?? [] }.map { $0.lowercased() })
+        func item(_ name: String) -> [String: Any] { catalog.first { $0["name"] as? String == name } ?? [:] }
+        func on(_ weekday: Int) -> Int {
+            days.contains { $0["dayIndex"] as? Int == weekday } ? weekday : (days.first?["dayIndex"] as? Int ?? 0)
+        }
+        func finding(group: String, code: String, pattern: String, muscles: [String], verdict: String, why: String,
+                     exercise: String, reason: String, day: Int, reps: (Int, Int)) -> [String: Any]? {
+            let e = item(exercise)
+            guard let id = e["id"] as? String, !ids.contains(id.lowercased()) else { return nil }
+            return ["group": group, "code": code, "missingPattern": pattern, "muscles": muscles, "verdictText": verdict, "whyText": why,
+                    "proposal": ["exercise": e, "reasonText": reason, "signals": ["same-role"], "lastTopSet": NSNull(),
+                                 "prescription": ["workingSets": 3, "repMin": reps.0, "repMax": reps.1, "targetRIR": 2, "restSec": 90],
+                                 "dayIndex": on(day)]]
+        }
+        let findings = [
+            finding(group: "ham", code: "HAM_NO_KNEE_FLEXION", pattern: "knee-flexion", muscles: ["ham"],
+                    verdict: "Hiányzik a lábhajlítás — a combhajlítót most csak csípőből hajlítással edzed.",
+                    why: "A combhajlító két ízületen dolgozik: a csípőből hajlítás a csípő felől, a lábhajlítás a térd felől terheli. A kettő együtt adja a teljes munkát.",
+                    exercise: "Leg Curl", reason: "Stabil, könnyű benne terhelni — izomépítéshez jó.", day: 3, reps: (10, 15)),
+            finding(group: "back", code: "BACK_NO_VERTICAL_PULL", pattern: "vertical-pull", muscles: ["back-wide"],
+                    verdict: "Hiányzik a felülről húzás — a hátadat most csak evezéssel edzed.",
+                    why: "Az evezés inkább a hát közepét, a felülről húzás inkább a hát szélességét építi. A kettő együtt adja a teljes hátat.",
+                    exercise: "Lat Pulldown · Pronated", reason: "Ezen a héten kevés jut erre az izomra.", day: 0, reps: (8, 12)),
+        ].compactMap { $0 }
+        return ["findings": findings]
+    }
+
+    private static func baseBlock() -> [String: Any] {
         ["id": "b0000000-0000-4000-8000-0000000000aa", "title": "V-forma és kar", "shortTitle": "V-forma és kar", "status": "active",
          "weeks": 6, "currentWeek": 2, "phaseCurve": ["MEV", "MAV", "MAV", "MAV", "MRV", "Deload"],
          "musclePriorities": ["back": "emphasize", "biceps": "emphasize", "shoulder": "maintain", "chest": "maintain",

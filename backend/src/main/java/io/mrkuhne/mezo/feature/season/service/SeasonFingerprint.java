@@ -15,7 +15,7 @@ import java.util.Optional;
 /**
  * The state a season preview was computed against (spec §5.3, Review Focus 2) — pure. SHA-256 over the season's
  * status, window and accepted draft, its goal (accepted adjustment and overrides included), the weekly slots, the latest weight trend point and weigh-in, the sleep goal and the
- * running block. Any of them moving between the preview and the accept makes the accept a 409
+ * running block with its days and exercises (mezo-r36n9.122: a gym-day change re-arranges them in the same accept). Any of them moving between the preview and the accept makes the accept a 409
  * {@code SEASON_PREVIEW_STALE}, so a preview opened before a weigh-in is never applied after it.
  */
 public final class SeasonFingerprint {
@@ -25,7 +25,8 @@ public final class SeasonFingerprint {
 
     public static String of(SeasonEntity s, Optional<SeasonGoalPort.GoalView> goal, SeasonTrainPort.Schedule slots,
                             List<SeasonMetricsPort.TrendPoint> trend, String latestWeighIn,
-                            SeasonSleepPort.SleepGoal sleep, Optional<SeasonTrainPort.Block> block) {
+                            SeasonSleepPort.SleepGoal sleep, Optional<SeasonTrainPort.Block> block,
+                            String blockState) {
         StringBuilder b = new StringBuilder();
         b.append("season|").append(s.getId()).append('|').append(s.getStatus()).append('|').append(s.getStartDate())
             .append('|').append(s.getWeeks()).append('|').append(s.getSleepNeedMin()).append('|').append(s.getDraft())
@@ -41,6 +42,7 @@ public final class SeasonFingerprint {
         b.append("sleep|").append(sleep).append('\n');
         block.ifPresent(m -> b.append("block|").append(m.id()).append('|').append(m.status()).append('|')
             .append(m.startDate()).append('|').append(m.weeks()).append('\n'));
+        b.append("days|").append(blockState).append('\n');
         return sha256(b.toString());
     }
 

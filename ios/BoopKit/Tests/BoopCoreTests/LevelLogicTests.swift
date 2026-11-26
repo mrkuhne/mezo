@@ -176,7 +176,7 @@ struct LevelLogicTests {
 
     @Test func errorTextNamesTheCooldownAndAuthFailure() {
         #expect(levelErrorText(.conflict("MAIL_RUN_COOLDOWN")).contains("várj"))
-        #expect(levelErrorText(.rejected("MAIL_AUTH_FAILED")).contains("jelszót"))
+        #expect(levelErrorText(.rejected("MAIL_AUTH_FAILED")).contains("Google"))
         #expect(!levelErrorText(.server).contains("Mezo"))
     }
 

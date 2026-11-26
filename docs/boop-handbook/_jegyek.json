@@ -1295,8 +1295,9 @@
     "terulet": [
       "Terv"
     ],
-    "mit_kapsz": "Ha az Évadban másik napokra vagy több edzésre váltasz, egyetlen elfogadással a futó edzésblokk is átrendeződik. Addig, amíg fut a blokk, az edzésnapok zárolva vannak.",
-    "szulo": "mezo-r36n9.16"
+    "mit_kapsz": "Ha az Évadban másik napokra vagy több/kevesebb edzésre váltasz, az előnézet napról napra megmutatja a futó edzésblokk új hetét, és egyetlen „Elfogadom” a blokkot is átrendezi a kalóriával és az alvással együtt. Nincs többé zárolt edzésnap.",
+    "szulo": "mezo-r36n9.16",
+    "munkamenet": "evad-blokk-napok"
   },
   "mezo-r36n9.123": {
     "cim": "Évad: korábbi évadok és a mostani súly az új évad céljánál",
@@ -1763,7 +1764,27 @@
       "Ma",
       "Edzés"
     ],
-    "mit_kapsz": "Bármire beállítható emlékeztető, mint az Apple Emlékeztetők appjában (pl. vitamin 8:00-kor): ébresztőként egész képernyőn szól, némításon és alvó módon is, „Kész” és szundi gombbal, a kiegészítőknél a „Bevettem” be is írja a napodba. Utána widgetek a főképernyőre és a zárolt képernyőre (a következő teendő, a mai nap kipipálható emlékeztetőkkel, a napközbeni kérdés), és edzés közben a zárolt képernyőn a gyakorlat és a pihenő visszaszámlálója gombokkal.",
+    "mit_kapsz": "Bármire beállítható emlékeztető, mint az Apple Emlékeztetők appjában (pl. vitamin 8:00-kor): ébresztőként egész képernyőn szól, némításon és alvó módon is, „Kész” gombbal (az elnémítás csak csend), a kiegészítőknél a „Bevettem” be is írja a napodba. Utána widgetek a főképernyőre és a zárolt képernyőre (a következő teendő, a mai nap kipipálható emlékeztetőkkel, a napközbeni kérdés), és edzés közben a zárolt képernyőn a gyakorlat és a pihenő visszaszámlálója gombokkal.",
     "munkamenet": "boop-ebreszto-widget"
+  },
+  "mezo-r36n9.174": {
+    "cim": "Edzés: egy évad-módosítással későbbi napra költözött, már elvégzett edzés ne jelenjen meg újra ugyanazon a héten",
+    "tipus": "Hiba",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Ha az Évadban átrakod az edzésnapokat, és egy ezen a héten már megcsinált edzésnap a hét egy későbbi napjára költözik, Boop nem kínálja fel újra ugyanazon a héten.",
+    "szulo": "mezo-r36n9.15"
+  },
+  "mezo-r36n9.175": {
+    "cim": "Belső: az iPhone-os szerződésmásolat frissítése",
+    "tipus": "Karbantartás",
+    "szakasz": "B6 A Terv",
+    "terulet": [
+      "Terv"
+    ],
+    "mit_kapsz": "Belső rendrakás, neked nem látszik: a telefon szerződésmásolata egyezik a szerverével.",
+    "szulo": "mezo-r36n9.16"
   }
 }

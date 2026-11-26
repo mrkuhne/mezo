@@ -37,6 +37,15 @@ public final class SeasonTodoRules {
      */
     public static List<Todo> todo(SeasonNumbersJson before, SeasonNumbersJson after,
                                   SeasonDraftJson from, SeasonDraftJson to, Integer refitFromDow) {
+        return todo(before, after, from, to, refitFromDow, false);
+    }
+
+    /**
+     * @param blockMoves the running block is re-arranged by the same accept (mezo-r36n9.122) — the block line then
+     *                   says so instead of sending him to the builder
+     */
+    public static List<Todo> todo(SeasonNumbersJson before, SeasonNumbersJson after,
+                                  SeasonDraftJson from, SeasonDraftJson to, Integer refitFromDow, boolean blockMoves) {
         List<Todo> out = new ArrayList<>();
         int kcalDiff = after.trainDayKcal() - before.trainDayKcal();
         if (kcalDiff >= KCAL_STEP) {
@@ -52,7 +61,10 @@ public final class SeasonTodoRules {
                 "%s körül feküdj le. Az esti emlékeztetőt is ehhez igazítom.".formatted(after.bedtime())));
         }
         int gymTo = to.gymDaysOrEmpty().size();
-        if (gymTo != from.gymDaysOrEmpty().size()) {
+        if (blockMoves) {
+            out.add(new Todo("block", "Az edzésblokk", "A futó blokkod napjai az új edzésnapokra kerülnek, lent látod,"
+                + " melyik hova. Ezt is az Elfogadom teszi meg."));
+        } else if (gymTo != from.gymDaysOrEmpty().size()) {
             out.add(new Todo("block", "Az edzésblokk",
                 "A blokkot át kell tenni heti %d napra. Az Edzés → Blokk részben megmutatom a javaslatot, és te döntesz."
                     .formatted(gymTo)));

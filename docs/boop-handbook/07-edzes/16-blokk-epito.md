@@ -29,6 +29,24 @@ Ha a hét már életbe lépett, a kártya azt mutatja: „Indulhat, a hét szám
   a sáv és a te heti számod, alatta kis címkéken a sáv és hogy melyik napon hány sorozat van (például „Sáv 14–22 · Hétfő 6 ·
   Csütörtök 5”), a kártya alján pedig mindig ott van, **miért ez a sáv** (a szint és a sport alapján), és ha az izom kilóg a sávjából, egy **konkrét javaslat** („+1 Lehúzás
   (hétfő)”) **Elfogadom** és **miért?** gombbal.
+
+  **Hiányzó kiegészítő mozgás (2026-11-25).** Ha egy izmodat a héten csak egyféle mozgással edzed, és hiányzik mellőle a
+  kiegészítő párja, a kártyán egy halk, vékony keretes doboz jelenik meg **„KIEGÉSZÍTŐ MOZGÁS”** fejjel. Benne egy mondat, mi
+  hiányzik (például „Hiányzik a lábhajlítás — a combhajlítót most csak csípőből hajlítással edzed.”), jobb felül egy
+  **„miért?”**, ami egy-két mondatban elmondja, miért számít, és **egy javasolt gyakorlat** ugyanazzal a kis kártyával, mint a
+  hozzáadó lapon (kép, név, izomrész, egy rögzített mondat az okáról), alatta a nap és a sorozatok: „csütörtök · 3 × 10–15”
+  (például). Két gomb:
+  - **Hozzáadom** — a gyakorlat a megnevezett nap végére kerül az edzésmód számaival; a doboz helyén ennyi marad: „Hozzáadva
+    csütörtökhöz · **visszavonom**”. A visszavonás leveszi a sort. A hozzáadott sor ugyanúgy a „Mentés”-sel megy el, mint
+    bármelyik másik.
+  - **Mást választok** — a megszokott hozzáadó lap nyílik meg ugyanarra a napra, az izomválasztóban már bejelölve a hiányzó
+    mozgás izomrésze (például „Combhajlító”).
+
+  Ha a termedben nincs hozzá megfelelő gyakorlat, a doboz ezt mondja, és csak a „Mást választok” gomb marad. A test képe alatt
+  egy csendes sor számolja, hány ilyen jelzés van („2 hiányzó kiegészítő mozgás ›”) — rákoppintva a következő ilyen izomra
+  ugrik —, a pöttysorban pedig az ilyen izom üres karikát kap. **Csak tanács:** sosem kapcsolja be az „Igazítsd a sávba”
+  gombot, sosem akadályozza a mentést, és nem szól, ha az izom Tartás szinten van, ha a blokk nem edzi, vagy ha a futó edzés
+  napjára javasolna. Ha nincs net vagy a szerver nem válaszol, egyszerűen nincs jelzés — hibaüzenet nincs.
 - **Napok** — naponként egy lap: becsült edzéshossz, aznap van-e sport, izomcsoportonkénti sorozatszám (a felső címkék
   továbbra is egész izomcsoportok), és gyakorlatonként egy **három soros sor** (2026-11-21):
   - **felül** a ≡ fogó, a gyakorlat neve és a „⋯” menü;
@@ -128,10 +146,21 @@ ha a „Nincs mit menteni” felirat nem fér el a gombon, helyette „Nincs vá
    az élre kerüljön), semmi kiválasztva esetén a hét sáv alatti izomcsoportjaira —, a blokk edzésmódjának számaival (sorozat, ismétlés, tartalék) együtt, így a heti
    sorozatszámok már **mentés előtt** pontosak. Egy új gyakorlat tehát nem „3 × 10”-ként érkezik, hanem úgy, ahogy az edzésmód
    beállítaná.
-8. **Egyetlen „Mentés” van**: a gyakorlat-, sorrend- és beállításváltozások a többivel együtt mennek el. A változtatás **a
+8. **A hiányjelzés is a szerveré.** Minden mérés után a telefon elküldi a piszkozat napjait (melyik napon mely gyakorlatok
+   vannak, és mennyi a becsült edzéshossz), a szerver pedig egy rögzített szabálytáblából mondja meg, mi hiányzik.
+   **Mit figyel:** combhajlító — csípőből hajlítás és lábhajlítás együtt; comb — guggolás vagy kitörés mellé lábnyújtás; hát
+   — felülről húzás és evezés együtt; bicepsz és tricepsz — ha csak a húzásokban, illetve nyomásokban segít be, egy külön
+   hajlítás vagy nyújtás; váll — fej fölé nyomás mellé oldalemelés; mell — nyomás mellé tárogatás (ez a leghalkabb).
+   Izmonként legfeljebb egy, összesen legfeljebb három jelzés. A javasolt gyakorlatot ugyanaz a rangsor választja, mint a
+   hozzáadó lapon (a termed eszközei, ami korábban fájt, a cél), a napot pedig azok közül, amelyek már edzik az izmot, a
+   legrövidebb edzésű. A saját gyakorlataidat nem ismeri, ezért ha egy izomnál ilyen van, arról hallgat. Amíg a gyakorlatok
+   listáján változtatsz, a jelzések eltűnnek, és a friss válasszal térnek vissza.
+9. **Egyetlen „Mentés” van**: a gyakorlat-, sorrend- és beállításváltozások a többivel együtt mennek el. A változtatás **a
    következő edzéstől él**; a már megkezdett edzést nem írja át.
 
 ## Miért így
+- A hiányjelzés **jelzés és egy koppintásos hozzáadás** együtt — a tulajdonos döntése (#59, 2026-11-25), a kinézet a
+  szimulátorban jóváhagyva („Jó, építsd”).
 - A tulajdonos döntései: az app **javasol, te döntesz**; a heti átnézés gyakorlatonként, „Elfogadom átnézés nélkül” gombbal; a
   képernyők csak a telefonon készülnek; a kinézet a szimulátorban jóváhagyott (7 kör, 2026-11-17).
 - A futó blokkon is menthető az edzésmód, a technikák és a jóváhagyás módja — a tulajdonos döntése, 2026-11-19 („Igen, A változat”),
@@ -155,8 +184,8 @@ ha a „Nincs mit menteni” felirat nem fér el a gombon, helyette „Nincs vá
 
 ## Mi jön még
 - A technika és a kihívás edzés közben (lépésenként mit csinálj, a legyőzendő szám) — külön jegy, a technika-tervező után.
-- **Lefedettség-jelzések:** az építő szól, ha a blokkból hiányzik egy kiegészítő mozgás (például hátsó vállat vagy alkart érő
-  gyakorlat), és egy **„Hozzáadom”** gombbal ugyanaz a hozzáadó lap nyílik meg — a következő jegy.
+- A hiányjelzés elhalasztása („Most nem”), az összetett és izolált gyakorlatok arányának figyelése és a ténylegesen
+  elvégzett edzésekből számolt egyensúly — később, ha kéred.
 - Az éves térkép és a követése már él: lásd [Éves terv](19-eves-terv.md).
 
 ## Mi marad ki
