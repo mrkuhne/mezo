@@ -1228,7 +1228,7 @@
     },
     "kezikonyv:07-edzes/16-blokk-epito": {
       "page_id": "41d8968e-752b-81cc-818e-dc11d0726e8f",
-      "hash": "bb205fcabcd5"
+      "hash": "47d27a6546bf"
     },
     "kiadasok:78e52679e": {
       "page_id": "41d8968e-752b-8127-9b15-d0288d125bd0",
@@ -1444,7 +1444,7 @@
     },
     "jegyek:mezo-r36n9.114": {
       "page_id": "41e8968e-752b-8120-9f47-ff64d36d5325",
-      "hash": "1fe29f06bc78"
+      "hash": "41f83baf40de"
     },
     "jegyek:mezo-r36n9.118": {
       "page_id": "41e8968e-752b-8158-8e7e-f33c9c9c7c21",
@@ -1516,7 +1516,7 @@
     },
     "jegyek:mezo-r36n9.122": {
       "page_id": "41e8968e-752b-8190-a8bd-feb5a12420e2",
-      "hash": "6749a5d9a156"
+      "hash": "09b332921cc6"
     },
     "kiadasok:a1b15069c": {
       "page_id": "41e8968e-752b-814c-96b3-c1985d14a5ef",
@@ -3197,6 +3197,10 @@
     "kiadasok:fc06d0969": {
       "page_id": "4238968e-752b-8154-825f-c79836229ed3",
       "hash": "97961ffd560d"
+    },
+    "kiadasok:435f2e444": {
+      "page_id": "4248968e-752b-8158-b209-d61e66f5a48c",
+      "hash": "65fd65248af8"
     }
   }
 }

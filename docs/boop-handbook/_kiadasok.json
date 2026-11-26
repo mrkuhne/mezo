@@ -961,5 +961,20 @@
       "mezo-r36n9.136"
     ],
     "mi_valtozott": "Ha egy kísérlet alatt új étrend-kiegészítőt kezdesz, vagy a naplóba azt írod, hogy elkezdtél valamit, a kísérlet ezt is kiírja „közben más is változott” jelzésként, és az eredménynél is figyelembe veszi. Egy ritka szerverhiba már nem akaszthatja meg Boop válaszát, és ha átírsz egy naplóbejegyzést, Boop nem javasolja újra ugyanazt a kísérletet."
+  },
+  "435f2e444": {
+    "cim": "Hiányjelzés a blokképítőben: a kimaradt kiegészítő mozgás egy koppintással pótolható",
+    "datum": "2026-11-26",
+    "verzio": "",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app",
+      "Háttérrendszer"
+    ],
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.114"
+    ],
+    "mi_valtozott": "A blokképítő Izmok lapján Boop szól, ha egy izomnál a heti tervből hiányzik egy hasznos kiegészítő mozgás — például csípőből hajlítás van, de lábhajlítás nincs. A test képe alatt egy halk sor mutatja, hány ilyen van, és odaugrik. Az izom kártyáján megmondja, mi hiányzik és miért, ajánl egy gyakorlatot a termedhez igazítva egy konkrét napra, és a „Hozzáadom” gombbal beteszi; a „Mást választok” a hozzáadó lapot nyitja arra az izomra szűrve. Ez tanács, nem szabály: nem kapcsolja be a sávba igazító gombot, és a szinten tartott izmoknál nem szól."
   }
 }
