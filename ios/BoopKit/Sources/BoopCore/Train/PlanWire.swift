@@ -7,7 +7,7 @@ import Foundation
 
 // MARK: - The running block
 
-public struct WireBlock: Decodable, Equatable, Sendable {
+public struct WireBlock: Codable, Equatable, Sendable {
     public let id: String
     public let title: String
     public let shortTitle: String?
@@ -31,7 +31,7 @@ public struct WireBlock: Decodable, Equatable, Sendable {
     public var goal: String? = nil
 }
 
-public struct WireDay: Decodable, Equatable, Sendable {
+public struct WireDay: Codable, Equatable, Sendable {
     public let id: String
     public let day: String
     public let type: String
