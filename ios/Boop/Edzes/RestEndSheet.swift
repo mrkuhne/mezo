@@ -10,7 +10,7 @@ struct RestEndSheet: View {
     @State private var mode: RestEndMode
     @State private var denied = false
 
-    init(hue: Hue, userKey: String, alarms: AlarmScheduling = SystemAlarmScheduler(userKey: "rest"), onChanged: @escaping () -> Void = {}) {
+    init(hue: Hue, userKey: String, alarms: AlarmScheduling = SystemAlarmScheduler(), onChanged: @escaping () -> Void = {}) {
         self.hue = hue; self.userKey = userKey; self.alarms = alarms; self.onChanged = onChanged
         _mode = State(initialValue: RestEndMode.load(userKey: userKey))
     }

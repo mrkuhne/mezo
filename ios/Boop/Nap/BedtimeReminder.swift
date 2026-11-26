@@ -29,9 +29,14 @@ protocol ReminderCenter: Sendable {
     func pendingIds(withPrefix prefix: String) async -> [String]
     /// Takes already delivered notifications with these ids out of the notification centre.
     func removeDelivered(ids: [String])
+    /// Takes every delivered notification whose id starts with `prefix` out of the notification centre (sign-out: the
+    /// next user must not see the previous one's reminders).
+    func removeDelivered(withPrefix prefix: String)
 }
 
 extension ReminderCenter {
+    func removeDelivered(withPrefix prefix: String) {}
+
     func scheduleAt(id: String, fireAt: Date, title: String, body: String) async throws {
         let c = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: fireAt)
         try await scheduleOnce(id: id, on: c, hour: c.hour ?? 0, minute: c.minute ?? 0, title: title, body: body, route: "")
@@ -129,6 +134,14 @@ struct SystemReminderCenter: ReminderCenter {
 
     func removeDelivered(ids: [String]) {
         UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: ids)
+    }
+
+    func removeDelivered(withPrefix prefix: String) {
+        Task {
+            let center = UNUserNotificationCenter.current()
+            let ids = await center.deliveredNotifications().map(\.request.identifier).filter { $0.hasPrefix(prefix) }
+            if !ids.isEmpty { center.removeDeliveredNotifications(withIdentifiers: ids) }
+        }
     }
 }
 

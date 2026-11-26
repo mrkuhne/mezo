@@ -24,18 +24,21 @@ final class ReminderScheduler {
 
     @ObservationIgnored private let store: ReminderStore
     @ObservationIgnored private let alarms: AlarmScheduling
+    /// Which alarms are ours, and what each was armed as.
+    @ObservationIgnored private let book: AlarmIdBook
     @ObservationIgnored private let center: ReminderCenter
     @ObservationIgnored private let clock: @Sendable () -> Date
     /// nil = follow the device: a fresh calendar in the current time zone for every run (travel is respected).
     @ObservationIgnored private let injectedCalendar: Calendar?
     @ObservationIgnored private var inFlight: Task<Void, Never>?
 
-    init(store: ReminderStore, alarms: AlarmScheduling, center: ReminderCenter,
+    init(store: ReminderStore, alarms: AlarmScheduling, center: ReminderCenter, book: AlarmIdBook? = nil,
          clock: @escaping @Sendable () -> Date = { Date() }, calendar: Calendar? = nil,
          startingAfter: Task<Void, Never>? = nil) {
         self.inFlight = startingAfter
         self.store = store
         self.alarms = alarms
+        self.book = book ?? AlarmIdBook.inMemory()
         self.center = center
         self.clock = clock
         self.injectedCalendar = calendar
@@ -71,12 +74,24 @@ final class ReminderScheduler {
         await withTaskCancellationHandler { await task.value } onCancel: { task.cancel() }
     }
 
-    /// `keepSnoozes`: a refresh re-arms the plan but leaves the owner's „10 perc múlva” one-offs standing.
-    private func clearAll(keepSnoozes: Bool = false) async {
-        await alarms.cancelAll(prefix: Self.prefix)
-        for id in await center.pendingIds(withPrefix: Self.prefix) where !(keepSnoozes && id.hasPrefix(ReminderActions.snoozePrefix)) {
-            center.cancel(id: id)
+    /// Sign-out: every alarm and notification of the family goes (a ringing one too: it belongs to the account that left),
+    /// and what already rang is taken out of the notification centre.
+    private func clearAll() async {
+        for id in book.entries.keys {
+            await alarms.cancel(id: id)
+            book.forget(id)
         }
+        for id in await center.pendingIds(withPrefix: Self.prefix) { center.cancel(id: id) }
+        center.removeDelivered(withPrefix: Self.prefix)
+    }
+
+    /// What an alarm was armed as: a ring with the same id but another moment or words must be armed again.
+    private static func fingerprint(_ o: ReminderOccurrence, title: String, secondary: String) -> String {
+        "\(Int(o.fireAt.timeIntervalSince1970))|\(title)|\(secondary)"
+    }
+
+    private static func secondaryTitle(_ r: Reminder) -> String {
+        if case .supplement = r.link { "Bevettem" } else { "Kész" }
     }
 
     private func run(askPermission: Bool) async {
@@ -100,7 +115,26 @@ final class ReminderScheduler {
         let notificationsAllowed = notifStatus == .allowed
         guard !Task.isCancelled else { return }
 
-        await clearAll(keepSnoozes: true) // from here on the run finishes arming even if its caller is cancelled
+        // From here on the run finishes arming even if its caller is cancelled.
+        // Alarms: what already stands as planned stays; everything else of ours goes — except an alarm ringing right now
+        // (a refresh from a Health wake or an unrelated edit must never silence it; it leaves once he silenced it).
+        let alerting = await alarms.alertingIds()
+        let held = await alarms.scheduledIds()
+        var planned: [String: String] = [:]
+        for occ in plan.alarms {
+            guard let r = byId[occ.reminderId] else { continue }
+            planned[occ.alarmId.uuidString] = Self.fingerprint(occ, title: r.title, secondary: Self.secondaryTitle(r))
+        }
+        var standing: Set<String> = []
+        for (id, fp) in book.entries where !alerting.contains(id) {
+            if planned[id] == fp, held?.contains(id) == true { standing.insert(id); continue }
+            await alarms.cancel(id: id)
+            book.forget(id)
+        }
+        // Notifications are re-added whole; the owner's „10 perc múlva” one-offs stay.
+        for id in await center.pendingIds(withPrefix: Self.prefix) where !id.hasPrefix(ReminderActions.snoozePrefix) {
+            center.cancel(id: id)
+        }
 
         // alarms
         var failed: [UUID: String] = [:]
@@ -108,8 +142,16 @@ final class ReminderScheduler {
         var expectedAlarmIds: [UUID: Set<String>] = [:]
         for occ in plan.alarms {
             guard failed[occ.reminderId] == nil, let r = byId[occ.reminderId] else { continue }
-            let secondary: String = { if case .supplement = r.link { return "Bevettem" } else { return "Kész" } }()
+            let secondary = Self.secondaryTitle(r)
+            let id = occ.alarmId.uuidString
+            if standing.contains(id) || alerting.contains(id) {
+                alarmUntil[occ.reminderId] = occ.fireAt
+                if standing.contains(id) { expectedAlarmIds[occ.reminderId, default: []].insert(id) }
+                continue
+            }
             do {
+                // remembered before the system call: an alarm the call left behind can still be cancelled later
+                book.remember(id, fingerprint: Self.fingerprint(occ, title: r.title, secondary: secondary))
                 try await alarms.schedule(occ, title: r.title, secondaryTitle: secondary, tint: ReminderLook.hue(r).glow)
                 alarmUntil[occ.reminderId] = occ.fireAt
                 expectedAlarmIds[occ.reminderId, default: []].insert(occ.alarmId.uuidString)

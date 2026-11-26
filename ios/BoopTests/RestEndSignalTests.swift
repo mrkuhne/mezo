@@ -11,8 +11,9 @@ fileprivate final class RestAlarms: AlarmScheduling, @unchecked Sendable {
     func authorization() async -> AlarmAuth { .allowed }
     func requestAuthorization() async -> AlarmAuth { .allowed }
     func schedule(_ o: ReminderOccurrence, title: String, secondaryTitle: String, tint: Color) async throws {}
-    func cancelAll(prefix: String) async {}
+    func cancel(id: String) async {}
     func scheduledIds() async -> Set<String>? { [] }
+    func alertingIds() async -> Set<String> { [] }
     func scheduleRest(at: Date, title: String, tint: Color) async throws { restAt.append(at); live = at }
     func cancelRest() async { cancels += 1; live = nil }
 }

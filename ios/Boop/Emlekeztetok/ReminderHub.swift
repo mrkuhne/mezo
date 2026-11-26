@@ -39,21 +39,30 @@ enum ReminderHub {
         }
     }
 
+    /// What one user's reminders are made of.
+    struct Parts {
+        let store: ReminderStore
+        let alarms: AlarmScheduling
+        let center: ReminderCenter
+        let book: AlarmIdBook
+    }
+
     /// Test seam: the parts of one user's reminders.
-    static func activate(for id: UUID, make: (UUID) -> (ReminderStore, AlarmScheduling, ReminderCenter)) {
+    static func activate(for id: UUID, make: (UUID) -> Parts) {
         if userId == id, store != nil { return }
         // A switch: the old family is cleared first; the new scheduler's first refresh queues behind that clear.
         let handoff = scheduler.map { old in Task { await old.signedOut() } }
-        let (s, alarms, center) = make(id)
+        let p = make(id)
+        let (s, alarms, center) = (p.store, p.alarms, p.center)
         store = s
-        scheduler = ReminderScheduler(store: s, alarms: alarms, center: center, startingAfter: handoff)
+        scheduler = ReminderScheduler(store: s, alarms: alarms, center: center, book: p.book, startingAfter: handoff)
         let key = id.uuidString
         if let old = restEnd { Task { await old.signedOut() } }
         restEnd = RestEndSignal(alarms: alarms, center: center, mode: { RestEndMode.load(userKey: key) })
         userId = id
     }
 
-    private static func liveParts(_ id: UUID) -> (ReminderStore, AlarmScheduling, ReminderCenter) {
+    private static func liveParts(_ id: UUID) -> Parts {
         let url: URL
         let alarms: AlarmScheduling
         #if DEBUG
@@ -62,13 +71,14 @@ enum ReminderHub {
             alarms = NoAlarmScheduler()
         } else {
             url = RitmusEnvironment.userRoot(for: id).appendingPathComponent("reminders.json")
-            alarms = SystemAlarmScheduler(userKey: id.uuidString)
+            alarms = SystemAlarmScheduler()
         }
         #else
         url = RitmusEnvironment.userRoot(for: id).appendingPathComponent("reminders.json")
-        alarms = SystemAlarmScheduler(userKey: id.uuidString)
+        alarms = SystemAlarmScheduler()
         #endif
-        return (ReminderStore(fileURL: url), alarms, SystemReminderCenter())
+        return Parts(store: ReminderStore(fileURL: url), alarms: alarms, center: SystemReminderCenter(),
+                     book: AlarmIdBook(userKey: id.uuidString))
     }
 
     /// Sign-out: cancels the family and forgets the store.

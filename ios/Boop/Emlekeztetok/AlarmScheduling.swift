@@ -19,13 +19,16 @@ protocol AlarmScheduling: Sendable {
     /// Shows the system prompt (once); the resulting state.
     func requestAuthorization() async -> AlarmAuth
     func schedule(_ o: ReminderOccurrence, title: String, secondaryTitle: String, tint: Color) async throws
-    /// Cancels every alarm Boop scheduled for this user (AlarmKit ids carry no prefix, so we remember ours).
-    func cancelAll(prefix: String) async
+    /// Cancels one alarm by its id (`UUID` string). Which ids are Boop's is remembered by `AlarmIdBook` (AlarmKit ids
+    /// carry no prefix).
+    func cancel(id: String) async
     /// The ids (`UUID` strings of `ReminderOccurrence.alarmId`) of the alarms the system currently holds.
     /// nil when the system's list could not be read (an error is not an empty list).
     func scheduledIds() async -> Set<String>?
+    /// The ids of the alarms ringing right now: a refresh never cancels one of these (only the owner silences it).
+    func alertingIds() async -> Set<String>
     /// The workout's rest end as a one-off alarm at `at` (one at a time: a second call replaces the first). Not part of
-    /// the reminder family: `cancelAll` leaves it alone.
+    /// the reminder family: the reminder scheduler never touches it.
     func scheduleRest(at: Date, title: String, tint: Color) async throws
     func cancelRest() async
 }
@@ -45,12 +48,9 @@ extension ReminderOccurrence {
 
 nonisolated struct ReminderAlarmMetadata: AlarmMetadata {}
 
-/// The real thing, over `AlarmManager.shared`. `userKey` scopes the remembered set of our own alarm ids.
+/// The real thing, over `AlarmManager.shared`. Stateless: which ids are ours is kept by `AlarmIdBook`.
 struct SystemAlarmScheduler: AlarmScheduling {
-    let userKey: String
-    private var defaultsKey: String { "boop.rem.alarmIds.\(userKey)" }
-
-    init(userKey: String) { self.userKey = userKey }
+    init() {}
 
     func authorization() async -> AlarmAuth { Self.map(AlarmManager.shared.authorizationState) }
 
@@ -69,7 +69,6 @@ struct SystemAlarmScheduler: AlarmScheduling {
         let config = AlarmManager.AlarmConfiguration<ReminderAlarmMetadata>.alarm(
             schedule: .fixed(o.fireAt), attributes: attrs, stopIntent: ReminderSilenceIntent(), secondaryIntent: ReminderDoneIntent(key: o.key))
         let id = o.alarmId
-        remember(id.uuidString)
         do {
             _ = try await AlarmManager.shared.schedule(id: id, configuration: config)
         } catch let e as AlarmManager.AlarmError {
@@ -100,12 +99,8 @@ struct SystemAlarmScheduler: AlarmScheduling {
 
     func cancelRest() async { try? AlarmManager.shared.cancel(id: Self.restAlarmId) }
 
-    func cancelAll(prefix: String) async {
-        let ids = UserDefaults.standard.stringArray(forKey: defaultsKey) ?? []
-        for s in ids {
-            if let id = UUID(uuidString: s) { try? AlarmManager.shared.cancel(id: id) }
-        }
-        UserDefaults.standard.removeObject(forKey: defaultsKey)
+    func cancel(id: String) async {
+        if let id = UUID(uuidString: id) { try? AlarmManager.shared.cancel(id: id) }
     }
 
     func scheduledIds() async -> Set<String>? {
@@ -113,10 +108,9 @@ struct SystemAlarmScheduler: AlarmScheduling {
         return Set(alarms.map { $0.id.uuidString })
     }
 
-    private func remember(_ id: String) {
-        var ids = Set(UserDefaults.standard.stringArray(forKey: defaultsKey) ?? [])
-        ids.insert(id)
-        UserDefaults.standard.set(Array(ids).sorted(), forKey: defaultsKey)
+    func alertingIds() async -> Set<String> {
+        guard let alarms = try? AlarmManager.shared.alarms else { return [] }
+        return Set(alarms.filter { if case .alerting = $0.state { true } else { false } }.map { $0.id.uuidString })
     }
 
     private static func map(_ s: AlarmManager.AuthorizationState) -> AlarmAuth {
@@ -133,6 +127,58 @@ struct NoAlarmScheduler: AlarmScheduling {
     func authorization() async -> AlarmAuth { .denied }
     func requestAuthorization() async -> AlarmAuth { .denied }
     func schedule(_ o: ReminderOccurrence, title: String, secondaryTitle: String, tint: Color) async throws {}
-    func cancelAll(prefix: String) async {}
+    func cancel(id: String) async {}
     func scheduledIds() async -> Set<String>? { [] }
+    func alertingIds() async -> Set<String> { [] }
+}
+
+/// The alarms Boop armed for one user and what each was armed as (a fingerprint of its moment and words): AlarmKit ids
+/// carry no prefix, so ours are remembered here, per user (`boop.rem.alarms.<userKey>`). MainActor-isolated: every change
+/// is one synchronous read-modify-write, so two schedulers of the same user (the UI's and a headless one) never lose each
+/// other's ids — a forgotten id would be an alarm nobody can cancel.
+@MainActor
+final class AlarmIdBook {
+    private let defaults: UserDefaults?
+    private let key: String
+    private var memory: [String: String] = [:]
+
+    init(userKey: String, defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        key = "boop.rem.alarms.\(userKey)"
+        // the first version kept a bare list of ids: they are still ours (no fingerprint, so they are re-armed once)
+        let legacy = "boop.rem.alarmIds.\(userKey)"
+        if let old = defaults.stringArray(forKey: legacy) {
+            var e = entries
+            for id in old where e[id] == nil { e[id] = "" }
+            defaults.set(e, forKey: key)
+            defaults.removeObject(forKey: legacy)
+        }
+    }
+
+    private init() { defaults = nil; key = "" }
+
+    /// A book that lives only as long as this object (tests, previews).
+    static func inMemory() -> AlarmIdBook { AlarmIdBook() }
+
+    /// id → fingerprint of what it was armed as.
+    var entries: [String: String] {
+        guard let defaults else { return memory }
+        return defaults.dictionary(forKey: key) as? [String: String] ?? [:]
+    }
+
+    func remember(_ id: String, fingerprint: String) {
+        var e = entries
+        e[id] = fingerprint
+        store(e)
+    }
+
+    func forget(_ id: String) {
+        var e = entries
+        guard e.removeValue(forKey: id) != nil else { return }
+        store(e)
+    }
+
+    private func store(_ e: [String: String]) {
+        if let defaults { defaults.set(e, forKey: key) } else { memory = e }
+    }
 }

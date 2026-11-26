@@ -8,8 +8,13 @@ fileprivate final class FakeAlarms: AlarmScheduling, @unchecked Sendable {
     var auth: AlarmAuth
     var grants = true
     var requests = 0
-    var scheduled: [ReminderOccurrence] = []
-    var cancelAlls: [String] = []
+    /// What the system holds, by alarm id.
+    var held: [String: ReminderOccurrence] = [:]
+    var scheduled: [ReminderOccurrence] { held.values.sorted { ($0.fireAt, $0.key) < ($1.fireAt, $1.key) } }
+    var scheduleCalls = 0
+    var cancelled: [String] = []
+    /// Ids ringing right now.
+    var alerting: Set<String> = []
     var failWith: AlarmArmError?
     var active = 0
     var overlapped = false
@@ -30,20 +35,22 @@ fileprivate final class FakeAlarms: AlarmScheduling, @unchecked Sendable {
         defer { active -= 1 }
         if delay > .zero { try? await Task.sleep(for: delay) }
         if let failWith { throw failWith }
-        scheduled.append(o)
+        scheduleCalls += 1
+        held[o.alarmId.uuidString] = o
     }
-    func cancelAll(prefix: String) async {
+    func cancel(id: String) async {
         active += 1
         if active > 1 { overlapped = true }
         defer { active -= 1 }
         if delay > .zero { try? await Task.sleep(for: delay) }
-        cancelAlls.append(prefix)
-        scheduled = []
+        cancelled.append(id)
+        held[id] = nil
     }
     func scheduledIds() async -> Set<String>? {
         if unreadable { return nil }
-        return losesAll ? [] : Set(scheduled.map { $0.alarmId.uuidString })
+        return losesAll ? [] : Set(held.keys).union(alerting)
     }
+    func alertingIds() async -> Set<String> { alerting }
 }
 
 fileprivate final class SchedCenter: ReminderCenter, @unchecked Sendable {
@@ -99,7 +106,6 @@ struct ReminderSchedulerTests {
         let sch = scheduler(s, a, c)
         await sch.refresh(askPermission: false)
         await sch.refresh(askPermission: false)
-        #expect(a.cancelAlls == ["boop.rem.", "boop.rem."])
         #expect(a.scheduled.count == 7)
         #expect(c.cancelled.contains("boop.rem.stale.2026-01-01"))
         #expect(!c.cancelled.contains("other.keep"))
@@ -211,6 +217,74 @@ struct ReminderSchedulerTests {
         #expect(c.requests.count == 3) // the first refresh armed alarms only
     }
 
+    // MARK: a ringing alarm (final review I1)
+
+    @Test func aRefreshNeverCancelsTheAlarmRingingNow() async {
+        let s = store(), a = FakeAlarms(), c = SchedCenter()
+        let r = alarmReminder()
+        s.upsert(r)
+        let sch = scheduler(s, a, c)
+        await sch.refresh(askPermission: false)
+        // today's ring is sounding, and an unrelated edit (or a Health wake) refreshes the family
+        let ringing = a.scheduled[0].alarmId.uuidString
+        a.alerting = [ringing]
+        s.upsert(noteReminder())
+        await sch.refresh(askPermission: false)
+        #expect(!a.cancelled.contains(ringing))
+        #expect(a.held[ringing] != nil)
+    }
+
+    @Test func aRingingAlarmLeftOutOfThePlanStaysUntilSilenced() async {
+        let s = store(), a = FakeAlarms(), c = SchedCenter()
+        let r = alarmReminder()
+        s.upsert(r)
+        let sch = scheduler(s, a, c)
+        await sch.refresh(askPermission: false)
+        let today = a.scheduled[0]
+        a.alerting = [today.alarmId.uuidString]
+        s.tick(today.key)            // today's ring left the plan (as when its moment has passed)
+        await sch.refresh(askPermission: false)
+        #expect(!a.cancelled.contains(today.alarmId.uuidString))
+        a.alerting = []              // silenced: the next refresh tidies it away
+        await sch.refresh(askPermission: false)
+        #expect(a.cancelled.contains(today.alarmId.uuidString))
+    }
+
+    @Test func anUnchangedPlanLeavesTheStandingAlarmsAlone() async {
+        let s = store(), a = FakeAlarms(), c = SchedCenter()
+        s.upsert(alarmReminder())
+        let sch = scheduler(s, a, c)
+        await sch.refresh(askPermission: false)
+        await sch.refresh(askPermission: false)
+        #expect(a.cancelled.isEmpty)
+        #expect(a.scheduleCalls == 7)
+    }
+
+    @Test func aMovedTimeReArmsEveryRing() async {
+        let s = store(), a = FakeAlarms(), c = SchedCenter()
+        var r = alarmReminder()
+        s.upsert(r)
+        let sch = scheduler(s, a, c)
+        await sch.refresh(askPermission: false)
+        r.hour = 9
+        s.upsert(r)
+        await sch.refresh(askPermission: false)
+        #expect(a.cancelled.count == 7)
+        #expect(a.scheduled.count == 7 && a.scheduled.allSatisfy { cal.component(.hour, from: $0.fireAt) == 9 })
+    }
+
+    @Test func anAlarmTheSystemLostIsArmedAgain() async {
+        let s = store(), a = FakeAlarms(), c = SchedCenter()
+        s.upsert(alarmReminder())
+        let sch = scheduler(s, a, c)
+        await sch.refresh(askPermission: false)
+        let lost = a.scheduled[3].alarmId.uuidString
+        a.held[lost] = nil
+        await sch.refresh(askPermission: false)
+        #expect(a.held[lost] != nil)
+        #expect(a.scheduled.count == 7)
+    }
+
     @Test func unreadableSystemListDoesNotFailRows() async {
         let s = store(), a = FakeAlarms(), c = SchedCenter()
         a.unreadable = true
@@ -241,18 +315,18 @@ struct ReminderHubTests {
         ReminderHub.deactivate()
         let alarmsA = FakeAlarms(), alarmsB = FakeAlarms()
         let center = SchedCenter()
-        func make(_ id: UUID) -> (ReminderStore, AlarmScheduling, ReminderCenter) {
+        func make(_ id: UUID) -> ReminderHub.Parts {
             let st = ReminderStore(fileURL: FileManager.default.temporaryDirectory
                 .appendingPathComponent("hub-\(UUID().uuidString)/reminders.json"))
             st.upsert(Reminder(title: "x", hour: 23, minute: 59, repeats: .daily, strength: .alarm))
-            return (st, id == a ? alarmsA : alarmsB, center)
+            return ReminderHub.Parts(store: st, alarms: id == a ? alarmsA : alarmsB, center: center, book: .inMemory())
         }
         ReminderHub.activate(for: a, make: make)
         await ReminderHub.scheduler!.refresh(askPermission: false)
         #expect(!alarmsA.scheduled.isEmpty)
         ReminderHub.activate(for: b, make: make)
         await ReminderHub.scheduler!.refresh(askPermission: false)
-        #expect(alarmsA.scheduled.isEmpty && !alarmsA.cancelAlls.isEmpty)
+        #expect(alarmsA.scheduled.isEmpty && !alarmsA.cancelled.isEmpty)
         #expect(!alarmsB.scheduled.isEmpty)
         // offline keeps B's alarms
         ReminderHub.apply(.offline)

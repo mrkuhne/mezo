@@ -71,8 +71,8 @@ enum HeadlessContext {
 
     /// A scheduler over the real alarm and notification centres, for a process with no `ReminderHub`.
     static func scheduler(for parts: Parts) -> ReminderScheduler {
-        ReminderScheduler(store: parts.store, alarms: SystemAlarmScheduler(userKey: parts.userId.uuidString),
-                          center: SystemReminderCenter())
+        ReminderScheduler(store: parts.store, alarms: SystemAlarmScheduler(), center: SystemReminderCenter(),
+                          book: AlarmIdBook(userKey: parts.userId.uuidString))
     }
 
     nonisolated static func day(of date: Date, calendar: Calendar) -> String {
