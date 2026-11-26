@@ -371,7 +371,8 @@ public struct NKAreaBar: View {
         case "Figyelt": "search-ink"
         case "Szabályok": "scale-ink"
         case "Fiókok": "repeat-deep"
-        case "Napirend", "Terv", "Blokk", "Tervezett": "clock-ink"
+        case "Napirend", "Terv", "Tervezett": "clock-ink"
+        case "Mezociklus": "cycle-ink"
         case "Mi hat rá": "bolt-ink"
         case "Hét", "Előzmények", "Minták": "chart-deep"
         // The Súly room (`mezo-r36n9.158`): the body for Test (owner: its own mark), the book for a log of days.

@@ -83,7 +83,7 @@ struct BlockBuilderPage: View {
             PlanSky(height: 150)
             VStack(spacing: 0) {
                 head
-                if model.justCreated { justCreatedLine }
+                if model.justCreated, !model.isTemplate { justCreatedLine }
                 if let data = budgetData { PlanBudgetCard(data: data, compact: true).padding(.horizontal, 20).padding(.bottom, 8) }
                 if model.evaluation == nil {
                     evaluationMissing
@@ -309,7 +309,9 @@ struct BlockBuilderPage: View {
 
     /// The one line that says what he is looking at.
     private var scope: String {
-        switch mode {
+        // A template is edited apart from any run (mezo-r36n9.177): the head says so whatever the tab.
+        if model.isTemplate { return "SABLON SZERKESZTÉSE" }
+        return switch mode {
         case .izmok: "EGY HÉT · IZMONKÉNT"
         case .napok: "EGY HÉT · NAPONKÉNT"
         case .blokk: "A TELJES BLOKK · \(model.draft?.weeks ?? 0) HÉT"
@@ -1656,10 +1658,13 @@ private struct BuilderBlockView: View {
         VStack(spacing: 0) {
             toggleRow(title: "Technikák", text: "Pihenős drop, drop set, myo set és félismétlés a stabil gyakorlatok utolsó sorozatán.",
                       isOn: Binding(get: { model.draft?.techniquesEnabled ?? false }, set: { model.draft?.techniquesEnabled = $0 }))
-            Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5)
-            toggleRow(title: "A heti javaslatot én hagyom jóvá",
-                      text: "Bekapcsolva hétfőn átnézed, mi változna. Kikapcsolva magától életbe lép.",
-                      isOn: Binding(get: { model.draft?.reviewMode == .manual }, set: { model.draft?.reviewMode = $0 ? .manual : .auto }))
+            // The weekly review belongs to a running mezociklus; a template does not carry it (mezo-r36n9.177).
+            if !model.isTemplate {
+                Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5)
+                toggleRow(title: "A heti javaslatot én hagyom jóvá",
+                          text: "Bekapcsolva hétfőn átnézed, mi változna. Kikapcsolva magától életbe lép.",
+                          isOn: Binding(get: { model.draft?.reviewMode == .manual }, set: { model.draft?.reviewMode = $0 ? .manual : .auto }))
+            }
         }
         .padding(.horizontal, 18).padding(.vertical, 4).nkGlass(26)
     }

@@ -29,6 +29,11 @@ import BoopDesign
 //   -previewUjBlokkScroll Y                the step opens scrolled down by Y points
 //   -previewUjBlokkStart fail              „Ezzel kezdem" fails at the start (503): the inline error under the button
 //   -previewEvesTerv YES                   the Éves terv (mezo-r36n9.113); its states in EvesTerv/EvesTervPreview.swift
+//   -previewMezo tab|list|detail|detailClosed|restart|close|report|pending|save|offline|empty
+//                                          the Mezociklus tab (mezo-r36n9.177): the card + tiles (tab), Mezociklusaim,
+//                                          a template's / a closed run's detail page, the restart / close sheets, the
+//                                          zárójelentés ready or with Boop still writing, the save confirmation, the
+//                                          list offline (a 5-hour-old copy) and with nothing at all
 //   -previewKovetkezik YES|nincs|lezaras   with `-preview shell -previewHome edzes`: the Ma tab's Következik card and the
 //                                          pre-filled intake behind „Indítás" (scenarios in EvesTerv/EvesTervPreview.swift)
 //
@@ -63,6 +68,61 @@ enum PlanPreview {
     }
 }
 
+/// `-previewMezo …` (mezo-r36n9.177): the Mezociklus tab's card and tiles on fixtures, with the same flow the room
+/// uses, opened on the requested state.
+struct MezoPreviewRoot: View {
+    @State private var model = MezociklusokModel(client: PlanPreview.client, cache: nil)
+    @State private var flow = MezoFlowState()
+    @State private var toast: String?
+    @Namespace private var zoom
+    private let state = UserDefaults.standard.string(forKey: "previewMezo") ?? "tab"
+
+    var body: some View {
+        ZStack {
+            NK.ground.ignoresSafeArea()
+            NKAreaSubPage(hue: planHue, crumb: "Edzés", eyebrow: "Mezociklus", title: model.groups.running?.title ?? "Edzés",
+                          sentence: "", onBack: nil) {
+                if let r = model.groups.running {
+                    MezoCurrentCard(title: r.title, week: r.currentWeek, weeks: r.weeks, split: r.split ?? "", hue: planHue,
+                                    zoom: zoom, offlineReason: nil,
+                                    onEdit: { toast = "Szerkesztés" },
+                                    onRestart: { flow.sheet = .restart(r) },
+                                    onClose: { flow.sheet = .close(r) },
+                                    onSaveTemplate: { flow.saveRunning = r })
+                } else if let p = model.groups.upcoming.first {
+                    MezoPlannedCard(card: p, hue: planHue) { flow.cover = .detail(p) }
+                }
+                MezoTiles(hue: planHue, groups: model.groups, year: nil, onAll: { flow.cover = .list }, onYear: { toast = "Éves terv" })
+            }
+        }
+        .nkToast($toast)
+        .mezoFlow($flow, model: model, plan: PlanPreview.client, hue: planHue, toast: $toast) {}
+        .task {
+            if state == "offline" {
+                // A copy read five hours ago, then the net goes.
+                let dir = FileManager.default.temporaryDirectory.appendingPathComponent("mezo-preview-\(UUID().uuidString)")
+                let earlier = Date().addingTimeInterval(-5 * 3600)
+                await MezociklusokModel(client: PlanPreview.client, cache: ServerCache(directory: dir, clock: { earlier })).load()
+                PlanPreviewTransport.mezoOffline = true
+                model = MezociklusokModel(client: PlanPreview.client, cache: ServerCache(directory: dir))
+            }
+            await model.load()
+            let g = model.groups
+            switch state {
+            case "list", "offline", "empty": flow.cover = .list
+            case "detail": if let t = g.templates.first { flow.cover = .detail(t) }
+            case "detailClosed": if let c = g.closed.first { flow.cover = .detail(c) }
+            case "restart": if let r = g.running { flow.sheet = .restart(r) }
+            case "close": if let r = g.running { flow.sheet = .close(r) }
+            case "report", "pending": if let id = g.closed.first?.blockId { flow.cover = .report(id) }
+            case "save": flow.saveRunning = g.running
+            default: break
+            }
+        }
+        .preferredColorScheme(.dark)
+    }
+}
+
 struct PlanPreviewRoot: View {
     @State private var page: EdzesPage? = {
         if UserDefaults.standard.bool(forKey: "previewUjBlokk") {
@@ -90,7 +150,7 @@ struct PlanPreviewRoot: View {
             NK.ground.ignoresSafeArea()
             NKAreaSubPage(hue: planHue, crumb: "Edzés", eyebrow: "Blokk", title: "V-forma és kar",
                           sentence: "Hathetes blokk, a *hát* és a *bicepsz* a hangsúly.", onBack: nil) {
-                WeekReviewEntrance(model: review, hue: planHue, zoom: zoom, openReview: { page = .review }, openBuilder: { page = .builder })
+                WeekReviewEntrance(model: review, hue: planHue, zoom: zoom, openReview: { page = .review })
             }
         }
         .task { async let b: Void = builder.load(); await review.load(); await b }
@@ -153,7 +213,10 @@ final class PlanPreviewTransport: ClientTransport, @unchecked Sendable {
             sent = obj as? [String: Any]
             sentArray = obj as? [[String: Any]]
         }
+        let mezoState = UserDefaults.standard.string(forKey: "previewMezo")
+        if mezoState != nil, Self.mezoOffline { throw URLError(.notConnectedToInternet) }
         let reply: Any? = lock.withLock {
+            if let mezoState, let answer = mezoAnswer(operationID, path: request.path, sent: sent, state: mezoState) { return answer }
             switch operationID {
             case "listMesocycles": return state == "empty" ? [] : [block]
             case "getExerciseCatalog": return Self.catalog
@@ -212,6 +275,138 @@ final class PlanPreviewTransport: ClientTransport, @unchecked Sendable {
         }
         var h = HTTPFields(); h[.contentType] = "application/json"
         return (HTTPResponse(status: .ok, headerFields: h), HTTPBody(data))
+    }
+
+    // MARK: mezociklusok (mezo-r36n9.177)
+
+    /// `-previewMezo offline`: set after the first read filled the cache, so the second read fails.
+    nonisolated(unsafe) static var mezoOffline = false
+    private var mezoRuns: [[String: Any]]?
+    private var reportReads: [String: Int] = [:]
+
+    private static let mezoTemplateIds = ["7e000000-0000-4000-8000-0000000000a1", "7e000000-0000-4000-8000-0000000000a2",
+                                          "7e000000-0000-4000-8000-0000000000a3"]
+
+    private func runs(_ state: String) -> [[String: Any]] {
+        if let mezoRuns { return mezoRuns }
+        guard state != "empty" else { mezoRuns = []; return [] }
+        var running = block
+        running["startDate"] = "2026-11-16"; running["templateId"] = Self.mezoTemplateIds[0]; running["split"] = "5 napos"
+        func run(_ id: String, _ title: String, _ status: String, _ start: String, _ end: String?, report: Bool,
+                 split: String, curve: [String], days: [[String: Any]]) -> [String: Any] {
+            var r: [String: Any] = ["id": id, "title": title, "shortTitle": title, "status": status, "weeks": curve.count,
+                                    "currentWeek": status == "archived" ? curve.count : 0, "phaseCurve": curve,
+                                    "musclePriorities": [String: String](), "sportGroups": [String](),
+                                    "techniquesEnabled": false, "weeklyReviewMode": "auto", "days": days,
+                                    "startDate": start, "hasReport": report, "split": split,
+                                    "templateId": Self.mezoTemplateIds[1]]
+            if let end { r["endDate"] = end; r["closedAt"] = end + "T18:00:00Z" }
+            return r
+        }
+        let base = block["days"] as? [[String: Any]] ?? []
+        let curve6 = ["MEV", "MAV", "MAV", "MRV", "MRV", "Deload"]
+        let all: [[String: Any]] = [
+            running,
+            run("b0000000-0000-4000-8000-0000000000b1", "Erő · Tél", "planned", "2027-01-05", nil, report: false,
+                split: "felső-alsó", curve: curve6, days: Array(base.prefix(4))),
+            run("b0000000-0000-4000-8000-0000000000c1", "Hipertrófia · Nyár", "archived", "2026-07-07", "2026-08-17", report: true,
+                split: "push-pull-láb", curve: curve6, days: base),
+            run("b0000000-0000-4000-8000-0000000000c2", "Hipertrófia · Nyár", "archived", "2026-06-23", "2026-07-04", report: true,
+                split: "push-pull-láb", curve: curve6, days: base),
+            run("b0000000-0000-4000-8000-0000000000c3", "Váll és hát", "archived", "2026-05-05", "2026-06-15", report: false,
+                split: "felső-alsó", curve: curve6, days: Array(base.prefix(3))),
+        ]
+        mezoRuns = all
+        return all
+    }
+
+    private func templates(_ state: String) -> [[String: Any]] {
+        guard state != "empty" else { return [] }
+        let base = block["days"] as? [[String: Any]] ?? []
+        func t(_ i: Int, _ title: String, runs: Int, split: String, curve: [String], days: [[String: Any]]) -> [String: Any] {
+            ["id": Self.mezoTemplateIds[i], "title": title, "shortTitle": title, "runCount": runs, "weeks": curve.count,
+             "phaseCurve": curve, "split": split, "trainingStyle": "balanced", "techniquesEnabled": true,
+             "musclePriorities": block["musclePriorities"] ?? [:], "sportGroups": [String](),
+             "days": days.map { d in var x = d; x.removeValue(forKey: "id"); return x }]
+        }
+        return [t(0, "V-forma és kar", runs: 3, split: "5 napos", curve: ["MEV", "MAV", "MAV", "MAV", "MRV", "Deload"], days: base),
+                t(1, "Erő · Tél", runs: 0, split: "felső-alsó", curve: ["MEV", "MAV", "MRV", "MRV", "MRV", "Deload"], days: Array(base.prefix(4))),
+                t(2, "Váll és hát", runs: 1, split: "felső-alsó", curve: ["MEV", "MEV", "MAV", "MAV", "MRV", "MRV", "MRV", "Deload"],
+                  days: Array(base.prefix(3)))]
+    }
+
+    /// The mezociklus operations; nil hands the call to the builder's own answers.
+    private func mezoAnswer(_ op: String, path: String?, sent: [String: Any]?, state: String) -> Any? {
+        let id = path?.split(separator: "/").dropLast().last.map(String.init)
+        switch op {
+        case "listMesocycles":
+            return runs(state)
+        case "listMesoTemplates":
+            return templates(state)
+        case "closeMesocycle":
+            var all = runs(state)
+            guard let i = all.firstIndex(where: { $0["id"] as? String == id }) else { return nil }
+            all[i]["status"] = "archived"; all[i]["endDate"] = "2026-11-26"; all[i]["closedAt"] = "2026-11-26T18:00:00Z"
+            all[i]["hasReport"] = true
+            mezoRuns = all
+            return all[i]
+        case "restartMesocycle":
+            var all = runs(state)
+            guard let i = all.firstIndex(where: { $0["id"] as? String == id && $0["status"] as? String == "active" }) else { return nil }
+            var fresh = all[i]
+            all[i]["status"] = "archived"; all[i]["endDate"] = "2026-11-26"; all[i]["hasReport"] = true
+            fresh["id"] = "b0000000-0000-4000-8000-0000000000d1"; fresh["currentWeek"] = 1; fresh["startDate"] = "2026-11-26"
+            all.insert(fresh, at: 0)
+            mezoRuns = all
+            return fresh
+        case "activateMesocycle":
+            var all = runs(state)
+            guard let i = all.firstIndex(where: { $0["id"] as? String == id }) else { return nil }
+            all[i]["status"] = "active"; all[i]["currentWeek"] = 1
+            mezoRuns = all
+            return all[i]
+        case "rerunMesocycle", "saveMesocycleToTemplate":
+            return ["templateId": Self.mezoTemplateIds[1]]
+        case "startMesoTemplate":
+            var all = runs(state)
+            let tid = path?.split(separator: "/").dropLast().last.map(String.init)
+            let t = templates(state).first { $0["id"] as? String == tid } ?? [:]
+            var fresh = block
+            fresh["id"] = "b0000000-0000-4000-8000-0000000000e1"; fresh["title"] = t["title"] ?? "Új mezociklus"
+            fresh["status"] = sent?["status"] ?? "active"; fresh["currentWeek"] = 1; fresh["startDate"] = sent?["startDate"] ?? "2026-11-26"
+            all.insert(fresh, at: 0)
+            mezoRuns = all
+            return fresh
+        case "updateMesoTemplate":
+            return sent
+        case "getMesocycleReport":
+            guard let id = path?.split(separator: "/").dropLast().last.map(String.init) else { return nil }
+            reportReads[id, default: 0] += 1
+            let pending = state == "pending" && reportReads[id, default: 0] < 2
+            let title = runs(state).first { $0["id"] as? String == id }?["title"] as? String ?? "Hipertrófia · Nyár"
+            return Self.report(id: id, title: title, pending: pending)
+        default:
+            return nil
+        }
+    }
+
+    private static func report(id: String, title: String, pending: Bool) -> [String: Any] {
+        let planned = [36, 42, 42, 48, 48, 24], actual = [36, 40, 42, 41, 46, 18]
+        func arc(_ muscle: String, _ share: Double) -> [String: Any] {
+            ["muscle": muscle, "weeks": planned.indices.map { i in
+                ["week": i + 1, "planned": Int(Double(planned[i]) * share), "actual": Int(Double(actual[i]) * share)] }]
+        }
+        return ["mesocycleId": id, "title": title, "startDate": "2026-07-07", "endDate": "2026-08-17", "weeks": 6,
+                "selfEval": "Jól ment, a harmadik héten fáradt voltam.",
+                "aiEval": pending ? NSNull() : "A felsőtest szépen nőtt, a láb lemaradt a terv mögött: a következő mezociklusban érdemes ott eggyel több sorozat.",
+                "aiEvalStatus": pending ? "pending" : "ready", "aiEvalEnabled": true,
+                "adherence": ["plannedSessions": 17, "completedSessions": 15, "plannedWeeks": 6, "completedWeeks": 6, "completionPct": 88],
+                "volume": ["muscles": [arc("back", 0.4), arc("chest", 0.3), arc("quad", 0.3)]],
+                "strength": [
+                    ["exerciseName": "Chest Supported Row", "muscle": "back", "firstTopKg": 60, "lastTopKg": 67.5, "firstTopReps": 8, "lastTopReps": 8, "deltaKg": 7.5],
+                    ["exerciseName": "Leg Press", "muscle": "quad", "firstTopKg": 140, "lastTopKg": 150, "firstTopReps": 10, "lastTopReps": 10, "deltaKg": 10],
+                    ["exerciseName": "Preacher Curl", "muscle": "biceps", "firstTopKg": 30, "lastTopKg": 27.5, "firstTopReps": 10, "lastTopReps": 12, "deltaKg": -2.5]],
+                "records": ["medalCount": 2, "top": [["exerciseName": "Leg Press", "kind": "weight", "date": "2026-08-12", "value": 150]]]]
     }
 
     // MARK: fixtures

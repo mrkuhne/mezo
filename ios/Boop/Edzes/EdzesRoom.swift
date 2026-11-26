@@ -21,10 +21,10 @@ import BoopDesign
 //     `WallSource`, not onto a card surface here.
 //   • **Every carousel has dots under it**, so a row that continues says so (owner, 2026-11-17).
 
-/// Which tab of the room is open. The labels are the owner's (`Terv` became **`Blokk`** on
-/// 2026-11-16) and they live **here, once**: `AreaRoom`'s tab set reads the same constants.
+/// Which tab of the room is open. The labels are the owner's (`Terv` became `Blokk` on 2026-11-16, then
+/// **`Mezociklus`** on 2026-11-26) and they live **here, once**: `AreaRoom`'s tab set reads the same constants.
 enum EdzesTab: String, CaseIterable {
-    case ma = "Ma", blokk = "Blokk", gyakorlatok = "Gyakorlatok", elozmenyek = "Előzmények"
+    case ma = "Ma", blokk = "Mezociklus", gyakorlatok = "Gyakorlatok", elozmenyek = "Előzmények"
 }
 
 /// A sub-page of the room, opened from a card.
@@ -94,6 +94,9 @@ struct EdzesRoom: View {
     @State private var showGym = false
     /// „Melyik napot csinálod ma?" (mezo-r36n9.163).
     @State private var showOtherDays = false
+    /// Every mezociklus — the Mezociklus tab's card actions, tiles and pages (mezo-r36n9.177).
+    @State private var mezo: MezociklusokModel?
+    @State private var mezoFlow = MezoFlowState()
 
     /// `hidden` is not „no workout": the session may well be running, minimised.
     private enum WorkoutPhase { case hidden, briefing, playing, ceremony, result }
@@ -186,6 +189,7 @@ struct EdzesRoom: View {
         .fullScreenCover(item: $yearPlan) { cover in
             EvesTervPage(model: cover.model) { yearPlan = nil }
         }
+        .mezoFlow($mezoFlow, model: mezo, plan: plan, hue: hue, toast: $toast) { Task { await refreshAfterMezo() } }
         // The year may have moved on behind a cover (a block started from the card, an edit on the map): read it again.
         .onChange(of: page) { _, now in if now == nil { Task { await year?.load() } } }
         .onChange(of: yearPlan?.id) { _, now in if now == nil { Task { await year?.load() } } }
@@ -306,11 +310,14 @@ struct EdzesRoom: View {
             #endif
             if weekReview == nil, let plan { weekReview = WeekReviewModel(client: plan) }
             if year == nil, let plan { year = YearPlanModel(client: plan, cache: cache) }
+            if mezo == nil, let plan { mezo = MezociklusokModel(client: plan, cache: cache) }
             async let preload: Void = prepareBuilder(fresh: false)
             async let yearLoad: Void = loadYear()
+            async let mezoLoad: Void = loadMezo()
             await weekReview?.load()
             await preload
             await yearLoad
+            await mezoLoad
             if blockDay == nil { blockDay = block?.days.first(where: \.isCurrent)?.day ?? block?.days.first?.day }
         }
     }
@@ -328,6 +335,35 @@ struct EdzesRoom: View {
     }
 
     private func loadYear() async { await year?.load() }
+    private func loadMezo() async { await mezo?.load() }
+
+    /// A mezociklus started, restarted, closed or edited: today, the block, the week and the year re-read.
+    private func refreshAfterMezo() async {
+        await store?.load(force: true)
+        await store?.loadBlock()
+        await weekReview?.load()
+        await prepareBuilder(fresh: true)
+        await year?.load()
+        await mezo?.load()
+        if blockDay == nil || block?.days.contains(where: { $0.day == blockDay }) != true {
+            blockDay = block?.days.first(where: \.isCurrent)?.day ?? block?.days.first?.day
+        }
+    }
+
+    /// The running one's card, for an action on it. Loaded on demand when the list has not arrived yet; offline the
+    /// toast says why nothing happens.
+    private func withRunning(_ act: @escaping (MezoCard) -> Void) {
+        Task {
+            if mezo?.groups.running == nil { await mezo?.load() }
+            if let reason = mezoOfflineReason { toast = reason; return }
+            if let running = mezo?.groups.running { act(running) }
+            else { toast = mezo?.lastError ?? "A futó mezociklusodat most nem érem el." }
+        }
+    }
+
+    private var mezoOfflineReason: String? {
+        mezo?.offline == true ? "Most nem érem el a szervert — net nélkül nem tudod újraindítani vagy lezárni." : nil
+    }
 
     /// The Következik card: only for a plan just read from the server, and only while it names a next block.
     @ViewBuilder private var kovetkezik: some View {
@@ -789,39 +825,60 @@ struct EdzesRoom: View {
 
     @ViewBuilder private var blokk: some View {
         if let b = block {
+            MezoCurrentCard(title: b.title, week: b.currentWeek, weeks: b.weeks, split: b.split, hue: hue, zoom: planZoom,
+                            offlineReason: mezoOfflineReason,
+                            onEdit: { page = .builder },
+                            onRestart: { withRunning { mezoFlow.sheet = .restart($0) } },
+                            onClose: { withRunning { mezoFlow.sheet = .close($0) } },
+                            onSaveTemplate: { withRunning { mezoFlow.saveRunning = $0 } })
             if let weekReview, plan != nil {
-                WeekReviewEntrance(model: weekReview, hue: hue, zoom: planZoom,
-                                   openReview: { page = .review }, openBuilder: { page = .builder })
+                WeekReviewEntrance(model: weekReview, hue: hue, zoom: planZoom, openReview: { page = .review })
             }
             blockLoadCard(b)
-            yearPlanRow
             weekCarousel(b)
+            mezoTiles
             NKAskRow(hue: hue, text: "Kérdezd meg Boopot az edzéstervedről") { openPlace(.boop) }
         } else if store?.blockProblem != nil {
-            NKBare("A BLOKKOD", hue: hue) { NKNoFreshData("A blokkodat most nem érem el") }
-            yearPlanRow
+            NKBare("A MEZOCIKLUSOD", hue: hue) { NKNoFreshData("A mezociklusodat most nem érem el") }
+            mezoTiles
             NKAskRow(hue: hue, text: "Kérdezd meg Boopot az edzéstervedről") { openPlace(.boop) }
         } else {
-            NKNotLiveYet(hue: hue, title: "Nincs futó blokkod",
-                         line: "Amint elindítasz egy nyolchetes blokkot, itt fog állni, hányadik hetén jársz, mit hoz a hét, és melyik izomcsoport mennyit kap.")
+            if let planned = mezo?.groups.upcoming.first {
+                MezoPlannedCard(card: planned, hue: hue) { mezoFlow.cover = .detail(planned) }
+            } else {
+                NKNotLiveYet(hue: hue, title: "Nincs futó mezociklusod",
+                             line: "Amint elindítasz egy mezociklust, itt fog állni, hányadik hetén jársz, mit hoz a hét, és melyik izomcsoport mennyit kap.")
+            }
             if plan != nil {
                 Button { openNewBlock() } label: {
-                    Text("Új blokk").nkFont(16, .semibold).foregroundStyle(NK.ground)
+                    Text("Új mezociklus").nkFont(16, .semibold).foregroundStyle(NK.ground)
                         .padding(.horizontal, 28).frame(minHeight: 52).background(Capsule().fill(.white))
                 }
                 .buttonStyle(PressStyle())
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 20)
             }
-            yearPlanRow
+            mezoTiles
             NKAskRow(hue: hue, text: "Kérdezd meg Boopot az edzéstervedről") { openPlace(.boop) }
         }
+    }
+
+    /// Mezociklusaim · Éves terv — always there, whatever state the running one is in.
+    @ViewBuilder private var mezoTiles: some View {
+        if plan != nil {
+            MezoTiles(hue: hue, groups: mezo?.groups ?? .empty, year: yearPlanValue,
+                      onAll: { mezoFlow.cover = .list }, onYear: { openYearPlan() })
+        }
+    }
+
+    private var yearPlanValue: WireYearPlan? {
+        if case .ready(let p, _) = year?.phase { p } else { nil }
     }
 
     /// The whole block's load in one card: the weeks, and what the muscles get. Tapping it
     /// opens the page that breaks it down muscle by muscle.
     private func blockLoadCard(_ b: BlockPlan) -> some View {
-        NKBare("A BLOKK TERHELÉSE", hue: hue, trailing: store?.blockAgeText) {
+        NKBare("A MEZOCIKLUS TERHELÉSE", hue: hue, trailing: store?.blockAgeText) {
             Button { page = .blockLoad } label: {
                 VStack(alignment: .leading, spacing: 14) {
                     NKBlockTimeline(edzesTimeline(b), hue: hue,
@@ -838,29 +895,6 @@ struct EdzesRoom: View {
             }
             .buttonStyle(.plain)
             .accessibilityHint("Izomcsoportonkénti bontás")
-        }
-    }
-
-    /// The way into the Éves terv from the Blokk tab: one row under the block's load.
-    @ViewBuilder private var yearPlanRow: some View {
-        if plan != nil {
-            NKBare("AZ ÉVES TERV", hue: hue) {
-                Button { openYearPlan() } label: {
-                    HStack(spacing: 10) {
-                        Text("Melyik blokk mikor jön, és mire figyel")
-                            .nkFont(13).foregroundStyle(.white.opacity(0.7))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(.white.opacity(0.45))
-                    }
-                    .frame(minHeight: 44)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Éves terv")
-                .accessibilityHint("Melyik blokk mikor jön, és mire figyel")
-            }
         }
     }
 
