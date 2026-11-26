@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import os
 
 /// Everything persisted for one user's reminders.
 public struct ReminderFile: Codable, Equatable, Sendable {
@@ -23,10 +24,15 @@ public final class ReminderStore {
 
     @ObservationIgnored private let fileURL: URL
     @ObservationIgnored private let clock: @Sendable () -> Date
+    @ObservationIgnored private let calendar: Calendar
+    private static let log = Logger(subsystem: "hu.mezo.boop", category: "ReminderStore")
 
-    public init(fileURL: URL, clock: @escaping @Sendable () -> Date = Date.init) {
+    public init(fileURL: URL, clock: @escaping @Sendable () -> Date = Date.init, calendar: Calendar? = nil) {
         self.fileURL = fileURL
         self.clock = clock
+        var greg = Calendar(identifier: .gregorian)
+        greg.timeZone = TimeZone.current
+        self.calendar = calendar ?? greg
         self.file = Self.read(fileURL) ?? ReminderFile()
     }
 
@@ -65,7 +71,7 @@ public final class ReminderStore {
 
     /// Re-read the file (another process may have written ticks). Keeps the current state if unreadable.
     public func reload() {
-        if let f = Self.read(fileURL) {
+        if let f = Self.read(fileURL), f != file {
             file = f
             changes += 1
         }
@@ -89,14 +95,16 @@ public final class ReminderStore {
             try data.write(to: fileURL, options: [.atomic])
             #endif
         } catch {
-            // Best effort: in-memory state stays authoritative for this run.
+            // Best effort: in-memory state stays authoritative for this run; nothing new reached the disk, so no bump.
+            Self.log.error("could not write reminders: \(error.localizedDescription, privacy: .public)")
+            return
         }
         changes += 1
     }
 
     /// Drops done keys whose day is older than 14 local days (and unparseable keys).
     private func prune() {
-        let cal = Calendar.current
+        let cal = calendar
         let today = cal.startOfDay(for: clock())
         guard let cutoff = cal.date(byAdding: .day, value: -14, to: today) else { return }
         file.done = file.done.filter { key in

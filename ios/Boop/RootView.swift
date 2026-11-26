@@ -56,7 +56,9 @@ struct RootView: View {
             case .signedOut: AuthFlow()
             case .offline: OfflineView()
             case .needsOnboarding(let me): OnboardingFlow(me: me)
-            case .ready(let me): ShellView(me: me)
+            case .ready(let me):
+                let _ = ReminderHub.activate(for: me.id) // before the Ma tree: BedtimeReminder reads the store at creation
+                ShellView(me: me)
             }
         }
         .animation(.easeInOut(duration: 0.3), value: session.state)
@@ -76,6 +78,11 @@ struct RootView: View {
         .environment(kapacitasStore)
         .onChange(of: session.state, initial: true) { _, state in updateLink(state) }
         .background { if let link, case .ready = session.state { SyncTriggers(link: link) } }
+        .background {
+            if case .ready(let me) = session.state, let store = ReminderHub.store, let scheduler = ReminderHub.scheduler {
+                ReminderTriggers(store: store, scheduler: scheduler).id(me.id)
+            }
+        }
         .background { if let ritmus, case .ready = session.state { RitmusTriggers(env: ritmus, morning: morning) } }
         .background { if let ritmus, let penz, case .ready = session.state { PenzTriggers(env: ritmus, store: penz) } }
     }
@@ -89,6 +96,8 @@ struct RootView: View {
         }
         // The wall's waiting notifications belong to the account that made them.
         if let old = ritmus?.userKey, link?.userId != me?.id { WallNotifier.signedOut(userKey: old) }
+        // His own reminders belong to the account too: signed out cancels them; another user gets his own store.
+        if me == nil { ReminderHub.deactivate() } else if let me { ReminderHub.activate(for: me.id) }
         // Signed out, or another user: the old daily loop stops sending at once (its queue stays on disk for that user;
         // the session's client already carries another token, or none).
         guard let me else {
@@ -155,6 +164,22 @@ struct RootView: View {
             BackgroundSyncHost.ritmus = ritmus
         }
         if case .ready = state { Task { await link?.syncIfStale() } }
+    }
+}
+
+/// Keeps the user's own reminders armed: on open, on return to the foreground and on every edit (an edit may ask for the
+/// alarm permission). The HealthKit wake does the same through `ReminderHub.scheduler`.
+private struct ReminderTriggers: View {
+    let store: ReminderStore
+    let scheduler: ReminderScheduler
+    @Environment(\.scenePhase) private var scenePhase
+    var body: some View {
+        Color.clear
+            .task { await scheduler.refresh(askPermission: false) }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active { Task { await scheduler.refresh(askPermission: false) } }
+            }
+            .onChange(of: store.changes) { Task { await scheduler.refresh(askPermission: true) } }
     }
 }
 

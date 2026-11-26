@@ -53,6 +53,38 @@ struct ReminderStoreTests {
         #expect(store.file.done == ["\(id)|\(dayString(-1))"])
     }
 
+    @Test func pruneKeepsExactlyFourteenDays() {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "UTC")!
+        let now = cal.date(from: DateComponents(year: 2026, month: 11, day: 26, hour: 12))!
+        let store = ReminderStore(fileURL: tempURL(), clock: { now }, calendar: cal)
+        let id = UUID().uuidString
+        store.tick("\(id)|2026-11-12") // exactly 14 days old: kept
+        store.tick("\(id)|2026-11-11") // 15 days old: pruned
+        #expect(store.file.done == ["\(id)|2026-11-12"])
+    }
+
+    @Test func reloadOfUnchangedContentDoesNotBump() {
+        let url = tempURL()
+        let store = ReminderStore(fileURL: url)
+        store.upsert(sample())
+        let before = store.changes
+        store.reload()
+        #expect(store.changes == before)
+    }
+
+    @Test func failedWriteDoesNotBump() throws {
+        let url = tempURL()
+        let dir = url.deletingLastPathComponent()
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true) // a folder where the file goes
+        let store = ReminderStore(fileURL: url)
+        let before = store.changes
+        store.upsert(sample())
+        #expect(store.changes == before)
+        #expect(store.file.reminders.count == 1)
+    }
+
     @Test func missingFileStartsEmptyWithDefaults() {
         let f = ReminderStore(fileURL: tempURL()).file
         #expect(f.reminders.isEmpty && f.done.isEmpty)

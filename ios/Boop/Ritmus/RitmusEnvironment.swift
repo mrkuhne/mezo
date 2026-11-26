@@ -342,10 +342,15 @@ final class RitmusEnvironment {
     }
 
     /// Each signed-in user keeps their own days and queue: `<base>/boop-ritmus/<userId>/ledger|outbox`.
+    /// The user's own folder, the parent of `ledger`, `outbox`, `cache` (and the reminders file).
+    static func userRoot(for userId: UUID, base: URL = .applicationSupportDirectory) -> URL {
+        base.appendingPathComponent("boop-ritmus", isDirectory: true)
+            .appendingPathComponent(userId.uuidString, isDirectory: true)
+    }
+
     static func directories(for userId: UUID,
                             base: URL = .applicationSupportDirectory) -> (ledger: URL, outbox: URL, cache: URL) {
-        let root = base.appendingPathComponent("boop-ritmus", isDirectory: true)
-            .appendingPathComponent(userId.uuidString, isDirectory: true)
+        let root = userRoot(for: userId, base: base)
         // `cache` is the last-known-good READ cache (`ServerCache`) — a third folder, per user like the other two,
         // and deliberately separate: everything in it is a disposable copy of something the server still has, so
         // clearing it can never lose one of the owner's own writes the way clearing `outbox` would.

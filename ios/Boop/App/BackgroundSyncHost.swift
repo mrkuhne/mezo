@@ -33,6 +33,7 @@ enum BackgroundSyncHost {
             // a wake is also a moment to keep the reminders true (a close saved on the web, a day rolled over)
             await ritmus.reminders.refresh(ledger: ritmus.ledger, bedtimeTarget: nil, askPermission: false)
         }
+        await ReminderHub.scheduler?.refresh(askPermission: false)
         let tokens = KeychainTokenStore()
         guard tokens.read() != nil, let userId = lastUserId else { return false }
         let sync = sync(userId: userId) {
