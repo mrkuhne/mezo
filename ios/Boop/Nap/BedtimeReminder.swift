@@ -1,4 +1,5 @@
 import Foundation
+import BoopCore
 import Observation
 import UserNotifications
 
@@ -126,7 +127,7 @@ final class ReminderPresenter: NSObject, UNUserNotificationCenterDelegate, Senda
 enum BedtimeTime {
     static let lead = 30
 
-    static func trigger(for target: String) -> (hour: Int, minute: Int)? {
+    static func trigger(for target: String, lead: Int = lead) -> (hour: Int, minute: Int)? {
         let p = target.split(separator: ":")
         guard p.count == 2, let h = Int(p[0]), let m = Int(p[1]), (0..<24).contains(h), (0..<60).contains(m) else { return nil }
         let t = ((h * 60 + m - lead) % 1440 + 1440) % 1440
@@ -134,8 +135,8 @@ enum BedtimeTime {
     }
 
     /// "22:15" for a 22:45 target.
-    static func label(for target: String) -> String? {
-        trigger(for: target).map { String(format: "%02d:%02d", $0.hour, $0.minute) }
+    static func label(for target: String, lead: Int = lead) -> String? {
+        trigger(for: target, lead: lead).map { String(format: "%02d:%02d", $0.hour, $0.minute) }
     }
 }
 
@@ -149,6 +150,8 @@ enum BedtimeText {
     static let settings = "Beállítások"
     static let failed = "Most nem sikerült beállítani, próbáld újra egy kicsit később."
     static let title = "Fél óra múlva lefekvés"
+    /// The title for a configured lead ("Fél óra" at the default 30).
+    static func title(lead: Int) -> String { lead == BedtimeTime.lead ? title : "\(lead) perc múlva lefekvés" }
     static let body = "Tedd le a telefont, és kezdd a levezetést. Holnap hálás leszel érte."
     static func on(_ time: String) -> String { "Emlékeztetlek \(time)-kor" }
 }
@@ -183,12 +186,32 @@ final class BedtimeReminder {
     @ObservationIgnored private var busy = false
     @ObservationIgnored private let center: ReminderCenter
     @ObservationIgnored private let defaults: UserDefaults
+    /// The built-in reminder settings (on/off and lead come from here) and where a change is written back.
+    @ObservationIgnored private let settings: () -> BoopReminderSettings
+    @ObservationIgnored private let saveSettings: (BoopReminderSettings) -> Void
+    /// Whether the signed-in user's store exists; without one the old UserDefaults on/off still rules.
+    @ObservationIgnored private let hasStore: () -> Bool
 
-    init(center: ReminderCenter = SystemReminderCenter(), defaults: UserDefaults = .standard) {
+    init(center: ReminderCenter = SystemReminderCenter(), defaults: UserDefaults = .standard,
+         settings: @escaping () -> BoopReminderSettings = { MainActor.assumeIsolated { ReminderHub.store?.file.builtIn ?? BoopReminderSettings() } },
+         saveSettings: @escaping (BoopReminderSettings) -> Void = { s in MainActor.assumeIsolated { ReminderHub.store?.setBuiltIn(s) } },
+         hasStore: @escaping () -> Bool = { MainActor.assumeIsolated { ReminderHub.store != nil } }) {
         self.center = center
         self.defaults = defaults
-        isOn = defaults.bool(forKey: Self.onKey)
-        time = defaults.string(forKey: Self.timeKey)
+        self.settings = settings
+        self.saveSettings = saveSettings
+        self.hasStore = hasStore
+        // One-time migration: the old on/off key moves into the settings once a store exists.
+        if hasStore(), defaults.object(forKey: Self.onKey) != nil {
+            var s = settings()
+            s.bedtimeEnabled = defaults.bool(forKey: Self.onKey)
+            saveSettings(s)
+            defaults.removeObject(forKey: Self.onKey)
+        }
+        let storedTime = defaults.string(forKey: Self.timeKey)
+        time = storedTime
+        // the settings default is "on", but it only rings once the owner asked for it (a time was scheduled)
+        isOn = hasStore() ? settings().bedtimeEnabled && storedTime != nil : defaults.bool(forKey: Self.onKey)
         target = defaults.string(forKey: Self.targetKey)
     }
 
@@ -202,7 +225,7 @@ final class BedtimeReminder {
             set(on: false, time: nil, target: nil)
             return ReminderReply(text: BedtimeText.off)
         }
-        guard let target = target ?? self.target, let label = BedtimeTime.label(for: target) else {
+        guard let target = target ?? self.target, let label = BedtimeTime.label(for: target, lead: settings().bedtimeMinutesBefore) else {
             return ReminderReply(text: BedtimeText.noTarget)
         }
         switch await center.status() {
@@ -221,8 +244,14 @@ final class BedtimeReminder {
         guard isOn, !busy else { return }
         busy = true
         defer { busy = false }
+        // switched off in the reminder settings: cancel and follow
+        if hasStore(), !settings().bedtimeEnabled {
+            center.cancel(id: Self.id)
+            set(on: false, time: nil, target: nil)
+            return
+        }
         if await center.status() != .allowed { set(on: false, time: nil, target: nil); return }
-        guard let target = target ?? self.target, let label = BedtimeTime.label(for: target) else {
+        guard let target = target ?? self.target, let label = BedtimeTime.label(for: target, lead: settings().bedtimeMinutesBefore) else {
             // on, but nothing to count back from: it cannot ring honestly
             center.cancel(id: Self.id)
             set(on: false, time: nil, target: nil)
@@ -233,9 +262,9 @@ final class BedtimeReminder {
     }
 
     private func schedule(_ target: String) async -> Bool {
-        guard let t = BedtimeTime.trigger(for: target) else { return false }
+        guard let t = BedtimeTime.trigger(for: target, lead: settings().bedtimeMinutesBefore) else { return false }
         do {
-            try await center.schedule(id: Self.id, hour: t.hour, minute: t.minute, title: BedtimeText.title, body: BedtimeText.body)
+            try await center.schedule(id: Self.id, hour: t.hour, minute: t.minute, title: BedtimeText.title(lead: settings().bedtimeMinutesBefore), body: BedtimeText.body)
             return true
         } catch { return false }
     }
@@ -244,7 +273,12 @@ final class BedtimeReminder {
         isOn = on
         self.time = time
         self.target = target
-        defaults.set(on, forKey: Self.onKey)
+        if hasStore() {
+            var s = settings()
+            if s.bedtimeEnabled != on { s.bedtimeEnabled = on; saveSettings(s) }
+        } else {
+            defaults.set(on, forKey: Self.onKey)
+        }
         defaults.set(time, forKey: Self.timeKey)
         defaults.set(target, forKey: Self.targetKey)
     }

@@ -1,6 +1,7 @@
 import Foundation
 import Testing
 import UserNotifications
+import BoopCore
 @testable import Boop
 
 /// Records what the reminder asked of the notification centre.
@@ -198,5 +199,35 @@ struct BedtimeReminderTests {
         center.pending.removeAll()
         await r.refresh(target: nil)
         #expect(center.scheduled.last?.hour == 22 && center.scheduled.last?.minute == 30)
+    }
+
+    @Test func bedtimeOffCancelsBoopBedtime() async {
+        let center = FakeCenter(.allowed)
+        var settings = BoopReminderSettings()
+        let r = BedtimeReminder(center: center, defaults: defaults(), settings: { settings }, saveSettings: { settings = $0 }, hasStore: { true })
+        _ = await r.toggle(target: "22:30")
+        #expect(r.isOn && settings.bedtimeEnabled)
+        settings.bedtimeEnabled = false      // switched off in the reminder settings
+        await r.refresh(target: "22:30")
+        #expect(!r.isOn)
+        #expect(center.cancelled.contains(BedtimeReminder.id))
+    }
+
+    @Test func legacyOnKeyMigratesIntoTheSettingsOnce() {
+        let store = defaults()
+        store.set(false, forKey: "bedtimeReminder.on")
+        var settings = BoopReminderSettings()
+        let r = BedtimeReminder(center: FakeCenter(.allowed), defaults: store, settings: { settings }, saveSettings: { settings = $0 }, hasStore: { true })
+        #expect(!settings.bedtimeEnabled)
+        #expect(!r.isOn)
+        #expect(store.object(forKey: "bedtimeReminder.on") == nil)
+    }
+
+    @Test func leadMinutesComeFromTheSettings() async {
+        let center = FakeCenter(.allowed)
+        var settings = BoopReminderSettings(); settings.bedtimeMinutesBefore = 45
+        let r = BedtimeReminder(center: center, defaults: defaults(), settings: { settings }, saveSettings: { settings = $0 }, hasStore: { true })
+        _ = await r.toggle(target: "23:00")
+        #expect(r.time == "22:15")
     }
 }

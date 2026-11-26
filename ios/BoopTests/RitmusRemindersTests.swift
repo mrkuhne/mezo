@@ -52,9 +52,10 @@ final class RitmusRemindersTests {
     private let center = FakeRitmusCenter()
     deinit { try? FileManager.default.removeItem(at: root) }
 
-    private func reminders(now: Date, center custom: FakeRitmusCenter? = nil) -> (RitmusReminders, LedgerStore) {
+    private func reminders(now: Date, center custom: FakeRitmusCenter? = nil,
+                           settings: BoopReminderSettings = BoopReminderSettings()) -> (RitmusReminders, LedgerStore) {
         let ledger = LedgerStore(directory: root)
-        return (RitmusReminders(center: custom ?? center, calendar: Self.budapest, clock: { now }), ledger)
+        return (RitmusReminders(center: custom ?? center, calendar: Self.budapest, clock: { now }, settings: { settings }), ledger)
     }
 
     private func checkIn(_ moment: CheckInMoment, at: Date) -> LedgerCheckIn {
@@ -122,6 +123,41 @@ final class RitmusRemindersTests {
         #expect(center.request(Self.id(.delben, 12))?.title == "Déli kitöltés")
         #expect(center.request(Self.id(.delutan, 12))?.title == "Délutáni kitöltés")
         #expect(center.request(Self.id(.reggel, 12))?.body == "Mennyi energia van benned most? · 6 kérdés, fél perc")
+    }
+
+    // MARK: - Settings
+
+    @Test func defaultsPlanAsBefore() async throws {
+        let (r, ledger) = reminders(now: Self.at(6, 50))
+        let plans = r.plan(ledger: ledger, bedtimeTarget: nil, settings: BoopReminderSettings())
+        #expect(plans.count == 28)
+        #expect(plans.first { $0.id == Self.id(.reggel, 12) }.map { [$0.hour, $0.minute] } == [7, 30])
+        #expect(plans.first { $0.id == Self.id(.delben, 12) }.map { [$0.hour, $0.minute] } == [12, 30])
+        #expect(plans.first { $0.id == Self.id(.delutan, 12) }.map { [$0.hour, $0.minute] } == [16, 0])
+        #expect(plans.first { $0.id == Self.close(12) }.map { [$0.hour, $0.minute] } == [21, 30])
+    }
+
+    @Test func disabledSlotIsNotPlanned() async {
+        var s = BoopReminderSettings(); s.noon.enabled = false
+        let (r, ledger) = reminders(now: Self.at(6, 50), settings: s)
+        await r.refresh(ledger: ledger, bedtimeTarget: nil, askPermission: false)
+        #expect(center.scheduled.allSatisfy { !$0.id.contains(".delben.") })
+        #expect(center.request(Self.id(.reggel, 12)) != nil)
+    }
+
+    @Test func movedSlotRingsAtNewTime() async {
+        var s = BoopReminderSettings(); s.morning = .init(enabled: true, hour: 8, minute: 15)
+        let (r, ledger) = reminders(now: Self.at(6, 50), settings: s)
+        await r.refresh(ledger: ledger, bedtimeTarget: nil, askPermission: false)
+        #expect(time(center.request(Self.id(.reggel, 12))) == [8, 15])
+    }
+
+    @Test func closeOffDropsTheClose() async {
+        var s = BoopReminderSettings(); s.closeEnabled = false
+        let (r, ledger) = reminders(now: Self.at(6, 50), settings: s)
+        await r.refresh(ledger: ledger, bedtimeTarget: "23:00", askPermission: false)
+        #expect(center.scheduled.allSatisfy { !$0.id.contains(".close.") })
+        #expect(center.request(Self.id(.reggel, 12)) != nil)
     }
 
     // MARK: - The close
