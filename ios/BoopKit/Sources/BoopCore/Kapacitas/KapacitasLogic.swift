@@ -326,7 +326,7 @@ public func kapacitasLineTopic(_ line: String) -> (glyph: String, topic: String)
     if has(["alv", "lefekv", "éjszak", "fekü"]) { return ("moon-ink", "Alvás") }
     if has(["évad", "súlycél", "heti "]) { return ("check-ink", "Évad") }
     if has(["röpi", "röplabda", "sport"]) { return ("ball-sun", "Sport") }
-    if has(["edzés", "lábnap", "hátedzés", "pihenőnap", "blokk"]) { return ("dumbbell-ink", "Edzés") }
+    if has(["edzés", "lábnap", "hátedzés", "pihenőnap", "blokk", "mezociklus"]) { return ("dumbbell-ink", "Edzés") }
     if has(["terh", "túl sok", "szoros", "laza", "rendben", "enyhül"]) { return ("bolt-ink", "Terhelés") }
     return ("check-ink", "Hatás")
 }

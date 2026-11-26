@@ -25,7 +25,7 @@ struct EvesTervBlokkSheet: View {
                     content(block, plan: plan)
                         .padding(.horizontal, 22).padding(.top, 28).padding(.bottom, 20)
                 } else {
-                    Text("Ezt a blokkot már nem találom.").nkFont(15).foregroundStyle(.white.opacity(0.7))
+                    Text("Ezt a mezociklust már nem találom.").nkFont(15).foregroundStyle(.white.opacity(0.7))
                         .padding(28)
                 }
             }
@@ -51,7 +51,7 @@ struct EvesTervBlokkSheet: View {
                 Text(evesErrorText(e)).nkFont(13.5).foregroundStyle(planWarn).fixedSize(horizontal: false, vertical: true)
             }
             if status.isLocked {
-                Text(status == .done ? "Ez a blokk lezárult, már nem változik." : "Ez a blokk most fut, ezért nem módosítható. A fókuszát a blokk oldalán állíthatod.")
+                Text(status == .done ? "Ez a mezociklus lezárult, már nem változik." : "Ez a mezociklus most fut, ezért nem módosítható. A fókuszát a mezociklus oldalán állíthatod.")
                     .nkFont(14).foregroundStyle(.white.opacity(0.7)).fixedSize(horizontal: false, vertical: true)
             } else if status == .skipped {
                 skip(block, status: status)
@@ -142,7 +142,7 @@ struct EvesTervBlokkSheet: View {
             UjBlokkLabel("Kihagyás")
             if status == .skipped {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Ezt a blokkot kihagytad; a következők előrébb jöttek.").nkFont(13.5).foregroundStyle(.white.opacity(0.8))
+                    Text("Ezt a mezociklust kihagytad; a következők előrébb jöttek.").nkFont(13.5).foregroundStyle(.white.opacity(0.8))
                         .fixedSize(horizontal: false, vertical: true)
                     Button { if let id = block.id { Task { await model.skip(id, false) } } } label: {
                         Text("Visszaveszem").nkFont(15, .semibold).foregroundStyle(.white)
@@ -157,7 +157,7 @@ struct EvesTervBlokkSheet: View {
             } else {
                 VStack(alignment: .leading, spacing: 12) {
                     if lost.isEmpty {
-                        Text("Ha kihagyod, a következő blokkok előrébb jönnek, és minden izom máskor is sorra kerül.")
+                        Text("Ha kihagyod, a következő mezociklusok előrébb jönnek, és minden izom máskor is sorra kerül.")
                             .nkFont(13).foregroundStyle(.white.opacity(0.8)).fixedSize(horizontal: false, vertical: true)
                     } else {
                         HStack(alignment: .top, spacing: 10) {
@@ -166,8 +166,8 @@ struct EvesTervBlokkSheet: View {
                                 Text(lostTitle(lost)).nkFont(15, .semibold).foregroundStyle(planWarn)
                                     .fixedSize(horizontal: false, vertical: true)
                                 Text(lost.count == 1
-                                     ? "Ha kihagyod ezt a blokkot, idén más blokk nem teszi fókuszba: egész évben Tartáson marad."
-                                     : "Ha kihagyod ezt a blokkot, idén más blokk nem teszi fókuszba őket: egész évben Tartáson maradnak.")
+                                     ? "Ha kihagyod ezt a mezociklust, idén más mezociklus nem teszi fókuszba: egész évben Tartáson marad."
+                                     : "Ha kihagyod ezt a mezociklust, idén más mezociklus nem teszi fókuszba őket: egész évben Tartáson maradnak.")
                                     .nkFont(13).foregroundStyle(.white.opacity(0.8)).fixedSize(horizontal: false, vertical: true)
                             }
                         }

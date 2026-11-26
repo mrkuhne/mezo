@@ -8,7 +8,7 @@ import BoopDesign
 // The Napok tab is the day editor (mezo-r36n9.116): reorder, add, swap, delete with undo, per-row settings.
 
 struct BlockBuilderPage: View {
-    enum Mode: String, CaseIterable { case izmok = "Izmok", napok = "Napok", blokk = "Blokk" }
+    enum Mode: String, CaseIterable { case izmok = "Izmok", napok = "Napok", blokk = "Mezociklus" }
 
     @State var model: BlockBuilderModel
     let onClose: () -> Void
@@ -56,14 +56,14 @@ struct BlockBuilderPage: View {
         Group {
             switch model.phase {
             case .loading:
-                PlanStateView(title: "Betöltöm a blokkot", text: "Egy pillanat, lekérem a terved és az értékelését.", loading: true, onClose: onClose)
+                PlanStateView(title: "Betöltöm a mezociklust", text: "Egy pillanat, lekérem a terved és az értékelését.", loading: true, onClose: onClose)
             case .noBlock:
                 if let onNewBlock {
-                    PlanStateView(title: "Nincs futó blokkod",
+                    PlanStateView(title: "Nincs futó mezociklusod",
                                   text: "Indíts egy újat: megmondod, hány hétre és mennyi időd van egy edzésre, én pedig hozok két-három lehetőséget, mindegyiknél azzal, hogy miért.",
-                                  mark: .calendar, action: ("Új blokk", onNewBlock), onClose: onClose)
+                                  mark: .calendar, action: ("Új mezociklus", onNewBlock), onClose: onClose)
                 } else {
-                    PlanStateView(title: "Nincs futó blokkod", text: "Az építő a futó blokkodat állítja. Amint elindul egy, itt tudod igazítani.",
+                    PlanStateView(title: "Nincs futó mezociklusod", text: "Az építő a futó mezociklusodat állítja. Amint elindul egy, itt tudod igazítani.",
                                   mark: .calendar, onClose: onClose)
                 }
             case .failed(let e):
@@ -150,7 +150,7 @@ struct BlockBuilderPage: View {
                 .presentationCornerRadius(34)
                 .presentationDragIndicator(.visible)
         }
-        .confirmationDialog("Eldobod az új blokkot?", isPresented: $confirmDiscard, titleVisibility: .visible) {
+        .confirmationDialog("Eldobod az új mezociklust?", isPresented: $confirmDiscard, titleVisibility: .visible) {
             Button("Eldobom", role: .destructive) {
                 discarding = true
                 Task { await model.discard(); discarding = false }
@@ -998,7 +998,7 @@ private struct BuilderDayCard: View {
                             .nkFont(13).foregroundStyle(planWarn).fixedSize(horizontal: false, vertical: true)
                     }
                     if !draft.techniquesEnabled, day.exercises.contains(where: { $0.stable && $0.judged }) {
-                        Text("A technikák ki vannak kapcsolva ebben a blokkban. A Blokk fülön bekapcsolhatod.")
+                        Text("A technikák ki vannak kapcsolva ebben a mezociklusban. A Mezociklus fülön bekapcsolhatod.")
                             .nkFont(12).foregroundStyle(.white.opacity(0.5)).fixedSize(horizontal: false, vertical: true)
                     }
                     if day.exercises.isEmpty {
@@ -1609,7 +1609,7 @@ private struct BuilderBlockView: View {
                 }
             }
             Text(draft?.style == nil
-                 ? "Most nincs edzésmód: a gyakorlatok a saját beállításukkal mennek. Ha választasz, az egész blokkra érvényes lesz."
+                 ? "Most nincs edzésmód: a gyakorlatok a saját beállításukkal mennek. Ha választasz, az egész mezociklusra érvényes lesz."
                  : "Egy gyakorlatnál az eltérő beállítás megmarad.")
                 .nkFont(11).foregroundStyle(.white.opacity(0.45)).fixedSize(horizontal: false, vertical: true)
         }

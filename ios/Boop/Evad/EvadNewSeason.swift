@@ -16,7 +16,7 @@ struct EvadNewSeason: View {
 
     var body: some View {
         NKAreaSubPage(hue: evadHue, crumb: "Évad", eyebrow: "Új évad", title: "Jöhet a következő évad",
-                      sentence: "A mostani súlycélodból és edzésblokkodból *már összeállítottam* egy javaslatot, csak nézd át.",
+                      sentence: "A mostani súlycélodból és mezociklusodból *már összeállítottam* egy javaslatot, csak nézd át.",
                       onBack: close) {
             if let d = draft {
                 steps(d)
@@ -110,7 +110,7 @@ struct EvadNewSeason: View {
             let sport = evadSportSummary(d.sport)
             Text([blockPhrase(d.block), "heti \(d.gymDays.count) edzés", sport.isEmpty ? nil : sport].compactMap { $0 }.joined(separator: " · "))
                 .nkFont(14).foregroundStyle(.white.opacity(0.75)).fixedSize(horizontal: false, vertical: true)
-            Text("Edzésblokkot csak évadhoz lehet indítani, így a hossza is az évadhoz igazodik.")
+            Text("Mezociklust csak évadhoz lehet indítani, így a hossza is az évadhoz igazodik.")
                 .nkFont(12.5).foregroundStyle(.white.opacity(0.5)).fixedSize(horizontal: false, vertical: true)
         }
         step(3, "Az étel", done: false) {
@@ -142,9 +142,9 @@ struct EvadNewSeason: View {
 
     private func blockPhrase(_ b: EvadBlockChoice?) -> String? {
         switch b?.source {
-        case "adopt": "a mostani blokkod folytatódik"
-        case "rerun": "a legutóbbi blokkod újraindul"
-        case "template": "sablonból indul új blokk"
+        case "adopt": "a mostani mezociklusod folytatódik"
+        case "rerun": "a legutóbbi mezociklusod újraindul"
+        case "template": "sablonból indul új mezociklus"
         default: nil
         }
     }

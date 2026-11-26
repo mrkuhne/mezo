@@ -26,8 +26,8 @@ struct KovetkezikTests {
         let c = try #require(KovetkezikContent(plan: plan(), today: "2026-11-21"))
         #expect(c.blockId == "b2")
         #expect(c.title == "Comb + far")
-        #expect(c.meta == "6 hét · nov. 23-tól · 2. blokk a 8-ból")
-        #expect(c.sentence == "A mostani blokkod holnap ér véget. Most a comb és a far kerül fókuszba, minden más Tartáson marad.")
+        #expect(c.meta == "6 hét · nov. 23-tól · 2. mezociklus a 8-ból")
+        #expect(c.sentence == "A mostani mezociklusod holnap ér véget. Most a comb és a far kerül fókuszba, minden más Tartáson marad.")
         #expect(c.emphasized == "Comb, far")
         #expect(c.loads.count == 6 && c.deloadLast)
         #expect(c.caption == "5 terhelő hét + 1 könnyítő")
@@ -48,20 +48,20 @@ struct KovetkezikTests {
     @Test func withoutARunningYearBlockTheEndIsTheDayBeforeTheNext() throws {
         // The running block is not linked to the year: the day before the next block's start ends it.
         let c = try #require(KovetkezikContent(plan: plan(b1: "done"), today: "2026-11-18"))
-        #expect(c.sentence?.hasPrefix("A mostani blokkod vasárnap ér véget.") == true)
+        #expect(c.sentence?.hasPrefix("A mostani mezociklusod vasárnap ér véget.") == true)
     }
 
     @Test func noBlockSentence() throws {
         let c = try #require(KovetkezikContent(plan: plan(next: #"{"blockId":"b2","startsOn":"2026-11-23","reason":"no_block"}"#, b1: "done"),
                                                today: "2026-11-21"))
-        #expect(c.sentence == "Most nincs futó blokkod. A terv szerint a comb és a far jön, minden más Tartáson marad.")
+        #expect(c.sentence == "Most nincs futó mezociklusod. A terv szerint a comb és a far jön, minden más Tartáson marad.")
     }
 
     @Test func aBlockStartingTodayReadsMatol() throws {
         // The server's no_block start for a due block is today.
         let c = try #require(KovetkezikContent(plan: plan(next: #"{"blockId":"b2","startsOn":"2026-11-25","reason":"no_block"}"#, b1: "done"),
                                                today: "2026-11-25"))
-        #expect(c.meta == "6 hét · mától · 2. blokk a 8-ból")
+        #expect(c.meta == "6 hét · mától · 2. mezociklus a 8-ból")
         let closing = try #require(KovetkezikContent(plan: plan(next: #"{"blockId":"c","startsOn":"2027-09-29","reason":"no_block"}"#),
                                                      today: "2027-09-29"))
         #expect(closing.meta == "2 hét · mától · lezárás")
@@ -89,7 +89,7 @@ struct KovetkezikTests {
     @Test func intakeHeadNamesTheYearBlock() {
         let loading = YearBlockPrefill(yearBlockId: "b2", tiers: [:], weeks: 6, consolidation: false, startDate: nil,
                                        ordinal: 3, focus: ["shoulder", "chest"])
-        #expect(ujBlokkYearSentence(loading) == "Az éves terved 3. blokkja: Mell + váll. Kitöltöttem, amit tudok; átállíthatod.")
+        #expect(ujBlokkYearSentence(loading) == "Az éves terved 3. mezociklusa: Mell + váll. Kitöltöttem, amit tudok; átállíthatod.")
         let closing = YearBlockPrefill(yearBlockId: "c", tiers: [:], weeks: 2, consolidation: true, startDate: nil, ordinal: 9)
         #expect(ujBlokkYearSentence(closing) == "Az éves terved lezárása. A hossza és a szintek a tervből jönnek.")
         #expect(ujBlokkStartText(.planned("2026-12-14")) == "dec. 14-től")

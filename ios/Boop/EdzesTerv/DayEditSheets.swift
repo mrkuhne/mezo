@@ -789,12 +789,12 @@ struct DayEditSwapSheet: View {
             let row = draft.days[at.day].exercises[at.index]
             let taken = dayEditTaken(draft.days[at.day])
             let pool = dayEditPool(model, taken: taken)
-            NKSheetFrame(hue: planHue, eyebrow: row.name, title: "Mire cseréljük a blokk végéig?") {
+            NKSheetFrame(hue: planHue, eyebrow: row.name, title: "Mire cseréljük a mezociklus végéig?") {
                 DayEditSuggestions(load: load, taken: taken, empty: "Most nincs jó ajánlásom — nézd meg a teljes listát", onPick: pick)
                 DayEditFullList(showAll: $showAll, query: $query, forced: load == .failed,
                                 items: pool.filter { $0.coarse == row.muscle }, others: pool.filter { $0.coarse != row.muscle },
                                 label: load.label, onPick: { pick($0, load.prescription(for: $0)) })
-                Text("A csere a blokk hátralévő részére szól, a technika és amit te állítottál, marad. A döntés a tiéd — a teljes listából bármit választhatsz.")
+                Text("A csere a mezociklus hátralévő részére szól, a technika és amit te állítottál, marad. A döntés a tiéd — a teljes listából bármit választhatsz.")
                     .nkFont(12).foregroundStyle(.white.opacity(0.45))
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)

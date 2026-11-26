@@ -53,6 +53,6 @@ struct TrainAsPlannedClientTests {
         let p = WorkoutAsPlannedPayload(templateSessionId: UUID(), date: "2026-11-23", startedAt: six, overrides: [])
         let result = await train().send(item(p))
         guard case .failed(let why) = result else { Issue.record("a 404 on the booking is final, not a retry: \(result)"); return }
-        #expect(why == "Ez a tervnap már nincs a mostani blokkodban.")
+        #expect(why == "Ez a tervnap már nincs a mostani mezociklusodban.")
     }
 }

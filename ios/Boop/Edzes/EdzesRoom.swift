@@ -456,7 +456,7 @@ struct EdzesRoom: View {
                              action: (doneToday && store?.session == nil) ? nil : { startOrResume() },
                              onResult: doneToday ? result : nil)
         } else if let w = workout, w.isRestDay {
-            NKHighlight(hue: hue, label: "ma", text: "Ma nincs edzés", sub: "A blokkod szerint ez pihenőnap.")
+            NKHighlight(hue: hue, label: "ma", text: "Ma nincs edzés", sub: "A mezociklusod szerint ez pihenőnap.")
         } else if let c = brief.map({ maiCopy($0, .mozgas) }) {
             NKHighlight(hue: hue, label: "ma", text: c.headline, sub: c.sentence)
         }
@@ -602,7 +602,7 @@ struct EdzesRoom: View {
         if !weeks.isEmpty, let b = block {
             NKBare("HOL TARTASZ", hue: hue, trailing: store?.blockAgeText) {
                 NKBlockTimeline(weeks, hue: hue,
-                                caption: "\(b.weeks) hetes blokk · \(b.currentWeek). hét · \(b.shortTitle)")
+                                caption: "\(b.weeks) hetes mezociklus · \(b.currentWeek). hét · \(b.shortTitle)")
             }
         }
     }
@@ -650,7 +650,7 @@ struct EdzesRoom: View {
         // first set, not a gate he has to pass twice.
         if store.session != nil { phase = .playing; return }
         guard workout?.isRestDay == false || workout?.templateSessionId != nil else {
-            toast = "Ma nincs mit elkezdeni — a blokkod szerint pihenőnap."
+            toast = "Ma nincs mit elkezdeni — a mezociklusod szerint pihenőnap."
             return
         }
         guard workout != nil else {
@@ -817,7 +817,7 @@ struct EdzesRoom: View {
             NKMenuItem(glyph: "plus-ink", name: "Egyedi edzés", sub: "Saját összeállítás") { toast = soonToast("Egyedi edzés") },
             NKMenuItem(glyph: "dumbbell-ink", name: "Gyakorlatok", sub: "A saját súlyaiddal") { selected = EdzesTab.gyakorlatok.rawValue },
             NKMenuItem(glyph: "book-sage", name: "Előzmények", sub: "Minden eddigi edzés") { selected = EdzesTab.elozmenyek.rawValue },
-        ] + (plan != nil ? [NKMenuItem(glyph: "sun-ink", name: "Éves terv", sub: "Az év blokkjai, előre") { openYearPlan() }] : []),
+        ] + (plan != nil ? [NKMenuItem(glyph: "sun-ink", name: "Éves terv", sub: "Az év mezociklusai, előre") { openYearPlan() }] : []),
         hue: hue)
     }
 
@@ -882,7 +882,7 @@ struct EdzesRoom: View {
             Button { page = .blockLoad } label: {
                 VStack(alignment: .leading, spacing: 14) {
                     NKBlockTimeline(edzesTimeline(b), hue: hue,
-                                    caption: "\(b.weeks) hetes blokk · \(b.currentWeek). hét · \(b.split)")
+                                    caption: "\(b.weeks) hetes mezociklus · \(b.currentWeek). hét · \(b.split)")
                     HStack(spacing: 10) {
                         Text(muscleSummary(b))
                             .nkFont(13).foregroundStyle(.white.opacity(0.7))
@@ -910,7 +910,7 @@ struct EdzesRoom: View {
     private func weekCarousel(_ b: BlockPlan) -> some View {
         NKBare("A HETED", hue: hue, trailing: store?.blockAgeText) {
             if b.days.isEmpty {
-                NKNoFreshData("A blokk napjai még nem érkeztek meg")
+                NKNoFreshData("A mezociklus napjai még nem érkeztek meg")
             } else {
                 NKCarousel(b.days, hue: hue, height: 150) { day in
                     DayCard(day: day, hue: hue, done: isDayDone(day), today: day.isCurrent)

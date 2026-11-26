@@ -86,7 +86,7 @@ struct EvadRulesPage: View {
         if let title = b.title {
             let length = b.blockWeeks.map { "\($0) hetes" }
             let when: String? = if let from = b.fromWeek, let to = b.toWeek { "az évad \(from)–\(to). hetében" } else { nil }
-            rows.append(NKAreaRow(id: "block", glyph: "clock-ink", title: "Blokk · \(title)",
+            rows.append(NKAreaRow(id: "block", glyph: "clock-ink", title: "Mezociklus · \(title)",
                                   sub: [length, when].compactMap { $0 }.joined(separator: ", ")))
         }
         var sports: [String] = []

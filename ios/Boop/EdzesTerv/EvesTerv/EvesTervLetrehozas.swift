@@ -21,7 +21,7 @@ struct EvesTervLetrehozas: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 26) {
                     UjBlokkHead(eyebrow: replaceActive ? "ÉVES TERV · JÖVŐ ÉV" : "ÉVES TERV · ÚJ", title: "Egy év, előre",
-                                sentence: "Megmondom, melyik blokk mikor jön és mire figyel. A gyakorlatokat mindig a blokk indulásakor rakom össze, a friss állapotodból.",
+                                sentence: "Megmondom, melyik mezociklus mikor jön és mire figyel. A gyakorlatokat mindig a mezociklus indulásakor rakom össze, a friss állapotodból.",
                                 onClose: onClose)
                     start
                     emphasis
@@ -111,7 +111,7 @@ struct EvesTervLetrehozas: View {
 
     private var length: some View {
         VStack(alignment: .leading, spacing: 12) {
-            UjBlokkLabel("Blokkhossz", trailing: "\(model.blockWeeks - 1) + 1 könnyítő hét")
+            UjBlokkLabel("Mezociklus hossza", trailing: "\(model.blockWeeks - 1) + 1 könnyítő hét")
             HStack(spacing: 6) {
                 ForEach(Array(YearPlanModel.blockWeekRange), id: \.self) { w in
                     UjBlokkChoice(text: "\(w)", on: model.blockWeeks == w, sub: "hét") { model.blockWeeks = w }
@@ -128,7 +128,7 @@ struct EvesTervLetrehozas: View {
             if let plan = model.preview {
                 VStack(alignment: .leading, spacing: 16) {
                     YearStrip(plan: plan, showsCurrent: false)
-                    Text("felül a felsőtest-blokkok, alul a láb-blokkok · üres: könnyítő hét")
+                    Text("felül a felsőtest-mezociklusok, alul a láb-mezociklusok · üres: könnyítő hét")
                         .nkFont(11, design: .monospaced).foregroundStyle(.white.opacity(0.45)).fixedSize(horizontal: false, vertical: true)
                     VStack(spacing: 0) {
                         ForEach(evesRows(plan)) { row in
@@ -167,7 +167,7 @@ struct EvesTervLetrehozas: View {
                     Task { await model.refreshPreview() }
                 }
             } else {
-                UjBlokkNotice(title: "Kirakom az évet", text: "A blokkokat és a dátumaikat a szerver számolja ki.", loading: true)
+                UjBlokkNotice(title: "Kirakom az évet", text: "A mezociklusokat és a dátumaikat a szerver számolja ki.", loading: true)
             }
             if model.preview != nil, let e = model.previewError {
                 Text(evesErrorText(e)).nkFont(12.5).foregroundStyle(planWarn).fixedSize(horizontal: false, vertical: true)

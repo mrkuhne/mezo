@@ -74,7 +74,7 @@ struct EvesTervTerkep: View {
                 PlanStateView(title: "Előveszem az éves tervedet", text: "Egy pillanat.", loading: true, onClose: onClose)
             case .none:
                 PlanStateView(title: "Még nincs éves terved",
-                              text: "Egy évre előre elosztom a blokkokat: melyik mikor jön, és melyik izmot teszi fókuszba. Minden izom sorra kerül.",
+                              text: "Egy évre előre elosztom a mezociklusokat: melyik mikor jön, és melyik izmot teszi fókuszba. Minden izom sorra kerül.",
                               mark: .calendar, action: ("Éves terv készítése", { onCreate(false) }), onClose: onClose)
             case .failed(let e):
                 PlanStateView(title: "Most nem érem el az éves tervedet", text: evesErrorText(e), mark: .shield,
@@ -96,7 +96,7 @@ struct EvesTervTerkep: View {
             Button("Lezárom", role: .destructive) { Task { await model.archive() } }
             Button("Mégsem", role: .cancel) {}
         } message: {
-            Text("A blokkjaid és az edzéseid megmaradnak, csak a térkép tűnik el. Később újat készíthetsz.")
+            Text("A mezociklusaid és az edzéseid megmaradnak, csak a térkép tűnik el. Később újat készíthetsz.")
         }
         .preferredColorScheme(.dark)
     }
@@ -182,7 +182,7 @@ struct EvesTervTerkep: View {
 
     private func blocks(_ plan: WireYearPlan) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            UjBlokkLabel("Blokkok", trailing: "koppints egyre")
+            UjBlokkLabel("Mezociklusok", trailing: "koppints egyre")
             VStack(spacing: 0) {
                 ForEach(Array(evesRows(plan).enumerated()), id: \.element.id) { i, row in
                     if i > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
@@ -257,7 +257,7 @@ struct EvesTervTerkep: View {
             }
             if let id = target?.id {
                 Button { Task { await model.linkRunning(id) } } label: {
-                    Text("Hozzákötöm a következő blokkhoz").nkFont(14, .semibold).foregroundStyle(planWarn)
+                    Text("Hozzákötöm a következő mezociklushoz").nkFont(14, .semibold).foregroundStyle(planWarn)
                         .padding(.horizontal, 18).frame(minHeight: 44)
                         .background(Capsule().stroke(planWarn.opacity(0.6), lineWidth: 1))
                         .contentShape(Capsule())

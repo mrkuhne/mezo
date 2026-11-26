@@ -57,7 +57,7 @@ struct UjBlokkAlapok: View {
                             Text("az évadodból:").nkFont(14).foregroundStyle(.white.opacity(0.6))
                             Text(daysLine).nkFont(20, .medium).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
                         }
-                        Text("Az Évad oldalon állíthatod át; amíg a blokk fut, ezek a napok maradnak.")
+                        Text("Az Évad oldalon állíthatod át; amíg a mezociklus fut, ezek a napok maradnak.")
                             .nkFont(12.5).foregroundStyle(.white.opacity(0.55)).fixedSize(horizontal: false, vertical: true)
                     }
                     .padding(16).frame(maxWidth: .infinity, alignment: .leading)

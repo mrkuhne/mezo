@@ -106,7 +106,7 @@ struct EvadExperimentLogicTests {
         #expect(m.map(\.title) == ["Ami tényleg változott", "Ami nem változott érdemben", "Mire figyelj"])
         #expect(m[0].body.hasPrefix("Az alvásod hossza, a mélyalvás és a reggeli közérzeted."))
         #expect(m[1].body == "A pulzus-variabilitás és a nyugalmi pulzus. Ennyi nap alapján ez lehet véletlen is.")
-        #expect(m[2].body == "Ez a te napjaidból látszik, de nem bizonyíték. A két hét alatt más nem változott: nem volt új blokk, kímélő időszak vagy évadmódosítás.")
+        #expect(m[2].body == "Ez a te napjaidból látszik, de nem bizonyíték. A két hét alatt más nem változott: nem volt új mezociklus, kímélő időszak vagy évadmódosítás.")
         // with an overlap, the overlap is named instead
         let o = evadMeaning(F.experiment(F.done(overlaps: #"[{"kind":"deload","date":"2026-11-10","text":"Közben könnyebb hét volt"}]"#)))
         #expect(o.last?.body == "Ez a te napjaidból látszik, de nem bizonyíték. Közben könnyebb hét volt. Emiatt az eredmény kevésbé biztos.")

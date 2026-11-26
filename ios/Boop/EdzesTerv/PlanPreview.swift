@@ -148,8 +148,8 @@ struct PlanPreviewRoot: View {
     var body: some View {
         ZStack {
             NK.ground.ignoresSafeArea()
-            NKAreaSubPage(hue: planHue, crumb: "Edzés", eyebrow: "Blokk", title: "V-forma és kar",
-                          sentence: "Hathetes blokk, a *hát* és a *bicepsz* a hangsúly.", onBack: nil) {
+            NKAreaSubPage(hue: planHue, crumb: "Edzés", eyebrow: "Mezociklus", title: "V-forma és kar",
+                          sentence: "Hathetes mezociklus, a *hát* és a *bicepsz* a hangsúly.", onBack: nil) {
                 WeekReviewEntrance(model: review, hue: planHue, zoom: zoom, openReview: { page = .review })
             }
         }

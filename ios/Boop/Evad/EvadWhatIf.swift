@@ -31,7 +31,7 @@ struct EvadWhatIf: View {
                 settings(draft)
                 consequences
                 if changed, let week = preview?.block {
-                    NKBare("A blokkod új hete", hue: evadHue, glyph: "dumbbell-ink", trailing: week.title) {
+                    NKBare("A mezociklusod új hete", hue: evadHue, glyph: "dumbbell-ink", trailing: week.title) {
                         NKList(evadBlockWeekRows(week), hue: evadHue)
                     }
                 }

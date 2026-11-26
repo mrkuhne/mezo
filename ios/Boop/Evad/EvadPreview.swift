@@ -160,8 +160,8 @@ final class EvadPreviewModel: @unchecked Sendable {
             }
             let dropped: [[String: Any]] = oldDays.count > newDays.count
                 ? (newDays.count..<oldDays.count).map { ["weekday": oldDays[$0], "title": titles[$0], "change": "drop"] } : []
-            block = ["mesocycleId": "m1", "title": "Felső-alsó blokk", "days": days, "dropped": dropped]
-            todo.append(["key": "block", "title": "Az edzésblokk", "body": "A futó blokkod napjai az új edzésnapokra kerülnek, lent látod, melyik hova. Ezt is az Elfogadom teszi meg."])
+            block = ["mesocycleId": "m1", "title": "Felső-alsó mezociklus", "days": days, "dropped": dropped]
+            todo.append(["key": "block", "title": "A mezociklus", "body": "A futó mezociklusod napjai az új edzésnapokra kerülnek, lent látod, melyik hova. Ezt is az Elfogadom teszi meg."])
         }
         if let wa = a["weeksToTarget"] as? Int, let wb = b["weeksToTarget"] as? Int, wa != wb, let date = b["targetDate"] as? String {
             todo.append(["key": "length", "title": "Az évad hossza", "body": "Az évad \(wb > wa ? "hosszabb" : "rövidebb") lesz, a célt \(evadShortDate(date)) körül éred el."])

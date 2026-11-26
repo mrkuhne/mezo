@@ -606,7 +606,7 @@ extension TrainClient: OutboxSender {
             let said = (try? bad.body.json).flatMap { $0.first.flatMap { $0.message ?? $0.code } }
             return .failed(said ?? "TRAIN_AS_PLANNED_DATE_OUT_OF_WINDOW")
         // The template day is gone from the active block (rotated, ended): final, said in the owner's words.
-        case .notFound: return .failed("Ez a tervnap már nincs a mostani blokkodban.")
+        case .notFound: return .failed("Ez a tervnap már nincs a mostani mezociklusodban.")
         case .unauthorized: return Self.map(401)
         case .undocumented(let code, _): return Self.map(code)
         }

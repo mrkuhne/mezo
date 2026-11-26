@@ -214,9 +214,9 @@ func planErrorText(_ error: PlanFetchError) -> String {
     switch error {
     case .offline: "Most nincs net. Amint visszajön, újra megpróbálhatod."
     case .unauthorized: "Lejárt a bejelentkezésed. Lépj be újra."
-    case .notFound: "Ezt a blokkot már nem találom."
+    case .notFound: "Ezt a mezociklust már nem találom."
     case .rejected: "A szerver ezt így nem fogadta el."
-    case .conflict("SEASON_REQUIRED"): "Edzésblokk csak évadhoz indulhat. Az Évad oldalon indíthatsz egyet."
+    case .conflict("SEASON_REQUIRED"): "Mezociklust csak futó évadban indíthatsz. Az Évad oldalon indíthatsz egyet."
     case .conflict: "Ez közben lezárult, ezért nem változott."
     case .dayWorkoutRunning: "Ezen a napon most fut az edzésed — gyakorlatot hozzáadni, cserélni vagy törölni utána lehet. A sorrend és a beállítások most is mennek."
     case .server: "Valami elakadt a szerveren. Próbáld újra kicsit később."
