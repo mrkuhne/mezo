@@ -407,6 +407,12 @@ components:
       properties:
         source: { type: string }
         recipeId: { type: string, format: uuid, nullable: true }
+        recipeName:
+          type: string
+          nullable: true
+          description: >-
+            mezo-r36n9.181 - on a pantry line that is part of a recipe logged ingredient by ingredient, the
+            recipe's name frozen at log time (recipeId is then the marker); null on every other line.
         pantryItemId: { type: string, format: uuid, nullable: true }
         amount: { type: number }
         unit: { type: string }

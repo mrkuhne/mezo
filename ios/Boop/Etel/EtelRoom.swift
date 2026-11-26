@@ -329,12 +329,15 @@ final class EtelStore {
         }
     }
 
-    /// Logs one serving of a recipe as a meal (one tap). `clientRef` is kept by the caller until the save worked, so a
-    /// retry after a lost answer is the same meal.
+    /// Logs one serving of a recipe as a meal (one tap): its ingredients gram by gram, each marked as part of the recipe
+    /// (`mezo-r36n9.181`), or the single "1 adag" line when the shelf cannot be read or an ingredient is not a gram line.
+    /// `clientRef` is kept by the caller until the save worked, so a retry after a lost answer is the same meal.
     func logRecipe(_ recipe: Recipe, clientRef: UUID) async -> (ok: Bool, text: String) {
         guard let food else { return (false, "Most nem tudom rögzíteni") }
         let moment = BoopClock.now()
-        let draft = MealDraft(date: food.ymd(moment), slot: recipe.category, title: recipe.name, items: [DraftItem(recipe: recipe)])
+        let shelf = (try? await food.pantry()) ?? []
+        let items = DraftItem.ingredientLines(of: recipe, shelf: shelf) ?? [DraftItem(recipe: recipe)]
+        let draft = MealDraft(date: food.ymd(moment), slot: recipe.category, title: recipe.name, items: items)
         do {
             let meal = try await food.save(draft, clientRef: clientRef, capturedAt: moment)
             return (true, "\(recipe.name) rögzítve · \(huInt(Int(meal.macros.kcal.rounded()))) kcal")

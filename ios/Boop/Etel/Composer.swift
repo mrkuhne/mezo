@@ -68,6 +68,8 @@ final class MealComposerModel {
     private var parkedPhotoRef: UUID?
     private(set) var recipes: [Recipe]?
     private(set) var shelf: [PantryRow]?
+    /// A recipe pick is waiting for the shelf (`useRecipe`); further taps are ignored until it lands.
+    private(set) var pickingRecipe = false
     /// The owner's usual meals, ranked by the server (the fifth entrance).
     private(set) var usuals: [UsualMeal]?
     /// The chips above the words in drink mode: the drink bucket only, kept apart from the Szokásos page's full list.
@@ -352,6 +354,29 @@ final class MealComposerModel {
         }
         capturedAt = stamp()
         draft = MealDraft(date: dayString(capturedAt), slot: slot(at: capturedAt), title: nil, items: [item])
+        stage = .draft
+    }
+
+    /// A recipe as one serving of its ingredients, gram by gram, each marked as part of the recipe (`mezo-r36n9.181`). The
+    /// shelf is read (once) for the ingredients' numbers; when it cannot be read, or an ingredient cannot be a gram line,
+    /// the recipe goes in as the single "1 adag" line, as before.
+    func useRecipe(_ recipe: Recipe) async {
+        // One pick at a time: a second tap while the shelf is still loading must not replace the plate being built.
+        guard !pickingRecipe else { return }
+        pickingRecipe = true
+        defer { pickingRecipe = false }
+        let addingTo = adding && draft != nil
+        if shelf == nil, let lists { shelf = try? await lists.shelf() }
+        // the owner left the recipe list while the shelf loaded: nothing to put on the plate
+        guard stage == .recipes else { return }
+        guard let lines = DraftItem.ingredientLines(of: recipe, shelf: shelf ?? []) else { use(DraftItem(recipe: recipe)); return }
+        if addingTo, draft != nil {
+            draft?.items.append(contentsOf: lines)
+            adding = false; stage = .draft
+            return
+        }
+        capturedAt = stamp()
+        draft = MealDraft(date: dayString(capturedAt), slot: slot(at: capturedAt), title: recipe.name, items: lines)
         stage = .draft
     }
 
@@ -921,7 +946,7 @@ private struct MealComposerHost: View {
     /// (a stepper, the number typeable); its macros and the way to take it off. Flags that matter to him close it.
     private func line(_ i: Int, _ item: DraftItem) -> some View {
         let badges = draftBadges(for: item, profile: model.profile)
-        let glyph = switch item.source { case .recipe: "book-sage"; case .pantry: "bowl-sage"; case .estimate: "spark-cream" }
+        let glyph = switch item.source { case .recipe: "book-sage"; case .pantry: item.recipeId != nil ? "book-sage" : "bowl-sage"; case .estimate: "spark-cream" }
         let doubt = sourceTag(item).contains("nézd át")
         let c = item.contribution
         // grams and millilitres move by ten, servings and pieces by a half
@@ -1023,7 +1048,7 @@ private struct MealComposerHost: View {
                     else { recipeFinder(recipes) }
                     ForEach(filterRecipes(recipes, query: listQuery).filter { listFilter == nil || $0.category == listFilter }) { r in
                         row(r.name, "\(huInt(Int((r.macros.kcal / Double(max(r.servings, 1))).rounded()))) kcal · \(Int(r.perServing.p.rounded())) g fehérje adagonként",
-                            glyph: "book-sage", points: etelPoints(r.fit)) { model.use(DraftItem(recipe: r)) }
+                            glyph: "book-sage", points: etelPoints(r.fit)) { Task { await model.useRecipe(r) } }
                     }
                 } else { loadingRow }
             } else if model.stage == .usuals {

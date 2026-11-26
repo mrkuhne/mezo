@@ -361,10 +361,37 @@ func draftTitle(_ draft: MealDraft) -> String {
 /// The small tag under a draft line; a line flagged for review says so whatever its source.
 func draftSourceTag(_ item: DraftItem) -> String {
     switch item.source {
-    case .pantry: item.needsReview ? "kamra · nézd át" : "kamra"
-    case .recipe: item.needsReview ? "recept · nézd át" : "recept"
-    case .estimate: item.needsReview || item.confidence < 0.6 ? "becslés · nézd át" : "becslés"
+    case .pantry:
+        // an ingredient of a recipe logged ingredient by ingredient (mezo-r36n9.181) says whose part it is
+        let base = item.recipeId == nil ? "kamra" : item.recipeName.map { "\($0) része" } ?? "recept része"
+        return item.needsReview ? "\(base) · nézd át" : base
+    case .recipe: return item.needsReview ? "recept · nézd át" : "recept"
+    case .estimate: return item.needsReview || item.confidence < 0.6 ? "becslés · nézd át" : "becslés"
     }
+}
+
+/// A logged meal's recipes that were logged ingredient by ingredient (`mezo-r36n9.181`), in plate order: each recipe's
+/// name and the lines that are its parts. A meal without such lines has none.
+struct RecipePartGroup: Equatable {
+    var recipeId: UUID
+    var name: String
+    var items: [MealItem]
+}
+
+func recipePartGroups(_ meal: BoopCore.Meal) -> [RecipePartGroup] {
+    var groups: [RecipePartGroup] = []
+    for item in meal.items where item.source == "pantry" {
+        guard let id = item.recipeId else { continue }
+        if let i = groups.firstIndex(where: { $0.recipeId == id }) { groups[i].items.append(item) }
+        else { groups.append(RecipePartGroup(recipeId: id, name: item.recipeName ?? "Recept", items: [item])) }
+    }
+    return groups
+}
+
+/// "80 g" / "1,5 g": whole above ten, one decimal below.
+func huQuantity(_ amount: Double, _ unit: String) -> String {
+    let v = amount >= 10 ? huInt(Int(amount.rounded())) : String(format: "%.1f", amount).replacingOccurrences(of: ".", with: ",")
+    return "\(v) \(unit)"
 }
 
 // MARK: - The warm Ma page (mezo-r36n9.101): the day's curve, the three numbers, the orb's number
