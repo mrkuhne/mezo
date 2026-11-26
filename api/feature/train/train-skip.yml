@@ -68,6 +68,9 @@ paths:
         '404':
           description: No live skip with this id for the caller (TRAIN_SKIP_NOT_FOUND)
           content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } }
+        '409':
+          description: The skip belongs to an accepted capacity rearrangement (TRAIN_SKIP_CAPACITY_OWNED) — it is taken back from the Átrendezés page
+          content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } }
 components:
   schemas:
     PlannedSkipKind: { type: string, enum: [GYM, SPORT, RUN, MEAL] }

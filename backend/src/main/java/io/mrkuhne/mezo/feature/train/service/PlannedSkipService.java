@@ -145,10 +145,28 @@ public class PlannedSkipService {
             .orElseThrow();
     }
 
+    /**
+     * The public path ({@code DELETE /api/train/skips/{id}}): a {@code KAPACITAS} skip belongs to an accepted
+     * Átrendezés bundle — 409 {@code TRAIN_SKIP_CAPACITY_OWNED}; he takes it back from the Átrendezés page.
+     */
     @Transactional
     public void undo(UUID user, UUID id) {
+        undo(user, id, false);
+    }
+
+    /** The capacity ledger's trusted undo of its own {@code KAPACITAS} skip (inside the ledger's transaction). */
+    @Transactional
+    public void undoForCapacity(UUID user, UUID id) {
+        undo(user, id, true);
+    }
+
+    private void undo(UUID user, UUID id, boolean trusted) {
         lock.lock(user);
         var found = repository.findByIdAndCreatedByAndDeletedFalse(id, user);
+        if (!trusted && found.filter(e -> e.getReasonCategory() == Reason.KAPACITAS).isPresent()) {
+            throw new SystemRuntimeErrorException(SystemMessage.error("TRAIN_SKIP_CAPACITY_OWNED").build(),
+                HttpStatus.CONFLICT);
+        }
         boolean removed = found
             .map(e -> {
                 repository.delete(e);

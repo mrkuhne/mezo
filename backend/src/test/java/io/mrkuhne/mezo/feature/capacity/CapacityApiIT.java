@@ -449,4 +449,20 @@ class CapacityApiIT extends ApiIntegrationTest {
                 assertThat(r.getState()).isEqualTo(AdjustmentState.ACTIVE.wire());
             });
     }
+
+    /** K3 final review finding 8: the public DELETE cannot take back a capacity-owned skip (the Átrendezés undo can). */
+    @Test
+    void publicSkipDeleteRefusesACapacitySkip() {
+        RegisteredUser user = registerUser("cap-skip-delete");
+        UUID id = plannedSkips.upsertForCapacity(user.id(), LocalDate.now(BUD)).getId();
+
+        String body = exchangeForBody(org.springframework.http.HttpMethod.DELETE, "/api/train/skips/" + id, null,
+            user.headers(), HttpStatus.CONFLICT, String.class);
+
+        assertHasRequestError(body, "TRAIN_SKIP_CAPACITY_OWNED");
+        assertThat(skipRows.findByIdAndCreatedByAndDeletedFalse(id, user.id())).isPresent();
+        // the trusted path (the ledger's undo) still removes it
+        plannedSkips.undoForCapacity(user.id(), id);
+        assertThat(skipRows.findByIdAndCreatedByAndDeletedFalse(id, user.id())).isEmpty();
+    }
 }

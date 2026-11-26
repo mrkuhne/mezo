@@ -3938,6 +3938,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            The skip belongs to an accepted capacity rearrangement
+            (TRAIN_SKIP_CAPACITY_OWNED) — it is taken back from the Átrendezés
+            page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/train/recovery:
     get:
       tags:

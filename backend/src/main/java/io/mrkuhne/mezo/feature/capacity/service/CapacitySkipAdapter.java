@@ -33,7 +33,7 @@ public class CapacitySkipAdapter implements CapacitySkipPort {
     public void undoSkip(UUID owner, UUID skipId) {
         // Look first: train's undo throws 404 on a missing row, which would mark the ledger's transaction rollback-only.
         if (skipRows.findByIdAndCreatedByAndDeletedFalse(skipId, owner).isPresent()) {
-            skips.undo(owner, skipId);
+            skips.undoForCapacity(owner, skipId);
         }
     }
 }
