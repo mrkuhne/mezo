@@ -44,6 +44,7 @@ exercise rows and numbers are invented, and no workout is saved.
 |---|---|
 | `-previewNotify checkin\|este` | rings the real check-in / close reminder at the next whole minute (background the app; a tap opens the cover) |
 | `-preview shell` / `-preview onboarding` | signs in a local preview user; the brief and Health endpoints answer from `PreviewTransport` |
+| `-probeAlarm YES` | all configurations: every launch prints the stored `probe.doneAt` / `probe.scheduledAt` (log prefix `PROBE`), asks for AlarmKit authorization and schedules one alarm 120 s ahead whose secondary button writes `probe.doneAt` — the free-team check of AlarmKit + button intents (`AlarmProbe.swift`, `mezo-r36n9.172`) |
 | `-previewEdzesRestEnd YES` | the Edzés room opens on the „Pihenő vége” sheet (rest-end signal setting, mezo-r36n9.172); reach the room with `-previewDrill mozgas` (the Ma launch ignores it in some builds — tapping the Edzés orb works) |
 | `-previewEmpty YES` | Nap shows the empty states instead of the brief |
 | `-previewTab ma\|terv\|naplo\|boop` | opens that place of the spine (`terv` is the Évad place since B6 S1; the key kept its old name) |

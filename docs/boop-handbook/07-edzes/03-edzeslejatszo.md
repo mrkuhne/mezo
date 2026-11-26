@@ -167,6 +167,7 @@ Az ajánlás azért ilyen szerény, mert a döntés a tiéd marad: Boop csak a r
 | `workout_timing_profile` | Megtanult időzítés (sorozat, pihenő, átállás) |
 
 ## Mi jön még
+- **Pihenő vége (2026-11-25).** Az edzésszoba fejlécében a csengő gomb „Pihenő vége” lapot nyit: a pihenő végén zárolt telefonon is jelez a Boop — alapból rezgéssel és rövid hanggal, kérésre ébresztő erősséggel (ha az ébresztő-engedély nincs megadva, marad a rezgés, és ezt egy mondat kimondja). A választás fiókonként megmarad. Részletek: [Emlékeztetők és ébresztők](../01-alapok/emlekeztetok-es-ebresztok.md).
 - Gyakorlat hozzáadása edzés közben (a csere a blokk végéig 2026-11-23 óta él).
 - B5: Élő tevékenység (lásd [Élő tevékenység](08-elo-tevekenyseg.md)); az óra (lásd [Apple Watch-app](07-apple-watch.md)).
 - Nyitott kérdés a tulajdonosnak: a visszajelzés (például erős ízületi fájdalom) befolyásolja-e a **terhelést** — a gyakorlatcsere ajánlását már befolyásolja (a nemrég erősen fájó gyakorlat kimarad az ajánlásból), a heti súlyt még nem.
