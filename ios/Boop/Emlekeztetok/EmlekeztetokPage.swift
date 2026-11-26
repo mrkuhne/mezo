@@ -31,6 +31,9 @@ struct EmlekeztetokPage: View {
                              sentence: reminderSentence(sections),
                              actions: [NKAreaAction(glyph: "plus-ink", label: "Új emlékeztető") { editing = ReminderDraft() }],
                              onBack: onClose) {
+            if let gone = store.file.notices, !gone.isEmpty {
+                NKNote(removedNotice(gone), hue: hue)
+            }
             if store.file.reminders.isEmpty {
                 NKNote("Még nincs emlékeztetőd. A jobb felső + gombbal adsz hozzá egyet — ébresztőt is, ami némítva is szól.", hue: hue)
             }
@@ -54,6 +57,7 @@ struct EmlekeztetokPage: View {
             #endif
         }
         .onChange(of: scenePhase) { _, phase in if phase == .active { expiry = InstallExpiry.date() } }
+        .onDisappear { store.clearNotices() }      // said once: gone when the page closes
     }
 
     // MARK: sections

@@ -121,6 +121,11 @@ struct ReminderPresentationTests {
         #expect(onlyNotes.lines.last == "Előre beállítva: nov. 28-ig")
     }
 
+    @Test func aRemovedGroupsReminderIsSaid() {
+        #expect(removedNotice(["Este"]) == "Töröltem az emlékeztetőt: „Este” — ez a kiegészítő-csoport már nincs meg.")
+        #expect(removedNotice(["Este", "Reggel"]) == "Töröltem ezeket az emlékeztetőket: „Este”, „Reggel” — a kiegészítő-csoportjuk már nincs meg.")
+    }
+
     @Test func todaysOverflowIsSaidOnThePage() {
         let f = ReminderFooter.build(expiry: nil, horizon: ArmHorizon(), todayOverflow: true, now: now, calendar: cal)
         #expect(f.warning == ReminderFooter.overflowWarning)

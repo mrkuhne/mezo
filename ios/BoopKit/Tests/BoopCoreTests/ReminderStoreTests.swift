@@ -144,4 +144,54 @@ struct ReminderStoreTests {
         let data = try JSONEncoder().encode(rs)
         #expect(try JSONDecoder().decode([Reminder].self, from: data) == rs)
     }
+
+    // MARK: an unreadable file (final review minor 3)
+
+    @Test func anUnreadableFileIsKeptAsideNeverOverwrittenSilently() throws {
+        let url = tempURL()
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let garbage = Data("{ not json".utf8)
+        try garbage.write(to: url)
+        let store = ReminderStore(fileURL: url)
+        let corrupt = url.appendingPathExtension("corrupt")
+        #expect(try Data(contentsOf: corrupt) == garbage)       // the owner's bytes survive
+        #expect(store.recoveredFromCorrupt)
+        store.upsert(Reminder(title: "Víz", hour: 9, minute: 0, repeats: .daily))
+        #expect(try Data(contentsOf: corrupt) == garbage)       // a new write does not touch the copy
+        #expect(ReminderStore(fileURL: url).file.reminders.count == 1)
+    }
+
+    @Test func aGoodFileLeavesNoCopy() {
+        let url = tempURL()
+        let a = ReminderStore(fileURL: url)
+        a.upsert(Reminder(title: "Víz", hour: 9, minute: 0, repeats: .daily))
+        let b = ReminderStore(fileURL: url)
+        #expect(!b.recoveredFromCorrupt)
+        #expect(!FileManager.default.fileExists(atPath: url.appendingPathExtension("corrupt").path))
+    }
+
+    // MARK: a supplement group that is gone (final review minor 1)
+
+    @Test func aGoneGroupTakesItsLinkedReminderAndSaysSoOnce() {
+        let store = ReminderStore(fileURL: tempURL())
+        let morning = Reminder(title: "Reggel", hour: 8, minute: 0, repeats: .daily, strength: .alarm, link: .supplement(daypart: "morning"))
+        let evening = Reminder(title: "Este", hour: 21, minute: 0, repeats: .daily, strength: .alarm, link: .supplement(daypart: "evening"))
+        let own = Reminder(title: "Víz", hour: 9, minute: 0, repeats: .daily)
+        [morning, evening, own].forEach { store.upsert($0) }
+        store.removeLinked(keeping: ["morning"])
+        #expect(store.file.reminders.map(\.id) == [morning.id, own.id])
+        #expect(store.file.notices == ["Este"])
+        store.clearNotices()
+        #expect(store.file.notices == nil)
+    }
+
+    @Test func anEmptyGroupListNeverDeletesTheVitaminAlarm() {
+        let store = ReminderStore(fileURL: tempURL())
+        let morning = Reminder(title: "Reggel", hour: 8, minute: 0, repeats: .daily, strength: .alarm, link: .supplement(daypart: "morning"))
+        store.upsert(morning)
+        let before = store.changes
+        store.removeLinked(keeping: [])
+        #expect(store.file.reminders == [morning])
+        #expect(store.changes == before)
+    }
 }

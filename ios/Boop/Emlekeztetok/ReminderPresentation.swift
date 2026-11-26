@@ -121,6 +121,14 @@ func reminderSentence(_ s: ReminderSections) -> String {
     return alarms == 0 ? "Ma *\(s.today.count)* emlékeztető." : "Ma *\(s.today.count)* emlékeztető, ebből *\(alarms)* ébresztő."
 }
 
+/// The page's one-time line about linked reminders removed with their supplement group.
+func removedNotice(_ titles: [String]) -> String {
+    let names = titles.map { "„\($0)”" }.joined(separator: ", ")
+    return titles.count == 1
+        ? "Töröltem az emlékeztetőt: \(names) — ez a kiegészítő-csoport már nincs meg."
+        : "Töröltem ezeket az emlékeztetőket: \(names) — a kiegészítő-csoportjuk már nincs meg."
+}
+
 // MARK: - The page's footers
 
 /// The lines under the sections: alarms ring through silent, the install's expiry, how far ahead everything is set.

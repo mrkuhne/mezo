@@ -226,6 +226,39 @@ struct EtelStoreTests {
         #expect(reminders.file.done == ["\(linked.id.uuidString)|\(yesterday)"])   // today's alarm still rings
     }
 
+    // MARK: a deleted group's reminder (final review minor 1)
+
+    private func linkedStore() -> (ReminderStore, Reminder, Reminder) {
+        let reminders = ReminderStore(fileURL: FileManager.default.temporaryDirectory.appendingPathComponent("etel-gone-\(UUID().uuidString)/reminders.json"))
+        let morning = Reminder(title: "Reggel", hour: 8, minute: 0, repeats: .daily, strength: .alarm, link: .supplement(daypart: "morning"))
+        let evening = Reminder(title: "Este", hour: 21, minute: 0, repeats: .daily, strength: .alarm, link: .supplement(daypart: "evening"))
+        reminders.upsert(morning); reminders.upsert(evening)
+        return (reminders, morning, evening)
+    }
+
+    @Test func aLoadedProtocolWithoutAGroupRemovesItsReminder() async {
+        script(meals: [])                                   // the protocol has only "morning"
+        let (reminders, morning, _) = linkedStore()
+        let store = EtelStore(taken: SupplementTakenStore(fileURL: tempFile()), reminders: { reminders })
+        await store.load(food: FoodClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: transport)), now: Date())
+        #expect(reminders.file.reminders.map(\.id) == [morning.id])
+        #expect(reminders.file.notices == ["Este"])
+    }
+
+    @Test func aFailedOrEmptyProtocolKeepsEveryReminder() async {
+        script(meals: [])
+        transport.on("getProtocol", 503)                   // offline / server down
+        let (reminders, _, _) = linkedStore()
+        let store = EtelStore(taken: SupplementTakenStore(fileURL: tempFile()), reminders: { reminders })
+        let food = FoodClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: transport))
+        await store.load(food: food, now: Date())
+        #expect(reminders.file.reminders.count == 2)
+        transport.on("getProtocol", 200, #"{"active":{"id":"cc7f5b29-83a4-4f7f-8b29-4e6ebd8b7c08","version":1,"builtAt":"2026-11-01T06:00:00Z","status":"active","items":[]},"history":[]}"#)
+        await store.load(food: food, now: Date())
+        #expect(reminders.file.reminders.count == 2)        // an empty list is never a reason to delete
+        #expect(reminders.file.notices == nil)
+    }
+
     @Test func undoUnticksTheLinkedReminder() async {
         script(meals: [])
         let taken = SupplementTakenStore(fileURL: tempFile())

@@ -118,6 +118,7 @@ final class EtelStore {
         switch await s {
         case .success(let (proto, stash)):
             applyProtocol(proto, stash: stash)
+            pruneLinkedReminders()
             groupsProblem = nil
         case .failure(let e): groupsProblem = e
         }
@@ -148,6 +149,13 @@ final class EtelStore {
             takenIds = [:]      // no per-user file yet (a preview, a test): the day's own memory only
         }
         takenDay = today
+    }
+
+    /// A group the freshly read protocol no longer has takes its linked reminder with it (the page says so once). Only
+    /// after a successful read, and never on an empty list: offline or a momentary empty protocol must not delete the
+    /// vitamin alarm.
+    private func pruneLinkedReminders() {
+        reminderStore?.removeLinked(keeping: Set(groups.map(\.key)))
     }
 
     private func applyProtocol(_ proto: FoodProtocol, stash: [StashRow]) {
@@ -395,7 +403,8 @@ final class EtelStore {
     /// Reads the protocol and the stash again after an edit. Returns false when the read failed (the list keeps what it had).
     private func reloadSupplements(_ food: FoodClient) async -> Bool {
         switch await Self.attempt({ (try await food.protocol(), try await food.stash()) }) {
-        case .success(let (proto, stash)): applyProtocol(proto, stash: stash); groupsProblem = nil; groupsLoaded = true; return true
+        case .success(let (proto, stash)):
+            applyProtocol(proto, stash: stash); pruneLinkedReminders(); groupsProblem = nil; groupsLoaded = true; return true
         case .failure: return false
         }
     }
