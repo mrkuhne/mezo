@@ -66,6 +66,10 @@ Measured over ten sessions (~2 billion tokens): every API call re-reads the whol
 for 5–8 days averaged **~220k tokens per call**; subagents were 50–60 % of the big sessions (each starts at ~60k);
 Notion calls made inside that bloated context were ~10 %. So:
 
+- **Flow: the `munkamenet` skill** — *kezdés* (one task in a fresh session), *lezárás* (merge, Notion once, report,
+  archive the session or hand off), *takarítás* (weekly cleanup). The `session-length-guard` hook
+  (`scripts/hooks/`, context > 250k tokens or session > 24h) tells you when to switch to *lezárás* — obey it at the
+  next safe point.
 - **One task, one session.** When the task is done (merged + pushed + reported), the next task starts in a **new
   session** (`start_session` / tell the owner) — never keep a session going across days or unrelated slices. Past
   ~150 turns or ~250k context, wrap up and hand off with a short brief instead of continuing.

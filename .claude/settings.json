@@ -10,6 +10,29 @@
         ],
         "matcher": ""
       }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"$CLAUDE_PROJECT_DIR/scripts/hooks/session-length-guard.mjs\"; [ -f \"$f\" ] && node \"$f\" || true",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"$CLAUDE_PROJECT_DIR/scripts/hooks/session-length-guard.mjs\"; [ -f \"$f\" ] && node \"$f\" || true",
+            "timeout": 5
+          }
+        ],
+        "matcher": ""
+      }
     ]
   }
 }
