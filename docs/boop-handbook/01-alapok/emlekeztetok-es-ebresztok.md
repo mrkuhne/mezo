@@ -20,11 +20,12 @@ osszefoglalo: Bármire állíthatsz emlékeztetőt, a vitaminhoz igazi ébreszt�
 
 ## Hogyan működik
 1. Az emlékeztetők a telefonon vannak, a saját fiókodhoz kötve; net nélkül is működnek.
-2. A telefon mindig csak a következő napokat ütemezi be: az ébresztőket hét napra, az értesítéseket három napra előre. Minden indításkor, a háttérből felébredve és szerkesztéskor újra összerakja.
+2. A telefon mindig csak a következő napokat ütemezi be: az ébresztőket hét napra, az értesítéseket három napra előre. Minden indításkor, a háttérből felébredve és szerkesztéskor újra összerakja. Egy épp szóló ébresztőt ez sosem hallgattat el — azt csak te állítod le. Az oldal alján külön látod, meddig vannak beállítva az ébresztők és meddig az értesítések; ha mára több értesítés jutna, mint amennyit az iPhone előre beállít, az oldal szól, és a kimaradó sor mellett ott a „Ma már nem fér több értesítés”.
 3. Az ébresztő **csak elnémít**, ha leállítod (gombbal, a lehúzással vagy az oldalsó gombbal is): a tétel nyitva marad. **Csak a Kész / Bevettem gomb számít megtörténtnek.** Így a Boop adata azt jelenti, hogy tényleg megtörtént.
-4. A vitamin „Bevettem” jelzése offline is megy: a telefon eltárolja, és amikor van net, elküldi. Ha a szobában korábban bejelölöd, aznap nem szól az ébresztő.
+4. A vitamin „Bevettem” jelzése offline is megy: a telefon eltárolja, és amikor van net, elküldi. Ha a szobában korábban bejelölöd, aznap nem szól az ébresztő. Ha a tegnapi értesítést csak reggel nyomod „Kész”-re, az a tegnapi napra számít (a tegnapi időponttal), és a mai ébresztő ugyanúgy szól. Ha egy kiegészítő-csoport megszűnik, az emlékeztetője is törlődik, és az oldal ezt egyszer jelzi; net nélkül vagy üres listánál sosem töröl.
 5. Csak a kijelentkezés törli az ébresztőket; ha épp nincs net, minden marad, ahogy volt.
-6. Az első új, hangos emlékeztető mentésekor a telefon engedélyt kér az ébresztőkre és az értesítésekre; máskor nem kérdez.
+6. A Boop saját emlékeztetőinek (kitöltések, zárás, lefekvés) be/ki kapcsolása vagy idejük átállítása azonnal érvényes.
+7. Az első új, hangos emlékeztető mentésekor a telefon engedélyt kér az ébresztőkre és az értesítésekre; máskor nem kérdez.
 
 ## Miért így
 - Az ébresztő leállítása sosem „kész” — tulajdonosi döntés (2026-11-25), hogy a későbbi vitamin ↔ alvás/forma összevetés valódi adatból dolgozzon.
