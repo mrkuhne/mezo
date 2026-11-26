@@ -600,7 +600,7 @@
     },
     "kezikonyv:04-terv/00-attekintes": {
       "page_id": "4168968e-752b-81c6-a15f-d115f1a8c6e1",
-      "hash": "718e58408aee"
+      "hash": "7e51501945c9"
     },
     "kezikonyv:04-terv/01-terv-keret": {
       "page_id": "4168968e-752b-8197-a22b-c72ced5647ab",
@@ -624,7 +624,7 @@
     },
     "kezikonyv:04-terv/06-terv-csomag": {
       "page_id": "4168968e-752b-81c2-b09d-e11a0ba276cf",
-      "hash": "5dc05b87fe16"
+      "hash": "bde50def91ae"
     },
     "kezikonyv:04-terv/07-bevasarlolista": {
       "page_id": "4168968e-752b-81c4-ab54-c295e5a48d60",
@@ -1516,7 +1516,7 @@
     },
     "jegyek:mezo-r36n9.122": {
       "page_id": "41e8968e-752b-8190-a8bd-feb5a12420e2",
-      "hash": "09b332921cc6"
+      "hash": "67627f5c661c"
     },
     "kiadasok:a1b15069c": {
       "page_id": "41e8968e-752b-814c-96b3-c1985d14a5ef",
@@ -3201,6 +3201,18 @@
     "kiadasok:435f2e444": {
       "page_id": "4248968e-752b-8158-b209-d61e66f5a48c",
       "hash": "65fd65248af8"
+    },
+    "kiadasok:450d1babf": {
+      "page_id": "4248968e-752b-81ca-8fdd-d4344d5d634e",
+      "hash": "fd65a0ba16df"
+    },
+    "jegyek:mezo-r36n9.174": {
+      "page_id": "4248968e-752b-814f-8fad-d6457967f47a",
+      "hash": "25ed52549648"
+    },
+    "jegyek:mezo-r36n9.175": {
+      "page_id": "4248968e-752b-81ca-bcac-f26f537deaa1",
+      "hash": "69df5ae2388e"
     }
   }
 }

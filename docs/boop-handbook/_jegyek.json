@@ -1754,5 +1754,25 @@
     ],
     "mit_kapsz": "Az éves terv és az új blokk indításának átnézéséből maradt apró javítások gyűjtője: néhány ritka eset kezelése a blokkok indításánál és archiválásánál, a hónapjelölők és a könnyítő hét pontosítása a telefonon. A legtöbb nem látható; amelyik igen, az a terv pontosabb megjelenítését hozza.",
     "munkamenet": "Muscle Ladder implementation"
+  },
+  "mezo-r36n9.174": {
+    "cim": "Edzés: egy évad-módosítással későbbi napra költözött, már elvégzett edzés ne jelenjen meg újra ugyanazon a héten",
+    "tipus": "Hiba",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Ha az Évadban átrakod az edzésnapokat, és egy ezen a héten már megcsinált edzésnap a hét egy későbbi napjára költözik, Boop nem kínálja fel újra ugyanazon a héten.",
+    "szulo": "mezo-r36n9.15"
+  },
+  "mezo-r36n9.175": {
+    "cim": "Belső: az iPhone-os szerződésmásolat frissítése",
+    "tipus": "Karbantartás",
+    "szakasz": "B6 A Terv",
+    "terulet": [
+      "Terv"
+    ],
+    "mit_kapsz": "Belső rendrakás, neked nem látszik: a telefon szerződésmásolata egyezik a szerverével.",
+    "szulo": "mezo-r36n9.16"
   }
 }

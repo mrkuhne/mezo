@@ -976,5 +976,20 @@
       "mezo-r36n9.114"
     ],
     "mi_valtozott": "A blokképítő Izmok lapján Boop szól, ha egy izomnál a heti tervből hiányzik egy hasznos kiegészítő mozgás — például csípőből hajlítás van, de lábhajlítás nincs. A test képe alatt egy halk sor mutatja, hány ilyen van, és odaugrik. Az izom kártyáján megmondja, mi hiányzik és miért, ajánl egy gyakorlatot a termedhez igazítva egy konkrét napra, és a „Hozzáadom” gombbal beteszi; a „Mást választok” a hozzáadó lapot nyitja arra az izomra szűrve. Ez tanács, nem szabály: nem kapcsolja be a sávba igazító gombot, és a szinten tartott izmoknál nem szól."
+  },
+  "450d1babf": {
+    "cim": "Évad: az edzésnapok módosítása a futó blokkot is átrendezi, egyetlen elfogadással",
+    "datum": "2026-11-26",
+    "verzio": "3.41.0",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app",
+      "Háttérrendszer"
+    ],
+    "szakasz": "B6 A Terv",
+    "jegyek": [
+      "mezo-r36n9.122"
+    ],
+    "mi_valtozott": "Az Évad Módosítás oldalán már futó edzésblokk mellett is átállíthatod, hány edzésed legyen és mely napokon. Az előnézetben megjelenik „A blokkod új hete”: napról napra látod, melyik edzés marad, melyik költözik, melyik nap új (egy meglévő edzés ismétlése) és melyik marad ki. Egyetlen „Elfogadom” egyszerre állítja át a kalóriát, az alvásigényt, a heti napokat és a blokkot — sosincs olyan pillanat, amikor a kalória már 5 edzéssel számol, a blokk még 4-gyel. Hogy melyik nap ismétlődjön vagy maradjon ki, azt ugyanaz a kiértékelő dönti el, mint a blokképítőben."
   }
 }
