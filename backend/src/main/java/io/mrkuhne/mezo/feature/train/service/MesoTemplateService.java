@@ -16,15 +16,21 @@ import io.mrkuhne.mezo.feature.train.mapper.TrainMapper;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesoTemplateRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
+import io.mrkuhne.mezo.feature.train.repository.TrainingYearBlockRepository;
+import io.mrkuhne.mezo.feature.train.entity.TrainingYearBlockEntity;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import io.mrkuhne.mezo.techcore.persistence.OwnershipGuard;
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,6 +57,10 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class MesoTemplateService {
 
+    /** 409: restart / save-to-template need a run that is still running (mezo-r36n9.177). */
+    public static final String MESO_NOT_ACTIVE = "TRAIN_MESO_NOT_ACTIVE";
+    private static final ZoneId ZONE = ZoneId.of("Europe/Budapest");
+
     private final MesoTemplateRepository templateRepository;
     private final MesocycleRepository mesocycleRepository;
     private final WorkoutSessionRepository workoutSessionRepository;
@@ -60,6 +70,8 @@ public class MesoTemplateService {
     private final ExerciseStyler styler;
     private final TechniqueGuard techniqueGuard;
     private final VolumeProperties volumeProperties;
+    private final TrainingYearBlockRepository yearBlockRepository;
+    private final ObjectProvider<Clock> clock;
 
     /** The owner's templates, oldest first, each carrying how many runs were started from it. */
     public List<MesoTemplateResponse> list(UUID createdBy) {
@@ -104,7 +116,7 @@ public class MesoTemplateService {
             t.getWeeks(), t.getSplit(), t.getStyle(), t.getTrainingStyle(), t.getPhaseCurve(), t.getNotes(),
             req.getStatus().getValue(),
             mapper.toDayInputs(t.getDays()), mapper.toBaselines(t.getVolumePerMuscle()),
-            t.getMusclePriorities(), t.getSportGroups(), t.isTechniquesEnabled(), req.getYearBlockId()));
+            t.getMusclePriorities(), t.getSportGroups(), t.isTechniquesEnabled(), req.getYearBlockId(), null));
     }
 
     /**
@@ -123,6 +135,95 @@ public class MesoTemplateService {
 
         MesoTemplateEntity template = new MesoTemplateEntity();
         template.setCreatedBy(createdBy);
+        MesoTemplateEntity saved = templateRepository.save(snapshotInto(template, run, createdBy));
+
+        run.setTemplateId(saved.getId()); // dirty-checked link-back — one legacy run, one template
+        return MesoRerunResponse.builder().templateId(saved.getId()).build();
+    }
+
+    /**
+     * Restarts the ACTIVE run from week 1 today, carrying its CURRENT state (mezo-r36n9.177, spec §5.5) — ONE
+     * transaction: the run's days are read first, its template is found (or materialized for a legacy run) and, with
+     * {@code updateTemplate}, overwritten; the year block it fills is released so the new run takes it over; the run
+     * is closed exactly like {@link TrainService#closeMesocycle} (closedAt, frozen report, AI review after commit);
+     * then a new active run is stamped from the captured state. Any failure — {@code SEASON_REQUIRED} included —
+     * rolls all of it back.
+     */
+    @Transactional
+    public MesocycleResponse restart(UUID createdBy, UUID mesocycleId, boolean updateTemplate) {
+        MesocycleEntity run = lockedActiveRun(createdBy, mesocycleId);
+        List<MesoDayJson> days = daysOf(createdBy, run.getId());
+        MesoTemplateEntity template = templateOf(createdBy, run, updateTemplate);
+
+        // Release the year block this run fills (as supersedePlannedRuns does) so the restarted run is linked back
+        // to the same block, not to whichever planned block happens to start nearest to today.
+        UUID yearBlockId = null;
+        for (TrainingYearBlockEntity b : yearBlockRepository.findByCreatedByAndMesocycleIdAndDeletedFalse(createdBy,
+            run.getId())) {
+            yearBlockId = yearBlockId != null ? yearBlockId : b.getId();
+            b.setMesocycleId(null);
+            b.setStatus(YearGenerator.PLANNED);
+            yearBlockRepository.save(b);
+        }
+
+        trainService.closeMesocycle(createdBy, run.getId(), null);
+        return trainService.stampRun(createdBy, new TrainService.StampSource(
+            template.getId(), run.getTitle(), run.getShortTitle(), run.getGoal(), run.getGoalPreset(),
+            LocalDate.now(clock.getIfAvailable(Clock::systemUTC).withZone(ZONE)), run.getWeeks(), run.getSplit(),
+            run.getStyle(), run.getTrainingStyle(), run.getPhaseCurve(), run.getNotes(), "active",
+            mapper.toDayInputs(days), null, run.getMusclePriorities(), run.getSportGroups(),
+            run.isTechniquesEnabled(), yearBlockId, run.getWeeklyReviewMode()));
+    }
+
+    /**
+     * Overwrites the run's template with the run's current state (a legacy run gets one created and linked);
+     * idempotent, the run itself is untouched (mezo-r36n9.177). An archived run is 409.
+     */
+    @Transactional
+    public MesoRerunResponse saveToTemplate(UUID createdBy, UUID mesocycleId) {
+        MesocycleEntity run = mesocycleRepository.findLockedByIdAndCreatedByAndDeletedFalse(mesocycleId, createdBy)
+            .orElseThrow(OwnershipGuard::notFound);
+        if ("archived".equals(run.getStatus())) {
+            throw notActive();
+        }
+        return MesoRerunResponse.builder().templateId(templateOf(createdBy, run, true).getId()).build();
+    }
+
+    private MesocycleEntity lockedActiveRun(UUID createdBy, UUID id) {
+        MesocycleEntity run = mesocycleRepository.findLockedByIdAndCreatedByAndDeletedFalse(id, createdBy)
+            .orElseThrow(OwnershipGuard::notFound);
+        if (!"active".equals(run.getStatus())) {
+            throw notActive();
+        }
+        return run;
+    }
+
+    private static SystemRuntimeErrorException notActive() {
+        return new SystemRuntimeErrorException(SystemMessage.error(MESO_NOT_ACTIVE).build(), HttpStatus.CONFLICT);
+    }
+
+    /**
+     * The run's live template; a legacy run (none, or its template deleted) gets one materialized from its state and
+     * linked. {@code overwrite} replaces an existing template's plan with the run's state.
+     */
+    private MesoTemplateEntity templateOf(UUID createdBy, MesocycleEntity run, boolean overwrite) {
+        MesoTemplateEntity existing = run.getTemplateId() == null ? null : templateRepository
+            .findByIdAndCreatedByAndDeletedFalse(run.getTemplateId(), createdBy).orElse(null);
+        if (existing != null) {
+            return overwrite ? templateRepository.save(snapshotInto(existing, run, createdBy)) : existing;
+        }
+        MesoTemplateEntity fresh = new MesoTemplateEntity();
+        fresh.setCreatedBy(createdBy);
+        MesoTemplateEntity saved = templateRepository.save(snapshotInto(fresh, run, createdBy));
+        run.setTemplateId(saved.getId());
+        return saved;
+    }
+
+    /**
+     * Copies a run's plan state onto a template row (metadata + template days/exercises). Volume landmarks are config
+     * (volume engine v2), so {@code volumePerMuscle} is left as it is.
+     */
+    private MesoTemplateEntity snapshotInto(MesoTemplateEntity template, MesocycleEntity run, UUID createdBy) {
         template.setTitle(run.getTitle());
         template.setShortTitle(run.getShortTitle());
         template.setGoal(run.getGoal());
@@ -138,10 +239,7 @@ public class MesoTemplateService {
         template.setPhaseCurve(List.copyOf(run.getPhaseCurve()));
         template.setNotes(run.getNotes());
         template.setDays(daysOf(createdBy, run.getId()));
-        MesoTemplateEntity saved = templateRepository.save(template);
-
-        run.setTemplateId(saved.getId()); // dirty-checked link-back — one legacy run, one template
-        return MesoRerunResponse.builder().templateId(saved.getId()).build();
+        return template;
     }
 
     /** Ownership gate: a missing row and a foreign row are indistinguishable to the caller (404). */

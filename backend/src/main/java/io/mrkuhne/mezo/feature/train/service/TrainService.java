@@ -235,7 +235,8 @@ public class TrainService {
         Map<String, String> musclePriorities,
         List<String> sportGroups,
         boolean techniquesEnabled,
-        UUID yearBlockId // the Éves terv block this run starts; null = the ±14-day rule (mezo-r36n9.113)
+        UUID yearBlockId, // the Éves terv block this run starts; null = the ±14-day rule (mezo-r36n9.113)
+        String weeklyReviewMode // carried by a restart (mezo-r36n9.177); null = the run's default
     ) {}
 
     /**
@@ -278,6 +279,9 @@ public class TrainService {
         m.setPhaseCurve(List.copyOf(src.phaseCurve()));
         m.setNotes(src.notes());
         m.setVolumeModel((short) 2); // a new run is born on the amount model — nothing to migrate
+        if (src.weeklyReviewMode() != null) {
+            m.setWeeklyReviewMode(src.weeklyReviewMode());
+        }
         if (active) {
             // Single-active invariant holds on the start-as-active path too — the start sheet's
             // "Aktiválás most" stamps directly with active status (live-smoke regression).
