@@ -1847,5 +1847,16 @@
     "mit_kapsz": "Az Edzés „Mezociklus” fülén látod a futó mezociklusodat, és egy koppintással szerkeszted, újraindítod az 1. héttől (a módosításaiddal együtt) vagy lezárod zárójelentéssel. A Mezociklusaim oldalon ott van minden sablonod, a következő és a lezárt mezociklusaid — mindegyiket előbb megnézed, aztán döntesz. A sablonokat is szerkesztheted. A „blokk” szó mindenhol „mezociklus” lett.",
     "szulo": "mezo-r36n9",
     "munkamenet": "mezociklus-kezeles"
+  },
+  "mezo-r36n9.183": {
+    "cim": "Mezociklusaim telepítése a telefonodra és végigkattintása",
+    "tipus": "Feladat",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Az új Mezociklusaim oldal a telefonodon is ott lesz; végigkattintjuk a listát, egy részletoldalt és egy sablonmentést. Újraindítást csak a kifejezett engedélyeddel próbálunk, mert az lezárja a most futó mezociklusodat.",
+    "szulo": "mezo-r36n9",
+    "munkamenet": "mezociklus-kezeles",
+    "szakasz": "B5 Edzés + Watch"
   }
 }
