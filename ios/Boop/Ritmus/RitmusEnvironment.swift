@@ -341,13 +341,13 @@ final class RitmusEnvironment {
         chatRef.store = store
     }
 
-    /// Each signed-in user keeps their own days and queue: `<base>/boop-ritmus/<userId>/ledger|outbox`.
     /// The user's own folder, the parent of `ledger`, `outbox`, `cache` (and the reminders file).
     static func userRoot(for userId: UUID, base: URL = .applicationSupportDirectory) -> URL {
         base.appendingPathComponent("boop-ritmus", isDirectory: true)
             .appendingPathComponent(userId.uuidString, isDirectory: true)
     }
 
+    /// Each signed-in user keeps their own days and queue: `<base>/boop-ritmus/<userId>/ledger|outbox`.
     static func directories(for userId: UUID,
                             base: URL = .applicationSupportDirectory) -> (ledger: URL, outbox: URL, cache: URL) {
         let root = userRoot(for: userId, base: base)

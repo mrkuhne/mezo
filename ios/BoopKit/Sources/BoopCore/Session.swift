@@ -10,6 +10,14 @@ public struct Me: Equatable, Sendable {
     public let email: String
     public let onboarded: Bool
     public let timezone: String
+
+    public init(id: UUID, name: String, email: String, onboarded: Bool, timezone: String) {
+        self.id = id
+        self.name = name
+        self.email = email
+        self.onboarded = onboarded
+        self.timezone = timezone
+    }
 }
 
 /// Who is signed in and what the app should show: sign-in, offline, onboarding or the shell.

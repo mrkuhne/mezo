@@ -96,8 +96,8 @@ struct RootView: View {
         }
         // The wall's waiting notifications belong to the account that made them.
         if let old = ritmus?.userKey, link?.userId != me?.id { WallNotifier.signedOut(userKey: old) }
-        // His own reminders belong to the account too: signed out cancels them; another user gets his own store.
-        if me == nil { ReminderHub.deactivate() } else if let me { ReminderHub.activate(for: me.id) }
+        // His own reminders belong to the account too: only a real sign-out cancels them (not .loading/.offline); another user gets his own store.
+        ReminderHub.apply(state)
         // Signed out, or another user: the old daily loop stops sending at once (its queue stays on disk for that user;
         // the session's client already carries another token, or none).
         guard let me else {

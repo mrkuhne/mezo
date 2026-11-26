@@ -22,7 +22,8 @@ protocol AlarmScheduling: Sendable {
     /// Cancels every alarm Boop scheduled for this user (AlarmKit ids carry no prefix, so we remember ours).
     func cancelAll(prefix: String) async
     /// The ids (`UUID` strings of `ReminderOccurrence.alarmId`) of the alarms the system currently holds.
-    func scheduledIds() async -> Set<String>
+    /// nil when the system's list could not be read (an error is not an empty list).
+    func scheduledIds() async -> Set<String>?
 }
 
 extension ReminderOccurrence {
@@ -79,8 +80,8 @@ struct SystemAlarmScheduler: AlarmScheduling {
         UserDefaults.standard.removeObject(forKey: defaultsKey)
     }
 
-    func scheduledIds() async -> Set<String> {
-        guard let alarms = try? AlarmManager.shared.alarms else { return [] }
+    func scheduledIds() async -> Set<String>? {
+        guard let alarms = try? AlarmManager.shared.alarms else { return nil }
         return Set(alarms.map { $0.id.uuidString })
     }
 
@@ -105,5 +106,5 @@ struct NoAlarmScheduler: AlarmScheduling {
     func requestAuthorization() async -> AlarmAuth { .denied }
     func schedule(_ o: ReminderOccurrence, title: String, secondaryTitle: String) async throws {}
     func cancelAll(prefix: String) async {}
-    func scheduledIds() async -> Set<String> { [] }
+    func scheduledIds() async -> Set<String>? { [] }
 }

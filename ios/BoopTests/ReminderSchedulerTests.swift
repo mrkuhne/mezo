@@ -14,6 +14,7 @@ fileprivate final class FakeAlarms: AlarmScheduling, @unchecked Sendable {
     var overlapped = false
     var delay: Duration = .zero
     var losesAll = false
+    var unreadable = false
     init(_ auth: AlarmAuth = .allowed) { self.auth = auth }
 
     func authorization() async -> AlarmAuth { auth }
@@ -38,8 +39,9 @@ fileprivate final class FakeAlarms: AlarmScheduling, @unchecked Sendable {
         cancelAlls.append(prefix)
         scheduled = []
     }
-    func scheduledIds() async -> Set<String> {
-        losesAll ? [] : Set(scheduled.map { $0.alarmId.uuidString })
+    func scheduledIds() async -> Set<String>? {
+        if unreadable { return nil }
+        return losesAll ? [] : Set(scheduled.map { $0.alarmId.uuidString })
     }
 }
 
@@ -206,5 +208,57 @@ struct ReminderSchedulerTests {
         #expect(sch.state[r.id] == .fellBackToNotification)
         #expect(a.scheduled.isEmpty)
         #expect(c.requests.count == 3) // the first refresh armed alarms only
+    }
+
+    @Test func unreadableSystemListDoesNotFailRows() async {
+        let s = store(), a = FakeAlarms(), c = SchedCenter()
+        a.unreadable = true
+        let r = alarmReminder()
+        s.upsert(r)
+        let sch = scheduler(s, a, c)
+        await sch.refresh(askPermission: false)
+        if case .armed = sch.state[r.id] {} else { Issue.record("expected armed") }
+    }
+}
+
+@MainActor @Suite(.serialized)
+struct ReminderHubTests {
+    let a = UUID(), b = UUID()
+    func me(_ id: UUID) -> Me { Me(id: id, name: "T", email: "x@y.z", onboarded: true, timezone: "Europe/Budapest") }
+
+    @Test func rules() {
+        #expect(ReminderHub.action(for: .offline, current: a) == .keep)
+        #expect(ReminderHub.action(for: .loading, current: a) == .keep)
+        #expect(ReminderHub.action(for: .signedOut, current: a) == .deactivate)
+        #expect(ReminderHub.action(for: .signedOut, current: nil) == .keep)
+        #expect(ReminderHub.action(for: .ready(me(b)), current: a) == .activate(b))
+        #expect(ReminderHub.action(for: .ready(me(a)), current: a) == .keep)
+        #expect(ReminderHub.action(for: .ready(me(a)), current: nil) == .activate(a))
+    }
+
+    @Test func switchCancelsTheOldUsersAlarms() async {
+        ReminderHub.deactivate()
+        let alarmsA = FakeAlarms(), alarmsB = FakeAlarms()
+        let center = SchedCenter()
+        func make(_ id: UUID) -> (ReminderStore, AlarmScheduling, ReminderCenter) {
+            let st = ReminderStore(fileURL: FileManager.default.temporaryDirectory
+                .appendingPathComponent("hub-\(UUID().uuidString)/reminders.json"))
+            st.upsert(Reminder(title: "x", hour: 23, minute: 59, repeats: .daily, strength: .alarm))
+            return (st, id == a ? alarmsA : alarmsB, center)
+        }
+        ReminderHub.activate(for: a, make: make)
+        await ReminderHub.scheduler!.refresh(askPermission: false)
+        #expect(!alarmsA.scheduled.isEmpty)
+        ReminderHub.activate(for: b, make: make)
+        await ReminderHub.scheduler!.refresh(askPermission: false)
+        #expect(alarmsA.scheduled.isEmpty && !alarmsA.cancelAlls.isEmpty)
+        #expect(!alarmsB.scheduled.isEmpty)
+        // offline keeps B's alarms
+        ReminderHub.apply(.offline)
+        await ReminderHub.scheduler!.refresh(askPermission: false)
+        #expect(!alarmsB.scheduled.isEmpty)
+        ReminderHub.apply(.signedOut)
+        #expect(ReminderHub.scheduler == nil)
+        ReminderHub.deactivate()
     }
 }

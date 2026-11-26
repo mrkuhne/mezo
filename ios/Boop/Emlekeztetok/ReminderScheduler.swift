@@ -30,7 +30,9 @@ final class ReminderScheduler {
     @ObservationIgnored private var inFlight: Task<Void, Never>?
 
     init(store: ReminderStore, alarms: AlarmScheduling, center: ReminderCenter,
-         clock: @escaping @Sendable () -> Date = { Date() }, calendar: Calendar = .current) {
+         clock: @escaping @Sendable () -> Date = { Date() }, calendar: Calendar = .current,
+         startingAfter: Task<Void, Never>? = nil) {
+        self.inFlight = startingAfter
         self.store = store
         self.alarms = alarms
         self.center = center
@@ -88,14 +90,13 @@ final class ReminderScheduler {
         let notificationsAllowed = notifStatus == .allowed
         guard !Task.isCancelled else { return }
 
-        await clearAll()
+        await clearAll() // from here on the run finishes arming even if its caller is cancelled
 
         // alarms
         var failed: [UUID: String] = [:]
         var alarmUntil: [UUID: Date] = [:]
         var expectedAlarmIds: [UUID: Set<String>] = [:]
         for occ in plan.alarms {
-            guard !Task.isCancelled else { return }
             guard failed[occ.reminderId] == nil, let r = byId[occ.reminderId] else { continue }
             let secondary: String = { if case .supplement = r.link { return "Bevettem" } else { return "Kész" } }()
             do {
@@ -111,9 +112,10 @@ final class ReminderScheduler {
         }
         // compare the system's list with ours (AlarmKit can lose alarms silently)
         if !expectedAlarmIds.isEmpty {
-            let held = await alarms.scheduledIds()
-            for (rid, ids) in expectedAlarmIds where failed[rid] == nil && !ids.isSubset(of: held) {
-                failed[rid] = "Az ébresztő nem maradt beállítva."
+            if let held = await alarms.scheduledIds() {
+                for (rid, ids) in expectedAlarmIds where failed[rid] == nil && !ids.isSubset(of: held) {
+                    failed[rid] = "Az ébresztő nem maradt beállítva."
+                }
             }
         }
 
@@ -121,7 +123,6 @@ final class ReminderScheduler {
         var notifUntil: [UUID: Date] = [:]
         if notificationsAllowed {
             for occ in plan.notifications {
-                guard !Task.isCancelled else { return }
                 guard let r = byId[occ.reminderId] else { continue }
                 let c = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: occ.fireAt)
                 do {
