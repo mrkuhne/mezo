@@ -198,7 +198,11 @@ private struct SyncTriggers: View {
     @Environment(\.scenePhase) private var scenePhase
     var body: some View {
         Color.clear
-            .onChange(of: scenePhase) { _, phase in if phase == .active { Task { await link.syncIfStale() } } }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active { Task { await link.syncIfStale() } }
+                // The rest-end alarm sleeps while the app is open and wakes when it goes away (`.inactive` is a glance).
+                if phase != .inactive { let fg = phase == .active; Task { await ReminderHub.restEnd?.foregroundChanged(fg) } }
+            }
             .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged)) { _ in
                 Task { await link.calendarChanged() }
             }

@@ -7,7 +7,11 @@ import Foundation
 enum ReminderHub {
     static var store: ReminderStore?
     static var scheduler: ReminderScheduler?
+    /// The workout's "rest is over" signal (vibrate or alarm), built with the scheduler and cleared with it.
+    static var restEnd: RestEndSignal?
     private static var userId: UUID?
+    /// The key the per-user settings that live outside the reminders file hang on (`boop.restEnd.<userKey>`).
+    static var userKey: String? { userId?.uuidString }
 
     /// Builds this user's store and scheduler (once per user; a switch first cancels the previous user's family).
     /// Called before the user's view tree is built: `BedtimeReminder` reads the store when it is created.
@@ -43,6 +47,9 @@ enum ReminderHub {
         let (s, alarms, center) = make(id)
         store = s
         scheduler = ReminderScheduler(store: s, alarms: alarms, center: center, startingAfter: handoff)
+        let key = id.uuidString
+        if let old = restEnd { Task { await old.signedOut() } }
+        restEnd = RestEndSignal(alarms: alarms, center: center, mode: { RestEndMode.load(userKey: key) })
         userId = id
     }
 
@@ -68,6 +75,8 @@ enum ReminderHub {
     static func deactivate() {
         HeadlessContext.invalidate()
         if let old = scheduler { Task { await old.signedOut() } }
+        if let old = restEnd { Task { await old.signedOut() } }
+        restEnd = nil
         store = nil
         scheduler = nil
         userId = nil

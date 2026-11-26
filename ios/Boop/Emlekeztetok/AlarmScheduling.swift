@@ -24,6 +24,15 @@ protocol AlarmScheduling: Sendable {
     /// The ids (`UUID` strings of `ReminderOccurrence.alarmId`) of the alarms the system currently holds.
     /// nil when the system's list could not be read (an error is not an empty list).
     func scheduledIds() async -> Set<String>?
+    /// The workout's rest end as a one-off alarm at `at` (one at a time: a second call replaces the first). Not part of
+    /// the reminder family: `cancelAll` leaves it alone.
+    func scheduleRest(at: Date, title: String, tint: Color) async throws
+    func cancelRest() async
+}
+
+extension AlarmScheduling {
+    func scheduleRest(at: Date, title: String, tint: Color) async throws {}
+    func cancelRest() async {}
 }
 
 extension ReminderOccurrence {
@@ -70,6 +79,26 @@ struct SystemAlarmScheduler: AlarmScheduling {
             throw AlarmArmError.other(error.localizedDescription)
         }
     }
+
+    /// One fixed id: the rest alarm is replaced, never stacked.
+    static let restAlarmId = UUID(uuidString: "B00B0000-0000-4000-8000-0000000000E5")!
+
+    func scheduleRest(at: Date, title: String, tint: Color) async throws {
+        try? AlarmManager.shared.cancel(id: Self.restAlarmId)
+        let alert = AlarmPresentation.Alert(
+            title: LocalizedStringResource(stringLiteral: title),
+            stopButton: AlarmButton(text: "Leállítom", textColor: .white, systemImageName: "stop.fill"))
+        let attrs = AlarmAttributes<ReminderAlarmMetadata>(presentation: AlarmPresentation(alert: alert), metadata: nil, tintColor: tint)
+        let config = AlarmManager.AlarmConfiguration<ReminderAlarmMetadata>.alarm(
+            schedule: .fixed(at), attributes: attrs, stopIntent: ReminderSilenceIntent())
+        do {
+            _ = try await AlarmManager.shared.schedule(id: Self.restAlarmId, configuration: config)
+        } catch {
+            throw AlarmArmError.other(error.localizedDescription)
+        }
+    }
+
+    func cancelRest() async { try? AlarmManager.shared.cancel(id: Self.restAlarmId) }
 
     func cancelAll(prefix: String) async {
         let ids = UserDefaults.standard.stringArray(forKey: defaultsKey) ?? []

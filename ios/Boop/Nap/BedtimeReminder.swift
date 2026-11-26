@@ -19,6 +19,9 @@ protocol ReminderCenter: Sendable {
     /// (`RitmusCover` route name). The daily loop's reminders use it: a repeating clock time cannot skip a day that is done.
     /// No default: every centre decides what a dated request means.
     func scheduleOnce(id: String, on day: DateComponents, hour: Int, minute: Int, title: String, body: String, route: String) async throws
+    /// A one-time notification at an exact moment (second precision — a rest end is not on a minute). The default falls
+    /// back to the minute-precision `scheduleOnce`; the system centre overrides it.
+    func scheduleAt(id: String, fireAt: Date, title: String, body: String) async throws
     func cancel(id: String)
     /// Whether a request with this id is still waiting to ring.
     func isPending(id: String) async -> Bool
@@ -26,6 +29,13 @@ protocol ReminderCenter: Sendable {
     func pendingIds(withPrefix prefix: String) async -> [String]
     /// Takes already delivered notifications with these ids out of the notification centre.
     func removeDelivered(ids: [String])
+}
+
+extension ReminderCenter {
+    func scheduleAt(id: String, fireAt: Date, title: String, body: String) async throws {
+        let c = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: fireAt)
+        try await scheduleOnce(id: id, on: c, hour: c.hour ?? 0, minute: c.minute ?? 0, title: title, body: body, route: "")
+    }
 }
 
 /// The real centre: local notifications, no server.
@@ -70,6 +80,16 @@ struct SystemReminderCenter: ReminderCenter {
         when.calendar = .current
         let request = UNNotificationRequest(identifier: id, content: content,
                                             trigger: UNCalendarNotificationTrigger(dateMatching: when, repeats: false))
+        try await UNUserNotificationCenter.current().add(request)
+    }
+
+    func scheduleAt(id: String, fireAt: Date, title: String, body: String) async throws {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+        let request = UNNotificationRequest(identifier: id, content: content,
+                                            trigger: UNTimeIntervalNotificationTrigger(timeInterval: max(1, fireAt.timeIntervalSinceNow), repeats: false))
         try await UNUserNotificationCenter.current().add(request)
     }
 
@@ -135,7 +155,8 @@ final class ReminderPresenter: NSObject, UNUserNotificationCenterDelegate, Senda
 
     /// What to show while the app is open: nothing for the daily loop's reminders, a banner for the rest.
     static func presentation(for id: String) -> UNNotificationPresentationOptions {
-        id.hasPrefix(RitmusReminders.idPrefix) ? [] : foregroundOptions
+        // the workout player on screen shows the rest countdown itself
+        id.hasPrefix(RitmusReminders.idPrefix) || id == RestEndSignal.notificationId ? [] : foregroundOptions
     }
 
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async
