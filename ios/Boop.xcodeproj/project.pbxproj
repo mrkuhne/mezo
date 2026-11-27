@@ -10,6 +10,8 @@
 		B0000000000000000000A001 /* BoopAPI in Frameworks */ = {isa = PBXBuildFile; productRef = B0000000000000000000A101 /* BoopAPI */; };
 		B0000000000000000000A002 /* BoopCore in Frameworks */ = {isa = PBXBuildFile; productRef = B0000000000000000000A102 /* BoopCore */; };
 		B0000000000000000000A003 /* BoopDesign in Frameworks */ = {isa = PBXBuildFile; productRef = B0000000000000000000A103 /* BoopDesign */; };
+		B0000000000000000000A004 /* BoopDesign in Frameworks */ = {isa = PBXBuildFile; productRef = B0000000000000000000A104 /* BoopDesign */; };
+		B0000000000000000000A005 /* BoopWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B00000000000000000000021 /* BoopWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -20,16 +22,40 @@
 			remoteGlobalIDString = B00000000000000000000007;
 			remoteInfo = Boop;
 		};
+		B0000000000000000000C002 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B0000000000000000000000A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B00000000000000000000027;
+			remoteInfo = BoopWidgets;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		B00000000000000000000030 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				B0000000000000000000A005 /* BoopWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		B00000000000000000000001 /* Boop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Boop.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B00000000000000000000002 /* BoopTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BoopTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B00000000000000000000021 /* BoopWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BoopWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		B00000000000000000000003 /* Boop */ = {isa = PBXFileSystemSynchronizedRootGroup; path = Boop; sourceTree = "<group>"; };
 		B00000000000000000000013 /* BoopTests */ = {isa = PBXFileSystemSynchronizedRootGroup; path = BoopTests; sourceTree = "<group>"; };
+		B00000000000000000000023 /* BoopWidgets */ = {isa = PBXFileSystemSynchronizedRootGroup; path = BoopWidgets; sourceTree = "<group>"; };
+		B00000000000000000000033 /* BoopLive */ = {isa = PBXFileSystemSynchronizedRootGroup; path = BoopLive; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -44,6 +70,7 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		B00000000000000000000014 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		B00000000000000000000024 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (B0000000000000000000A004 /* BoopDesign in Frameworks */,); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -52,6 +79,8 @@
 			children = (
 				B00000000000000000000003 /* Boop */,
 				B00000000000000000000013 /* BoopTests */,
+				B00000000000000000000023 /* BoopWidgets */,
+				B00000000000000000000033 /* BoopLive */,
 				B00000000000000000000006 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -61,6 +90,7 @@
 			children = (
 				B00000000000000000000001 /* Boop.app */,
 				B00000000000000000000002 /* BoopTests.xctest */,
+				B00000000000000000000021 /* BoopWidgets.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -75,10 +105,11 @@
 				B00000000000000000000008 /* Sources */,
 				B00000000000000000000004 /* Frameworks */,
 				B00000000000000000000009 /* Resources */,
+				B00000000000000000000030 /* Embed Foundation Extensions */,
 			);
 			buildRules = ();
-			dependencies = ();
-			fileSystemSynchronizedGroups = (B00000000000000000000003 /* Boop */,);
+			dependencies = (B0000000000000000000D002 /* PBXTargetDependency */,);
+			fileSystemSynchronizedGroups = (B00000000000000000000003 /* Boop */, B00000000000000000000033 /* BoopLive */,);
 			name = Boop;
 			packageProductDependencies = (
 				B0000000000000000000A101 /* BoopAPI */,
@@ -104,6 +135,25 @@
 			productName = BoopTests;
 			productReference = B00000000000000000000002 /* BoopTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		B00000000000000000000027 /* BoopWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B0000000000000000000002B;
+			buildPhases = (
+				B00000000000000000000028 /* Sources */,
+				B00000000000000000000024 /* Frameworks */,
+				B00000000000000000000029 /* Resources */,
+			);
+			buildRules = ();
+			dependencies = ();
+			fileSystemSynchronizedGroups = (B00000000000000000000023 /* BoopWidgets */, B00000000000000000000033 /* BoopLive */,);
+			name = BoopWidgets;
+			packageProductDependencies = (
+				B0000000000000000000A104 /* BoopDesign */,
+			);
+			productName = BoopWidgets;
+			productReference = B00000000000000000000021 /* BoopWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -132,6 +182,7 @@
 			targets = (
 				B00000000000000000000007 /* Boop */,
 				B00000000000000000000017 /* BoopTests */,
+				B00000000000000000000027 /* BoopWidgets */,
 			);
 		};
 /* End PBXProject section */
@@ -139,11 +190,13 @@
 /* Begin PBXResourcesBuildPhase section */
 		B00000000000000000000009 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 		B00000000000000000000019 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		B00000000000000000000029 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		B00000000000000000000008 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 		B00000000000000000000018 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		B00000000000000000000028 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -152,6 +205,11 @@
 			target = B00000000000000000000007 /* Boop */;
 			targetProxy = B0000000000000000000C001 /* PBXContainerItemProxy */;
 		};
+		B0000000000000000000D002 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B00000000000000000000027 /* BoopWidgets */;
+			targetProxy = B0000000000000000000C002 /* PBXContainerItemProxy */;
+		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
@@ -159,7 +217,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = Boop.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "$(BOOP_APP_ENTITLEMENTS:default=Boop.entitlements)";
 				INFOPLIST_FILE = "Boop-Info.plist";
 				INFOPLIST_KEY_NSCameraUsageDescription = "A Boop a kamerával lefotózza az étkezésedet, a termék címkéjét vagy a vonalkódját, hogy ki tudja számolni, mit ettél. A képet a Boop elemzi, és a naplódban marad.";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "A Boop a naptáradból látja, mennyi időd marad edzésre és evésre.";
@@ -186,7 +244,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = Boop.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "$(BOOP_APP_ENTITLEMENTS:default=Boop.entitlements)";
 				INFOPLIST_FILE = "Boop-Info.plist";
 				INFOPLIST_KEY_NSCameraUsageDescription = "A Boop a kamerával lefotózza az étkezésedet, a termék címkéjét vagy a vonalkódját, hogy ki tudja számolni, mit ettél. A képet a Boop elemzi, és a naplódban marad.";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "A Boop a naptáradból látja, mennyi időd marad edzésre és evésre.";
@@ -265,12 +323,63 @@
 			};
 			name = Release;
 		};
+		B0000000000000000000002C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "BoopWidgets-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Boop;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.mrkuhne.boop.widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "BOOP_WIDGETS $(inherited)";
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		B0000000000000000000002D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "BoopWidgets-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Boop;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.mrkuhne.boop.widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "BOOP_WIDGETS $(inherited)";
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
 		B0000000000000000000000B = {isa = XCConfigurationList; buildConfigurations = (B0000000000000000000000C, B0000000000000000000000D,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Debug; };
 		B0000000000000000000001B = {isa = XCConfigurationList; buildConfigurations = (B0000000000000000000001C, B0000000000000000000001D,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Debug; };
 		B0000000000000000000000E = {isa = XCConfigurationList; buildConfigurations = (B0000000000000000000000F, B00000000000000000000010,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Debug; };
+		B0000000000000000000002B = {isa = XCConfigurationList; buildConfigurations = (B0000000000000000000002C, B0000000000000000000002D,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Debug; };
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -281,6 +390,7 @@
 		B0000000000000000000A101 /* BoopAPI */ = {isa = XCSwiftPackageProductDependency; productName = BoopAPI; };
 		B0000000000000000000A102 /* BoopCore */ = {isa = XCSwiftPackageProductDependency; productName = BoopCore; };
 		B0000000000000000000A103 /* BoopDesign */ = {isa = XCSwiftPackageProductDependency; productName = BoopDesign; };
+		B0000000000000000000A104 /* BoopDesign */ = {isa = XCSwiftPackageProductDependency; productName = BoopDesign; };
 /* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = B0000000000000000000000A /* Project object */;

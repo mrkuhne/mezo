@@ -23,6 +23,7 @@ struct BoopApp: App {
                 .task {
                     #if DEBUG
                     await Self.debugNotify()
+                    await WorkoutActivityController.debugPreview()
                     if let p = UserDefaults.standard.string(forKey: "preview") { session.debugPreview(p); return }
                     #endif
                     await session.bootstrap()

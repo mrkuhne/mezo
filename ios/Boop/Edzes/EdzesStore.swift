@@ -99,6 +99,7 @@ final class EdzesStore {
         self.client = client; self.cache = cache; self.folder = folder; self.clock = clock
         self.session = Self.readSession(folder)
         self.finished = Self.readFinished(folder)
+        WorkoutLiveActions.liveStore = self      // the Lock Screen card's buttons act on this store while it lives
     }
 
     /// Point the store at the user's folder, and pick up a workout left running there.
@@ -305,10 +306,12 @@ final class EdzesStore {
         signalRestEnd()
     }
 
-    /// Re-arms (or clears) the "rest is over" signal for the session as it is now.
+    /// Re-arms (or clears) the "rest is over" signal and the Lock Screen card for the session as it is now.
     private func signalRestEnd() {
         let s = session, now = clock()
+        let dayName = today?.value.title ?? today?.value.dayLabel
         Task { await ReminderHub.restEnd?.sessionChanged(s, now: now) }
+        Task { await WorkoutLiveActions.activities.sessionChanged(s, dayName: dayName) }
     }
 
     /// The workout is over: the session leaves the phone's memory and its file — and stays, as the day's result,
