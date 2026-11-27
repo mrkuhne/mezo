@@ -25,10 +25,11 @@ enum EvadWallID {
 ///     tip — an experiment can wait a day, a meal window cannot).
 ///   • S4 `.happened` — an experiment finished within the last three days („Kész a kísérlet"); a tap opens its result.
 /// Every card's „miért?" is the overview's own words. No season (nil overview), no candidates.
-public func evadCandidates(_ o: EvadOverview?, experiments: EvadExperiments? = nil, now: Date,
-                           calendar: Calendar = .current) -> [WallCandidate] {
+public func evadCandidates(_ o: EvadOverview?, experiments: EvadExperiments? = nil, review: WallCandidate? = nil,
+                           now: Date, calendar: Calendar = .current) -> [WallCandidate] {
     guard let o else { return [] }
     var out: [WallCandidate] = []
+    if let review { out.append(review) }
     if let menu = evadMenuCandidate(o, now: now, calendar: calendar) { out.append(menu) }
 
     if let i = o.insights.first(where: { $0.key == "learned_expenditure" }) {
