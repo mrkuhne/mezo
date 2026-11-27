@@ -672,7 +672,7 @@
     },
     "kezikonyv:06-etel/01-etel-szoba-ma": {
       "page_id": "4168968e-752b-8195-9564-d1ced1b8d194",
-      "hash": "95ba4cb07ec3"
+      "hash": "505117952750"
     },
     "kezikonyv:06-etel/02-etkezes-rogzitese": {
       "page_id": "4168968e-752b-8164-b1d7-d8aa78d82e63",
@@ -3445,6 +3445,14 @@
     "kiadasok:11b3e49c9": {
       "page_id": "4258968e-752b-81f9-902c-f0e95401b894",
       "hash": "cfd26a34fc28"
+    },
+    "jegyek:mezo-r36n9.198": {
+      "page_id": "4258968e-752b-818e-a2a7-e468d237d3cd",
+      "hash": "afecd76720fe"
+    },
+    "kiadasok:da283486a": {
+      "page_id": "4258968e-752b-8191-ba2b-cccb799cf0df",
+      "hash": "06ca1c0a1ced"
     }
   }
 }
