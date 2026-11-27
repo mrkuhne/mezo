@@ -289,7 +289,7 @@ struct EtelKamra: View {
     private var hero: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("A POLCOD").nkFont(11.5, .semibold, design: .monospaced).foregroundStyle(.white.opacity(0.6)).tracking(1.2)
-            NKStatRow(shelfStats(store.shelf, profile: store.profile), hue: hue)
+            EtelHeroStats(stats: shelfStats(store.shelf, profile: store.profile), hue: hue)
             EtelMixBar(parts: shelfNovaMix(store.shelf), hue: hue, title: "Mennyire feldolgozott")
         }
         .padding(16)

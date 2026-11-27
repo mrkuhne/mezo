@@ -184,7 +184,7 @@ struct EtelReceptek: View {
         card("ÚJ RECEPT") { entrances }
         let picks = store.recipesProblem == nil ? recipeTopPicks(store.recipes) : []
         if !picks.isEmpty {
-            NKBare("A LEGJOBBAK NEKED", hue: hue, trailing: "pontszám szerint") {
+            NKBare("A LEGJOBBAK NEKED", hue: hue, trailing: typeSize.isAccessibilitySize ? nil : "pontszám szerint") {
                 NKCarousel(picks, hue: hue, height: min(pickHeight, 460), widthFraction: typeSize.isAccessibilitySize ? 0.86 : 0.62) { r in
                     pickCard(r)
                 }
@@ -206,7 +206,7 @@ struct EtelReceptek: View {
     private var hero: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("A RECEPTKÖNYVED").nkFont(11.5, .semibold, design: .monospaced).foregroundStyle(.white.opacity(0.6)).tracking(1.2)
-            NKStatRow(recipeStats(store.recipes, profile: store.profile), hue: hue)
+            EtelHeroStats(stats: recipeStats(store.recipes, profile: store.profile), hue: hue)
             EtelMixBar(parts: recipeSlotMix(store.recipes), hue: hue, title: "Mire valók")
         }
         .padding(16)
@@ -264,7 +264,8 @@ struct EtelReceptek: View {
     // MARK: new recipe
 
     private var entrances: some View {
-        LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
+        // One column at the accessibility text sizes: two would cut the titles.
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: typeSize.isAccessibilitySize ? 1 : 2), spacing: 8) {
             ForEach(recipeEntrances) { e in
                 entrance(e.glyph, e.title, e.sub, lit: e.lit) {
                     switch e.route {
@@ -283,12 +284,14 @@ struct EtelReceptek: View {
             VStack(alignment: .leading, spacing: 10) {
                 EtelMedallion(glyph: glyph, size: 36, lit: lit)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title).nkFont(15, .semibold).foregroundStyle(.white).lineLimit(1).fixedSize().layoutPriority(1)
-                    Text(sub).nkFont(12).foregroundStyle(.white.opacity(0.55)).lineLimit(2).multilineTextAlignment(.leading)
+                    Text(title).nkFont(15, .semibold).foregroundStyle(.white).lineLimit(typeSize.isAccessibilitySize ? 3 : 1)
+                        .fixedSize(horizontal: !typeSize.isAccessibilitySize, vertical: typeSize.isAccessibilitySize).layoutPriority(1)
+                    Text(sub).nkFont(12).foregroundStyle(.white.opacity(0.55)).lineLimit(typeSize.isAccessibilitySize ? nil : 2).multilineTextAlignment(.leading)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            .padding(14).frame(maxWidth: .infinity, alignment: .topLeading).frame(height: 116, alignment: .topLeading)
+            .padding(14).frame(maxWidth: .infinity, alignment: .topLeading)
+            .frame(minHeight: typeSize.isAccessibilitySize ? nil : 116, maxHeight: typeSize.isAccessibilitySize ? nil : 116, alignment: .topLeading)
             .background {
                 let shape = RoundedRectangle(cornerRadius: 20, style: .continuous)
                 shape.fill(lit ? hue.glow.opacity(0.12) : .white.opacity(0.06))
@@ -407,5 +410,30 @@ struct EtelMixBar: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(title): " + parts.map { "\($0.label) \($0.count)" }.joined(separator: ", "))
+    }
+}
+
+/// The hero's three numbers: the kit's `NKStatRow`, and one number per line at the accessibility text sizes, where three
+/// columns would break the labels mid-word.
+struct EtelHeroStats: View {
+    let stats: [NKStat]
+    let hue: Hue
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    var body: some View {
+        if typeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(stats) { s in
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text([s.value ?? "–", s.unit].filter { !$0.isEmpty }.joined(separator: " "))
+                            .nkFont(26, s.hot ? .semibold : .regular).foregroundStyle(s.hot ? hue.glow : .white).monospacedDigit()
+                        Text(s.label).nkFont(13).foregroundStyle(.white.opacity(0.6)).fixedSize(horizontal: false, vertical: true)
+                    }
+                    .accessibilityElement(children: .combine)
+                }
+            }
+        } else {
+            NKStatRow(stats, hue: hue)
+        }
     }
 }

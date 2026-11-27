@@ -2197,5 +2197,16 @@
     "munkamenet": "etel-receptek-kamra",
     "mit_kapsz": "A Receptek és a Kamra fül is kártyákra kerül, mint a Ma és a Hét: felül egy kiemelt kártya a számokkal és egy kis grafikával, alatta üvegkártyák, a Receptekben oldalra lapozható sor a legjobb pontszámú receptjeidből.",
     "szulo": "mezo-r36n9"
+  },
+  "mezo-r36n9.208": {
+    "cim": "Étel: a legnagyobb betűméretnél a pontgyűrű, a három szám és a fejléc címe szétesik",
+    "tipus": "Hiba",
+    "szakasz": "B4 Étel",
+    "terulet": [
+      "Étel"
+    ],
+    "munkamenet": "etel-receptek-kamra",
+    "mit_kapsz": "A legnagyobb betűméretnél is olvasható a pontszám a gyűrűben, a három szám nem törik szótag közepén, és a szoba címe sem.",
+    "szulo": "mezo-r36n9"
   }
 }
