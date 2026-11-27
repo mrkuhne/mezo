@@ -1942,5 +1942,41 @@
     ],
     "mit_kapsz": "A napközbeni kérdéseket egy widgetből is megválaszolhatod, az app megnyitása nélkül: kérdésenként egy koppintás egy számrácson. Előtte közösen eldöntjük, hogyan jelenjen meg a fájdalom és a sóvárgás kérdése, mert ezek nem férnek bele egy számrácsba.",
     "szulo": "mezo-r36n9.172"
+  },
+  "mezo-r36n9.192": {
+    "cim": "A szobák fülsora levágja a feliratokat a legnagyobb betűméretnél",
+    "tipus": "Hiba",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Alapok"
+    ],
+    "szulo": "mezo-r36n9",
+    "munkamenet": "etel-ma-lezaras",
+    "allapot": "Később",
+    "mit_kapsz": "Ha a telefonon a legnagyobb betűméretet használod, a szobák felső fülsora (például az Étel „Receptek” füle) sem csonkul „Rece…”-re: minden fül neve olvasható marad."
+  },
+  "mezo-r36n9.193": {
+    "cim": "A napi görbe óraszámai összetorlódnak nagy betűméretnél",
+    "tipus": "Hiba",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Alapok"
+    ],
+    "szulo": "mezo-r36n9",
+    "munkamenet": "etel-ma-lezaras",
+    "allapot": "Később",
+    "mit_kapsz": "Nagy betűméretnél és kis telefonon is olvashatók maradnak a napi görbe alatti órák: ritkábban jelennek meg, de nem csúsznak egymásra."
+  },
+  "mezo-r36n9.194": {
+    "cim": "A díszes (talpas) betűs címek és számok nem nőnek a betűmérettel",
+    "tipus": "Hiba",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Alapok"
+    ],
+    "szulo": "mezo-r36n9",
+    "munkamenet": "etel-ma-lezaras",
+    "allapot": "Később",
+    "mit_kapsz": "Az app talpas betűs címei és nagy számai is követik a telefonon beállított betűméretet, így nagyobb betűvel minden szöveg egyformán könnyen olvasható."
   }
 }
