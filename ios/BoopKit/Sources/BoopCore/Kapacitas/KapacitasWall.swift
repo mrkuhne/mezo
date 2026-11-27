@@ -22,7 +22,7 @@ public enum KapacitasWallID {
 }
 
 /// The Kapacitás source's candidate:
-///   • `.improves`, rank 0.85 — at least one open proposal in the current week. It beats the season's correction (0.8)
+///   • `.improves`, rank 0.85 — at least one open proposal in the wall's week (`kapacitasWallMonday`: next week from Sunday 18:00). It beats the season's correction (0.8)
 ///     and the food tip (0.7), not a session within two hours (0.9). Text: the top proposal's day verdict and the open
 ///     proposals counted in words („A csütörtök *túl sok* lenne. Négy dolgot tennék át a héten."); sub: the moves in
 ///     brief.
@@ -32,7 +32,7 @@ public enum KapacitasWallID {
 /// has already accepted offline (queued); `todaySessionStart` is today's planned session from the brief.
 public func kapacitasWallCandidates(week: KapacitasWeek?, now: Date, todaySessionStart: Date? = nil,
                                     excluding: Set<String> = [], timeZone: TimeZone = .current) -> [WallCandidate] {
-    guard let week, week.monday == kapacitasMonday(for: now, timeZone: timeZone) else { return [] }
+    guard let week, week.monday == kapacitasWallMonday(now, timeZone: timeZone) else { return [] }
     let open = week.proposals.filter { $0.status == "open" && !excluding.contains($0.id) }
     guard let top = open.first else { return [] }
     let today = kapacitasYMD(now, timeZone: timeZone)

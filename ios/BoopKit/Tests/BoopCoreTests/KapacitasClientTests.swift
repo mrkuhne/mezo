@@ -47,6 +47,32 @@ struct KapacitasClientTests {
         #expect(s.headline == "A terhed gyorsabban nő.")
     }
 
+    @Test func seasonCarriesPatternsAndTheAdvisoryCard() async throws {
+        let stub = StubTransport()
+        let json = Self.seasonJSON.replacingOccurrences(of: #""headline":"A terhed gyorsabban nő."}"#, with: #"""
+        "headline":"A terhed gyorsabban nő.","patterns":[{"key":"weekday-overload:THURSDAY","line":"A csütörtök",
+         "body":"például: 6-ból 4.","evidence":6,"consistent":4,"weekday":"THURSDAY"}],
+         "deloadForward":{"fromWeek":10,"toWeek":8,"title":"Előrébb hoznám a könnyebb hetet.","body":"például"}}
+        """#)
+        stub.on("getCapacitySeason", .json(200, json))
+        let s = try await Self.client(stub).season()
+        #expect(s.patterns.count == 1 && s.patterns[0].consistent == 4)
+        #expect(s.deloadForward == KapacitasDeloadHint(fromWeek: 10, toWeek: 8, title: "Előrébb hoznám a könnyebb hetet.", body: "például"))
+        // an older server: neither field
+        let older = StubTransport()
+        older.on("getCapacitySeason", .json(200, Self.seasonJSON))
+        let old = try await Self.client(older).season()
+        #expect(old.patterns.isEmpty && old.deloadForward == nil)
+    }
+
+    @Test func seasonHintsReadTheList() async throws {
+        let stub = StubTransport()
+        stub.on("getCapacitySeasonHints", .json(200, #"{"hints":[{"key":"k","line":"A csütörtök","evidence":3,"consistent":2}]}"#))
+        let h = try await Self.client(stub).seasonHints()
+        #expect(stub.sent[0].path == "/api/capacity/season-hints")
+        #expect(h.map(\.line) == ["A csütörtök"])
+    }
+
     @Test func seasonWithoutActiveSeasonIsNotFound() async {
         let stub = StubTransport()
         stub.on("getCapacitySeason", .status(404))

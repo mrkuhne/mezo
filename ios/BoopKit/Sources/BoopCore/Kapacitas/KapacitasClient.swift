@@ -27,6 +27,12 @@ public struct KapacitasClient: Sendable {
         try await raw.get("/api/capacity/season", operationID: "getCapacitySeason")
     }
 
+    /// K4: patterns worth knowing when he sets up a new season (Új évad step 2). [] when there is nothing learned yet.
+    public func seasonHints() async throws(PlanFetchError) -> [KapacitasPattern] {
+        let h: KapacitasSeasonHints = try await raw.get("/api/capacity/season-hints", operationID: "getCapacitySeasonHints")
+        return h.hints
+    }
+
     // MARK: - Átrendezés (K3)
 
     /// The week of `monday` (yyyy-MM-dd): day verdicts, proposals, ledger rows. The current or next week gets its

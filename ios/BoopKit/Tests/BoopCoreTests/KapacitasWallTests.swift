@@ -106,4 +106,17 @@ struct KapacitasWallTests {
         // last week's read is not this week's card
         #expect(kapacitasWallCandidates(week: Self.packed, now: Self.at(30, 9), timeZone: Self.zone).isEmpty)
     }
+
+    @Test func sundayEveningShowsNextWeeksCard() {
+        let next = KapacitasWeek(monday: "2026-11-30", days: [
+            Self.day("2026-11-30", "laza", "laza", 0.4), Self.day("2026-12-03", "tulSok", "túl sok", 1.2),
+        ], proposals: [Self.proposal("n1", "MOVE_SESSION_DAY", day: "2026-12-03")])
+        #expect(kapacitasWallCandidates(week: next, now: Self.at(29, 17), timeZone: Self.zone).isEmpty,
+                "Sunday afternoon: still this week's wall")
+        let cards = kapacitasWallCandidates(week: next, now: Self.at(29, 18, 30), timeZone: Self.zone)
+        #expect(cards.count == 1 && cards[0].role == .improves)
+        #expect(cards[0].text.hasPrefix("A csütörtök *túl sok* lenne."))
+        #expect(kapacitasWallCandidates(week: Self.packed, now: Self.at(29, 18, 30), timeZone: Self.zone).isEmpty,
+                "from Sunday 18:00 this week's read no longer makes the card")
+    }
 }

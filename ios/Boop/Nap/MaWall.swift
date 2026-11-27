@@ -73,8 +73,8 @@ struct MaWall: View {
         return r
     }
 
-    /// The Monday of the week on the wall, in the phone's zone.
-    private var monday: String { kapacitasMonday(for: ctx.now) }
+    /// The Monday of the week on the wall, in the phone's zone: next week's from Sunday 18:00 (K4 Sunday preview).
+    private var monday: String { kapacitasWallMonday(ctx.now) }
 
     /// Today's planned session, still ahead and not done — what makes a today-proposal urgent on the wall.
     private var todaySessionStart: Date? {

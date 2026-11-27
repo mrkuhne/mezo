@@ -11,8 +11,9 @@ struct KapDetailPick: Identifiable, Equatable { let id: String }
 ///
 /// Offline is an answer: the cached week shows with its age, an accept is queued (the same clientRef), and *Minden
 /// hatása* opens from the cache. *Ha mindet jóváhagyod* is the server's `allEffects` (every open proposal applied
-/// together by its engines — never a sum made here), shown from two open proposals. *Ebből tanulok* appears once the
-/// patterns arrive (K4). *Megbeszélem Boop-pal* closes the page and opens the Boop place (the presenter's `ask`).
+/// together by its engines — never a sum made here), shown from two open proposals. *Korábban áttettük* shows how each
+/// move went (K4 outcome words, the weeks before from the server's history); *Ebből tanulok* only the patterns the
+/// server shows (≥ 3 occurrences). *Megbeszélem Boop-pal* closes the page and opens the Boop place (the presenter's `ask`).
 struct AtrendezesPage: View {
     let monday: String
     /// The page it came from („Ma", „Évad").
@@ -107,16 +108,17 @@ struct AtrendezesPage: View {
         }
         let history = kapacitasHistory(week, shown: Set(cards.map(\.id)))
         if !history.isEmpty {
-            NKBare("Korábban áttettük", hue: kapacitasHue, glyph: "repeat-deep") {
+            NKBare("Korábban áttettük", hue: kapacitasHue, glyph: "repeat-deep", trailing: "és hogyan sült el") {
                 NKRowList(history.map { h in
                     NKAreaRow(id: h.id, glyph: h.glyph, title: h.title, sub: h.sub, value: h.value,
+                              valueSub: h.valueSub ?? "",
                               state: h.state == "done" ? .done : h.state == "gone" ? .skipped : .normal)
                 }, hue: kapacitasHue)
             }
         }
         if !week.patterns.isEmpty {
             NKBare("Ebből tanulok", hue: kapacitasHue, glyph: "spark-deep") {
-                NKList(week.patterns.map { (title: $0.line, body: "") }, hue: kapacitasHue)
+                NKList(kapacitasPatternRows(week.patterns), hue: kapacitasHue)
             }
         }
         NKActions([NKAction(glyph: "repeat-deep", title: "Kérek más javaslatot", primary: true,

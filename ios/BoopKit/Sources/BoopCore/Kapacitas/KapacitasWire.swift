@@ -51,6 +51,19 @@ public struct KapacitasSeasonStats: Codable, Equatable, Sendable {
     }
 }
 
+/// The season's advisory card (B7 K4, owner decision #121 „Csak szóljon"): the lighter week is worth bringing forward.
+/// It only tells — the phone writes nothing; its one action opens the Boop chat.
+public struct KapacitasDeloadHint: Codable, Equatable, Sendable {
+    public let fromWeek: Int
+    public let toWeek: Int
+    public let title: String
+    public let body: String
+
+    public init(fromWeek: Int, toWeek: Int, title: String, body: String) {
+        self.fromWeek = fromWeek; self.toWeek = toWeek; self.title = title; self.body = body
+    }
+}
+
 /// `GET /api/capacity/season`.
 public struct KapacitasSeasonLoad: Codable, Equatable, Sendable {
     public let weeks: [KapacitasSeasonWeek]
@@ -58,9 +71,39 @@ public struct KapacitasSeasonLoad: Codable, Equatable, Sendable {
     public let nowWeek: Int
     public let stats: KapacitasSeasonStats
     public let headline: String?
+    /// K4: *Amit a mozgatásokból tanultam* — the shown patterns; [] from an older server.
+    public let patterns: [KapacitasPattern]
+    /// K4: the advisory lighter-week card, nil when there is nothing to say.
+    public let deloadForward: KapacitasDeloadHint?
 
-    public init(weeks: [KapacitasSeasonWeek], nowWeek: Int, stats: KapacitasSeasonStats, headline: String?) {
+    public init(weeks: [KapacitasSeasonWeek], nowWeek: Int, stats: KapacitasSeasonStats, headline: String?,
+                patterns: [KapacitasPattern] = [], deloadForward: KapacitasDeloadHint? = nil) {
         self.weeks = weeks; self.nowWeek = nowWeek; self.stats = stats; self.headline = headline
+        self.patterns = patterns; self.deloadForward = deloadForward
+    }
+
+    enum CodingKeys: String, CodingKey { case weeks, nowWeek, stats, headline, patterns, deloadForward }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        weeks = try c.decode([KapacitasSeasonWeek].self, forKey: .weeks)
+        nowWeek = try c.decode(Int.self, forKey: .nowWeek)
+        stats = try c.decode(KapacitasSeasonStats.self, forKey: .stats)
+        headline = try c.decodeIfPresent(String.self, forKey: .headline)
+        patterns = ((try? c.decodeIfPresent([KapacitasPattern].self, forKey: .patterns)) ?? nil) ?? []
+        deloadForward = (try? c.decodeIfPresent(KapacitasDeloadHint.self, forKey: .deloadForward)) ?? nil
+    }
+}
+
+/// `GET /api/capacity/season-hints`: patterns worth knowing when he sets up a new season.
+struct KapacitasSeasonHints: Decodable, Sendable {
+    let hints: [KapacitasPattern]
+
+    enum CodingKeys: String, CodingKey { case hints }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        hints = ((try? c.decodeIfPresent([KapacitasPattern].self, forKey: .hints)) ?? nil) ?? []
     }
 }
 
@@ -154,13 +197,18 @@ public struct KapacitasProposal: Codable, Equatable, Sendable, Identifiable {
     public let steps: [KapacitasStep]
     public let touchedDays: [String]
     public let decidedAt: String?
+    /// K4: how the day went after it („jól", „félig", „még nem tudom"…) and the line under it, from the server.
+    public let outcomeWord: String?
+    public let outcomeSub: String?
 
     public init(id: String, kind: String, day: String?, status: String, title: String, move: String,
                 effectLines: [String], why: [String], effects: [KapacitasCompareLine], steps: [KapacitasStep] = [],
-                touchedDays: [String] = [], decidedAt: String? = nil) {
+                touchedDays: [String] = [], decidedAt: String? = nil, outcomeWord: String? = nil,
+                outcomeSub: String? = nil) {
         self.id = id; self.kind = kind; self.day = day; self.status = status; self.title = title; self.move = move
         self.effectLines = effectLines; self.why = why; self.effects = effects; self.steps = steps
         self.touchedDays = touchedDays; self.decidedAt = decidedAt
+        self.outcomeWord = outcomeWord; self.outcomeSub = outcomeSub
     }
 
     /// A calendar to-do: the phone never writes his calendar, he moves the event himself.
@@ -184,11 +232,54 @@ public struct KapacitasAdjustment: Codable, Equatable, Sendable, Identifiable {
     }
 }
 
-/// A learned pattern (empty until K4).
+/// A learned pattern (K4): title, evidence sentence and counts, all from the server's rule — never phrased here.
 public struct KapacitasPattern: Codable, Equatable, Sendable {
     public let key: String
     public let line: String
+    public let body: String?
     public let evidence: Int
+    public let consistent: Int
+    /// MONDAY…SUNDAY for a weekday pattern.
+    public let weekday: String?
+
+    public init(key: String, line: String, body: String? = nil, evidence: Int, consistent: Int = 0,
+                weekday: String? = nil) {
+        self.key = key; self.line = line; self.body = body; self.evidence = evidence; self.consistent = consistent
+        self.weekday = weekday
+    }
+
+    enum CodingKeys: String, CodingKey { case key, line, body, evidence, consistent, weekday }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        key = try c.decode(String.self, forKey: .key)
+        line = try c.decode(String.self, forKey: .line)
+        body = (try? c.decodeIfPresent(String.self, forKey: .body)) ?? nil
+        evidence = ((try? c.decodeIfPresent(Int.self, forKey: .evidence)) ?? nil) ?? 0
+        consistent = ((try? c.decodeIfPresent(Int.self, forKey: .consistent)) ?? nil) ?? 0
+        weekday = (try? c.decodeIfPresent(String.self, forKey: .weekday)) ?? nil
+    }
+}
+
+/// A decided proposal of an earlier week (K4), as *Korábban áttettük* shows it.
+public struct KapacitasHistoryItem: Codable, Equatable, Sendable {
+    public let proposalId: String
+    public let kind: String
+    public let day: String
+    /// accepted | declined | undone
+    public let status: String
+    public let title: String
+    /// The outcome word („jól", „még nem tudom", „maradt így"…).
+    public let word: String
+    public let sub: String?
+    /// Accepted only: whether the day went well after it.
+    public let good: Bool?
+
+    public init(proposalId: String, kind: String, day: String, status: String, title: String, word: String,
+                sub: String? = nil, good: Bool? = nil) {
+        self.proposalId = proposalId; self.kind = kind; self.day = day; self.status = status; self.title = title
+        self.word = word; self.sub = sub; self.good = good
+    }
 }
 
 /// `GET /api/capacity/week`.
@@ -201,12 +292,27 @@ public struct KapacitasWeek: Codable, Equatable, Sendable {
     /// „Ha mindet jóváhagyod": the week with every open proposal applied together, from the server's engines; nil
     /// below two open proposals.
     public let allEffects: [KapacitasCompareLine]?
+    /// K4: decided proposals of the eight weeks before, newest first; [] from an older server.
+    public let history: [KapacitasHistoryItem]
 
     public init(monday: String, days: [KapacitasWeekDay], proposals: [KapacitasProposal],
                 adjustments: [KapacitasAdjustment] = [], patterns: [KapacitasPattern] = [],
-                allEffects: [KapacitasCompareLine]? = nil) {
+                allEffects: [KapacitasCompareLine]? = nil, history: [KapacitasHistoryItem] = []) {
         self.monday = monday; self.days = days; self.proposals = proposals; self.adjustments = adjustments
-        self.patterns = patterns; self.allEffects = allEffects
+        self.patterns = patterns; self.allEffects = allEffects; self.history = history
+    }
+
+    enum CodingKeys: String, CodingKey { case monday, days, proposals, adjustments, patterns, allEffects, history }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        monday = try c.decode(String.self, forKey: .monday)
+        days = try c.decode([KapacitasWeekDay].self, forKey: .days)
+        proposals = try c.decode([KapacitasProposal].self, forKey: .proposals)
+        adjustments = try c.decodeIfPresent([KapacitasAdjustment].self, forKey: .adjustments) ?? []
+        patterns = ((try? c.decodeIfPresent([KapacitasPattern].self, forKey: .patterns)) ?? nil) ?? []
+        allEffects = try c.decodeIfPresent([KapacitasCompareLine].self, forKey: .allEffects)
+        history = ((try? c.decodeIfPresent([KapacitasHistoryItem].self, forKey: .history)) ?? nil) ?? []
     }
 }
 

@@ -5,9 +5,14 @@ import BoopDesign
 /// **Új évad** (screen 12): five steps prefilled from the server's first-season draft (his live goal, running block,
 /// weekly slots and sleep goal), the summary from the server's preview of that draft. Nothing is saved until
 /// *Indulhat az évad* — then the season is created and activated in one go.
+///
+/// B7 K4: step 2 carries what the moves taught (`GET /api/capacity/season-hints`, e.g. a weekday that keeps running
+/// over) beside the training days, so he can place them knowingly. No hints, no net: the step is as before.
 struct EvadNewSeason: View {
     let close: @MainActor @Sendable () -> Void
     @Environment(EvadStore.self) private var store: EvadStore?
+    @Environment(KapacitasStore.self) private var kapacitas: KapacitasStore?
+    @State private var hints: [KapacitasPattern] = []
     @State private var draft: EvadDraft?
     @State private var preview: EvadPreview?
     @State private var loadProblem: String?
@@ -32,6 +37,7 @@ struct EvadNewSeason: View {
         }
         .evadReviewAnchor()
         .task { if draft == nil { await load() } }
+        .task { hints = (try? await kapacitas?.client?.seasonHints()) ?? [] }
         .task(id: draft) {
             guard let draft else { return }
             try? await Task.sleep(for: .milliseconds(300))
@@ -112,6 +118,16 @@ struct EvadNewSeason: View {
                 .nkFont(14).foregroundStyle(.white.opacity(0.75)).fixedSize(horizontal: false, vertical: true)
             Text("Mezociklust csak évadhoz lehet indítani, így a hossza is az évadhoz igazodik.")
                 .nkFont(12.5).foregroundStyle(.white.opacity(0.5)).fixedSize(horizontal: false, vertical: true)
+            if !hints.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    NKMono("AMIT A MOZGATÁSOKBÓL TANULTAM")
+                    ForEach(Array(kapacitasPatternRows(hints).enumerated()), id: \.offset) { _, h in
+                        Text(h.body.isEmpty ? h.title : "\(h.title) \(h.body)")
+                            .nkFont(13).foregroundStyle(.white.opacity(0.7)).fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .accessibilityElement(children: .combine)
+            }
         }
         step(3, "Az étel", done: false) {
             Text(["A napi keret igazodik az edzésnapokhoz",
