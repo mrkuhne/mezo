@@ -148,6 +148,37 @@ recipes → what to change → feedback.
 `recipe_breakdown`, artifact = recipe id): read the existing vote on open (`GET /feedback/{kind}/{id}`), vote
 optimistically, revert + toast on failure. Shown only when there is AI prose (web mezo-76f6 rule).
 
+### 5.4 Approved spike (owner OK 2026-11-28, decisions #124–#125) — this OVERRIDES §5.1 where they differ
+
+Spike branch `spike/boop-receptertekeles` (`ios/Boop/ReceptDemo/ReceptErtekelesDemo.swift`, launch
+`-previewRecept YES -previewReceptState full|loading|detail`); screenshots `assets/receptertekeles/`
+(`2-napod-szempontok.png`, `3-szempontok-receptjeid.png`, `4-szempont-reszletek.png`).
+
+1. **Order:** hero (rosette + verdict + confidence + fitsFor + summary) → **Ha ma megennéd** → **Miből áll össze** →
+   A receptjeid között → Így lenne jobb → Hasznos volt?
+2. **Hero mini graphic:** a rosette — one petal per dimension, length = points, each petal in its dimension's
+   colour, degraded = faint stub; score number in the centre.
+3. **Miből áll össze = 2 rows × 4 tiles** (the current grid's shape, owner liked it): coloured icon circle, number,
+   a thin bar in the dimension's colour, short name; the weakest tile has a small amber dot. NOT a list.
+4. **Tap = a detail page** rising from the bottom over the **blurred** recipe sheet (owner: „jöhet fel egy oldal ami
+   mögött elhomályosul minden és kiírjuk részletesen"; the old `DimensionSheet` text was too short). Content: icon +
+   name + big number, long bar, chips (leggyengébb/legerősebb · súly % · lefedettség), **MIT MÉR**, **MIÉRT ENNYI**
+   (the full AI paragraph — the prompt's `details.<id>` grows to 3–4 sentences), **A SZÁMOK** (from the envelope's
+   existing per-dimension payload: `context` rows, `micros`, `macro` ratio/targets, `nova` stack + items — today
+   dropped by the iOS mapping), **HONNAN JÖN** (per-ingredient contribution, see 6), **ÍGY JAVÍTHATÓ** (the tips whose
+   `dimension` is this one), Boop note, Kész; tapping the dim background closes it.
+5. **Étel colours (decision #125, Étel-wide):** one main colour **green** `#3FBF8F` and two sub colours **honey**
+   `#F4C860` and **coral** `#F28B6E`; every dimension its own shade of the three families (macro green, micro lime
+   `#A9D86B`, who coral, fat_quality honey, nova mint `#7FDCC0`, plant_diversity leaf `#6CC46A`, energy_density
+   apricot `#F5A65B`, portion rose `#F2A3B3`). Day bars: kcal green, protein coral, carbs honey, fat mint; „eddig ma"
+   grey. Tip glyphs honey. This slice applies it to the recipe evaluation only; the rest of Étel follows later
+   (own bd issue).
+6. **HONNAN JÖN — new deterministic backend work:** per dimension that rests on a nutrient (who: salt + sugar;
+   fat_quality: saturated fat; micro: fibre; nova: the processed items), the envelope gains the top contributing
+   ingredients (name, amount in the nutrient's unit, share 0–1) computed from the recipe's line snapshots — never by
+   the LLM. Additive optional field on the dimension (JSON column + DTO + openapi).
+7. Largest Dynamic Type: rosette above the verdict (stacked), tiles 2 × 2.
+
 ## 6. What's left to the builder
 
 Exact component split (a reusable score card the meal page could adopt later is welcome, not required); the

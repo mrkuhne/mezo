@@ -2010,5 +2010,16 @@
     "munkamenet": "makro-kijelzes",
     "mit_kapsz": "A Fehérje, Szénhidrát és Zsír sáv alatt nem az áll, mennyi fér még bele, hanem hogy mennyiből mennyit ettél (például „120/176 g”).",
     "szulo": "mezo-r36n9"
+  },
+  "mezo-r36n9.199": {
+    "cim": "Gazdagabb, színesebb receptértékelés, a napodhoz és a receptjeidhez mérve",
+    "tipus": "Funkció",
+    "szakasz": "B4 Étel",
+    "terulet": [
+      "Étel"
+    ],
+    "munkamenet": "receptertekeles",
+    "mit_kapsz": "A recept értékelése ételre szabott ítélettel és magyarázattal jön; látod, hol tartanál ma, ha megennéd, hányadik a receptjeid között, és a szempontokra koppintva részletes oldal nyílik arról, honnan jön a gond és mit cserélj.",
+    "szulo": "mezo-r36n9"
   }
 }
