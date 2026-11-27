@@ -48,6 +48,11 @@ final class RitmusRouter {
         return destination
     }
 
+    /// The Sunday weekly review (`mezo-r36n9.196`): asked for by its notification, the Ma wall card, Évad › Most and
+    /// Évad › Hét; the shell presents it at page level and clears it on close.
+    var review = false
+    func openReview() { review = true }
+
     /// Takes the cover that is asked for but not shown yet (a notification tap that landed before the shell was up, or
     /// while a sheet was open) and clears it, so the shell can present it once nothing else is in the way.
     func takePending() -> RitmusCover? {

@@ -66,7 +66,7 @@ struct AtrendezesPage: View {
 
     @ViewBuilder
     private func content(_ week: KapacitasWeek, store: KapacitasStore, open: Int) -> some View {
-        let cards = week.proposals.filter { ["open", "accepted", "declined"].contains($0.status) || store.queuedAccepts.contains($0.id) }
+        let cards = kapProposalCards(week, store: store)
         NKBare("A heted", hue: kapacitasHue, glyph: "chart-deep", trailing: "teher és bírás") {
             KapWeekStrip(week: week)
             if let note = dayNote(week) {
@@ -82,23 +82,7 @@ struct AtrendezesPage: View {
             Text(notice).nkFont(13).foregroundStyle(.white.opacity(0.7))
                 .frame(maxWidth: .infinity, alignment: .leading).fixedSize(horizontal: false, vertical: true)
         }
-        if !cards.isEmpty {
-            NKBare("Boop javaslatai", hue: kapacitasHue, glyph: "spark-cream", trailing: open > 0 ? "\(open) vár rád" : nil) {
-                VStack(spacing: 12) {
-                    ForEach(cards) { p in
-                        ProposalCard(p: p, state: KapCardState.of(p, in: week, queued: store.queuedAccepts),
-                                     busy: store.deciding.contains(p.id) || store.sendingQueued.contains(p.id),
-                                     accept: { Task { await store.accept(p, monday: monday) } },
-                                     decline: { Task { await store.decline(p, monday: monday) } },
-                                     undo: { Task { await store.undo(p, monday: monday) } },
-                                     more: { detail = KapDetailPick(id: p.id) })
-                    }
-                }
-                // a settled card folds into its row; reduced motion: it simply changes
-                .animation(reduceMotion ? nil : .easeInOut(duration: 0.25),
-                           value: cards.map { "\($0.id)\($0.status)" } + store.queuedAccepts.sorted())
-            }
-        }
+        KapProposalList(week: week, monday: monday, store: store, more: { detail = KapDetailPick(id: $0) })
         if let all = week.allEffects, !all.isEmpty {
             NKBare("Ha mindet jóváhagyod", hue: kapacitasHue, glyph: "link-deep") {
                 NKCompareColumns(leftTitle: "Most", rightTitle: "Utána", lines: all.map {

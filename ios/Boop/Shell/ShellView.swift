@@ -28,6 +28,8 @@ struct ShellView: View {
     /// The Emlékeztetők page asked for while a sheet was up (the "+" sheet's Emlékeztető door, a reminder's notification
     /// tapped): it opens after that sheet has gone.
     @State private var reminderPageAfterSheet = false
+    /// The weekly review asked for while a sheet was up: it opens after that sheet has gone.
+    @State private var reviewAfterSheet = false
     /// The meal composer the "+" sheet asked for (opens once the sheet has gone), and the one on screen.
     @State private var mealAfterCapture: MealStart?
     @State private var meal: MealStart?
@@ -82,6 +84,7 @@ struct ShellView: View {
         if let q = quickAfterCapture { quickAfterCapture = nil; quick = q }
         if let hue = areaAfterCapture { areaAfterCapture = nil; router.go(.room(RoomEntry(hue))) }
         if reminderPageAfterSheet { reminderPageAfterSheet = false; router.openReminders() }
+        if reviewAfterSheet { reviewAfterSheet = false; router.openReview() }
     }
 
     /// The quick log's own sheets (`mezo-r36n9.154`); each closes itself with the toast to show.
@@ -184,6 +187,14 @@ struct ShellView: View {
                     .presentationDragIndicator(.visible)
             }
         }
+        // The Sunday weekly review (`mezo-r36n9.196`): its notification, the Ma wall card, Évad › Most / Hét.
+        .fullScreenCover(isPresented: Binding(get: { [r = router.review] in r }, set: { router.review = $0 })) {
+            if let window = evadReviewWindow(now: BoopClock.now()) ?? WeeklyReviewFlow.previewWindow {
+                WeeklyReviewFlow(window: window) { router.review = false }
+            } else {
+                WeeklyReviewClosed { router.review = false }
+            }
+        }
         // A notification tap while the "+" or account sheet is up: the sheet goes first, then the cover (two
         // presentations never overlap).
         .onChange(of: router.cover) { _, asked in
@@ -192,6 +203,13 @@ struct ShellView: View {
             router.cover = nil
             capturing = false
             account = false
+        }
+        .onChange(of: router.review) { _, asked in
+            guard asked, capturing || account else { return }
+            router.review = false
+            capturing = false
+            account = false
+            reviewAfterSheet = true
         }
         .onChange(of: router.reminders) { _, asked in
             guard asked == .page, capturing || account else { return }
@@ -228,6 +246,8 @@ struct ShellView: View {
             case "checkin", "checkinDone": router.open(.checkin)
             case "reminderNew": router.openNewReminder()
             case "este", "esteDone": router.open(.este)
+            // `-previewOpen review -reviewPage 1…5`: the Sunday review on a page (any day of the week).
+            case "review": router.openReview()
             default: break
             }
             #endif
