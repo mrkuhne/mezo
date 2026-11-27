@@ -1,5 +1,7 @@
 # Boop — the home screen and the navigation map (design)
 
+> **Superseded in part** by [`2026-11-27-boop-evad-szoba-kezdolap-design.md`](2026-11-27-boop-evad-szoba-kezdolap-design.md) (barless home, 2026-11-27).
+
 - **Status:** **approved by the owner 2026-11-13** (the ring, round 3; the map, the same day) ·
   **Issues:** `mezo-r36n9.47` (the home screen), `mezo-r36n9.51` (the map), `mezo-r36n9.37` (the shared
   area-page kit that follows from it) · **Epic:** `mezo-r36n9`
