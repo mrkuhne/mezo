@@ -72,7 +72,7 @@ glitch list, §7.1 sequencing) · decisions #119, #124.
 - Create: `ios/Boop/Edzes/EdzesWeeksArc.swift` (the weeks' arc graphic grown from `NKBlockTimeline`, spike `SpikeWeeksArc`), `ios/Boop/Edzes/EdzesMuscleBars.swift` (spike `SpikeMuscleBars`)
 - Test: `ios/BoopTests/EdzesMezociklusTabTests.swift`
 
-**Interfaces — Consumes:** Task 1 views. **Produces:** `EdzesWeeksArc(weeks: [NKBlockWeek], hue: Hue, compact: Bool = false)` (Task 3 uses `compact: true`); `enum MezoHeroState { case loading, running(Block), none(planned: MezoCard?), failed(String) }` with `static func resolve(block: BlockPlan?, firstAnswerArrived: Bool, failure: String?, planned: MezoCard?) -> MezoHeroState`; `func muscleRows(_ bands: [MuscleBand], top: Int = 5) -> (rows: [MuscleBand], more: Int)`.
+**Interfaces — Consumes:** Task 1 views. **Produces:** `EdzesWeeksArc(weeks: [NKBlockWeek], hue: Hue, compact: Bool = false)` (Task 3 uses `compact: true`); `enum MezoHeroState { case loading, running(BlockPlan), none(planned: MezoCard?), failed(String) }` with `static func resolve(block: BlockPlan?, firstAnswerArrived: Bool, failure: String?, planned: MezoCard?) -> MezoHeroState`; `func muscleRows(_ bands: [MuscleBand], top: Int = 5) -> (rows: [MuscleBand], more: Int)`.
 
 - [ ] Write failing tests: `heroIsLoadingUntilFirstAnswer` (`resolve(nil, false, nil, nil) == .loading`; `resolve(nil, true, nil, nil) == .none(planned: nil)`; failure → `.failed`), `muscleRowsCapsAtFiveWithMore` (8 bands → 5 rows, `more == 3`).
 - [ ] Run Boop `xcodebuild test` (README line 37) → fail.
