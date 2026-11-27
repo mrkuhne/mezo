@@ -1736,5 +1736,65 @@
     "miert": "„OK, világos 2.”",
     "kovetkezmeny": "Jöhet a terv, utána az építés.",
     "levaltotta": "A sötétebb, telített zöld ég."
+  },
+  "d-2026-11-27-sport-gomb": {
+    "datum": "2026-11-27",
+    "terulet": [
+      "Sport"
+    ],
+    "cim": "A sport saját gömböt kap az Edzés mellett; a kondi és a sport mindenhol két külön dolog",
+    "suly": "Nagy",
+    "valasztas": "Új Sport terület a kezdőkörön, közvetlenül az Edzés után, saját oldallal. Egy nap lehet csak kondi, csak sport, mindkettő vagy egyik sem — a nap oldala, az Edzés, a heti menü és a fal ezt külön kezeli. A webes app és a szerver minden sportfunkciója átjön, a rejtettek kivételével.",
+    "miert": "„a sportnap és az edzés nap most egyben van… kéne nekünk egy új menügömb akkor az edzés mellé, ami a sport”",
+    "kovetkezmeny": "Hatlépéses építés (2 szerver, 3 app-fül lépés, 1 app-szintű + telepítés). A Sport gömb a kezdőkör átalakítása után kerül fel.",
+    "levaltotta": "Eddig a sport csak a gyors rögzítőben létezett, és egy beírt röpi a kondit is kipipálta."
+  },
+  "d-2026-11-27-sport-futas": {
+    "datum": "2026-11-27",
+    "terulet": [
+      "Sport"
+    ],
+    "cim": "A futás egyelőre csak napló és beosztás, edzésterv-építő nélkül",
+    "suly": "Közepes",
+    "valasztas": "A futás egy sportfajta a többi között: beírható és a heti rendbe tehető. A webes intervallum-terv építő nem jön át.",
+    "miert": "Most nem fut rendszeresen; ha elkezdi, az órás távolság és tempó saját szeletet kap.",
+    "kovetkezmeny": "Kevesebb munka most; a futóterv később, külön.",
+    "levaltotta": "—"
+  },
+  "d-2026-11-27-sport-ora": {
+    "datum": "2026-11-27",
+    "terulet": [
+      "Sport"
+    ],
+    "cim": "A röpit az órán indítja, az app ebből előtölti a bejegyzést; csillagok, pontok, érmek rejtve",
+    "suly": "Közepes",
+    "valasztas": "Az Apple Watch-on indított röpi időtartama, kalóriája és pulzusa előtölti a rögzítést; csak a megterhelést, a szetteket és a vállat kell hozzáírni. A kézi rögzítés tartaléknak megmarad. Az ugrásszám, a csillagok, pontok és érmek nem jönnek át.",
+    "miert": "Ő indítja az órán; a játékosítás rejtve marad (a korábbi döntés szerint).",
+    "kovetkezmeny": "A rögzítés pár koppintás; élesben az első órás röpi után ellenőrizzük.",
+    "levaltotta": "A webes sport-ünneplés és a kézi időtartam-beírás."
+  },
+  "d-2026-11-27-sport-fulek": {
+    "datum": "2026-11-27",
+    "terulet": [
+      "Sport"
+    ],
+    "cim": "A Sport fülei: Ma · Hét · Napló · Test (a Beosztás a Hét-be olvadt)",
+    "suly": "Közepes",
+    "valasztas": "A Hét fül a hét két sávja és a 6 hetes terhelés alatt a heti rendet is hordozza (rendszeres alkalmak, egyszeri események, sportfajták). A negyedik fül a Test: hogyan viseli a tested a kondit és a sportot együtt.",
+    "miert": "Próbaváltozat 1. kör: a Hét és a Beosztás ugyanarról szólt.",
+    "kovetkezmeny": "A heti rend a Hét alján szerkeszthető.",
+    "levaltotta": "Ma · Hét · Napló · Beosztás."
+  },
+  "d-2026-11-27-sport-proba": {
+    "datum": "2026-11-27",
+    "terulet": [
+      "Sport"
+    ],
+    "cim": "A Sport próbaváltozata elfogadva: a Test az Edzés izomtérképét használja, az alkalmak a Hét-en szerkeszthetők",
+    "suly": "Közepes",
+    "valasztas": "A Test fül az Edzés izomtérképét mutatja Együtt / Kondi / Röpi kapcsolóval, alatta a váll 6 hétre és a pihenő a kettő között. A rendszeres alkalmak a Hét-en szerkeszthetők és újak vehetők fel („Ez változik” dobozzal). A leírás és a lépésekre bontott terv is elfogadva.",
+    "miert": "„Mehet így.”",
+    "kovetkezmeny": "Indulhat az építés, első lépés a szerver.",
+    "levaltotta": "Az 1. kör saját testtérképe."
   }
 }
