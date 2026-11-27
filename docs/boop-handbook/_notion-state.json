@@ -744,7 +744,7 @@
     },
     "kezikonyv:07-edzes/08-elo-tevekenyseg": {
       "page_id": "4168968e-752b-815f-b13c-e3bc7bc508b8",
-      "hash": "b3c96912f1e2"
+      "hash": "a1172e893fb2"
     },
     "kezikonyv:07-edzes/09-edzesek-a-healthbol": {
       "page_id": "4168968e-752b-81f7-a4bc-e98727e51d36",
@@ -3288,7 +3288,7 @@
     },
     "jegyek:mezo-r36n9.183": {
       "page_id": "4248968e-752b-81c2-9b81-f7f2a9ae48a6",
-      "hash": "5e81954069e3"
+      "hash": "b3ecfa6a6058"
     },
     "jegyek:mezo-r36n9.177": {
       "page_id": "4248968e-752b-8140-b473-cd0130e99bae",
@@ -3349,6 +3349,14 @@
     "jegyek:mezo-r36n9.185": {
       "page_id": "4258968e-752b-8132-b5c6-c87940317459",
       "hash": "34817c970021"
+    },
+    "jegyek:mezo-r36n9.186": {
+      "page_id": "4258968e-752b-819d-b6ef-c1f28f2a69ce",
+      "hash": "51e8b116ce3b"
+    },
+    "kiadasok:7dc303fa1": {
+      "page_id": "4258968e-752b-817c-b21c-cb966eebab5a",
+      "hash": "f5596f5dc697"
     }
   }
 }
