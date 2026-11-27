@@ -23,10 +23,16 @@ public final class EvadStore {
     /// A sub-page someone outside the page asked for (the Ma wall's „Átnézem" → `modositas`): the Évad page opens it
     /// once it is on screen and clears it.
     public var pendingSub: String?
+    /// This week so far, Monday → yesterday (the Évad orb and the Most tab); nil on Monday or before the first read.
+    public private(set) var week: EvadAdherenceResponse?
+    /// How old `week` is when it came from the cache; nil for a fresh read.
+    public private(set) var weekAge: TimeInterval?
+    @ObservationIgnored private var weekFrom: String?
 
     /// A cached overview older than this is not shown: a month-old season week is not this week.
     public static let maxAge: TimeInterval = 14 * 86_400
     static let endpoint = "evad/overview"
+    static let weekEndpoint = "evad/adherence-week"
     static let key = "-"
 
     @ObservationIgnored public let client: EvadClient?
@@ -77,6 +83,32 @@ public final class EvadStore {
             }
         } catch {
             if overview == nil { problem = error }
+        }
+    }
+
+    /// The Évad orb's number: this week's adherence, nil without a season or with nothing judged yet.
+    public var weekScore: Int? { empty ? nil : week.flatMap { evadWeekScore($0.summary) } }
+
+    /// Reads this week so far (Monday → yesterday). Monday: nothing is lived yet, so no call and no week. Without
+    /// `force` it reads once per week; offline it serves the cached week of the same Monday.
+    public func loadWeek(now: Date = Date(), calendar: Calendar = .current, force: Bool = false) async {
+        guard let range = evadMostRange(now: now, calendar: calendar) else {
+            week = nil; weekAge = nil; weekFrom = nil
+            return
+        }
+        guard let client else { return }
+        guard force || weekFrom != range.to || weekAge != nil else { return }
+        do throws(PlanFetchError) {
+            let fresh = try await client.adherence(from: range.from, to: range.to)
+            week = fresh; weekAge = nil; weekFrom = range.to
+            try? await cache?.put(fresh, endpoint: Self.weekEndpoint, date: range.from)
+        } catch .offline {
+            if let hit = await cache?.get(EvadAdherenceResponse.self, endpoint: Self.weekEndpoint, date: range.from,
+                                          maxAge: Self.maxAge) {
+                week = hit.value; weekAge = hit.age; weekFrom = range.to
+            }
+        } catch {
+            // a refusal or fault keeps whatever is on screen
         }
     }
 
