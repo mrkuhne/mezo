@@ -251,6 +251,7 @@ public struct NKAreaPage<Content: View>: View {
                 // room for the area's own bar to float over the page's end
                 Color.clear.frame(height: tabs.isEmpty ? 100 : 150)
             }
+            .nkTopBounceLock()
         }
         .overlay(alignment: .bottom) {
             if let selectedTab, !tabs.isEmpty {
@@ -501,6 +502,7 @@ public struct NKAreaSubPage<Content: View>: View {
                 MirroredLand(sky: .room(hue)).padding(.top, -20)
                 Color.clear.frame(height: 100)
             }
+            .nkTopBounceLock()
         }
         .scrollIndicators(.hidden)
         .ignoresSafeArea(edges: .top)

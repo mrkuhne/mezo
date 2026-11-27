@@ -69,7 +69,7 @@ struct BoopTabView: View {
                 .onChange(of: chat?.lines.count) { withAnimation { proxy.scrollTo("end", anchor: .bottom) } }
                 .onChange(of: chat?.answering) { withAnimation { proxy.scrollTo("end", anchor: .bottom) } }
             }
-            composer.padding(.bottom, typing ? 10 : 92)
+            composer.keepsKeyboard().padding(.bottom, typing ? 10 : 92)
         }
         .nkToast($toast)
         .task { await chat?.refresh() }

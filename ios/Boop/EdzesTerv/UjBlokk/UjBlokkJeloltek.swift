@@ -22,6 +22,7 @@ struct UjBlokkJeloltek: View {
                 VStack(alignment: .leading, spacing: 18) {
                     content
                 }
+                .nkTopBounceLock()
                 .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 30)
             }
             .scrollIndicators(.hidden)

@@ -63,6 +63,7 @@ public struct NKDrillPage<Content: View>: View {
                     .background(FloatingLights(hue: hue).padding(.vertical, -100))
                 MirroredLand(hue: hue).padding(.top, -20)
             }
+            .nkTopBounceLock()
         }
         .scrollIndicators(.hidden)
         .ignoresSafeArea(edges: .top)

@@ -28,6 +28,7 @@ struct EvesTervLetrehozas: View {
                     length
                     proposal
                 }
+                .nkTopBounceLock()
                 .padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 30)
                 .disabled(model.saving)
             }

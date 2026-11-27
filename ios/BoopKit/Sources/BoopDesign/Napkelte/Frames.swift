@@ -165,6 +165,7 @@ public struct NKTabPage<Hero: View, Content: View>: View {
                     MirroredLand(sky: sky).padding(.top, 20)
                 }
                 .coordinateSpace(name: NKHeroEndKey.space)
+                .nkTopBounceLock()
             }
             .onPreferenceChange(NKHeroEndKey.self) { heroEnd = $0 }
             .scrollPosition($position)
@@ -359,6 +360,7 @@ public struct NKFlowFrame<Content: View>: View {
                 VStack(spacing: 12) { content }
                     .padding(.horizontal, 16).padding(.top, -14).padding(.bottom, 60)
             }
+            .nkTopBounceLock()
         }
         .scrollIndicators(.hidden)
         .ignoresSafeArea(edges: .top)

@@ -71,6 +71,7 @@ struct WorkoutCeremony: View {
                         if !review { noteRow(p) }
                         doneButton(p)
                     }
+                    .nkTopBounceLock()
                     .padding(.horizontal, 20)
                     .padding(.top, 26)
                     .padding(.bottom, 44)
