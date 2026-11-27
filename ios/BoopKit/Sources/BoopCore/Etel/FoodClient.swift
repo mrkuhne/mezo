@@ -163,6 +163,38 @@ public struct FoodClient: Sendable {
         return meal
     }
 
+    /// Corrects a logged meal in place (`mezo-r36n9.184`): the server replaces every line and re-scores it. The meal keeps
+    /// its time (`capturedAt` = the original moment — the server would otherwise stamp now) and, with no `window` sent,
+    /// its plan window; the stored photo is untouched.
+    public func updateMeal(_ mealId: UUID, with draft: MealDraft, at loggedAt: Date) async throws {
+        let request = Components.Schemas.MealRequest(
+            slot: draft.slot, loggedAt: nil, title: draft.title, items: draft.items.map(Self.itemRequest), capturedAt: loggedAt)
+        try await call(mapsRefusals: true) {
+            switch try await client.updateMeal(path: .init(id: mealId.wire), body: .json(request)) {
+            case .noContent: return
+            case .badRequest: throw FoodFetchError.rejected
+            case .notFound: throw FoodFetchError.notFound
+            case .unauthorized: throw FoodFetchError.unauthorized
+            case .undocumented: throw FoodFetchError.server
+            }
+        }
+    }
+
+    /// Deletes a logged meal (and its photo, server side). A meal already gone counts as deleted.
+    public func deleteMeal(_ mealId: UUID) async throws {
+        do { try await deleteMealCall(mealId) } catch FoodFetchError.notFound { return }
+    }
+
+    private func deleteMealCall(_ mealId: UUID) async throws {
+        try await call {
+            switch try await client.deleteMeal(path: .init(id: mealId.wire)) {
+            case .noContent, .notFound: return
+            case .unauthorized: throw FoodFetchError.unauthorized
+            case .undocumented: throw FoodFetchError.server
+            }
+        }
+    }
+
     private func defaultMoment(for day: String, now: Date = Date()) -> Date {
         if day == ymd(now) { return now }
         let p = day.split(separator: "-").compactMap { Int($0) }
@@ -1102,7 +1134,16 @@ extension FoodClient {
     static func map(_ r: Components.Schemas.MealResponse) -> Meal {
         Meal(id: UUID(uuidString: r.id) ?? UUID(), slot: r.slot, loggedAt: r.loggedAt, mealDate: r.mealDate, title: r.title,
              macros: map(r.macros), score: r.score.value,
-             items: r.items.map { MealItem(name: $0.name, source: $0.source, amount: $0.amount, unit: $0.unit, contribution: map($0.contribution), nova: $0.nova, recipeId: $0.recipeId.flatMap(UUID.init(uuidString:)), recipeName: $0.recipeName) },
+             items: r.items.map { i in
+                 MealItem(name: i.name, source: i.source, amount: i.amount, unit: i.unit, contribution: map(i.contribution), nova: i.nova,
+                          pantryItemId: i.pantryItemId.flatMap(UUID.init(uuidString:)),
+                          fiberG: i.nutrients?.fiberG, sugarG: i.nutrients?.sugarG, saltG: i.nutrients?.saltG,
+                          saturatedFatG: i.nutrients?.saturatedFatG,
+                          recipeId: i.recipeId.flatMap(UUID.init(uuidString:)), recipeName: i.recipeName,
+                          ingredientOverrides: (i.ingredientOverrides ?? []).compactMap { o in
+                              UUID(uuidString: o.pantryItemId).map { IngredientOverride(lineOrder: o.lineOrder, pantryItemId: $0, amount: o.amount) }
+                          })
+             },
              hasPhoto: r.hasPhoto ?? false, breakdown: r.score.breakdown.map { map($0.value1) })
     }
 
@@ -1176,7 +1217,10 @@ extension FoodClient {
         Components.Schemas.MealItemRequest(
             source: i.source.rawValue, recipeId: i.recipeId?.wire, pantryItemId: i.pantryItemId?.wire,
             amount: i.amount, unit: i.unit, name: i.name, per: i.per, basisUnit: i.basisUnit, kcal: i.kcal, proteinG: i.proteinG,
-            carbsG: i.carbsG, fatG: i.fatG, nova: i.nova, fiberG: i.fiberG, sugarG: i.sugarG, saltG: i.saltG, saturatedFatG: i.saturatedFatG)
+            carbsG: i.carbsG, fatG: i.fatG, nova: i.nova, fiberG: i.fiberG, sugarG: i.sugarG, saltG: i.saltG, saturatedFatG: i.saturatedFatG,
+            ingredientOverrides: i.ingredientOverrides.map { $0.map { o in
+                Components.Schemas.MealIngredientOverrideRequest(lineOrder: o.lineOrder, pantryItemId: o.pantryItemId.wire, amount: o.amount)
+            } })
     }
 
     static func map(_ r: Components.Schemas.PantryLookupResponse) -> LookupResult {

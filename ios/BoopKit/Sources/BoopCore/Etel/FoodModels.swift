@@ -70,10 +70,26 @@ public struct MealItem: Equatable, Sendable {
     public var unit: String
     public var contribution: Macros
     public var nova: Int?
+    /// The shelf food a pantry line was snapshotted from; a correction (`mezo-r36n9.184`) sends it back.
+    public var pantryItemId: UUID? = nil
+    /// The line's frozen nutrient facts (nil = the source carried none); an estimate line's correction sends them back.
+    public var fiberG: Double? = nil, sugarG: Double? = nil, saltG: Double? = nil, saturatedFatG: Double? = nil
     /// On an ingredient of a recipe logged ingredient by ingredient (`mezo-r36n9.181`): the recipe it is part of, and
     /// its name as it was at log time. Nil on every other line.
     public var recipeId: UUID? = nil
     public var recipeName: String? = nil
+    /// A recipe line logged with some ingredients at other amounts; a correction must carry them or they are lost.
+    public var ingredientOverrides: [IngredientOverride] = []
+}
+
+/// One recipe ingredient logged at an amount other than the recipe's (keyed by `lineOrder`, `pantryItemId` checks it).
+public struct IngredientOverride: Codable, Equatable, Sendable {
+    public var lineOrder: Int
+    public var pantryItemId: UUID
+    public var amount: Double
+    public init(lineOrder: Int, pantryItemId: UUID, amount: Double) {
+        self.lineOrder = lineOrder; self.pantryItemId = pantryItemId; self.amount = amount
+    }
 }
 
 public struct Meal: Equatable, Sendable, Identifiable {
@@ -262,6 +278,8 @@ public struct DraftItem: Codable, Equatable, Sendable {
     /// A shelf line that is one ingredient of a recipe (`mezo-r36n9.181`): `recipeId` then marks the recipe it is part of
     /// and this is that recipe's name, for the "X receptből" label. Nil on every other line.
     public var recipeName: String?
+    /// A recipe line's ingredients at other amounts, carried through a correction (`mezo-r36n9.184`); nil elsewhere.
+    public var ingredientOverrides: [IngredientOverride]? = nil
 
     public init(source: DraftSource, pantryItemId: UUID? = nil, recipeId: UUID? = nil, name: String, amount: Double, unit: String,
                 per: Double, basisUnit: String, kcal: Double, proteinG: Double, carbsG: Double, fatG: Double, nova: Int? = nil,
