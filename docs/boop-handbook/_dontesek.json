@@ -1699,5 +1699,17 @@
     "miert": "A Yazio mintájára: a kalória, a makrók és a megevett ételek legyenek fókuszban.",
     "kovetkezmeny": "A görbe egy lapozással érhető el, nem azonnal látszik.",
     "levaltotta": "Tíz egyforma, kártya nélküli blokk egymás alatt, és a helyben lenyíló étkezés-részlet."
+  },
+  "d-2026-11-27-etkezes-javitas": {
+    "datum": "2026-11-27",
+    "terulet": [
+      "Étel"
+    ],
+    "cim": "Egy rögzített étkezés teljesen javítható és törölhető",
+    "suly": "Közepes",
+    "valasztas": "Az étkezés oldalán a Javítás a megszokott rögzítő lapot nyitja meg kitöltve: mennyiség, tétel ki és be, időpont, étkezés; mentés után Boop újraértékeli. Törlés az oldalon vagy a sort balra húzva, megerősítő kérdés helyett pár másodperces „Visszavonás”.",
+    "miert": "A fotós felismerésnél leggyakrabban egy tétel vagy egy mennyiség csúszik el — ezt csak a teljes javítás hozza helyre.",
+    "kovetkezmeny": "A rögzítő lap kap egy „javító” módot.",
+    "levaltotta": "Eddig egy rögzített étkezést sem javítani, sem törölni nem lehetett."
   }
 }
