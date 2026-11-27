@@ -1899,5 +1899,15 @@
     ],
     "mit_kapsz": "Ha leírod vagy lefotózod, mit ettél, és Boop felismeri benne az egyik receptedet, az is hozzávalónként, grammal és „… része” jelöléssel kerül a tányérra, nem egyetlen „1 adag” sorként.",
     "munkamenet": "recept-osszetevonkent"
+  },
+  "mezo-r36n9.185": {
+    "cim": "Átrendezés: a jövő hétre szinte csak edzés-kihagyást javasol",
+    "tipus": "Funkció",
+    "szakasz": "B7 Napi kapacitás",
+    "terulet": [
+      "Ma"
+    ],
+    "mit_kapsz": "Ha egy hét túl sok, a Boop először az edzések áthelyezését keresi egy üres napra, és csak akkor javasol kihagyást, ha nincs jobb.",
+    "szulo": "mezo-r36n9.17"
   }
 }
