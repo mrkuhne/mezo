@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.nutrition.mapper;
 
 import io.mrkuhne.mezo.api.dto.MealBreakdown;
 import io.mrkuhne.mezo.api.dto.MealContextRow;
+import io.mrkuhne.mezo.api.dto.MealContributorRow;
 import io.mrkuhne.mezo.api.dto.MealImproveRow;
 import io.mrkuhne.mezo.api.dto.MealMacroDetail;
 import io.mrkuhne.mezo.api.dto.MealMicroRow;
@@ -36,7 +37,8 @@ public final class BreakdownDtoMapper {
                 : b.dimensions().stream().map(BreakdownDtoMapper::toDimension).toList())
             .improve(b.improve() == null ? List.of()
                 : b.improve().stream()
-                    .map(i -> MealImproveRow.builder().text(i.text()).impact(i.impact()).build())
+                    .map(i -> MealImproveRow.builder().text(i.text()).impact(i.impact())
+                        .dimension(i.dimension()).build())
                     .toList())
             .tools(b.tools() == null ? List.of()
                 : b.tools().stream()
@@ -86,6 +88,10 @@ public final class BreakdownDtoMapper {
                 .windowSource(d.timing().windowSource() == null ? null
                     : MealTimingDetail.WindowSourceEnum.fromValue(d.timing().windowSource()))
                 .build())
+            .contributors(d.contributors() == null ? null : d.contributors().stream()
+                .map(c -> MealContributorRow.builder().name(c.name()).nutrient(c.nutrient())
+                    .amount(c.amount()).unit(c.unit()).share(c.share()).build())
+                .toList())
             .build();
     }
 }
