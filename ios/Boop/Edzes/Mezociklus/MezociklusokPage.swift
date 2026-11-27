@@ -49,7 +49,6 @@ struct MezociklusokPage: View {
                 }
             }
         }
-        .refreshable { await model.load() }
         .task { await model.load() }
         .fullScreenCover(item: $open) { card in
             MezoDetailPage(card: card, model: model, plan: plan, hue: hue,
