@@ -9,7 +9,7 @@ import BoopDesign
 //   -sportTab Ma|Hét|Napló|Test   (owner 2026-11-27: Beosztás folded into Hét, Test is the 4th tab)
 //   -sportMoment before|after|done|skipped   the Ma hero's moment (before the game / the watch recorded it / logged / skipped)
 //   -sportState ready|empty|loading|error|offline
-//   -sportSheet log|skip          opens the log or the skip sheet
+//   -sportSheet log|skip|slot|slotNew   opens the log, skip, slot-edit or new-slot sheet
 
 private let hue = Hue.sport
 
@@ -24,13 +24,20 @@ struct SportDemoRoom: View {
     @State private var state: DemoState
     @State private var sheet: SportDemoSheet?
     @State private var toast: String?
+    @State private var slots: [SportSlot]
+    @State private var editing: SportSlot?
 
     init() {
         let d = UserDefaults.standard
         _tab = State(initialValue: d.string(forKey: "sportTab") ?? "Ma")
         _moment = State(initialValue: Moment(rawValue: d.string(forKey: "sportMoment") ?? "") ?? .before)
         _state = State(initialValue: DemoState(rawValue: d.string(forKey: "sportState") ?? "") ?? .ready)
-        _sheet = State(initialValue: SportDemoSheet(rawValue: d.string(forKey: "sportSheet") ?? ""))
+        let fixtureSlots = [0, 1, 2, 4].map { SportSlot(day: $0) }
+        _slots = State(initialValue: fixtureSlots)
+        let sh = SportDemoSheet(rawValue: d.string(forKey: "sportSheet") ?? "")
+        _sheet = State(initialValue: sh)
+        if sh == .slot { _editing = State(initialValue: fixtureSlots[0]); _tab = State(initialValue: "Hét") }
+        if sh == .slotNew { _editing = State(initialValue: SportSlot(sport: "Röplabda", day: 3, hour: 19, minutes: 90, place: "")); _tab = State(initialValue: "Hét") }
     }
 
     private var head: (String, String) {
@@ -77,7 +84,7 @@ struct SportDemoRoom: View {
             case .error: SportError { state = .ready }
             case .ready, .offline:
                 switch tab {
-                case "Hét": SportHet(); SportBeosztas { toast = $0 }
+                case "Hét": SportHet(); SportBeosztas(slots: slots, toast: { toast = $0 }, edit: { editing = $0; sheet = .slot }, add: { editing = SportSlot(day: 3, hour: 19, minutes: 90, place: ""); sheet = .slotNew })
                 case "Test": SportTest()
                 case "Napló": SportNaplo()
                 default: SportMa(moment: $moment, open: { sheet = $0 })
@@ -92,6 +99,15 @@ struct SportDemoRoom: View {
                 switch s {
                 case .log: SportLogSheet(prefilled: moment == .after || moment == .done) { sheet = nil; moment = .done; toast = "Elmentve — a röpi bekerült a napodba" }
                 case .skip: SportSkipSheet { sheet = nil; moment = .skipped; toast = "Kihagyva — Visszavonás a kártyán" }
+                case .slot, .slotNew:
+                    SportSlotSheet(slot: editing ?? SportSlot(), isNew: s == .slotNew,
+                                   clash: { c in slots.contains { $0.id != c.id && $0.day == c.day } ? "\(SportSlot.dayOn[c.day]) már van egy alkalmad — mindkettő megmarad." : nil },
+                                   save: { new in
+                                       if let i = slots.firstIndex(where: { $0.id == new.id }) { slots[i] = new } else { slots.append(new) }
+                                       slots.sort { ($0.day, $0.hour) < ($1.day, $1.hour) }
+                                       sheet = nil; toast = s == .slotNew ? "Felvettem — a heti rendben van" : "Elmentve — a jövő héttől így lesz"
+                                   },
+                                   delete: { old in slots.removeAll { $0.id == old.id }; sheet = nil; toast = "Törölve — Visszavonás" })
                 }
             }
             .presentationDetents([.large])
@@ -102,7 +118,21 @@ struct SportDemoRoom: View {
     }
 }
 
-enum SportDemoSheet: String, Identifiable { case log, skip; var id: String { rawValue } }
+enum SportDemoSheet: String, Identifiable { case log, skip, slot, slotNew; var id: String { rawValue } }
+
+struct SportSlot: Identifiable, Equatable {
+    var id = UUID()
+    var sport = "Röplabda"
+    var day = 0            // 0 = hétfő
+    var hour = 18, minute = 0
+    var minutes = 120
+    var match = false
+    var place = "Sportcsarnok"
+    static let dayNames = ["Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek", "Szombat", "Vasárnap"]
+    static let dayOn = ["Hétfőn", "Kedden", "Szerdán", "Csütörtökön", "Pénteken", "Szombaton", "Vasárnap"]
+    var time: String { String(format: "%02d:%02d", hour, minute) }
+    var length: String { minutes % 60 == 0 ? "\(minutes / 60) óra" : minutes < 60 ? "\(minutes) perc" : "\(minutes / 60) ó \(minutes % 60) p" }
+}
 
 // MARK: - Shared bits
 
@@ -420,7 +450,10 @@ private struct SportNaplo: View {
 // MARK: - Hét · a heti rend (was the Beosztás tab)
 
 private struct SportBeosztas: View {
+    let slots: [SportSlot]
     let toast: (String) -> Void
+    let edit: (SportSlot) -> Void
+    let add: () -> Void
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             NKMono("A HETI REND")
@@ -428,15 +461,15 @@ private struct SportBeosztas: View {
                 .nkFont(13).foregroundStyle(.white.opacity(0.7)).fixedSize(horizontal: false, vertical: true)
         }
         .padding(.horizontal, 4).padding(.top, 10)
-        glassCard("RENDSZERES ALKALMAK", trailing: "4") {
+        glassCard("RENDSZERES ALKALMAK", trailing: "\(slots.count)") {
             VStack(spacing: 0) {
-                ForEach(["Hétfő", "Kedd", "Szerda", "Péntek"], id: \.self) { d in
-                    Button { toast("Itt nyílik az alkalom szerkesztője") } label: {
+                ForEach(slots) { sl in
+                    Button { edit(sl) } label: {
                         HStack {
                             NKGlyph("ball-sun", .white, size: 18)
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("\(d) 18:00 · Röplabda").nkFont(15, .medium).foregroundStyle(.white)
-                                Text("2 óra · edzés · Sportcsarnok").nkFont(12.5).foregroundStyle(.white.opacity(0.6))
+                                Text("\(SportSlot.dayNames[sl.day]) \(sl.time) · \(sl.sport)").nkFont(15, .medium).foregroundStyle(.white)
+                                Text([sl.length, sl.match ? "meccs" : "edzés", sl.place].filter { !$0.isEmpty }.joined(separator: " · ")).nkFont(12.5).foregroundStyle(.white.opacity(0.6))
                             }
                             Spacer()
                             Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(.white.opacity(0.4))
@@ -445,7 +478,7 @@ private struct SportBeosztas: View {
                     }
                     .buttonStyle(.plain)
                 }
-                NKPill("Új rendszeres alkalom", glyph: "plus-ink", primary: false) { toast("Sport · nap · idő · hossz · edzés vagy meccs · hely") }
+                NKPill("Új rendszeres alkalom", glyph: "plus-ink", primary: false, action: add)
                     .padding(.top, 8)
             }
         }
@@ -485,21 +518,45 @@ private struct FlowChips: View {
 
 // MARK: - Test (how the body takes gym + sport together)
 
-private let bothColor = Color(red: 1.0, green: 0.86, blue: 0.62)
 
 private struct SportTest: View {
+    @State private var mapMode = UserDefaults.standard.string(forKey: "sportMap") ?? "Együtt"   // -sportMap Együtt|Kondi|Röpi
+
+    // Invented week: what the gym block and the volleyball loaded, per muscle token of the Edzés map.
+    private static let gymHeat: [String: Double] = ["chest-mid": 0.7, "back-wide": 0.8, "shoulder-front": 0.5, "shoulder-side": 0.6,
+                                                    "biceps-long": 0.5, "triceps-long": 0.45, "quad": 0.75, "ham": 0.55, "glute": 0.6]
+    private static let sportHeat: [String: Double] = ["shoulder-front": 0.7, "shoulder-side": 0.8, "shoulder-rear": 0.6, "quad": 0.7,
+                                                      "calf": 0.95, "core": 0.5, "glute": 0.35]
+    private var mapHeat: [NKBodyHeat] {
+        let src: [String: Double]
+        switch mapMode {
+        case "Kondi": src = Self.gymHeat
+        case "Röpi": src = Self.sportHeat
+        default: src = Self.gymHeat.merging(Self.sportHeat) { a, b in min(1, a + b * 0.6) }
+        }
+        return src.map { NKBodyHeat(muscle: $0.key, level: $0.value) }
+    }
+    private var mapLine: String {
+        switch mapMode {
+        case "Kondi": return "A kondi a héten: hát, mell, comb — a terv szerint."
+        case "Röpi": return "A röpi a héten: váll, vádli (az ugrások), comb és törzs."
+        default: return "Együtt: a vállad és a combod kap mindkettőből — ezekre figyelek a legjobban."
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .bottom, spacing: 18) {
-                VStack(spacing: 6) { BodyMap(back: false).frame(width: 110, height: 220); NKMono("ELÖL") }
-                VStack(spacing: 6) { BodyMap(back: true).frame(width: 110, height: 220); NKMono("HÁTUL") }
+            HStack(spacing: 8) {
+                ForEach(["Együtt", "Kondi", "Röpi"], id: \.self) { m in
+                    Button { withAnimation(.easeInOut(duration: 0.2)) { mapMode = m } } label: { Chip(text: m, on: m == mapMode) }
+                        .buttonStyle(.plain)
+                        .accessibilityAddTraits(m == mapMode ? .isSelected : [])
+                }
+                Spacer()
             }
-            .frame(maxWidth: .infinity)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Testtérkép a hétre: a vállat és a combot a kondi és a röpi is terheli, a mellet és a hátat csak a kondi, a vádlit leginkább a röpi.")
-            HStack(spacing: 16) {
-                legend("kondi", gymColor); legend("röpi", hue.glow); legend("mindkettő", bothColor)
-            }
+            NKBodyMap(mapHeat, hue: mapMode == "Kondi" ? .mozgas : hue, views: .both)
+                .frame(height: 230).frame(maxWidth: .infinity)
+            Text(mapLine).nkFont(13).foregroundStyle(.white.opacity(0.75)).fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 22) { bigNumber("2", "izom kap mindkettőből", lit: true); bigNumber("5,8", "váll átlag"); bigNumber("11 ó", "pihenő köztük") }
         }
         .padding(18).nkGlass(28)
@@ -514,10 +571,6 @@ private struct SportTest: View {
             }
         }
         NKAskRow(hue: hue, text: "Kérdezd meg Boopot a testedről") {}
-    }
-
-    private func legend(_ t: String, _ c: Color) -> some View {
-        HStack(spacing: 6) { Circle().fill(c).frame(width: 8, height: 8); Text(t).nkFont(12.5).foregroundStyle(.white.opacity(0.8)) }
     }
 
     private func hint(_ text: String, ok: Bool) -> some View {
@@ -579,58 +632,6 @@ private struct SportTest: View {
             }
             Text("Reggel kondi, este röpi: 11 óra köztük minden nap — ez elég. Nehezebb a röpi utáni reggel: oda könnyebb kondi kell.")
                 .nkFont(13).foregroundStyle(.white.opacity(0.7)).fixedSize(horizontal: false, vertical: true).padding(.top, 4)
-        }
-    }
-}
-
-/// A front or back figure; each muscle group is filled by who loaded it this week (gym, sport, both), its strength by how much.
-private struct BodyMap: View {
-    let back: Bool
-    var body: some View {
-        Canvas { ctx, size in
-            let k = min(size.width / 100, size.height / 200)
-            let ox = (size.width - 100 * k) / 2
-            func pt(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: ox + x * k, y: y * k) }
-            // The silhouette: one soft outline, mirrored.
-            var half = Path()
-            half.move(to: pt(50, 24))
-            half.addLine(to: pt(45, 24)); half.addCurve(to: pt(44, 30), control1: pt(45, 27), control2: pt(44, 28))
-            half.addCurve(to: pt(27, 35), control1: pt(38, 31), control2: pt(31, 32))
-            half.addCurve(to: pt(21, 48), control1: pt(23, 38), control2: pt(21, 43))
-            half.addCurve(to: pt(15, 90), control1: pt(19, 62), control2: pt(16, 78))
-            half.addCurve(to: pt(21, 92), control1: pt(15, 94), control2: pt(19, 95))
-            half.addCurve(to: pt(28, 56), control1: pt(23, 80), control2: pt(26, 66))
-            half.addCurve(to: pt(31, 86), control1: pt(29, 66), control2: pt(31, 76))
-            half.addCurve(to: pt(31, 150), control1: pt(28, 108), control2: pt(29, 130))
-            half.addCurve(to: pt(34, 194), control1: pt(30, 166), control2: pt(31, 182))
-            half.addLine(to: pt(46, 194))
-            half.addCurve(to: pt(47, 150), control1: pt(46, 180), control2: pt(45, 164))
-            half.addCurve(to: pt(50, 100), control1: pt(49, 130), control2: pt(48, 110))
-            half.closeSubpath()
-            var mirror = half.applying(CGAffineTransform(translationX: -(ox + 50 * k), y: 0)).applying(CGAffineTransform(scaleX: -1, y: 1))
-            mirror = mirror.applying(CGAffineTransform(translationX: ox + 50 * k, y: 0))
-            let head = Path(ellipseIn: CGRect(x: ox + 41 * k, y: 2 * k, width: 18 * k, height: 21 * k))
-            for p in [half, mirror, head] { ctx.fill(p, with: .color(.white.opacity(0.08))) }
-            func m(_ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat, _ c: Color, _ a: Double, mirrored: Bool = true) {
-                let r = CGRect(x: ox + x * k, y: y * k, width: w * k, height: h * k)
-                ctx.fill(Path(ellipseIn: r), with: .color(c.opacity(a)))
-                if mirrored { ctx.fill(Path(ellipseIn: CGRect(x: ox + (100 - x - w) * k, y: y * k, width: w * k, height: h * k)), with: .color(c.opacity(a))) }
-            }
-            m(23, 33, 15, 13, bothColor, 0.95)                        // shoulders: both
-            if !back {
-                m(34, 38, 15, 15, gymColor, 0.8)                      // chest
-                m(21, 48, 8, 16, gymColor, 0.6)                       // biceps
-                m(42, 58, 16, 28, hue.glow, 0.55, mirrored: false)    // core
-                m(32, 96, 13, 40, bothColor, 0.9)                     // quads: both
-                m(33, 158, 11, 26, hue.glow, 0.6)                     // shins
-            } else {
-                m(33, 38, 16, 26, gymColor, 0.8)                      // lats / upper back
-                m(21, 48, 8, 16, gymColor, 0.45)                      // triceps
-                m(42, 68, 16, 14, bothColor, 0.5, mirrored: false)    // lower back: both, light
-                m(33, 90, 16, 16, gymColor, 0.7)                      // glutes
-                m(32, 110, 13, 32, gymColor, 0.55)                    // hamstrings
-                m(33, 156, 11, 28, hue.glow, 0.95)                    // calves: the jumps
-            }
         }
     }
 }
@@ -791,6 +792,125 @@ private struct SportSkipSheet: View {
             NKPill("Kihagyom", action: done)
         }
         .padding(22)
+    }
+}
+
+/// Edit or add one recurring slot: sport, day, start, length, practice or match, place. Opens for review, actions at the bottom.
+private struct SportSlotSheet: View {
+    @State var slot: SportSlot
+    let isNew: Bool
+    let clash: (SportSlot) -> String?
+    let save: (SportSlot) -> Void
+    let delete: (SportSlot) -> Void
+
+    init(slot: SportSlot, isNew: Bool, clash: @escaping (SportSlot) -> String?, save: @escaping (SportSlot) -> Void, delete: @escaping (SportSlot) -> Void) {
+        _slot = State(initialValue: slot); self.isNew = isNew; self.clash = clash; self.save = save; self.delete = delete
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                NKMono(isNew ? "ÚJ RENDSZERES ALKALOM" : "RENDSZERES ALKALOM")
+                Text(isNew ? "Mikor sportolsz?" : "\(SportSlot.dayNames[slot.day]) \(slot.time) · \(slot.sport)").font(.nkSerif(28)).foregroundStyle(.white)
+                    .fixedSize(horizontal: false, vertical: true)
+                row("Milyen sport?") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(Array(stride(from: 0, to: kinds.count, by: 4)), id: \.self) { i in
+                            HStack(spacing: 8) {
+                                ForEach(kinds[i..<min(i + 4, kinds.count)], id: \.self) { k in
+                                    Button { slot.sport = k } label: { Chip(text: k, on: k == slot.sport) }.buttonStyle(.plain)
+                                }
+                            }
+                        }
+                    }
+                }
+                row("Melyik nap?") {
+                    HStack(spacing: 6) {
+                        ForEach(0..<7, id: \.self) { d in
+                            Button { slot.day = d } label: {
+                                Text(["H", "K", "Sz", "Cs", "P", "Sz", "V"][d]).nkFont(14, d == slot.day ? .semibold : .regular)
+                                    .foregroundStyle(d == slot.day ? NK.ground : .white.opacity(0.85))
+                                    .frame(maxWidth: .infinity, minHeight: 42)
+                                    .background(RoundedRectangle(cornerRadius: 12).fill(d == slot.day ? hue.glow : .white.opacity(0.08)))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(SportSlot.dayNames[d])
+                            .accessibilityAddTraits(d == slot.day ? .isSelected : [])
+                        }
+                    }
+                }
+                HStack(alignment: .top, spacing: 14) {
+                    row("Kezdés") { stepper(slot.time, minus: { shift(-15) }, plus: { shift(15) }) }
+                    row("Hossz") { stepper(slot.length, minus: { slot.minutes = max(15, slot.minutes - 15) }, plus: { slot.minutes = min(360, slot.minutes + 15) }) }
+                }
+                row("Edzés vagy meccs?") {
+                    HStack(spacing: 8) {
+                        ForEach([false, true], id: \.self) { m in
+                            Button { slot.match = m } label: {
+                                Text(m ? "Meccs" : "Edzés").nkFont(14.5, m == slot.match ? .semibold : .regular)
+                                    .foregroundStyle(m == slot.match ? NK.ground : .white)
+                                    .frame(maxWidth: .infinity, minHeight: 44)
+                                    .background(Capsule().fill(m == slot.match ? hue.glow : .white.opacity(0.09)))
+                            }.buttonStyle(.plain)
+                        }
+                    }
+                }
+                row("Hol?") {
+                    TextField("", text: $slot.place, prompt: Text("például: Sportcsarnok").foregroundStyle(.white.opacity(0.4)))
+                        .nkFont(15).foregroundStyle(.white).padding(12)
+                        .background(RoundedRectangle(cornerRadius: 14).fill(.white.opacity(0.07)))
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    NKMono("EZ VÁLTOZIK")
+                    Text(effect).nkFont(13.5).foregroundStyle(.white.opacity(0.8)).fixedSize(horizontal: false, vertical: true)
+                    if let c = clash(slot) { Text(c).nkFont(13.5).foregroundStyle(hue.glow).fixedSize(horizontal: false, vertical: true) }
+                }
+                .padding(14).frame(maxWidth: .infinity, alignment: .leading).nkGlass(20)
+                NKPill(isNew ? "Felveszem" : "Mentés", glyph: "check-ink") { save(slot) }.padding(.top, 4)
+                if !isNew {
+                    Button { delete(slot) } label: {
+                        Text("Alkalom törlése").nkFont(15, .medium).foregroundStyle(hue.glow).frame(maxWidth: .infinity, minHeight: 44)
+                    }.buttonStyle(.plain)
+                }
+            }
+            .padding(22)
+        }
+    }
+
+    private let kinds = ["Röplabda", "Futás", "Cross", "TRX", "Kerékpár", "Úszás", "Foci", "Kosár", "Tenisz", "Túra", "Egyéb"]
+
+    private var effect: String {
+        let d = SportSlot.dayNames[slot.day].lowercased()
+        let gymMorning = slot.day < 5
+        let base = "A jövő héttől minden \(d) \(slot.time)-kor \(slot.sport.lowercased()), \(slot.length)."
+        return gymMorning
+            ? base + " Aznap reggel kondi is van: \(max(0, slot.hour - 8)) óra lesz köztük, és a másnapi kondit ehhez igazítom."
+            : base + " Ezen a napon nincs kondi, így ez a hét szabad napja marad mozgással."
+    }
+
+    private func shift(_ m: Int) {
+        let t = max(5 * 60, min(22 * 60, slot.hour * 60 + slot.minute + m))
+        slot.hour = t / 60; slot.minute = t % 60
+    }
+
+    private func stepper(_ value: String, minus: @escaping () -> Void, plus: @escaping () -> Void) -> some View {
+        HStack(spacing: 10) {
+            stepButton("−", minus)
+            Text(value).font(.nkNumber(20)).foregroundStyle(.white).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7).frame(maxWidth: .infinity)
+            stepButton("+", plus)
+        }
+    }
+    private func stepButton(_ t: String, _ a: @escaping () -> Void) -> some View {
+        Button(action: a) {
+            Text(t).font(.system(size: 20, weight: .medium)).foregroundStyle(.white)
+                .frame(width: 40, height: 40).background(Circle().fill(.white.opacity(0.1)))
+        }
+        .buttonStyle(.plain).accessibilityLabel(t == "+" ? "Később / hosszabb" : "Korábban / rövidebb")
+    }
+
+    private func row<C: View>(_ title: String, @ViewBuilder _ c: () -> C) -> some View {
+        VStack(alignment: .leading, spacing: 10) { Text(title).nkFont(15.5, .medium).foregroundStyle(.white); c() }
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
