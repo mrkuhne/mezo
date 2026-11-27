@@ -63,3 +63,14 @@ private func rgb(_ c: Color) -> (Int, Int, Int) {
     #expect(NKBackdrop(hue: .alvas, heroHeight: 500, scrollY: 0).sky == .hue(.alvas))
     #expect(NKBackdrop(hue: .alvas, heroHeight: 500, scrollY: 0, sky: .calm).sky == .calm)
 }
+
+/// The Edzés room paints the spike's lighter step 2 (owner #129, mezo-r36n9.197.1); the Mozgás orb's world and the
+/// Étel room stay as they were.
+@Test func mozgasRoomSkyIsTheSpikeStep2() {
+    #expect(Hue.mozgas.roomSky.map(rgb).elementsEqual([(0x5C, 0x7F, 0xC0), (0xF4, 0xBC, 0x8E), (0xFF, 0xEF, 0xCB)], by: ==))
+    #expect(rgb(Hue.mozgas.roomTop) == (0x34, 0x50, 0x7E))
+    #expect(Hue.fuel.roomSky.map(rgb).elementsEqual([(0x4A, 0x87, 0x96), (0xA8, 0xD9, 0xCB), (0xF6, 0xF9, 0xE8)], by: ==))
+    #expect(rgb(Hue.fuel.roomTop) == (0x3D, 0x5F, 0x5C))
+    #expect(Hue.mozgas.sky.map(rgb).elementsEqual([(0x2F, 0x57, 0xB0), (0xF0, 0x9A, 0x55), (0xFF, 0xD9, 0x8C)], by: ==))
+    #expect(rgb(Hue.mozgas.top) == rgb(Color(hex: 0x4A2810)))
+}
