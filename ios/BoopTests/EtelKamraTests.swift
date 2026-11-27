@@ -20,6 +20,14 @@ struct EtelKamraTests {
 
     // MARK: search and filter
 
+    @Test func theProcessingMixGroupsNovaAndLeavesOutEmptyGroups() {
+        let mix = shelfNovaMix([row("a", nova: 1), row("b", nova: 2), row("c", nova: 4), row("d", nova: nil)])
+        #expect(mix.map(\.label) == ["alig feldolgozott", "ultra-feldolgozott", "nincs adat"])
+        #expect(mix.map(\.count) == [2, 1, 1])
+        #expect(mix.last?.strength == 0)
+        #expect(shelfNovaMix([]).isEmpty)
+    }
+
     @Test func searchIgnoresCaseAndAccentsAndTheCategoryNarrowsIt() {
         let rows = [row("Túró", category: "dairy"), row("Tojás", category: "eggs"), row("Tejföl 20%", category: "dairy")]
         #expect(filterShelf(rows, query: "turo", category: nil).map(\.name) == ["Túró"])

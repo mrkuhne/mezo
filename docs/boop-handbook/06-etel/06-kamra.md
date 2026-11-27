@@ -10,9 +10,15 @@ osszefoglalo: Az alapanyagaid saját pontszámmal; újat vonalkóddal, linkből,
 ---
 
 ## Mit csinál
-**A Kamra fül:** Vonalkód · Link · Címkefotó · Kézzel; „A kamrád számokban” (tételek, alig feldolgozottak, jelzéssel
-neked); keresés a kamrában és a közös katalógusban, szűrés kategóriára. Tételenként egy sor: kategória-ikon, név,
-címkék (kalória egységre, fehérje, feldolgozottság, érzékenység), és a tétel **saját pontszáma** gyűrűben.
+**A Kamra fül** (2026-11-28 óta kártyás rendben, mint a Ma és a Hét):
+
+- **felül a kiemelt kártya** („A polcod”): tételek, alig feldolgozottak, jelzéssel neked, alatta egy kis sáv arról,
+  mennyire feldolgozott, ami a polcon van (alig feldolgozott · feldolgozott · ultra-feldolgozott · nincs adat);
+- **„Felveszek egyet” kártya**: Vonalkód · Link · Címkefotó · Kézzel (a legnagyobb betűméretnél kettő-kettő egymás alatt);
+- **„A kamrád” kártya**: keresés a kamrában és a közös katalógusban, szűrés kategóriára. Tételenként egy sor:
+  kategória-ikon, név, címkék (kalória egységre, fehérje, feldolgozottság, érzékenység), és a tétel **saját
+  pontszáma** gyűrűben;
+- **„Beállítások” kártya** a fül alján.
 
 **A tétel lapja:** címkék, négy makró-csempe, „Megeszem belőle”; **Boop értékelése** (a pontszám és az öt szempont,
 koppintásra magyarázat); a címke többi sora (rost, cukor, só, telített zsír — hiány esetén „nincs adat”);
