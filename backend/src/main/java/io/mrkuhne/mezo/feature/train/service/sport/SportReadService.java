@@ -284,12 +284,16 @@ public class SportReadService {
             return List.of();
         }
         List<UUID> ids = instances.stream().map(WorkoutSessionEntity::getId).toList();
-        Map<UUID, ExerciseEntity> exercises = exerciseRepository
-            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(user, ids).stream()
-            .collect(Collectors.toMap(ExerciseEntity::getId, e -> e, (a, b) -> a));
-        Map<UUID, List<ExerciseSetEntity>> setsBySession = exerciseSetRepository
-            .findWorkingSetsInSessions(user, ids).stream()
+        List<ExerciseSetEntity> working = exerciseSetRepository.findWorkingSetsInSessions(user, ids);
+        Map<UUID, List<ExerciseSetEntity>> setsBySession = working.stream()
             .collect(Collectors.groupingBy(ExerciseSetEntity::getWorkoutSessionId));
+        // a set points at the exercise row it was logged against — often the template's, sometimes soft-deleted
+        // after a swap (mezo-mobji) — so resolve by the sets' own exercise ids, not by the instance
+        Set<UUID> exerciseIds = working.stream().map(ExerciseSetEntity::getExerciseId).filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+        Map<UUID, ExerciseEntity> exercises = exerciseIds.isEmpty() ? Map.of() : exerciseRepository
+            .findOwnedByIdIncludingDeleted(user, exerciseIds).stream()
+            .collect(Collectors.toMap(ExerciseEntity::getId, e -> e, (a, b) -> a));
         List<SportMath.GymSession> out = new ArrayList<>();
         for (WorkoutSessionEntity i : instances) {
             List<SportMath.GymSet> sets = setsBySession.getOrDefault(i.getId(), List.of()).stream()
