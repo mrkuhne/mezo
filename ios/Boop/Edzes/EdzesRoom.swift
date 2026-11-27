@@ -455,7 +455,8 @@ struct EdzesRoom: View {
                              hue: hue, done: done, progress: runningProgress,
                              missions: store?.missions.count ?? 0, released: released.count,
                              action: (done && store?.session == nil) ? nil : { startOrResume() },
-                             onResult: done ? result : nil, stats: spikeStats, back: spikeLoadPage)
+                             onResult: done ? result : nil, stats: spikeStats, back: spikeLoadPage,
+                             onOtherDay: canPickOtherDay ? { showOtherDays = true } : nil)
         } else if let w = workout, !w.isRestDay, let title = w.title {
             // The brief has no session but the training plan does (a day started across
             // midnight, or a brief that has not caught up): the plan is the honest thing.
@@ -464,13 +465,14 @@ struct EdzesRoom: View {
                              done: doneToday, progress: runningProgress, missions: store?.missions.count ?? 0,
                              released: released.count,
                              action: (doneToday && store?.session == nil) ? nil : { startOrResume() },
-                             onResult: doneToday ? result : nil, stats: spikeStats, back: spikeLoadPage)
+                             onResult: doneToday ? result : nil, stats: spikeStats, back: spikeLoadPage,
+                             onOtherDay: canPickOtherDay ? { showOtherDays = true } : nil)
         } else if let w = workout, w.isRestDay {
             NKHighlight(hue: hue, label: "ma", text: "Ma nincs edzés", sub: "A mezociklusod szerint ez pihenőnap.")
         } else if let c = brief.map({ maiCopy($0, .mozgas) }) {
             NKHighlight(hue: hue, label: "ma", text: c.headline, sub: c.sentence)
         }
-        if canPickOtherDay {
+        if canPickOtherDay, workout?.isRestDay == true || (brief?.day.session == nil && workout?.title == nil) {
             quietLink("Másik napot csinálok ma") { showOtherDays = true }
         }
     }
@@ -1159,6 +1161,8 @@ private struct TodaySessionCard: View {
     // SPIKE (mezo-r36n9.197): three stat numbers in the hero, and the day's load as page 2.
     var stats: [(String, String)] = []
     var back: AnyView? = nil
+    /// SPIKE: „Másik napot csinálok ma" as a quiet text link inside the hero, under Indítás.
+    var onOtherDay: (() -> Void)? = nil
     @State private var heroPage = 0
     @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.accessibilityVoiceOverEnabled) private var voiceOver
@@ -1245,6 +1249,18 @@ private struct TodaySessionCard: View {
                     }
                     .frame(maxWidth: .infinity, minHeight: 52)
                     .background(Capsule().fill(hue.glow))
+                }
+                .buttonStyle(.plain)
+            }
+            if let onOtherDay {
+                Button(action: onOtherDay) {
+                    HStack(spacing: 4) {
+                        Text("Másik napot csinálok ma").nkFont(14, .medium).foregroundStyle(.white.opacity(0.75))
+                        Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.4))
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 40)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }

@@ -35,6 +35,15 @@ struct PreviewTransport: ClientTransport {
         if UserDefaults.standard.bool(forKey: "previewFoodOffline"), ["draftMealFromAi", "createMeal", "lookupPantryItem"].contains(operationID) {
             throw URLError(.notConnectedToInternet)
         }
+        // SPIKE (mezo-r36n9.197) `-spikeState nincs|hiba|offline`: the Edzés room with no block, a failed load, no net.
+        switch UserDefaults.standard.string(forKey: "spikeState") {
+        case "nincs" where operationID == "listMesocycles":
+            var h = HTTPFields(); h[.contentType] = "application/json"
+            return (HTTPResponse(status: .ok, headerFields: h), HTTPBody("[]"))
+        case "hiba" where Self.trainOps.contains(operationID): return (HTTPResponse(status: .internalServerError), nil)
+        case "offline" where Self.trainOps.contains(operationID): throw URLError(.notConnectedToInternet)
+        default: break
+        }
         // `-etelDay error|deletefail` (mezo-r36n9.184): the Étel day and plan fail / the meal delete is refused.
         let etelDay = UserDefaults.standard.string(forKey: "etelDay")
         if etelDay == "error", ["getFuelDay", "getFuelPlan"].contains(operationID) { return (HTTPResponse(status: .internalServerError), nil) }
