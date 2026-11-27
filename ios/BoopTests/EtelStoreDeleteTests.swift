@@ -36,8 +36,33 @@ struct EtelStoreDeleteTests {
         #expect(store.day?.consumed.kcal == 400 && store.day?.consumed.p == 30)
         #expect(store.plan?.remaining?.kcal == 2000)
         #expect(store.plan?.windows.first?.loggedMealIds.isEmpty == true)
+        // an emptied window is no longer "done": its card offers + / Kihagyom again, not „Kész, a részletei nincsenek itt."
+        #expect(store.plan?.windows.first?.state != .done)
         #expect(store.isPendingDelete(m.id))
         #expect(!store.removeLocally(m))   // a second route for the same meal is a no-op
+    }
+
+    @Test func undoAfterAFreshReadStillPutsTheMealBackInItsWindow() async throws {
+        let food = FoodClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: transport))
+        for reread in ["day", "all"] {
+            let store = await loaded(); let m = try b(store)
+            let day = store.day, plan = store.plan
+            store.removeLocally(m)
+            if reread == "day" { await store.loadDay(food: food, now: Date()) } else { await store.load(food: food, now: Date()) }
+            #expect(store.day?.meals.map(\.id).contains(m.id) == false, "\(reread)")
+            store.undoDelete(m.id)
+            #expect(store.day?.meals.map(\.id) == day?.meals.map(\.id), "\(reread)")
+            #expect(store.plan == plan, "\(reread)")
+        }
+    }
+
+    @Test func aMealOutsideEveryWindowStillGivesItsNumbersBack() async throws {
+        let store = await loaded()
+        let a = try #require(store.day?.meals.first { $0.id.uuidString.lowercased() == mealA })
+        #expect(store.removeLocally(a))
+        #expect(store.plan?.remaining?.kcal == 1800)
+        await store.loadDay(food: FoodClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: transport)), now: Date())
+        #expect(store.plan?.remaining?.kcal == 1800)   // a day-only read never counts it twice
     }
 
     @Test func undoPutsEverythingBackWithoutTheServer() async throws {

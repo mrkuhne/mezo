@@ -570,3 +570,16 @@ func etelWindowCaptureTime(_ w: PlanWindow, now: Date, calendar: Calendar = .cur
     guard let from = at(w.from), let to = at(w.to), to > from, to <= now else { return nil }
     return from.addingTimeInterval(to.timeIntervalSince(from) / 2)
 }
+
+/// The state a "done" window falls back to when a delete empties it (mezo-r36n9.184), until the next plan read
+/// recomputes it on the server: over → missed, open now → now, still to come → pending.
+func etelWindowStateWhenEmptied(_ w: PlanWindow, now: Date, calendar: Calendar = .current) -> WindowState {
+    func at(_ hhmm: String) -> Date? {
+        let parts = hhmm.split(separator: ":").compactMap { Int($0) }
+        guard parts.count == 2 else { return nil }
+        return calendar.date(bySettingHour: parts[0], minute: parts[1], second: 0, of: now)
+    }
+    guard let from = at(w.from), let to = at(w.to) else { return .missed }
+    if to <= now { return .missed }
+    return from <= now ? .now : .pending
+}

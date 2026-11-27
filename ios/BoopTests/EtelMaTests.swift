@@ -219,4 +219,15 @@ struct EtelMaTests {
         #expect(etelWindowCaptureTime(PlanWindow(slot: "lunch", label: "Ebéd", from: "14:30", to: "16:00", state: .now), now: now, calendar: cal) == nil)
         #expect(etelWindowCaptureTime(PlanWindow(slot: "dinner", label: "Vacsora", from: "19:00", to: "21:00", state: .pending), now: now, calendar: cal) == nil)
     }
+
+    @Test func aWindowEmptiedByADeleteTakesTheStateTheClockGivesIt() {
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = .current
+        let now = cal.date(from: DateComponents(year: 2026, month: 11, day: 13, hour: 13, minute: 10))!
+        func state(_ from: String, _ to: String) -> WindowState {
+            etelWindowStateWhenEmptied(PlanWindow(slot: "lunch", label: "Ebéd", from: from, to: to, state: .done), now: now, calendar: cal)
+        }
+        #expect(state("07:00", "09:00") == .missed)
+        #expect(state("12:00", "14:00") == .now)
+        #expect(state("19:00", "21:00") == .pending)
+    }
 }

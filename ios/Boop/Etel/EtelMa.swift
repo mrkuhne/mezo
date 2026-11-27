@@ -277,8 +277,7 @@ struct EtelMa: View {
     /// A logged meal inside its window's card: a tap opens its own page; swipe left or long-press to correct or delete.
     private func mealRow(_ m: BoopCore.Meal, _ label: String) -> some View {
         let title = mealTitle(m, slotLabel: label)
-        return Button { detailMeal = m } label: {
-            HStack(spacing: 12) {
+        return HStack(spacing: 12) {
                 NKThumb(image: store.photos[m.id].map { Image(uiImage: $0) }, glyph: "bowl-cream", size: 52)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title).nkFont(15.5, .medium).foregroundStyle(.white).lineLimit(3).multilineTextAlignment(.leading)
@@ -301,8 +300,6 @@ struct EtelMa: View {
             }
             .padding(.vertical, 8)
             .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title), \(timeText(m.loggedAt)), \(huInt(Int(m.macros.kcal.rounded()))) kilokalória\(mealPoints(m).map { ", \($0) pont" } ?? "")")
         .accessibilityHint("Megnyitja az étkezés oldalát")
@@ -438,14 +435,13 @@ struct EtelMa: View {
         VStack(spacing: 0) {
             ForEach(Array(list.enumerated()), id: \.element.id) { k, m in
                 if k > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5).padding(.leading, 52) }
-                Button { detailMeal = m } label: {
                 HStack(spacing: 12) {
                     ZStack {
                         Circle().fill(hue.glow.opacity(0.16)).frame(width: 40, height: 40)
                         NKGlyph("cup-cream", hue.glow, size: 18)
                     }
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(mealTitle(m, slotLabel: "Ital")).nkFont(15, .medium).foregroundStyle(.white).lineLimit(1)
+                        Text(mealTitle(m, slotLabel: "Ital")).nkFont(15, .medium).foregroundStyle(.white).lineLimit(2)
                         Text("\(timeText(m.loggedAt)) · \(huInt(Int(m.macros.kcal.rounded()))) kcal · \(Int(m.macros.p.rounded())) g fehérje")
                             .nkFont(12.5).foregroundStyle(.white.opacity(0.55))
                     }
@@ -456,8 +452,6 @@ struct EtelMa: View {
                 }
                 .padding(.vertical, 10)
                 .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
                 .accessibilityElement(children: .combine)
                 .accessibilityHint("Megnyitja az ital oldalát")
                 .modifier(MealRowActions(online: online, title: mealTitle(m, slotLabel: "Ital"),
@@ -616,12 +610,13 @@ private struct MealRowActions: ViewModifier {
                 .buttonStyle(.plain)
                 .accessibilityHidden(true)
             }
+            // A tap opens the page — a tap gesture, not a Button: a Button would still fire when the finger lifts after
+            // a swipe inside the row. While Törlés shows, a tap closes it instead.
             content
                 .offset(x: offset)
-                .overlay {
-                    // While Törlés shows, a tap on the row closes it instead of opening the page.
-                    if revealed { Color.clear.contentShape(Rectangle()).onTapGesture { close() }.offset(x: offset) }
-                }
+                .onTapGesture { if revealed { close() } else { onOpen() } }
+                .accessibilityAddTraits(.isButton)
+                .accessibilityAction { onOpen() }
         }
         .clipped()
         .simultaneousGesture(

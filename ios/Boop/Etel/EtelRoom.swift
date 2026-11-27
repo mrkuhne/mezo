@@ -115,7 +115,7 @@ final class EtelStore {
         case .success(let v): plan = v; planProblem = nil
         case .failure(let e): planProblem = e
         }
-        hideWaitingDeletes()
+        if case .success = await p { hideWaitingDeletes(freshPlan: true) } else { hideWaitingDeletes(freshPlan: false) }
         switch await s {
         case .success(let (proto, stash)):
             applyProtocol(proto, stash: stash)
@@ -136,7 +136,7 @@ final class EtelStore {
     func loadDay(food: FoodClient, now: Date) async {
         self.food = food; self.now = now
         switch await Self.attempt({ try await food.day(now) }) {
-        case .success(let v): day = v; dayVersion += 1; dayProblem = nil; hideWaitingDeletes()
+        case .success(let v): day = v; dayVersion += 1; dayProblem = nil; hideWaitingDeletes(freshPlan: false)
         case .failure(let e): dayProblem = e
         }
     }
@@ -144,7 +144,20 @@ final class EtelStore {
     // MARK: - Deleting a logged meal (mezo-r36n9.184)
 
     /// A meal taken off the page while its Visszavonás runs, and where it sat (its place in the day, in each window).
-    private struct RemovedMeal { let meal: BoopCore.Meal; let index: Int; let windows: [Int: Int] }
+    private struct RemovedMeal {
+        let meal: BoopCore.Meal
+        /// Its place in the day's meals; nil when this take-off found it only in the plan.
+        let index: Int?
+        let windows: [Int: Int]
+        /// The states of the windows the delete emptied, to put back on undo.
+        var emptied: [Int: WindowState] = [:]
+
+        /// A re-read's take-off over the first one: each part (day, windows) from whichever took it off.
+        func merged(over old: RemovedMeal) -> RemovedMeal {
+            RemovedMeal(meal: meal, index: index ?? old.index, windows: windows.isEmpty ? old.windows : windows,
+                        emptied: windows.isEmpty ? old.emptied : emptied)
+        }
+    }
     /// Deletes waiting for their toast to run out; and the ones on their way to the server (still hidden on a reload).
     private var waitingDeletes: [UUID: RemovedMeal] = [:]
     @ObservationIgnored private var sendingDeletes: [UUID: RemovedMeal] = [:]
@@ -191,36 +204,55 @@ final class EtelStore {
     }
 
     /// A fresh read brings back a meal whose delete is still waiting or on its way: take it off again.
-    private func hideWaitingDeletes() {
-        for id in Array(waitingDeletes.keys) { if let r = takeOff(id) { waitingDeletes[id] = r } }
-        for id in Array(sendingDeletes.keys) { if let r = takeOff(id) { sendingDeletes[id] = r } }
+    /// A read may bring back only the day (the home ring) or only the plan (Ma's rows): whatever part it did not
+    /// re-read keeps the first removal's record, so Visszavonás still puts the meal back where it sat, and the plan's
+    /// remaining numbers move only when the plan itself was read again.
+    private func hideWaitingDeletes(freshPlan: Bool) {
+        func again(_ old: RemovedMeal) -> RemovedMeal { takeOff(old.meal.id, as: old.meal, freshPlan: freshPlan)?.merged(over: old) ?? old }
+        for (id, r) in waitingDeletes { waitingDeletes[id] = again(r) }
+        for (id, r) in sendingDeletes { sendingDeletes[id] = again(r) }
     }
 
-    private func takeOff(_ id: UUID) -> RemovedMeal? {
-        guard var d = day, let i = d.meals.firstIndex(where: { $0.id == id }) else { return nil }
-        let meal = d.meals.remove(at: i)
-        d.consumed.kcal -= meal.macros.kcal; d.consumed.p -= meal.macros.p
-        d.consumed.c -= meal.macros.c; d.consumed.f -= meal.macros.f
-        var windows: [Int: Int] = [:]
+    /// Takes the meal off the day and out of its windows. `as`: the meal already taken off once (a re-read), so the
+    /// plan is stripped even when this read did not bring the day back. `freshPlan`: the plan still counts the meal
+    /// in its remaining numbers (first removal, or the plan was just read again).
+    private func takeOff(_ id: UUID, as known: BoopCore.Meal? = nil, freshPlan: Bool = true) -> RemovedMeal? {
+        var d = day
+        let i = d?.meals.firstIndex(where: { $0.id == id })
+        guard let meal = i.flatMap({ d?.meals[$0] }) ?? known else { return nil }
+        if let i, var dd = d {
+            dd.meals.remove(at: i)
+            dd.consumed.kcal -= meal.macros.kcal; dd.consumed.p -= meal.macros.p
+            dd.consumed.c -= meal.macros.c; dd.consumed.f -= meal.macros.f
+            d = dd
+        }
+        var windows: [Int: Int] = [:], emptied: [Int: WindowState] = [:]
         if var p = plan {
-            p.remaining = p.remaining.map { Macros(kcal: $0.kcal + meal.macros.kcal, p: $0.p + meal.macros.p, c: $0.c + meal.macros.c, f: $0.f + meal.macros.f) }
-            for w in p.windows.indices { if let k = p.windows[w].loggedMealIds.firstIndex(of: id) { windows[w] = k; p.windows[w].loggedMealIds.remove(at: k) } }
+            if freshPlan { p.remaining = p.remaining.map { Macros(kcal: $0.kcal + meal.macros.kcal, p: $0.p + meal.macros.p, c: $0.c + meal.macros.c, f: $0.f + meal.macros.f) } }
+            for w in p.windows.indices {
+                guard let k = p.windows[w].loggedMealIds.firstIndex(of: id) else { continue }
+                windows[w] = k; p.windows[w].loggedMealIds.remove(at: k)
+                if p.windows[w].loggedMealIds.isEmpty, p.windows[w].state == .done {
+                    emptied[w] = .done; p.windows[w].state = etelWindowStateWhenEmptied(p.windows[w], now: now)
+                }
+            }
             plan = p
         }
-        day = d; dayVersion += 1
-        return RemovedMeal(meal: meal, index: i, windows: windows)
+        if i != nil { day = d; dayVersion += 1 }
+        return RemovedMeal(meal: meal, index: i, windows: windows, emptied: emptied)
     }
 
     private func putBack(_ r: RemovedMeal) {
         guard var d = day, !d.meals.contains(where: { $0.id == r.meal.id }) else { return }
         let m = r.meal
-        d.meals.insert(m, at: min(r.index, d.meals.count))
+        d.meals.insert(m, at: min(r.index ?? d.meals.count, d.meals.count))
         d.consumed.kcal += m.macros.kcal; d.consumed.p += m.macros.p; d.consumed.c += m.macros.c; d.consumed.f += m.macros.f
         if var p = plan {
             p.remaining = p.remaining.map { Macros(kcal: $0.kcal - m.macros.kcal, p: $0.p - m.macros.p, c: $0.c - m.macros.c, f: $0.f - m.macros.f) }
             for (w, k) in r.windows where p.windows.indices.contains(w) {
                 p.windows[w].loggedMealIds.insert(m.id, at: min(k, p.windows[w].loggedMealIds.count))
             }
+            for (w, state) in r.emptied where p.windows.indices.contains(w) { p.windows[w].state = state }
             plan = p
         }
         day = d; dayVersion += 1

@@ -35,6 +35,10 @@ struct PreviewTransport: ClientTransport {
         if UserDefaults.standard.bool(forKey: "previewFoodOffline"), ["draftMealFromAi", "createMeal", "lookupPantryItem"].contains(operationID) {
             throw URLError(.notConnectedToInternet)
         }
+        // `-etelDay error|deletefail` (mezo-r36n9.184): the Étel day and plan fail / the meal delete is refused.
+        let etelDay = UserDefaults.standard.string(forKey: "etelDay")
+        if etelDay == "error", ["getFuelDay", "getFuelPlan"].contains(operationID) { return (HTTPResponse(status: .internalServerError), nil) }
+        if etelDay == "deletefail", operationID == "deleteMeal" { return (HTTPResponse(status: .internalServerError), nil) }
         // `-previewRefuse YES`: the server refuses the daily loop's writes (the "nem sikerült elküldeni · Újra" rows).
         if UserDefaults.standard.bool(forKey: "previewRefuse"), ["saveCheckIn", "addFocus", "putDayClose", "createJournalEntry"].contains(operationID) {
             return (HTTPResponse(status: .badRequest), nil)
@@ -153,7 +157,9 @@ struct PreviewTransport: ClientTransport {
     nonisolated(unsafe) private static var foodDiet = #"{"splitPreset":"balanced","proteinTier":"moderate","waterMl":2500,"fiberG":30,"dayTypeShiftKcal":0,"learningEnabled":true}"#
     nonisolated(unsafe) private static var foodFuel = #"{"mealsPerDay":5,"caffeineCutoff":"14:00"}"#
     /// The start date and category of the open kímélő period; nil = none.
-    nonisolated(unsafe) private static var foodKimelo: (start: String, category: String)?
+    /// `-previewRecovery YES` starts with a cold already on (the Étel room's kímélő day, mezo-r36n9.184).
+    nonisolated(unsafe) private static var foodKimelo: (start: String, category: String)? =
+        UserDefaults.standard.bool(forKey: "previewRecovery") ? (dayString(offset: 0), "ILLNESS") : nil
     /// Protocol rows (JSON) and the supplements the review has made (id, name, dose).
     nonisolated(unsafe) private static var foodProtocol: [String] = [
         #"{"id":"dd805c3a-94b5-4080-9c3a-5f7fce9c8d09","pantryItemId":"22b49e70-d8f9-44c4-9a7e-93b1c0cdc12d","slotKey":"morning","pinned":false,"placementSource":"rule"}"#,
@@ -243,14 +249,18 @@ struct PreviewTransport: ClientTransport {
         let recipe = #"{"kind":"recipe","recipeId":"\#(recipeId)","text":"Csirkés rizs zöldségekkel","reason":"belefér a fehérjébe, és laktózmentes"}"#
         let fish = #"{"kind":"ingredients","text":"Lazac, burgonya és saláta","reason":"a nap fehérjéjéből még 38 g hiányzik"}"#
         let windows = [
-            window("breakfast", "meal", "Reggeli", "07:00", "09:00", "breakfast#1", macros(600, 40, 70, 18), state: "done", logged: #""\#(seedMealId)""#),
+            UserDefaults.standard.string(forKey: "etelDay") == "empty"
+                ? window("breakfast", "meal", "Reggeli", "07:00", "09:00", "breakfast#1", macros(600, 40, 70, 18), state: "missed")
+                : window("breakfast", "meal", "Reggeli", "07:00", "09:00", "breakfast#1", macros(600, 40, 70, 18), state: "done", logged: #""\#(seedMealId)""#),
             window("snack", "snack", "Tízórai", "10:00", "11:00", "snack#1", macros(200, 15, 20, 6), state: "missed"),
-            window("lunch", "meal", "Ebéd", "12:00", "14:00", "lunch#1", macros(700, 50, 80, 20), state: "now", suggestion: recipe),
+            UserDefaults.standard.string(forKey: "etelDay") == "over"
+                ? window("lunch", "meal", "Ebéd", "12:00", "14:00", "lunch#1", macros(700, 50, 80, 20), state: "done", logged: #""0e0e0e0e-0000-4000-8000-000000000001""#)
+                : window("lunch", "meal", "Ebéd", "12:00", "14:00", "lunch#1", macros(700, 50, 80, 20), state: "now", suggestion: recipe),
             window("snack", "snack", "Uzsonna", "16:00", "17:00", "snack#2", macros(200, 15, 20, 6), state: "pending"),
             window("dinner", "meal", "Vacsora", "19:00", "21:00", "dinner#1", macros(700, 50, 80, 20), state: "pending", suggestion: fish),
         ].joined(separator: ",")
         let skipped = foodSkips.count * 200
-        return #"{"date":"\#(date)","windows":[\#(windows)],"remaining":\#(macros(Double(1980 - skipped), 128, 218, 56)),"tip":{"text":"Ebédre tegyél fehérjét: a reggeli után még sok hiányzik.","reason":"a fehérje a nap célja alatt jár"}}"#
+        return #"{"date":"\#(date)","windows":[\#(windows)],"remaining":\#(UserDefaults.standard.string(forKey: "etelDay") == "over" ? macros(-120, 50, -12, -37) : macros(Double(1980 - skipped), 128, 218, 56)),"tip":{"text":"Ebédre tegyél fehérjét: a reggeli után még sok hiányzik.","reason":"a fehérje a nap célja alatt jár"}}"#
     }
 
     /// The `id` of a meal JSON (its first field).
@@ -273,13 +283,19 @@ struct PreviewTransport: ClientTransport {
         let date = pathDate(request)
         switch op {
         case "getFuelDay":
-            let all = ([seedMeal(date: date)] + previewDrinks(date: date) + foodMeals).compactMap { m -> String? in
+            // `-etelDay empty`: nothing logged yet; `-etelDay over`: a big lunch puts the day over its budget.
+            let etelDay = UserDefaults.standard.string(forKey: "etelDay")
+            if etelDay == "empty" {
+                return json(#"{"date":"\#(date)","targets":{"kcal":2400,"p":150,"c":260,"f":70,"water":2500},"consumed":{"kcal":0,"p":0,"c":0,"f":0,"water":0},"meals":[],"skippedKcal":0}"#)
+            }
+            let over = etelDay == "over" ? [#"{"id":"0e0e0e0e-0000-4000-8000-000000000001","slot":"lunch","loggedAt":"\#(date)T12:30:00+01:00","mealDate":"\#(date)","title":"Rántott hús hasábburgonyával","macros":\#(macros(2100, 78, 210, 98)),"score":{"value":0.41,"breakdown":null},"items":[],"hasPhoto":false}"#] : []
+            let all = ([seedMeal(date: date)] + over + previewDrinks(date: date) + foodMeals).compactMap { m -> String? in
                 let id = mealId(of: m)
                 return foodDeleted.contains(id) ? nil : (foodEdits[id] ?? m)
             }
             let meals = all.joined(separator: ",")
             let mode = foodKimelo.map { "\"fuelMode\":\"GUIDANCE\",\"recoveryCategory\":\"\($0.category)\",\"recoveryDay\":1," } ?? ""
-            return json(#"{"date":"\#(date)","targets":{"kcal":2400,"p":150,"c":260,"f":70,"water":2500},"consumed":{"kcal":420,"p":22,"c":62,"f":9,"water":\#(foodWater)},"meals":[\#(meals)],\#(mode)"skippedKcal":\#(foodSkips.count * 200)}"#)
+            return json(#"{"date":"\#(date)","targets":{"kcal":2400,"p":150,"c":260,"f":70,"water":2500},"consumed":\#(etelDay == "over" ? #"{"kcal":2520,"p":100,"c":272,"f":107"# : #"{"kcal":420,"p":22,"c":62,"f":9"#),"water":\#(foodWater)},"meals":[\#(meals)],\#(mode)"skippedKcal":\#(foodSkips.count * 200)}"#)
         case "getFuelPlan": return json(foodPlan(date: date))
         case "getMealCoachForDay":
             return json(#"{"verdicts":[{"mealId":"\#(seedMealId)","tagline":"Jó kezdés","summary":"Jó kezdés: a fehérje a helyén, a rost viszont elmarad a napi harmadától.","improve":[],"dimensionNotes":{"micro":"Egy evőkanál chiamag vagy egy adag hüvelyes +6 g rostot ad.","nova":"Ez a tányér szinte csupa alapanyag — itt nincs mit javítani."},"glucoseTips":[{"title":"Legközelebb laposabb","body":"Tegyél bele egy evőkanál chiamagot: lassítja a felszívódást."}]}]}"#)
