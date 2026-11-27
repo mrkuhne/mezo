@@ -1808,5 +1808,31 @@
     "miert": "Mehet; a ritka, komoly lépések ne legyenek véletlenül az ujja alatt; fent egy fő gomb legyen, ne kettő.",
     "kovetkezmeny": "Jöhet a terv, utána lépésenként az építés, mindegyik a saját munkamenetében.",
     "levaltotta": "A futó mezociklus kártyáján a három szabad gomb sora, és a sötétebb meleg narancs Edzés ég."
+  },
+  "d-2026-11-27-etel-het-naptari": {
+    "datum": "2026-11-27",
+    "terulet": [
+      "Étel"
+    ],
+    "cim": "Az Étel Hét fül a naptári hetet mutatja, lapozható",
+    "suly": "Kicsi",
+    "valasztas": "Hétfőtől vasárnapig, az oszlopok és a napok ugyanabban a sorrendben; a hátralévő napok halványan; nyíllal az előző hetekre.",
+    "miert": "Az „utolsó 7 nap, a mai nappal kezdve” összevisszának hatott: se a naptárt, se az oszlopok rendjét nem követte.",
+    "kovetkezmeny": "Hétfő reggel még üres a hét — ott a nyíllal az előző hétre lehet lépni.",
+    "levaltotta": "A mától visszafelé számolt 7 napos ablak, fordított napsorrenddel."
+  },
+  "d-2026-11-27-carousel-doboz-nelkul": {
+    "datum": "2026-11-27",
+    "terulet": [
+      "Étel",
+      "Edzés",
+      "Ma"
+    ],
+    "cim": "A kártyasorok (carouselek) nem kerülnek külön dobozba",
+    "suly": "Közepes",
+    "valasztas": "Egy oldalra görgethető kártyasor szabadon áll az oldalon, csak a saját kártyái vannak — nem teszünk köré még egy üvegkártyát. Így az oldalon jó arányban váltakoznak a kártyák és a kártyasorok.",
+    "miert": "„Nem minden dobozolt” — ez frissíti az oldalt, és nem lesz minden ugyanolyan doboz.",
+    "kovetkezmeny": "Az Edzés újratervezésénél is így: a Mezociklus „A heted” és a Ma „Gyakorlatok” kártyasora doboz nélkül áll.",
+    "levaltotta": "A kártyasor üvegkártyába csomagolva."
   }
 }

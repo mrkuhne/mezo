@@ -19,13 +19,15 @@ public struct NKCarousel<Item: Identifiable, Card: View>: View {
     /// measured anyway — so the page that knows its cards says how tall they are.
     let height: CGFloat
     let card: (Item) -> Card
+    /// The card the row opens on (e.g. today in a week); nil = the first.
+    let initial: Item.ID?
     @State private var current: Item.ID?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    public init(_ items: [Item], hue: Hue, height: CGFloat = 170, widthFraction: CGFloat = 0.86,
+    public init(_ items: [Item], hue: Hue, height: CGFloat = 170, widthFraction: CGFloat = 0.86, initial: Item.ID? = nil,
                 @ViewBuilder card: @escaping (Item) -> Card) {
         self.items = items; self.hue = hue; self.height = height
-        self.widthFraction = widthFraction; self.card = card
+        self.widthFraction = widthFraction; self.card = card; self.initial = initial
     }
 
     public var body: some View {
@@ -48,7 +50,7 @@ public struct NKCarousel<Item: Identifiable, Card: View>: View {
             .frame(height: height)
             if items.count > 1 { dots }
         }
-        .onAppear { if current == nil { current = items.first?.id } }
+        .onAppear { if current == nil { current = initial ?? items.first?.id } }
     }
 
     private var dots: some View {

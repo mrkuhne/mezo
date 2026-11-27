@@ -58,7 +58,7 @@ Nincs saját; a keretek és az ablakok az [étrend-beállításokból](04-napi-k
 | `supplement_intake` | A kiegészítők bevétele |
 
 ## Mi jön még
-A Hét fül ugyanerre az elrendezésre kerül. A szoba alsó sávja a legnagyobb betűméreteknél még levágja a feliratokat.
+A Hét fül 2026-11-27 óta ugyanezt a rendet követi (lásd [Napi keret, víz és heti kép](04-napi-keret.md)); a Receptek és a Kamra fül még hátravan. A szoba alsó sávja a legnagyobb betűméreteknél még levágja a feliratokat.
 
 ## Mi marad ki
 Nincs.

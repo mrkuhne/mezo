@@ -132,9 +132,12 @@ public struct WeekBars: View {
     let lineLabel: String
     /// Bars drawn as an outline instead of filled: a day the chart must not read as a miss (a kímélő day).
     let marked: Set<Int>
-    public init(values: [Double?], average: Double?, unit: String, labels: [String], lineLabel: String = "átlag", marked: Set<Int> = []) {
+    /// The bar drawn lit with its number (today). nil = the last; a week that does not hold today passes `.some(nil)`.
+    let lit: Int??
+    public init(values: [Double?], average: Double?, unit: String, labels: [String], lineLabel: String = "átlag", marked: Set<Int> = [],
+                lit: Int?? = nil) {
         self.values = values; self.average = average; self.unit = unit; self.labels = labels
-        self.lineLabel = lineLabel; self.marked = marked
+        self.lineLabel = lineLabel; self.marked = marked; self.lit = lit
     }
     public var body: some View {
         GeometryReader { g in
@@ -145,7 +148,7 @@ public struct WeekBars: View {
             ZStack(alignment: .topLeading) {
                 HStack(alignment: .bottom, spacing: 0) {
                     ForEach(values.indices, id: \.self) { i in
-                        let last = i == values.count - 1
+                        let last = i == (lit ?? (values.count - 1))
                         VStack(spacing: 6) {
                             Spacer(minLength: 0)
                             if last { Text(weekBarValueLabel(values[i], unit: unit)).nkFont(11, .bold, design: .monospaced).foregroundStyle(.white) }
