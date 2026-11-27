@@ -32,7 +32,10 @@ struct RootView: View {
         Group {
             #if DEBUG
             // Simulator review of the shared area-page kit: every block on one page, no sign-in needed.
-            if UserDefaults.standard.bool(forKey: "previewKit") {
+            if UserDefaults.standard.string(forKey: "spikeEvad") != nil {
+                // THROWAWAY spike (mezo-r36n9.196): the barless ring, Nap, Évad, the Sunday review, Étel's menu.
+                EvadSpikeRoot()
+            } else if UserDefaults.standard.bool(forKey: "previewKit") {
                 KitGallery()
             } else if UserDefaults.standard.bool(forKey: "previewEvesTerv") {
                 // The Éves terv on fixtures (mezo-r36n9.113).

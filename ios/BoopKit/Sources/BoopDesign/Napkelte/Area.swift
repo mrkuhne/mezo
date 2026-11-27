@@ -143,9 +143,11 @@ public struct NKAreaTab: Identifiable, Equatable, Sendable {
     public let badge: Int
     /// A countless mark instead of a number: this tab wants his tap, and there is nothing to count.
     public let dot: Bool
+    /// The tab's own glyph in the bar, when the shared name table would give it someone else's (Évad's Hét / Terv).
+    public let glyph: String?
     public var id: String { name }
-    public init(_ name: String, badge: Int = 0, dot: Bool = false) {
-        self.name = name; self.badge = badge; self.dot = dot
+    public init(_ name: String, badge: Int = 0, dot: Bool = false, glyph: String? = nil) {
+        self.name = name; self.badge = badge; self.dot = dot; self.glyph = glyph
     }
 }
 
@@ -379,6 +381,11 @@ public struct NKAreaBar: View {
         // The Súly room (`mezo-r36n9.158`): the body for Test (owner: its own mark), the book for a log of days.
         case "Test": "body-cream"
         case "Napló": "book-sage"
+        // The Évad room (spike 2026-11-27) and the Nap room's Napok tab: their own marks.
+        case "Most": "most-ink"
+        case "Kísérlet": "kiserlet-ink"
+        case "Napok": "napok-ink"
+        case "Évad": "evad-ink"
         default: "chart-deep"
         }
     }
@@ -386,7 +393,7 @@ public struct NKAreaBar: View {
     public var body: some View {
         HStack(spacing: 0) {
             ForEach(tabs) { t in
-                item(glyph: Self.glyph(t.name), label: t.name, badge: t.badge, on: t.name == selected)
+                item(glyph: t.glyph ?? Self.glyph(t.name), label: t.name, badge: t.badge, on: t.name == selected)
                     .contentShape(Rectangle())
                     .onTapGesture { withAnimation(.easeInOut(duration: 0.22)) { selected = t.name } }
                     .accessibilityElement(children: .combine)

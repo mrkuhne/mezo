@@ -65,7 +65,8 @@ public struct Trend: View {
 /// `mic` (voice) and `offline` (a cloud with a slash, "nincs net"; B3, spike `RMicGlyph` / `ROfflineGlyph`).
 public struct NKGlyph: View {
     static let outlined: Set<String> = ["check-ink", "clock-ink", "camera-ink", "book-sage", "mic", "offline", "e-penz", "e-level",
-                                        "body-cream", "cup-cream", "cycle-ink"]
+                                        "body-cream", "cup-cream", "cycle-ink",
+                                        "evad-ink", "most-ink", "het-ink", "terv-ink", "kiserlet-ink", "napok-ink", "atnezes-ink"]
     let name: String, color: Color, size: CGFloat
     public init(_ name: String, _ color: Color, size: CGFloat = 18) { self.name = name; self.color = color; self.size = size }
 
@@ -143,6 +144,64 @@ public struct NKGlyph: View {
                         }, with: .color(color), style: st)
                         ctx.stroke(P { $0.addArc(center: CGPoint(x: 45, y: 19), radius: 6, startAngle: .degrees(180), endAngle: .degrees(360), clockwise: false) },
                                    with: .color(color), style: st)
+                    case "evad-ink":
+                        // Évad's own mark (spike 2026-11-27): the evening sun half under the horizon, held between two
+                        // brackets — a stretch of weeks with a beginning and an end.
+                        ctx.stroke(P { $0.addArc(center: CGPoint(x: 32, y: 40), radius: 12, startAngle: .degrees(180), endAngle: .degrees(360), clockwise: false) }, with: .color(color), style: st)
+                        ctx.stroke(P { $0.move(to: CGPoint(x: 14, y: 40)); $0.addLine(to: CGPoint(x: 50, y: 40)) }, with: .color(color), style: st)
+                        ctx.stroke(P {
+                            $0.move(to: CGPoint(x: 13, y: 14)); $0.addLine(to: CGPoint(x: 7, y: 14)); $0.addLine(to: CGPoint(x: 7, y: 52)); $0.addLine(to: CGPoint(x: 13, y: 52))
+                            $0.move(to: CGPoint(x: 51, y: 14)); $0.addLine(to: CGPoint(x: 57, y: 14)); $0.addLine(to: CGPoint(x: 57, y: 52)); $0.addLine(to: CGPoint(x: 51, y: 52))
+                        }, with: .color(color), style: st)
+                        ctx.stroke(P { $0.move(to: CGPoint(x: 32, y: 14)); $0.addLine(to: CGPoint(x: 32, y: 20)) }, with: .color(color), style: st)
+                    case "most-ink":
+                        // Most (the mid-week glance): an orb filled to a wave, with a needle-dot at its rim — "where I stand".
+                        ctx.stroke(P { $0.addEllipse(in: CGRect(x: 9, y: 9, width: 46, height: 46)) }, with: .color(color), style: st)
+                        ctx.stroke(P {
+                            $0.move(to: CGPoint(x: 13, y: 36))
+                            $0.addCurve(to: CGPoint(x: 32, y: 36), control1: CGPoint(x: 19, y: 30), control2: CGPoint(x: 26, y: 30))
+                            $0.addCurve(to: CGPoint(x: 51, y: 36), control1: CGPoint(x: 38, y: 42), control2: CGPoint(x: 45, y: 42))
+                        }, with: .color(color), style: st)
+                        ctx.fill(P { $0.addEllipse(in: CGRect(x: 28, y: 16, width: 8, height: 8)) }, with: .color(color))
+                    case "het-ink":
+                        // Hét (the week behind and ahead): seven days rising on a soft arc, the last one ringed.
+                        for (i, y) in [44.0, 38, 33, 30, 33, 38].enumerated() {
+                            ctx.fill(P { $0.addEllipse(in: CGRect(x: 5 + Double(i) * 8.4, y: y - 3, width: 6, height: 6)) }, with: .color(color))
+                        }
+                        ctx.stroke(P { $0.addEllipse(in: CGRect(x: 51, y: 38, width: 10, height: 10)) }, with: .color(color), style: st)
+                        ctx.stroke(P { $0.move(to: CGPoint(x: 6, y: 56)); $0.addLine(to: CGPoint(x: 58, y: 56)) }, with: .color(color), style: st)
+                    case "terv-ink":
+                        // Terv (the big plan): a path winding up to a flag on a summit.
+                        ctx.stroke(P {
+                            $0.move(to: CGPoint(x: 8, y: 56))
+                            $0.addCurve(to: CGPoint(x: 30, y: 40), control1: CGPoint(x: 26, y: 56), control2: CGPoint(x: 12, y: 42))
+                            $0.addCurve(to: CGPoint(x: 44, y: 24), control1: CGPoint(x: 46, y: 38), control2: CGPoint(x: 34, y: 26))
+                        }, with: .color(color), style: st)
+                        ctx.stroke(P { $0.move(to: CGPoint(x: 44, y: 24)); $0.addLine(to: CGPoint(x: 44, y: 6)) }, with: .color(color), style: st)
+                        ctx.fill(P { $0.move(to: CGPoint(x: 44, y: 6)); $0.addLine(to: CGPoint(x: 58, y: 11)); $0.addLine(to: CGPoint(x: 44, y: 16)); $0.closeSubpath() }, with: .color(color))
+                    case "kiserlet-ink":
+                        // Kísérlet: a flask with a bubble rising out of its liquid.
+                        ctx.stroke(P {
+                            $0.move(to: CGPoint(x: 25, y: 8)); $0.addLine(to: CGPoint(x: 39, y: 8))
+                            $0.move(to: CGPoint(x: 27, y: 8)); $0.addLine(to: CGPoint(x: 27, y: 26)); $0.addLine(to: CGPoint(x: 12, y: 52))
+                            $0.addQuadCurve(to: CGPoint(x: 16, y: 57), control: CGPoint(x: 11, y: 57))
+                            $0.addLine(to: CGPoint(x: 48, y: 57)); $0.addQuadCurve(to: CGPoint(x: 52, y: 52), control: CGPoint(x: 53, y: 57))
+                            $0.addLine(to: CGPoint(x: 37, y: 26)); $0.addLine(to: CGPoint(x: 37, y: 8))
+                        }, with: .color(color), style: st)
+                        ctx.stroke(P { $0.move(to: CGPoint(x: 18, y: 43)); $0.addLine(to: CGPoint(x: 46, y: 43)) }, with: .color(color), style: st)
+                        ctx.fill(P { $0.addEllipse(in: CGRect(x: 29, y: 31, width: 6, height: 6)) }, with: .color(color))
+                    case "napok-ink":
+                        // Napok (the last days): three day cards stacked, the front one with a sun-dot.
+                        ctx.stroke(P { $0.move(to: CGPoint(x: 18, y: 8)); $0.addLine(to: CGPoint(x: 50, y: 8)) }, with: .color(color), style: st)
+                        ctx.stroke(P { $0.move(to: CGPoint(x: 13, y: 17)); $0.addLine(to: CGPoint(x: 53, y: 17)) }, with: .color(color), style: st)
+                        ctx.stroke(P { $0.addRoundedRect(in: CGRect(x: 8, y: 26, width: 48, height: 30), cornerSize: CGSize(width: 8, height: 8)) }, with: .color(color), style: st)
+                        ctx.fill(P { $0.addEllipse(in: CGRect(x: 17, y: 35, width: 10, height: 10)) }, with: .color(color))
+                        ctx.stroke(P { $0.move(to: CGPoint(x: 34, y: 40)); $0.addLine(to: CGPoint(x: 46, y: 40)) }, with: .color(color), style: st)
+                    case "atnezes-ink":
+                        // Heti átnézés: a week-circle turning back on itself around a tick.
+                        ctx.stroke(P { $0.addArc(center: CGPoint(x: 32, y: 32), radius: 23, startAngle: .degrees(-50), endAngle: .degrees(260), clockwise: false) }, with: .color(color), style: st)
+                        ctx.stroke(P { $0.move(to: CGPoint(x: 47, y: 7)); $0.addLine(to: CGPoint(x: 47, y: 15)); $0.addLine(to: CGPoint(x: 39, y: 15)) }, with: .color(color), style: st)
+                        ctx.stroke(P { $0.move(to: CGPoint(x: 22, y: 33)); $0.addLine(to: CGPoint(x: 29, y: 40)); $0.addLine(to: CGPoint(x: 43, y: 25)) }, with: .color(color), style: st)
                     case "offline":
                         ctx.stroke(P {
                             $0.move(to: CGPoint(x: 18, y: 48)); $0.addLine(to: CGPoint(x: 46, y: 48))
