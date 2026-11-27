@@ -9,7 +9,7 @@ import BoopDesign
 enum Area: Int, CaseIterable, Identifiable {
     /// The day itself, at the top of the ring: the owner gave it its own orb on 2026-11-16 (decision #41). It is
     /// the whole day, so it leads rather than following the parts of it.
-    case nap, alvas, etel, edzes, energia, suly, forma, penz, level
+    case nap, alvas, etel, edzes, sport, energia, suly, forma, penz, level
 
     var id: Int { rawValue }
 
@@ -20,6 +20,7 @@ enum Area: Int, CaseIterable, Identifiable {
         case .alvas: "Alvás"
         case .etel: "Étel"
         case .edzes: "Edzés"
+        case .sport: "Sport"
         case .energia: "Energia"
         case .suly: "Súly"
         case .forma: "Forma"
@@ -36,7 +37,7 @@ enum Area: Int, CaseIterable, Identifiable {
         case .edzes: .mozgas
         case .energia: .pulzus
         case .forma: .forma
-        case .nap, .penz, .level, .suly: nil
+        case .nap, .penz, .level, .suly, .sport: nil
         }
     }
 
@@ -47,13 +48,14 @@ enum Area: Int, CaseIterable, Identifiable {
         case .penz: .penz
         case .level: .level
         case .suly: .suly
+        case .sport: .sport
         default: hue
         }
     }
 
     /// The day is live but has no metric room: it opens the day's own page instead of a drill-down. Pénz and Súly
     /// are live without a metric: their orbs read their own stores, not the brief (`mezo-r36n9.153`, `.158`).
-    var live: Bool { hue != nil || self == .nap || self == .penz || self == .suly }
+    var live: Bool { hue != nil || self == .nap || self == .penz || self == .suly || self == .sport }
 
     /// The orb's four colours. The world's own where there is one; the day's is Boop's cool teal.
     var orb: [Color] {

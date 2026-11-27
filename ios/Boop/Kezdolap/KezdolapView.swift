@@ -314,6 +314,7 @@ struct KezdolapView: View {
         case "penz": return .room(.penz)
         case "level": return .room(.level)
         case "suly": return .room(.suly)
+        case "sport": return .room(.sport)
         case "nap-oldal": return .day
         default: return nil
         }
