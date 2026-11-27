@@ -11,7 +11,13 @@ Look: **Napkelte** — [spec](../docs/superpowers/specs/2026-11-10-boop-napkelte
 - `Boop.xcodeproj` — app target `Boop` (bundle `io.mrkuhne.boop`) + unit tests `BoopTests`.
 - `Boop/` — screens, one folder per area (file-system synchronized group: new files are picked up automatically).
 - `BoopKit/` — local Swift package: `BoopAPI` (client generated from the backend contract),
-  `BoopCore` (session, token, API wiring), `BoopDesign` (the Napkelte kit in `Napkelte/`, plus the remaining Lágy tokens and glyph assets).
+  `BoopCore` (session, token, API wiring), `BoopDesign` (the Napkelte kit in `Napkelte/`, plus the remaining Lágy tokens and glyph assets),
+  `BoopShared` (the widget snapshot and the shared-Keychain store, linked by the app and the widget extension).
+- `BoopWidgets/` — widget extension `io.mrkuhne.boop.widgets`: the workout Live Activity and the Következő / Mai nap /
+  Lock Screen widgets. `BoopLive/` — sources compiled into both the app and the extension (activity attributes, the
+  widget and Live Activity intents; their `perform` runs in the app). The free team has **no App Group**, so app and
+  widgets share data through the Keychain access group `$(AppIdentifierPrefix)io.mrkuhne.boop.shared`
+  (`Boop.entitlements`, `BoopWidgets.entitlements`).
 - `scripts/sync-openapi.sh` — copies `api/openapi.yml` into `BoopKit/Sources/BoopAPI/openapi.yaml`
   (rewriting the 3.1-style `exclusiveMinimum: N` the Swift generator rejects); `--check` fails when stale.
 
@@ -61,7 +67,7 @@ exercise rows and numbers are invented, and no workout is saved.
 | `-previewScroll 850` | tab pages open scrolled to that offset |
 | `-previewOpen capture\|account` | opens the "+" capture sheet (the nine quick-log doors + the meal chips) or the account sheet |
 | `-reminders page\|edit\|edit-linked\|denied` | seeds six sample reminders (invented; nothing reaches AlarmKit or notifications) and opens the Emlékeztetők page (`mezo-r36n9.172`): `edit` also opens a new reminder's edit sheet filled as in the spike, `edit-linked` the supplement-linked reminder's sheet, `denied` shows the row states „Ébresztő helyett értesítés” / „Nem sikerült beállítani” / notifications off; `-previewOpen reminderNew` opens the blank edit sheet (the page's own "+"; the "+" sheet's door opens the page); the supplement list sheet with its „Emlékeztess” rows is `-previewHome etel -etelSheet supplements` |
-| `-previewMaReminders YES` | same sample reminders; with `-previewHome nap` Ma shows its „Emlékeztetők” fold under the wall |
+| `-previewMaReminders YES` | same sample reminders; with `-previewHome nap` Ma shows its „Emlékeztetők” fold under the wall. Also writes the widget snapshot: add Boop's Következő / Mai nap from the Home Screen editor (long-press → edit → Add Widget → Boop) and tick on Mai nap. The Simulator's Lock Screen editor does not open — check the Lock Screen line on the phone |
 | `-previewOpen water\|supplements\|sport\|weight\|sleep\|journal` | opens one quick-log sheet of the "+" (víz · kiegészítők · sport · súly · alvás · napló) |
 | `-previewLearning YES` | the brief is "learning" (Forma unknown, 9/14 nights): the ring blanks Forma alone, the other orbs keep their numbers |
 | `-previewHome suly -sulyTab Ma\|Test\|Napló` | the Súly area (`mezo-r36n9.158`) on invented figures from `Suly/SulyPreview.swift` (the Évad preview's season: 84,1 kg → 82, planned −0,4 kg a week, the ring says 84); `-sulyState full\|noseason\|empty\|offline\|error` (no active season · no weigh-ins and no trend · no net, cache primed five hours old · the server failing) |

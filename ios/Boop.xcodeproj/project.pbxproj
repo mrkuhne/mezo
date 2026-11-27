@@ -11,6 +11,8 @@
 		B0000000000000000000A002 /* BoopCore in Frameworks */ = {isa = PBXBuildFile; productRef = B0000000000000000000A102 /* BoopCore */; };
 		B0000000000000000000A003 /* BoopDesign in Frameworks */ = {isa = PBXBuildFile; productRef = B0000000000000000000A103 /* BoopDesign */; };
 		B0000000000000000000A004 /* BoopDesign in Frameworks */ = {isa = PBXBuildFile; productRef = B0000000000000000000A104 /* BoopDesign */; };
+		B0000000000000000000A006 /* BoopShared in Frameworks */ = {isa = PBXBuildFile; productRef = B0000000000000000000A105 /* BoopShared */; };
+		B0000000000000000000A007 /* BoopShared in Frameworks */ = {isa = PBXBuildFile; productRef = B0000000000000000000A106 /* BoopShared */; };
 		B0000000000000000000A005 /* BoopWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B00000000000000000000021 /* BoopWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
@@ -66,11 +68,12 @@
 				B0000000000000000000A001 /* BoopAPI in Frameworks */,
 				B0000000000000000000A002 /* BoopCore in Frameworks */,
 				B0000000000000000000A003 /* BoopDesign in Frameworks */,
+				B0000000000000000000A006 /* BoopShared in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		B00000000000000000000014 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-		B00000000000000000000024 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (B0000000000000000000A004 /* BoopDesign in Frameworks */,); runOnlyForDeploymentPostprocessing = 0; };
+		B00000000000000000000024 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (B0000000000000000000A004 /* BoopDesign in Frameworks */, B0000000000000000000A007 /* BoopShared in Frameworks */,); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -115,6 +118,7 @@
 				B0000000000000000000A101 /* BoopAPI */,
 				B0000000000000000000A102 /* BoopCore */,
 				B0000000000000000000A103 /* BoopDesign */,
+				B0000000000000000000A105 /* BoopShared */,
 			);
 			productName = Boop;
 			productReference = B00000000000000000000001 /* Boop.app */;
@@ -150,6 +154,7 @@
 			name = BoopWidgets;
 			packageProductDependencies = (
 				B0000000000000000000A104 /* BoopDesign */,
+				B0000000000000000000A106 /* BoopShared */,
 			);
 			productName = BoopWidgets;
 			productReference = B00000000000000000000021 /* BoopWidgets.appex */;
@@ -329,6 +334,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
+				CODE_SIGN_ENTITLEMENTS = BoopWidgets.entitlements;
 				INFOPLIST_FILE = "BoopWidgets-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Boop;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
@@ -354,6 +360,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
+				CODE_SIGN_ENTITLEMENTS = BoopWidgets.entitlements;
 				INFOPLIST_FILE = "BoopWidgets-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Boop;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
@@ -391,6 +398,8 @@
 		B0000000000000000000A102 /* BoopCore */ = {isa = XCSwiftPackageProductDependency; productName = BoopCore; };
 		B0000000000000000000A103 /* BoopDesign */ = {isa = XCSwiftPackageProductDependency; productName = BoopDesign; };
 		B0000000000000000000A104 /* BoopDesign */ = {isa = XCSwiftPackageProductDependency; productName = BoopDesign; };
+		B0000000000000000000A105 /* BoopShared */ = {isa = XCSwiftPackageProductDependency; productName = BoopShared; };
+		B0000000000000000000A106 /* BoopShared */ = {isa = XCSwiftPackageProductDependency; productName = BoopShared; };
 /* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = B0000000000000000000000A /* Project object */;

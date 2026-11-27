@@ -93,6 +93,7 @@ enum ReminderHub {
         if let old = scheduler { Task { await headless?.value; await old.signedOut() } }
         if let old = restEnd { Task { await old.signedOut() } }
         restEnd = nil
+        WidgetSnapshotWriter.clear()     // nothing of the account stays on the Home or Lock Screen
         store = nil
         scheduler = nil
         userId = nil
