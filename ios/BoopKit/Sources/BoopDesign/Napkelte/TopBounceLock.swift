@@ -8,8 +8,8 @@ import UIKit
 public extension View {
     /// Apply to the **content inside** a full-screen page's `ScrollView` (not to the scroll view itself): pulling the
     /// page down past its top no longer drags the top bar and the sky with it and opens an empty band above them.
-    /// The bottom keeps its bounce, and a scroll view that carries a pull-to-refresh is left alone (the pull is the
-    /// gesture there). Not for sheets: a sheet's pull-down is how it closes.
+    /// The bottom keeps its bounce. No page pulls down to refresh (owner, 2026-11-27): a page that needs a reload
+    /// offers a button. Not for sheets: a sheet's pull-down is how it closes.
     func nkTopBounceLock() -> some View {
         background(NKTopBounceLock().frame(width: 0, height: 0).accessibilityHidden(true))
     }
@@ -38,7 +38,6 @@ struct NKTopBounceLock: UIViewRepresentable {
         }
 
         static func clamp(_ sv: UIScrollView) {
-            guard sv.refreshControl == nil else { return }
             let top = -sv.adjustedContentInset.top
             if sv.contentOffset.y < top { sv.contentOffset.y = top }
         }

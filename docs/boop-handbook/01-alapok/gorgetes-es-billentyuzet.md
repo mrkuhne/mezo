@@ -6,7 +6,7 @@ allapot: Élesben
 hol: [iPhone app]
 szulo: navigacio
 szakasz: [Kezdőlap]
-osszefoglalo: A lapok teteje (a boop felirat, a vissza nyíl, a lap feje) nem húzható le, így nem nyílik fölötte üres szürke csík; a billentyűzet bárhol bezárul, ha mellé koppintasz.
+osszefoglalo: Egyik lap teteje sem (a boop felirat, a vissza nyíl, a lap feje) nem húzható le, így nem nyílik fölötte üres szürke csík; nincs lehúzásra frissítés; a billentyűzet bárhol bezárul, ha mellé koppintasz.
 ---
 
 ## Mit csinál
@@ -29,5 +29,5 @@ A tulajdonos kérése (2026-11-27): a lehúzható tető és a bezárhatatlan bil
 
 ## Mi marad ki
 - A **felcsúszó lapok** lehúzása marad: ott a lehúzás zárja be a lapot.
-- A **lehúzásra frissülő** oldalak (az Étel szoba és a Mezociklusok lista) továbbra is lehúzhatók, mert ott a lehúzás
-  maga a frissítés.
+- **Lehúzásra frissítés nincs többé** sehol (a tulajdonos döntése, 2026-11-27): az Étel szobát a fejében álló
+  Frissítés gomb frissíti, a Mezociklusok lista pedig minden megnyitáskor magától frissül.
