@@ -134,7 +134,7 @@ struct DaySheet: View {
     /// B7 K3: *Mit tennél át?* opens the Átrendezés page — presented here, at the page's level (boop-ios.md §9).
     @State private var atrendezes = false
     @Environment(KapacitasStore.self) private var kapacitasStore: KapacitasStore?
-    @Environment(\.openPlace) private var openPlace
+    @Environment(\.openDestination) private var openDestination
 
     private var state: DayConflict {
         let s = brief.day.session
@@ -188,7 +188,7 @@ struct DaySheet: View {
         .defaultScrollAnchor(previewBottom ? .bottom : nil)
         .fullScreenCover(isPresented: $atrendezes) {
             AtrendezesPage(monday: kapacitasMonday(of: brief.date), crumb: "A napod", close: { atrendezes = false },
-                           ask: { atrendezes = false; close(); openPlace(.boop) })
+                           ask: { atrendezes = false; close(); openDestination(.chat) })
                 .environment(kapacitasStore)
         }
         .onAppear {

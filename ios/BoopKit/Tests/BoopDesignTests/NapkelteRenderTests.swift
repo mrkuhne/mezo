@@ -38,13 +38,15 @@ func pixel(_ img: UIImage, x: Int, y: Int) -> (Int, Int, Int)? {
 }
 
 @Test @MainActor func outlinedGlyphsRender() {
-    for n in ["check-ink", "clock-ink", "camera-ink", "book-sage", "sun-ink", "mic", "offline", "e-penz", "e-level", "body-cream", "cycle-ink"] {
+    for n in ["check-ink", "clock-ink", "camera-ink", "book-sage", "sun-ink", "mic", "offline", "e-penz", "e-level", "body-cream", "cycle-ink",
+              "evad-ink", "most-ink", "het-ink", "terv-ink", "kiserlet-ink", "napok-ink", "atnezes-ink"] {
         #expect(render(NKGlyph(n, .white, size: 22), width: 22, height: 22) != nil, "glyph \(n)")
     }
 }
 
 @Test func outlinedSetCoversTheBlobbingGlyphs() {
-    #expect(NKGlyph.outlined == ["check-ink", "clock-ink", "camera-ink", "book-sage", "mic", "offline", "e-penz", "e-level", "body-cream", "cup-cream", "cycle-ink"])
+    #expect(NKGlyph.outlined == ["check-ink", "clock-ink", "camera-ink", "book-sage", "mic", "offline", "e-penz", "e-level", "body-cream", "cup-cream", "cycle-ink",
+                                "evad-ink", "most-ink", "het-ink", "terv-ink", "kiserlet-ink", "napok-ink", "atnezes-ink"])
 }
 
 @Test @MainActor func pillRendersAtAccessibilitySize() {
@@ -99,4 +101,9 @@ func pixel(_ img: UIImage, x: Int, y: Int) -> (Int, Int, Int)? {
         let big = naturalWidth(Text("Jó napod lesz").nkFont(17, design: design).dynamicTypeSize(.accessibility3))
         #expect(big > small * 1.3, "design \(design): \(small) → \(big)")
     }
+}
+
+/// The barless home's floating „+" (`mezo-r36n9.196`).
+@Test @MainActor func floatingPlusRenders() {
+    #expect(render(NKFloatingPlus(raised: true) {}, height: 140) != nil)
 }

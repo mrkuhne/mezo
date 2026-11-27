@@ -48,6 +48,8 @@ func areaTabs(_ hue: Hue, brief: Brief) -> AreaTabs {
         AreaTabs(names: ["Ma", "Figyelt", "Szabályok", "Fiókok"], badges: [:])
     case .suly:
         AreaTabs(names: ["Ma", "Test", "Napló"], badges: [:])
+    case .evad:
+        AreaTabs(names: ["Most", "Hét", "Terv", "Kísérlet"], badges: [:])
     }
 }
 
@@ -65,6 +67,7 @@ func areaName(_ hue: Hue) -> String {
     case .penz: "Pénz"
     case .level: "Levél"
     case .suly: "Súly"
+    case .evad: "Évad"
     }
 }
 
@@ -79,6 +82,7 @@ func areaGlyph(_ hue: Hue) -> String {
     case .penz: "e-penz"
     case .level: "e-level"
     case .suly: "scale-ink"
+    case .evad: "evad-ink"
     }
 }
 
@@ -104,7 +108,7 @@ struct AreaRoom: View {
     let onLink: (Brief.Link) -> Void
     @Environment(\.dismiss) private var dismiss
     @Environment(\.closeRoom) private var closeRoom
-    @Environment(\.openPlace) private var openPlace
+    @Environment(\.openDestination) private var openDestination
     @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
     @Environment(RitmusRouter.self) private var router: RitmusRouter?
     @State private var selected = "Ma"
@@ -138,7 +142,7 @@ struct AreaRoom: View {
                    actions: [NKAreaAction(glyph: "search-ink", label: "Keresés") { ctx.toast(soonToast("Keresés · \(areaName(hue))")) },
                              NKAreaAction(glyph: "repeat-deep", label: "Beállítások") { ctx.toast(soonToast("\(areaName(hue)) beállításai")) }],
                    onBack: { if let closeRoom { closeRoom() } else { dismiss() } },
-                   onAsk: { openPlace(.boop) }) {
+                   onAsk: { openDestination(.chat) }) {
             content
             Color.clear.frame(height: 10)
         }
@@ -203,7 +207,7 @@ struct AreaRoom: View {
             }
         }
         NKBare("AZ ALVÁS TERÜLET", hue: hue) { alvasMenu }
-        NKAskRow(hue: hue, text: "Kérdezd meg Boopot az alvásodról") { openPlace(.boop) }
+        NKAskRow(hue: hue, text: "Kérdezd meg Boopot az alvásodról") { openDestination(.chat) }
     }
 
     private var alvasMenu: some View {
@@ -221,12 +225,12 @@ struct AreaRoom: View {
         if !brief.day.observations.isEmpty {
             NKBare("AMI HATOTT RÁ", hue: hue) { NKList(observationItems, hue: hue) }
         }
-        NKAskRow(hue: hue, text: "Kérdezd meg Boopot, mitől alszol jobban") { openPlace(.boop) }
+        NKAskRow(hue: hue, text: "Kérdezd meg Boopot, mitől alszol jobban") { openDestination(.chat) }
     }
 
     @ViewBuilder private var alvasElozmenyek: some View {
         daysBehind
-        NKAskRow(hue: hue, text: "Kérdezd meg Boopot a hosszú távú alvásodról") { openPlace(.boop) }
+        NKAskRow(hue: hue, text: "Kérdezd meg Boopot a hosszú távú alvásodról") { openDestination(.chat) }
     }
 
     private var nightSub: String {
@@ -269,7 +273,7 @@ struct AreaRoom: View {
             }
         }
         NKBare("AZ ENERGIA TERÜLET", hue: hue) { energiaMenu }
-        NKAskRow(hue: hue, text: "Kérdezd meg Boopot a közérzetedről") { openPlace(.boop) }
+        NKAskRow(hue: hue, text: "Kérdezd meg Boopot a közérzetedről") { openDestination(.chat) }
     }
 
     private var energiaMenu: some View {
@@ -285,7 +289,7 @@ struct AreaRoom: View {
 
     @ViewBuilder private var energiaCheckinek: some View {
         NKBare("A MAI KÖRÖK", hue: hue) { NKRowList(checkinRows, hue: hue) }
-        NKAskRow(hue: hue, text: "Kérdezd meg Boopot az energiádról") { openPlace(.boop) }
+        NKAskRow(hue: hue, text: "Kérdezd meg Boopot az energiádról") { openDestination(.chat) }
     }
 
     @ViewBuilder private var energiaMintak: some View {
@@ -295,7 +299,7 @@ struct AreaRoom: View {
         } else {
             NKBare("AMIT ÉSZREVETTEM", hue: hue) { NKList(observationItems, hue: hue) }
         }
-        NKAskRow(hue: hue, text: "Kérdezd meg Boopot a mintáidról") { openPlace(.boop) }
+        NKAskRow(hue: hue, text: "Kérdezd meg Boopot a mintáidról") { openDestination(.chat) }
     }
 
     private var energiaStats: [NKStat] {
@@ -383,7 +387,7 @@ struct AreaRoom: View {
             NKStat(value: brief.nightsKnown > 0 ? "\(brief.nightsKnown)" : nil, unit: "éjszaka", label: "amit már ismerek"),
         ], hue: hue)
         NKBare("MI HAT RÁ MA", hue: hue) { NKRowList(otherAreas, hue: hue) }
-        NKAskRow(hue: hue, text: "Kérdezd meg Boopot a formádról") { openPlace(.boop) }
+        NKAskRow(hue: hue, text: "Kérdezd meg Boopot a formádról") { openDestination(.chat) }
     }
 
     @ViewBuilder private var formaMiHatRa: some View {
@@ -400,7 +404,7 @@ struct AreaRoom: View {
             info = AreaInfo(title: "Hogyan számolom a Formát?",
                             body: "A Forma nem orvosi mérőszám, hanem a saját előzményeidhez méri, mire vagy ma képes: az alvásodból, a nyugalmi pulzusodból és annak változékonyságából, az elmúlt napok terheléséből és abból, amit a check-inekben mondasz. Ezért mozdul el egy rossz éjszaka után, és ezért nem hasonlítható össze a másokéval.")
         }
-        NKAskRow(hue: hue, text: "Kérdezd meg Boopot, mi befolyásolja") { openPlace(.boop) }
+        NKAskRow(hue: hue, text: "Kérdezd meg Boopot, mi befolyásolja") { openDestination(.chat) }
     }
 
     /// The other four areas as rows, each with its own score — Forma is the sum of them, so this is the one place
@@ -422,7 +426,7 @@ struct AreaRoom: View {
     @ViewBuilder private var plannedTab: some View {
         let t = plannedText
         NKNotLiveYet(hue: hue, title: t.title, line: t.line)
-        NKAskRow(hue: hue, text: "Kérdezd meg Boopot a pénzedről") { openPlace(.boop) }
+        NKAskRow(hue: hue, text: "Kérdezd meg Boopot a pénzedről") { openDestination(.chat) }
     }
 
     private var plannedText: (title: String, line: String) {

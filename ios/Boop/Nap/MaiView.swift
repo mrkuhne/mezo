@@ -19,7 +19,7 @@ func hue(for key: MetricKey) -> Hue {
 /// total, and `Hue.metrics` is the list to iterate when a metric is what you mean.
 func metricKey(for hue: Hue) -> MetricKey {
     switch hue {
-    case .forma, .penz, .level, .suly: .forma
+    case .forma, .penz, .level, .suly, .evad: .forma
     case .alvas: .alvas
     case .mozgas: .mozgas
     case .fuel: .fuel
@@ -101,11 +101,19 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
     let sheets: (MaiContext) -> Sheets
 
     init(brief: Brief, initialRoom: Hue? = nil, onHome: (@MainActor @Sendable () -> Void)? = nil,
+         initialNapTab: NapTab = .ma,
          @ViewBuilder below: @escaping (MaiContext) -> Below,
          @ViewBuilder drill: @escaping (Hue, MaiContext) -> Drill, sheets: @escaping (MaiContext) -> Sheets) {
         self.brief = brief; self.initialRoom = initialRoom; self.onHome = onHome
         self.below = below; self.drill = drill; self.sheets = sheets
+        _napTab = State(initialValue: initialNapTab)
     }
+
+    /// The Nap room's tab on screen.
+    @State private var napTab: NapTab
+    /// The day opened from the Napok tab (its sheet hangs here, at page level).
+    @State private var openDay: NapOpenDay?
+    @Environment(\.openDestination) private var openDestination
 
 
     /// The rooms pushed over Ma (at most one in B2).
@@ -127,19 +135,15 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
     /// The label of the toast's action (nil = "Visszavonom" when there is an undo).
     @State private var toastAction: String?
     @Environment(\.openURL) private var openURL
-    @Environment(\.openAccount) private var openAccount
     @Environment(\.openMeal) private var openMeal
     @Environment(\.foodClient) private var food
     /// B3: the hero's check-in pill opens the full-screen check-in (the evening one, the close).
     @Environment(RitmusRouter.self) private var router: RitmusRouter?
     @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
 
-    private var copy: MaiCopy { maiCopy(brief, metricKey(for: selected)) }
     private var now: Date { _ = clockTick; return BoopClock.now() }
     private var evening: Bool { isEvening(now) }
     private var phase: DayPhase { DayPhase.at(now) }
-    /// Evening's dusk or kímélő's calm over the page; nil = the selected orb's own sky.
-    private var sky: NKSky? { maiSky(evening: evening, recovery: brief.day.recovery != nil) }
     private var context: MaiContext {
         MaiContext(hue: selected, motion: motion,
                    toast: { show($0) }, undoToast: { show($0, undo: $1) },
@@ -148,7 +152,6 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
     }
 
     var body: some View {
-        let c = copy
         let ctx = context
         Group {
             if let initialRoom, let onHome {
@@ -159,25 +162,31 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
                     .onAppear { setRoomOpen(true) }
             } else {
                 NavigationStack(path: $path) {
-                    // A short head, not a screenful: the day's own picture ("Mai nap") has to be visible without
-                    // scrolling, the way the spike shows it.
-                    NKTabPage(hue: selected, sky: sky, heroHeight: 240,
-                              compact: NKCompact(palette: selected.orb, title: phase.name, value: clockLabel(now),
-                                                 // no score in the capsule either: it left the home with
-                                                 // the hero's number (decision #13)
-                                                 line: c.headline)) {
-                        hero(c)
-                    } content: {
+                    // The Nap room (decision #135): a ring room like every other — Ma is the day page the centre
+                    // used to open, Napok the last 14 days (the old Napló place).
+                    NapRoomPage(brief: brief, tab: $napTab, onBack: onHome,
+                                onAsk: { openDestination(.chat) }) {
+                        if let r = brief.day.recovery {
+                            KimeloBanner(recovery: r) { show(soonToast("Kilépés a kímélő módból")) }
+                        }
                         below(ctx)
+                    } napok: {
+                        NapokTab { openDay = NapOpenDay(id: $0) }
                     }
                     .toolbar(.hidden, for: .navigationBar)
-                    // the shell's painted landscape shows through the stack
                     .containerBackground(.clear, for: .navigation)
                     .navigationDestination(for: Hue.self) { h in drill(h, ctx) }
                 }
             }
         }
         .modifier(sheets(ctx))
+        .sheet(item: $openDay) { day in
+            if let ritmus {
+                NaploDayDetail(env: ritmus, date: day.id)
+                    .presentationDetents([.large]).presentationBackground(NK.ground).presentationCornerRadius(34)
+                    .presentationDragIndicator(.visible)
+            }
+        }
         .onChange(of: path.isEmpty) { _, empty in setRoomOpen(!empty) }
         .onAppear { if initialRoom == nil { setRoomOpen(!path.isEmpty) } }
         .nkToast($toast, action: undo == nil ? nil : (toastAction ?? SessionText.undo)) { undo?(); undo = nil }
@@ -189,31 +198,6 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
         .task(id: BedtimeRefreshKey(target: reminderTarget(brief), settings: ReminderHub.store?.file.builtIn ?? BoopReminderSettings())) {
             await reminder.refresh(target: reminderTarget(brief))
         }
-    }
-
-    /// The title row, the day's date and the wordmark (the Élet spike's head, owner 2026-11-16).
-    ///
-    /// The **phase strip is gone**: Reggel · Napközben · Este were a switch for something he scrolls anyway, and
-    /// he chose one scroll with headings instead. The **row of mini orbs is gone too** (L0/b): the ring is the
-    /// app's entrance, so a second menu here would be the same menu twice.
-    @ViewBuilder private var header: some View {
-        NKTitleRow(bellCount: 0, onBell: { show(soonToast("Értesítések")) }, onPlus: nil, onAvatar: openAccount,
-                   onBack: onHome)
-            .padding(.top, 54)
-        Text(dayHeadline(brief.date))
-            .nkFont(12, design: .monospaced).foregroundStyle(.white.opacity(0.75))
-            .padding(.top, 14)
-        Text("boop")
-            .font(.custom(Lagy.outfitFamily, size: 33).weight(.light)).tracking(4.5)
-            .foregroundStyle(.white)
-            .padding(.top, 10)
-            .accessibilityHidden(true)
-        Rectangle()
-            .fill(LinearGradient(colors: [.white.opacity(0), .white.opacity(0.22), .white.opacity(0)],
-                                 startPoint: .leading, endPoint: .trailing))
-            .frame(height: 0.8)
-            .padding(.horizontal, 44)
-            .padding(.top, 12)
     }
 
     /// Simulator review: `-previewOrb alvas` opens on that orb (Hue name, lower case, no accents).
@@ -237,26 +221,6 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
     private func openRoom(_ h: Hue) {
         guard path.isEmpty else { return }
         path.append(h)
-    }
-
-    /// The day page's head (the Élet spike): the title row, the date, the wordmark — and then the page itself.
-    ///
-    /// Everything else left the head on the owner's call (2026-11-16): the big rising orb with its caps, 42 pt
-    /// verdict and sentence (the orbs are the ring's job; Boop's morning words live in *A reggeli összefoglaló*,
-    /// which reads them aloud too), and then the **lens action row** — he saw it in the build and said it does
-    /// not belong there. The bedtime reminder keeps its switch on Alvás's bedtime card; the one-minute breathing
-    /// exercise lost its door and gets one on the Energia page (`mezo-r36n9.59`).
-    private func hero(_ c: MaiCopy) -> some View {
-        VStack(spacing: 0) {
-            header.nkHeroEnd()     // the compact capsule arrives as the wordmark slides under the top bar
-            if let r = brief.day.recovery {
-                KimeloBanner(recovery: r) { show(soonToast("Kilépés a kímélő módból")) }
-                    .padding(.top, 14)
-            }
-            Spacer(minLength: 0)
-        }
-        // Never squeeze the hero (labels would shrink); a tall hero pushes the cards down instead.
-        .fixedSize(horizontal: false, vertical: true)
     }
 
     private func show(_ text: String, undo: (() -> Void)? = nil, action: String? = nil) {

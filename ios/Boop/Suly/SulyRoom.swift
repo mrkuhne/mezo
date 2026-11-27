@@ -8,7 +8,7 @@ import BoopDesign
 struct SulyRoom: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.closeRoom) private var closeRoom
-    @Environment(\.openPlace) private var openPlace
+    @Environment(\.openDestination) private var openDestination
     @Environment(\.openPick) private var openPick
     @Environment(SulyStore.self) private var store: SulyStore?
     @SceneStorage("suly.tab") private var selected: String = "Ma"
@@ -41,12 +41,12 @@ struct SulyRoom: View {
                    actions: [NKAreaAction(glyph: "plus-ink", label: "Súly rögzítése") { openPick(.quick(.weight)) },
                              NKAreaAction(glyph: "repeat-deep", label: "Frissítés") { Task { await store?.load(force: true) } }],
                    onBack: { if let closeRoom { closeRoom() } else { dismiss() } },
-                   onAsk: { openPlace(.boop) }) {
+                   onAsk: { openDestination(.chat) }) {
             switch selected {
-            case "Test": SulyTest(store: store, openInfo: { info = $0 }, ask: { openPlace(.boop) })
+            case "Test": SulyTest(store: store, openInfo: { info = $0 }, ask: { openDestination(.chat) })
             case "Napló": SulyNaplo(store: store, capture: { openPick(.quick(.weight)) })
-            default: SulyMa(store: store, openInfo: { info = $0 }, openEvad: { openPlace(.terv) },
-                            capture: { openPick(.quick(.weight)) }, ask: { openPlace(.boop) })
+            default: SulyMa(store: store, openInfo: { info = $0 }, openEvad: { openDestination(.room(RoomEntry(.evad))) },
+                            capture: { openPick(.quick(.weight)) }, ask: { openDestination(.chat) })
             }
             Color.clear.frame(height: 10)
         }

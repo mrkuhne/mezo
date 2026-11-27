@@ -72,7 +72,7 @@ enum PenzPage: Identifiable, Equatable {
 struct PenzRoom: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.closeRoom) private var closeRoom
-    @Environment(\.openPlace) private var openPlace
+    @Environment(\.openDestination) private var openDestination
     @Environment(PenzStore.self) private var store: PenzStore?
     @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
     @SceneStorage("penz.tab") private var selected: String = PenzTab.ma.rawValue
@@ -123,7 +123,7 @@ struct PenzRoom: View {
                    actions: [NKAreaAction(glyph: "search-ink", label: "Keresés") { toast = soonToast("Keresés · Pénz") },
                              NKAreaAction(glyph: "repeat-deep", label: "Frissítés") { Task { await reload() } }],
                    onBack: { if let closeRoom { closeRoom() } else { dismiss() } },
-                   onAsk: { openPlace(.boop) }) {
+                   onAsk: { openDestination(.chat) }) {
             content
             Color.clear.frame(height: 10)
         }
@@ -254,16 +254,16 @@ struct PenzRoom: View {
     @ViewBuilder private var content: some View {
         switch tab {
         case .ma: PenzMa(store: store, open: { sheet = $0 }, openNews: { page = .news($0) },
-                         openPenzem: { selected = PenzTab.penzem.rawValue }, openPage: { page = $0 }, ask: { openPlace(.boop) })
+                         openPenzem: { selected = PenzTab.penzem.rawValue }, openPage: { page = $0 }, ask: { openDestination(.chat) })
         case .koltes: PenzKoltes(store: store, open: { sheet = $0 }, openMonth: { page = .month },
-                                 onRefused: { refusedCash = $0 }, ask: { openPlace(.boop) })
+                                 onRefused: { refusedCash = $0 }, ask: { openDestination(.chat) })
         case .penzem:
             PenzPenzem(store: store, open: { sheet = $0 }, openSleeve: { page = .sleeve($0) },
                        openPractice: { selected = PenzTab.gyakorlas.rawValue },
                        openCatalog: { page = .catalog(returnTo: nil) }, openWeekly: { page = .weekly($0) },
-                       ask: { openPlace(.boop) })
+                       ask: { openDestination(.chat) })
         case .gyakorlas:
-            PenzGyakorlas(store: store, open: { sheet = $0 }, openJournal: { page = .journal }, ask: { openPlace(.boop) })
+            PenzGyakorlas(store: store, open: { sheet = $0 }, openJournal: { page = .journal }, ask: { openDestination(.chat) })
         }
     }
 
@@ -285,7 +285,7 @@ struct PenzRoom: View {
             if let store { PenzMonthPage(store: store) { page = nil } }
         case .news(let item):
             PenzNewsPage(item: item, onBack: { page = nil },
-                         ask: { page = nil; openPlace(.boop) },
+                         ask: { page = nil; openDestination(.chat) },
                          openPenzem: { page = nil; selected = PenzTab.penzem.rawValue })
         case .sleeve(let s):
             if let store {

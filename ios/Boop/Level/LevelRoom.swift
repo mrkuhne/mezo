@@ -17,7 +17,7 @@ import BoopDesign
 struct LevelRoom: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.closeRoom) private var closeRoom
-    @Environment(\.openPlace) private var openPlace
+    @Environment(\.openDestination) private var openDestination
     @Environment(\.scenePhase) private var scenePhase
     @Environment(LevelStore.self) private var store: LevelStore?
     @SceneStorage("level.tab") private var selected: String = LevelTab.ma.rawValue
@@ -49,7 +49,7 @@ struct LevelRoom: View {
                    tabs: LevelTab.allCases.map { NKAreaTab($0.rawValue, badge: $0 == .ma ? badge : 0) },
                    selectedTab: $selected,
                    onBack: { if let closeRoom { closeRoom() } else { dismiss() } },
-                   onAsk: { openPlace(.boop) }) {
+                   onAsk: { openDestination(.chat) }) {
             content
             Color.clear.frame(height: 10)
         }
@@ -74,11 +74,11 @@ struct LevelRoom: View {
             switch tab {
             case .ma:
                 LevelMa(store: store, now: Date(), onFiokok: { withAnimation { selected = LevelTab.fiokok.rawValue } },
-                        onAsk: { openPlace(.boop) }, toast: { toast = $0 })
+                        onAsk: { openDestination(.chat) }, toast: { toast = $0 })
             case .figyelt:
                 NKNotLiveYet(hue: hue, title: "Amit figyelsz",
                              line: "Termékek és árak, amiket kérsz, hogy tartsak szemmel — és szólok, ha tényleg olcsóbb.")
-                NKAskRow(hue: hue, text: "Kérdezd meg Boopot a leveleidről") { openPlace(.boop) }
+                NKAskRow(hue: hue, text: "Kérdezd meg Boopot a leveleidről") { openDestination(.chat) }
             case .szabalyok:
                 LevelSzabalyok(store: store, toast: { toast = $0 })
             case .fiokok:

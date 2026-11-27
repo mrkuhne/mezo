@@ -72,11 +72,21 @@ struct KezdolapRingTests {
         #expect(ringItem(.penz, brief: nil, penz: allowance(remaining: 0, budget: 7_700_000)).display == "0")
     }
 
-    /// The ninth orb (owner 2026-11-24, `mezo-r36n9.158`): Súly after Energia, live, its number the pace score.
-    @Test func ringHasNineAreasWithSulyAfterEnergia() {
-        #expect(Area.allCases.map(\.name) == ["Nap", "Alvás", "Étel", "Edzés", "Energia", "Súly", "Forma", "Pénz", "Levél"])
+    /// The ninth orb (owner 2026-11-24, `mezo-r36n9.158`) and the tenth (2026-11-27, `.196`, decision #132): Évad
+    /// between Energia and Súly, live, its number this week's adherence.
+    @Test func ringHasTenAreasWithEvadBetweenEnergiaAndSuly() {
+        #expect(Area.allCases.map(\.name) == ["Nap", "Alvás", "Étel", "Edzés", "Energia", "Évad", "Súly", "Forma", "Pénz", "Levél"])
         #expect(Area.suly.world == .suly && Area.suly.hue == nil)
+        #expect(Area.evad.world == .evad && Area.evad.hue == nil && Area.evad.live)
     }
+
+    @Test func evadOrbShowsTheWeekScore() {
+        let i = ringItem(.evad, brief: nil, evad: 78)
+        #expect(i.display == "78" && abs(i.level - 0.78) < 0.001 && i.live)
+    }
+
+    /// No season, or nothing judged yet this week: „–", never 0.
+    @Test func evadOrbWithoutSeasonIsDash() { #expect(ringItem(.evad, brief: nil).display == "–") }
 
     @Test func sulyOrbIsLiveAndShowsThePaceScore() {
         let item = ringItem(.suly, brief: nil, suly: 84)

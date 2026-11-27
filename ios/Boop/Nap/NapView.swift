@@ -8,7 +8,8 @@ import BoopDesign
 struct NapView: View {
     /// Opened from the home screen's ring with that area's room already on screen (nil = the plain page).
     var initialRoom: Hue? = nil
-    /// Opened from the ring's day orb with the day's own sheet already up (nil = no sheet).
+    /// The Nap room's tab to open on (Ma, or Napok — the old Napló place).
+    var initialNapTab: NapTab = .ma
     /// The way back to the home screen's ring (nil = Ma is the place's own root).
     var onHome: (@MainActor @Sendable () -> Void)? = nil
     @Environment(\.openAccount) private var openAccount
@@ -25,7 +26,7 @@ struct NapView: View {
     /// B7 K3: the wall's Átrendezés card opens the page — presented here, at page level (boop-ios.md §9).
     @State private var atrendezes = false
     @Environment(KapacitasStore.self) private var kapacitas: KapacitasStore?
-    @Environment(\.openPlace) private var openPlace
+    @Environment(\.openDestination) private var openDestination
 
     /// What the wall's Átrendezés card calls (nil before sign-in: no store, no card action).
     private var atrendezesOpener: (@MainActor @Sendable () -> Void)? {
@@ -35,7 +36,7 @@ struct NapView: View {
 
     /// *Megbeszélem Boop-pal* on the Átrendezés page: close it, open Boop.
     private var askBoop: @MainActor @Sendable () -> Void {
-        { atrendezes = false; openPlace(.boop) }
+        { atrendezes = false; openDestination(.chat) }
     }
 
     private var state: NapEmptyState {
@@ -68,7 +69,7 @@ struct NapView: View {
                              problem: morning?.problem, forceBrief: forceBrief) {
             case .mai:
                 if let morning, let brief = morning.brief {
-                    MaiView(brief: brief, initialRoom: initialRoom, onHome: onHome) { ctx in
+                    MaiView(brief: brief, initialRoom: initialRoom, onHome: onHome, initialNapTab: initialNapTab) { ctx in
                         cards(brief, morning, ctx)
                     } drill: { hue, ctx in
                         if hue == .fuel {
@@ -84,6 +85,10 @@ struct NapView: View {
                         } else if hue == .level {
                             // Levél's room has its own data (mezo-r36n9.39): the mail API, not the brief.
                             LevelRoom()
+                        } else if hue == .evad {
+                            // Évad's room (decision #132): today's Évad page in a room frame until step 2 gives it
+                            // its own tabs.
+                            EvadPage()
                         } else if hue == .suly {
                             // Súly's room (mezo-r36n9.158): the season's weight course, the trend and the weigh-ins.
                             SulyRoom()

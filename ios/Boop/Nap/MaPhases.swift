@@ -191,7 +191,7 @@ struct MaBelow: View {
     /// A wall card's "Rögzítem" opens the meal composer at page level (boop-ios.md §9).
     @Environment(\.openMeal) private var openMeal
     /// The ask row under the observations sends him to Boop's own place.
-    @Environment(\.openPlace) private var openPlace
+    @Environment(\.openDestination) private var openDestination
     /// Is the day's timeline open? In the morning it is; later it is one row (owner decision #13).
     @State private var napodOpen: Bool?
     @State private var etel = EtelStore()
@@ -441,7 +441,7 @@ struct MaBelow: View {
                                      return store.problem == nil
                                  },
                                  toast: ctx.toast)
-                NKAskRow(hue: ctx.hue, text: "Kérdezd meg Boopot, mit vett még észre") { openPlace(.boop) }
+                NKAskRow(hue: ctx.hue, text: "Kérdezd meg Boopot, mit vett még észre") { openDestination(.chat) }
             }
         }
     }

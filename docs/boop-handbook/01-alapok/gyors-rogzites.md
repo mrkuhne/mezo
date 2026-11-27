@@ -6,19 +6,17 @@ allapot: Élesben
 hol: [iPhone app]
 szulo: 00-attekintes
 szakasz: [B2, B3, B4, B5, Kezdőlap]
-osszefoglalo: Egy lap, ahonnan bármit rögzíthetsz, ami a webes gyors logolásban volt — étkezés, ital, víz, kiegészítők, edzés indítása, sport, súly, check-in, napló, alvás, kiadás —, a menüsor „+” gombjáról; a kezdőlapon öt gyorsajtó a leggyakoribb ötre; a súly, az alvás, a sport és a naplósor egy hétre visszamenőleg is rögzíthető.
+osszefoglalo: Egy lap, ahonnan bármit rögzíthetsz, ami a webes gyors logolásban volt — étkezés, ital, víz, kiegészítők, edzés indítása, sport, súly, check-in, napló, alvás, kiadás —, a lebegő „+” gombról; a súly, az alvás, a sport és a naplósor egy hétre visszamenőleg is rögzíthető.
 ---
 
 ## Mit csinál
-A „+” gomb (a menüsor jobb szélén) egy lapot nyit „Mit rögzítesz?” címmel. A kezdőlapon Boop mondata alatt
-**öt gyorsajtó** áll — **Étkezés · Víz · Súly · Check-in · Napló** —, mindegyik rögtön a saját lapját nyitja, a
-„Mit rögzítesz?” lap nélkül (2026-11-24; a korábbi „Rögzítés” kapszula helyett, amely csak ezt a lapot nyitotta). Rajta minden, ami a régi webes gyors logolásban volt (a tulajdonos döntése, 2026-11-24):
+A lebegő üveg **„+”** gomb (jobb alsó sarok; a kör fölött és egy szoba sávja fölé följebb ülve, a beszélgetésen elrejtve; a képernyőolvasó „Rögzítés”-nek mondja) egy lapot nyit „Mit rögzítesz?” címmel. A kezdőlapon korábban Boop alatt álló **öt gyorsajtó** (Étkezés · Víz · Súly · Check-in · Napló) 2026-11-28 óta nincs — mind az öt ezen a lapon van. Rajta minden, ami a régi webes gyors logolásban volt (a tulajdonos döntése, 2026-11-24):
 
 - **Étkezés** — Fotó · Szöveg · Vonalkód · Recept · Kamra · **Ital**: megnyitja az étkezés rögzítését a választott bejárattal
   (az Ital a hatodik, pont nélküli rekesz — lásd *Italok*);
 - **Víz** — öt gomb (1 · 2 · 3 · 5 · 7,5 dl), egy koppintás, és az Étel szoba vízszámlálója lép;
 - **Kiegészítők** — a csoportjaid (reggel, napközben, este…) egy-egy „Bevettem” gombbal; még egy koppintás visszavonja;
-- **Edzés indítása** — a Ma helyre visz, és megnyitja az Edzés szobát a mai tervvel;
+- **Edzés indítása** — a kezdőlapra visz, és megnyitja az Edzés szobát a mai tervvel;
 - **Sport** — a terven kívüli mozgás: mi volt (röpi, cross, TRX, kerékpár, úszás, foci, kosár, tenisz, túra, egyéb),
   hány perc (húzható skála), mennyire volt nehéz (1–10), és **mikor** (Most · Tegnap · Más időpont);
 - **Súly** — a mérleg száma egy húzható skálán, tized kilónként; onnan indul, ahol legutóbb hagytad; **melyik nap**
@@ -47,7 +45,7 @@ A „+” gomb (a menüsor jobb szélén) egy lapot nyit „Mit rögzítesz?” 
 ## Miért így
 A spec szerint egyetlen gyűjtőlap van minden gyors rögzítésre, hogy ne kelljen keresgélni, melyik helyen kell valamit
 felvinni. A tulajdonos 2026-11-24-én kérte, hogy a lap a webes kilenc ajtót mind tudja, és a kezdőlapon is legyen
-gombja (lásd a döntést: *Gyors rögzítés: a webes kilenc ajtó a „+” lapon, és egy gomb a kezdőlapon*).
+gombja; 2026-11-28-án az alsó sáv eltűntével a „+” lebegő gombbá vált, a kezdőlapi gyorsajtók pedig megszűntek.
 
 ## Beállítások
 Nincs. A kiegészítők listáját az Étel szoba beállításaiban állítod össze.

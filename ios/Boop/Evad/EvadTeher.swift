@@ -13,7 +13,7 @@ struct EvadTeher: View {
     /// B7 K3: *A jövő heted* opens the next week's Átrendezés page (EvadPage presents it).
     var openAtrendezes: @MainActor @Sendable () -> Void = {}
     @Environment(KapacitasStore.self) private var store: KapacitasStore?
-    @Environment(\.openPlace) private var openPlace
+    @Environment(\.openDestination) private var openDestination
 
     private var nextMonday: String { kapacitasNextMonday(after: kapacitasMonday(for: Date())) }
 
@@ -34,7 +34,7 @@ struct EvadTeher: View {
                 .task { await store?.load(force: true) }
                 if let hint = s.deloadForward {
                     NKHighlight(hue: evadHue, label: "Boop javaslata", text: hint.title, sub: hint.body,
-                                actions: [NKHighlightAction("Megbeszélem Boop-pal", action: { openPlace(.boop) })])
+                                actions: [NKHighlightAction("Megbeszélem Boop-pal", action: { openDestination(.chat) })])
                 }
             }
             nextWeek

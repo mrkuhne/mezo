@@ -2175,5 +2175,16 @@
     "munkamenet": "etel-het",
     "mit_kapsz": "A Hét fül hétfőtől vasárnapig mutatja a hetet, nyíllal lapozhatsz visszafelé; a napok oldalra görgethető kártyákon, ugyanabban a sorrendben, mint az oszlopok; a hét részletei kártyán a rögzített napok, a makróátlagok és a hét fontos tényei.",
     "szulo": "mezo-r36n9"
+  },
+  "mezo-r36n9.196": {
+    "cim": "Új kezdőlap sáv nélkül, és az Évad saját szobája vasárnapi átnézéssel",
+    "tipus": "Funkció",
+    "szakasz": "Évad",
+    "terulet": [
+      "Terv",
+      "Alapok"
+    ],
+    "mit_kapsz": "A kezdőlapon tíz gömb, alsó sáv nélkül; az Évad saját gömböt és szobát kap (Most · Hét · Terv · Kísérlet), vasárnap este pedig Boop lépésenként végigvezet a héten és a jövő héten.",
+    "szulo": "mezo-r36n9"
   }
 }

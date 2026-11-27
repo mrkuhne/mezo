@@ -2,29 +2,7 @@ import SwiftUI
 import BoopCore
 import BoopDesign
 
-/// The four places of the spine, in bar order: Ma · Évad · Napló · Boop (Évad was Terv; its key stays `terv`).
-enum ShellTab: Int, CaseIterable {
-    case ma, terv, naplo, boop
-
-    var storageKey: String { ["ma", "terv", "naplo", "boop"][rawValue] }
-    init?(key: String) { guard let t = Self.allCases.first(where: { $0.storageKey == key }) else { return nil }; self = t }
-    /// What the scene storage held: the new keys map to themselves, anything else (the old domain names) lands on Ma.
-    static func restored(_ raw: String) -> ShellTab { ShellTab(key: raw) ?? .ma }
-    /// The colour world the place paints until its page reports another.
-    var defaultHue: Hue { [.forma, evadHue, .alvas, .forma][rawValue] }
-}
-
-/// Lets a page send the owner to another place of the spine, as if he had tapped the bar (the day page's
-/// "Kérdezd meg Boopot" row goes to Boop).
-private struct OpenPlaceKey: EnvironmentKey { static let defaultValue: @MainActor @Sendable (ShellTab) -> Void = { _ in } }
-extension EnvironmentValues {
-    var openPlace: @MainActor @Sendable (ShellTab) -> Void {
-        get { self[OpenPlaceKey.self] }
-        set { self[OpenPlaceKey.self] = newValue }
-    }
-}
-
-/// Tells the shell that a page has a room (a domain drill-down) open over it: the bar steps aside until it closes.
+/// Tells the home screen that a page has a room (a domain drill-down) open over it.
 private struct SetRoomOpenKey: EnvironmentKey { static let defaultValue: @MainActor @Sendable (Bool) -> Void = { _ in } }
 extension EnvironmentValues {
     var setRoomOpen: @MainActor @Sendable (Bool) -> Void {
@@ -33,23 +11,14 @@ extension EnvironmentValues {
     }
 }
 
-/// One sky per place in bar order: what the page last reported, else its default colour world.
-func shellPanels(_ skies: [ShellTab: NKBackdrop]) -> [NKBackdrop] {
-    ShellTab.allCases.map { skies[$0] ?? NKBackdrop(hue: $0.defaultHue, heroHeight: 560, scrollY: 0) }
-}
-
-/// The four places in the floating bar, the "+" beside it, and one painted landscape behind them all: switching
-/// slides it toward the tapped place while the skies blend, the page cross-fades over it, and the bar's capsule
-/// glides to the new icon. The capture and account sheets are presented here, at page level.
+/// The app's frame since the barless home (`mezo-r36n9.196`, decision #134): the home ring is the only root, every
+/// room opens from it, and there is no bottom bar any more — the floating „+" lives on the ring. The capture, account
+/// and daily-loop presentations are hung here, at page level (boop-ios.md §9).
 struct ShellView: View {
     let me: Me
-    @SceneStorage("tab") private var tabKey = "ma"
-    /// The switch in flight: the place we came from, which side the new one sits on, and how far along (0 → 1).
-    @State private var fromTab = ShellTab.ma
-    @State private var direction: CGFloat = 1
-    @State private var progress: Double = 1
-    /// Last sky each place asked for (Ma re-colours with its orbs); unseen places use their default.
-    @State private var skies: [ShellTab: NKBackdrop] = [:]
+    /// The pre-barless place key: read once on launch (an old „Napló" lands in Nap › Napok, „Boop" in the chat,
+    /// „Évad" in its room), then cleared — the ring is always where the app opens.
+    @SceneStorage("tab") private var tabKey = ""
     @State private var capturing = false
     @State private var account = false
     /// The daily loop's full-screen covers (B3): Ma's rows, the lens pill, "+" and the notifications ask for them.
@@ -72,7 +41,7 @@ struct ShellView: View {
     @State private var previewMegvolt = false
     /// Simulator review: `-previewOpen naploDay` opens yesterday's Napló day sheet from the shell (DEBUG).
     @State private var previewNaploDay = false
-    /// The area the "+" sheet asked to open ("Edzés indítása"): Ma, then the ring opens that room.
+    /// The area the "+" sheet asked to open ("Edzés indítása"): the ring opens that room once the sheet is gone.
     @State private var areaAfterCapture: Hue?
     @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
     /// The day's brief: Boop's own goals and the bedtime target for the close.
@@ -80,11 +49,6 @@ struct ShellView: View {
     @Environment(\.trainClient) private var train
     @Environment(PenzStore.self) private var penz: PenzStore?
     @State private var toast: String?
-    /// A room is open over the page: the bar is hidden.
-    @State private var roomOpen = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    private var tab: ShellTab { ShellTab.restored(tabKey) }
 
     /// What a pick asks for. From the "+" sheet it waits until that sheet is gone (two presentations never overlap);
     /// from a page (the home screen's quick doors) it opens at once.
@@ -104,7 +68,7 @@ struct ShellView: View {
             case .meal: meal = pick.mealStart
             case .penzExpense: penzCapture = true
             case .quick(let kind): quick = kind
-            case .area(let hue): select(.ma); router.openRoom(hue)
+            case .area(let hue): router.go(.room(RoomEntry(hue)))
             case .reminder: router.openReminders()
             }
         }
@@ -116,7 +80,7 @@ struct ShellView: View {
         if let start = mealAfterCapture { mealAfterCapture = nil; meal = start }
         if penzAfterCapture { penzAfterCapture = false; penzCapture = true }
         if let q = quickAfterCapture { quickAfterCapture = nil; quick = q }
-        if let hue = areaAfterCapture { areaAfterCapture = nil; select(.ma); router.openRoom(hue) }
+        if let hue = areaAfterCapture { areaAfterCapture = nil; router.go(.room(RoomEntry(hue))) }
         if reminderPageAfterSheet { reminderPageAfterSheet = false; router.openReminders() }
     }
 
@@ -134,30 +98,10 @@ struct ShellView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            NKBackdropPanorama(from: sky(fromTab), to: sky(tab), direction: direction, progress: progress,
-                               travel: reduceMotion ? 0 : 0.5)
-            ZStack {
-                page(tab)
-                    .id(tab)
-                    .onPreferenceChange(NKBackdropKey.self) { [tab] sky in if let sky { skies[tab] = sky } }
-                    // The old page leaves quickly and the new one arrives just after, so text never doubles up.
-                    .transition(.asymmetric(insertion: .opacity.animation(.easeOut(duration: 0.5).delay(0.3)),
-                                            removal: .opacity.animation(.easeIn(duration: 0.22))))
-            }
-            .environment(\.nkBackdropHosted, true)
+        KezdolapView()
             .environment(router)
-            .environment(\.setRoomOpen, { open in withAnimation(.smooth(duration: 0.35)) { roomOpen = open } })
-            .environment(\.kezdolapHomeReset, homeReset)
-            NKSpineBar(selected: Binding(get: { tab.rawValue }, set: { select(ShellTab(rawValue: $0) ?? .ma) }),
-                       onPlus: { capturing = true })
-                .offset(y: roomOpen ? 140 : 0)
-                .opacity(roomOpen ? 0 : 1)
-                .allowsHitTesting(!roomOpen)
-                .accessibilityHidden(roomOpen)
-        }
         .environment(\.openAccount, { account = true })
-        .environment(\.openPlace, { select($0) })
+        .environment(\.openDestination, { router.go($0) })
         .environment(\.openMeal, { meal = $0 })
         .environment(\.openCapture, { capturing = true })
         .nkToast($toast)
@@ -257,16 +201,18 @@ struct ShellView: View {
             reminderPageAfterSheet = true
         }
         .onAppear {
-            fromTab = tab
+            // An old stored place (before the barless home) opens its room once; then the ring is the start again.
+            let restored = homeDestination(restored: tabKey)
+            if restored != .home { router.go(restored) }
+            tabKey = ""
             #if DEBUG
-            // Simulator review: `-previewTab ma|terv|naplo|boop` opens that place, `-previewOpen capture|account` a sheet,
+            // Simulator review: `-previewOpen capture|account` opens a sheet,
             // `-previewOpen checkin|checkinDone` the check-in (its first item / its payoff), `-previewOpen este` the close.
             // `-reminders page|edit|edit-linked|denied`, `-previewMaReminders YES`: the Emlékeztetők screens on sample reminders.
             if ReminderPreviewSeed.wanted {
                 ReminderPreviewSeed.seed()
                 if ReminderPreviewSeed.opensPage { router.openReminders() }
             }
-            if let t = UserDefaults.standard.string(forKey: "previewTab").flatMap(ShellTab.init(key:)) { tabKey = t.storageKey; fromTab = t }
             switch UserDefaults.standard.string(forKey: "previewOpen") {
             case "capture": capturing = true
             case "meal": meal = MealStart()
@@ -287,15 +233,9 @@ struct ShellView: View {
             #endif
         }
         #if DEBUG
-        // `-previewScroll 900` opens the pages scrolled; `-previewSwitch terv|naplo|boop` switches to that place
-        // after 3 s and back to Ma 3 s later (records the backdrop slide + blend without taps).
+        // `-previewScroll 900` opens the pages scrolled.
         .environment(\.nkInitialScrollY, UserDefaults.standard.object(forKey: "previewScroll") == nil
                      ? nil : CGFloat(UserDefaults.standard.double(forKey: "previewScroll")))
-        .task {
-            guard let to = UserDefaults.standard.string(forKey: "previewSwitch").flatMap(ShellTab.init(key:)) else { return }
-            try? await Task.sleep(for: .seconds(3)); select(to)
-            try? await Task.sleep(for: .seconds(3)); select(.ma)
-        }
         #endif
     }
 
@@ -324,37 +264,6 @@ struct ShellView: View {
         .preferredColorScheme(.dark)
     }
 
-    /// Bumped when the bar's "Ma" is tapped while Ma is already the place: the home screen's ring comes back.
-    @State private var homeReset = 0
-
-    @ViewBuilder private func page(_ tab: ShellTab) -> some View {
-        switch tab {
-        case .ma: KezdolapView()
-        case .terv: EvadPage()
-        case .naplo: NaploView()
-        case .boop: BoopTabView()
-        }
-    }
-
-    private func sky(_ tab: ShellTab) -> NKBackdrop { shellPanels(skies)[tab.rawValue] }
-
-    /// The old land starts from where it is now (no jump), then the blend runs to the new one.
-    private func select(_ new: ShellTab) {
-        // "Ma" tapped while Ma is already the place: back to the home screen's ring.
-        guard new != tab else { if new == .ma { homeReset += 1 }; return }
-        var still = Transaction(); still.disablesAnimations = true
-        withTransaction(still) {
-            fromTab = tab
-            direction = new.rawValue >= tab.rawValue ? 1 : -1
-            progress = 0
-        }
-        DispatchQueue.main.async {
-            withAnimation(.smooth(duration: 0.95)) {
-                tabKey = new.storageKey
-                progress = 1
-            }
-        }
-    }
 }
 
 /// "hétfő, 06:50" from the device clock, Hungarian.

@@ -18,7 +18,7 @@ struct MaiCopyTests {
         }
         // Pénz, Levél and Súly are colour worlds without a metric, so the bridge covers `Hue.metrics`, not every case.
         #expect(MetricKey.allCases.map { hue(for: $0) } == Hue.metrics)
-        #expect(Hue.allCases.count == Hue.metrics.count + 3)
+        #expect(Hue.allCases.count == Hue.metrics.count + 4)
         #expect(metricKey(for: .suly) == .forma)
     }
 

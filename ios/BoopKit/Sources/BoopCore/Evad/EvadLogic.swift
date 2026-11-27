@@ -441,3 +441,33 @@ public func evadCompareRows(_ a: EvadNumbers, _ b: EvadNumbers) -> [EvadCompareR
     }
     return out
 }
+
+// MARK: - This week (the Évad orb and the Most tab, `mezo-r36n9.196`)
+
+/// This week's adherence in percent: equal weight over the parts that have something to judge (food days in band of
+/// the judged ones, sessions done of the planned ones, nights long enough of the measured ones); a part with nothing to
+/// judge is left out. Nothing to judge at all → nil (the orb shows „–", never 0).
+public func evadWeekScore(_ a: EvadAdherence) -> Int? {
+    var parts: [Double] = []
+    if a.foodJudged > 0 { parts.append(Double(a.foodInBand) / Double(a.foodJudged)) }
+    if a.sessionsPlanned > 0 { parts.append(Double(a.sessionsDone) / Double(a.sessionsPlanned)) }
+    if a.nightsJudged > 0 { parts.append(Double(a.nightsOk) / Double(a.nightsJudged)) }
+    guard !parts.isEmpty else { return nil }
+    return Int((parts.reduce(0, +) / Double(parts.count) * 100).rounded())
+}
+
+/// The lived part of `now`'s week, Monday → yesterday (`yyyy-MM-dd`); nil on Monday, when nothing is lived yet.
+public func evadMostRange(now: Date, calendar: Calendar = .current) -> (from: String, to: String)? {
+    var cal = calendar
+    cal.firstWeekday = 2
+    guard let monday = cal.dateInterval(of: .weekOfYear, for: now)?.start else { return nil }
+    let today = cal.startOfDay(for: now)
+    guard today > monday, let yesterday = cal.date(byAdding: .day, value: -1, to: today) else { return nil }
+    return (evadYMD(monday, calendar: cal), evadYMD(yesterday, calendar: cal))
+}
+
+/// `yyyy-MM-dd` of `date` in `calendar`'s time zone.
+public func evadYMD(_ date: Date, calendar: Calendar = .current) -> String {
+    let c = calendar.dateComponents([.year, .month, .day], from: date)
+    return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
+}

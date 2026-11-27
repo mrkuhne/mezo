@@ -2030,7 +2030,7 @@
     "terulet": "Célok és évad",
     "app": "Részben kész",
     "mit_tud": "A ténylegesen megevett mennyiséget átadja a súlycél-motornak, hogy mérje a terv betartását és tanulja az energiaigényedet.",
-    "app_megjegyzes": "Az Évad áttekintése már mutat betartást; a teljes Évad-összekötés épül.",
+    "app_megjegyzes": "Az Évad áttekintése már mutat betartást, és a kezdőlap Évad gömbje a heti betartást mutatja; a teljes Évad-összekötés épül.",
     "jegyek": [
       "mezo-r36n9.16"
     ],
