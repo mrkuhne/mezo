@@ -531,6 +531,12 @@ mezo:
     scheduling:
       enabled: true
     cron:
+      # Boop B7 K4 (mezo-r36n9.17): 03:30 owner zone — capacity proposal outcomes + learned patterns (OutcomeJob)
+      capacity-outcome-job:
+        enabled: true
+      # Boop B7 K4: Sunday preview of next week's proposals on mezo.capacity.sunday.cron (SundayPreviewJob)
+      capacity-sunday-job:
+        enabled: true
       # V2.2 nightly daily-summary generator (schedule itself: mezo.companion.summary.cron);
       # off = the DailySummaryJob bean does not exist
       daily-summary-job:

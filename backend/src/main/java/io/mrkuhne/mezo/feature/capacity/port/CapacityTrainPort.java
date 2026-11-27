@@ -67,4 +67,11 @@ public interface CapacityTrainPort {
 
     /** {@code templateSessionId} is a template day of the owner's active mesocycle (false when none runs). */
     boolean templateInActiveBlock(UUID owner, UUID templateSessionId);
+
+    /**
+     * The Mondays of the running block's lighter (deload) weeks — week {@code n} of the block starts on the Monday of
+     * its start date plus {@code n-1} weeks, and is a deload week when its phase is "Deload" (Boop B7 K4, the advisory
+     * "bring the lighter week forward" card). Empty with no running block.
+     */
+    java.util.List<LocalDate> deloadMondays(UUID owner);
 }

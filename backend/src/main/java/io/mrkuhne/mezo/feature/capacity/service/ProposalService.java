@@ -71,11 +71,17 @@ public class ProposalService {
     /** A proposal as the API shows it. */
     public record ProposalView(UUID id, String kind, LocalDate day, ProposalStatus status, String title, String move,
                                List<String> effectLines, List<String> why, List<Line> compare,
-                               List<AdjustmentDraft> steps, List<LocalDate> touchedDays, Instant decidedAt) {
+                               List<AdjustmentDraft> steps, List<LocalDate> touchedDays, Instant decidedAt,
+                               String outcomeWord, String outcomeSub) {
     }
 
-    /** A learned pattern line (K4 fills them; empty until then). */
-    public record PatternView(String key, String line, int evidence) {
+    /** A shown learned pattern ({@link CapacityPatterns}): its title ({@code line}), body and counts. */
+    public record PatternView(String key, String line, String body, int evidence, int consistent, String weekday) {
+        public static PatternView of(CapacityPatterns.Found f) {
+            Object weekday = f.payload().get("weekday");
+            return new PatternView(f.key(), f.title(), f.body(), f.evidence(), f.consistent(),
+                weekday == null ? null : weekday.toString());
+        }
     }
 
     /**
@@ -83,7 +89,8 @@ public class ProposalService {
      * open proposal applied together — null when fewer than two are open.
      */
     public record WeekView(LocalDate monday, List<CapacityDay> days, List<ProposalView> proposals,
-                           List<DayAdjustmentView> adjustments, List<PatternView> patterns, List<Line> allEffects) {
+                           List<DayAdjustmentView> adjustments, List<PatternView> patterns, List<Line> allEffects,
+                           List<CapacityLearningService.HistoryItem> history) {
     }
 
     /** One generated proposal, priced and worded, before it is stored. */
@@ -105,6 +112,7 @@ public class ProposalService {
     private final CrossEffectCalculator calculator;
     private final ProposalWordingWriter words;
     private final CapacityLock lock;
+    private final CapacityLearningService learning;
     private final CapacityProperties props;
     private final WearableProperties wearable;
     private final ObjectProvider<Clock> clock;
@@ -114,7 +122,7 @@ public class ProposalService {
     public ProposalService(CapacityProposalRepository proposals, DayAdjustmentRepository rows,
                            DayAdjustmentService ledger, CapacityDayService days, WeekPictureService pictures,
                            CrossEffectCalculator calculator, ProposalWordingWriter words, CapacityLock lock,
-                           CapacityProperties props, WearableProperties wearable, ObjectProvider<Clock> clock,
+                           CapacityLearningService learning, CapacityProperties props, WearableProperties wearable, ObjectProvider<Clock> clock,
                            PlatformTransactionManager transactionManager,
                            @Qualifier("applicationTaskExecutor") AsyncTaskExecutor executor) {
         this.proposals = proposals;
@@ -125,6 +133,7 @@ public class ProposalService {
         this.calculator = calculator;
         this.words = words;
         this.lock = lock;
+        this.learning = learning;
         this.props = props;
         this.wearable = wearable;
         this.clock = clock;
@@ -136,7 +145,7 @@ public class ProposalService {
 
     /**
      * The week of {@code monday}: day verdicts, stored proposals (generated on this read when the current or next week
-     * has none yet), every ledger row touching the week, patterns (empty until K4). Never waits for a model.
+     * has none yet), every ledger row touching the week, the shown learned patterns and the earlier weeks' decided proposals. Never waits for a model.
      */
     public WeekView week(UUID owner, LocalDate monday) {
         requireMonday(monday);
@@ -316,7 +325,8 @@ public class ProposalService {
     /** {@link #generate(UUID, LocalDate, Set)} keeping only the drafts {@code keep} accepts (priced only those). */
     private Generated generate(UUID owner, LocalDate monday, Set<String> suppressed, Predicate<ProposalDraft> keep) {
         WeekPicture w = pictures.picture(owner, monday);
-        List<ProposalDraft> drafts = ProposalGenerator.forWeek(w, List.of(), props).stream().filter(keep).toList();
+        List<ProposalDraft> drafts = ProposalGenerator.forWeek(w, learning.generatorPatterns(owner), props).stream()
+            .filter(keep).toList();
         if (drafts.isEmpty()) {
             return new Generated(w, List.of());
         }
@@ -444,8 +454,9 @@ public class ProposalService {
                 .thenComparing(ProposalService::rank))
             .map(ProposalService::toView)
             .toList();
-        return new WeekView(monday, dayList, list, ledger.list(owner, monday, monday.plusDays(6)), List.of(),
-            allEffects(owner, monday, list, picture));
+        List<PatternView> shown = learning.shownPatterns(owner).stream().map(PatternView::of).toList();
+        return new WeekView(monday, dayList, list, ledger.list(owner, monday, monday.plusDays(6)), shown,
+            allEffects(owner, monday, list, picture), learning.history(owner, monday));
     }
 
     /**
@@ -471,6 +482,8 @@ public class ProposalService {
     }
 
     static ProposalView toView(CapacityProposalEntity p) {
+        CapacityLearningService.HistoryItem outcome = p.getOutcome() == null ? null
+            : CapacityLearningService.historyItem(p);
         Map<String, Object> effects = p.getEffects() == null ? Map.of() : p.getEffects();
         List<Line> compare = new ArrayList<>();
         if (effects.get("compare") instanceof List<?> raw) {
@@ -483,7 +496,8 @@ public class ProposalService {
         return new ProposalView(p.getId(), p.getKind(), p.getDay(), ProposalStatus.valueOf(p.getStatus().toUpperCase()),
             p.getTitle(), effects.get("move") == null ? "" : effects.get("move").toString(), strings(effects.get("lines")),
             p.getWhy() == null ? List.of() : List.copyOf(p.getWhy()), List.copyOf(compare),
-            AdjustmentDraft.fromBundle(p.getBundle()), touchedDays(p), p.getDecidedAt());
+            AdjustmentDraft.fromBundle(p.getBundle()), touchedDays(p), p.getDecidedAt(),
+            outcome == null ? null : outcome.word(), outcome == null ? null : outcome.sub());
     }
 
     private static Map<String, Object> effectsMap(Wording w, List<Line> compare, List<LocalDate> touched) {

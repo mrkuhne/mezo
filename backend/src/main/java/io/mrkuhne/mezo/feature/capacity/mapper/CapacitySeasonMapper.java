@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.capacity.mapper;
 
+import io.mrkuhne.mezo.api.dto.CapacityDeloadHint;
 import io.mrkuhne.mezo.api.dto.CapacitySeasonLoad;
 import io.mrkuhne.mezo.api.dto.CapacitySeasonStats;
 import io.mrkuhne.mezo.api.dto.CapacitySeasonWeek;
@@ -20,6 +21,10 @@ public final class CapacitySeasonMapper {
             .stats(CapacitySeasonStats.builder().overloadedDays4w(l.overloadedDays4w()).moves(l.moves())
                 .movesGood(l.movesGood()).build())
             .headline(l.headline())
+            .patterns(l.patterns().stream().map(CapacityProposalMapper::pattern).toList())
+            .deloadForward(l.deloadForward() == null ? null : CapacityDeloadHint.builder()
+                .fromWeek(l.deloadForward().fromWeek()).toWeek(l.deloadForward().toWeek())
+                .title(l.deloadForward().title()).body(l.deloadForward().body()).build())
             .build();
     }
 }

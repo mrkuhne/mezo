@@ -60,6 +60,26 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/capacity/season-hints:
+    get:
+      tags: [Capacity]
+      operationId: getCapacitySeasonHints
+      summary: Learned patterns worth knowing when planning a new season
+      description: >
+        Read-only hints for the Új évad flow (shown beside the training days): the learned patterns that are shown
+        (evidence >= 3, consistent >= 2, at least half consistent, standing out against the other days), strongest
+        first. A weekday pattern carries its weekday. Empty when nothing has been learned yet. Never calls a model.
+      responses:
+        '200':
+          description: The hints
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CapacitySeasonHints' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
   /api/capacity/adjustments:
     get:
       tags: [Capacity]
@@ -283,6 +303,32 @@ components:
           type: string
           nullable: true
           description: Rule-built Hungarian sentence when the load outgrew recovery three weeks running; else null
+        patterns:
+          type: array
+          items: { $ref: '#/components/schemas/CapacityPattern' }
+          description: The shown learned patterns ("Amit a mozgatásokból tanultam"), strongest first
+        deloadForward:
+          allOf: [{ $ref: '#/components/schemas/CapacityDeloadHint' }]
+          nullable: true
+          description: >
+            Advisory only (owner decision #121): the load outgrew recovery three weeks running and a lighter (deload)
+            week of the running block lies later than next week — worth bringing forward. Nothing is written; the
+            phone offers only "Megbeszélem Boop-pal". Null otherwise.
+    CapacityDeloadHint:
+      type: object
+      required: [fromWeek, toWeek, title, body]
+      properties:
+        fromWeek: { type: integer, description: The 1-based season week of the planned lighter week }
+        toWeek: { type: integer, description: The 1-based season week it would be worth moving to (next week) }
+        title: { type: string }
+        body: { type: string }
+    CapacitySeasonHints:
+      type: object
+      required: [hints]
+      properties:
+        hints:
+          type: array
+          items: { $ref: '#/components/schemas/CapacityPattern' }
     CapacitySeasonWeek:
       type: object
       required: [week, planned, over, trainingOnly]
@@ -324,7 +370,7 @@ components:
         createdAt: { type: string, format: date-time, nullable: true }
     CapacityWeek:
       type: object
-      required: [monday, days, proposals, adjustments, patterns]
+      required: [monday, days, proposals, adjustments, patterns, history]
       properties:
         monday: { type: string, format: date }
         days:
@@ -339,6 +385,13 @@ components:
         patterns:
           type: array
           items: { $ref: '#/components/schemas/CapacityPattern' }
+          description: The shown learned patterns ("Ebből tanulok"), strongest first
+        history:
+          type: array
+          items: { $ref: '#/components/schemas/CapacityHistoryItem' }
+          description: >
+            "Korábban áttettük" beyond this week — accepted, declined and taken-back proposals of the 8 weeks before,
+            newest first, at most 12, each with its outcome word and line
         allEffects:
           type: array
           nullable: true
@@ -388,6 +441,29 @@ components:
           type: array
           items: { type: string, format: date }
         decidedAt: { type: string, format: date-time, nullable: true }
+        outcomeWord:
+          type: string
+          nullable: true
+          description: 'Once the day is lived (the nightly pass): "bevált", "nem segített", "maradt így", ...'
+        outcomeSub:
+          type: string
+          nullable: true
+          description: 'The outcome line ("Az edzés megvolt · a nap rendben lett · ..."); only the known parts'
+    CapacityHistoryItem:
+      type: object
+      required: [proposalId, kind, day, status, title, word]
+      properties:
+        proposalId: { type: string, format: uuid }
+        kind:
+          type: string
+          enum: [MOVE_SESSION_DAY, SHIFT_SESSION_TIME, SHORTEN_SESSION, LIGHTEN_SESSION, SWAP_SESSION_KIND, SKIP_SESSION,
+                 SHIFT_BEDTIME, MOVE_MEAL_ENERGY, CALENDAR_TODO]
+        day: { type: string, format: date }
+        status: { type: string, enum: [accepted, declined, undone] }
+        title: { type: string }
+        word: { type: string, description: 'The outcome word; "még nem tudom" for an accepted one not yet lived' }
+        sub: { type: string, nullable: true, description: The outcome line }
+        good: { type: boolean, nullable: true, description: 'Accepted only: whether the day went well after it' }
     CapacityProposalStep:
       type: object
       required: [kind, payload]
@@ -410,11 +486,17 @@ components:
         favours: { type: integer, description: '1 = the change helps, -1 = it costs, 0 = neutral' }
     CapacityPattern:
       type: object
-      required: [key, line, evidence]
+      required: [key, line, evidence, consistent]
       properties:
-        key: { type: string }
-        line: { type: string }
-        evidence: { type: integer }
+        key: { type: string, description: 'e.g. weekday-overload:THURSDAY, move-kind-works:MOVE_SESSION_DAY' }
+        line: { type: string, description: The pattern's title }
+        body: { type: string, nullable: true, description: The evidence sentence (counts from the rule) }
+        evidence: { type: integer, description: How many times the situation occurred }
+        consistent: { type: integer, description: How many of those went the pattern's way }
+        weekday:
+          type: string
+          nullable: true
+          description: 'The weekday a weekday pattern is about (MONDAY..SUNDAY)'
     CapacityProposalAcceptRequest:
       type: object
       required: [clientRef]

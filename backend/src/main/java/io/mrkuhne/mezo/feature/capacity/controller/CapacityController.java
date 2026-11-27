@@ -5,14 +5,17 @@ import io.mrkuhne.mezo.api.dto.CapacityAdjustment;
 import io.mrkuhne.mezo.api.dto.CapacityEventFeedbackRequest;
 import io.mrkuhne.mezo.api.dto.CapacityProposal;
 import io.mrkuhne.mezo.api.dto.CapacityProposalAcceptRequest;
+import io.mrkuhne.mezo.api.dto.CapacitySeasonHints;
 import io.mrkuhne.mezo.api.dto.CapacitySeasonLoad;
 import io.mrkuhne.mezo.api.dto.CapacityWeek;
 import io.mrkuhne.mezo.feature.capacity.mapper.CapacityAdjustmentMapper;
 import io.mrkuhne.mezo.feature.capacity.mapper.CapacityProposalMapper;
 import io.mrkuhne.mezo.feature.capacity.mapper.CapacitySeasonMapper;
+import io.mrkuhne.mezo.feature.capacity.service.CapacityLearningService;
 import io.mrkuhne.mezo.feature.capacity.service.DayAdjustmentService;
 import io.mrkuhne.mezo.feature.capacity.service.EventFeedbackService;
 import io.mrkuhne.mezo.feature.capacity.service.ProposalService;
+import io.mrkuhne.mezo.feature.capacity.service.ProposalService.PatternView;
 import io.mrkuhne.mezo.feature.capacity.service.SeasonLoadService;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
 import java.time.LocalDate;
@@ -30,6 +33,7 @@ public class CapacityController implements CapacityApi {
     private final SeasonLoadService seasonLoadService;
     private final DayAdjustmentService adjustments;
     private final ProposalService proposals;
+    private final CapacityLearningService learning;
     private final CurrentUserId currentUserId;
 
     @Override
@@ -41,6 +45,12 @@ public class CapacityController implements CapacityApi {
     @Override
     public CapacitySeasonLoad getCapacitySeason() {
         return CapacitySeasonMapper.toDto(seasonLoadService.read(currentUserId.get()));
+    }
+
+    @Override
+    public CapacitySeasonHints getCapacitySeasonHints() {
+        return CapacitySeasonHints.builder().hints(learning.shownPatterns(currentUserId.get()).stream()
+            .map(PatternView::of).map(CapacityProposalMapper::pattern).toList()).build();
     }
 
     @Override

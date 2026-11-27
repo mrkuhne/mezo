@@ -75,10 +75,38 @@ public final class ProposalGenerator {
 
     /**
      * A learned pattern of his weeks ({@code capacity_pattern}); a pattern whose payload names the draft's weekday
-     * ({@code "weekday": "THURSDAY"}) and, optionally, its kind ({@code "kind": "MOVE_SESSION_DAY"}) lifts the draft's
+     * ({@code "weekday": "THURSDAY"}) and/or its kind ({@code "kind": "MOVE_SESSION_DAY"}) lifts the draft's
      * rank by its consistency and lends its {@code line} to "Miért javaslom".
      */
     public record Pattern(String key, int evidence, int consistent, Map<String, Object> payload) {
+    }
+
+    /**
+     * The season's advisory card (owner decision #121, "Csak szóljon"): bring the lighter week forward. Never stored as
+     * a proposal and never written anywhere — the Évad page only tells and offers "Megbeszélem Boop-pal".
+     */
+    public record DeloadHint(int fromWeek, int toWeek, String title, String body) {
+    }
+
+    /**
+     * {@code SEASON_DELOAD_FORWARD}: each of the last three completed season weeks carried more load than recovery
+     * ({@link SeasonLoadModel#headline}) and the running block's nearest lighter week lies later than next week → bring
+     * it forward to next week. Empty when next week is already the lighter one, is past the season's end, or there is
+     * no lighter week ahead.
+     *
+     * @param deloadWeeks the 1-based season weeks of the block's lighter weeks
+     */
+    public static Optional<DeloadHint> deloadForward(List<SeasonLoadModel.WeekOut> weeks, int nowWeek,
+                                                     List<Integer> deloadWeeks) {
+        int next = nowWeek + 1;
+        if (SeasonLoadModel.headline(weeks, nowWeek) == null || next > weeks.size()
+            || deloadWeeks.contains(next) || deloadWeeks.contains(nowWeek)) {
+            return Optional.empty();
+        }
+        return deloadWeeks.stream().filter(d -> d > next && d <= weeks.size()).min(Integer::compare)
+            .map(d -> new DeloadHint(d, next, "Előrébb hoznám a könnyebb hetet.",
+                "Három hete több a teher, mint amennyit a pihenés visszaad. A tervben a " + d
+                    + ". hét a könnyebb, de már a jövő hét (a " + next + ".) jobban jönne. Ha gondolod, beszéljük meg."));
     }
 
     public static List<ProposalDraft> forWeek(WeekPicture w, List<Pattern> patterns, CapacityProperties p) {
@@ -537,8 +565,10 @@ public final class ProposalGenerator {
         for (Pattern pt : patterns) {
             Map<String, Object> payload = pt.payload() == null ? Map.of() : pt.payload();
             Object kind = payload.get("kind");
-            if (!weekday.equals(payload.get("weekday")) || (kind != null && !d.kind().equals(kind))
-                || pt.evidence() <= 0) {
+            Object day = payload.get("weekday");
+            // a pattern speaks to a draft through its weekday, its kind, or both; one with neither ranks nothing
+            if ((day == null && kind == null) || (day != null && !weekday.equals(day))
+                || (kind != null && !d.kind().equals(kind)) || pt.evidence() <= 0) {
                 continue;
             }
             boost += 0.1 * Math.min(1.0, (double) pt.consistent() / pt.evidence());

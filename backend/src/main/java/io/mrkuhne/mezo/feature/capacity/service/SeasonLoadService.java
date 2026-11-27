@@ -52,13 +52,15 @@ public class SeasonLoadService {
 
     /** The stored read model; {@code load}/{@code recovery} are null when unknown. */
     public record SeasonLoad(List<WeekOut> weeks, int nowWeek, int overloadedDays4w, int moves, int movesGood,
-                             String headline) {
+                             String headline, List<ProposalService.PatternView> patterns,
+                             ProposalGenerator.DeloadHint deloadForward) {
     }
 
     private final CapacitySeasonPort seasons;
     private final CapacityDayService days;
     private final CapacityTrainPort train;
     private final CapacityProposalRepository proposals;
+    private final CapacityLearningService learning;
     private final CapacityProperties props;
     private final WearableProperties wearable;
     private final ObjectProvider<Clock> clock;
@@ -116,8 +118,14 @@ public class SeasonLoadService {
         List<CapacityProposalEntity> accepted = proposals.findByCreatedByAndStatusAndDeletedFalse(owner, "accepted");
         int good = (int) accepted.stream()
             .filter(p -> p.getOutcome() != null && Boolean.TRUE.equals(p.getOutcome().get("good"))).count();
+        List<Integer> deloadWeeks = train.deloadMondays(owner).stream()
+            .map(m -> (int) ChronoUnit.WEEKS.between(startMonday, m) + 1)
+            .filter(w -> w >= 1 && w <= weekCount)
+            .toList();
         return new SeasonLoad(weeks, nowWeek, overloaded, accepted.size(), good,
-            SeasonLoadModel.headline(weeks, nowWeek));
+            SeasonLoadModel.headline(weeks, nowWeek),
+            learning.shownPatterns(owner).stream().map(ProposalService.PatternView::of).toList(),
+            ProposalGenerator.deloadForward(weeks, nowWeek, deloadWeeks).orElse(null));
     }
 
     /** The planned sessions of a week as training demand only (no calendar, no sleep). */
