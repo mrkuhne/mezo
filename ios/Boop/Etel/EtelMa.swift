@@ -24,6 +24,7 @@ struct EtelMa: View {
     var onAsk: () -> Void = {}
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.accessibilityVoiceOverEnabled) private var voiceOver
     @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
     /// The logged meal whose own page is open.
     @State private var detailMeal: BoopCore.Meal?
@@ -73,8 +74,9 @@ struct EtelMa: View {
     @ViewBuilder private var heroCard: some View {
         if let day = store.day {
             Group {
-                if typeSize.isAccessibilitySize {
-                    // The largest type sizes: both pages one under the other, nothing clipped to a fixed height.
+                if typeSize.isAccessibilitySize || voiceOver {
+                    // The largest type sizes (and VoiceOver, which has no page dots to find page 2): both pages one under
+                    // the other, nothing clipped to a fixed height.
                     VStack(spacing: 22) { heroRingPage(day); heroCurvePage(day) }
                 } else {
                     VStack(spacing: 10) {
@@ -179,7 +181,9 @@ struct EtelMa: View {
         VStack(alignment: .leading, spacing: 10) {
             NKMono("A NAP MENETE")
             if let curve = etelDayCurve(day: day, plan: store.plan, now: store.clock) {
+                // The drawing and its keys are visual; VoiceOver reads the note under them, which says the same in words.
                 NKCurve(values: curve.values, labels: curve.labels, hue: hue, target: curve.target, nowIndex: curve.nowIndex, planAfterNow: true)
+                    .accessibilityHidden(true)
                 // At the largest text sizes the three keys stack: side by side they broke mid-word ("meg-ette-d").
                 let keys = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 6)) : AnyLayout(HStackLayout(spacing: 14))
                 keys {
@@ -187,6 +191,7 @@ struct EtelMa: View {
                     legend("a mai terv", dashed: true)
                     legend("a kereted", dashed: true, white: true)
                 }
+                .accessibilityHidden(true)
                 Text(curve.note).nkFont(12.5).foregroundStyle(.white.opacity(0.6)).fixedSize(horizontal: false, vertical: true)
             } else {
                 Text("A nap menete az első étkezés után rajzolódik ki.").nkFont(13).foregroundStyle(.white.opacity(0.6))
@@ -657,8 +662,13 @@ private struct MealRowActions: ViewModifier {
             Button(action: onEdit) { Label("Javítás", systemImage: "pencil") }.disabled(!online)
             Button(role: .destructive, action: onDelete) { Label("Törlés", systemImage: "trash") }.disabled(!online)
         }
-        .accessibilityAction(named: "Javítás") { if online { onEdit() } }
-        .accessibilityAction(named: "Törlés") { if online { onDelete() } }
+        .accessibilityAction(named: "Javítás") { if online { onEdit() } else { offlineNote() } }
+        .accessibilityAction(named: "Törlés") { if online { onDelete() } else { offlineNote() } }
+    }
+
+    /// Offline the actions stay listed (like the dimmed buttons) but say why they do nothing, instead of silence.
+    private func offlineNote() {
+        UIAccessibility.post(notification: .announcement, argument: "Ehhez internet kell. Ha visszajön, itt javíthatod vagy törölheted.")
     }
 
     private func close() { animate { offset = 0; revealed = false } }
