@@ -1699,5 +1699,18 @@
     "miert": "A Yazio mintájára: a kalória, a makrók és a megevett ételek legyenek fókuszban.",
     "kovetkezmeny": "A görbe egy lapozással érhető el, nem azonnal látszik.",
     "levaltotta": "Tíz egyforma, kártya nélküli blokk egymás alatt, és a helyben lenyíló étkezés-részlet."
+  },
+  "d-2026-11-27-konnyebb-het-csak-szol": {
+    "cim": "A könnyebb hét előrehozásáról Boop csak szól",
+    "datum": "2026-11-27",
+    "suly": "Kicsi",
+    "terulet": [
+      "Évad",
+      "Edzés"
+    ],
+    "valasztas": "Ha egymás után három hét túl sok volt, Boop az Évadon jelzi, hogy érdemes előbbre hozni a következő könnyebb edzéshetet, és megbeszélheted vele. Egy koppintásos áthelyezés most nincs: az átrakást kézzel csinálod az Edzésben.",
+    "miert": "Az Évad módosító oldalán ma nincs ilyen beállítás; megépítése több nap lenne és ütközne az edzésblokkon folyó más munkákkal.",
+    "levaltotta": "A terv eredetileg azt írta, hogy a kártya az Évad módosítást nyitja meg előre kitöltve.",
+    "kovetkezmeny": "A gombos áthelyezés külön jegyen vár (mezo-r36n9.187)."
   }
 }
