@@ -1834,5 +1834,68 @@
     "miert": "„Nem minden dobozolt” — ez frissíti az oldalt, és nem lesz minden ugyanolyan doboz.",
     "kovetkezmeny": "Az Edzés újratervezésénél is így: a Mezociklus „A heted” és a Ma „Gyakorlatok” kártyasora doboz nélkül áll.",
     "levaltotta": "A kártyasor üvegkártyába csomagolva."
+  },
+  "d-2026-11-27-evad-szoba": {
+    "datum": "2026-11-27",
+    "terulet": [
+      "Terv"
+    ],
+    "cim": "Az Évad saját gömb és saját szoba lesz: Most · Hét · Terv · Kísérlet",
+    "suly": "Nagy",
+    "valasztas": "Az Évad a kör tizedik gömbje, a száma az, hogy hány százalékban tartod az e heti tervet. Saját szobája saját menüvel: Most (hogy állok a héten), Hét (vasárnapi átnézés, terhelés, a jövő heted, amit Boop tanult), Terv (az év sávja benne az évaddal, a cél, mi mire hat, szabályok, módosítás), Kísérlet. Vasárnap este ötlapos, vezetett heti átnézés.",
+    "miert": "„Teljesen össze vagyok rajta zavarodva, túl van zsúfolva” — egy oldalon tizenegy blokk és három fül volt. Hétközben ránézni, vasárnap este átnézni a hetet.",
+    "kovetkezmeny": "Szimulátoros próbaváltozat, utána terv, majd két lépésben épül (előbb a kezdőlap, aztán az Évad szoba).",
+    "levaltotta": "Az Évad mint az alsó sáv második helye, egy zsúfolt oldallal."
+  },
+  "d-2026-11-27-menu-etelbe": {
+    "datum": "2026-11-27",
+    "terulet": [
+      "Terv",
+      "Étel"
+    ],
+    "cim": "A heti menü és a bevásárlólista az Étel szobába költözik",
+    "suly": "Közepes",
+    "valasztas": "A menü és a lista az Étel szobában lakik; a vasárnapi átnézés menü-lépése odavisz.",
+    "miert": "Hét közben ott keresed, mit főzöl; két helyen ne legyen ugyanaz.",
+    "kovetkezmeny": "Az Évadból eltűnik a Menü és a Lista fül.",
+    "levaltotta": "Menü és Lista fül az Évadban."
+  },
+  "d-2026-11-27-kezdolap-sav-nelkul": {
+    "datum": "2026-11-27",
+    "terulet": [
+      "Alapok"
+    ],
+    "cim": "A kezdőlapnak nincs alsó sávja: a kör a menü",
+    "suly": "Nagy",
+    "valasztas": "Eltűnik az alsó sáv (Ma · Évad · Napló · Boop) és az öt gyorsajtó. A középső gömb a Boop beszélgetést nyitja, a felső Nap gömb a Nap szobát, jobb alul csak a + gomb.",
+    "miert": "„Ezek mind a + gombon belül is megvannak” — a kör maga a menü.",
+    "kovetkezmeny": "Minden terület a körből nyílik szobaként.",
+    "levaltotta": "A négy helyes alsó sáv és az öt gyorsajtó (2026-11-24)."
+  },
+  "d-2026-11-27-naplo-nap-szobaba": {
+    "datum": "2026-11-27",
+    "terulet": [
+      "Napló",
+      "Ma"
+    ],
+    "cim": "A Napló a Nap szobába kerül „Napok” fülként",
+    "suly": "Közepes",
+    "valasztas": "A Nap szoba: Ma (a mai nap a reggeli összefoglalóval) és Napok (az elmúlt napok).",
+    "miert": "A Nap gömb a „napjaim” ajtaja, ma és visszafelé.",
+    "kovetkezmeny": "Nincs külön Napló hely.",
+    "levaltotta": "A Napló mint az alsó sáv helye."
+  },
+  "d-2026-11-27-ev-az-evadban": {
+    "datum": "2026-11-27",
+    "terulet": [
+      "Terv",
+      "Edzés"
+    ],
+    "cim": "Az év sávként látszik az Évadban, a mezociklusokat továbbra is az Edzésben szerkeszted",
+    "suly": "Közepes",
+    "valasztas": "Az Évad Terv fülének tetején az év sávja mutatja, hol tartasz az évben és mennyi ebből az évad; egy koppintás az Edzés éves tervére visz.",
+    "miert": "Egy pillantásra látszik a kettő kapcsolata, és mindkettő ott marad, ahol keresed.",
+    "kovetkezmeny": "Az éves terv nem költözik.",
+    "levaltotta": ""
   }
 }
