@@ -2186,5 +2186,16 @@
     ],
     "mit_kapsz": "A kezdőlapon tíz gömb, alsó sáv nélkül; az Évad saját gömböt és szobát kap (Most · Hét · Terv · Kísérlet), vasárnap este pedig Boop lépésenként végigvezet a héten és a jövő héten.",
     "szulo": "mezo-r36n9"
+  },
+  "mezo-r36n9.207": {
+    "cim": "Étel Receptek és Kamra: kártyás rend, kiemelt felső kártya, lapozható legjobb receptek",
+    "tipus": "Feladat",
+    "szakasz": "B4 Étel",
+    "terulet": [
+      "Étel"
+    ],
+    "munkamenet": "etel-receptek-kamra",
+    "mit_kapsz": "A Receptek és a Kamra fül is kártyákra kerül, mint a Ma és a Hét: felül egy kiemelt kártya a számokkal és egy kis grafikával, alatta üvegkártyák, a Receptekben oldalra lapozható sor a legjobb pontszámú receptjeidből.",
+    "szulo": "mezo-r36n9"
   }
 }

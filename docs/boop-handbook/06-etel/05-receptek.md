@@ -10,12 +10,16 @@ osszefoglalo: A saját receptjeid pontszámmal és címkékkel; új receptet elm
 ---
 
 ## Mit csinál
-**A Receptek fül:**
+**A Receptek fül** (2026-11-28 óta kártyás rendben, mint a Ma és a Hét):
 
-- fent négy út egy új recepthez: **Ezt főztem** · Linkből · Fotóból · Receptműhely;
-- „A könyvtárad számokban”: hány recept, átlagos pontszám, hány hordoz jelzést neked;
-- a könyvtár: keresés, szűrés étkezés szerint, receptenként egy sor — név, címkék (kalória, fehérje, idő), külön
-  sorban a sárga érzékenység-jelzés, jobbra a recept saját pontszáma gyűrűben.
+- **felül a kiemelt kártya** („A receptkönyved”): hány recept, átlagos pontszám, hány hordoz jelzést neked, alatta egy
+  kis sáv, ami megmutatja, mire valók a receptjeid (reggeli, ebéd, vacsora, nasi — darabszámmal);
+- **„Új recept” kártya**: négy út egy új recepthez — **Ezt főztem** · Linkből · Fotóból · Receptműhely;
+- **„A legjobbak neked”**: oldalra lapozható sor a legjobb pontszámú (legfeljebb öt) receptedből, mindegyik saját
+  kártyán fotóval, pontgyűrűvel, étkezéssel, kalóriával és fehérjével; koppintásra nyílik a receptlap. A sor nincs
+  kártyába zárva, és csak akkor látszik, ha legalább három receptednek van pontszáma;
+- **„A könyvtárad” kártya**: keresés, szűrés étkezés szerint, receptenként egy sor — név, címkék (kalória, fehérje,
+  idő), külön sorban a sárga érzékenység-jelzés, jobbra a recept saját pontszáma gyűrűben.
 
 **A receptlap:** címkék (étkezés, idő, adag, feldolgozottság), négy makró-csempe egy adagra, „Megeszem 1 adagot”;
 **Boop értékelése**: a pontszám, mire jó („edzés után jó”), egymondatos ítélet, összefoglaló, a szempontok csempéi

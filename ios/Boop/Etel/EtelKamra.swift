@@ -210,6 +210,19 @@ func shelfStats(_ rows: [PantryRow], profile: SensitivityProfile?) -> [NKStat] {
             NKStat(value: "\(flagged)", label: "jelzéssel neked")]
 }
 
+/// The shelf's processing mix for the hero bar (NOVA groups): barely processed (1–2) lit strongest, then processed (3),
+/// ultra-processed (4), and the foods with no NOVA. Empty groups are left out.
+func shelfNovaMix(_ rows: [PantryRow]) -> [EtelMixPart] {
+    let whole = rows.filter { ($0.nova ?? 9) <= 2 }.count
+    let processed = rows.filter { $0.nova == 3 }.count
+    let ultra = rows.filter { ($0.nova ?? 0) >= 4 }.count
+    let unknown = rows.filter { $0.nova == nil }.count
+    return [EtelMixPart(label: "alig feldolgozott", count: whole, strength: 1),
+            EtelMixPart(label: "feldolgozott", count: processed, strength: 0.55),
+            EtelMixPart(label: "ultra-feldolgozott", count: ultra, strength: 0.15),
+            EtelMixPart(label: "nincs adat", count: unknown, strength: 0)].filter { $0.count > 0 }
+}
+
 /// A food whose facts are an unreviewed AI estimate wears the „becsült" tag (row and page) until its facts are replaced.
 func kamraShowsEstimate(_ r: PantryRow) -> Bool { r.estimated }
 
@@ -223,9 +236,9 @@ enum PantryAddRoute: String, Identifiable, Equatable {
     var id: String { rawValue }
 }
 
-/// `Kamra` on the warm blocks: four ways to put a food on the shelf, the shelf in three numbers, then the shelf (search,
-/// category filter, the catalog behind the search) — a food per row, its category's mark, its facts as pills, its own
-/// score as a ring.
+/// The `Kamra` tab of the Étel room in tiers (mezo-r36n9.207, decisions #119/#120): a hero card with the shelf in three
+/// numbers over its processing mix, the ways to add a food on a glass card, the shelf itself (search, categories, the
+/// catalog) on a glass card, and the settings on the last card.
 struct EtelKamra: View {
     let store: EtelStore
     let onAdd: (PantryAddRoute) -> Void
@@ -240,20 +253,48 @@ struct EtelKamra: View {
     @State private var searchProblem = false
     private let hue = Hue.fuel
 
+    @Environment(\.dynamicTypeSize) private var typeSize
+
     var body: some View {
-        NKBare("FELVESZEK EGYET", hue: hue) {
-            HStack(spacing: 8) {
-                addChip("search-ink", "Vonalkód", primary: true) { onAdd(.barcode) }
-                addChip("link-deep", "Link") { onAdd(.link) }
-                addChip("camera-ink", "Címkefotó") { onAdd(.label) }
-                addChip("plus-ink", "Kézzel") { onAdd(.manual) }
+        if store.shelfLoaded, store.shelfProblem == nil, !store.shelf.isEmpty { hero }
+        card("FELVESZEK EGYET") {
+            if typeSize.isAccessibilitySize {
+                Grid(horizontalSpacing: 8, verticalSpacing: 8) {
+                    GridRow { addChip("search-ink", "Vonalkód", primary: true) { onAdd(.barcode) }; addChip("link-deep", "Link") { onAdd(.link) } }
+                    GridRow { addChip("camera-ink", "Címkefotó") { onAdd(.label) }; addChip("plus-ink", "Kézzel") { onAdd(.manual) } }
+                }
+            } else {
+                HStack(spacing: 8) {
+                    addChip("search-ink", "Vonalkód", primary: true) { onAdd(.barcode) }
+                    addChip("link-deep", "Link") { onAdd(.link) }
+                    addChip("camera-ink", "Címkefotó") { onAdd(.label) }
+                    addChip("plus-ink", "Kézzel") { onAdd(.manual) }
+                }
             }
         }
-        if store.shelfLoaded, store.shelfProblem == nil, !store.shelf.isEmpty {
-            NKBare("A KAMRÁD SZÁMOKBAN", hue: hue) { NKStatRow(shelfStats(store.shelf, profile: store.profile), hue: hue) }
+        card("A KAMRÁD", trailing: store.shelf.isEmpty ? nil : "\(store.shelf.count) tétel", state: shelfState) { shelf }
+        card("BEÁLLÍTÁSOK") { EtelSettingsList(store: store, onSheet: onSheet) }
+    }
+
+    /// A glass card: the small-caps head on the card, the block's own loading and failed states inside (as on Ma, Hét).
+    private func card<C: View>(_ label: String, trailing: String? = nil, state: NKBlockState = .ready,
+                               @ViewBuilder _ content: () -> C) -> some View {
+        NKBare(label, hue: hue, trailing: trailing, state: state, content: content)
+            .padding(.horizontal, 16).padding(.vertical, 12)
+            .nkGlass(24)
+    }
+
+    // MARK: the hero: the three numbers over the processing mix
+
+    private var hero: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("A POLCOD").nkFont(11.5, .semibold, design: .monospaced).foregroundStyle(.white.opacity(0.6)).tracking(1.2)
+            NKStatRow(shelfStats(store.shelf, profile: store.profile), hue: hue)
+            EtelMixBar(parts: shelfNovaMix(store.shelf), hue: hue, title: "Mennyire feldolgozott")
         }
-        NKBare("A KAMRÁD", hue: hue, state: shelfState) { shelf }
-        NKBare("BEÁLLÍTÁSOK", hue: hue) { EtelSettingsList(store: store, onSheet: onSheet) }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .nkGlass(28)
     }
 
     private var shelfState: NKBlockState {

@@ -131,6 +131,27 @@ struct RecipeImportReviewTests {
         #expect(filterRecipes([a, b], query: "pizza").isEmpty)
     }
 
+    // MARK: the card tiers (mezo-r36n9.207)
+
+    private func scored(_ name: String, _ fit: Double?, _ slot: String = "lunch") -> Recipe {
+        var r = Recipe(id: UUID(), name: name, category: slot, servings: 1, macros: Macros(kcal: 1, p: 1, c: 1, f: 1))
+        r.fit = fit
+        return r
+    }
+
+    @Test func theTopPicksAreTheBestScoredFiveAndNeedThree() {
+        #expect(recipeTopPicks([scored("a", 0.9), scored("b", 0.5), scored("c", nil)]).isEmpty)
+        let six = [scored("a", 0.6), scored("b", 0.9), scored("c", nil), scored("d", 0.7), scored("e", 0.8), scored("f", 0.5), scored("g", 0.4)]
+        #expect(recipeTopPicks(six).map(\.name) == ["b", "e", "d", "a", "f"])
+    }
+
+    @Test func theSlotMixFollowsTheDayAndLightsTheFirstStrongest() {
+        let mix = recipeSlotMix([scored("a", nil, "dinner"), scored("b", nil, "breakfast"), scored("c", nil, "dinner")])
+        #expect(mix.map(\.label) == [etelSlotLabel("breakfast"), etelSlotLabel("dinner")])
+        #expect(mix.map(\.count) == [1, 2])
+        #expect(mix[0].strength > mix[1].strength)
+    }
+
     @Test func anAbsentAllergenKeyNeverReadsAsFree() {
         let profile = SensitivityProfile(items: [SensitivityItem(key: "milk", level: .intolerance, note: nil)], novaRule: NovaRule(enabled: false, maxLevel: 4))
         let unknown = Recipe(id: UUID(), name: "Zabkása", category: "breakfast", servings: 1, macros: Macros(kcal: 1, p: 1, c: 1, f: 1), allergens: [:])
