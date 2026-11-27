@@ -17,6 +17,10 @@ osszefoglalo: Röplabda, kerékpár, úszás és más sportok naplója heti beos
 - **A kondi és a sport két külön réteg** (2026-11-27): egy beírt röpi vagy az órán rögzített röpi csak a sportot pipálja ki,
   egy befejezett kondi vagy erősítő edzés az órán csak a kondit. Korábban egy beírt röpi a kondit is „megvolt”-nak mutatta.
   Az Edzés napja azt is tudja, ha aznap sport van, így egy sportnap nem „pihenőnap” (az app ezt a Sport területtel kapja meg).
+- **A Sport terület adatai a szerveren** (2026-11-28, a telefon a következő lépésben kezdi mutatni): egy hétre a terem és a
+  sport sávja napról napra, a mai sport állapota (még előtte · az óra már rögzítette, ilyenkor előtöltve · kész · kihagyva az
+  indokkal), hat hét terhelése, melyik izmot dolgoztatta a terem és a sport, a váll heti átlaga, a pihenő a kettő között, és
+  Boop jelzései. Amiről nincs adat (nehézség, hossz, ismeretlen sportfajta), arra nem talál ki számot.
 - **Futóblokkok:** hetekre bontott terv, alkalmanként bemelegítés / munka / pihenő / levezetés szakaszokkal (sprint, piramis,
   egyenletes), cél-megterheléssel; és futásnapló.
 
@@ -27,7 +31,16 @@ osszefoglalo: Röplabda, kerékpár, úszás és más sportok naplója heti beos
 2. A rögzített alkalmak energiája bekerül a napi kalóriacélba (több mozgás → több étel), és megnyitja az edzés előtti/utáni
    étkezési ablakot.
 3. A heti tervezett mozgás a súlycél-motor energiaigény-számításába is bemegy.
-4. **A futás ma csak időszakaszokból áll** — nincs távolság vagy tempó, és a futás-rész eddig használatlan volt.
+4. **Egy mérce a teremre és a sportra:** egy alkalom terhelése = mennyire volt nehéz (1–10) × hány perc. A sportnál a beírt
+   nehézség számít; a teremnél a sorozatokból becsüljük: minden kész munkasorozatnál 10 mínusz a „még ennyi ment volna”
+   ismétlés, ezek átlaga. Így a kettő összeadható és összevethető.
+5. **Izomhő:** a sportfajtákhoz egy táblázat rendeli, mely izmokat mennyire dolgoztatják (például röplabda: váll, comb, vádli);
+   a teremnél a sorozatok izmai kapják a terhelést. A két réteg és az együttes érték egy közös skálán látszik.
+6. **Pihenő a kettő között:** ha egy napon terem és sport is van, és 3 óránál kevesebb köztük a pihenő, Boop figyelmeztet;
+   3–6 óránál csak jelez. Ennek alapja két kutatás (Robineau és mtsai, 2016; Sports Medicine áttekintés, 2021): 6 óránál
+   rövidebb pihenőnél a két edzés zavarja egymást. Akkor is szól, ha egy sportnap után másnap délelőtt lábnap jön, vagy ha
+   az utolsó két hétben legalább kétszer esett vissza az ismétlésszám egy kemény sportnap után.
+7. **A futás ma csak időszakaszokból áll** — nincs távolság vagy tempó, és a futás-rész eddig használatlan volt.
 
 ## Miért így
 A spec szerint a sport és a futás megmarad; a futás az órával kap értelmet (távolság, tempó, pulzus), ezért a B5 ott építi újra.

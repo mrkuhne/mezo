@@ -16,6 +16,8 @@ key_files:
 related: [season, penz, mail, fuel, pantry, recipe, dayclose, intention, journal, companion, proactive, _platform-auth-security, _platform-api-backend, me, today]
 ---
 
+> **2026-11-28 — reviewed after Boop Sport S2 (`mezo-r36n9.202`).** The brief's kind matcher moved from boop's `BoopWorkoutKinds` to train's `service/sport/SportWorkoutKinds` (train must not import boop; `BoopDayAssembler` calls it, behaviour unchanged); `wearable` gains `SportHealthAdapter` for train's `SportHealthPort`. The new Sport reads: §4 *Sport S2*.
+
 # Boop — native iOS app — Feature Documentation
 
 > **2026-11-28 — The barless home (`mezo-r36n9.196`, step 1 of the Évad-szoba work; decisions #132–#138; spec [`2026-11-27-boop-evad-szoba-kezdolap-design.md`](../superpowers/specs/2026-11-27-boop-evad-szoba-kezdolap-design.md)).** **Current navigation — this supersedes every "spine / place / bar / quick doors" description below.** There is **no bottom bar, no `ShellTab`, no `NKSpineBar`, no `PlacePage`, no panorama place switch and no quick doors**: `ShellView` hosts `KezdolapView` as the root. The ring has **ten orbs** clockwise from the top — Nap, Alvás, Étel, Edzés, Energia, **Évad** (new, violet, shows this week's adherence %, „–" with no season or nothing judged yet), Súly, Forma, Pénz, Levél. The centre orb and Boop's line (caption „KÉRDEZD BOOPOT") open Boop's chat (back button to the ring); the **Nap orb opens the Nap room** (`Nap/NapRoom.swift`: `NapTab`, `napRoomHead`, `NapRoomPage`) with its own bar **Ma** (the day page) · **Napok** (`Naplo/NapokTab.swift`, replaces `NaploView`: the last 14 days, each row opens that day's sheet) · **Boop**; the Évad orb opens today's Évad page in a room frame with a back button (its own tabbed room is step 2). A floating glass  (`NKFloatingPlus`, BoopKit `Napkelte/FloatingPlus.swift`, a11y „Rögzítés") sits bottom-right on the ring, raised above a room's bar, hidden on the chat, and opens the unchanged capture sheet — the five former quick doors are gone from the ring and remain on that sheet. One destination type, `BoopDestination` (`Shell/BoopDestination.swift`: `RoomEntry`, `homeDestination(restored:)`, env `openDestination`), replaces `openPlace`; an old remembered place maps once on launch (Napló → Nap › Napok, Boop → chat, Évad → Évad room, else the ring). Simulator: `-previewTab` and `-previewSwitch` are removed; `-previewHome nap|napok|chat|evad|alvas|etel|edzes|energia|suly|forma|penz|level` opens the home moved on (`nap-oldal` aliases `nap`). See §9 *One destination type, no spine*.
@@ -1383,12 +1385,19 @@ Tunables (`mezo.boop`, `BoopProperties`): `steps-goal` 9000, `regen-per-day` 3, 
 ### Sport S1 — gym and sport as two layers on the brief (`mezo-r36n9.201`, 2026-11-27, backend only)
 `BoopDay` (the brief's day sheet) gains **`sport[]`** (`BoopSport {sport, time, minutes, done, doneMinutes, avgHr}`)
 next to the gym `session`; it comes from `WorkoutWindowQueryService.windowsFor` (slots + events − skips). Done is
-matched **by kind** (`BoopDayAssembler.training`, pure `BoopWorkoutKinds`): a finished gym instance or a strength
+matched **by kind** (`BoopDayAssembler.training`, pure `BoopWorkoutKinds` — since S2 train's `SportWorkoutKinds`): a finished gym instance or a strength
 Health workout ticks the gym; a sport log (the resolver pairs it with the nearest plan) or that sport's own Health
 workout (`volleyball`, `running`, `cycling` for bike, `hiit` for cross/TRX, …) ticks the sport; Health `other` ticks
 neither. Before S1 any logged sport or any ≥ 20 min workout near the gym window ticked the gym. The brief fingerprint
 adds a `|sport:` part only when the day has sport (sport-less days keep their hash). Not yet read by the app — S3
 builds the Sport area on it; the Edzés room can read `sportToday[]` on the today workout read (`train.md` §4).
+
+### Sport S2 — the Sport read models (`mezo-r36n9.202`, 2026-11-28, backend only)
+Five read-only server reads the Sport area (S3, `mezo-r36n9.203`) will draw: `GET /api/train/sport/overview`
+(the week's gym + sport lanes, totals, week count, tonight's moment BEFORE / RECORDED / DONE / SKIPPED with the Watch
+pre-fill, Boop's hint keys), `…/load` (6 weeks, session-RPE × minutes for both layers), `…/body` (muscle heat per
+layer and together), `…/shoulder` and `…/gaps`. Unknown numbers are `null`. Not yet in the generator filter or read
+by the app. Rules and shapes: [`train.md`](train.md) §4 *Sport read models*.
 
 ### B3 API operations (the generator filter, `ios/BoopKit/Sources/BoopAPI/openapi-generator-config.yaml`)
 

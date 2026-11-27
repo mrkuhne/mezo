@@ -510,6 +510,81 @@
     ],
     "csomag": "train"
   },
+  "train-sport-het": {
+    "cim": "Sport: a hét két sávja és a mai sport",
+    "terulet": "Edzés",
+    "app": "Nincs még",
+    "mit_tud": "Egy hétre megmutatja napról napra a terem és a sport sávját (tervezett, kész, kihagyott, elmaradt), a heti perceket és alkalmakat, a mai sport állapotát (még előtte, az óra már rögzítette, kész, kihagyva) az óra adatával előtöltve, és Boop jelzéseit a két réteg ütközéséről.",
+    "app_megjegyzes": "A szerver kész (2026-11-28); a telefon Sport területe a következő lépésben (S3) kezdi használni.",
+    "jegyek": [
+      "mezo-r36n9.202",
+      "mezo-r36n9.203"
+    ],
+    "kezikonyv": [
+      "07-edzes/10-sport-futas"
+    ],
+    "csomag": "train"
+  },
+  "train-sport-terheles": {
+    "cim": "Sport: hat hét terhelése egy mércén",
+    "terulet": "Edzés",
+    "app": "Nincs még",
+    "mit_tud": "Hat hétre hetente összeadja a terem és a sport terhelését ugyanazon a mércén (érzett nehézség × perc); ahol nincs adat a nehézségről vagy a hosszról, nem talál ki számot, csak megszámolja az ilyen alkalmakat.",
+    "app_megjegyzes": "A szerver kész (2026-11-28); a telefon még nem olvassa (S3).",
+    "jegyek": [
+      "mezo-r36n9.202",
+      "mezo-r36n9.203"
+    ],
+    "kezikonyv": [
+      "07-edzes/10-sport-futas"
+    ],
+    "csomag": "train"
+  },
+  "train-sport-test": {
+    "cim": "Sport: melyik izmot dolgoztatta a hét",
+    "terulet": "Edzés",
+    "app": "Nincs még",
+    "mit_tud": "Izmonként megmutatja, mennyi munkát kapott a hét a teremben, a sportban és együtt, egy közös skálán, és hány izom kapott mindkettőből; az ismeretlen sportfajta nem ad hőt.",
+    "app_megjegyzes": "A szerver kész (2026-11-28); a telefon testtérképe még nem olvassa (S3).",
+    "jegyek": [
+      "mezo-r36n9.202",
+      "mezo-r36n9.203"
+    ],
+    "kezikonyv": [
+      "07-edzes/10-sport-futas"
+    ],
+    "csomag": "train"
+  },
+  "train-sport-vall": {
+    "cim": "Sport: a váll terhelése hétről hétre",
+    "terulet": "Edzés",
+    "app": "Nincs még",
+    "mit_tud": "Hetente átlagolja, mennyire érezted a vállad a sport után, hogy látszódjon, ha emelkedik.",
+    "app_megjegyzes": "A szerver kész (2026-11-28); a telefon még nem olvassa (S3).",
+    "jegyek": [
+      "mezo-r36n9.202",
+      "mezo-r36n9.203"
+    ],
+    "kezikonyv": [
+      "07-edzes/10-sport-futas"
+    ],
+    "csomag": "train"
+  },
+  "train-sport-pihenes": {
+    "cim": "Sport: pihenőidő a terem és a sport között",
+    "terulet": "Edzés",
+    "app": "Nincs még",
+    "mit_tud": "Naponta kiszámolja a legrövidebb pihenőt a terem és a sport között, és jelez, ha 3 óránál kevesebb (figyelj) vagy 3–6 óra (tájékoztat) — a kutatások szerint 6 óra alatt a kettő zavarja egymást.",
+    "app_megjegyzes": "A szerver kész (2026-11-28); a telefon még nem olvassa (S3).",
+    "jegyek": [
+      "mezo-r36n9.202",
+      "mezo-r36n9.203"
+    ],
+    "kezikonyv": [
+      "07-edzes/10-sport-futas"
+    ],
+    "csomag": "train"
+  },
   "train-edzes-potlas": {
     "cim": "Edzés pótlása a terv számaival",
     "terulet": "Edzés",
