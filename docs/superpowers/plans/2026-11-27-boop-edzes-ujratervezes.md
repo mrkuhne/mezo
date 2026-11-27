@@ -5,7 +5,7 @@
 > to main on its own.** Steps use checkbox (`- [ ]`) syntax. A step session reads this plan, the spec, and its bd
 > child; it may write a finer task list in its bd notes, never a second plan file.
 
-**Goal:** Every existing Edzés page gets the accepted visual rank (#119, #124): one hero card on top, one glass card
+**Goal:** Every existing Edzés page gets the accepted visual rank (#119, #129): one hero card on top, one glass card
 per logical unit, actions inside the card they act on, small graphics — on the lighter Mozgás room sky.
 
 **Architecture:** iOS only, no server or data change. Step 1 lifts Étel Ma's private card and paged hero into three
@@ -16,15 +16,15 @@ reference only** (never merged — every step branches from main).
 **Tech Stack:** SwiftUI iOS 26, Swift Testing, Napkelte kit (`ios/BoopKit/Sources/BoopDesign/Napkelte/`).
 
 **Spec:** `docs/superpowers/specs/2026-11-27-boop-edzes-ujratervezes-design.md` (§5 design, §6.1 spike result and
-glitch list, §7.1 sequencing) · decisions #119, #124.
+glitch list, §7.1 sequencing) · decisions #119, #129.
 
 ## Global Constraints
 
 - Napkelte canon: dark glass, colour only in the sky, the orbs and key numbers; no emoji; never „Mezo" in a visible string.
 - No glass on glass: anything inside a section card uses the inner treatment (fill `white 0.06`, stroke `white 0.08`, radius 20), never `nkGlass`.
 - One primary action per card (white capsule, or the hue capsule for Indítás); the rest quiet capsules or the card's „…" menu.
-- Running block: Szerkesztés primary; Újraindítás · Lezárás · Mentés a sablonba only in the hero's „…" menu (#124).
-- Ma tab order: hero → Következik → A mai gyakorlatok → Hol tartasz → Az Edzés terület → ask row (#124).
+- Running block: Szerkesztés primary; Újraindítás · Lezárás · Mentés a sablonba only in the hero's „…" menu (#129).
+- Ma tab order: hero → Következik → A mai gyakorlatok → Hol tartasz → Az Edzés terület → ask row (#129).
 - Mozgás room sky `[0x5C7FC0, 0xF4BC8E, 0xFFEFCB]`, `roomTop` `0x34507E`; the Mozgás orb elsewhere keeps its colours.
 - Every block still loads and fails on its own (`NKBlockState` semantics, inside its card); never pull-to-refresh (`.191`).
 - Accessibility Dynamic Type / VoiceOver: a paged hero stacks its pages; action rows reflow to a column; no mid-word breaks.
