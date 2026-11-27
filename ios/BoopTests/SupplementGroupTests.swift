@@ -38,7 +38,7 @@ struct SupplementGroupTests {
         transport.on("getPantry", 200, #"{"ingredients":[],"imports":[],"suggestions":[],"stash":[\#(stash(pD3, "D3-vitamin", "4000 NE")),\#(stash(pOmega, "Omega-3", "2 g")),\#(stash(pMag, "Magnézium", "400 mg")),\#(stash(pNew, "Cink", "15 mg"))]}"#)
         transport.on("logIntake") { body in (201, #"{"id":"\#(UUID().uuidString.lowercased())","pantryItemId":"\#(self.pD3)","takenAt":"2026-11-13T07:00:00Z","takenDate":"2026-11-13"}"#) }
         transport.on("deleteProtocolItem") { _ in (204, "") }
-        let s = EtelStore()
+        let s = EtelStore.isolated()
         await s.load(food: FoodClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: transport)), now: Date())
         return (s, rows)
     }

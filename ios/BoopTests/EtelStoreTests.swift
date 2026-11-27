@@ -66,7 +66,7 @@ struct EtelStoreTests {
 
     private func loaded(water: Double = 500, meals: [String] = []) async -> EtelStore {
         script(water: water, meals: meals)
-        let store = EtelStore()
+        let store = EtelStore.isolated()
         await store.load(food: FoodClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: transport)), now: Date())
         return store
     }
@@ -76,7 +76,7 @@ struct EtelStoreTests {
         #expect(store.day?.meals.count == 1)
         #expect(transport.count("getMealPhoto") == 0)
         // and one that says it has one asks exactly once
-        let withPhoto = EtelStore()
+        let withPhoto = EtelStore.isolated()
         script(meals: [meal(mealA, photo: false), meal(mealB, photo: true)])
         await withPhoto.load(food: FoodClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: transport)), now: Date())
         #expect(transport.count("getMealPhoto") == 1)
@@ -146,7 +146,7 @@ struct EtelStoreTests {
         }
         script(meals: [])
         let food = FoodClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: transport))
-        let store = EtelStore(taken: SupplementTakenStore(fileURL: tempFile()))
+        let store = EtelStore.isolated()
         await store.load(food: food, now: at(4))
         let group = SupplementGroup(key: "morning", label: "Reggel", count: 1, summary: "D3")
         transport.on("logIntake", 201, #"{"id":"\#(intake1)","pantryItemId":"\#(pantry)","takenAt":"2031-03-04T07:30:00Z","takenDate":"2031-03-04"}"#)

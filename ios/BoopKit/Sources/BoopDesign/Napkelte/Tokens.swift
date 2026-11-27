@@ -33,11 +33,14 @@ public enum NKSky: Hashable, Sendable {
     case hue(Hue)
     /// Kímélő mód: grey-blue sky over a pale sage horizon.
     case calm
+    /// A room page's own sky (`Hue.roomSky`): lighter than the orb's world where the owner asked for it (#122).
+    case room(Hue)
 
     /// Sky gradient: top, middle, horizon.
     public var colors: [Color] {
         switch self {
         case .hue(let h): h.sky
+        case .room(let h): h.roomSky
         case .calm: [Color(hex: 0x2A3A4E), Color(hex: 0x6E8FA0), Color(hex: 0xD6E4DC)]
         }
     }
@@ -46,6 +49,7 @@ public enum NKSky: Hashable, Sendable {
     public var top: Color {
         switch self {
         case .hue(let h): h.top
+        case .room(let h): h.roomTop
         case .calm: Color(hex: 0x1E3040)
         }
     }
@@ -53,7 +57,7 @@ public enum NKSky: Hashable, Sendable {
     /// Seeds the ridge shapes, so a sky always has the same land.
     var seed: Double {
         switch self {
-        case .hue(let h): Double(h.rawValue) * 0.9
+        case .hue(let h), .room(let h): Double(h.rawValue) * 0.9
         case .calm: 4.6
         }
     }
@@ -107,6 +111,18 @@ public enum Hue: Int, CaseIterable, Sendable {
         [Color(hex: 0x8B6CF0), Color(hex: 0x4BA8E6), Color(hex: 0xF29A4A), Color(hex: 0x4CC79A), Color(hex: 0xF06A9A),
          Color(hex: 0x5FD08A), Color(hex: 0x8E82F0), Color(hex: 0xE6B33A)][rawValue]
     }
+
+    /// The sky of the hue's own room pages: the Étel room is lighter and less saturated than the Fuel orb's world
+    /// (owner, „világos 2”, decision #122); every other room paints with `sky`.
+    public var roomSky: [Color] {
+        switch self {
+        case .fuel: [Color(hex: 0x4A8796), Color(hex: 0xA8D9CB), Color(hex: 0xF6F9E8)]
+        default: sky
+        }
+    }
+
+    /// The dark top under `roomSky`.
+    public var roomTop: Color { self == .fuel ? Color(hex: 0x3D5F5C) : top }
 
     /// The hue's dark top, the base of the deep ground.
     public var top: Color {

@@ -1712,5 +1712,29 @@
     "miert": "Az Évad módosító oldalán ma nincs ilyen beállítás; megépítése több nap lenne és ütközne az edzésblokkon folyó más munkákkal.",
     "levaltotta": "A terv eredetileg azt írta, hogy a kártya az Évad módosítást nyitja meg előre kitöltve.",
     "kovetkezmeny": "A gombos áthelyezés külön jegyen vár (mezo-r36n9.187)."
+  },
+  "d-2026-11-27-etkezes-javitas": {
+    "datum": "2026-11-27",
+    "terulet": [
+      "Étel"
+    ],
+    "cim": "Egy rögzített étkezés teljesen javítható és törölhető",
+    "suly": "Közepes",
+    "valasztas": "Az étkezés oldalán a Javítás a megszokott rögzítő lapot nyitja meg kitöltve: mennyiség, tétel ki és be, időpont, étkezés; mentés után Boop újraértékeli. Törlés az oldalon vagy a sort balra húzva, megerősítő kérdés helyett pár másodperces „Visszavonás”.",
+    "miert": "A fotós felismerésnél leggyakrabban egy tétel vagy egy mennyiség csúszik el — ezt csak a teljes javítás hozza helyre.",
+    "kovetkezmeny": "A rögzítő lap kap egy „javító” módot.",
+    "levaltotta": "Eddig egy rögzített étkezést sem javítani, sem törölni nem lehetett."
+  },
+  "d-2026-11-27-etel-ma-proba": {
+    "datum": "2026-11-27",
+    "terulet": [
+      "Étel"
+    ],
+    "cim": "Az Étel Ma próbaváltozata elfogadva, a világosabb („világos 2”) zölddel",
+    "suly": "Közepes",
+    "valasztas": "Az első kör képei lettek az irány: hős kártya gyűrűvel és lapozható görbével, étkezésenként kártya „MOST” kiemeléssel, étkezés saját oldala Javítás és Törlés gombbal, hosszan nyomott menü. Az Étel szoba ege a halványabb, üdébb zöld.",
+    "miert": "„OK, világos 2.”",
+    "kovetkezmeny": "Jöhet a terv, utána az építés.",
+    "levaltotta": "A sötétebb, telített zöld ég."
   }
 }

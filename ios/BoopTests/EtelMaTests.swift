@@ -162,4 +162,72 @@ struct EtelMaTests {
         #expect(groups[0].summary == "D3-vitamin 4000 NE · Kiegészítő")
         #expect(groups[1].summary == "Magnézium 200 mg")
     }
+
+    // MARK: the three tiers (mezo-r36n9.184)
+
+    @Test func ringCentreSaysWhatStillFits() {
+        let d = day(eaten: set(1110, 80, 120, 40), meals: [meal()])
+        let c = etelRingCentre(day: d, plan: plan(remaining: Macros(kcal: 1240, p: 85, c: 130, f: 38)))
+        #expect(c.top == "még" && c.number == "1\u{00A0}240" && c.bottom == "kcal fér bele")
+        #expect(abs(etelRingFraction(day: d) - 1110.0 / 2350.0) < 0.001)
+        // no plan yet: the day's own target less what is eaten
+        #expect(etelRingCentre(day: d, plan: nil).number == "1\u{00A0}240")
+    }
+
+    @Test func overBudgetRingIsANegativeNumberInTheNormalWords() {
+        let d = day(eaten: set(2470, 160, 260, 80), meals: [meal()])
+        let c = etelRingCentre(day: d, plan: plan(remaining: Macros(kcal: -120, p: 5, c: -10, f: -2)))
+        #expect(c.number == "−120" && c.bottom == "kcal")
+        #expect(c.top == "a kereten túl")
+        #expect(etelRingFraction(day: d) == 1)
+    }
+
+    @Test func kimeloDayRingHasNoBudget() {
+        let d = day(eaten: set(1860, 80, 200, 60), meals: [meal()], fuelMode: "GUIDANCE")
+        let c = etelRingCentre(day: d, plan: plan(remaining: Macros(kcal: 490, p: 85, c: 50, f: 18)))
+        #expect(c.top == "ma nincs keret" && c.number == "1\u{00A0}860" && c.bottom == "kcal megvan")
+        #expect(etelRingFraction(day: d) == 0)
+    }
+
+    @Test func windowTotalIsWhatWasEatenOverItsBudget() {
+        let w = PlanWindow(slot: "lunch", label: "Ebéd", from: "12:00", to: "14:00", budget: Macros(kcal: 650, p: 40, c: 70, f: 20), state: .done)
+        let logged = etelWindowTotal(.logged(label: "Ebéd", meals: [meal(), meal()]), window: w)
+        #expect(logged?.value == "1\u{00A0}000" && logged?.unit == "/ 650 kcal")
+        let open = etelWindowTotal(.open(w), window: w)
+        #expect(open?.value == "650" && open?.unit == "kcal keret")
+        #expect(etelWindowTotal(.logged(label: "Ebéd", meals: [meal()]), window: nil)?.unit == "kcal")
+        let noBudget = PlanWindow(slot: "snack", kind: .snack, label: "Uzsonna", from: "16:00", to: "17:00", state: .pending)
+        #expect(etelWindowTotal(.open(noBudget), window: noBudget) == nil)
+    }
+
+    @Test func aMealIsKnownByItsWindowsName() {
+        let m = meal(slot: "lunch"), loose = meal(slot: "dinner")
+        let w = PlanWindow(slot: "lunch", label: "Ebéd", from: "12:00", to: "14:00", state: .done, loggedMealIds: [m.id])
+        let d = day(eaten: set(1000, 60, 100, 30), meals: [m, loose])
+        #expect(etelMealLabel(m, plan: plan(remaining: nil, windows: [w]), day: d) == "Ebéd")
+        #expect(etelMealLabel(loose, plan: plan(remaining: nil, windows: [w]), day: d) == etelSlotLabel("dinner"))
+        #expect(etelMealLabel(m, plan: nil, day: d) == etelSlotLabel("lunch"))
+    }
+
+    @Test func plusOnAPastWindowLogsIntoThatWindow() {
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = .current
+        let now = cal.date(from: DateComponents(year: 2026, month: 11, day: 13, hour: 15, minute: 10))!
+        let breakfast = PlanWindow(slot: "breakfast", label: "Reggeli", from: "07:00", to: "09:00", state: .missed)
+        let at = etelWindowCaptureTime(breakfast, now: now, calendar: cal)
+        #expect(at.map { cal.component(.hour, from: $0) } == 8)
+        // the window open now, or one still to come: the composer's own "now"
+        #expect(etelWindowCaptureTime(PlanWindow(slot: "lunch", label: "Ebéd", from: "14:30", to: "16:00", state: .now), now: now, calendar: cal) == nil)
+        #expect(etelWindowCaptureTime(PlanWindow(slot: "dinner", label: "Vacsora", from: "19:00", to: "21:00", state: .pending), now: now, calendar: cal) == nil)
+    }
+
+    @Test func aWindowEmptiedByADeleteTakesTheStateTheClockGivesIt() {
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = .current
+        let now = cal.date(from: DateComponents(year: 2026, month: 11, day: 13, hour: 13, minute: 10))!
+        func state(_ from: String, _ to: String) -> WindowState {
+            etelWindowStateWhenEmptied(PlanWindow(slot: "lunch", label: "Ebéd", from: from, to: to, state: .done), now: now, calendar: cal)
+        }
+        #expect(state("07:00", "09:00") == .missed)
+        #expect(state("12:00", "14:00") == .now)
+        #expect(state("19:00", "21:00") == .pending)
+    }
 }

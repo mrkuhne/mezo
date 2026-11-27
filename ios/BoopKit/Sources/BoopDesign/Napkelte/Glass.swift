@@ -195,7 +195,9 @@ public struct NKToast: ViewModifier {
                         }
                     }
                     .padding(.leading, 16).padding(.trailing, action == nil ? 16 : 6).frame(minHeight: 42)
-                    .glassEffect(.regular, in: .capsule)
+                    // The glass is a background that takes no touches: glass wrapped around the content swallowed every
+                    // tap on the action, so Visszavonás never fired (mezo-r36n9.184, iOS 27 simulator).
+                    .background { Color.clear.glassEffect(.regular, in: .capsule).allowsHitTesting(false) }
                     .padding(.top, 6)
                     .transition(.move(edge: .top).combined(with: .opacity))
                     .task(id: t) {

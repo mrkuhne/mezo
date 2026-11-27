@@ -73,6 +73,7 @@ exercise rows and numbers are invented, and no workout is saved.
 | `-previewOpen drink` | the composer in drink mode (Ital · Mit ittál?, `mezo-r36n9.160`); `-previewHome etel -previewDrinks YES` puts two drinks on the preview day (the ITALOK group) |
 | `-previewOpen megvolt` | the Megvolt sheet for yesterday's preview template day (`mezo-r36n9.161`) |
 | `-previewOpen chatAnswer\|chatAsk\|chatQueued` | the Boop tab: one answered question / one asked at launch whose answer takes 8 s / one question waiting for the net (use with `-previewOffline YES`) |
+| `-etelDay over\|empty\|error\|deletefail` | the Étel room's Ma tab (`mezo-r36n9.184`): a big lunch puts the day over budget („a kereten túl −120”) / nothing logged yet / the day and the plan fail (each card shows its own Újra) / the server refuses a meal delete (the meal comes back with a calm line); `-previewRecovery YES` also makes the Étel day a kímélő one („ma nincs keret”) |
 | `-previewOffline YES` | no network: captures stay pending on the phone (waiting glyph), the mic keeps a recording for later upload |
 | `-previewColdTap checkin\|este` | simulates a notification tap from a cold launch: the cover is asked for before any view exists |
 | `-previewRefuse YES` | the server refuses the daily loop's writes (check-in, goal, close, journal line) with 400: the quiet "nem sikerült elküldeni · Újra" rows |

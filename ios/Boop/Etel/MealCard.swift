@@ -60,6 +60,9 @@ struct MealDetail: View {
     let title: String
     var coach: MealCoach? = nil
     let onDimension: (DimensionSelection) -> Void
+    /// The meal's own page shows the numbers and the parts in cards of their own (`MealDetailPage`).
+    var showNumbers = true
+    var showParts = true
 
     /// The coach's sentence; before it arrives (or with the coach off), the envelope's own, if it has one.
     private var words: String? {
@@ -70,9 +73,11 @@ struct MealDetail: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
+            if showNumbers {
             Text("\(huInt(Int(meal.macros.kcal.rounded()))) kcal · F \(Int(meal.macros.p.rounded())) g · Sz \(Int(meal.macros.c.rounded())) g · Zs \(Int(meal.macros.f.rounded())) g")
                 .nkFont(12.5, design: .monospaced).foregroundStyle(.white.opacity(0.7)).fixedSize(horizontal: false, vertical: true)
-            ForEach(recipePartGroups(meal), id: \.recipeId) { group in
+            }
+            ForEach(showParts ? recipePartGroups(meal) : [], id: \.recipeId) { group in
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 6) {
                         NKGlyph("book-sage", .white.opacity(0.7), size: 13)

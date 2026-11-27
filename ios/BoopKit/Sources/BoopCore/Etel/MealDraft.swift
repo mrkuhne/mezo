@@ -176,3 +176,21 @@ public extension MealDraft {
         }
     }
 }
+
+// MARK: - Correction seed (mezo-r36n9.184)
+
+public extension MealDraft {
+    /// A logged meal as an editable draft: every line at its logged amount, its macros as the per-basis (so changing
+    /// the amount scales them), its source ids and recipe overrides kept. The stored photo stays on the server.
+    init(editing m: Meal) {
+        self.init(date: m.mealDate, slot: m.slot, title: m.title, items: m.items.map { i in
+            var d = DraftItem(source: DraftSource(rawValue: i.source) ?? .estimate, pantryItemId: i.pantryItemId, recipeId: i.recipeId,
+                              name: i.name, amount: i.amount, unit: i.unit, per: i.amount > 0 ? i.amount : 1, basisUnit: i.unit,
+                              kcal: i.contribution.kcal, proteinG: i.contribution.p, carbsG: i.contribution.c, fatG: i.contribution.f,
+                              nova: i.nova, fiberG: i.fiberG, sugarG: i.sugarG, saltG: i.saltG, saturatedFatG: i.saturatedFatG,
+                              recipeName: i.recipeName)
+            d.ingredientOverrides = i.ingredientOverrides.isEmpty ? nil : i.ingredientOverrides
+            return d
+        })
+    }
+}

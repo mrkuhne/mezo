@@ -2,64 +2,377 @@ import SwiftUI
 import BoopCore
 import BoopDesign
 
-// The `Ma` tab of the Étel room, on the warm area blocks (mezo-r36n9.101): the one thing that matters now, the ways
-// to record a meal, the day in three numbers, the day's curve, the macros, the day's meals as rows (a logged one
-// opens in place), water and the supplement groups. Nothing sits in a card except the highlight.
+// The `Ma` tab of the Étel room in three tiers (mezo-r36n9.184, decision #120): a hero card (the kcal ring and the
+// three macro bars; swipe it for the day's curve), the ways to record a meal, one glass card per plan window (a
+// logged meal opens its own page), then the small cards — drinks, water, supplements — and the ask row.
 // Adherence-neutral: over budget is a negative number in the normal colour, never red, and nothing counts a streak.
 
 struct EtelMa: View {
     let store: EtelStore
-    let onDimension: (DimensionSelection) -> Void
     let onToast: (String) -> Void
     let onRetry: () -> Void
     /// Opens the composer at an entrance (nil = the picker).
     let onCapture: (MealStart.Entrance) -> Void
+    /// Opens the composer on a prepared start: a window's „+" at that window's time, or a logged meal to correct.
+    let onCompose: (MealStart) -> Void
+    /// Takes a logged meal off the page with a few seconds of Visszavonás (the room defers the server delete).
+    let onDelete: (BoopCore.Meal, String) -> Void
     let onCard: (PendingCardAction, PendingDraft) -> Void
     /// Opens one of the settings, skip or list sheets (page level).
     let onSheet: (EtelSheet) -> Void
     /// Asks Boop about the day's food (the page's last row).
     var onAsk: () -> Void = {}
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    /// The logged meals whose details are open.
-    @State private var opened: Set<UUID> = []
-    /// The later windows whose suggestion and buttons are open (the one open now always shows them).
-    @State private var openedWindows: Set<String> = []
+    @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.accessibilityVoiceOverEnabled) private var voiceOver
+    @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
+    /// The logged meal whose own page is open.
+    @State private var detailMeal: BoopCore.Meal?
+    @State private var heroPage = 0
+    @ScaledMetric(relativeTo: .body) private var heroHeight: CGFloat = 268
 
     private let hue = Hue.fuel
     private var guidance: Bool { store.day?.fuelMode == "GUIDANCE" }
+    private var online: Bool { ritmus?.online ?? true }
 
     var body: some View {
         PendingMealCards(store: store, onSave: { onCard(.save, $0) }, onEdit: { onCard(.edit, $0) },
                          onRetry: { onCard(.retry, $0) }, onDiscard: { onCard(.discard, $0) },
                          onRetryPhoto: { onCard(.retryPhoto, $0) })
         highlight
+        heroCard
         capture
-        NKBare("MA EDDIG", hue: hue, state: dayState("A mai számaidat most nem látom.")) {
-            if let day = store.day { NKStatRow(etelStats(day: day, plan: store.plan), hue: hue) }
+        windowCards
+            .fullScreenCover(item: $detailMeal) { m in
+                MealDetailPage(store: store, initial: m, label: label(of: m), onSaved: { onRetry() },
+                               onDelete: onDelete, onClose: { detailMeal = nil })
+            }
+        if let day = store.day, !etelDrinks(day).isEmpty {
+            card("ITALOK", trailing: "\(huInt(etelDrinkKcal(day))) kcal") { drinks(etelDrinks(day)) }
         }
-        if let day = store.day, let curve = etelDayCurve(day: day, plan: store.plan, now: store.clock) {
-            NKBare("A NAP MENETE", hue: hue) {
-                VStack(alignment: .leading, spacing: 10) {
-                    NKCurve(values: curve.values, labels: curve.labels, hue: hue, target: curve.target, nowIndex: curve.nowIndex, planAfterNow: true)
-                    HStack(spacing: 14) {
-                        legend("megetted", dashed: false)
-                        legend("a mai terv", dashed: true)
-                        legend("a kereted", dashed: true, white: true)
+        card("VÍZ", state: dayState("A vízbevitelt most nem látom.")) { water }
+        card("KIEGÉSZÍTŐK", state: supplementState) { supplements }
+        NKAskRow(hue: hue, text: "Kérdezd meg Boopot az étkezésedről") { onAsk() }
+    }
+
+    // MARK: - A glass card: the small-caps head on the card, the block's own loading and failed states inside
+
+    private func card<C: View>(_ label: String, trailing: String? = nil, state: NKBlockState = .ready,
+                               @ViewBuilder _ content: () -> C) -> some View {
+        NKBare(label, hue: hue, trailing: trailing, state: state, content: content)
+            .padding(.horizontal, 16).padding(.vertical, 12)
+            .nkGlass(24)
+    }
+
+    private func label(of m: BoopCore.Meal) -> String {
+        guard let day = store.day else { return etelSlotLabel(m.slot) }
+        return etelMealLabel(m, plan: store.plan, day: day)
+    }
+
+    // MARK: - The hero: the kcal ring and the macro bars; page 2 the day's curve
+
+    @ViewBuilder private var heroCard: some View {
+        if let day = store.day {
+            Group {
+                if typeSize.isAccessibilitySize || voiceOver {
+                    // The largest type sizes (and VoiceOver, which has no page dots to find page 2): both pages one under
+                    // the other, nothing clipped to a fixed height.
+                    VStack(spacing: 22) { heroRingPage(day); heroCurvePage(day) }
+                } else {
+                    VStack(spacing: 10) {
+                        TabView(selection: $heroPage) {
+                            heroRingPage(day).tag(0)
+                            heroCurvePage(day).tag(1)
+                        }
+                        .tabViewStyle(.page(indexDisplayMode: .never))
+                        .frame(height: min(heroHeight, 420) - (guidance ? 40 : 0))
+                        HStack(spacing: 6) {
+                            ForEach(0..<2) { i in
+                                Capsule().fill(.white.opacity(heroPage == i ? 0.85 : 0.25)).frame(width: heroPage == i ? 16 : 6, height: 6)
+                            }
+                        }
+                        .accessibilityHidden(true)
                     }
-                    Text(curve.note).nkFont(13).foregroundStyle(.white.opacity(0.6)).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(.vertical, 14)
+            .frame(maxWidth: .infinity)
+            .nkGlass(28)
+        } else {
+            card("MA EDDIG", state: dayState("A mai számaidat most nem látom.")) { EmptyView() }
+        }
+    }
+
+    private func heroRingPage(_ day: FoodDay) -> some View {
+        let centre = etelRingCentre(day: day, plan: store.plan)
+        let eaten = day.consumed.kcal, target = day.targets.kcal
+        let big = typeSize.isAccessibilitySize
+        let top = big ? AnyLayout(VStackLayout(alignment: .leading, spacing: 16)) : AnyLayout(HStackLayout(spacing: 20))
+        let bars = big ? AnyLayout(VStackLayout(spacing: 12)) : AnyLayout(HStackLayout(spacing: 12))
+        return VStack(spacing: 18) {
+            top {
+                ZStack {
+                    Circle().stroke(.white.opacity(0.10), lineWidth: 14)
+                    Circle().trim(from: 0, to: etelRingFraction(day: day))
+                        .stroke(AngularGradient(colors: [hue.glow.opacity(0.7), hue.glow, Color(red: 0.75, green: 0.95, blue: 0.82)], center: .center),
+                                style: StrokeStyle(lineWidth: 14, lineCap: .round))
+                        .rotationEffect(.degrees(-90))
+                    VStack(spacing: 2) {
+                        Text(centre.top).nkFont(13).foregroundStyle(.white.opacity(0.65)).lineLimit(1).minimumScaleFactor(0.6)
+                        // The ring is a fixed 166 pt: at the largest text sizes the number shrinks to fit, never "1…".
+                        Text(centre.number).font(.nkNumber(44)).foregroundStyle(.white).monospacedDigit()
+                            .lineLimit(1).minimumScaleFactor(0.2)
+                        Text(centre.bottom).nkFont(12).foregroundStyle(.white.opacity(0.6)).lineLimit(1).minimumScaleFactor(0.6)
+                    }
+                    .padding(20)
+                }
+                .frame(width: 166, height: 166)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(guidance ? "Ma nincs keret. \(centre.number) kilokalória megvan."
+                                             : "\(centre.top) \(centre.number) \(centre.bottom). \(huInt(Int(eaten.rounded()))) a \(huInt(Int(target.rounded())))-ból.")
+                VStack(alignment: .leading, spacing: 14) {
+                    heroStat(huInt(Int(eaten.rounded())), "megetted", sub: guidance ? nil : "a kereted \(huInt(Int(target.rounded())))")
+                    heroStat("\(Int(day.consumed.p.rounded())) g", "fehérje", sub: guidance ? nil : "a célod \(Int(day.targets.p.rounded())) g", lit: true)
+                }
+                if !big { Spacer(minLength: 0) }
+            }
+            bars {
+                heroMacro("Fehérje", day.consumed.p, day.targets.p, store.plan?.remaining?.p, hue.glow)
+                heroMacro("Szénhidrát", day.consumed.c, day.targets.c, store.plan?.remaining?.c, Color(red: 0.65, green: 0.91, blue: 0.78))
+                heroMacro("Zsír", day.consumed.f, day.targets.f, store.plan?.remaining?.f, Color(red: 0.96, green: 0.78, blue: 0.38))
+            }
+        }
+        .padding(.horizontal, 18)
+    }
+
+    private func heroStat(_ value: String, _ label: String, sub: String?, lit: Bool = false) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(value).font(.custom(Lagy.outfitFamily, size: 24, relativeTo: .title2).weight(.medium))
+                .foregroundStyle(lit ? hue.glow : .white).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
+            Text(label).nkFont(12.5, .medium).foregroundStyle(.white.opacity(0.8))
+            if let sub { Text(sub).nkFont(11.5).foregroundStyle(.white.opacity(0.5)).fixedSize(horizontal: false, vertical: true) }
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// One macro: the bar and "még N g" — a negative N when over, in the same colour; eaten only on a kímélő day.
+    private func heroMacro(_ name: String, _ eaten: Double, _ target: Double, _ remaining: Double?, _ color: Color) -> some View {
+        let left = Int((remaining ?? (target - eaten)).rounded())
+        let line = guidance ? "\(Int(eaten.rounded())) g" : "még \(huInt(left)) g"
+        return VStack(alignment: .leading, spacing: 6) {
+            Text(name).nkFont(12, .medium).foregroundStyle(.white.opacity(0.85)).lineLimit(1).minimumScaleFactor(0.8)
+            Capsule().fill(.white.opacity(0.1)).frame(height: 6)
+                .overlay(alignment: .leading) {
+                    if !guidance {
+                        GeometryReader { g in
+                            Capsule().fill(color).frame(width: max(4, g.size.width * (target > 0 ? min(1, max(0, eaten / target)) : 0)))
+                        }
+                    }
+                }
+            Text(line).nkFont(11.5).foregroundStyle(.white.opacity(0.6)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(guidance ? "\(name): \(Int(eaten.rounded())) gramm"
+                                     : "\(name): \(Int(eaten.rounded())) gramm a \(Int(target.rounded()))-ból, még \(huInt(left)) gramm")
+    }
+
+    @ViewBuilder private func heroCurvePage(_ day: FoodDay) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            NKMono("A NAP MENETE")
+            if let curve = etelDayCurve(day: day, plan: store.plan, now: store.clock) {
+                // The drawing and its keys are visual; VoiceOver reads the note under them, which says the same in words.
+                NKCurve(values: curve.values, labels: curve.labels, hue: hue, target: curve.target, nowIndex: curve.nowIndex, planAfterNow: true)
+                    .accessibilityHidden(true)
+                // At the largest text sizes the three keys stack: side by side they broke mid-word ("meg-ette-d").
+                let keys = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 6)) : AnyLayout(HStackLayout(spacing: 14))
+                keys {
+                    legend("megetted", dashed: false)
+                    legend("a mai terv", dashed: true)
+                    legend("a kereted", dashed: true, white: true)
+                }
+                .accessibilityHidden(true)
+                Text(curve.note).nkFont(12.5).foregroundStyle(.white.opacity(0.6)).fixedSize(horizontal: false, vertical: true)
+            } else {
+                Text("A nap menete az első étkezés után rajzolódik ki.").nkFont(13).foregroundStyle(.white.opacity(0.6))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 18)
+    }
+
+    // MARK: - One glass card per plan window
+
+    @ViewBuilder private var windowCards: some View {
+        if let plan = store.plan, let day = store.day {
+            let items = etelWindowItems(plan: plan, day: day)
+            if let line = etelWindowsEmptyLine(items) {
+                card("A MAI ÉTKEZÉSEK") { Text(line).nkFont(14).foregroundStyle(.white.opacity(0.7)).fixedSize(horizontal: false, vertical: true) }
+            } else {
+                VStack(spacing: 22) { ForEach(items) { item in windowCard(item, window: etelWindow(of: item, plan: plan)) } }
+            }
+        } else {
+            card("A MAI ÉTKEZÉSEK", state: planState) { EmptyView() }
+        }
+    }
+
+    private func windowCard(_ item: EtelWindowItem, window w: PlanWindow?) -> some View {
+        let name: String = {
+            switch item {
+            case .logged(let l, _): l
+            case .open(let w), .skipped(let w), .quiet(let w): w.label
+            }
+        }()
+        let now = w?.state == .now
+        // At the largest text sizes the name and hours take the full width and the numbers + „+" go under them.
+        let big = typeSize.isAccessibilitySize
+        let head = big ? AnyLayout(VStackLayout(alignment: .leading, spacing: 6)) : AnyLayout(HStackLayout(alignment: .center, spacing: 10))
+        return VStack(alignment: .leading, spacing: 4) {
+            head {
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 7) {
+                        Text(name).nkFont(20, design: .serif).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
+                        if now {
+                            Text("MOST").nkFont(10, .semibold, design: .monospaced).foregroundStyle(NK.ground)
+                                .padding(.horizontal, 7).padding(.vertical, 3).background(Capsule().fill(hue.glow))
+                        }
+                    }
+                    if let w { Text("\(w.from)–\(w.to)").nkFont(12).foregroundStyle(.white.opacity(0.5)).fixedSize() }
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(.isHeader)
+                if !big { Spacer(minLength: 6) }
+                HStack(alignment: .center, spacing: 10) {
+                if let total = etelWindowTotal(item, window: w) {
+                    VStack(alignment: big ? .leading : .trailing, spacing: 1) {
+                        Text(total.value).font(.custom(Lagy.outfitFamily, size: 20, relativeTo: .title3).weight(.medium))
+                            .foregroundStyle(now && !isLogged(item) ? hue.glow : .white).monospacedDigit()
+                        Text(total.unit).nkFont(11).foregroundStyle(.white.opacity(0.5))
+                    }
+                    .accessibilityElement(children: .combine)
+                }
+                if big { Spacer(minLength: 6) }
+                Button { onCompose(MealStart(entrance: .pick, at: w.flatMap { etelWindowCaptureTime($0, now: store.clock) })) } label: {
+                    Image(systemName: "plus").nkFont(15, .semibold).foregroundStyle(.white)
+                        .frame(width: 44, height: 44).background(Circle().fill(.white.opacity(0.12)).padding(4))
+                }
+                .buttonStyle(.plain).accessibilityLabel("Étkezés rögzítése: \(name)")
+                }
+            }
+            .padding(.bottom, 4)
+            switch item {
+            case .logged(let l, let meals):
+                ForEach(Array(meals.enumerated()), id: \.element.id) { k, m in
+                    if k > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5).padding(.leading, 64) }
+                    mealRow(m, l)
+                }
+            case .open(let w): openBody(w)
+            case .skipped(let w): skippedRow(w)
+            case .quiet:
+                Text("Kész, a részletei nincsenek itt.").nkFont(13).foregroundStyle(.white.opacity(0.5))
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .nkGlass(24)
+        .overlay {
+            if now { RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(hue.glow.opacity(0.45), lineWidth: 1).allowsHitTesting(false) }
+        }
+    }
+
+    private func isLogged(_ item: EtelWindowItem) -> Bool { if case .logged = item { true } else { false } }
+
+    private func timeText(_ date: Date) -> String {
+        let f = DateFormatter(); f.dateFormat = "HH:mm"; f.locale = Locale(identifier: "hu_HU")
+        return f.string(from: date)
+    }
+
+    /// A logged meal inside its window's card: a tap opens its own page; swipe left or long-press to correct or delete.
+    private func mealRow(_ m: BoopCore.Meal, _ label: String) -> some View {
+        let title = mealTitle(m, slotLabel: label)
+        // At the largest text sizes the kcal + points go under the title, so the title never breaks mid-word.
+        let big = typeSize.isAccessibilitySize
+        let row = big ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(spacing: 12))
+        return row {
+              HStack(spacing: 12) {
+                NKThumb(image: store.photos[m.id].map { Image(uiImage: $0) }, glyph: "bowl-cream", size: 52)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title).nkFont(15.5, .medium).foregroundStyle(.white).lineLimit(big ? nil : 3).multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: big)
+                    let info = big ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2)) : AnyLayout(HStackLayout(spacing: 6))
+                    info {
+                        Text(timeText(m.loggedAt)).nkFont(12).foregroundStyle(.white.opacity(0.55)).fixedSize()
+                        Text("F \(Int(m.macros.p.rounded())) · Sz \(Int(m.macros.c.rounded())) · Zs \(Int(m.macros.f.rounded()))")
+                            .nkFont(11.5, design: .monospaced).foregroundStyle(.white.opacity(0.5)).lineLimit(big ? 2 : 1).minimumScaleFactor(0.7)
+                    }
+                }
+              }
+                if !big { Spacer(minLength: 6) }
+              HStack(spacing: 12) {
+                VStack(alignment: big ? .leading : .trailing, spacing: 3) {
+                    Text(huInt(Int(m.macros.kcal.rounded()))).font(.custom(Lagy.outfitFamily, size: 17, relativeTo: .body).weight(.medium))
+                        .foregroundStyle(.white).monospacedDigit()
+                    if let points = mealPoints(m) {
+                        Text("\(points) pont").nkFont(10.5, .semibold).foregroundStyle(hue.glow)
+                            .padding(.horizontal, 7).padding(.vertical, 2.5).background(Capsule().fill(hue.glow.opacity(0.16)))
+                    }
+                }
+                if big { Spacer(minLength: 6) }
+                Image(systemName: "chevron.right").nkFont(12, .semibold).foregroundStyle(.white.opacity(0.35))
+              }
+            }
+            .padding(.vertical, 8)
+            .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title), \(timeText(m.loggedAt)), \(huInt(Int(m.macros.kcal.rounded()))) kilokalória\(mealPoints(m).map { ", \($0) pont" } ?? "")")
+        .accessibilityHint("Megnyitja az étkezés oldalát")
+        .modifier(MealRowActions(online: online, title: title,
+                                 onOpen: { detailMeal = m },
+                                 onEdit: { onCompose(MealStart(entrance: .edit, editing: m)) },
+                                 onDelete: { onDelete(m, title) }))
+    }
+
+    /// The open window's body inside its card: Boop's suggestion; on the window open now Megeszem · Kihagyom · photo,
+    /// on a later one Kihagyom (its „+" is the Megeszem).
+    private func openBody(_ w: PlanWindow) -> some View {
+        let now = w.state == .now
+        return VStack(alignment: .leading, spacing: 10) {
+            if let s = w.suggestion {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(s.text).nkFont(now ? 15 : 14, design: .serif).foregroundStyle(.white.opacity(now ? 0.92 : 0.75))
+                        .fixedSize(horizontal: false, vertical: true)
+                    if now, !s.reason.isEmpty {
+                        Text(s.reason).nkFont(12.5).foregroundStyle(.white.opacity(0.55)).fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+            HStack(spacing: 8) {
+                if now {
+                    Button { onCapture(.pick) } label: {
+                        Text("Megeszem").nkFont(14, .semibold).foregroundStyle(NK.ground)
+                            .padding(.horizontal, 16).frame(minHeight: 40).background(Capsule().fill(.white.opacity(0.95)))
+                    }
+                    .buttonStyle(.plain)
+                }
+                if !guidance {
+                    Button { onSheet(.skip(w)) } label: {
+                        Text("Kihagyom").nkFont(14).foregroundStyle(.white.opacity(0.8))
+                            .padding(.horizontal, 16).frame(minHeight: 40)
+                            .background(Capsule().fill(.white.opacity(0.1)).overlay(Capsule().stroke(.white.opacity(0.18))))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("\(w.label) kihagyása")
+                }
+                Spacer(minLength: 0)
+                if now {
+                    Button { onCapture(.photo) } label: {
+                        NKGlyph("camera-ink", .white, size: 18).frame(width: 40, height: 40).background(Circle().fill(.white.opacity(0.1)))
+                    }
+                    .buttonStyle(.plain).accessibilityLabel("Fotó az étkezésről")
                 }
             }
         }
-        if !guidance {
-            NKBare("MAKRÓK", hue: hue, trailing: "ami még belefér", state: dayState("A mai keretedet most nem látom.")) { macros }
-        }
-        NKBare("A MAI ÉTKEZÉSEK", hue: hue, state: planState) { windows }
-        if let day = store.day, !etelDrinks(day).isEmpty {
-            NKBare("ITALOK", hue: hue, trailing: "\(huInt(etelDrinkKcal(day))) kcal") { drinks(etelDrinks(day)) }
-        }
-        NKBare("VÍZ", hue: hue, state: dayState("A vízbevitelt most nem látom.")) { water }
-        NKBare("KIEGÉSZÍTŐK", hue: hue, state: supplementState) { supplements }
-        NKAskRow(hue: hue, text: "Kérdezd meg Boopot az étkezésedről") { onAsk() }
     }
 
     /// One entry of the curve's legend: a short stroke the way the line is drawn, and what it is.
@@ -68,7 +381,7 @@ struct EtelMa: View {
             Path { p in p.move(to: CGPoint(x: 0, y: 1)); p.addLine(to: CGPoint(x: 16, y: 1)) }
                 .stroke(white ? Color.white.opacity(0.55) : hue.glow, style: StrokeStyle(lineWidth: 2, lineCap: .round, dash: dashed ? [2, 4] : []))
                 .frame(width: 16, height: 2)
-            Text(text).nkFont(11.5).foregroundStyle(.white.opacity(0.6))
+            Text(text).nkFont(11.5).foregroundStyle(.white.opacity(0.6)).lineLimit(1).minimumScaleFactor(0.7)
         }
         .accessibilityHidden(true)
     }
@@ -140,42 +453,6 @@ struct EtelMa: View {
         // says what comes next and offers its suggestion.
     }
 
-    // MARK: - The macros: what is eaten of each, and what still fits
-
-    @ViewBuilder private var macros: some View {
-        if let day = store.day {
-            let remaining = store.plan?.remaining
-            VStack(spacing: 14) {
-                macro("Fehérje", day.consumed.p, day.targets.p, remaining?.p, hue.glow)
-                macro("Szénhidrát", day.consumed.c, day.targets.c, remaining?.c, Color(red: 0.65, green: 0.91, blue: 0.78))
-                macro("Zsír", day.consumed.f, day.targets.f, remaining?.f, Color(red: 0.96, green: 0.78, blue: 0.38))
-            }
-        }
-    }
-
-    /// One macro: its name, what is eaten of the goal, the bar, and "még N g" — a negative N when over, in the same colour.
-    private func macro(_ name: String, _ eaten: Double, _ target: Double, _ remaining: Double?, _ color: Color) -> some View {
-        let left = Int((remaining ?? (target - eaten)).rounded())
-        return VStack(spacing: 7) {
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(name).nkFont(14.5, .medium).foregroundStyle(.white)
-                Text("\(Int(eaten.rounded())) / \(Int(target.rounded())) g").nkFont(12, design: .monospaced).foregroundStyle(.white.opacity(0.5))
-                    .lineLimit(1).minimumScaleFactor(0.7)
-                Spacer(minLength: 8)
-                Text("még").nkFont(12).foregroundStyle(.white.opacity(0.5))
-                Text("\(huInt(left)) g").font(.custom(Lagy.outfitFamily, size: 17).weight(.medium)).foregroundStyle(.white).monospacedDigit()
-            }
-            Capsule().fill(.white.opacity(0.1)).frame(height: 5)
-                .overlay(alignment: .leading) {
-                    GeometryReader { g in
-                        Capsule().fill(color).frame(width: max(3, g.size.width * (target > 0 ? min(1, max(0, eaten / target)) : 0)))
-                    }
-                }
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(name): \(Int(eaten.rounded())) gramm a \(Int(target.rounded()))-ból, még \(huInt(left)) gramm")
-    }
-
     // MARK: - The day's drinks (`mezo-r36n9.160`): no window, no ring
 
     private func drinks(_ list: [BoopCore.Meal]) -> some View {
@@ -188,91 +465,23 @@ struct EtelMa: View {
                         NKGlyph("cup-cream", hue.glow, size: 18)
                     }
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(mealTitle(m, slotLabel: "Ital")).nkFont(15, .medium).foregroundStyle(.white).lineLimit(1)
+                        Text(mealTitle(m, slotLabel: "Ital")).nkFont(15, .medium).foregroundStyle(.white).lineLimit(2)
                         Text("\(timeText(m.loggedAt)) · \(huInt(Int(m.macros.kcal.rounded()))) kcal · \(Int(m.macros.p.rounded())) g fehérje")
                             .nkFont(12.5).foregroundStyle(.white.opacity(0.55))
                     }
                     Spacer(minLength: 8)
                     Text("ital").nkFont(11, .medium, design: .monospaced).tracking(1).foregroundStyle(.white.opacity(0.55))
                         .padding(.horizontal, 8).padding(.vertical, 4).background(Capsule().fill(.white.opacity(0.08)))
+                    Image(systemName: "chevron.right").nkFont(12, .semibold).foregroundStyle(.white.opacity(0.35))
                 }
                 .padding(.vertical, 10)
-                .accessibilityElement(children: .combine)
-            }
-        }
-    }
-
-    // MARK: - The day's meals, as rows
-
-    @ViewBuilder private var windows: some View {
-        if let plan = store.plan, let day = store.day {
-            let items = etelWindowItems(plan: plan, day: day)
-            if let line = etelWindowsEmptyLine(items) {
-                Text(line).nkFont(14).foregroundStyle(.white.opacity(0.7)).fixedSize(horizontal: false, vertical: true)
-            } else {
-                VStack(spacing: 0) {
-                    ForEach(Array(items.enumerated()), id: \.element.id) { k, item in
-                        if k > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5).padding(.leading, 64) }
-                        switch item {
-                        case .logged(let label, let meals):
-                            ForEach(meals) { m in mealRow(m, label) }
-                        case .open(let w): openRow(w)
-                        case .skipped(let w): skippedRow(w)
-                        case .quiet(let w): quietRow(w)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private func timeText(_ date: Date) -> String {
-        let f = DateFormatter(); f.dateFormat = "HH:mm"; f.locale = Locale(identifier: "hu_HU")
-        return f.string(from: date)
-    }
-
-    /// A logged meal: his photo, the name, when, the energy and the protein, the score — a tap opens its details in place.
-    private func mealRow(_ m: BoopCore.Meal, _ label: String) -> some View {
-        let title = mealTitle(m, slotLabel: label)
-        let open = opened.contains(m.id)
-        return VStack(alignment: .leading, spacing: 0) {
-            Button {
-                withAnimation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.86)) {
-                    if open { opened.remove(m.id) } else { opened.insert(m.id) }
-                }
-            } label: {
-                HStack(spacing: 12) {
-                    NKThumb(image: store.photos[m.id].map { Image(uiImage: $0) }, glyph: "bowl-cream", size: 52)
-                        .overlay(alignment: .bottomTrailing) { NKDoneTick(hue: hue).offset(x: 4, y: 3) }
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(title).nkFont(15.5, .medium).foregroundStyle(.white).lineLimit(2).multilineTextAlignment(.leading)
-                        HStack(spacing: 6) {
-                            Text("\(label) · \(timeText(m.loggedAt))").nkFont(12).foregroundStyle(.white.opacity(0.55)).lineLimit(1)
-                            if let points = mealPoints(m) {
-                                Text("\(points) pont").nkFont(10.5, .semibold).foregroundStyle(hue.glow)
-                                    .padding(.horizontal, 7).padding(.vertical, 2.5)
-                                    .background(Capsule().fill(hue.glow.opacity(0.16)))
-                            }
-                        }
-                    }
-                    Spacer(minLength: 6)
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text(huInt(Int(m.macros.kcal.rounded()))).font(.custom(Lagy.outfitFamily, size: 17).weight(.medium))
-                            .foregroundStyle(.white).monospacedDigit()
-                        Text("kcal · \(Int(m.macros.p.rounded())) g").nkFont(11).foregroundStyle(.white.opacity(0.5))
-                    }
-                    Image(systemName: open ? "chevron.up" : "chevron.down").nkFont(12, .semibold).foregroundStyle(.white.opacity(0.35))
-                }
-                .padding(.vertical, 12)
                 .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityElement(children: .combine)
-            .accessibilityHint(open ? "Bezárja a részleteket" : "Megnyitja a részleteket")
-            if open {
-                MealDetail(meal: m, title: title, coach: store.coach[m.id], onDimension: onDimension)
-                    .padding(.leading, 64).padding(.bottom, 14)
-                    .transition(.opacity)
+                .accessibilityElement(children: .combine)
+                .accessibilityHint("Megnyitja az ital oldalát")
+                .modifier(MealRowActions(online: online, title: mealTitle(m, slotLabel: "Ital"),
+                                         onOpen: { detailMeal = m },
+                                         onEdit: { onCompose(MealStart(entrance: .edit, editing: m)) },
+                                         onDelete: { onDelete(m, mealTitle(m, slotLabel: "Ital")) }))
             }
         }
     }
@@ -288,94 +497,6 @@ struct EtelMa: View {
         }
         .frame(width: 52, height: 52)
         .accessibilityHidden(true)
-    }
-
-    /// A window still open. The one that is on now shows its suggestion and buttons; a later one is a single quiet
-    /// line until he taps it, so the page reads as a day and not as a column of buttons.
-    private func openRow(_ w: PlanWindow) -> some View {
-        let now = w.state == .now
-        let key = "\(w.slot)-\(w.from)"
-        let expanded = now || openedWindows.contains(key)
-        let head = HStack(spacing: 12) {
-            emptyMedallion(now)
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 7) {
-                    Text(w.label).nkFont(15.5, .medium).foregroundStyle(.white.opacity(now ? 1 : 0.85)).lineLimit(1)
-                    if now {
-                        Text("MOST").nkFont(10, .semibold, design: .monospaced).foregroundStyle(NK.ground)
-                            .padding(.horizontal, 7).padding(.vertical, 3).background(Capsule().fill(hue.glow))
-                    }
-                }
-                Text(now || w.suggestion == nil || expanded ? "\(w.from)–\(w.to)" : "\(w.from)–\(w.to) · \(w.suggestion?.text ?? "")")
-                    .nkFont(12).foregroundStyle(.white.opacity(0.55)).lineLimit(1)
-            }
-            Spacer(minLength: 6)
-            if let b = w.budget {
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text(huInt(Int(b.kcal.rounded()))).font(.custom(Lagy.outfitFamily, size: 17).weight(.medium))
-                        .foregroundStyle(now ? hue.glow : .white.opacity(0.8)).monospacedDigit()
-                    Text("kcal keret").nkFont(11).foregroundStyle(.white.opacity(0.5))
-                }
-            }
-            // The open-now row has nothing to fold, but keeps the chevron's width so the numbers line up down the list.
-            Image(systemName: expanded ? "chevron.up" : "chevron.down").nkFont(12, .semibold).foregroundStyle(.white.opacity(0.35))
-                .opacity(now ? 0 : 1).accessibilityHidden(true)
-        }
-        .contentShape(Rectangle())
-        return VStack(alignment: .leading, spacing: 10) {
-            if now {
-                head.accessibilityElement(children: .combine)
-            } else {
-                Button {
-                    withAnimation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.86)) {
-                        if expanded { openedWindows.remove(key) } else { openedWindows.insert(key) }
-                    }
-                } label: { head }
-                .buttonStyle(.plain)
-                .accessibilityElement(children: .combine)
-                .accessibilityHint(expanded ? "Bezárja" : "Megnyitja: megeszem vagy kihagyom")
-            }
-            if expanded {
-                VStack(alignment: .leading, spacing: 10) {
-                    if let s = w.suggestion {
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(s.text).nkFont(15, design: .serif).foregroundStyle(.white.opacity(0.92)).fixedSize(horizontal: false, vertical: true)
-                            if !s.reason.isEmpty {
-                                Text(s.reason).nkFont(12.5).foregroundStyle(.white.opacity(0.55)).fixedSize(horizontal: false, vertical: true)
-                            }
-                        }
-                    }
-                    HStack(spacing: 8) {
-                        Button { onCapture(.pick) } label: {
-                            Text("Megeszem").nkFont(14, .semibold).foregroundStyle(now ? NK.ground : .white)
-                                .padding(.horizontal, 16).frame(minHeight: 38)
-                                .background {
-                                    if now { Capsule().fill(.white.opacity(0.95)) }
-                                    else { Capsule().fill(.white.opacity(0.1)).overlay(Capsule().stroke(.white.opacity(0.18))) }
-                                }
-                        }
-                        .buttonStyle(.plain)
-                        if !guidance {
-                            Button { onSheet(.skip(w)) } label: {
-                                Text("Kihagyom").nkFont(14).foregroundStyle(.white.opacity(0.8))
-                                    .padding(.horizontal, 16).frame(minHeight: 38)
-                                    .background(Capsule().fill(.white.opacity(0.1)).overlay(Capsule().stroke(.white.opacity(0.18))))
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel("\(w.label) kihagyása")
-                        }
-                        Spacer(minLength: 0)
-                        Button { onCapture(.photo) } label: {
-                            NKGlyph("camera-ink", .white, size: 18).frame(width: 38, height: 38).background(Circle().fill(.white.opacity(0.1)))
-                        }
-                        .buttonStyle(.plain).accessibilityLabel("Fotó az étkezésről")
-                    }
-                }
-                .padding(.leading, 64)
-                .transition(.opacity)
-            }
-        }
-        .padding(.vertical, 12)
     }
 
     /// A skipped window with the way back: Visszavonom plans it again and the budget returns.
@@ -394,20 +515,6 @@ struct EtelMa: View {
             .buttonStyle(.plain).accessibilityLabel("\(w.label) kihagyásának visszavonása")
         }
         .padding(.vertical, 12)
-    }
-
-    private func quietRow(_ w: PlanWindow) -> some View {
-        HStack(spacing: 12) {
-            emptyMedallion(false).overlay(alignment: .bottomTrailing) { NKDoneTick(hue: hue).offset(x: 4, y: 3) }
-            VStack(alignment: .leading, spacing: 3) {
-                Text(w.label).nkFont(15.5, .medium).foregroundStyle(.white.opacity(0.8)).lineLimit(1)
-                Text("\(w.from)–\(w.to) · kész, a részletei nincsenek itt").nkFont(12).foregroundStyle(.white.opacity(0.5)).lineLimit(1)
-                    .minimumScaleFactor(0.8)
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(.vertical, 12)
-        .accessibilityElement(children: .combine)
     }
 
     // MARK: - Water
@@ -497,3 +604,75 @@ struct EtelMa: View {
 
 /// What the owner can do with a capture that is waiting.
 enum PendingCardAction { case save, edit, retry, discard, retryPhoto }
+
+/// A logged row's other routes besides the tap (spec §5.1, HIG: a swipe is never the only route): swipe left to
+/// reveal Törlés (a long swipe deletes at once), long-press for Megnyitás · Javítás · Törlés, and the same three as
+/// VoiceOver actions. Offline the correcting routes stay visible but disabled — they need the net.
+private struct MealRowActions: ViewModifier {
+    let online: Bool
+    let title: String
+    let onOpen: () -> Void
+    let onEdit: () -> Void
+    let onDelete: () -> Void
+    @State private var offset: CGFloat = 0
+    @State private var revealed = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    private let reveal: CGFloat = 88, commit: CGFloat = 200
+
+    func body(content: Content) -> some View {
+        ZStack(alignment: .trailing) {
+            if offset < 0 {
+                Button(role: .destructive) { close(); onDelete() } label: {
+                    VStack(spacing: 3) {
+                        Image(systemName: "trash").nkFont(16, .semibold)
+                        Text("Törlés").nkFont(11.5, .semibold)
+                    }
+                    .foregroundStyle(.white)
+                    .frame(width: max(0, -offset)).frame(maxHeight: .infinity)
+                    .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color(red: 0.78, green: 0.33, blue: 0.30)))
+                }
+                .buttonStyle(.plain)
+                .accessibilityHidden(true)
+            }
+            // A tap opens the page — a tap gesture, not a Button: a Button would still fire when the finger lifts after
+            // a swipe inside the row. While Törlés shows, a tap closes it instead.
+            content
+                .offset(x: offset)
+                .onTapGesture { if revealed { close() } else { onOpen() } }
+                .accessibilityAddTraits(.isButton)
+                .accessibilityAction { onOpen() }
+        }
+        .clipped()
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 24)
+                .onChanged { v in
+                    guard online, abs(v.translation.width) > abs(v.translation.height) * 1.6 else { return }
+                    offset = min(0, v.translation.width + (revealed ? -reveal : 0))
+                }
+                .onEnded { v in
+                    guard online else { return }
+                    let x = v.translation.width + (revealed ? -reveal : 0)
+                    if x < -commit { close(); onDelete() }
+                    else if x < -reveal / 2 { animate { offset = -reveal; revealed = true } }
+                    else { close() }
+                }
+        )
+        .contextMenu {
+            Button(action: onOpen) { Label("Megnyitás", systemImage: "doc.text") }
+            Button(action: onEdit) { Label("Javítás", systemImage: "pencil") }.disabled(!online)
+            Button(role: .destructive, action: onDelete) { Label("Törlés", systemImage: "trash") }.disabled(!online)
+        }
+        .accessibilityAction(named: "Javítás") { if online { onEdit() } else { offlineNote() } }
+        .accessibilityAction(named: "Törlés") { if online { onDelete() } else { offlineNote() } }
+    }
+
+    /// Offline the actions stay listed (like the dimmed buttons) but say why they do nothing, instead of silence.
+    private func offlineNote() {
+        UIAccessibility.post(notification: .announcement, argument: "Ehhez internet kell. Ha visszajön, itt javíthatod vagy törölheted.")
+    }
+
+    private func close() { animate { offset = 0; revealed = false } }
+    private func animate(_ change: () -> Void) {
+        withAnimation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.86), change)
+    }
+}
