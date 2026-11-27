@@ -124,9 +124,15 @@ final class NoWorkoutActivity: WorkoutActivitySyncing {
 enum WorkoutLiveActions {
     /// The Edzés room's store, while it exists.
     static weak var liveStore: EdzesStore?
-    /// Unit tests never start a real card (their host is the app itself).
-    static var activities: WorkoutActivitySyncing = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil
-        ? WorkoutActivityController.shared : NoWorkoutActivity()
+    /// Unit tests never start a real card (their host is the app itself). Neither does a `-previewLiveActivity` run: its
+    /// sample card would be ended at once by the preview account's start-up (no workout file → `endAll`).
+    static var activities: WorkoutActivitySyncing = {
+        if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil { return NoWorkoutActivity() }
+        #if DEBUG
+        if UserDefaults.standard.string(forKey: "previewLiveActivity") != nil { return NoWorkoutActivity() }
+        #endif
+        return WorkoutActivityController.shared
+    }()
     /// Seconds a „+15 mp" adds.
     static let addSeconds: TimeInterval = 15
 

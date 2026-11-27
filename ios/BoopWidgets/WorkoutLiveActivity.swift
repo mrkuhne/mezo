@@ -10,7 +10,7 @@ struct WorkoutLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: WorkoutActivityAttributes.self) { context in
             WorkoutCard(attributes: context.attributes, state: context.state, stale: context.isStale)
-                .padding(16)
+                .padding(.horizontal, 16).padding(.vertical, 12)
                 .activityBackgroundTint(Color.black.opacity(0.55))
                 .activitySystemActionForegroundColor(.white)
         } dynamicIsland: { context in
@@ -70,19 +70,20 @@ struct WorkoutCard: View {
     private var restOver: Bool { state.phase == .rest && stale }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        // The Lock Screen gives a card at most 160 pt: every size here is budgeted to fit it with the buttons.
+        VStack(alignment: .leading, spacing: 5) {
             header
             HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 1) {
                     Text(state.exercise)
-                        .font(.nkSerif(22)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
-                    Text(subline).font(.system(size: 13)).foregroundStyle(.white.opacity(0.65)).lineLimit(1)
+                        .font(.nkSerif(20)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
+                    Text(subline).font(.system(size: 12)).foregroundStyle(.white.opacity(0.65)).lineLimit(1)
                 }
                 Spacer(minLength: 8)
                 if let target {
                     VStack(alignment: .trailing, spacing: 0) {
-                        Text(target).font(.nkNumber(24)).foregroundStyle(.white).lineLimit(1)
-                        Text("cél").font(.system(size: 11)).foregroundStyle(.white.opacity(0.55))
+                        Text(target).font(.nkNumber(21)).foregroundStyle(.white).lineLimit(1)
+                        Text("cél").font(.system(size: 10)).foregroundStyle(.white.opacity(0.55))
                     }
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel("Cél: \(target)")
@@ -98,12 +99,12 @@ struct WorkoutCard: View {
 
     private var header: some View {
         HStack(spacing: 8) {
-            OrbDot(size: 16)
+            OrbDot(size: 13)
             Text("EDZÉS · \(state.done) / \(state.total) SOROZAT")
-                .font(.nkMono(11)).tracking(1.5).foregroundStyle(.white.opacity(0.8))
+                .font(.nkMono(10)).tracking(1.5).foregroundStyle(.white.opacity(0.8))
             Spacer(minLength: 4)
             if !attributes.dayName.isEmpty {
-                Text(attributes.dayName).font(.system(size: 12)).foregroundStyle(.white.opacity(0.6)).lineLimit(1)
+                Text(attributes.dayName).font(.system(size: 11)).foregroundStyle(.white.opacity(0.6)).lineLimit(1)
             }
         }
         .accessibilityElement(children: .combine)
@@ -135,8 +136,8 @@ struct WorkoutCard: View {
         return HStack(spacing: 14) {
             Text("PIHENŐ").font(.nkMono(10)).tracking(1.5).foregroundStyle(.white.opacity(0.7))
             Text(timerInterval: start...ends, countsDown: true)
-                .font(.nkNumber(34)).monospacedDigit().foregroundStyle(Self.glow)
-                .frame(width: 92, alignment: .leading)
+                .font(.nkNumber(26)).monospacedDigit().foregroundStyle(Self.glow)
+                .frame(width: 72, alignment: .leading)
             ProgressView(timerInterval: start...ends, countsDown: true) { EmptyView() } currentValueLabel: { EmptyView() }
                 .progressViewStyle(.linear).tint(Self.glow)
         }
@@ -163,10 +164,10 @@ struct WorkoutCard: View {
 
     private func pill(_ text: String, filled: Bool) -> some View {
         Text(text)
-            .font(.system(size: 16, weight: .semibold))
+            .font(.system(size: 15, weight: .semibold))
             .foregroundStyle(filled ? Color.black.opacity(0.85) : .white)
             .lineLimit(1).minimumScaleFactor(0.8)
-            .frame(maxWidth: .infinity, minHeight: 46)
+            .frame(maxWidth: .infinity, minHeight: 36)
             .background(Capsule().fill(filled ? Self.glow : Color.white.opacity(0.14)))
     }
 }
