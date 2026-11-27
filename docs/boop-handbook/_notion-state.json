@@ -3428,11 +3428,15 @@
     },
     "kiadasok:2090f37b1": {
       "page_id": "4258968e-752b-814b-9e22-e262cf5a6409",
-      "hash": "d1d8d792ca69"
+      "hash": "80961382ed39"
     },
     "kezikonyv:01-alapok/gorgetes-es-billentyuzet": {
       "page_id": "4258968e-752b-81a3-ac44-f8b92bdc589d",
-      "hash": "92c153b8a70d"
+      "hash": "d5b65ffc1a0f"
+    },
+    "kiadasok:e1e42d1e5": {
+      "page_id": "4258968e-752b-81ab-872e-c7c996e91747",
+      "hash": "46b000df9d2f"
     }
   }
 }
