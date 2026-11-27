@@ -14,11 +14,17 @@ osszefoglalo: A Ma fül megmutatja, mennyi fér még bele a napba és mit egyél
 - **„Következő étkezés” tipp:** a maradék keretből Boop konkrét javaslatot ad (például: „vacsorára egy fehérjedús tál fér
   bele, kb. 600 kcal”), lehetőleg a saját receptjeidből.
 - **Víz:** egy koppintással rögzítesz egy pohár vizet, látod a napi vízcélt.
-- **Hét fül:** a fejléc egy mondatban mondja a hét átlagát („Napi átlag 2 380 kalória”, például) és hogy a keret alatt vagy
-  fölött zártál-e. Alatta „A hét egy mondatban”: egyetlen megfigyelés (a fehérje elmaradása, a keret fölötti napok vagy a
-  kihagyott étkezések), három szám (kalória- és fehérje-átlag a céllal, az étkezések pontszámának átlaga), kalória- és
-  fehérje-oszlopok a célvonallal, a napok soronként címkékkel és a nap pontszámával, végül a hét részletei címkéken.
-  Egy napra koppintva a négy makró sávval a célhoz képest és a nap étkezései pontszámmal.
+- **Hét fül (naptári hét, 2026-11-27 óta):** hétfőtől vasárnapig mutatja a hetet; fent nyíllal lapozhatsz az előző
+  hetekre („ez a hét”, „múlt hét”, „3 hete”), a jövőbe nem. A fejléc egy mondatban mondja a hét átlagát („Napi átlag
+  2 380 kalória”, például) és hogy a keret alatt vagy fölött zártál-e. Alatta egy **hős kártya**: három szám (kalória-
+  és fehérje-átlag a céllal, az étkezések pontszámának átlaga) és a kalória-oszlopok a célvonallal — oldalra húzva a
+  fehérje-oszlopok; a mai nap oszlopa világít. Utána „A hét egy mondatban” (egyetlen megfigyelés). **A napok** egy
+  doboz nélküli, oldalra görgethető kártyasorban jönnek, ugyanabban a sorrendben, mint az oszlopok; a sor a mai napon
+  nyílik. Minden napkártyán a nap neve és dátuma, a kalória a célhoz képest egy sávval, a fehérje, a nap pontszáma,
+  és ha van: kímélő nap, edzésnap, kihagyott étkezés. A még hátralévő napok halványak („még előtted”), nem
+  „kimaradt” napok. Végül **A hét részletei** kártya: hány napot rögzítettél (hét pötty), a fehérje, szénhidrát és
+  zsír napi átlaga a célhoz mérve, az edzésnapok, a kihagyott étkezések, a kímélő napok és hogy melyik nap zárt
+  legközelebb a célhoz. Egy napra koppintva a négy makró sávval a célhoz képest és a nap étkezései pontszámmal.
 - **Étrendi beállítások:** makróarány (kiegyensúlyozott, zsírszegény, szénhidrátszegény, szénhidrátdús vagy egyéni),
   fehérjeszint (alacsony / közepes / magas), napi víz- és rostcél.
 

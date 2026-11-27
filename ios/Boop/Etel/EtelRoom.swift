@@ -44,6 +44,8 @@ final class EtelStore {
     private(set) var weekLoaded = false
     private(set) var weekProblem: FoodFetchError?
     private(set) var weekScores: [String: Int] = [:]
+    /// Which calendar week the Hét tab shows: 0 = this week (Monday → Sunday), −1 = last week, … (never a future week).
+    private(set) var weekOffset = 0
     /// Days whose meals could not be read for a score (the tab says so instead of showing a quietly wrong average).
     private(set) var weekScoreFailures: Set<String> = []
     /// The server's judgement of the week's days (B6 S2 — the single source); empty when it could not be read, and the
@@ -340,12 +342,14 @@ final class EtelStore {
     /// then each logged day's meals for its own mean score.
     func loadWeek(food: FoodClient, evad: EvadClient?, now: Date) async {
         self.food = food
-        let start = Calendar.current.date(byAdding: .day, value: -6, to: now) ?? now
+        let start = etelWeekMonday(of: now, offset: weekOffset)
+        let sunday = Calendar.current.date(byAdding: .day, value: 6, to: start) ?? start
+        let judgedTo = min(sunday, now)
         // The server's judgement runs on its own: the week is on screen the moment it is read (the local rule
         // meanwhile), and a slow or hung judgement never holds the tab, its scores or the opened day.
         weekAdherenceTask?.cancel()
         weekAdherenceTask = evad.map { evad in
-            let (from, to) = (food.ymd(start), food.ymd(now))
+            let (from, to) = (food.ymd(start), food.ymd(judgedTo))
             return Task { [weak self] in
                 let days: [EvadAdherenceDay]
                 do throws(PlanFetchError) { days = try await evad.adherence(from: from, to: to).days }
@@ -356,7 +360,10 @@ final class EtelStore {
         }
         if evad == nil { weekAdherence = [] }
         switch await Self.attempt({ try await food.week(from: start) }) {
-        case .success(let w): week = w; weekProblem = nil
+        case .success(let w):
+            // Another week's scores never colour this one while its own are read.
+            if week?.start != w.start { weekScores = [:]; weekScoreFailures = [] }
+            week = w; weekProblem = nil
         case .failure(let e): weekProblem = e
         }
         weekLoaded = true
@@ -388,6 +395,14 @@ final class EtelStore {
         }
         weekScores = scored
         weekScoreFailures = failed
+    }
+
+    /// The week stepper: one calendar week back (−1) or forward (+1), never past this week.
+    func stepWeek(_ delta: Int, food: FoodClient, evad: EvadClient?, now: Date) async {
+        let next = min(0, max(-52, weekOffset + delta))
+        guard next != weekOffset else { return }
+        weekOffset = next
+        await loadWeek(food: food, evad: evad, now: now)
     }
 
     // MARK: - Recipes (B4 Task 12)
@@ -859,7 +874,8 @@ struct EtelRoom: View {
                 EtelKamra(store: store, onAdd: { kamraSheet = .add($0) }, onOpen: { kamraSheet = .item($0) }, onRetry: { Task { await reload() } },
                           onSheet: { etelSheet = $0 })
             case .het:
-                EtelHet(store: store, onOpen: { hetDay = $0 }, onRetry: { Task { await reload() } })
+                EtelHet(store: store, onOpen: { hetDay = $0 }, onRetry: { Task { await reload() } },
+                        onStep: { delta in Task { if let food { await store.stepWeek(delta, food: food, evad: evad?.client, now: BoopClock.now()) } } })
             }
             Color.clear.frame(height: 20)
         }
@@ -995,7 +1011,7 @@ struct EtelRoom: View {
             case "supplements": etelSheet = .supplements
             case "skip": if let food, let plan = try? await food.plan(BoopClock.now()), let w = plan.windows.first(where: { $0.state == .now || $0.state == .pending }) { await store.load(food: food, now: BoopClock.now()); etelSheet = .skip(w) }
             case "het-day": if let food { await store.loadWeek(food: food, evad: evad?.client, now: BoopClock.now()); if let w = store.week {
-                hetDay = hetWeek(w, scores: store.weekScores, today: store.ymd, adherence: store.weekAdherence).days.dropLast().last } }
+                hetDay = hetWeek(w, scores: store.weekScores, today: store.ymd, adherence: store.weekAdherence).days.last { $0.date < store.ymd } } }
             default: break
             }
         }
@@ -1121,4 +1137,13 @@ struct EtelRoom: View {
         case .discard: Task { await box.discard(card.id); await store.refreshPending(box) }
         }
     }
+}
+
+/// The Monday (00:00, the phone's zone) of the calendar week holding `now`, moved by `offset` weeks.
+func etelWeekMonday(of now: Date, offset: Int = 0, calendar: Calendar = .current) -> Date {
+    var cal = Calendar(identifier: .gregorian); cal.timeZone = calendar.timeZone
+    let day = cal.startOfDay(for: now)
+    let weekday = cal.component(.weekday, from: day)   // 1 = Sunday
+    let monday = cal.date(byAdding: .day, value: -((weekday + 5) % 7), to: day) ?? day
+    return cal.date(byAdding: .day, value: offset * 7, to: monday) ?? monday
 }

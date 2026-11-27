@@ -155,6 +155,65 @@ struct EtelHetTests {
         #expect(hetVerdict(w, level: 0.2).headline == "Még kevés a rögzítés a héten")
         #expect(hetDateLabel("2026-11-18") == "november 18.")
     }
+    // MARK: the calendar week (mezo-r36n9.200)
+
+    /// 2026-11-23 (hétfő) … 2026-11-29 (vasárnap); today is Friday the 27th.
+    private func calendarWeek() -> FuelWeek {
+        let dates = (23...29).map { "2026-11-\($0)" }
+        let kcal: [Double] = [2200, 2620, 2390, 2150, 900, 0, 0]
+        return FuelWeek(start: "2026-11-23", days: dates.indices.map { i in
+            FuelDayRollup(date: dates[i], targets: MacroSet(kcal: 2350, p: 165, c: 280, f: 70, water: 3000),
+                          consumed: MacroSet(kcal: kcal[i], p: kcal[i] > 0 ? 140 : 0, c: kcal[i] > 0 ? 220 : 0, f: kcal[i] > 0 ? 66 : 0, water: 0),
+                          plannedMovementKcal: i == 6 ? 300 : (i == 1 ? 300 : nil))
+        })
+    }
+
+    @Test func theCalendarWeekRunsMondayToSundayInOrderAndTheRestIsStillAhead() {
+        let w = hetWeek(calendarWeek(), scores: [:], today: "2026-11-27")
+        #expect(w.labels == ["H", "K", "Sze", "Cs", "P", "Szo", "V"], "the days in calendar order, the same as the chart")
+        #expect(w.days.map(\.date) == w.days.map(\.date).sorted())
+        #expect(w.rangeLabel == "november 23–29.")
+        #expect(w.containsToday)
+        let sat = w.days[5], sun = w.days[6]
+        #expect(sat.future && sun.future)
+        #expect(sat.kcal == nil && !sat.judged)
+        #expect(sat.note.contains("még előtted") && !sat.note.contains("nincs rögzítés"), "a day ahead is never a missed day")
+        #expect(sun.trainingDay)
+        #expect(w.elapsedDays == 5)
+        #expect(w.loggedDays == 5)
+        #expect(w.trainingDays == 1, "a training day still ahead is not counted yet")
+        // the four finished days only
+        #expect(w.judgedDays == 4)
+        #expect(w.averageKcal == 2340)
+        #expect(w.averageCarbs == 220 && w.carbsTarget == 280)
+        #expect(w.averageFat == 66 && w.fatTarget == 70)
+        #expect(w.closestDay?.name == "Szerda", "2390 is only 40 off its target")
+    }
+
+    @Test func aPastWeekHasNoTodayAndCrossesMonthsInItsLabel() {
+        let dates = ["2026-11-30", "2026-12-01", "2026-12-02", "2026-12-03", "2026-12-04", "2026-12-05", "2026-12-06"]
+        let week = FuelWeek(start: dates[0], days: dates.map {
+            FuelDayRollup(date: $0, targets: MacroSet(kcal: 2350, p: 165, c: 280, f: 70, water: 0), consumed: MacroSet(kcal: 2300, p: 150, c: 250, f: 70, water: 0))
+        })
+        let w = hetWeek(week, scores: [:], today: "2026-12-10")
+        #expect(!w.containsToday)
+        #expect(w.days.allSatisfy { !$0.future && $0.judged })
+        #expect(w.rangeLabel == "november 30. – december 6.")
+        #expect(hetWeekAgo(0) == "ez a hét" && hetWeekAgo(-1) == "múlt hét" && hetWeekAgo(-3) == "3 hete")
+    }
+
+    @Test func theWeekStartsOnMondayInThePhonesZone() {
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "Europe/Budapest")!
+        let ymd: (Date) -> String = { d in let c = cal.dateComponents([.year, .month, .day], from: d); return String(format: "%04d-%02d-%02d", c.year!, c.month!, c.day!) }
+        let friday = cal.date(from: DateComponents(year: 2026, month: 11, day: 27, hour: 15))!
+        let sunday = cal.date(from: DateComponents(year: 2026, month: 11, day: 29, hour: 23, minute: 30))!
+        let monday = cal.date(from: DateComponents(year: 2026, month: 11, day: 23, hour: 0, minute: 10))!
+        #expect(ymd(etelWeekMonday(of: friday, calendar: cal)) == "2026-11-23")
+        #expect(ymd(etelWeekMonday(of: sunday, calendar: cal)) == "2026-11-23", "Sunday belongs to the week that began on Monday")
+        #expect(ymd(etelWeekMonday(of: monday, calendar: cal)) == "2026-11-23")
+        #expect(ymd(etelWeekMonday(of: friday, offset: -1, calendar: cal)) == "2026-11-16")
+    }
+
     // MARK: the server's day judgement (B6 S2, mezo-r36n9.16 Task 12)
 
     /// What `GET /api/seasons/adherence` says about the same seven days under the rule the tab used to apply itself:

@@ -19,7 +19,13 @@ struct HetDay: Equatable, Identifiable {
     let kcal: Int?
     let target: Int
     let proteinG: Int?
+    var carbsG: Int? = nil
+    var fatG: Int? = nil
     let isToday: Bool
+    /// A day after today (the calendar week runs on to Sunday): nothing to say yet, never "nincs rögzítés".
+    var future: Bool = false
+    /// The target made room for planned training that day.
+    var trainingDay: Bool = false
     /// A recovery day: the day stops being judged (its numbers are guidance only).
     let kimelo: Bool
     /// Counts in the week's averages: a finished, logged day that is not kímélő.
@@ -45,6 +51,11 @@ struct HetWeek: Equatable {
     let targetsVary: Bool
     /// Days whose meals could not be read for their score: said, never mistaken for a day without one.
     let scoreGaps: Int
+    /// The macro means over the judged days, against the week's mean targets (the details card).
+    var averageCarbs: Int? = nil
+    var averageFat: Int? = nil
+    var carbsTarget: Int? = nil
+    var fatTarget: Int? = nil
 
     var isEmpty: Bool { days.isEmpty }
     var kcalValues: [Double?] { days.map { $0.kcal.map(Double.init) } }
@@ -52,6 +63,23 @@ struct HetWeek: Equatable {
     /// The bars drawn hollow: a kímélő day is never read as a miss.
     var markedIndices: [Int] { days.indices.filter { days[$0].kimelo } }
     var labels: [String] { days.map(\.label) }
+    /// Today falls in this week (the current week; a past week has no "még tart").
+    var containsToday: Bool { days.contains(where: \.isToday) }
+    /// The days already lived (today included) — what "N / 7 rögzítve" counts against.
+    var elapsedDays: Int { days.filter { !$0.future }.count }
+    var loggedDays: Int { days.filter { $0.kcal != nil }.count }
+    var trainingDays: Int { days.filter { $0.trainingDay && !$0.future }.count }
+    /// The judged day that closed nearest its own target; nil before two judged days (one day is no "closest").
+    var closestDay: HetDay? {
+        let judged = days.filter { $0.judged && $0.kcal != nil }
+        guard judged.count >= 2 else { return nil }
+        return judged.min { abs($0.kcal! - $0.target) < abs($1.kcal! - $1.target) }
+    }
+    /// "november 23–29." / "november 30. – december 6." — the week the tab shows.
+    var rangeLabel: String {
+        guard let first = days.first?.date, let last = days.last?.date else { return "" }
+        return hetRangeLabel(first, last)
+    }
 
     /// The totals' line about days whose score read failed; nil when none did.
     var scoreGapLine: String? {
@@ -106,14 +134,19 @@ func hetWeek(_ week: FuelWeek, scores: [String: Int], today: String, scoreFailur
     let days: [HetDay] = week.days.map { r in
         let weekday = hetWeekday(r.date)
         let isToday = r.date == today
+        let future = r.date > today
         let server = served[r.date]
         let kimelo = server.map { $0.excused && $0.excuse == "kimelo" } ?? (r.fuelMode != nil)
-        let logged = r.consumed.kcal > 0
+        let logged = r.consumed.kcal > 0 && !future
         let kcal = logged ? Int(r.consumed.kcal.rounded()) : nil
-        let judged = server?.judged ?? (!isToday && !kimelo && logged)
+        let judged = !future && (server?.judged ?? (!isToday && !kimelo && logged))
+        let training = (r.plannedMovementKcal ?? 0) > 0
         var parts: [String] = []
         if isToday { parts.append("még tart") }
-        if kimelo {
+        if future {
+            parts.append("még előtted")
+            if training { parts.append("edzésnap") }
+        } else if kimelo {
             parts.append("kímélő nap")
             if let why = recoveryWord(r.recoveryCategory) { parts.append(why) }
             parts.append("nem értékelem")
@@ -124,7 +157,9 @@ func hetWeek(_ week: FuelWeek, scores: [String: Int], today: String, scoreFailur
         if r.skippedKcal > 0 { parts.append("étkezés kihagyva · −\(huInt(r.skippedKcal)) kcal a keretből") }
         if !kimelo, scoreFailures.contains(r.date) { parts.append("a pontszám most nem jött meg") }
         return HetDay(date: r.date, label: weekday.flatMap { hetShort[$0] } ?? "", name: isToday ? "Ma" : (weekday.flatMap { hetLong[$0] } ?? r.date),
-                      kcal: kcal, target: Int(r.targets.kcal.rounded()), proteinG: logged ? Int(r.consumed.p.rounded()) : nil, isToday: isToday,
+                      kcal: kcal, target: Int(r.targets.kcal.rounded()), proteinG: logged ? Int(r.consumed.p.rounded()) : nil,
+                      carbsG: logged ? Int(r.consumed.c.rounded()) : nil, fatG: logged ? Int(r.consumed.f.rounded()) : nil,
+                      isToday: isToday, future: future, trainingDay: training,
                       kimelo: kimelo, judged: judged, skippedKcal: r.skippedKcal, scorePoints: kimelo ? nil : scores[r.date],
                       note: parts.joined(separator: " · "))
     }
@@ -132,7 +167,7 @@ func hetWeek(_ week: FuelWeek, scores: [String: Int], today: String, scoreFailur
     let proteinTargets = week.days.map { Int($0.targets.p.rounded()) }
     let judged = days.filter(\.judged)
     let skipped = week.days.filter { $0.skippedKcal > 0 }
-    return HetWeek(
+    var out = HetWeek(
         days: days, waterline: mean(targets), proteinTarget: mean(proteinTargets),
         averageKcal: mean(judged.compactMap(\.kcal)), averageProtein: mean(judged.compactMap(\.proteinG)),
         averageScore: mean(days.compactMap(\.scorePoints)),
@@ -140,6 +175,31 @@ func hetWeek(_ week: FuelWeek, scores: [String: Int], today: String, scoreFailur
         skippedDays: skipped.count, skippedKcal: skipped.reduce(0) { $0 + $1.skippedKcal },
         targetsVary: Set(targets).count > 1,
         scoreGaps: days.filter { !$0.kimelo && scoreFailures.contains($0.date) }.count)
+    out.averageCarbs = mean(judged.compactMap(\.carbsG))
+    out.averageFat = mean(judged.compactMap(\.fatG))
+    out.carbsTarget = mean(week.days.map { Int($0.targets.c.rounded()) })
+    out.fatTarget = mean(week.days.map { Int($0.targets.f.rounded()) })
+    return out
+}
+
+private let hetMonths = ["január", "február", "március", "április", "május", "június", "július", "augusztus", "szeptember",
+                         "október", "november", "december"]
+
+/// "november 23–29." within a month, "november 30. – december 6." across two.
+func hetRangeLabel(_ first: String, _ last: String) -> String {
+    let a = first.split(separator: "-").compactMap { Int($0) }, b = last.split(separator: "-").compactMap { Int($0) }
+    guard a.count == 3, b.count == 3, (1...12).contains(a[1]), (1...12).contains(b[1]) else { return "\(first) – \(last)" }
+    return a[1] == b[1] ? "\(hetMonths[a[1] - 1]) \(a[2])–\(b[2])."
+                        : "\(hetMonths[a[1] - 1]) \(a[2]). – \(hetMonths[b[1] - 1]) \(b[2])."
+}
+
+/// What the week stepper says under the range: "ez a hét", "múlt hét", "3 hete".
+func hetWeekAgo(_ offset: Int) -> String {
+    switch offset {
+    case 0: "ez a hét"
+    case -1: "múlt hét"
+    default: "\(-offset) hete"
+    }
 }
 
 // MARK: - What the week says, in words and numbers
@@ -170,7 +230,7 @@ func hetObservation(_ w: HetWeek) -> (title: String, sub: String)? {
 /// The three numbers over the week: energy against the target, protein against the target (the lit one), the score.
 func hetStats(_ w: HetWeek) -> [NKStat] {
     [NKStat(value: w.averageKcal.map(huInt), unit: "kcal", label: w.waterline.map { "átlag · cél \(huInt($0))" } ?? "napi átlag"),
-     NKStat(value: w.averageProtein.map { "\($0)" }, target: w.proteinTarget.map { "\($0)" }, unit: "g", label: "fehérje átlag", hot: true),
+     NKStat(value: w.averageProtein.map { "\($0)" }, unit: "g", label: w.proteinTarget.map { "fehérje · cél \($0)" } ?? "fehérje átlag", hot: true),
      NKStat(value: w.averageScore.map { "\($0)" }, unit: "pont", label: "étkezések átlaga")]
 }
 
@@ -187,7 +247,7 @@ func hetVerdict(_ w: HetWeek?, level: Double?) -> EtelVerdict {
 
 /// "november 18." from "2026-11-18" (the opened day's eyebrow).
 func hetDateLabel(_ ymd: String) -> String {
-    let months = ["január", "február", "március", "április", "május", "június", "július", "augusztus", "szeptember", "október", "november", "december"]
+    let months = hetMonths
     let p = ymd.split(separator: "-").compactMap { Int($0) }
     guard p.count == 3, (1...12).contains(p[1]) else { return ymd }
     return "\(months[p[1] - 1]) \(p[2])."
@@ -195,12 +255,19 @@ func hetDateLabel(_ ymd: String) -> String {
 
 // MARK: - The tab
 
-/// `Hét` on the warm blocks: the week's one observation, its three numbers, the energy and protein bars against the
-/// targets, the days behind them as rows (pills, a score ring), and the week's details as pills.
+/// `Hét` in tiers (mezo-r36n9.200, decisions #119/#120): the week stepper (a calendar week, Monday → Sunday), a hero card
+/// with the three numbers over the kcal / protein bars (swipe between them), the week's one observation, the days as a
+/// free-standing carousel (owner: a carousel is not boxed into a card), and the week's details card.
 struct EtelHet: View {
     let store: EtelStore
     let onOpen: (HetDay) -> Void
     let onRetry: () -> Void
+    /// The week stepper: −1 one week back, +1 one week forward.
+    var onStep: (Int) -> Void = { _ in }
+    @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.accessibilityVoiceOverEnabled) private var voiceOver
+    @State private var heroPage = 0
+    @ScaledMetric(relativeTo: .body) private var dayCardHeight: CGFloat = 196
     private let hue = Hue.fuel
 
     private var state: NKBlockState {
@@ -218,94 +285,272 @@ struct EtelHet: View {
 
     var body: some View {
         if let w = week, !w.isEmpty {
+            stepper(w)
+            hero(w)
             if let o = hetObservation(w) { NKHighlight(hue: hue, label: "A HÉT EGY MONDATBAN", text: o.title, sub: o.sub) }
-            NKBare("A HÉT SZÁMOKBAN", hue: hue, trailing: "\(w.judgedDays) értékelt nap") { NKStatRow(hetStats(w), hue: hue) }
-            NKBare("KALÓRIA · 7 NAP", hue: hue) { bars(w.kcalValues, w.waterline, w, height: 150, unit: "kcal") }
-            NKBare("FEHÉRJE · 7 NAP", hue: hue) { bars(w.proteinValues, w.proteinTarget, w, height: 130, unit: "g") }
-            NKBare("A NAPOK", hue: hue) { days(w) }
-            NKBare("A HÉT RÉSZLETEI", hue: hue) { details(w) }
+            NKBare("A NAPOK", hue: hue, trailing: "\(w.loggedDays) / \(w.elapsedDays) rögzítve") {
+                NKCarousel(w.days, hue: hue, height: min(dayCardHeight, 440), widthFraction: typeSize.isAccessibilitySize ? 0.86 : 0.6,
+                           initial: w.days.first(where: \.isToday)?.id) { d in dayCard(d, proteinTarget: w.proteinTarget) }
+            }
+            card("A HÉT RÉSZLETEI") { details(w) }
         } else {
-            NKBare("A HETED", hue: hue, state: state) {
+            if store.week != nil { stepper(nil) }
+            card("A HETED", state: state) {
                 Text("Erre a hétre még nincs adat. Egy-két rögzített nap után itt látod, hogyan áll a heted.")
                     .nkFont(14).foregroundStyle(.white.opacity(0.7)).fixedSize(horizontal: false, vertical: true)
             }
         }
     }
 
-    // MARK: bars
+    /// A glass card: the small-caps head on the card, the block's own loading and failed states inside (as on Ma).
+    private func card<C: View>(_ label: String, trailing: String? = nil, state: NKBlockState = .ready,
+                               @ViewBuilder _ content: () -> C) -> some View {
+        NKBare(label, hue: hue, trailing: trailing, state: state, content: content)
+            .padding(.horizontal, 16).padding(.vertical, 12)
+            .nkGlass(24)
+    }
 
-    private func bars(_ values: [Double?], _ target: Int?, _ w: HetWeek, height: CGFloat, unit: String) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            WeekBars(values: values, average: target.map(Double.init), unit: "", labels: w.labels, lineLabel: "cél", marked: Set(w.markedIndices))
-                .frame(height: height)
-            NKFlowRow(spacing: 6, rowSpacing: 6) {
-                if let target { EtelPill(text: "a vonal: \(w.targetsVary && unit == "kcal" ? "átlagos " : "")cél \(huInt(target)) \(unit)", glyph: "chart-deep") }
-                if w.kimeloDays > 0 { EtelPill(text: "körvonalas: kímélő nap", tone: .muted) }
-                EtelPill(text: "a mai nap még tart", tone: .muted)
+    // MARK: the week stepper
+
+    private func stepper(_ w: HetWeek?) -> some View {
+        let offset = store.weekOffset
+        return HStack(spacing: 8) {
+            stepButton("chevron.left", label: "Előző hét", enabled: offset > -52) { onStep(-1) }
+            VStack(spacing: 2) {
+                Text(w?.rangeLabel ?? "").nkFont(16, .semibold).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
+                Text(hetWeekAgo(offset)).nkFont(11.5, design: .monospaced).foregroundStyle(.white.opacity(0.55))
             }
+            .frame(maxWidth: .infinity)
+            .accessibilityElement(children: .combine)
+            stepButton("chevron.right", label: "Következő hét", enabled: offset < 0) { onStep(1) }
         }
     }
 
-    // MARK: days
-
-    private func days(_ w: HetWeek) -> some View {
-        VStack(spacing: 0) {
-            ForEach(Array(w.days.reversed().enumerated()), id: \.element.id) { k, d in
-                if k > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5).padding(.leading, 56) }
-                dayRow(d, proteinTarget: w.proteinTarget)
-            }
+    private func stepButton(_ symbol: String, label: String, enabled: Bool, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol).font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(.white.opacity(enabled ? 0.9 : 0.25))
+                .frame(width: 44, height: 44)
+                .background(Circle().fill(.white.opacity(enabled ? 0.10 : 0.04)))
         }
+        .buttonStyle(.plain).disabled(!enabled)
+        .accessibilityLabel(label)
     }
 
-    /// One day = one row: its weekday mark, the name, its facts as pills, and the day's own score as a ring.
-    private func dayRow(_ d: HetDay, proteinTarget: Int?) -> some View {
-        Button { onOpen(d) } label: {
-            HStack(alignment: .top, spacing: 12) {
-                ZStack {
-                    Circle().fill(d.isToday ? hue.glow.opacity(0.2) : .white.opacity(0.08))
-                    Text(d.label).nkFont(12.5, .semibold).foregroundStyle(d.isToday ? hue.glow : .white.opacity(0.9))
-                }
-                .frame(width: 44, height: 44).accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 7) {
-                    Text(d.name).nkFont(15.5, d.isToday ? .semibold : .medium).foregroundStyle(.white)
-                    NKFlowRow(spacing: 6, rowSpacing: 6) {
-                        if let kcal = d.kcal {
-                            EtelPill(text: "\(huInt(kcal)) / \(huInt(d.target)) kcal", tone: d.judged && kcal > Int(Double(d.target) * 1.1) ? .warn : .plain)
-                        } else {
-                            EtelPill(text: d.isToday ? "még nincs rögzítés" : "nincs rögzítés", tone: .muted)
-                        }
-                        if let g = d.proteinG {
-                            EtelPill(text: "\(g) g fehérje", tone: proteinTarget.map { g >= Int(Double($0) * 0.9) ? .hue : .plain } ?? .plain)
-                        }
-                        if d.isToday { EtelPill(text: "még tart", tone: .muted) }
-                        if d.kimelo { EtelPill(text: "kímélő nap", glyph: "heart-cream", tone: .muted) }
-                        if d.skippedKcal > 0 { EtelPill(text: "kihagyva −\(huInt(d.skippedKcal)) kcal", tone: .outline) }
+    // MARK: the hero: the three numbers over the kcal bars; page 2 the protein bars
+
+    private func hero(_ w: HetWeek) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            NKStatRow(hetStats(w), hue: hue)
+            if typeSize.isAccessibilitySize || voiceOver {
+                VStack(alignment: .leading, spacing: 20) { kcalPage(w); proteinPage(w) }
+            } else {
+                VStack(spacing: 10) {
+                    TabView(selection: $heroPage) {
+                        kcalPage(w).tag(0)
+                        proteinPage(w).tag(1)
                     }
+                    .tabViewStyle(.page(indexDisplayMode: .never))
+                    .frame(height: 196)
+                    HStack(spacing: 6) {
+                        ForEach(0..<2) { i in
+                            Capsule().fill(.white.opacity(heroPage == i ? 0.85 : 0.25)).frame(width: heroPage == i ? 16 : 6, height: 6)
+                        }
+                    }
+                    .accessibilityHidden(true)
                 }
-                Spacer(minLength: 4)
-                EtelScoreRing(points: d.scorePoints, size: 38).padding(.top, 2)
             }
-            .padding(.vertical, 12).frame(minHeight: 44).contentShape(Rectangle())
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .nkGlass(28)
+    }
+
+    private func kcalPage(_ w: HetWeek) -> some View {
+        chartPage("KALÓRIA", w.kcalValues, w.waterline, w, unit: "kcal")
+    }
+
+    private func proteinPage(_ w: HetWeek) -> some View {
+        chartPage("FEHÉRJE", w.proteinValues, w.proteinTarget, w, unit: "g")
+    }
+
+    private func chartPage(_ title: String, _ values: [Double?], _ target: Int?, _ w: HetWeek, unit: String) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(title).nkFont(11.5, .semibold, design: .monospaced).foregroundStyle(.white.opacity(0.6)).tracking(1.2)
+                Spacer(minLength: 8)
+                if let target {
+                    Text("a vonal: \(w.targetsVary && unit == "kcal" ? "átlagos " : "")cél \(huInt(target)) \(unit)")
+                        .nkFont(11.5).foregroundStyle(.white.opacity(0.55)).lineLimit(1).minimumScaleFactor(0.7)
+                }
+            }
+            WeekBars(values: values, average: target.map(Double.init), unit: "", labels: w.labels, lineLabel: "cél", marked: Set(w.markedIndices),
+                     lit: .some(w.days.firstIndex(where: \.isToday)))
+                .frame(height: 140)
+            if w.kimeloDays > 0 || w.containsToday {
+                Text([w.kimeloDays > 0 ? "körvonalas: kímélő nap" : nil, w.containsToday ? "a mai nap még tart" : nil]
+                        .compactMap { $0 }.joined(separator: " · "))
+                    .nkFont(11.5).foregroundStyle(.white.opacity(0.5))
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    // MARK: the days: one free-standing card per day
+
+    private func dayCard(_ d: HetDay, proteinTarget: Int?) -> some View {
+        Button { onOpen(d) } label: {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .top, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(d.name).nkFont(16, .semibold).foregroundStyle(d.isToday ? hue.glow : .white).lineLimit(1)
+                        Text(hetDateLabel(d.date)).nkFont(11.5, design: .monospaced).foregroundStyle(.white.opacity(0.5))
+                    }
+                    Spacer(minLength: 4)
+                    if !d.future && !d.kimelo { EtelScoreRing(points: d.scorePoints, size: 34) }
+                }
+                Spacer(minLength: 0)
+                if let kcal = d.kcal {
+                    // the target drops under the number when they do not fit side by side (largest text sizes)
+                    ViewThatFits(in: .horizontal) {
+                        HStack(alignment: .firstTextBaseline, spacing: 4) { dayKcal(kcal); dayTarget(d) }
+                        VStack(alignment: .leading, spacing: 2) { dayKcal(kcal); dayTarget(d) }
+                    }
+                    NKLevelBar(level: d.target > 0 ? Double(kcal) / Double(d.target) : 0, hue: hue)
+                    if let g = d.proteinG {
+                        let hit = proteinTarget.map { g >= Int(Double($0) * 0.9) } ?? false
+                        Text("\(g) g fehérje").nkFont(12.5, hit ? .semibold : .regular).foregroundStyle(hit ? hue.glow : .white.opacity(0.75))
+                    }
+                } else {
+                    Text(d.future ? "még előtted" : (d.isToday ? "még nincs rögzítés" : "nincs rögzítés"))
+                        .nkFont(14).foregroundStyle(.white.opacity(0.5))
+                    Text("cél \(huInt(d.target)) kcal").nkFont(11.5, design: .monospaced).foregroundStyle(.white.opacity(0.4))
+                }
+                NKFlowRow(spacing: 6, rowSpacing: 6) {
+                    if d.isToday { EtelPill(text: "még tart", tone: .muted) }
+                    if d.kimelo { EtelPill(text: "kímélő nap", glyph: "heart-cream", tone: .muted) }
+                    if d.trainingDay { EtelPill(text: "edzésnap", glyph: "dumbbell-ink", tone: .plain) }
+                    if d.skippedKcal > 0 { EtelPill(text: "kihagyva −\(huInt(d.skippedKcal))", tone: .outline) }
+                }
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .opacity(d.future ? 0.6 : 1)
+            .nkGlass(22)
+            .overlay { if d.isToday { RoundedRectangle(cornerRadius: 22).stroke(hue.glow.opacity(0.55), lineWidth: 1) } }
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .disabled(d.future)
         .accessibilityElement(children: .combine)
-        .accessibilityHint("Megnyitja a napot")
+        .accessibilityLabel("\(d.name), \(hetDateLabel(d.date)). \(d.note.isEmpty ? (d.kcal.map { "\(huInt($0)) a \(huInt(d.target)) kilokalóriából" } ?? "") : d.note)")
+        .accessibilityHint(d.future ? "" : "Megnyitja a napot")
     }
 
-    // MARK: details
+    private func dayKcal(_ kcal: Int) -> some View {
+        Text(huInt(kcal)).font(.nkNumber(26)).foregroundStyle(.white).monospacedDigit().lineLimit(1).minimumScaleFactor(0.6)
+    }
+
+    private func dayTarget(_ d: HetDay) -> some View {
+        Text("/ \(huInt(d.target)) kcal").nkFont(11.5, design: .monospaced).foregroundStyle(.white.opacity(0.5)).lineLimit(1)
+    }
+
+    // MARK: the details card
 
     private func details(_ w: HetWeek) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            NKFlowRow(spacing: 6, rowSpacing: 6) {
-                EtelPill(text: w.skippedDays == 0 ? "kihagyott étkezés: nincs" : "kihagyott étkezés: \(w.skippedDays) nap · −\(huInt(w.skippedKcal)) kcal",
-                         tone: w.skippedDays == 0 ? .plain : .outline)
-                EtelPill(text: w.kimeloDays == 0 ? "kímélő nap: nincs" : "kímélő nap: \(w.kimeloDays)", tone: .plain)
-                if w.targetsVary { EtelPill(text: "edzésnapokon nagyobb a keret", glyph: "dumbbell-ink") }
-                if let gap = w.scoreGapLine { EtelPill(text: gap, tone: .warn) }
+        VStack(alignment: .leading, spacing: 16) {
+            // the week's days as dots: logged, kímélő (hollow), not logged, still ahead (faint)
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Rögzített napok").nkFont(14.5, .medium).foregroundStyle(.white)
+                    Spacer(minLength: 8)
+                    Text("\(w.loggedDays) / \(w.elapsedDays)").font(.nkNumber(17)).foregroundStyle(.white).monospacedDigit()
+                }
+                HStack(spacing: 0) {
+                    ForEach(w.days) { d in
+                        VStack(spacing: 5) {
+                            ZStack {
+                                if d.kimelo { Circle().stroke(.white.opacity(0.6), lineWidth: 1.5) }
+                                else if d.kcal != nil { Circle().fill(d.isToday ? hue.glow.opacity(0.6) : hue.glow) }
+                                else { Circle().fill(.white.opacity(d.future ? 0.05 : 0.14)) }
+                            }
+                            .frame(width: 16, height: 16)
+                            Text(d.label).nkFont(10.5, design: .monospaced).foregroundStyle(.white.opacity(d.future ? 0.35 : 0.6))
+                                .lineLimit(1).minimumScaleFactor(0.5)
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                }
+                .accessibilityHidden(true)
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Rögzített napok: \(w.loggedDays) a \(w.elapsedDays)-ból")
+
+            divider
+            VStack(spacing: 14) {
+                macro("Fehérje", w.averageProtein, w.proteinTarget, lit: true)
+                macro("Szénhidrát", w.averageCarbs, w.carbsTarget)
+                macro("Zsír", w.averageFat, w.fatTarget)
+            }
+            divider
+            VStack(spacing: 10) {
+                fact("Edzésnap", w.trainingDays == 0 ? "nincs" : "\(w.trainingDays) · nagyobb kerettel")
+                fact("Kihagyott étkezés", w.skippedDays == 0 ? "nincs" : "\(w.skippedDays) nap · −\(huInt(w.skippedKcal)) kcal",
+                     warn: w.skippedDays > 0)
+                fact("Kímélő nap", w.kimeloDays == 0 ? "nincs" : "\(w.kimeloDays)")
+                if let c = w.closestDay, let kcal = c.kcal {
+                    fact("Legközelebb a célhoz", "\(c.name.lowercased()) · \(huInt(kcal)) / \(huInt(c.target))")
+                }
+            }
+            if let gap = w.scoreGapLine { EtelPill(text: gap, tone: .warn) }
             Text("A mai nap és a kímélő napok nem számítanak bele az átlagokba.").nkFont(12).foregroundStyle(.white.opacity(0.5))
                 .fixedSize(horizontal: false, vertical: true)
         }
+    }
+
+    private var divider: some View { Rectangle().fill(.white.opacity(0.08)).frame(height: 0.5) }
+
+    /// One macro's weekly mean against its mean target (never red — over is just a full bar).
+    private func macro(_ name: String, _ avg: Int?, _ target: Int?, lit: Bool = false) -> some View {
+        let value = HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Text(avg.map { "\($0)" } ?? "–").font(.nkNumber(17)).foregroundStyle(lit ? hue.glow : .white).monospacedDigit()
+            if let target { Text("/ \(target) g").nkFont(12, design: .monospaced).foregroundStyle(.white.opacity(0.5)) }
+        }
+        return VStack(spacing: 7) {
+            // name and value side by side; stacked at the largest text sizes
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(name).nkFont(14.5, .medium).foregroundStyle(.white)
+                    Text("napi átlag").nkFont(11.5).foregroundStyle(.white.opacity(0.45))
+                    Spacer(minLength: 8)
+                    value
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(name).nkFont(14.5, .medium).foregroundStyle(.white)
+                    value
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            NKLevelBar(level: (avg != nil && (target ?? 0) > 0) ? Double(avg!) / Double(target!) : 0, hue: hue)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private func fact(_ label: String, _ value: String, warn: Bool = false) -> some View {
+        let tone = warn ? Color(red: 0.96, green: 0.78, blue: 0.38) : Color.white
+        return ViewThatFits(in: .horizontal) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(label).nkFont(14).foregroundStyle(.white.opacity(0.7)).lineLimit(1)
+                Spacer(minLength: 8)
+                Text(value).nkFont(14, .medium).foregroundStyle(tone).lineLimit(1)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label).nkFont(14).foregroundStyle(.white.opacity(0.7))
+                Text(value).nkFont(14, .medium).foregroundStyle(tone).fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .accessibilityElement(children: .combine)
     }
 }
 
