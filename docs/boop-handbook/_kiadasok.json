@@ -1064,5 +1064,19 @@
       "mezo-r36n9.172"
     ],
     "mi_valtozott": "Edzés közben a zárolt képernyőn és a Dynamic Islandben egy kártya mutatja a gyakorlatot, hányadik sorozatnál tartasz, a célt (például „80 kg × 8”) és a pihenő visszaszámlálóját. A kártya gombjaival feloldás nélkül rögzíted a sorozatot („Kész”), adsz még 15 másodpercet („+15 mp”) vagy lépsz tovább („Tovább”) — akkor is, ha a Boop be van zárva. A kezdőképernyő widgetei a következő lépésben jönnek."
+  },
+  "fd1788065": {
+    "cim": "Étel Ma újratervezve — áttekinthető oldal, minden étkezésnek saját oldala, javítás és törlés",
+    "datum": "2026-11-27",
+    "verzio": "",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app"
+    ],
+    "szakasz": "B4 Étel",
+    "jegyek": [
+      "mezo-r36n9.184"
+    ],
+    "mi_valtozott": "Az Étel szoba Ma oldala három jól elváló részre tagolódik: felül egy kártya a mai kalóriagyűrűvel és a fehérje / szénhidrát / zsír sávokkal (oldalra lapozva a nap görbéje), alatta étkezésenként egy-egy kártya, végül a víz, a kiegészítők és az italok. A szoba ege világosabb zöld lett. Egy rögzített étkezésre koppintva megnyílik a saját oldala a számokkal, a hozzávalókkal és Boop értékelésével. Innen a Javítás kitöltve nyitja meg a rögzítőt, és ugyanarra az étkezésre ment (az időpont marad, Boop újraértékel); a Törlés (az oldalon, a sort balra húzva vagy hosszan nyomva) azonnal leveszi, és pár másodpercig a „Visszavonás” visszahozza. Internet nélkül a két gomb halvány, és megmondja, miért."
   }
 }
