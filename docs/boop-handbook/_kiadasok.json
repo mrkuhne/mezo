@@ -1108,5 +1108,14 @@
       "mezo-r36n9.172"
     ],
     "mi_valtozott": "Három Boop-widget, az app megnyitása nélkül: a Következő (kicsi) a nap következő teendőjét mutatja, és hogy mennyi idő van még addig; a Mai nap (közepes) a következő három teendőt és a mai emlékeztetőket, amelyeket a karikára koppintva ki is pipálhatsz; a zárolt képernyőn az óra alatt egy sor mutatja a következőt. Ha a mai terv még nem jött meg, csak az emlékeztetők látszanak egy „Nyisd meg a Boopot a mai tervhez” sorral; kijelentkezéskor a widgetek kiürülnek. Az ingyenes Apple-fiókkal is működik. A napközbeni kérdés widgetje külön jegyben jön."
+  },
+  "2090f37b1": {
+    "cim": "A lapok teteje a helyén marad, a billentyűzet bezárul mellé koppintva",
+    "datum": "2026-11-27",
+    "szakasz": "Kezdőlap",
+    "jegyek": [
+      "mezo-r36n9.191"
+    ],
+    "mi_valtozott": "Ha a lap tetején tovább húzod lefelé az ujjad, a felső rész (a boop felirat, a vissza nyíl, a lap feje) már nem jön le utána, és nem nyílik fölötte üres szürke csík — a lap alja továbbra is finoman visszarugózik. A billentyűzet az egész appban eltűnik, ha a szövegen kívül koppintasz, a beírt szöveg megmarad; a Boop beszélgetés küldés gombja nem csukja be, hogy rögtön írhasd a következő kérdést. A felcsúszó lapok lehúzással zárása és az Étel szoba lehúzásra frissítése marad."
   }
 }
