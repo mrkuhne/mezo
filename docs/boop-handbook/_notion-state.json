@@ -444,7 +444,7 @@
     },
     "kezikonyv:01-alapok/00-attekintes": {
       "page_id": "4168968e-752b-81b7-8c0b-f736eeecfc49",
-      "hash": "076153ac3201"
+      "hash": "e4f5eda52dd5"
     },
     "kezikonyv:01-alapok/app-ikon": {
       "page_id": "4178968e-752b-818c-b5ad-e922f5258a34",
@@ -596,7 +596,7 @@
     },
     "kezikonyv:03-naplo/widget-es-zarolt-kepernyo": {
       "page_id": "4168968e-752b-81fc-8eee-d3c3791cb992",
-      "hash": "48872e25654d"
+      "hash": "ea98ddaf4c80"
     },
     "kezikonyv:04-terv/00-attekintes": {
       "page_id": "4168968e-752b-81c6-a15f-d115f1a8c6e1",
@@ -744,7 +744,7 @@
     },
     "kezikonyv:07-edzes/08-elo-tevekenyseg": {
       "page_id": "4168968e-752b-815f-b13c-e3bc7bc508b8",
-      "hash": "69cb6a910be0"
+      "hash": "9225c2417229"
     },
     "kezikonyv:07-edzes/09-edzesek-a-healthbol": {
       "page_id": "4168968e-752b-81f7-a4bc-e98727e51d36",
@@ -3240,7 +3240,7 @@
     },
     "jegyek:mezo-r36n9.172": {
       "page_id": "4248968e-752b-81f0-a207-e1d8dbfcb380",
-      "hash": "fde884c52168"
+      "hash": "6863821e8fcb"
     },
     "dontesek:d-2026-11-25-d1-altalanos-emlekezteto": {
       "page_id": "4248968e-752b-8125-9293-f4349abd13aa",
@@ -3284,7 +3284,7 @@
     },
     "kezikonyv:01-alapok/emlekeztetok-es-ebresztok": {
       "page_id": "4248968e-752b-8157-8726-eec50a383206",
-      "hash": "83d51ddf88ec"
+      "hash": "b5b2ea30d938"
     },
     "jegyek:mezo-r36n9.183": {
       "page_id": "4248968e-752b-81c2-9b81-f7f2a9ae48a6",
@@ -3336,7 +3336,7 @@
     },
     "jegyek:mezo-r36n9.184": {
       "page_id": "4258968e-752b-8120-9091-c0c8758e57be",
-      "hash": "d21e11b756f0"
+      "hash": "3239c8a61606"
     },
     "dontesek:d-2026-11-27-kartyak-vissza": {
       "page_id": "4258968e-752b-8144-856f-f00a24ccb0d3",
@@ -3397,6 +3397,18 @@
     "kiadasok:fd1788065": {
       "page_id": "4258968e-752b-815f-ba13-e68238c3391c",
       "hash": "b0c1f1a76702"
+    },
+    "jegyek:mezo-r36n9.190": {
+      "page_id": "4258968e-752b-81cb-92ea-ee1652ee57c0",
+      "hash": "5f12eeec51e4"
+    },
+    "kiadasok:9196b259e": {
+      "page_id": "4258968e-752b-817d-89db-f76d88b020d6",
+      "hash": "3d09e9acba93"
+    },
+    "kezikonyv:02-ma/widgetek": {
+      "page_id": "4258968e-752b-81b0-a626-d2f5b937dfc9",
+      "hash": "5ecb34aa8b5a"
     }
   }
 }
