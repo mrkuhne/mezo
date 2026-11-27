@@ -190,7 +190,7 @@ The weekly menu and shopping list move from Évad to Étel. The builder decides 
 expected — inside the **Hét** tab (menu for next week + the list as a sub-page), or a new tab if Hét gets crowded (the
 same "no crowded page" rule applies). The Ma-wall menu card and the review's page 4 open it there.
 
-**Which recipes the menu may use** (owner decision 2026-11-27, #129): marked **on the recipe itself**. Étel › Receptek:
+**Which recipes the menu may use** (owner decision 2026-11-27, #137): marked **on the recipe itself**. Étel › Receptek:
 every recipe card and recipe page carries a „Menübe jöhet" toggle (writes the season's allowed-recipe set — same server
 data as today's Évad › Menü › Kiválasztott receptek, `season_allowed_recipe`); the tab gets a filter chip „Menübe jöhet"
 showing only the marked ones. The menu page shows one row „N recept a menüben" → Receptek with that filter on. The

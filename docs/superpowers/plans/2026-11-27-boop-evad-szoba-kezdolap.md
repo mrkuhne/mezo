@@ -8,7 +8,7 @@
 
 **Tech Stack:** Swift 6.2, SwiftUI (iOS 26), Swift Testing, BoopKit (BoopCore · BoopDesign), `ServerCache`, local notifications (`ReminderCenter`).
 
-**Spec:** `docs/superpowers/specs/2026-11-27-boop-evad-szoba-kezdolap-design.md` (decisions #124–#130 in `docs/superpowers/research/boop-standalone/14-decisions.md`). Spike (visual direction, throwaway): branch `spike/boop-evad-szoba` @ `58e2d7126` — `ios/Boop/Spike/EvadSpike*.swift`, glyph drawings in its `BoopDesign/Napkelte/Glass.swift`, screenshots `docs/superpowers/specs/assets/evad-szoba/spike/*.png`.
+**Spec:** `docs/superpowers/specs/2026-11-27-boop-evad-szoba-kezdolap-design.md` (decisions #132–#138 in `docs/superpowers/research/boop-standalone/14-decisions.md`). Spike (visual direction, throwaway): branch `spike/boop-evad-szoba` @ `58e2d7126` — `ios/Boop/Spike/EvadSpike*.swift`, glyph drawings in its `BoopDesign/Napkelte/Glass.swift`, screenshots `docs/superpowers/specs/assets/evad-szoba/spike/*.png`.
 
 **Issue:** `mezo-r36n9.196`. Step 1 branch `feat/boop-evad-szoba` (this worktree); step 2 branch `feat/boop-evad-szoba-2` cut from `origin/main` after step 1 lands. Simulators: create your own (`xcrun simctl create "Boop · r36n9.196" "iPhone 17 Pro Max"` and `"Boop · r36n9.196 SE" "iPhone SE (3rd generation)"`), delete them at the end.
 
@@ -17,7 +17,7 @@
 1. **No backend change is needed.** Every read exists: `EvadClient.adherence(from:to:)` (per-day + summary), `overview()`, `KapacitasStore.loadWeek/season`, `PlanClient.activeYearPlan()` via `YearPlanModel`, `EvadMenuStore.recipes()/putRecipes`. The review's done state stays on the phone (spec §11.4).
 2. **Recipe toggle writes a full set.** `putRecipes(id:recipeIds:)` replaces the season's whole allowed set, so a per-recipe toggle is a read-modify-write; Task 10 serialises it in `EvadMenuStore`. Étel `Recipe.id` is a `UUID`, `EvadRecipeOption.id` a `String` — match on `uuidString.lowercased()` (verify against the preview transport and one live row before Task 16).
 3. **„Respects the existing notification settings"** (spec §4.3): there is no weekly-review switch today; this plan arms the Sunday notification only when notification permission is already granted (never prompts) and adds no new setting. If the owner wants an off switch, it is a follow-up.
-4. Decisions #124–#130 are already rows in `docs/boop-handbook/_dontesek.json` (keys `d-2026-11-27-evad-szoba`, `-menu-etelbe`, `-kezdolap-sav-nelkul`, `-naplo-nap-szobaba`, `-ev-az-evadban`, `-menu-recept-jeloles`, `-evad-szoba-proba`) and the ticket row is in `_jegyek.json`; Task 6 only checks them.
+4. Decisions #132–#138 are already rows in `docs/boop-handbook/_dontesek.json` (keys `d-2026-11-27-evad-szoba`, `-menu-etelbe`, `-kezdolap-sav-nelkul`, `-naplo-nap-szobaba`, `-ev-az-evadban`, `-menu-recept-jeloles`, `-evad-szoba-proba`) and the ticket row is in `_jegyek.json`; Task 6 only checks them.
 
 ## Global Constraints
 
@@ -26,12 +26,12 @@
 - No pull-to-refresh anywhere (owner rule `mezo-r36n9.191`); the head's „Frissítés" action reloads.
 - Sheets and full-screen covers are presented at page level (`docs/features/boop-ios.md` §9), never inside scroll content; no `async let` fans — sequential awaits or `Task {}` handles.
 - A number is never invented: no season, nothing judged, or no data → „–" (orb, hero), never 0.
-- `Hue.evad` is appended **last** (rawValue 8) and every rawValue-indexed array (`name`, `glow`, `top`) grows with it. Exact values (decision #130): name `"Évad"`, sky `0x2A1242 · 0x8A4FB8 · 0xF4B48E`, orb `0x2E0F3E · 0x9440AE · 0xF4B48E · 0xE7A2E6`, glow `0xC77DE0`, top `0x2A1242`. `.forma` must never identify the Évad room again (`let evadHue: Hue = .evad`).
+- `Hue.evad` is appended **last** (rawValue 8) and every rawValue-indexed array (`name`, `glow`, `top`) grows with it. Exact values (decision #138): name `"Évad"`, sky `0x2A1242 · 0x8A4FB8 · 0xF4B48E`, orb `0x2E0F3E · 0x9440AE · 0xF4B48E · 0xE7A2E6`, glow `0xC77DE0`, top `0x2A1242`. `.forma` must never identify the Évad room again (`let evadHue: Hue = .evad`).
 - Ring order (clockwise from top): `nap, alvas, etel, edzes, energia, evad, suly, forma, penz, level`. Ring side `min(w − 6, h × (w < 380 ? 0.60 : 0.56))`; orb size `side < 360 ? 44 : side < 400 ? 50 : 54`; centre orb `side < 360 ? 104 : 122` (spike values).
-- Floating „+": 58 pt glass circle, `plus-ink` 22 pt, a11y „Rögzítés", trailing 20, bottom 18 on the ring / 78 in a room (above the room bar's right end); a room page's end spacer grows by 64 pt while the „+" floats so row ends can scroll clear of it (decision #130 fix). Opens the existing „Mit rögzítesz?" sheet unchanged. Hidden on the Boop chat.
+- Floating „+": 58 pt glass circle, `plus-ink` 22 pt, a11y „Rögzítés", trailing 20, bottom 18 on the ring / 78 in a room (above the room bar's right end); a room page's end spacer grows by 64 pt while the „+" floats so row ends can scroll clear of it (decision #138 fix). Opens the existing „Mit rögzítesz?" sheet unchanged. Hidden on the Boop chat.
 - Évad bar: **Most · Hét · Terv · Kísérlet** + Boop; glyphs `most-ink`, `het-ink`, `terv-ink`, `kiserlet-ink`; room glyph `evad-ink`; Nap room bar **Ma · Napok** + Boop, Napok glyph `napok-ink`; review glyph `atnezes-ink`.
 - Sunday review window: **Sunday 18:00 – Monday 23:59, device time zone**; notification at Sunday 18:00 local, one per week, only while a season exists.
-- Szabályok page and the recipe toggle keep today's look (decision #130).
+- Szabályok page and the recipe toggle keep today's look (decision #138).
 
 ## Review Focus
 
@@ -259,7 +259,7 @@ var destination: BoopDestination?; func go(_ d: BoopDestination); func takeDesti
 
 - [ ] **Step 1: Write the docs** (Hungarian business language in the handbook; format per `docs/boop-handbook/README.md`).
 - [ ] **Step 2: Run** `node scripts/gen-codemap.mjs && node scripts/lint-docs.mjs`. Expected: `0 errors, 0 stale`.
-- [ ] **Step 3: Commit** `docs(boop): handbook, decisions #124–#130 and flags for the barless home (mezo-r36n9.196)`
+- [ ] **Step 3: Commit** `docs(boop): handbook, decisions #132–#138 and flags for the barless home (mezo-r36n9.196)`
 
 ### Task 7: Step 1 — *Kész, ha…*, gates, merge, install, live check
 
@@ -539,7 +539,7 @@ func etelMenuCountLine(_ n: Int) -> String   // "\(n) recept a menüben"
 
 - [ ] **Step 1: Write the failing tests** — `toggleHiddenWithoutSeason`, `toggleBlockedShowsReason`, `toggleOnOff`, `filterMatchesLowercasedUUID`, `countLine`.
 - [ ] **Step 2: Run** `… -only-testing:BoopTests/EtelMenuTests`. Expected: FAIL, `cannot find 'etelMenuToggle' in scope`.
-- [ ] **Step 3: Implement**; the toggle uses today's look (an `NKToggleRow`/the existing Évad tick, decision #130); offline toggle shows the store's „Ehhez internet kell.".
+- [ ] **Step 3: Implement**; the toggle uses today's look (an `NKToggleRow`/the existing Évad tick, decision #138); offline toggle shows the store's „Ehhez internet kell.".
 - [ ] **Step 4: Run** `EtelMenuTests` + existing `EtelHetTests`. Expected: `** TEST SUCCEEDED **`.
 - [ ] **Step 5: Verify**: `-previewHome etel -etelTab Hét` (spike `27`, the „+" never over the card's row ends), `-etelTab Receptek -etelMenuOnly YES`, a recipe detail sheet; screenshots `built/27-etel-het.png`, `built/28-receptek-menube.png`.
 - [ ] **Step 6: Commit** `feat(boop): weekly menu and list in Étel › Hét; „Menübe jöhet" on the recipe (mezo-r36n9.196)`
