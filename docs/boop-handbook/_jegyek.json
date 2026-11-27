@@ -1999,5 +1999,16 @@
     "munkamenet": "mezociklus-kihivas-jelzes",
     "mit_kapsz": "A gyakorlat neve alatt kiírt mondat mondja meg, hogy lesz-e kihívás és milyen lesz az utolsó szett (például Myo, utána félismétlések, a csúcsod 12). Pihenőhéten, kímélő napon vagy sportnapon is látod, mi tartozik a gyakorlathoz a mezociklusban, és miért marad ki ma.",
     "szulo": "mezo-r36n9"
+  },
+  "mezo-r36n9.198": {
+    "cim": "Étel oldalon a makróknál „megevett/cél” látszik",
+    "tipus": "Funkció",
+    "szakasz": "B4 Étel",
+    "terulet": [
+      "Étel"
+    ],
+    "munkamenet": "makro-kijelzes",
+    "mit_kapsz": "A Fehérje, Szénhidrát és Zsír sáv alatt nem az áll, mennyi fér még bele, hanem hogy mennyiből mennyit ettél (például „120/176 g”).",
+    "szulo": "mezo-r36n9"
   }
 }

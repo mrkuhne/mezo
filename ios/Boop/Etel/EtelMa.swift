@@ -137,9 +137,9 @@ struct EtelMa: View {
                 if !big { Spacer(minLength: 0) }
             }
             bars {
-                heroMacro("Fehérje", day.consumed.p, day.targets.p, store.plan?.remaining?.p, hue.glow)
-                heroMacro("Szénhidrát", day.consumed.c, day.targets.c, store.plan?.remaining?.c, Color(red: 0.65, green: 0.91, blue: 0.78))
-                heroMacro("Zsír", day.consumed.f, day.targets.f, store.plan?.remaining?.f, Color(red: 0.96, green: 0.78, blue: 0.38))
+                heroMacro("Fehérje", day.consumed.p, day.targets.p, hue.glow)
+                heroMacro("Szénhidrát", day.consumed.c, day.targets.c, Color(red: 0.65, green: 0.91, blue: 0.78))
+                heroMacro("Zsír", day.consumed.f, day.targets.f, Color(red: 0.96, green: 0.78, blue: 0.38))
             }
         }
         .padding(.horizontal, 18)
@@ -156,9 +156,9 @@ struct EtelMa: View {
     }
 
     /// One macro: the bar and "még N g" — a negative N when over, in the same colour; eaten only on a kímélő day.
-    private func heroMacro(_ name: String, _ eaten: Double, _ target: Double, _ remaining: Double?, _ color: Color) -> some View {
-        let left = Int((remaining ?? (target - eaten)).rounded())
-        let line = guidance ? "\(Int(eaten.rounded())) g" : "még \(huInt(left)) g"
+    /// Under each bar: eaten of target ("120/176 g", owner 2026-11-27 — no longer "még N g"); a kímélő day shows the eaten grams only.
+    private func heroMacro(_ name: String, _ eaten: Double, _ target: Double, _ color: Color) -> some View {
+        let line = guidance ? "\(huInt(Int(eaten.rounded()))) g" : "\(huInt(Int(eaten.rounded())))/\(huInt(Int(target.rounded()))) g"
         return VStack(alignment: .leading, spacing: 6) {
             Text(name).nkFont(12, .medium).foregroundStyle(.white.opacity(0.85)).lineLimit(1).minimumScaleFactor(0.8)
             Capsule().fill(.white.opacity(0.1)).frame(height: 6)
@@ -174,7 +174,7 @@ struct EtelMa: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(guidance ? "\(name): \(Int(eaten.rounded())) gramm"
-                                     : "\(name): \(Int(eaten.rounded())) gramm a \(Int(target.rounded()))-ból, még \(huInt(left)) gramm")
+                                     : "\(name): \(Int(eaten.rounded())) gramm a \(Int(target.rounded())) grammból")
     }
 
     @ViewBuilder private func heroCurvePage(_ day: FoodDay) -> some View {

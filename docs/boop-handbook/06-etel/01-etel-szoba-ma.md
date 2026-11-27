@@ -15,7 +15,7 @@ Az Étel szoba (a kezdőlap Étel gömbjéről nyílik) saját alsó sávval jö
 
 **1. A nap egy pillantásra** (egy üvegkártya, balra-jobbra lapozható)
 - **Első oldal:** egy gyűrű, közepén „még 1 980 kcal” (például); a keret túllépése „−120 kcal”, normál színnel, soha
-  nem piros; kímélő napon „ma nincs keret”. Mellette a **Fehérje · Szénhidrát · Zsír** sávok, mindháromnál „még N g”.
+  nem piros; kímélő napon „ma nincs keret”. Mellette a **Fehérje · Szénhidrát · Zsír** sávok, mindháromnál „megevett/cél g” (például „120/176 g”).
 - **Második oldal: A nap menete:** egy görbe — folytonos vonal, amit megettél; szaggatott, ahová a mai terv visz;
   fölötte a kereted. Nagy betűmérettel vagy VoiceOverrel a két oldal egymás alá kerül, és a görbét szavakkal is felolvassa.
 
