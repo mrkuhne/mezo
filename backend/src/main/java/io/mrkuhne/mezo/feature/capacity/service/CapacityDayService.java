@@ -144,6 +144,14 @@ public class CapacityDayService {
         java.util.function.Function<LocalDate, Demand> demandOf = d -> demandCache.computeIfAbsent(d,
             k -> demand(eventsByDate.getOrDefault(k, List.of()), scores, sessions.getOrDefault(k, List.of()), k, asOf,
                 zone));
+        // The base is sampled with the plan as planned (mezo-r36n9.185): a future day counts every planned session, so
+        // a past day of the sample must too, or an unlogged training habit drags the base below an ordinary planned
+        // day and every gym day reads "szoros" (spec §5.3: an ordinary day reads rendben). The day's own demand (shown,
+        // and yesterday's load) stays the logged one.
+        Map<LocalDate, Demand> planCache = new HashMap<>();
+        java.util.function.Function<LocalDate, Demand> planDemandOf = d -> planCache.computeIfAbsent(d,
+            k -> demand(eventsByDate.getOrDefault(k, List.of()), scores, sessions.getOrDefault(k, List.of()), k,
+                LocalDate.MIN, zone));
 
         List<DayRead> out = new ArrayList<>();
         for (LocalDate d = first; !d.isAfter(last); d = d.plusDays(1)) {
@@ -162,13 +170,13 @@ public class CapacityDayService {
                 boolean full = sleepMin.containsKey(h) && m != null;
                 if (full) {
                     fullDays++;
-                    fullUnits.add(demandOf.apply(h).units());
+                    fullUnits.add(planDemandOf.apply(h).units());
                 }
                 if (f != null && (f.hasClose() || f.hasCheckin())) {
                     labelledDays++;
                 }
                 if (f != null && f.dayRating() != null && f.dayRating() >= GOOD_RATING) {
-                    ratedUnits.add(demandOf.apply(h).units());
+                    ratedUnits.add(planDemandOf.apply(h).units());
                 }
                 if (m != null && m.restingHr() != null) {
                     rhr.add(m.restingHr().doubleValue());

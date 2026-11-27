@@ -249,6 +249,21 @@ class ProposalGeneratorTest {
         }
     }
 
+    /** mezo-r36n9.185: a week where every day is túl sok offers one skip, the rest of the sessions shorter. */
+    @Test
+    void atMostOneSkipAWeekTheOthersShorter() {
+        Week week = new Week();
+        for (int i = 0; i < 7; i++) {
+            week.day(i, 1.4, 0.7).gym(i, "07:00", "Edzés " + i, false);
+        }
+
+        List<ProposalDraft> drafts = ProposalGenerator.forWeek(week.build(), List.of(), P);
+
+        assertThat(drafts).isNotEmpty();
+        assertThat(drafts.stream().filter(d -> d.kind().equals("SKIP_SESSION"))).hasSize(1);
+        assertThat(drafts).anyMatch(d -> d.kind().equals("SHORTEN_SESSION"));
+    }
+
     // ── the accept rules hold for every draft ────────────────────────────────
 
     @Test

@@ -195,4 +195,29 @@ class CapacityDayServiceIT extends AbstractIntegrationTest {
             .doesNotContain("training");
         assertThat(today.demand().items()).extracting(DemandCalculator.DemandItem::kind).contains("training");
     }
+    /**
+     * mezo-r36n9.185: he trains on a plan but logs few sessions. The base is sampled with the plan as planned, so an
+     * ordinary planned gym day reads rendben, not szoros (spec §5.3) — before the fix the unlogged past made every
+     * planned day tight and no session could ever be moved.
+     */
+    @Test
+    void ordinaryPlannedGymDayReadsRendbenWhenPastSessionsWentUnlogged() {
+        UUID owner = databasePopulator.populateUser("cap-day9@test.local");
+        for (int dow = 0; dow < 7; dow++) {
+            trainPopulator.createGymSlotAt(owner, dow, "07:00", DAY.minusDays(60).atStartOfDay(BUD).toInstant());
+        }
+        for (int i = 1; i <= 14; i++) {
+            LocalDate d = DAY.minusDays(i);
+            sleepPopulator.createSleepLog(owner, d, new BigDecimal("8.0"), 4);
+            metricPopulator.createDay(owner, d, 8000, 55);
+            meeting(owner, d, "Napi " + FakeCompanionLlm.FAIL_COMPLETE, "09:00", "10:00");
+        }
+        meeting(owner, DAY, "Napi " + FakeCompanionLlm.FAIL_COMPLETE, "09:00", "10:00");
+
+        CapacityDay day = service.day(owner, DAY);
+
+        assertThat(day.demand().items()).extracting(DemandCalculator.DemandItem::kind).contains("training");
+        assertThat(day.verdict()).isEqualTo("rendben");
+        assertThat(day.ratio()).isCloseTo(0.8, within(1e-6));
+    }
 }
