@@ -53,30 +53,37 @@ public class RecipeBreakdownService {
         // score is clamped at 0, so a far-enough-off profile can score identically under both rubrics,
         // and matches() compares only value/id/score/weight, never the prose. The blanket cache null
         // in RecipeService.update is what actually guarantees a role edit is re-evaluated.
-        MealBreakdownJson fresh = scoringService.recipeTemplateBreakdown(recipe.getCategory(),
-            recipeService.fitLines(recipe, recipeService.pantryByIdFor(List.of(recipe))),
+        List<MealScoringService.ScoredLine> lines =
+            recipeService.fitLines(recipe, recipeService.pantryByIdFor(List.of(recipe)));
+        MealBreakdownJson fresh = scoringService.recipeTemplateBreakdown(recipe.getCategory(), lines,
             recipe.getRole());
         if (fresh == null) { // no kcal — pending-sparkle territory, nothing to explain
             return response(null, List.of());
         }
+        // „Honnan jön" rows (mezo-r36n9.199) are recomputed on every read from the same lines and
+        // overlaid on whatever envelope is served — never persisted, so they can't go stale.
         if (matches(recipe.getBreakdown(), fresh)) {
-            return response(recipe.getBreakdown(),
+            return response(RecipeContributors.attach(recipe.getBreakdown(), lines),
                 recipe.getFitsFor() == null ? List.of() : recipe.getFitsFor());
         }
 
+        MealBreakdownJson withSources = RecipeContributors.attach(fresh, lines);
         RecipeBreakdownProseService svc = prose.getIfAvailable();
-        RecipeBreakdownProseService.Enriched enriched = svc == null ? null : svc.enrich(recipe, fresh);
+        RecipeBreakdownProseService.Enriched enriched = svc == null ? null : svc.enrich(recipe, withSources);
         if (enriched == null) {
-            return response(fresh, List.of()); // deterministic, unpersisted (spec D5/D6)
+            return response(withSources, List.of()); // deterministic, unpersisted (spec D5/D6)
         }
         recipe.setBreakdown(enriched.envelope()); // dirty-checked; flush on tx commit
         recipe.setFitsFor(enriched.fitsFor());
         return response(enriched.envelope(), enriched.fitsFor());
     }
 
-    /** Cache valid iff the persisted numbers equal the freshly computed ones (value + per-dim). */
+    /** Cache valid iff the persisted prose is the current prompt generation AND its numbers equal the
+     *  freshly computed ones (value + per-dim). */
     private boolean matches(MealBreakdownJson stored, MealBreakdownJson fresh) {
-        if (stored == null || stored.value() == null || fresh.value() == null
+        if (stored == null || stored.proseVersion() == null
+            || stored.proseVersion() < RecipeBreakdownProseService.PROSE_VERSION
+            || stored.value() == null || fresh.value() == null
             || stored.value().compareTo(fresh.value()) != 0
             || stored.dimensions() == null
             || stored.dimensions().size() != fresh.dimensions().size()) {

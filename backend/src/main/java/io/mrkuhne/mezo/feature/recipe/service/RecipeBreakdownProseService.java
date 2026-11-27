@@ -38,9 +38,9 @@ public class RecipeBreakdownProseService {
         You evaluate ONE saved recipe TEMPLATE against the owner's daily nutrition targets.
         You get the recipe and the DETERMINISTIC dimension scores already computed by the engine.
         Answer with ONE JSON object and nothing else, exactly these keys:
-        {"summary":string,"fitsFor":[string],
+        {"tagline":string,"summary":string,"fitsFor":[string],
          "details":{"macro":string,"micro":string,"who":string,"fat_quality":string,"nova":string,"plant_diversity":string,"energy_density":string,"portion":string},
-         "improve":[{"text":string,"impact":string}]}
+         "improve":[{"text":string,"impact":string,"dimension":string}]}
         DIMENZIÓK (a details.<id> kulcsai — mit magyarázz dimenziónként):
         - macro: Kcal & makró arány — a P/C/F energia-arány a napi célhoz képest. A fehérje-TÖBBLETET
           a pontozás szándékosan nem bünteti (fitness-fókusz) — többlet-fehérjét sose ródd fel
@@ -54,11 +54,22 @@ public class RecipeBreakdownProseService {
         - portion: Adag-arány — egy adag kcal a slot-büdzséhez képest; jelezd, ha az adag túl nagy/kicsi a slothoz.
         Rules:
         - Write Hungarian, tegeződve, tömören.
-        - summary: 2-3 mondat — a recept sablon-szintű olvasata (mire jó, hogyan illik a célokhoz).
-        - details.*: 1-2 mondat dimenziónként; a megadott számok MAGYARÁZATA — soha ne mondj
-          ellent nekik és ne találj ki új számokat. Degradált (nincs adat) dimenzióról ne írj.
+        - Boop hangján írsz: barátságos, konkrét, ÉTEL-SPECIFIKUS. Nevezd meg a HOZZÁVALÓK sorból
+          a valódi hozzávalókat — a "FORRÁSOK" sorok megmondják, melyik hozzávaló mennyit hoz.
+        - TILOS kezdések (sem a summary, sem a details elején): „Ez egy", „Ez a recept", „Ez a sablon",
+          „A recept". Ne kategória-címkével kezdj, hanem a legbeszédesebb ténnyel.
+        - Számot CSAK a bemenetből idézz (a FORRÁSOK, a bontás és a hozzávalók számai) — soha ne
+          számolj ki és ne találj ki újat, és ne hivatkozz napi célokra, amiket nem kaptál meg.
+        - tagline: EGY mondat, legfeljebb 70 karakter — a recept fő erőssége és a leggyengébb
+          pontja (pl. "Fehérjében erős reggeli, a só húzza le."). Nincs benne szám.
+        - summary: 2-3 mondat — mire jó ez az étel, mi viszi a pontszámát fel és le, hozzávalókkal.
+        - details.*: 3-4 mondat dimenziónként; a megadott számok MAGYARÁZATA — melyik hozzávaló
+          áll a szám mögött, és miért ennyi. Soha ne mondj ellent a számoknak. Degradált (nincs adat)
+          dimenzióról ne írj.
         - fitsFor: 1-3 rövid címke, mikor/mire illik a recept (pl. "Post-workout · este").
-        - improve: 0-3 konkrét javaslat; impact = rövid kvalitatív tag (pl. "+rost", "-NOVA4").
+        - improve: 0-3 konkrét csere vagy kiegészítés MENNYISÉGGEL és a hozzávaló nevével (pl.
+          "Cseréld a feta felét túróra."); impact = rövid kvalitatív tag (pl. "+rost", "-só");
+          dimension = annak a dimenziónak az id-je (a details kulcsai közül), amelyiken javít.
         - Az időzítés sablon szinten nem értékelhető — arról ne írj javaslatot.
         - A SZEREP sor megmondja, milyen rubrikával pontozott a motor. Ha edzés előtti/utáni
           szerep van megadva, a gyors szénhidrát és a magasabb cukor SZÁNDÉKOS — sose írd hibának.
@@ -73,7 +84,7 @@ public class RecipeBreakdownProseService {
         SYSTEM_PROMPT.replace("- Write Hungarian, tegeződve, tömören.", "- Tegeződve, tömören.");
 
     /** LLM answer contract — permissive shapes; a malformed answer degrades, never errors. */
-    record ExtractedImprove(String text, String impact) {
+    record ExtractedImprove(String text, String impact, String dimension) {
     }
 
     /**
@@ -81,9 +92,14 @@ public class RecipeBreakdownProseService {
      * plant_diversity, energy_density, portion) — a Map, so any new dimension id narrates without a
      * schema edit and the snake_case ids need no {@code @JsonProperty} plumbing.
      */
-    record ExtractedProse(String summary, List<String> fitsFor, Map<String, String> details,
+    record ExtractedProse(String summary, String tagline, List<String> fitsFor, Map<String, String> details,
                           List<ExtractedImprove> improve) {
     }
+
+    /** The prompt generation stamped on every enriched envelope; bump it whenever the prompt changes
+     *  so {@code RecipeBreakdownService.matches()} re-narrates old cached prose lazily (mezo-r36n9.199).
+     *  1 = the pre-stamp prompt (stored as null), 2 = tagline + food-specific details + improve.dimension. */
+    public static final int PROSE_VERSION = 2;
 
     /** A successful enrichment: the prose-merged envelope + the (capped) fitsFor labels. */
     public record Enriched(MealBreakdownJson envelope, List<String> fitsFor) {
@@ -156,29 +172,57 @@ public class RecipeBreakdownProseService {
               .append(d.score()).append(", súly ").append(d.weight())
               .append(" — ").append(d.detail()).append('\n');
         }
+        for (Dimension d : det.dimensions()) {
+            if (d.contributors() == null || d.contributors().isEmpty()) {
+                continue;
+            }
+            sb.append("FORRÁSOK ").append(d.id()).append(':');
+            String sep = " ";
+            for (MealBreakdownJson.Contributor c : d.contributors()) {
+                sb.append(sep).append(c.name()).append(' ')
+                  .append(c.amount().stripTrailingZeros().toPlainString()).append(' ').append(c.unit())
+                  .append(nutrientLabel(c.nutrient()))
+                  .append(" (").append(c.share().movePointRight(2).setScale(0, java.math.RoundingMode.HALF_UP))
+                  .append("%)");
+                sep = ", ";
+            }
+            sb.append('\n');
+        }
         sb.append("VÉGSŐ ÉRTÉK: ").append(det.value())
           .append(" | megbízhatóság: ").append(det.confidence()).append('\n');
         return sb.toString();
     }
 
-    /** Numbers untouched; prose replaces summary + the per-dimension details + improve; llm tool row. */
-    private static MealBreakdownJson merge(MealBreakdownJson det, ExtractedProse prose) {
+    private static String nutrientLabel(String nutrient) {
+        return switch (nutrient) {
+            case "salt" -> " só";
+            case "sugar" -> " cukor";
+            case "saturated_fat" -> " telített zsír";
+            case "fiber" -> " rost";
+            default -> "";
+        };
+    }
+
+    /** Numbers untouched; prose replaces summary + tagline + the per-dimension details + improve;
+     *  llm tool row; stamped with {@link #PROSE_VERSION}. Package-private for the unit test. */
+    static MealBreakdownJson merge(MealBreakdownJson det, ExtractedProse prose) {
         Map<String, String> details = prose.details() == null ? Map.of() : prose.details();
         List<Dimension> dims = det.dimensions().stream().map(d -> {
             String text = details.get(d.id()); // keyed by dimension id — narrates all 8
-            return text == null || text.isBlank() ? d
-                : new Dimension(d.id(), d.label(), d.weight(), d.score(), d.coverage(), text,
-                    d.macro(), d.micros(), d.nova(), d.context(), d.timing(), d.note());
+            return text == null || text.isBlank() ? d : d.withDetail(text);
         }).toList();
+        java.util.Set<String> ids = det.dimensions().stream().map(Dimension::id)
+            .collect(java.util.stream.Collectors.toSet());
         List<ImproveRow> improve = prose.improve() == null ? List.<ImproveRow>of() : prose.improve().stream()
             .filter(i -> i.text() != null && !i.text().isBlank())
             .limit(3)
-            .map(i -> new ImproveRow(i.text(), i.impact() == null ? "" : i.impact()))
+            .map(i -> new ImproveRow(i.text(), i.impact() == null ? "" : i.impact(),
+                i.dimension() != null && ids.contains(i.dimension()) ? i.dimension() : null))
             .toList();
         List<ToolRow> tools = new ArrayList<>(det.tools());
         tools.add(new ToolRow("compute", "llm:sablon-olvasat"));
-        // tagline stays null: it is the logged-meal card's cut (mezo-mr4n); a recipe has no card row.
-        return new MealBreakdownJson(det.value(), det.confidence(), prose.summary(), null, dims,
-            improve, tools, det.formulaVersion());
+        String tagline = prose.tagline() == null || prose.tagline().isBlank() ? null : prose.tagline().strip();
+        return new MealBreakdownJson(det.value(), det.confidence(), prose.summary(), tagline, dims,
+            improve, tools, det.formulaVersion(), det.glucose(), PROSE_VERSION);
     }
 }

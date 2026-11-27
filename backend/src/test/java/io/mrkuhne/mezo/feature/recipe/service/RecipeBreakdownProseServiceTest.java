@@ -55,4 +55,56 @@ class RecipeBreakdownProseServiceTest {
 
         assertThat(msg).doesNotContain("edzés előtti").doesNotContain("edzés utáni");
     }
+
+    private static MealBreakdownJson.Dimension dim(String id) {
+        return new MealBreakdownJson.Dimension(id, id, new BigDecimal("0.2"), new BigDecimal("0.4"), null,
+            "számolt", null, null, null, null, null, null);
+    }
+
+    private MealBreakdownJson envelopeWith(MealBreakdownJson.Dimension... dims) {
+        return new MealBreakdownJson(new BigDecimal("0.60"), new BigDecimal("0.80"), null, null,
+            List.of(dims), List.of(), List.of(), MealScoringService.FORMULA_VERSION);
+    }
+
+    @Test
+    void testMerge_shouldKeepTaglineAndStampProseVersion_whenLlmGivesTagline() {
+        var prose = new RecipeBreakdownProseService.ExtractedProse("Összegzés.",
+            "  Fehérjében erős, a só húzza le.  ", List.of(), java.util.Map.of("who", "Hosszú magyarázat."),
+            List.of(new RecipeBreakdownProseService.ExtractedImprove("Cseréld a feta felét túróra.", "-só", "who")));
+
+        MealBreakdownJson out = RecipeBreakdownProseService.merge(envelopeWith(dim("macro"), dim("who")), prose);
+
+        assertThat(out.tagline()).isEqualTo("Fehérjében erős, a só húzza le.");
+        assertThat(out.proseVersion()).isEqualTo(RecipeBreakdownProseService.PROSE_VERSION);
+        assertThat(out.dimensions().get(1).detail()).isEqualTo("Hosszú magyarázat.");
+        assertThat(out.improve().getFirst().dimension()).isEqualTo("who");
+    }
+
+    @Test
+    void testMerge_shouldDropUnknownImproveDimension_whenIdNotInEnvelope() {
+        var prose = new RecipeBreakdownProseService.ExtractedProse("Összegzés.", " ", List.of(), null,
+            List.of(new RecipeBreakdownProseService.ExtractedImprove("Tipp.", "+rost", "timing")));
+
+        MealBreakdownJson out = RecipeBreakdownProseService.merge(envelopeWith(dim("macro")), prose);
+
+        assertThat(out.improve().getFirst().dimension()).isNull();
+        assertThat(out.tagline()).isNull();
+    }
+
+    @Test
+    void testUserMessage_shouldListSaltSources_whenWhoHasContributors() {
+        var who = dim("who").withContributors(List.of(new MealBreakdownJson.Contributor("Feta", "salt",
+            new BigDecimal("1.2"), "g", new BigDecimal("0.6316"))));
+
+        String msg = service.userMessage(recipe(MealRole.STANDARD), envelopeWith(dim("macro"), who));
+
+        assertThat(msg).contains("FORRÁSOK who: Feta 1.2 g só (63%)");
+    }
+
+    @Test
+    void testSystemPrompt_shouldBanTemplateOpeners() {
+        assertThat(RecipeBreakdownProseService.SYSTEM_PROMPT)
+            .contains("\"tagline\"").contains("\"dimension\"").contains("„Ez egy")
+            .contains("- Write Hungarian, tegeződve, tömören.");
+    }
 }
