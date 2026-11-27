@@ -1135,5 +1135,14 @@
       "mezo-r36n9.195"
     ],
     "mi_valtozott": "A gyakorlat neve alatt a rövid címkék helyett kiírt mondat mondja meg, milyen lesz az utolsó szett, és ha kihívás is van, a csúcsodat is. Pihenőhéten, kímélő napon és sportnapon egy halvány sor jelzi, mi tartozik a gyakorlathoz a mezociklusban, és miért marad ki ma."
+  },
+  "da283486a": {
+    "cim": "Étel oldalon a makróknál „megevett/cél” látszik",
+    "datum": "2026-11-27",
+    "szakasz": "B4 Étel",
+    "jegyek": [
+      "mezo-r36n9.198"
+    ],
+    "mi_valtozott": "A Fehérje, Szénhidrát és Zsír sáv alatt a „még N g” helyett most az áll, mennyiből mennyit ettél (például „120/176 g”). Kímélő napon továbbra is csak a megevett mennyiség látszik."
   }
 }
