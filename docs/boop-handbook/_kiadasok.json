@@ -1094,5 +1094,19 @@
       "mezo-r36n9.185"
     ],
     "mi_valtozott": "Az Átrendezés lapon a „Korábban áttettük” rész most megmondja, hogyan sült el egy-egy áthelyezés („bevált”, „nem segített”, „maradt így”), egy rövid sorral arról, mi történt aznap. Ha valami legalább háromszor ugyanúgy alakult, Boop az „Ebből tanulok” részben kimondja (például: „a csütörtökök rendre túl sokak”). Vasárnap este hattól a fal és az Átrendezés már a jövő hetet mutatja, amit Boop addigra előre átnézett. Az Évad Teher részén, ha három hete több a teher, mint amennyit a pihenés visszaad, Boop szól, hogy előrébb hozná a könnyebb hetet — ez csak tanács, semmit nem állít át, és „Megbeszélem Boop-pal” gombbal beszélhetsz róla. Új évad indításakor a második lépés mutatja, mit tanult Boop a korábbi mozgatásokból. A jövő heti javaslatok között már nem csak edzéskihagyás szerepel: hetente legfeljebb egy kihagyást javasol, és inkább áthelyez."
+  },
+  "9196b259e": {
+    "cim": "Widgetek a kezdő- és a zárolt képernyőn",
+    "datum": "2026-11-27",
+    "verzio": "",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app"
+    ],
+    "szakasz": "Életpanel",
+    "jegyek": [
+      "mezo-r36n9.172"
+    ],
+    "mi_valtozott": "Három Boop-widget, az app megnyitása nélkül: a Következő (kicsi) a nap következő teendőjét mutatja, és hogy mennyi idő van még addig; a Mai nap (közepes) a következő három teendőt és a mai emlékeztetőket, amelyeket a karikára koppintva ki is pipálhatsz; a zárolt képernyőn az óra alatt egy sor mutatja a következőt. Ha a mai terv még nem jött meg, csak az emlékeztetők látszanak egy „Nyisd meg a Boopot a mai tervhez” sorral; kijelentkezéskor a widgetek kiürülnek. Az ingyenes Apple-fiókkal is működik. A napközbeni kérdés widgetje külön jegyben jön."
   }
 }
