@@ -80,8 +80,14 @@ játékosít, és egy edzés itt nincs leosztályozva ötből.
 
 **Technika és kihívás edzés közben (2026-11-19):**
 
-- Ha egy gyakorlaton ma **technika** van vagy ez a **nap kihívása**, a neve alatt címke mutatja („PIHENŐS DROP”, „MYO SET”,
-  „KIHÍVÁS”), a sorozatok táblázatában pedig a technikás sorozat alatt egy sor jelzi előre.
+- Ha egy gyakorlaton ma **technika** van vagy ez a **nap kihívása**, a neve alatt **kiírt mondat** mondja meg (2026-11-27 óta,
+  a korábbi rövid címkék helyett), végig látszik, amíg a gyakorlatot csinálod: például „Utolsó szett: Pihenős drop”, vagy
+  sárgán „Kihívás · utolsó szett: Myo set, utána félismétlések · a csúcsod 12 félismétlés” (ha még nincs csúcsod: „most
+  állítod be a csúcsot”). A sorozatok táblázatában a technikás sorozat alatt egy sor jelzi előre.
+- **Ha ma kimarad** (2026-11-27 óta): pihenőhéten, kímélő napon (visszatérés betegség után, vagy könnyített nap) és sportnapon a
+  technika és/vagy a kihívás szándékosan elmarad. Ilyenkor egy halvány sor mondja, mi tartozik a gyakorlathoz a mezociklusban és miért
+  marad ki ma — például „A mezociklusban ehhez kihívás tartozik: Myo set, utána félismétlések. Ma kimarad, mert pihenőhét van.”
+  Sportnapon, ha a saját technikád megmarad, csak ennyi: „A mezociklusban ehhez kihívás is tartozik. Ma kimarad, mert sportnap van.”
 - **A technikás sorozatnál** egy lépéskártya mondja, mi jön: például „1 · Bukásig”, „2 · 30 mp pihenő”, „3 · 40 kg, ugyanannyi”.
   A rövid pihenő a kártyán számol vissza, és magától lép tovább (vagy „Kezdem”). A kisebb súlyt **abból számolja, amit ténylegesen
   emeltél** (30%-kal kevesebb, lefelé a legközelebbi 2,5 kg-ra), az ismétlést abból, amennyit csináltál. Myo szettnél a mini-sorozatok

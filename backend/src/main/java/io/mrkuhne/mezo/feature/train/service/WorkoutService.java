@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.api.dto.PrescribedSet;
 import io.mrkuhne.mezo.api.dto.SetLogRequest;
 import io.mrkuhne.mezo.api.dto.SetUpdateRequest;
 import io.mrkuhne.mezo.api.dto.TodayComeback;
+import io.mrkuhne.mezo.api.dto.SkippedTechnique;
 import io.mrkuhne.mezo.api.dto.TodayExercise;
 import io.mrkuhne.mezo.api.dto.WorkoutFeedbackInput;
 import io.mrkuhne.mezo.api.dto.WorkoutDetailExercise;
@@ -390,6 +391,12 @@ public class WorkoutService {
                 // is untouched).
                 if (techniquesOn) {
                     if (comeback != null || lighten.isPresent() || deloadWeek || invalidPicks.contains(e.getId())) {
+                        // Say what was left out and why (mezo-r36n9.195) — a pick the catalog no longer allows
+                        // is not a plan that merely waits, so it gets no line.
+                        if (!invalidPicks.contains(e.getId())) {
+                            t.setSkippedToday(skipped(Technique.fromWire(e.getTechnique()), e.isChallenge(),
+                                deloadWeek ? SkippedTechnique.ReasonEnum.DELOAD : SkippedTechnique.ReasonEnum.GENTLE));
+                        }
                         t.setTechnique(null);
                         t.setTechniqueSource(null);
                         t.setChallenge(false);
@@ -402,6 +409,10 @@ public class WorkoutService {
                             ? Technique.NONE : Technique.fromWire(e.getTechnique());
                         boolean challenge = !sport && e.isChallenge();
                         if (sport) {
+                            Technique plannerDropped = technique == Technique.NONE
+                                ? Technique.fromWire(e.getTechnique()) : Technique.NONE;
+                            t.setSkippedToday(skipped(plannerDropped, e.isChallenge(),
+                                SkippedTechnique.ReasonEnum.SPORT));
                             t.setChallenge(false);
                             t.setChallengeBest(null);
                             if (technique == Technique.NONE) {
@@ -496,6 +507,15 @@ public class WorkoutService {
             .filter(r -> TechniqueRules.check(Technique.fromWire(r.getTechnique()), r.isChallenge(),
                 attrs.of(r.getCatalogId())).isPresent())
             .map(ExerciseEntity::getId).collect(java.util.stream.Collectors.toSet());
+    }
+
+    /** What today's prescription left out of the plan, or null when nothing was (mezo-r36n9.195). */
+    private static SkippedTechnique skipped(Technique technique, boolean challenge, SkippedTechnique.ReasonEnum why) {
+        if (technique == Technique.NONE && !challenge) {
+            return null;
+        }
+        return new SkippedTechnique().technique(technique == Technique.NONE ? null : technique.toApi())
+            .challenge(challenge).reason(why);
     }
 
     /**

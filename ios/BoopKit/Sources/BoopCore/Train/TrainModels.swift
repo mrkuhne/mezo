@@ -169,6 +169,8 @@ public struct PlannedExercise: Codable, Equatable, Sendable, Identifiable {
     public var challenge: Bool
     /// The half-rep count to beat at the challenge set's weight; `nil` when there is none yet.
     public var challengeBest: Int?
+    /// What the mesocycle plans here that today leaves out, and why (mezo-r36n9.195); `nil` = nothing left out.
+    public var skippedToday: SkippedTechnique?
 
     public init(id: UUID, name: String, muscle: String, type: ExerciseType, sets: [PrescribedSet],
                 warmupCount: Int, workingCount: Int, repMin: Int, repMax: Int, targetRIR: Int,
@@ -176,7 +178,8 @@ public struct PlannedExercise: Codable, Equatable, Sendable, Identifiable {
                 lastWeek: LastWeekSet? = nil, note: String? = nil, warning: String? = nil,
                 videoURL: String? = nil, imageStartURL: String? = nil, imageEndURL: String? = nil,
                 replacesName: String? = nil, replacedByName: String? = nil, planSlot: Bool = true,
-                technique: SetTechnique? = nil, challenge: Bool = false, challengeBest: Int? = nil) {
+                technique: SetTechnique? = nil, challenge: Bool = false, challengeBest: Int? = nil,
+                skippedToday: SkippedTechnique? = nil) {
         self.id = id; self.name = name; self.muscle = muscle; self.type = type
         self.sets = sets.filter { $0.kind != .warmup }
         self.warmupCount = warmupCount; self.workingCount = workingCount
@@ -186,13 +189,13 @@ public struct PlannedExercise: Codable, Equatable, Sendable, Identifiable {
         self.videoURL = videoURL; self.imageStartURL = imageStartURL; self.imageEndURL = imageEndURL
         self.replacesName = replacesName; self.replacedByName = replacedByName; self.planSlot = planSlot
         self.technique = technique == SetTechnique.none ? nil : technique
-        self.challenge = challenge; self.challengeBest = challengeBest
+        self.challenge = challenge; self.challengeBest = challengeBest; self.skippedToday = skippedToday
     }
 
     enum CodingKeys: String, CodingKey {
         case id, name, muscle, type, sets, warmupCount, workingCount, repMin, repMax, targetRIR, anchorKg, rationale
         case progression, lastWeek, note, warning, videoURL, imageStartURL, imageEndURL, replacesName, replacedByName
-        case planSlot, technique, challenge, challengeBest
+        case planSlot, technique, challenge, challengeBest, skippedToday
     }
 
     // Written by hand so a plan cached before T2 (no `challenge` key) still reads.
@@ -220,7 +223,29 @@ public struct PlannedExercise: Codable, Equatable, Sendable, Identifiable {
             planSlot: try c.decodeIfPresent(Bool.self, forKey: .planSlot) ?? true,
             technique: try c.decodeIfPresent(SetTechnique.self, forKey: .technique),
             challenge: try c.decodeIfPresent(Bool.self, forKey: .challenge) ?? false,
-            challengeBest: try c.decodeIfPresent(Int.self, forKey: .challengeBest))
+            challengeBest: try c.decodeIfPresent(Int.self, forKey: .challengeBest),
+            skippedToday: try c.decodeIfPresent(SkippedTechnique.self, forKey: .skippedToday))
+    }
+}
+
+/// The technique and/or challenge the mesocycle plans on an exercise that today's prescription leaves out, and why
+/// (mezo-r36n9.195) — so the player can still say what belongs to it.
+public struct SkippedTechnique: Codable, Equatable, Sendable {
+    public enum Reason: String, Codable, Equatable, Sendable {
+        /// The mesocycle's deload week.
+        case deload
+        /// A comeback or a readiness-lightened day.
+        case gentle
+        /// A sport day loading the same muscles.
+        case sport
+        public init(wire: String) { self = Reason(rawValue: wire.lowercased()) ?? .gentle }
+    }
+    public var technique: SetTechnique?
+    public var challenge: Bool
+    public var reason: Reason
+    public init(technique: SetTechnique?, challenge: Bool, reason: Reason) {
+        self.technique = technique == SetTechnique.none ? nil : technique
+        self.challenge = challenge; self.reason = reason
     }
 }
 

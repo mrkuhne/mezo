@@ -114,6 +114,8 @@ public struct SessionExercise: Codable, Sendable, Equatable, Identifiable {
     public var challenge: Bool?
     /// The half-rep count to beat on the challenge.
     public var challengeBest: Int?
+    /// What the mesocycle plans here that today leaves out (mezo-r36n9.195). Optional so an older save restores.
+    public var skippedToday: SkippedTechnique?
     /// „Nem esik jól" said in the swap sheet today and accepted by the server (mezo-r36n9.66). Kept with the
     /// session so the chip still tells the truth — and can be cleared — after a relaunch. Optional so a session
     /// saved by an older build still restores.
@@ -152,11 +154,13 @@ public struct SessionExercise: Codable, Sendable, Equatable, Identifiable {
     public init(id: UUID, name: String, muscle: String, planned: [PrescribedSet], logged: [SessionSet] = [],
                 adjustment: Int = 0, skipped: Bool = false, note: String? = nil,
                 feedback: ExerciseFeedback? = nil, bestKg: Double? = nil, bestReps: Int? = nil,
-                technique: SetTechnique? = nil, challenge: Bool? = nil, challengeBest: Int? = nil) {
+                technique: SetTechnique? = nil, challenge: Bool? = nil, challengeBest: Int? = nil,
+                skippedToday: SkippedTechnique? = nil) {
         self.id = id; self.name = name; self.muscle = muscle; self.planned = planned; self.logged = logged
         self.adjustment = adjustment; self.skipped = skipped; self.note = note; self.feedback = feedback
         self.bestKg = bestKg; self.bestReps = bestReps
         self.technique = technique; self.challenge = challenge; self.challengeBest = challengeBest
+        self.skippedToday = skippedToday
     }
 }
 
@@ -230,7 +234,7 @@ public struct WorkoutSession: Codable, Sendable, Equatable {
                                         note: e.note,
                                         bestKg: e.lastWeek?.weightKg, bestReps: e.lastWeek?.reps,
                                         technique: e.technique, challenge: e.challenge,
-                                        challengeBest: e.challengeBest)
+                                        challengeBest: e.challengeBest, skippedToday: e.skippedToday)
         }
         // A workout already open on the server: its logged sets come back into the session, so
         // reopening the player continues rather than starting again.
@@ -545,7 +549,7 @@ public struct WorkoutSession: Codable, Sendable, Equatable {
                                           feedback: old.feedback,
                                           bestKg: exercise.lastWeek?.weightKg, bestReps: exercise.lastWeek?.reps,
                                           technique: exercise.technique, challenge: exercise.challenge,
-                                          challengeBest: exercise.challengeBest)
+                                          challengeBest: exercise.challengeBest, skippedToday: exercise.skippedToday)
         exercises.removeValue(forKey: id)
         exercises[exercise.id] = replacement
         if let at = order.firstIndex(of: id) { order[at] = exercise.id }
@@ -624,12 +628,13 @@ public struct WorkoutSession: Codable, Sendable, Equatable {
                 existing.technique = e.technique
                 existing.challenge = e.challenge
                 existing.challengeBest = e.challengeBest
+                existing.skippedToday = e.skippedToday
                 map[e.id] = existing
             } else {
                 map[e.id] = SessionExercise(id: e.id, name: e.name, muscle: e.muscle, planned: e.sets, note: e.note,
                                             bestKg: e.lastWeek?.weightKg, bestReps: e.lastWeek?.reps,
                                             technique: e.technique, challenge: e.challenge,
-                                            challengeBest: e.challengeBest)
+                                            challengeBest: e.challengeBest, skippedToday: e.skippedToday)
             }
             fresh.append(e.id)
         }

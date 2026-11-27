@@ -982,6 +982,23 @@ struct PreviewTransport: ClientTransport {
             #"{"kind":"working","targetWeightKg":\#(nkRound(target)),"targetReps":\#(e.targetReps),"targetRIR":2}"#
         }
         var flags = ""
+        // `-previewEdzesSkipped deload|gentle|sport` (mezo-r36n9.195): with `-previewEdzesTechnique YES`, today
+        // leaves the plan out the way the server does on that day, and says so in `skippedToday`.
+        if let technique, !work.isEmpty,
+           let why = UserDefaults.standard.string(forKey: "previewEdzesSkipped")?.uppercased() {
+            let own = technique.challenge && technique.technique == "partials" ? "null" : #""\#(technique.technique)""#
+            if why == "SPORT" {
+                guard technique.challenge else { return previewHead(head, e, target, last, warm, work, flags) }
+                if technique.technique != "partials" {
+                    work[work.count - 1] = techniqueSet(technique.technique, target: target, reps: e.targetReps)
+                    flags = #","technique":"\#(technique.technique)","techniqueSource":"owner""#
+                }
+                flags += #","challenge":false,"skippedToday":{"technique":null,"challenge":true,"reason":"SPORT"}"#
+            } else {
+                flags = #","challenge":false,"skippedToday":{"technique":\#(own),"challenge":\#(technique.challenge),"reason":"\#(why)"}"#
+            }
+            return previewHead(head, e, target, last, warm, work, flags)
+        }
         if let technique, !work.isEmpty {
             work[work.count - 1] = techniqueSet(technique.technique, target: target, reps: e.targetReps,
                                                 challenge: technique.challenge)
@@ -989,6 +1006,11 @@ struct PreviewTransport: ClientTransport {
                 ? #","technique":"\#(technique.technique)","techniqueSource":"planner","challenge":true,"challengeBest":7"#
                 : #","technique":"\#(technique.technique)","techniqueSource":"planner","challenge":false"#
         }
+        return previewHead(head, e, target, last, warm, work, flags)
+    }
+
+    private static func previewHead(_ head: String, _ e: PreviewExercise, _ target: Double, _ last: Double,
+                                    _ warm: [String], _ work: [String], _ flags: String) -> String {
         let sets = "[" + (warm + work).joined(separator: ",") + "]"
         let delta = e.lever == "weight" ? #","deltaKg":\#(nkRound(target - last))"#
             : (e.lever == "rep" ? #","deltaReps":\#(e.targetReps - e.lastReps)"# : "")

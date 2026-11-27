@@ -133,6 +133,9 @@ struct WorkoutPlayer: View {
                 sheet = .swap(session.all[at].id, false)
             }
             // `-previewEdzesSheet note|menu|swapBlock` (mezo-r36n9.147): the review opens that sheet of the first exercise.
+            // `-previewEdzesAt N` (mezo-r36n9.195): the player opens on the N-th exercise, counted from 0.
+            let jump = UserDefaults.standard.integer(forKey: "previewEdzesAt")
+            if jump > 0, session.all.indices.contains(jump) { session.switchTo(session.all[jump].id) }
             if let which = UserDefaults.standard.string(forKey: "previewEdzesSheet"), sheet == nil, let first = session.all.first {
                 switch which {
                 case "note": sheet = .note(first.id)
@@ -268,13 +271,17 @@ struct WorkoutPlayer: View {
                 // he knows what he is working, and the name is the only thing worth the top of the screen.
                 Text(e.name).nkFont(26, design: .serif).foregroundStyle(.white)
                     .fixedSize(horizontal: false, vertical: true)
-                // What is special about this exercise today, said up front (owner decision 2026-11-17 #3).
-                if techniqueToShow(e) != nil || e.liveChallenge {
-                    HStack(spacing: 6) {
-                        if let t = techniqueToShow(e) { TechniquePill(technique: t, hue: hue) }
-                        if e.liveChallenge { ChallengePill() }
-                    }
-                    .padding(.top, 3)
+                // What is special about this exercise today, said up front (owner decision 2026-11-17 #3) — in
+                // words, not bare pills, and also on a day that leaves it out (owner 2026-11-27, mezo-r36n9.195).
+                if let line = TechniqueHeadline.today(technique: e.liveTechnique, challenge: e.liveChallenge,
+                                                      best: e.challengeBest) {
+                    TechniqueHeadlineRow(text: line, challenge: e.liveChallenge,
+                                         technique: techniqueToShow(e), hue: hue)
+                        .padding(.top, 3)
+                }
+                if let line = TechniqueHeadline.skipped(e.skippedToday, keptTechnique: e.liveTechnique) {
+                    TechniqueSkippedRow(text: line, challenge: e.skippedToday?.challenge == true)
+                        .padding(.top, 2)
                 }
             }
             Spacer(minLength: 0)

@@ -115,19 +115,37 @@ enum TechniqueLines {
 }
 
 /// „PIHENŐS DROP" in the head, with its mark.
-struct TechniquePill: View {
-    let technique: SetTechnique
+/// Under the exercise's name: today's challenge and special last set, said in a sentence (mezo-r36n9.195). The
+/// challenge wears its flag and yellow, a technique alone its own mark in the page's glow.
+struct TechniqueHeadlineRow: View {
+    let text: String
+    let challenge: Bool
+    let technique: SetTechnique?
     let hue: Hue
     var body: some View {
-        PlanPill(technique.name.uppercased(), mono: true, color: hue.glow, mark: techniqueMark(technique))
-            .accessibilityLabel("Ma: \(technique.name) az utolsó sorozaton")
+        let tint = challenge ? planWarn : hue.glow
+        HStack(alignment: .firstTextBaseline, spacing: 7) {
+            PlanMark(challenge ? .flag : techniqueMark(technique ?? .none), color: tint, size: 13)
+            Text(text).nkFont(14, .semibold).foregroundStyle(tint)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Ma: \(text)")
     }
 }
 
-struct ChallengePill: View {
+/// The dim line on a day that leaves the plan out: what the mesocycle has on this exercise, and why it is off today.
+struct TechniqueSkippedRow: View {
+    let text: String
+    let challenge: Bool
     var body: some View {
-        PlanPill("KIHÍVÁS", mono: true, color: planWarn, mark: .flag)
-            .accessibilityLabel("Ma ez a nap kihívása: félismétlések az utolsó sorozat után")
+        HStack(alignment: .firstTextBaseline, spacing: 7) {
+            PlanMark(challenge ? .flag : .keep, color: .white.opacity(0.5), size: 12)
+            Text(text).nkFont(13).foregroundStyle(.white.opacity(0.6))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(text)
     }
 }
 
