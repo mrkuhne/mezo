@@ -539,7 +539,7 @@ public class WorkoutWindowQueryService {
 
     /** The same minutes rule, shared with {@link WorkoutEnergyService} so the ceremony's estimate and the
      *  day's food budget can never disagree about one session. */
-    static int gymMinutes(WorkoutSessionEntity instance, int defaultMinutes) {
+    public static int gymMinutes(WorkoutSessionEntity instance, int defaultMinutes) {
         if (instance.getActiveSeconds() != null) {
             return instance.getActiveSeconds() / 60;
         }
