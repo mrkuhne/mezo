@@ -26,7 +26,7 @@ private enum Fx {
         .init(id: "micro", name: "Rost", glyph: "leaf-sage", points: 78, weight: 15,
               sentence: "A zabpehely és a dió együtt 7 g rostot ad — ez egy étkezéshez jó szint."),
         .init(id: "who", name: "Só és cukor", glyph: "drop-sky", points: 41, weight: 15,
-              sentence: "A sót főleg a feta viszi: 1,4 g egy adagban, a napi keret közel harmada."),
+              sentence: "A sót főleg a feta viszi: 1,4 g egy adagban, a reggelire jutó keret kétszerese."),
         .init(id: "fat_quality", name: "Zsírminőség", glyph: "honey-sun", points: 80, weight: 10,
               sentence: "A zsír zöme a dióból jön, telítettből kevés — a feta az egyetlen nagyobb forrás."),
         .init(id: "nova", name: "Feldolgozottság", glyph: "spark-sage", points: 92, weight: 15,
@@ -76,7 +76,8 @@ private let fuelGrad = LinearGradient(colors: [Color(hex: 0x2E9C74), Color(hex: 
 
 struct ReceptErtekelesDemoRoot: View {
     private let state = UserDefaults.standard.string(forKey: "previewReceptState") ?? "full"
-    @State private var selectedDim: String = "who"
+    @State private var selectedDim: String = ""
+    @State private var openDim: String?
     var body: some View {
         NKSheetFrame(hue: .fuel, eyebrow: "RECEPT", title: Fx.name) {
             if state == "loading" {
@@ -90,7 +91,20 @@ struct ReceptErtekelesDemoRoot: View {
                 if state != "noprose" { feedback }
             }
         }
+        .blur(radius: openDim == nil ? 0 : 14)
+        .overlay {
+            if let d = Fx.dims.first(where: { $0.id == openDim }) {
+                ZStack(alignment: .bottom) {
+                    Color.black.opacity(0.45).ignoresSafeArea()
+                        .onTapGesture { withAnimation(.snappy) { openDim = nil } }
+                    DimDetail(d: d, isWeak: d.id == weakest, isStrong: d.id == strongest) { withAnimation(.snappy) { openDim = nil } }
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+                .transition(.opacity)
+            }
+        }
         .preferredColorScheme(.dark)
+        .onAppear { if state == "detail" { openDim = "who" } }
     }
 
     private var weakest: String? { Fx.dims.filter { $0.points != nil }.min { $0.points! < $1.points! }?.id }
@@ -138,13 +152,13 @@ struct ReceptErtekelesDemoRoot: View {
                     HStack(spacing: 8) { ForEach(rows[r]) { d in tile(d) } }
                 }
             }
-            if let d = Fx.dims.first(where: { $0.id == selectedDim }) { lens(d) }
+            Text("Koppints egy szempontra, és részletesen elmondom, miért annyi.").nkFont(12).foregroundStyle(.white.opacity(0.45))
         }
     }
 
     private func tile(_ d: DemoDim) -> some View {
         let c = DimPalette.color(d.id), on = d.id == selectedDim, isWeak = d.id == weakest
-        return Button { withAnimation(.snappy) { selectedDim = d.id } } label: {
+        return Button { withAnimation(.snappy) { openDim = d.id } } label: {
             VStack(spacing: 6) {
                 ZStack {
                     Circle().fill(c.opacity(0.18)).frame(width: 34, height: 34)
@@ -357,6 +371,104 @@ private struct RankStrip: View {
             }
         }
         .accessibilityElement().accessibilityLabel("A 30 recepted közül a 4. legjobb")
+    }
+}
+
+// MARK: the detail page over a blurred sheet (web DimSheet parity, richer)
+
+private struct DimDetail: View {
+    let d: DemoDim; let isWeak: Bool; let isStrong: Bool; let close: () -> Void
+    private var c: Color { DimPalette.color(d.id) }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Capsule().fill(.white.opacity(0.3)).frame(width: 38, height: 5).frame(maxWidth: .infinity).padding(.top, 10)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    HStack(alignment: .center, spacing: 14) {
+                        ZStack { Circle().fill(c.opacity(0.2)).frame(width: 54, height: 54); NKGlyph(d.glyph, c, size: 26) }
+                        VStack(alignment: .leading, spacing: 2) {
+                            NKMono("EGY SZEMPONT")
+                            Text(d.name).nkFont(24, design: .serif).foregroundStyle(.white)
+                        }
+                        Spacer()
+                        Text(d.points.map(String.init) ?? "—").font(.custom(Lagy.outfitFamily, size: 40).weight(.light)).foregroundStyle(isWeak ? amber : .white)
+                    }
+                    Capsule().fill(.white.opacity(0.08)).frame(height: 10)
+                        .overlay(alignment: .leading) { GeometryReader { g in Capsule().fill(c).frame(width: g.size.width * Double(d.points ?? 0) / 100) } }
+                    NKFlowRow(spacing: 6, rowSpacing: 6) {
+                        if isWeak { EtelPill(text: "a recept leggyengébb pontja", tone: .warn) }
+                        if isStrong { EtelPill(text: "a recept legerősebb pontja", tone: .hue) }
+                        EtelPill(text: "súlya a pontszámban \(d.weight)%")
+                        EtelPill(text: "az adag 97%-át láttam")
+                    }
+                    block("MIT MÉR", "Mennyire felel meg a recept a WHO ajánlásainak: a hozzáadott cukor legfeljebb az energia 10%-a, a só pedig férjen bele a napi keretbe.")
+                    block("MIÉRT ENNYI", "A cukorral nincs gond: az energia 6%-a, főleg az áfonyából és a mézből, jóval a 10%-os határ alatt. A só húzza le a pontszámot: egy adagban 1,4 g, ami a reggelire jutó 0,7 g-os keret kétszerese. Ennek kétharmadát a feta hozza, a többit a sütőpor és a tojás — a zabpehely és a túró szinte sómentes.")
+                    VStack(alignment: .leading, spacing: 12) {
+                        NKMono("A SZÁMOK")
+                        fact("Cukor", "6 E%", "limit 10 E%", 0.6, c)
+                        fact("Só", "1,4 g", "keret 0,7 g", 1.0, amber, over: "200%")
+                    }
+                    .padding(16).background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.white.opacity(0.05)))
+                    VStack(alignment: .leading, spacing: 10) {
+                        NKMono("HONNAN JÖN")
+                        source("Feta", "0,9 g só", 0.64)
+                        source("Sütőpor", "0,4 g só", 0.29)
+                        source("Tojás", "0,1 g só", 0.07)
+                    }
+                    VStack(alignment: .leading, spacing: 10) {
+                        NKMono("ÍGY JAVÍTHATÓ")
+                        HStack(alignment: .top, spacing: 10) {
+                            NKGlyph("spark-cream", EtelColors.gold, size: 15).padding(.top, 2)
+                            Text("Cseréld a feta felét túróra — a só 1,4 g-ról 0,8 g-ra esik, a fehérje marad.").nkFont(14.5).foregroundStyle(.white.opacity(0.9)).fixedSize(horizontal: false, vertical: true)
+                        }
+                        HStack(alignment: .top, spacing: 10) {
+                            NKGlyph("spark-cream", EtelColors.gold, size: 15).padding(.top, 2)
+                            Text("Sütőpor helyett fél teáskanál szódabikarbóna és pár csepp citrom: feleannyi nátrium.").nkFont(14.5).foregroundStyle(.white.opacity(0.9)).fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    Button(action: close) {
+                        Text("Kész").nkFont(15, .semibold).foregroundStyle(NK.ground)
+                            .frame(maxWidth: .infinity, minHeight: 48).background(Capsule().fill(.white.opacity(0.95)))
+                    }.buttonStyle(.plain)
+                }
+                .padding(22).padding(.bottom, 20)
+            }
+            .scrollIndicators(.hidden)
+        }
+        .frame(maxHeight: 720)
+        .background(
+            UnevenRoundedRectangle(topLeadingRadius: 32, topTrailingRadius: 32, style: .continuous)
+                .fill(NK.ground.opacity(0.92))
+                .overlay(alignment: .top) { LinearGradient(colors: [c.opacity(0.22), .clear], startPoint: .top, endPoint: .center).clipShape(UnevenRoundedRectangle(topLeadingRadius: 32, topTrailingRadius: 32, style: .continuous)) }
+        )
+        .ignoresSafeArea(edges: .bottom)
+    }
+    private func block(_ label: String, _ text: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            NKMono(label)
+            Text(text).nkFont(15).lineSpacing(3.5).foregroundStyle(.white.opacity(0.88)).fixedSize(horizontal: false, vertical: true)
+        }
+    }
+    private func fact(_ name: String, _ value: String, _ ref: String, _ pct: Double, _ col: Color, over: String? = nil) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(name).nkFont(14, .medium).foregroundStyle(.white)
+                Spacer()
+                Text(value).font(.custom(Lagy.outfitFamily, size: 17).weight(.medium)).foregroundStyle(.white)
+                Text(ref).nkFont(12).foregroundStyle(.white.opacity(0.5))
+                if let over { EtelPill(text: over, tone: .warn) }
+            }
+            Capsule().fill(.white.opacity(0.08)).frame(height: 7)
+                .overlay(alignment: .leading) { GeometryReader { g in Capsule().fill(col).frame(width: g.size.width * min(1, pct)) } }
+        }
+    }
+    private func source(_ name: String, _ value: String, _ share: Double) -> some View {
+        HStack(spacing: 10) {
+            Text(name).nkFont(14).foregroundStyle(.white.opacity(0.85)).frame(width: 80, alignment: .leading)
+            Capsule().fill(.white.opacity(0.08)).frame(height: 7)
+                .overlay(alignment: .leading) { GeometryReader { g in Capsule().fill(EtelColors.coral.opacity(0.85)).frame(width: g.size.width * share) } }
+            Text(value).nkFont(12.5).foregroundStyle(.white.opacity(0.6)).frame(width: 70, alignment: .trailing)
+        }
     }
 }
 #endif
