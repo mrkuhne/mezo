@@ -224,7 +224,7 @@
     },
     "jegyek:mezo-r36n9.17": {
       "page_id": "4168968e-752b-81d9-9448-c7846b8b3377",
-      "hash": "d4afd2fd7e84"
+      "hash": "ff419d84b2a5"
     },
     "jegyek:mezo-r36n9.18": {
       "page_id": "4168968e-752b-81a2-adff-e71b81a0e3d3",
@@ -2684,7 +2684,7 @@
     },
     "kezikonyv:02-ma/napi-kapacitas-atrendezes": {
       "page_id": "41f8968e-752b-81a6-957a-dabdf4fea4e9",
-      "hash": "883271fe15e1"
+      "hash": "5f28c3b1abea"
     },
     "jegyek:mezo-r36n9.128": {
       "page_id": "41f8968e-752b-81dd-a076-c52a06dfc4c1",
@@ -3348,7 +3348,7 @@
     },
     "jegyek:mezo-r36n9.185": {
       "page_id": "4258968e-752b-8132-b5c6-c87940317459",
-      "hash": "34817c970021"
+      "hash": "f8cee08cc98b"
     },
     "jegyek:mezo-r36n9.186": {
       "page_id": "4258968e-752b-819d-b6ef-c1f28f2a69ce",
@@ -3357,6 +3357,34 @@
     "kiadasok:7dc303fa1": {
       "page_id": "4258968e-752b-817c-b21c-cb966eebab5a",
       "hash": "f5596f5dc697"
+    },
+    "jegyek:mezo-r36n9.189": {
+      "page_id": "4258968e-752b-815a-adbf-e447d186aaac",
+      "hash": "a8b9b3143417"
+    },
+    "jegyek:mezo-r36n9.187": {
+      "page_id": "4258968e-752b-816b-9ad2-c1091fde1665",
+      "hash": "47a4e6789ac1"
+    },
+    "dontesek:d-2026-11-27-konnyebb-het-csak-szol": {
+      "page_id": "4258968e-752b-8119-afec-e53dea03519e",
+      "hash": "de1109d0623f"
+    },
+    "kiadasok:df974dcad": {
+      "page_id": "4258968e-752b-8132-8b7d-e790cdffe659",
+      "hash": "dfcb839398c8"
+    },
+    "funkciok:capacity-napi-biras": {
+      "page_id": "4258968e-752b-8141-81ed-d7204c4a2af3",
+      "hash": "43eff46c4563"
+    },
+    "funkciok:capacity-atrendezes": {
+      "page_id": "4258968e-752b-8124-8b77-f06258460d58",
+      "hash": "babd5bb140c9"
+    },
+    "funkciok:capacity-elorejelzes": {
+      "page_id": "4258968e-752b-8136-9f90-f17a577da01c",
+      "hash": "5031ff928336"
     }
   }
 }
