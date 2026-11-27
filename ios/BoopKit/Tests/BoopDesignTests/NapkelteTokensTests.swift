@@ -13,7 +13,7 @@ private func rgb(_ c: Color) -> (Int, Int, Int) {
     // The five metric worlds first, then the two the life dashboard added (Pénz, Levél): they have no metric,
     // so anything that means "a metric" iterates `Hue.metrics`, not `allCases`.
     #expect(Hue.metrics.map(\.name) == ["Forma", "Alvás", "Mozgás", "Fuel", "Pulzus"])
-    #expect(Hue.allCases.map(\.name) == ["Forma", "Alvás", "Mozgás", "Fuel", "Pulzus", "Pénz", "Levél", "Súly"])
+    #expect(Hue.allCases.map(\.name) == ["Forma", "Alvás", "Mozgás", "Fuel", "Pulzus", "Pénz", "Levél", "Súly", "Évad"])
 }
 
 /// The ninth area's world (owner 2026-11-24, `mezo-r36n9.158`): gold, the one colour the ring did not have.
@@ -62,4 +62,25 @@ private func rgb(_ c: Color) -> (Int, Int, Int) {
 @Test func backdropDefaultsToItsHuesSky() {
     #expect(NKBackdrop(hue: .alvas, heroHeight: 500, scrollY: 0).sky == .hue(.alvas))
     #expect(NKBackdrop(hue: .alvas, heroHeight: 500, scrollY: 0, sky: .calm).sky == .calm)
+}
+
+/// The tenth area's world (`mezo-r36n9.196`, decision #138): evening violet, distinct from Forma.
+@Test func evadWorldIsEveningViolet() {
+    #expect(rgb(Hue.evad.glow) == (0xC7, 0x7D, 0xE0))
+    #expect(Hue.evad.orb.count == 4 && Hue.evad.sky.count == 3)
+    #expect(rgb(Hue.evad.top) == (0x2A, 0x12, 0x42))
+    #expect(Hue.evad.name == "Évad")
+}
+
+@Test func tabGlyphOverrideWins() {
+    #expect(NKAreaTab("Hét", glyph: "het-ink").glyph == "het-ink")
+    #expect(NKAreaBar.glyph("Most") == "most-ink" && NKAreaBar.glyph("Kísérlet") == "kiserlet-ink")
+    #expect(NKAreaBar.glyph("Napok") == "napok-ink")
+    #expect(NKAreaBar.glyph("Hét") == "chart-deep")   // Étel/Alvás keep theirs
+}
+
+@Test func newGlyphsAreDrawn() {
+    for g in ["evad-ink", "most-ink", "het-ink", "terv-ink", "kiserlet-ink", "napok-ink", "atnezes-ink"] {
+        #expect(NKGlyph.outlined.contains(g))
+    }
 }
