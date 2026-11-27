@@ -2,7 +2,7 @@
 cim: Élő tevékenység a zárolt képernyőn
 szint: Kis funkció
 terulet: Edzés
-allapot: Ellenőrzés
+allapot: Élesben
 hol: [iPhone app]
 szulo: 03-edzeslejatszo
 szakasz: [B5]
