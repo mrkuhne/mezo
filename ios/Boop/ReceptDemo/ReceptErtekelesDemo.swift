@@ -8,6 +8,7 @@ import BoopDesign
 
 private struct DemoDim: Identifiable {
     let id: String, name: String, glyph: String, points: Int?, weight: Int, sentence: String
+    var short: String { ["macro": "Makró", "micro": "Rost", "who": "Só, cukor", "fat_quality": "Zsír", "nova": "Feldolgozás", "plant_diversity": "Növények", "energy_density": "Sűrűség", "portion": "Adag"][id] ?? name }
 }
 
 private struct DemoTip: Identifiable { let id = UUID(); let text: String; let lifts: String; let impact: String }
@@ -49,19 +50,41 @@ private enum Fx {
 }
 
 private let amber = Color(red: 0.96, green: 0.78, blue: 0.38)
+
+/// Étel: one main colour (green) and two sub colours (honey gold, coral) — every dimension its own shade of the three.
+enum EtelColors {
+    static let main = Color(hex: 0x3FBF8F)   // zöld
+    static let gold = Color(hex: 0xF4C860)   // méz
+    static let coral = Color(hex: 0xF28B6E)  // korall
+}
+private enum DimPalette {
+    static func color(_ id: String) -> Color {
+        switch id {
+        case "macro": EtelColors.main
+        case "micro": Color(hex: 0xA9D86B)          // lime
+        case "who": EtelColors.coral
+        case "fat_quality": EtelColors.gold
+        case "nova": Color(hex: 0x7FDCC0)           // menta
+        case "plant_diversity": Color(hex: 0x6CC46A) // levél
+        case "energy_density": Color(hex: 0xF5A65B)  // barack
+        default: Color(hex: 0xF2A3B3)                // rózsa
+        }
+    }
+}
 private let fuelGrad = LinearGradient(colors: [Color(hex: 0x2E9C74), Color(hex: 0xA6E8C8), Color(hex: 0xF4C860)],
                                       startPoint: .leading, endPoint: .trailing)
 
 struct ReceptErtekelesDemoRoot: View {
     private let state = UserDefaults.standard.string(forKey: "previewReceptState") ?? "full"
+    @State private var selectedDim: String = "who"
     var body: some View {
         NKSheetFrame(hue: .fuel, eyebrow: "RECEPT", title: Fx.name) {
             if state == "loading" {
                 loadingCard
             } else {
                 hero
+                dayCard
                 contributors
-                if state != "small" || true { dayCard }
                 rankCard
                 tipsCard
                 if state != "noprose" { feedback }
@@ -105,51 +128,67 @@ struct ReceptErtekelesDemoRoot: View {
         }
     }
 
-    // MARK: contributors
+    // MARK: contributors — 2 rows of 4 tiles; tap = the tile becomes the lens, its sentence opens in place
 
     private var contributors: some View {
         EtelSheetCard(label: "MIBŐL ÁLL ÖSSZE") {
-            VStack(alignment: .leading, spacing: 16) {
-                ForEach(Fx.dims) { d in row(d) }
+            let rows = [Array(Fx.dims.prefix(4)), Array(Fx.dims.dropFirst(4))]
+            VStack(spacing: 10) {
+                ForEach(0..<2, id: \.self) { r in
+                    HStack(spacing: 8) { ForEach(rows[r]) { d in tile(d) } }
+                }
             }
-            Text("Koppints egy szempontra a részletekért.").nkFont(12).foregroundStyle(.white.opacity(0.4))
+            if let d = Fx.dims.first(where: { $0.id == selectedDim }) { lens(d) }
         }
     }
 
-    private func row(_ d: DemoDim) -> some View {
-        let isWeak = d.id == weakest, isStrong = d.id == strongest
-        return VStack(alignment: .leading, spacing: 7) {
-            HStack(spacing: 10) {
+    private func tile(_ d: DemoDim) -> some View {
+        let c = DimPalette.color(d.id), on = d.id == selectedDim, isWeak = d.id == weakest
+        return Button { withAnimation(.snappy) { selectedDim = d.id } } label: {
+            VStack(spacing: 6) {
                 ZStack {
-                    Circle().fill((isWeak ? amber : Hue.fuel.glow).opacity(0.14)).frame(width: 30, height: 30)
-                    NKGlyph(d.glyph, isWeak ? amber : Hue.fuel.glow, size: 15)
+                    Circle().fill(c.opacity(0.18)).frame(width: 34, height: 34)
+                    NKGlyph(d.glyph, c, size: 17)
                 }
-                Text(d.name).nkFont(15, .medium).foregroundStyle(.white)
-                if isWeak { EtelPill(text: "leggyengébb", tone: .warn) }
-                if isStrong { EtelPill(text: "legerősebb", tone: .hue) }
-                Spacer(minLength: 6)
                 Text(d.points.map(String.init) ?? "—").font(.custom(Lagy.outfitFamily, size: 19).weight(.medium))
-                    .foregroundStyle(isWeak ? amber : .white)
-            }
-            if let p = d.points {
-                Capsule().fill(.white.opacity(0.08)).frame(height: 7)
+                    .foregroundStyle(.white)
+                Capsule().fill(.white.opacity(0.1)).frame(height: 4)
                     .overlay(alignment: .leading) {
-                        GeometryReader { g in
-                            Capsule().fill(isWeak ? AnyShapeStyle(amber) : AnyShapeStyle(fuelGrad))
-                                .frame(width: g.size.width * Double(p) / 100)
-                        }
+                        GeometryReader { g in Capsule().fill(c).frame(width: g.size.width * Double(d.points ?? 0) / 100) }
                     }
-                HStack(alignment: .top) {
-                    Text(d.sentence).nkFont(13).lineSpacing(2).foregroundStyle(.white.opacity(0.68)).fixedSize(horizontal: false, vertical: true)
-                    Spacer(minLength: 8)
-                    Text("súly \(d.weight)%").nkFont(10.5, design: .monospaced).foregroundStyle(.white.opacity(0.38))
-                }
-            } else {
-                Text("Még tanulom — ennél a receptnél nincs elég adat hozzá, a pontszám nélküle számol.")
-                    .nkFont(13).foregroundStyle(.white.opacity(0.45)).fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 6)
+                Text(d.short).nkFont(10).foregroundStyle(.white.opacity(0.6)).lineLimit(2).multilineTextAlignment(.center)
+                    .minimumScaleFactor(0.8).frame(height: 26, alignment: .top)
+            }
+            .padding(.vertical, 10).frame(maxWidth: .infinity)
+            .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(.white.opacity(on ? 0.1 : 0.04)))
+            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(on ? c.opacity(0.8) : .clear, lineWidth: 1.5))
+            .overlay(alignment: .topTrailing) {
+                if isWeak { Circle().fill(amber).frame(width: 8, height: 8).padding(7) }
             }
         }
-        .accessibilityElement(children: .combine)
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(d.name), \(d.points.map(String.init) ?? "nincs adat")\(isWeak ? ", leggyengébb" : "")")
+    }
+
+    private func lens(_ d: DemoDim) -> some View {
+        let c = DimPalette.color(d.id), isWeak = d.id == weakest, isStrong = d.id == strongest
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Text(d.name).nkFont(15.5, .semibold).foregroundStyle(.white)
+                if isWeak { EtelPill(text: "leggyengébb", tone: .warn) }
+                if isStrong { EtelPill(text: "legerősebb", tone: .hue) }
+                Spacer(minLength: 4)
+                Text("súly \(d.weight)%").nkFont(11, design: .monospaced).foregroundStyle(.white.opacity(0.45))
+            }
+            Text(d.points == nil ? "Még tanulom: ennél a receptnél nincs elég adat hozzá, a pontszám nélküle számol." : d.sentence)
+                .nkFont(14).lineSpacing(2.5).foregroundStyle(.white.opacity(0.85)).fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(14)
+        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(c.opacity(0.1)))
+        .overlay(alignment: .leading) { Capsule().fill(c).frame(width: 3).padding(.vertical, 12) }
+        .id(d.id)
+        .transition(.opacity)
     }
 
     // MARK: day
@@ -157,11 +196,11 @@ struct ReceptErtekelesDemoRoot: View {
     private var dayCard: some View {
         EtelSheetCard(label: "HA MA MEGENNÉD", trailing: "1 adaggal") {
             VStack(spacing: 13) {
-                ForEach(Fx.day, id: \.0) { m in dayBar(m.0, eaten: m.1, add: m.2, target: m.3, unit: m.4) }
+                ForEach(Fx.day, id: \.0) { m in dayBar(m.0, eaten: m.1, add: m.2, target: m.3, unit: m.4, color: macroColor(m.0)) }
             }
             HStack(spacing: 14) {
                 legend(Color(white: 0.62), "eddig ma")
-                legend(Color(hex: 0x4FB9A2), "ez a recept")
+                legend(EtelColors.main, "ez a recept (színes)")
                 Spacer()
             }
             Text("Ezzel a fehérjecélod 73%-án lennél, és még 750 kcal maradna a nap többi részére.")
@@ -173,7 +212,9 @@ struct ReceptErtekelesDemoRoot: View {
         HStack(spacing: 5) { Capsule().fill(c).frame(width: 12, height: 5); Text(t).nkFont(11).foregroundStyle(.white.opacity(0.5)) }
     }
 
-    private func dayBar(_ label: String, eaten: Double, add: Double, target: Double, unit: String) -> some View {
+    private func macroColor(_ k: String) -> Color { ["kcal": EtelColors.main, "fehérje": EtelColors.coral, "szénhidrát": EtelColors.gold, "zsír": Color(hex: 0x7FDCC0)][k] ?? EtelColors.main }
+
+    private func dayBar(_ label: String, eaten: Double, add: Double, target: Double, unit: String, color: Color) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             HStack(alignment: .firstTextBaseline) {
                 Text(label).nkFont(13, .medium).foregroundStyle(.white.opacity(0.8))
@@ -188,7 +229,7 @@ struct ReceptErtekelesDemoRoot: View {
                 let w = g.size.width
                 ZStack(alignment: .leading) {
                     Capsule().fill(.white.opacity(0.08))
-                    Capsule().fill(LinearGradient(colors: [Color(hex: 0x2E9C74), Color(hex: 0xA6E8C8)], startPoint: .leading, endPoint: .trailing)).frame(width: w * min(1, (eaten + add) / target))
+                    Capsule().fill(color).frame(width: w * min(1, (eaten + add) / target))
                     Capsule().fill(Color(white: 0.62)).frame(width: w * min(1, eaten / target))
                 }
             }
@@ -225,7 +266,7 @@ struct ReceptErtekelesDemoRoot: View {
         EtelSheetCard(label: "ÍGY LENNE JOBB") {
             ForEach(Fx.tips) { tip in
                 HStack(alignment: .top, spacing: 12) {
-                    ZStack { Circle().fill(Hue.fuel.glow.opacity(0.14)).frame(width: 30, height: 30); NKGlyph("spark-cream", Hue.fuel.glow, size: 15) }
+                    ZStack { Circle().fill(EtelColors.gold.opacity(0.16)).frame(width: 30, height: 30); NKGlyph("spark-cream", EtelColors.gold, size: 15) }
                     VStack(alignment: .leading, spacing: 6) {
                         Text(tip.text).nkFont(14.5).lineSpacing(2).foregroundStyle(.white.opacity(0.9)).fixedSize(horizontal: false, vertical: true)
                         NKFlowRow(spacing: 6, rowSpacing: 6) {
@@ -265,8 +306,7 @@ private struct Rosette: View {
                     let len = r * (0.3 + 0.7 * Double(d.points ?? 0) / 100)
                     Petal()
                         .fill(d.points == nil ? AnyShapeStyle(Color.white.opacity(0.08))
-                              : d.id == weakest ? AnyShapeStyle(amber.opacity(0.85))
-                              : AnyShapeStyle(LinearGradient(colors: [Color(hex: 0x2E9C74).opacity(0.55), Color(hex: 0x4FB9A2), Color(hex: 0xA6E8C8)],
+                              : AnyShapeStyle(LinearGradient(colors: [DimPalette.color(d.id).opacity(0.35), DimPalette.color(d.id)],
                                                              startPoint: .bottom, endPoint: .top)))
                         .frame(width: r * 0.42, height: len)
                         .offset(y: -len / 2)
