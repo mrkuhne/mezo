@@ -40,7 +40,8 @@ már egy saját dashboard oldala … mintha az egy full saját app lenne."*
 7. Never ask the owner for a password or token; he creates and enters every credential himself.
 8. **Warm is the look** (#12): photo heads where a compliant mood photo exists (painted landscape as the
    fallback), the area's hue on key numbers and marked spans inside the text, photo thumbnails on rows that are
-   *things*, and no card around the stats / curve / composition / row-list blocks.
+   *things*, and no card around the stats / curve / composition / row-list blocks. *(The no-card part is retired —
+   decision #119, 2026-11-27.)*
 9. **Ma is a living wall, not a timeline** (#13): what Boop wants to say right now, bounded — and the big 0–100
    score leaves the home screen.
 10. **The wall has three weights** (#13, round 7): the check-in as a question card · one hero with a photo band ·
