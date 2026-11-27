@@ -2,7 +2,7 @@
 
 > Hogyan építünk Boopot (iPhone + Watch app és a szervere) **gyorsan, jó minőségben és tokentakarékosan**.
 > A munkamenet skill része: a gép a feladat típusához tartozó fejezetet olvassa el, nem az egészet.
-> Tulajdonos: a termékgazda. Utolsó frissítés: 2026-11-26 (mezo-09hmu).
+> Tulajdonos: a termékgazda. Utolsó frissítés: 2026-11-27 (mezo-g641l).
 
 ---
 
@@ -104,18 +104,22 @@ egyetlen beszélgetés vitte az egészet. Mostantól **a munka hosszú, a sessio
 ### 5.1 Szelet-térkép (egyszer, az elején)
 1. Ötletelés + felderítés az egész szeletre → ① leírás → ② próbaváltozat → ③ **szelet-terv**.
 2. A terv **lépésekre** bontja a munkát. Minden lépés:
-   - **egy session alatt kész** (ökölszabály: legfeljebb kb. 100–150 gépi lépés, egy beolvasztható egység);
+   - **egy session alatt kész** (ökölszabály: legfeljebb kb. 60–70 gépi lépés, mert ennyi fér a 250 ezres határig;
+     egy beolvasztható egység);
    - saját jegy az epic alatt, saját „Kész, ha…” listával;
    - lehetőleg önállóan is értelmes eredmény (például „a szerver tudja”, „a képernyő üresen megjelenik”,
      „a kísérlet lap kész”).
 3. A sorrend és a függőségek a jegyekben vannak, nem a chatben.
 
 ### 5.2 Egy lépés menete (minden lépés friss sessionben)
-1. **Kezdés:** a gép elolvassa a szelet-tervet és az előző lépés **átadó jegyzetét**, és csak azt.
+1. **Kezdés:** a gép elolvassa az előző lépés **átadó jegyzetét** és a szelet-tervből a **saját lépését**, mást nem.
 2. Építés → ellenőrzés → beolvasztás. A lépések rendszerint a fő ágba kerülnek; a még be nem kapcsolt részek
    kapcsoló mögött várnak, így nem gyűlik egy hatalmas, kockázatos ág.
 3. **Átadó jegyzet** a következő lépés jegyébe (5.4) → lezárás → archiválás.
-4. A következő lépés új sessionben indul. A te jóváhagyásod nem kell hozzá: a ③ terv már lefedi.
+4. A következő lépés új sessionben indul, **leválasztva**: a régi azonnal bezár, nem várja meg és nem figyeli.
+   A te jóváhagyásod nem kell hozzá: a ③ terv már lefedi. Ha már csak a lezárás van hátra (kb. 25 lépés vagy
+   kevesebb), nincs átadás: a session maga fejezi be.
+5. A Notion a **sorozat végén egyszer** frissül, nem lépésenként.
 
 ### 5.3 Párhuzamosság
 - Két session csak akkor fut egyszerre, ha **nem nyúlnak ugyanahhoz a fájlhoz** (például az egyik a szerveren,
@@ -218,12 +222,14 @@ A tömörítés nem átadás: elveszíti a részleteket, és drága marad.
 
 | Szabály | Miért |
 |---|---|
-| Egy feladat, egy session. Kb. 150 lépés vagy 250 ezer token felett átadás. | Minden lépés újraolvassa a teljes beszélgetést. |
+| Egy feladat, egy session. 250 ezer token (kb. 60–70 lépés) felett átadás. | Minden lépés újraolvassa a teljes beszélgetést. |
+| Ha legfeljebb kb. 25 lépés van hátra, helyben kell befejezni | Egy új session elindítása ennél többe kerül. |
+| Átadás: egy utód, azonnal leválasztva, a régi bezár | A várakozó „szülő” sessionök vitték a friss fogyasztás kb. 12%-át (2026-11-27). |
 | A figyelmeztetésre a következő biztonságos pontnál lezárás vagy átadás | Az automatikus őr szól, nem kell rá emlékezni. |
 | Az alügynökök olcsó modellen futnak; a drága csak a végső átnézésre és a nehéz tervezésre | A nagy sessionökben az alügynökök vitték a tokenek felét. |
 | Végrehajtás alapból egy sessionben; alügynök-sor csak nagy, független részekre | A soros alügynökök (feladatonként építő és ellenőrző) a legdrágábbak. |
 | Szűk olvasás: célzott keresés, csak a kellő sorok; hosszú kimenetből csak a vége | A nagy fájlok és naplók a beszélgetésben ragadnak. |
-| A Notion egyszer frissül a végén, egy kis munkással | A beszélgetésen belüli Notion-hívások a tokenek kb. 10%-át vitték. |
+| A Notion egy munkasorozat végén egyszer frissül, egyszerre csak egy frissítés, kis munkással | A beszélgetésen belüli hívások a tokenek kb. 10%-át vitték; a párhuzamos frissítések dupla sorokat gyártottak. |
 | Emlékek: célzott keresés a területre, nem a teljes lista | A teljes emléklista minden lépésben ott ült. |
 | Heti takarítás („takarítás”) | Ne maradjanak félkész vagy elfelejtett sessionök. |
 

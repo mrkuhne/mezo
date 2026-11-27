@@ -1,6 +1,6 @@
 ---
 name: boop-notion
-description: Keep the owner's Notion "Boop" space (Jegyek ticket board, Kézikönyv handbook, Döntések, Kiadások) true — a one-way mirror of bd (epic mezo-r36n9) + docs/boop-handbook/. Run at the end of every Boop slice (boop skill §5), whenever a Boop ticket changes state, a decision is made or something ships. Use when the user mentions Notion, the Boop kézikönyv, jegytábla, or asks to sync / update Notion.
+description: Keep the owner's Notion "Boop" space (Jegyek ticket board, Kézikönyv handbook, Döntések, Kiadások) true — a one-way mirror of bd (epic mezo-r36n9) + docs/boop-handbook/. Push once at the end of a work series (boop skill §5, munkamenet lezárás); ticket states, decisions and releases are edited in the sources as they happen. Use when the user mentions Notion, the Boop kézikönyv, jegytábla, or asks to sync / update Notion.
 ---
 
 # Boop → Notion sync
@@ -29,25 +29,37 @@ live under *Adatbázisok (ne nyúlj hozzá)*; the dashboard pages (Jegyek, Kézi
 
 Privacy: no personal health values, ever. Examples are invented and marked „például”.
 
-## 2. Push to Notion — once, in a small worker (token diet, mezo-hsc75)
+## 2. Push to Notion — once per series, one at a time, in the slim worker (mezo-hsc75, mezo-g641l)
 
-Every Notion call made in the main session re-reads the whole (often 200k+ token) conversation — measured at ~10%
-of all tokens across ten sessions. So:
+Every Notion call made in the main session re-reads the whole (often 200k+ token) conversation, and two syncs running
+side by side once created the same rows twice. So:
 
-- **Batch.** Editing the sources (§1) is cheap — do it as things happen. **Push once**, at the end of the session
-  (or before the Hungarian report), not after every ticket change. The start-of-session `check` stays in the main
-  session (one command, no MCP calls); a lagging Notion found there is pushed by the same worker.
-- **Delegate.** The main session never calls the Notion MCP tools itself. Dispatch one fresh subagent:
-  `Agent(subagent_type: "general-purpose", model: "sonnet", description: "Boop Notion sync", prompt: "Follow
-  .claude/skills/boop-notion/SKILL.md §2 in <worktree path>: plan → apply → record until check exits 0. Do not edit
-  sources, do not commit. Report: ops applied, final check output.")`. Then commit `_notion-state.json` yourself (§3).
-  A worker that stalls is resumed with `SendMessage`, not re-dispatched.
+- **Once per series.** Editing the sources (§1) is cheap — do it as things happen. **Push once**, in the session that
+  finishes the work (the last one of a handoff chain), or when the series stops to wait for the owner. A session that
+  hands off does not push, and a lag found at session start is not paid first: the next series end pushes everything.
+- **From main.** Merge and push the sources first; sync from a worktree that is at `origin/main`.
+- **One at a time.** The script holds a machine-wide lock: `payload` refuses without it, `lock` refuses a state file
+  that is behind `origin/main`, and `unlock` refuses until the new page ids are pushed.
+- **Delegate.** The main session never calls the Notion MCP tools itself. Dispatch one fresh worker:
+  `Agent(subagent_type: "boop-notion-sync", description: "Boop Notion sync", prompt: "Sync from <worktree path>.")`
+  (only if that agent type is missing or reports no Notion tools: `general-purpose` with `model: "sonnet"` and "follow
+  `.claude/skills/boop-notion/SKILL.md` §2"). A worker that stalls is resumed with `SendMessage`, not re-dispatched.
+- **Publish and release** — the main session, right after the worker reports `check` exit 0:
+
+```bash
+git add docs/boop-handbook/_notion-state.json && git commit -m "chore(boop): Notion sync (<bd id>)" && git fetch -q origin && git rebase origin/main && git push origin HEAD:main && node scripts/boop-notion-sync.mjs unlock
+```
 
 The worker's loop:
 
 ```bash
-node scripts/boop-notion-sync.mjs plan          # what is pending (writes docs/boop-handbook/.last-plan.json)
+node scripts/boop-notion-sync.mjs lock --wait 10  # first; waits while another sync runs
+node scripts/boop-notion-sync.mjs plan            # what is pending (writes docs/boop-handbook/.last-plan.json)
 ```
+
+`lock` exit 4 = the state file is behind: `git merge --ff-only origin/main`, then lock again. Exit 3 = still held by
+another sync: stop and report who holds it. `unlock --force` is only for a dead sync whose Notion rows you have
+checked by hand.
 
 For each pending op:
 
@@ -67,5 +79,5 @@ archive them in Notion, then delete the record from `_notion-state.json`).
 
 ## 3. Commit
 
-`_notion-state.json` (page ids + hashes) and the source files are committed with the slice; `.last-plan.json` is
-gitignored. Commit message carries the driving bd id.
+The source files are committed and merged with the slice; `_notion-state.json` (page ids + hashes) is committed and
+pushed right after the sync (§2), before `unlock`. `.last-plan.json` is gitignored. Commit messages carry the bd id.

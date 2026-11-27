@@ -18,13 +18,18 @@
 //        after creating/updating a page in Notion, store its id + the planned hash (keys as printed by plan)
 //   node scripts/boop-notion-sync.mjs check
 //        exit 1 when anything is pending (for the end-of-slice checklist)
+//   node scripts/boop-notion-sync.mjs lock [--wait <minutes>]
+//        take the machine-wide sync lock; exit 3 = another sync holds it, exit 4 = state file behind origin/main
+//   node scripts/boop-notion-sync.mjs unlock [--force]
+//        release it; refuses until the new page ids are pushed to origin/main
+// `payload` refuses (exit 3) unless this worktree holds the lock.
 //
 // Run `plan` again after `record`: relations to rows created in the same pass resolve on the second pass.
 
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from 'node:fs';
-import { join, dirname, relative } from 'node:path';
+import { readFileSync, writeFileSync, readdirSync, existsSync, statSync, utimesSync, rmSync, realpathSync } from 'node:fs';
+import { join, dirname, relative, resolve as resolvePath } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // "mezo-r36n9.7" sorts before "mezo-r36n9.51": compare the numeric tail numerically, the rest as text.
@@ -33,7 +38,7 @@ const idOrder = (id) => {
   return m ? `${m[1]}${String(m[2]).padStart(8, '0')}` : id;
 };
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const ROOT = realpathSync(join(dirname(fileURLToPath(import.meta.url)), '..'));
 const HB = join(ROOT, 'docs/boop-handbook');
 const STATE_FILE = join(HB, '_notion-state.json');
 const PLAN_FILE = join(HB, '.last-plan.json');
@@ -307,6 +312,90 @@ function plan(only) {
   return { ops, missing_overlay: missing, orphans };
 }
 
+// ---------- one sync at a time (mezo-g641l) ----------
+// Two worktrees syncing side by side both saw the same rows as "not in Notion yet" and created them twice. So a sync
+// holds a machine-wide lock (in the git dir all worktrees share), starts from the published state, and publishes its
+// new page ids before letting go. The lock file's mtime is the heartbeat.
+const STATE_REL = 'docs/boop-handbook/_notion-state.json';
+const LOCK_STALE_MIN = 45;
+const git = (cwd, ...a) => execFileSync('git', a, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+const lockFile = () => join(resolvePath(ROOT, git(ROOT, 'rev-parse', '--git-common-dir')), 'boop-notion-sync.lock');
+
+function readLock() {
+  const f = lockFile();
+  if (!existsSync(f)) return null;
+  const ageMin = (Date.now() - statSync(f).mtimeMs) / 60_000;
+  return { owner: readFileSync(f, 'utf8').trim(), ageMin };
+}
+
+const heartbeat = () => utimesSync(lockFile(), new Date(), new Date());
+const publishedState = () => {
+  git(ROOT, 'fetch', '-q', 'origin', 'main');
+  return git(ROOT, 'show', `origin/main:${STATE_REL}`);
+};
+
+// keys whose Notion page id exists in `root`'s state file but not in origin/main's
+function unpublished(root) {
+  const file = join(root, STATE_REL);
+  if (!existsSync(file)) return [];
+  const remote = JSON.parse(publishedState()).records ?? {};
+  return Object.entries(readJson(file).records ?? {}).filter(([k, r]) => remote[k]?.page_id !== r.page_id).map(([k]) => k);
+}
+
+const refuse = (msg, code = 3) => { console.error(msg); process.exit(code); };
+
+function tryLock() {
+  const held = readLock();
+  if (held && held.owner !== ROOT) {
+    if (held.ageMin < LOCK_STALE_MIN) return { code: 3, msg: `a sync is already running in ${held.owner} (${Math.round(held.ageMin)} min ago)` };
+    const left = unpublished(held.owner);
+    if (left.length) return { code: 3, msg: `stale lock, but ${held.owner} has ${left.length} unpushed page ids: push its ${STATE_REL} first (or check Notion and \`unlock --force\`)` };
+    rmSync(lockFile(), { force: true });
+  }
+  git(ROOT, 'fetch', '-q', 'origin', 'main');
+  if (git(ROOT, 'log', '--oneline', 'HEAD..origin/main', '--', STATE_REL)) {
+    return { code: 4, msg: `${STATE_REL} is behind origin/main: bring this worktree up to origin/main, then lock again` };
+  }
+  if (held?.owner === ROOT) { heartbeat(); return { code: 0 }; }
+  try {
+    writeFileSync(lockFile(), ROOT, { flag: 'wx' });
+  } catch (e) {
+    if (e.code === 'EEXIST') return { code: 3, msg: 'another sync took the lock just now' };
+    throw e;
+  }
+  return { code: 0 };
+}
+
+function lock(args) {
+  const i = args.indexOf('--wait');
+  const deadline = Date.now() + (i >= 0 ? Number(args[i + 1]) : 0) * 60_000;
+  let r = tryLock();
+  while (r.code === 3 && Date.now() < deadline) {
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 20_000);
+    r = tryLock();
+  }
+  if (r.code) refuse(r.msg, r.code);
+  console.log('locked');
+}
+
+function unlock(args) {
+  const held = readLock();
+  if (!held) return console.log('not locked');
+  if (!args.includes('--force')) {
+    if (held.owner !== ROOT) refuse(`the lock belongs to ${held.owner}`);
+    const left = unpublished(ROOT);
+    if (left.length) refuse(`commit and push ${STATE_REL} first — unpushed page ids: ${left.join(', ')}`);
+  }
+  rmSync(lockFile(), { force: true });
+  console.log('unlocked');
+}
+
+function requireLock() {
+  const held = readLock();
+  if (held?.owner !== ROOT) refuse(`take the sync lock first: \`lock --wait 10\`${held ? ` (held by ${held.owner})` : ''}`);
+  heartbeat();
+}
+
 // ---------- CLI ----------
 const [cmd, ...args] = process.argv.slice(2);
 if (cmd === 'plan' || cmd === 'check') {
@@ -328,6 +417,7 @@ if (cmd === 'plan' || cmd === 'check') {
   // Tool-ready arguments for the last plan, so applying is mechanical:
   //   payload create <db> [n]  → {parent:{data_source_id}, pages:[...], keys:[...]} for notion-create-pages
   //   payload update <key>     → {page_id, properties, content} for notion-update-page
+  requireLock();
   if (!existsSync(PLAN_FILE)) { console.error('Run `plan` first.'); process.exit(2); }
   const last = readJson(PLAN_FILE);
   const [kind, target, n] = args;
@@ -358,7 +448,12 @@ if (cmd === 'plan' || cmd === 'check') {
     const ops = last.ops.filter((o) => o.op === 'update' && o.db === target && o.key.startsWith(prefix) && state.records[o.key]?.hash !== o.hash).slice(0, Number(n ?? 5));
     console.log(JSON.stringify(ops.map((o) => ({ key: o.key, page_id: o.page_id, icon: o.icon, properties: o.properties, content: o.content }))));
   } else { console.error('payload create <db> [n] | payload update <key> | payload updates <db> [n] | payload relations [db]'); process.exit(2); }
+} else if (cmd === 'lock') {
+  lock(args);
+} else if (cmd === 'unlock') {
+  unlock(args);
 } else if (cmd === 'record') {
+  if (readLock()?.owner === ROOT) heartbeat();
   if (!existsSync(PLAN_FILE)) { console.error('Run `plan` first.'); process.exit(2); }
   const last = readJson(PLAN_FILE);
   const byKey = Object.fromEntries(last.ops.map((o) => [o.key, o]));
@@ -376,6 +471,6 @@ if (cmd === 'plan' || cmd === 'check') {
   writeFileSync(STATE_FILE, JSON.stringify(state, null, 2) + '\n');
   console.log(`recorded ${args.length}`);
 } else {
-  console.log('usage: boop-notion-sync.mjs plan [--only db,db] [--json] | record <key>=<page-id> ... | check');
+  console.log('usage: boop-notion-sync.mjs plan [--only db,db] [--json] | lock [--wait min] | record <key>=<page-id> ... | check | unlock [--force]');
   process.exit(2);
 }
