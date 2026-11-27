@@ -788,6 +788,13 @@ struct EtelRoom: View {
 
     private var tab: EtelTab { EtelTab(rawValue: selected) ?? .ma }
 
+    /// On Ma the hero card carries the numbers, so the head names the window open now and its suggestion
+    /// (`mezo-r36n9.184`); with no window open now (or another tab) the verdict stays.
+    private var maHead: (headline: String, sentence: String)? {
+        guard tab == .ma, let now = store.plan?.windows.first(where: { $0.state == .now }) else { return nil }
+        return ("Most: \(now.label.lowercased())", now.suggestion?.text ?? "")
+    }
+
     var body: some View {
         let today = etelVerdict(day: store.day, plan: store.plan, problem: store.day == nil ? (store.dayProblem ?? (food == nil ? .unauthorized : nil)) : nil)
         let v = etelTabVerdict(tab, today: today, recipes: store.recipesLoaded ? store.recipes : nil, shelf: store.shelfLoaded ? store.shelf : nil,
@@ -795,7 +802,7 @@ struct EtelRoom: View {
                                                              adherence: store.weekAdherence) })
         NKAreaPage(hue: .fuel, name: "Étel", eyebrow: "Étel · \(tab.rawValue.lowercased())", level: store.day == nil ? nil : v.level,
                    display: etelDayPoints(store.day).map { "\($0)" },
-                   headline: v.headline, sentence: v.sentence, glyph: "bowl-cream",
+                   headline: maHead?.headline ?? v.headline, sentence: maHead?.sentence ?? v.sentence, glyph: "bowl-cream",
                    tabs: etelTabs(pending: store.pending.count), selectedTab: $selected,
                    actions: [NKAreaAction(glyph: "plus-ink", label: "Étkezés rögzítése") { composer = MealStart(entrance: .pick) },
                              NKAreaAction(glyph: "cup-cream", label: "Ital rögzítése") { composer = MealStart(entrance: .drink) },
@@ -804,9 +811,10 @@ struct EtelRoom: View {
                    onAsk: { openPlace(.boop) }) {
             switch tab {
             case .ma:
-                EtelMa(store: store, onDimension: { dimension = $0 }, onToast: { toast = $0 },
+                EtelMa(store: store, onToast: { toast = $0 },
                        onRetry: { Task { await reload() } },
-                       onCapture: { composer = MealStart(entrance: $0) }, onCard: cardAction,
+                       onCapture: { composer = MealStart(entrance: $0) }, onCompose: { composer = $0 },
+                       onDelete: { deleteMeal($0, title: $1) }, onCard: cardAction,
                        onSheet: { etelSheet = $0 }, onAsk: { openPlace(.boop) })
             case .receptek:
                 EtelReceptek(store: store, onImport: { recipeSheet = .importer($0) }, onWorkshop: { recipeSheet = .workshop },

@@ -11,14 +11,16 @@ struct MealDetailPage: View {
     /// The meal as it was when the page opened; after a correction the page reads it again from the day by id.
     let initial: BoopCore.Meal
     let label: String
-    let onDimension: (DimensionSelection) -> Void
-    /// The composer saved over the meal: the room reloads the day.
-    let onSaved: (String?) -> Void
+    /// The composer saved over the meal: the room reloads the day (the page shows the toast itself).
+    let onSaved: () -> Void
     /// Törlés: the page is already closing; the room starts the deferred delete.
     let onDelete: (BoopCore.Meal, String) -> Void
     let onClose: () -> Void
     @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
     @State private var composer: MealStart?
+    /// The page is a full-screen cover: the room's sheets and toast cannot show over it, so it keeps its own.
+    @State private var dimension: DimensionSelection?
+    @State private var toast: String?
     private let hue = Hue.fuel
 
     private var meal: BoopCore.Meal { store.day?.meals.first { $0.id == initial.id } ?? initial }
@@ -41,15 +43,20 @@ struct MealDetailPage: View {
         }
         .overlay(alignment: .bottom) { actionBar }
         .sheet(item: Binding(get: { [c = composer] in c }, set: { composer = $0 })) { start in
-            MealComposerSheet(start: start) { toast in
+            MealComposerSheet(start: start) { line in
                 composer = nil
-                onSaved(toast)
+                if let line { toast = line }
+                onSaved()
             }
             .presentationDetents([.large])
             .presentationBackground(NK.ground)
             .presentationCornerRadius(34)
             .presentationDragIndicator(.visible)
         }
+        .sheet(item: Binding(get: { [d = dimension] in d }, set: { dimension = $0 })) { d in
+            DimensionSheet(selection: d)
+        }
+        .nkToast($toast)
     }
 
     private var numbers: some View {
@@ -114,7 +121,7 @@ struct MealDetailPage: View {
                 Text("BOOP ÉRTÉKELÉSE").nkFont(11.5, .semibold, design: .monospaced).tracking(2).foregroundStyle(.white.opacity(0.6))
             }
             .accessibilityElement(children: .combine).accessibilityAddTraits(.isHeader)
-            MealDetail(meal: meal, title: title, coach: store.coach[meal.id], onDimension: onDimension,
+            MealDetail(meal: meal, title: title, coach: store.coach[meal.id], onDimension: { dimension = $0 },
                        showNumbers: false, showParts: false)
         }
         .padding(16).frame(maxWidth: .infinity, alignment: .leading).nkGlass(24)

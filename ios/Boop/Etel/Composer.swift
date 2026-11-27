@@ -31,6 +31,8 @@ struct MealStart: Identifiable {
     var serving: LookupItem?
     /// A logged meal to correct (`mezo-r36n9.184`): the composer opens on its draft and saves over it.
     var editing: BoopCore.Meal?
+    /// When the meal was eaten, if not now: a window card's „+" on a window already over (`mezo-r36n9.184`).
+    var at: Date?
 
     /// The composer's mode: the Ital door, a drink card reopened from the room (`mezo-r36n9.160`), or a drink corrected.
     var kind: MealKind {
@@ -565,7 +567,7 @@ private struct MealComposerHost: View {
         m.text = start.text
         m.minWorking = .milliseconds(2600)
         m.changed = { [weak ritmus] in ritmus?.mealDraftsChanged() }
-        if let meal = start.editing { m.beginEdit(meal) }
+        if let meal = start.editing { m.beginEdit(meal) } else if let at = start.at { m.setTime(at) }
         if let card = start.card {
             let bytes = card.photoRef.flatMap { ritmus?.food.photoData($0) }
             if case .ready = card.state {

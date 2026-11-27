@@ -508,3 +508,65 @@ func etelTabVerdict(_ tab: EtelTab, today: EtelVerdict, recipes: [Recipe]?, shel
         return EtelVerdict(headline: "\(shelf.count) tétel a kamrádban", sentence: "Ebből \(whole) alig feldolgozott alapanyag.", level: today.level)
     }
 }
+
+// MARK: - The three-tier Ma page (mezo-r36n9.184): the hero ring, the window cards
+
+/// The ring's centre: what still fits (a negative number in the same words' colour when over), or — on a kímélő day,
+/// which has no budget — what is eaten.
+struct EtelRingCentre: Equatable { let top: String, number: String, bottom: String }
+
+func etelRingCentre(day: FoodDay, plan: FuelPlan?) -> EtelRingCentre {
+    if day.fuelMode == "GUIDANCE" {
+        return EtelRingCentre(top: "ma nincs keret", number: huInt(Int(day.consumed.kcal.rounded())), bottom: "kcal megvan")
+    }
+    let left = Int((plan?.remaining?.kcal ?? (day.targets.kcal - day.consumed.kcal)).rounded())
+    return left < 0
+        ? EtelRingCentre(top: "a kereten túl", number: huInt(left), bottom: "kcal")
+        : EtelRingCentre(top: "még", number: huInt(left), bottom: "kcal fér bele")
+}
+
+/// How much of the ring is drawn: eaten over the budget, closed when over; none on a kímélő day.
+func etelRingFraction(day: FoodDay) -> Double {
+    guard day.fuelMode != "GUIDANCE", day.targets.kcal > 0 else { return 0 }
+    return min(1, max(0, day.consumed.kcal / day.targets.kcal))
+}
+
+/// The number on the right of a window card's head: what its meals came to (over its budget, if it has one), or the
+/// budget of a window still empty. Nil when there is nothing to show.
+func etelWindowTotal(_ item: EtelWindowItem, window: PlanWindow?) -> (value: String, unit: String)? {
+    switch item {
+    case .logged(_, let meals):
+        let kcal = Int(meals.reduce(0) { $0 + $1.macros.kcal }.rounded())
+        return (huInt(kcal), window?.budget.map { "/ \(huInt(Int($0.kcal.rounded()))) kcal" } ?? "kcal")
+    case .open, .skipped, .quiet:
+        guard let b = window?.budget else { return nil }
+        return (huInt(Int(b.kcal.rounded())), "kcal keret")
+    }
+}
+
+/// The plan window a list item stands for (a logged item: the window that claims its meals; none for a loose meal).
+func etelWindow(of item: EtelWindowItem, plan: FuelPlan) -> PlanWindow? {
+    switch item {
+    case .open(let w), .skipped(let w), .quiet(let w): return w
+    case .logged(_, let meals): return plan.windows.first { w in meals.contains { w.loggedMealIds.contains($0.id) } }
+    }
+}
+
+/// The name a logged meal goes by on its row and its page: its window's, else its slot's.
+func etelMealLabel(_ meal: BoopCore.Meal, plan: FuelPlan?, day: FoodDay) -> String {
+    if meal.slot == "drink" { return "Ital" }
+    if let plan, let w = plan.windows.first(where: { $0.loggedMealIds.contains(meal.id) }) { return w.label }
+    return etelSlotLabel(meal.slot)
+}
+
+/// The moment the „+" of a window card logs at: the middle of a window already over (a meal logged afterwards
+/// lands in it), nil — the composer's own "now" — for the window open now or one still to come.
+func etelWindowCaptureTime(_ w: PlanWindow, now: Date, calendar: Calendar = .current) -> Date? {
+    func at(_ hhmm: String) -> Date? {
+        let parts = hhmm.split(separator: ":").compactMap { Int($0) }
+        guard parts.count == 2 else { return nil }
+        return calendar.date(bySettingHour: parts[0], minute: parts[1], second: 0, of: now)
+    }
+    guard let from = at(w.from), let to = at(w.to), to > from, to <= now else { return nil }
+    return from.addingTimeInterval(to.timeIntervalSince(from) / 2)
+}
