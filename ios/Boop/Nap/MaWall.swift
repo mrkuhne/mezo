@@ -67,14 +67,25 @@ struct MaWall: View {
         r.register(WallSource(id: WallSources.level) { [digest = level?.digest] input in
             levelWallCandidates(digest, now: input.now)
         })
-        r.register(WallSource(id: WallSources.kapacitas) { [week = kapacitas?.weeks[monday], queued = kapacitas?.queuedAccepts ?? [], start = todaySessionStart] input in
-            kapacitasWallCandidates(week: week, now: input.now, todaySessionStart: start, excluding: queued)
+        r.register(WallSource(id: WallSources.kapacitas) { [week = kapacitas?.weeks[monday], current = kapacitas?.weeks[thisMonday], queued = kapacitas?.queuedAccepts ?? [], start = todaySessionStart] input in
+            kapacitasWallCandidates(week: week, now: input.now, todaySessionStart: start, excluding: queued,
+                                    currentWeek: current)
         })
         return r
     }
 
-    /// The Monday of the week on the wall, in the phone's zone.
-    private var monday: String { kapacitasMonday(for: ctx.now) }
+    /// The Monday of the week on the wall, in the phone's zone: next week's from Sunday 18:00 (K4 Sunday preview).
+    private var monday: String { kapacitasWallMonday(ctx.now) }
+
+    /// The Monday of the week holding today: differs from `monday` only on Sunday evening, when an urgent
+    /// today-proposal still lives in this week.
+    private var thisMonday: String { kapacitasMonday(for: ctx.now) }
+
+    /// Loads the wall's week, and on Sunday evening this week too (its today-proposals may be urgent).
+    private func loadKapacitasWeeks() async {
+        await kapacitas?.loadWeek(monday: monday)
+        if thisMonday != monday { await kapacitas?.loadWeek(monday: thisMonday) }
+    }
 
     /// Today's planned session, still ahead and not done — what makes a today-proposal urgent on the wall.
     private var todaySessionStart: Date? {
@@ -145,7 +156,7 @@ struct MaWall: View {
         }
         .task(id: level.map(ObjectIdentifier.init)) { await level?.refresh() }
         // the current week's proposals (B7 K3): the week read generates them on the server's first call
-        .task(id: kapacitasKey) { await kapacitas?.loadWeek(monday: monday) }
+        .task(id: kapacitasKey) { await loadKapacitasWeeks() }
         // the wall may ring for what expires: what is on screen now counts as seen, the rest may reach his pocket
         .onAppear { reconcileNotifications(markSeen: true) }
         .onChange(of: allExpiring.map(\.id)) { reconcileNotifications(markSeen: true) }
@@ -154,7 +165,7 @@ struct MaWall: View {
         .onChange(of: scenePhase) { _, phase in
             guard phase == .active else { return }
             if evad?.overview != nil { Task { await evad?.experiments.load(force: true) } }
-            Task { await kapacitas?.loadWeek(monday: monday) }
+            Task { await loadKapacitasWeeks() }
             reconcileNotifications(markSeen: false)
         }
     }

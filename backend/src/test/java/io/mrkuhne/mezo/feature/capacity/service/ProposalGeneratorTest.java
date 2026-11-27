@@ -249,6 +249,21 @@ class ProposalGeneratorTest {
         }
     }
 
+    /** mezo-r36n9.185: a week where every day is túl sok offers one skip, the rest of the sessions shorter. */
+    @Test
+    void atMostOneSkipAWeekTheOthersShorter() {
+        Week week = new Week();
+        for (int i = 0; i < 7; i++) {
+            week.day(i, 1.4, 0.7).gym(i, "07:00", "Edzés " + i, false);
+        }
+
+        List<ProposalDraft> drafts = ProposalGenerator.forWeek(week.build(), List.of(), P);
+
+        assertThat(drafts).isNotEmpty();
+        assertThat(drafts.stream().filter(d -> d.kind().equals("SKIP_SESSION"))).hasSize(1);
+        assertThat(drafts).anyMatch(d -> d.kind().equals("SHORTEN_SESSION"));
+    }
+
     // ── the accept rules hold for every draft ────────────────────────────────
 
     @Test
@@ -379,5 +394,33 @@ class ProposalGeneratorTest {
 
         ProposalDraft d = drafts.stream().filter(x -> x.kind().equals("SHORTEN_SESSION")).findFirst().orElseThrow();
         assertThat(((Number) d.bundle().get(0).payload().get("minutes")).intValue()).isEqualTo(240);
+    }
+
+    // ── K4: the season's advisory lighter-week card (decision #121) ──────────────────────────────────────
+
+    private static SeasonLoadModel.WeekOut wk(int n, boolean planned, boolean over) {
+        return new SeasonLoadModel.WeekOut(n, planned ? null : 100.0, planned ? null : 80.0, planned, over, false);
+    }
+
+    @Test
+    void threeOverWeeksProposeDeloadForward() {
+        // weeks 1-3 done and all over, now week 4, lighter week planned for week 7 of 8
+        List<SeasonLoadModel.WeekOut> weeks = List.of(wk(1, false, true), wk(2, false, true), wk(3, false, true),
+            wk(4, true, false), wk(5, true, false), wk(6, true, false), wk(7, true, false), wk(8, true, false));
+        var hint = ProposalGenerator.deloadForward(weeks, 4, List.of(7)).orElseThrow();
+        assertThat(hint.fromWeek()).isEqualTo(7);
+        assertThat(hint.toWeek()).isEqualTo(5);
+        assertThat(hint.body()).contains("a 7.").contains("(az 5.)");
+
+        // not three over in a row → quiet
+        List<SeasonLoadModel.WeekOut> mixed = List.of(wk(1, false, true), wk(2, false, false), wk(3, false, true),
+            wk(4, true, false), wk(5, true, false), wk(6, true, false), wk(7, true, false), wk(8, true, false));
+        assertThat(ProposalGenerator.deloadForward(mixed, 4, List.of(7))).isEmpty();
+        // next week already the lighter one → quiet
+        assertThat(ProposalGenerator.deloadForward(weeks, 4, List.of(5))).isEmpty();
+        // no lighter week ahead → quiet
+        assertThat(ProposalGenerator.deloadForward(weeks, 4, List.of(2))).isEmpty();
+        // the season ends this week → quiet
+        assertThat(ProposalGenerator.deloadForward(weeks.subList(0, 4), 4, List.of(7))).isEmpty();
     }
 }

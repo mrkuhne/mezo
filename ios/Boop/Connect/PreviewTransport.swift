@@ -615,7 +615,10 @@ struct PreviewTransport: ClientTransport {
                 let rest = past ? "\(rests[w - 1])" : "null"
                 return #"{"week":\#(w),"load":\#(loads[w - 1]),"recovery":\#(rest),"planned":\#(!past),"over":\#(w >= 4 && w <= 7),"trainingOnly":\#(!past)}"#
             }.joined(separator: ",")
-            return json(#"{"weeks":[\#(weeks)],"nowWeek":7,"stats":{"overloadedDays4w":2,"moves":11,"movesGood":8},"headline":"Az utóbbi három hétben a terhed gyorsabban nőtt, mint ahogy pihensz."}"#)
+            return json(#"{"weeks":[\#(weeks)],"nowWeek":7,"stats":{"overloadedDays4w":2,"moves":11,"movesGood":8},"headline":"Az utóbbi három hétben a terhed gyorsabban nőtt, mint ahogy pihensz.",\#(Self.capacitySeasonK4)}"#)
+        case "getCapacitySeasonHints":
+            // B7 K4: the Új évad step-2 hints (invented, „például")
+            return json(#"{"hints":[{"key":"weekday-overload:THURSDAY","line":"A csütörtök a gyenge pontod.","body":"Az elmúlt 8 hét 6 csütörtökéből 4 volt túl sok.","evidence":6,"consistent":4,"weekday":"THURSDAY"}]}"#)
         case "clearSessionTime":
             movedTime = nil
             return (HTTPResponse(status: .noContent), nil)
@@ -626,6 +629,9 @@ struct PreviewTransport: ClientTransport {
         default: return nil
         }
     }
+
+    /// B7 K4 season fields (invented): the shown patterns and the advisory lighter-week card (decision #121).
+    static let capacitySeasonK4 = #""patterns":[{"key":"weekday-overload:THURSDAY","line":"A csütörtök a gyenge pontod.","body":"Az elmúlt 8 hét 6 csütörtökéből 4 volt túl sok.","evidence":6,"consistent":4,"weekday":"THURSDAY"},{"key":"move-kind-works:MOVE_SESSION_DAY","line":"Az áttett edzések beválnak.","body":"5 áttett edzésből 4 után jó napod volt.","evidence":5,"consistent":4,"weekday":null}],"deloadForward":{"fromWeek":10,"toWeek":8,"title":"Előrébb hoznám a könnyebb hetet.","body":"Három hete több a teher, mint amennyit a pihenés visszaad. A tervben a 10. hét a könnyebb, de már a jövő hét (a 8.) jobban jönne. Ha gondolod, beszéljük meg."}"#
 
     // MARK: - Past days for Napló (invented; offsets from today)
 

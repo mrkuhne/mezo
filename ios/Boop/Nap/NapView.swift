@@ -205,7 +205,7 @@ private struct NapSheets: ViewModifier {
                 ProposalWhySheet(proposal: p, desk: desk, brief: brief, store: store, ctx: ctx)
             }
             .fullScreenCover(isPresented: $atrendezes) {
-                AtrendezesPage(monday: kapacitasMonday(for: ctx.now), crumb: "Ma", close: { atrendezes = false }, ask: ask)
+                AtrendezesPage(monday: kapacitasWallMonday(ctx.now), crumb: "Ma", close: { atrendezes = false }, ask: ask)
                     .environment(kapacitas)
             }
             #if DEBUG

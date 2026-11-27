@@ -147,6 +147,22 @@ final class KapacitasPreviewModel: @unchecked Sendable {
             }
             var week: [String: Any] = ["monday": monday, "days": days, "proposals": proposals, "adjustments": adjustments,
                                        "patterns": [] as [Any]]
+            if state != "empty" {
+                // K4: what the moves taught, and how the earlier weeks' moves went (invented, „például")
+                week["patterns"] = [["key": "weekday-overload:THURSDAY", "line": "A sűrű csütörtökök",
+                                     "body": "Ha csütörtökön 4 óránál több a megbeszélés, az esti edzés 3 esetből 2-szer elmaradt.",
+                                     "evidence": 3, "consistent": 2, "weekday": "THURSDAY"]]
+                week["history"] = [
+                    ["proposalId": "7d000000-0000-4000-8000-000000000001", "kind": "MOVE_SESSION_DAY", "day": Self.day(monday, -6),
+                     "status": "accepted", "title": "Hátedzés: kedd → szerda", "word": "bevált", "sub": "az edzés megvolt", "good": true],
+                    ["proposalId": "7d000000-0000-4000-8000-000000000002", "kind": "SHIFT_BEDTIME", "day": Self.day(monday, -11),
+                     "status": "accepted", "title": "Lefekvés 23:30, reggeli edzés 8:00", "word": "nem segített", "sub": "rövidebben edzettél",
+                     "good": false],
+                    ["proposalId": "7d000000-0000-4000-8000-000000000003", "kind": "MOVE_SESSION_DAY", "day": Self.day(monday, -18),
+                     "status": "declined", "title": "Lábnap csütörtök → péntek", "word": "maradt így", "sub": NSNull(),
+                     "good": NSNull()],
+                ]
+            }
             let open = proposals.filter { $0["status"] as? String == "open" }.count
             if open >= 2 {
                 week["allEffects"] = [Self.line("Túl sok nap a héten", "2", "0", 1), Self.line("Szoros nap", "1", "2"),

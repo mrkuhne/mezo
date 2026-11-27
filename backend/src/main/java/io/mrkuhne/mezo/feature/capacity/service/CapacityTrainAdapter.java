@@ -132,4 +132,23 @@ public class CapacityTrainAdapter implements CapacityTrainPort {
             .map(meso -> templateInBlock(owner, templateSessionId, meso.getId()))
             .orElse(false);
     }
+
+    @Override
+    public List<LocalDate> deloadMondays(UUID owner) {
+        return mesocycles.findByCreatedByAndStatusAndDeletedFalse(owner, "active").stream().findFirst()
+            .filter(meso -> meso.getStartDate() != null && meso.getPhaseCurve() != null)
+            .map(meso -> {
+                LocalDate first = meso.getStartDate().with(
+                    java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+                List<LocalDate> out = new ArrayList<>();
+                List<String> curve = meso.getPhaseCurve();
+                for (int i = 0; i < curve.size(); i++) {
+                    if ("Deload".equalsIgnoreCase(curve.get(i))) {
+                        out.add(first.plusWeeks(i));
+                    }
+                }
+                return List.copyOf(out);
+            })
+            .orElse(List.of());
+    }
 }

@@ -177,7 +177,7 @@
       "AI és memória"
     ],
     "mit_kapsz": "Reggel egy mondatban megtudod, belefér-e a nap. Egy új Átrendezés oldalon Boop megmutatja, mit tenne át a héten (edzés, alvás, étel, programok), minden kereszthatással; a jóváhagyásod után az appban mindenhol átkerül, de az Évad terve nem változik. Az áttételekből tanul, és előre szól, mielőtt túlvállalnád magad.",
-    "munkamenet": "b6-b7-epites-5d50e3"
+    "munkamenet": "optimistic-moore-728819"
   },
   "mezo-r36n9.18": {
     "cim": "B8 Az egy AI — minden adatot ismerő emlékezet",
@@ -1908,6 +1908,16 @@
       "Ma"
     ],
     "mit_kapsz": "Ha egy hét túl sok, a Boop először az edzések áthelyezését keresi egy üres napra, és csak akkor javasol kihagyást, ha nincs jobb.",
+    "szulo": "mezo-r36n9.17"
+  },
+  "mezo-r36n9.187": {
+    "cim": "Évad: a könnyebb hét előrehozása egy koppintással",
+    "tipus": "Funkció",
+    "szakasz": "B7 Napi kapacitás",
+    "terulet": [
+      "Évad"
+    ],
+    "mit_kapsz": "Ha a Boop azt javasolja, hogy a könnyebb hetet hozd előrébb, egy koppintással meg is tudod tenni, és látod, mi változik vele (a célod dátuma, az edzéseid). Addig a Boop csak szól, és megbeszélheted vele.",
     "szulo": "mezo-r36n9.17"
   }
 }

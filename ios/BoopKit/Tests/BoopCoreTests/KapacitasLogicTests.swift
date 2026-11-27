@@ -150,4 +150,79 @@ struct KapacitasLogicTests {
         #expect(some.map(\.value) == ["0", "11", "8"])
         #expect(some[2].target == "11" && some[1].hot)
     }
+
+    // MARK: - K4: outcomes and learned patterns
+
+    @Test func patternRowsShowEvidence() {
+        let rows = kapacitasPatternRows([
+            KapacitasPattern(key: "weekday-overload:THURSDAY", line: "A sűrű csütörtökök",
+                             body: "például: 4 csütörtökből 3 volt túl sok.", evidence: 4, consistent: 3, weekday: "THURSDAY"),
+            KapacitasPattern(key: "move-kind-works:MOVE_SESSION_DAY", line: "Az áttett edzések", evidence: 3, consistent: 2),
+        ])
+        #expect(rows.map(\.title) == ["A sűrű csütörtökök", "Az áttett edzések"])
+        #expect(rows[0].body == "például: 4 csütörtökből 3 volt túl sok.")
+        #expect(rows[1].body == "3 esetből 2-szer.", "no sentence from the server: the counts still show")
+    }
+
+    private static func hDay(_ d: String) -> KapacitasWeekDay {
+        KapacitasWeekDay(date: d, verdict: "rendben", label: "rendben", ratio: 0.7, calendarKnown: true)
+    }
+
+    @Test func historyRowsShowOutcomeWordsAndEarlierWeeks() {
+        let lived = KapacitasProposal(id: "p1", kind: "MOVE_SESSION_DAY", day: "2026-11-24", status: "accepted",
+                                      title: "Hátedzés: kedd → szerda", move: "", effectLines: [], why: [], effects: [],
+                                      outcomeWord: "jól", outcomeSub: "megvolt")
+        let pending = KapacitasProposal(id: "p2", kind: "SHIFT_BEDTIME", day: "2026-11-27", status: "accepted",
+                                        title: "Lefekvés 23:30", move: "", effectLines: [], why: [], effects: [],
+                                        outcomeWord: "még nem tudom")
+        let week = KapacitasWeek(monday: "2026-11-23", days: [Self.hDay("2026-11-23")], proposals: [lived, pending],
+            adjustments: [
+                KapacitasAdjustment(id: "a1", date: "2026-11-24", kind: "MOVE_SESSION_DAY", bundleId: "b1", proposalId: "p1", state: "done"),
+                KapacitasAdjustment(id: "a2", date: "2026-11-27", kind: "SHIFT_BEDTIME", bundleId: "b2", proposalId: "p2", state: "active"),
+            ],
+            history: [
+                KapacitasHistoryItem(proposalId: "p0", kind: "SHORTEN_SESSION", day: "2026-11-13", status: "accepted",
+                                     title: "Rövidebb lábnap", word: "félig", sub: "rövid edzés", good: false),
+                KapacitasHistoryItem(proposalId: "p9", kind: "MOVE_SESSION_DAY", day: "2026-11-06", status: "declined",
+                                     title: "Lábnap csütörtök → péntek", word: "maradt így"),
+                // a proposal already listed from this week's ledger is not repeated
+                KapacitasHistoryItem(proposalId: "p1", kind: "MOVE_SESSION_DAY", day: "2026-11-24", status: "accepted",
+                                     title: "dupla", word: "jól"),
+            ])
+        let rows = kapacitasHistory(week, shown: [])
+        #expect(rows.map(\.title) == ["Hátedzés: kedd → szerda", "Lefekvés 23:30", "Rövidebb lábnap", "Lábnap csütörtök → péntek"])
+        #expect(rows[0].value == "jól" && rows[0].valueSub == "megvolt" && rows[0].state == "done")
+        #expect(rows[1].value == "érvényben" && rows[1].state == "live", "not lived yet: the ledger state")
+        #expect(rows[2].value == "félig" && rows[2].valueSub == "rövid edzés" && rows[2].state == "done")
+        #expect(rows[3].value == "maradt így" && rows[3].state == "gone")
+    }
+
+    @Test func weekDecodesWithoutK4FieldsAndWithThem() throws {
+        let old = #"{"monday":"2026-11-23","days":[],"proposals":[],"adjustments":[],"patterns":[{"key":"k","line":"L","evidence":3}]}"#
+        let w = try PlanJSON.decoder.decode(KapacitasWeek.self, from: Data(old.utf8))
+        #expect(w.history.isEmpty && w.patterns[0].consistent == 0 && w.patterns[0].body == nil)
+        let new = #"""
+        {"monday":"2026-11-23","days":[],"proposals":[{"id":"p","kind":"SKIP_SESSION","day":"2026-11-24","status":"accepted",
+          "title":"t","move":"m","effectLines":[],"why":[],"effects":[],"steps":[],"touchedDays":[],"outcomeWord":"jól","outcomeSub":"megvolt"}],
+         "adjustments":[],"patterns":[{"key":"k","line":"L","body":"B","evidence":4,"consistent":3,"weekday":"THURSDAY"}],
+         "history":[{"proposalId":"x","kind":"SKIP_SESSION","day":"2026-11-10","status":"undone","title":"t","word":"visszavontad","sub":null,"good":null}]}
+        """#
+        let n = try PlanJSON.decoder.decode(KapacitasWeek.self, from: Data(new.utf8))
+        #expect(n.proposals[0].outcomeWord == "jól" && n.proposals[0].outcomeSub == "megvolt")
+        #expect(n.patterns[0].body == "B" && n.patterns[0].weekday == "THURSDAY" && n.patterns[0].consistent == 3)
+        #expect(n.history.count == 1 && n.history[0].word == "visszavontad" && n.history[0].sub == nil)
+    }
+
+    @Test func wallMondayTurnsToNextWeekOnSundayEvening() {
+        let zone = TimeZone(identifier: "Europe/Budapest")!
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = zone
+        func at(_ d: Int, _ h: Int, _ m: Int = 0) -> Date {
+            cal.date(from: DateComponents(year: 2026, month: 11, day: d, hour: h, minute: m))!
+        }
+        #expect(kapacitasWallMonday(at(29, 17, 59), timeZone: zone) == "2026-11-23")
+        #expect(kapacitasWallMonday(at(29, 18), timeZone: zone) == "2026-11-30")
+        #expect(kapacitasWallMonday(at(29, 23, 50), timeZone: zone) == "2026-11-30")
+        #expect(kapacitasWallMonday(at(30, 0, 10), timeZone: zone) == "2026-11-30")
+        #expect(kapacitasWallMonday(at(28, 20), timeZone: zone) == "2026-11-23", "Saturday evening stays this week")
+    }
 }

@@ -1,12 +1,14 @@
 package io.mrkuhne.mezo.feature.capacity.mapper;
 
 import io.mrkuhne.mezo.api.dto.CapacityCompareLine;
+import io.mrkuhne.mezo.api.dto.CapacityHistoryItem;
 import io.mrkuhne.mezo.api.dto.CapacityPattern;
 import io.mrkuhne.mezo.api.dto.CapacityProposal;
 import io.mrkuhne.mezo.api.dto.CapacityProposalStep;
 import io.mrkuhne.mezo.api.dto.CapacityWeek;
 import io.mrkuhne.mezo.api.dto.CapacityWeekDay;
 import io.mrkuhne.mezo.feature.capacity.service.CapacityDay;
+import io.mrkuhne.mezo.feature.capacity.service.ProposalService.PatternView;
 import io.mrkuhne.mezo.feature.capacity.service.ProposalService.ProposalView;
 import io.mrkuhne.mezo.feature.capacity.service.ProposalService.WeekView;
 import java.time.ZoneOffset;
@@ -23,9 +25,17 @@ public final class CapacityProposalMapper {
             .days(w.days().stream().map(CapacityProposalMapper::day).toList())
             .proposals(w.proposals().stream().map(CapacityProposalMapper::toDto).toList())
             .adjustments(w.adjustments().stream().map(CapacityAdjustmentMapper::toDto).toList())
-            .patterns(w.patterns().stream()
-                .map(p -> CapacityPattern.builder().key(p.key()).line(p.line()).evidence(p.evidence()).build())
-                .toList())
+            .patterns(w.patterns().stream().map(CapacityProposalMapper::pattern).toList())
+            .history(w.history().stream().map(h -> CapacityHistoryItem.builder()
+                .proposalId(h.proposalId())
+                .kind(CapacityHistoryItem.KindEnum.fromValue(h.kind()))
+                .day(h.day())
+                .status(CapacityHistoryItem.StatusEnum.fromValue(h.status()))
+                .title(h.title())
+                .word(h.word())
+                .sub(h.sub())
+                .good(h.good())
+                .build()).toList())
             .allEffects(w.allEffects() == null ? null : w.allEffects().stream().map(l -> CapacityCompareLine.builder()
                 .label(l.label()).before(l.before()).after(l.after()).favours(l.favours()).build()).toList())
             .build();
@@ -47,7 +57,15 @@ public final class CapacityProposalMapper {
                 .kind(CapacityProposalStep.KindEnum.fromValue(s.kind())).payload(s.payload()).build()).toList())
             .touchedDays(p.touchedDays())
             .decidedAt(p.decidedAt() == null ? null : p.decidedAt().atOffset(ZoneOffset.UTC))
+            .outcomeWord(p.outcomeWord())
+            .outcomeSub(p.outcomeSub())
             .build();
+    }
+
+    /** A shown learned pattern (the week, the season and the new-season hints share it). */
+    public static CapacityPattern pattern(PatternView p) {
+        return CapacityPattern.builder().key(p.key()).line(p.line()).body(p.body()).evidence(p.evidence())
+            .consistent(p.consistent()).weekday(p.weekday()).build();
     }
 
     /** The verdict word ("túl sok") to the wire enum ({@code tulSok}); the word itself goes out as the label. */

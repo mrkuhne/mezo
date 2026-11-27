@@ -520,8 +520,9 @@ on Átrendezés, *Amit a mozgatásokból tanultam* + *Mennyit bírsz az évadban
 
 **Files:** create `service/SundayPreviewJob.java` (`sunday.cron`, owner zone, generates next week's proposals so the wall
 card appears Sunday evening / Monday morning); season proposals in `ProposalGenerator` (`SEASON_DELOAD_FORWARD` when 3
-consecutive `over` weeks and a deload week ahead → card opens Évad's Módosítás with the deload week prefilled; **no
-write from capacity**); new-season hints op `GET /api/capacity/season-hints` read by `EvadNewSeason.swift` beside the
+consecutive `over` weeks and a deload week ahead → an advisory card on Évad's Teher that only tells and offers
+„Megbeszélem Boop-pal" (owner decision #121, 2026-11-27; the one-tap move is `mezo-r36n9.187`); **no write from
+capacity**); new-season hints op `GET /api/capacity/season-hints` read by `EvadNewSeason.swift` beside the
 weekday picker. Tests `SundayPreviewJobIT.sundayJobUsesOwnerZone`, `ProposalGeneratorTest.threeOverWeeksProposeDeloadForward`,
 `SeasonHintsIT.hintsListWeekdayOverload`.
 
@@ -536,8 +537,8 @@ weekday picker. Tests `SundayPreviewJobIT.sundayJobUsesOwnerZone`, `ProposalGene
 **Kész, ha… (K4)**
 - [ ] Sunday 18:00 (his zone) the wall shows next week's card when a day is `túl sok`; prod shows the job ran.
 - [ ] Átrendezés shows *Korábban áttettük* with outcomes and *Ebből tanulok* only for patterns with ≥ 3 evidence.
-- [ ] Évad shows the patterns and stats; a deload-forward card opens Módosítás prefilled and writes nothing until he
-  accepts there; Új évad shows the hints.
+- [ ] Évad shows the patterns and stats; a deload-forward card only tells (advisory, decision #121) and offers
+  „Megbeszélem Boop-pal", writing nothing; Új évad shows the hints.
 - [ ] Gates green; docs + Notion true; B7 closed.
 
 ---

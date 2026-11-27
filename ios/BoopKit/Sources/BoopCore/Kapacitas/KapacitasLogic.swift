@@ -331,37 +331,87 @@ public func kapacitasLineTopic(_ line: String) -> (glyph: String, topic: String)
     return ("check-ink", "Hatás")
 }
 
-/// A *Korábban áttettük* row: one per accepted bundle of the week whose card is not on the page. K3 shows the state
-/// only; the outcome words come with K4.
+/// A *Korábban áttettük* row: one per accepted bundle of the week whose card is not on the page, then the decided
+/// proposals of the weeks before (server `history`). The value is the outcome word once the server knows how the day
+/// went (K4), the ledger state until then.
 public struct KapacitasHistoryRow: Equatable, Sendable {
     public let id: String, glyph: String, title: String, sub: String, value: String
+    /// The outcome line under the word („megvolt", „rövid edzés"); nil when there is none.
+    public let valueSub: String?
     /// done = behind him, gone = taken back or lapsed, live = still to come.
     public let state: String
+
+    public init(id: String, glyph: String, title: String, sub: String, value: String, valueSub: String? = nil,
+                state: String) {
+        self.id = id; self.glyph = glyph; self.title = title; self.sub = sub; self.value = value
+        self.valueSub = valueSub; self.state = state
+    }
 }
+
+/// The word an accepted move shows before its day is lived.
+private let pendingOutcome = "még nem tudom"
 
 public func kapacitasHistory(_ w: KapacitasWeek, shown: Set<String>) -> [KapacitasHistoryRow] {
     var seen = Set<String>()
+    var listed = Set<String>()
     var rows: [KapacitasHistoryRow] = []
     for a in w.adjustments.sorted(by: { $0.date < $1.date }) where !seen.contains(a.bundleId) {
         seen.insert(a.bundleId)
+        if let pid = a.proposalId { listed.insert(pid) }
         if let pid = a.proposalId, shown.contains(pid) { continue }
         let p = a.proposalId.flatMap { id in w.proposals.first { $0.id == id } }
         let bundle = w.adjustments.filter { $0.bundleId == a.bundleId }
         // the bundle's state: any waiting / active step keeps it live
         let states = Set(bundle.map(\.state))
-        let state: String
-        let value: String
+        var state: String
+        var value: String
         if states.contains("waiting") { state = "live"; value = "vár a naptárra" }
         else if states.contains("active") { state = "live"; value = "érvényben" }
         else if states.contains("done") { state = "done"; value = "megtörtént" }
         else if states.contains("undone") { state = "gone"; value = "visszavontad" }
         else { state = "gone"; value = "lejárt" }
+        var valueSub: String?
+        if let word = p?.outcomeWord, !word.isEmpty, word != pendingOutcome, state != "gone" {
+            state = "done"; value = word; valueSub = p?.outcomeSub
+        }
         let kind = p.map(kapacitasKind) ?? kapacitasKind(KapacitasProposal(id: "", kind: a.kind, day: nil, status: "",
                                                                           title: "", move: "", effectLines: [], why: [], effects: []))
         rows.append(KapacitasHistoryRow(id: a.bundleId, glyph: kind.glyph, title: p?.title ?? kind.word.capitalized,
-                                        sub: kapacitasDayLabel(a.date), value: value, state: state))
+                                        sub: kapacitasDayLabel(a.date), value: value, valueSub: valueSub, state: state))
+    }
+    for h in w.history where !listed.contains(h.proposalId) && !shown.contains(h.proposalId) {
+        listed.insert(h.proposalId)
+        let kind = kapacitasKind(KapacitasProposal(id: h.proposalId, kind: h.kind, day: h.day, status: h.status,
+                                                   title: h.title, move: "", effectLines: [], why: [], effects: []))
+        let state: String
+        switch h.status {
+        case "accepted": state = h.word == pendingOutcome ? "live" : "done"
+        default: state = "gone"
+        }
+        rows.append(KapacitasHistoryRow(id: "h-" + h.proposalId, glyph: kind.glyph, title: h.title,
+                                        sub: kapacitasDayLabel(h.day), value: h.word, valueSub: h.sub, state: state))
     }
     return rows
+}
+
+/// *Ebből tanulok* / *Amit a mozgatásokból tanultam*: the server's shown patterns as title + evidence sentence. A
+/// pattern the server sent without a sentence still says how often it held („3 esetből 2-szer.").
+public func kapacitasPatternRows(_ patterns: [KapacitasPattern]) -> [(title: String, body: String)] {
+    patterns.map { p in
+        let body = p.body.flatMap { $0.isEmpty ? nil : $0 }
+            ?? (p.evidence > 0 && p.consistent > 0 ? "\(p.evidence) esetből \(p.consistent)-szer." : "")
+        return (title: p.line, body: body)
+    }
+}
+
+/// The week the wall, the day page and the Ma Átrendezés open: this week — except from Sunday 18:00 (the Sunday
+/// preview, K4), when it is already next week's.
+public func kapacitasWallMonday(_ now: Date, timeZone: TimeZone = .current) -> String {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = timeZone
+    let c = calendar.dateComponents([.weekday, .hour], from: now)
+    let monday = kapacitasMonday(for: now, timeZone: timeZone)
+    return c.weekday == 1 && (c.hour ?? 0) >= 18 ? kapacitasNextMonday(after: monday) : monday
 }
 
 // MARK: - Ha jóváhagyod, itt látod (K3 fix round 1)

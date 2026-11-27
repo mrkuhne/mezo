@@ -93,6 +93,27 @@ struct KapacitasWallTests {
         #expect(late.first?.role == .improves)
     }
 
+    /// K4 review minor: from Sunday 18:00 the wall shows next week, but a live today-proposal about Sunday sits in the
+    /// current week — it must still reach the wall as the urgent card.
+    @Test func sundayEveningTodayProposalFromTheCurrentWeek() throws {
+        let sundayEvening = KapacitasWeek(monday: "2026-11-23", days: Self.days, proposals: [
+            Self.proposal("s1", "SHORTEN_SESSION", day: "2026-11-29"),
+        ])
+        let next = KapacitasWeek(monday: "2026-11-30", days: [], proposals: [
+            Self.proposal("n1", "MOVE_SESSION_DAY", day: "2026-12-02"),
+        ])
+        let start = Self.at(29, 20)
+        let cards = kapacitasWallCandidates(week: next, now: Self.at(29, 18, 30), todaySessionStart: start,
+                                            timeZone: Self.zone, currentWeek: sundayEvening)
+        let c = try #require(cards.first)
+        #expect(cards.count == 1)
+        #expect(c.id == "kapacitas-ma-s1" && c.role == .expires && c.expiresAt == start)
+        // no session ahead: next week's card, the current week's proposal does not leak into it
+        let calm = kapacitasWallCandidates(week: next, now: Self.at(29, 18, 30), timeZone: Self.zone,
+                                           currentWeek: sundayEvening)
+        #expect(calm.first?.role == .improves && calm.first?.text.contains("Egy dolgot") == true)
+    }
+
     @Test func noCardWithoutProposals() {
         #expect(kapacitasWallCandidates(week: nil, now: Self.at(24, 9), timeZone: Self.zone).isEmpty)
         let calm = KapacitasWeek(monday: "2026-11-23", days: Self.days, proposals: [
@@ -105,5 +126,18 @@ struct KapacitasWallTests {
                                         timeZone: Self.zone).isEmpty)
         // last week's read is not this week's card
         #expect(kapacitasWallCandidates(week: Self.packed, now: Self.at(30, 9), timeZone: Self.zone).isEmpty)
+    }
+
+    @Test func sundayEveningShowsNextWeeksCard() {
+        let next = KapacitasWeek(monday: "2026-11-30", days: [
+            Self.day("2026-11-30", "laza", "laza", 0.4), Self.day("2026-12-03", "tulSok", "túl sok", 1.2),
+        ], proposals: [Self.proposal("n1", "MOVE_SESSION_DAY", day: "2026-12-03")])
+        #expect(kapacitasWallCandidates(week: next, now: Self.at(29, 17), timeZone: Self.zone).isEmpty,
+                "Sunday afternoon: still this week's wall")
+        let cards = kapacitasWallCandidates(week: next, now: Self.at(29, 18, 30), timeZone: Self.zone)
+        #expect(cards.count == 1 && cards[0].role == .improves)
+        #expect(cards[0].text.hasPrefix("A csütörtök *túl sok* lenne."))
+        #expect(kapacitasWallCandidates(week: Self.packed, now: Self.at(29, 18, 30), timeZone: Self.zone).isEmpty,
+                "from Sunday 18:00 this week's read no longer makes the card")
     }
 }

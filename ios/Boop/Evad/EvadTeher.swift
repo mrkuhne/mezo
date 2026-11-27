@@ -5,10 +5,15 @@ import BoopDesign
 /// The Évad tab's *Teher és pihenés* block and *Mennyit bírsz az évadban* stats (B7 K2, `mezo-r36n9.17`): the season's
 /// weekly load against recovery, from `GET /api/capacity/season`. A season with no data (404), or no net and nothing
 /// cached, leaves both blocks out — they are an extra, never an error. Weeks after today (the plan) are drawn faint.
+///
+/// K4: under the chart the advisory lighter-week card (owner decision #121 „Csak szóljon": it only tells — its one action
+/// opens the Boop chat, nothing is written), and at the bottom *Amit a mozgatásokból tanultam*, the server's shown
+/// patterns.
 struct EvadTeher: View {
     /// B7 K3: *A jövő heted* opens the next week's Átrendezés page (EvadPage presents it).
     var openAtrendezes: @MainActor @Sendable () -> Void = {}
     @Environment(KapacitasStore.self) private var store: KapacitasStore?
+    @Environment(\.openPlace) private var openPlace
 
     private var nextMonday: String { kapacitasNextMonday(after: kapacitasMonday(for: Date())) }
 
@@ -27,6 +32,10 @@ struct EvadTeher: View {
                 .nkStale(store?.ageText.map { NKStale(age: $0) })
                 // first read happens when the store is made (RootView); opening the tab refreshes it
                 .task { await store?.load(force: true) }
+                if let hint = s.deloadForward {
+                    NKHighlight(hue: evadHue, label: "Boop javaslata", text: hint.title, sub: hint.body,
+                                actions: [NKHighlightAction("Megbeszélem Boop-pal", action: { openPlace(.boop) })])
+                }
             }
             nextWeek
             if let s = store?.season, !s.weeks.isEmpty {
@@ -34,6 +43,11 @@ struct EvadTeher: View {
                     NKStatRow(kapacitasSeasonStats(s.stats).map {
                         NKStat(value: $0.value, target: $0.target, label: $0.label, hot: $0.hot)
                     }, hue: evadHue)
+                }
+                if !s.patterns.isEmpty {
+                    NKBare("Amit a mozgatásokból tanultam", hue: evadHue, glyph: "spark-cream") {
+                        NKList(kapacitasPatternRows(s.patterns), hue: evadHue)
+                    }
                 }
             }
         }

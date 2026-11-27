@@ -42,7 +42,8 @@ import java.util.Set;
  *       {@code laza}/{@code rendben} after it, never next to a heavy session of the same region; a target that keeps
  *       at least one rest day before every sport slot wins when there is one.</li>
  *   <li>No such day (or a kímélő week, which never adds load anywhere): {@code SHORTEN_SESSION} to two thirds; on a
- *       {@code túl sok} day that shortening cannot bring under it, {@code SKIP_SESSION}.</li>
+ *       {@code túl sok} day that shortening cannot bring under it, {@code SKIP_SESSION} — at most one skip a week, a
+ *       further one is offered as the shortening instead (mezo-r36n9.185).</li>
  *   <li>{@code SHIFT_BEDTIME} + linked {@code SHIFT_SESSION_TIME}: an event ends after 21:00 and a session starts before
  *       08:00 the next day — bed {@value #WIND_DOWN_MIN} minutes after the event, the session after a full need of
  *       sleep and {@value #READY_MIN} minutes to get going.</li>
@@ -74,10 +75,39 @@ public final class ProposalGenerator {
 
     /**
      * A learned pattern of his weeks ({@code capacity_pattern}); a pattern whose payload names the draft's weekday
-     * ({@code "weekday": "THURSDAY"}) and, optionally, its kind ({@code "kind": "MOVE_SESSION_DAY"}) lifts the draft's
+     * ({@code "weekday": "THURSDAY"}) and/or its kind ({@code "kind": "MOVE_SESSION_DAY"}) lifts the draft's
      * rank by its consistency and lends its {@code line} to "Miért javaslom".
      */
     public record Pattern(String key, int evidence, int consistent, Map<String, Object> payload) {
+    }
+
+    /**
+     * The season's advisory card (owner decision #121, "Csak szóljon"): bring the lighter week forward. Never stored as
+     * a proposal and never written anywhere — the Évad page only tells and offers "Megbeszélem Boop-pal".
+     */
+    public record DeloadHint(int fromWeek, int toWeek, String title, String body) {
+    }
+
+    /**
+     * {@code SEASON_DELOAD_FORWARD}: each of the last three completed season weeks carried more load than recovery
+     * ({@link SeasonLoadModel#headline}) and the running block's nearest lighter week lies later than next week → bring
+     * it forward to next week. Empty when next week is already the lighter one, is past the season's end, or there is
+     * no lighter week ahead.
+     *
+     * @param deloadWeeks the 1-based season weeks of the block's lighter weeks
+     */
+    public static Optional<DeloadHint> deloadForward(List<SeasonLoadModel.WeekOut> weeks, int nowWeek,
+                                                     List<Integer> deloadWeeks) {
+        int next = nowWeek + 1;
+        if (SeasonLoadModel.headline(weeks, nowWeek) == null || next > weeks.size()
+            || deloadWeeks.contains(next) || deloadWeeks.contains(nowWeek)) {
+            return Optional.empty();
+        }
+        return deloadWeeks.stream().filter(d -> d > next && d <= weeks.size()).min(Integer::compare)
+            .map(d -> new DeloadHint(d, next, "Előrébb hoznám a könnyebb hetet.",
+                "Három hete több a teher, mint amennyit a pihenés visszaad. A tervben " + HuDays.article(String.valueOf(d))
+                    + " " + d + ". hét a könnyebb, de már a jövő hét (" + HuDays.article(String.valueOf(next)) + " "
+                    + next + ".) jobban jönne. Ha gondolod, beszéljük meg."));
     }
 
     public static List<ProposalDraft> forWeek(WeekPicture w, List<Pattern> patterns, CapacityProperties p) {
@@ -112,8 +142,19 @@ public final class ProposalGenerator {
         List<ProposalDraft> kept = new ArrayList<>();
         Set<LocalDate> sessionDays = new HashSet<>();
         Set<List<LocalDate>> touched = new HashSet<>();
-        for (ProposalDraft d : valid.stream()
+        boolean skipKept = false;
+        for (ProposalDraft candidate : valid.stream()
                 .sorted(Comparator.comparingDouble(ProposalDraft::relief).reversed()).toList()) {
+            ProposalDraft d = candidate;
+            if (AdjustmentKind.SKIP_SESSION.name().equals(d.kind())) {
+                if (skipKept) {
+                    Optional<ProposalDraft> instead = insteadOfSecondSkip(w, d, p);
+                    if (instead.isEmpty()) {
+                        continue;
+                    }
+                    d = withPatterns(instead.get(), patterns);
+                }
+            }
             Optional<LocalDate> session = sessionDay(d);
             if (session.isPresent() && sessionDays.contains(session.get()) || touched.contains(d.touchedDays())) {
                 continue;
@@ -121,8 +162,10 @@ public final class ProposalGenerator {
             session.ifPresent(sessionDays::add);
             touched.add(d.touchedDays());
             kept.add(d);
+            skipKept |= AdjustmentKind.SKIP_SESSION.name().equals(d.kind());
         }
-        return kept.stream().limit(p.proposals().maxPerWeek()).toList();
+        return kept.stream().sorted(Comparator.comparingDouble(ProposalDraft::relief).reversed())
+            .limit(p.proposals().maxPerWeek()).toList();
     }
 
     /** The day of the gym session a draft is about (empty for a meal move, which concerns no session). */
@@ -147,15 +190,12 @@ public final class ProposalGenerator {
                 return Optional.of(move.get().draft());
             }
         }
-        // clamped to the payload's 10–240 bound, so a very long session can never make the week read fail
-        int shorter = Math.min(MAX_SESSION_MIN, Math.round((float) (s.minutes() * SHORTEN_SHARE / 5)) * 5);
-        if (shorter >= MIN_SESSION_MIN && shorter < s.minutes()) {
-            List<AdjustmentDraft> shorten = List.of(AdjustmentDraft.of(new ShortenSession(day.date(), shorter)));
-            DraftWeek.Result r = DraftWeek.apply(w, shorten, p);
+        Optional<ProposalDraft> shorten = shorten(w, day, s, p);
+        if (shorten.isPresent()) {
+            DraftWeek.Result r = DraftWeek.apply(w, shorten.get().bundle(), p);
             boolean stillOver = r.day(day.date()).map(l -> "túl sok".equals(l.verdictAfter())).orElse(false);
             if (!stillOver || !w.plan().rawGymDays().contains(day.date())) {
-                return Optional.of(new ProposalDraft(AdjustmentKind.SHORTEN_SESSION.name(), shorten,
-                    sessionFacts(s, day, Map.of("minutesAfter", shorter)), relief(r, p)));
+                return shorten;
             }
         }
         if (w.plan().rawGymDays().contains(day.date())) {
@@ -164,6 +204,33 @@ public final class ProposalGenerator {
                 sessionFacts(s, day, Map.of()), relief(DraftWeek.apply(w, skip, p), p)));
         }
         return Optional.empty();
+    }
+
+    /** The session cut to two thirds, clamped to the payload's 10–240 bound; empty when it cannot get shorter. */
+    private static Optional<ProposalDraft> shorten(WeekPicture w, CapacityDay day, PlannedSession s,
+                                                   CapacityProperties p) {
+        int shorter = Math.min(MAX_SESSION_MIN, Math.round((float) (s.minutes() * SHORTEN_SHARE / 5)) * 5);
+        if (shorter < MIN_SESSION_MIN || shorter >= s.minutes()) {
+            return Optional.empty();
+        }
+        List<AdjustmentDraft> bundle = List.of(AdjustmentDraft.of(new ShortenSession(day.date(), shorter)));
+        return Optional.of(new ProposalDraft(AdjustmentKind.SHORTEN_SESSION.name(), bundle,
+            sessionFacts(s, day, Map.of("minutesAfter", shorter)), relief(DraftWeek.apply(w, bundle, p), p)));
+    }
+
+    /**
+     * A second skip in one week is never the first offer (mezo-r36n9.185: a week of skips is a plan problem, not a
+     * day problem — the season level speaks to that): the session is offered shorter instead, or dropped.
+     */
+    private static Optional<ProposalDraft> insteadOfSecondSkip(WeekPicture w, ProposalDraft skip,
+                                                              CapacityProperties p) {
+        LocalDate date = LocalDate.parse(skip.facts().get("fromDate").toString());
+        Optional<CapacityDay> day = w.day(date);
+        Optional<PlannedSession> s = w.sessionsOn(date).stream().filter(x -> !x.done() && !x.running()).findFirst();
+        if (day.isEmpty() || s.isEmpty()) {
+            return Optional.empty();
+        }
+        return shorten(w, day.get(), s.get(), p).filter(d -> passesRules(w, d));
     }
 
     private record Target(LocalDate date, ProposalDraft draft, boolean keepsRest, double ratioBefore) {
@@ -499,8 +566,10 @@ public final class ProposalGenerator {
         for (Pattern pt : patterns) {
             Map<String, Object> payload = pt.payload() == null ? Map.of() : pt.payload();
             Object kind = payload.get("kind");
-            if (!weekday.equals(payload.get("weekday")) || (kind != null && !d.kind().equals(kind))
-                || pt.evidence() <= 0) {
+            Object day = payload.get("weekday");
+            // a pattern speaks to a draft through its weekday, its kind, or both; one with neither ranks nothing
+            if ((day == null && kind == null) || (day != null && !weekday.equals(day))
+                || (kind != null && !d.kind().equals(kind)) || pt.evidence() <= 0) {
                 continue;
             }
             boost += 0.1 * Math.min(1.0, (double) pt.consistent() / pt.evidence());
