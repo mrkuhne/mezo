@@ -80,6 +80,16 @@ public struct MealItem: Equatable, Sendable {
     public var recipeName: String? = nil
     /// A recipe line logged with some ingredients at other amounts; a correction must carry them or they are lost.
     public var ingredientOverrides: [IngredientOverride] = []
+
+    public init(name: String, source: String, amount: Double, unit: String, contribution: Macros, nova: Int? = nil,
+                pantryItemId: UUID? = nil, fiberG: Double? = nil, sugarG: Double? = nil, saltG: Double? = nil,
+                saturatedFatG: Double? = nil, recipeId: UUID? = nil, recipeName: String? = nil,
+                ingredientOverrides: [IngredientOverride] = []) {
+        self.name = name; self.source = source; self.amount = amount; self.unit = unit; self.contribution = contribution
+        self.nova = nova; self.pantryItemId = pantryItemId; self.fiberG = fiberG; self.sugarG = sugarG; self.saltG = saltG
+        self.saturatedFatG = saturatedFatG; self.recipeId = recipeId; self.recipeName = recipeName
+        self.ingredientOverrides = ingredientOverrides
+    }
 }
 
 /// One recipe ingredient logged at an amount other than the recipe's (keyed by `lineOrder`, `pantryItemId` checks it).

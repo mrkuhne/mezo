@@ -16,22 +16,26 @@ extension MealStart.Entrance {
         case .pantry: .pantry
         case .barcode: .barcode
         case .usual: .usuals
-        case .photo, .text, .serving, .pick, .drink: nil
+        case .photo, .text, .serving, .pick, .drink, .edit: nil
         }
     }
 }
 
 struct MealStart: Identifiable {
-    enum Entrance: Equatable { case pick, photo, text, recipe, pantry, barcode, usual, serving, drink }
+    enum Entrance: Equatable { case pick, photo, text, recipe, pantry, barcode, usual, serving, drink, edit }
     let id = UUID()
     var entrance: Entrance = .pick
     var text = ""
     var card: PendingDraft?
     /// A shelf or catalog food the owner chose to eat (the Kamra): it opens the serving confirmation, in grams.
     var serving: LookupItem?
+    /// A logged meal to correct (`mezo-r36n9.184`): the composer opens on its draft and saves over it.
+    var editing: BoopCore.Meal?
 
-    /// The composer's mode: the Ital door, or a drink card reopened from the room (`mezo-r36n9.160`).
-    var kind: MealKind { entrance == .drink || card?.kind == .drink ? .drink : .meal }
+    /// The composer's mode: the Ital door, a drink card reopened from the room (`mezo-r36n9.160`), or a drink corrected.
+    var kind: MealKind {
+        entrance == .drink || card?.kind == .drink || editing?.slot == MealKind.drink.fixedSlot ? .drink : .meal
+    }
 }
 
 /// The composer's state and its decisions, apart from any view.
@@ -89,6 +93,11 @@ final class MealComposerModel {
 
     private let drafter: any MealDrafting
     private let saver: @Sendable (MealDraft, UUID, Date) async throws -> BoopCore.Meal
+    /// Saves a correction over a logged meal (`mezo-r36n9.184`): its id, the edited draft, its moment.
+    private let updater: (@Sendable (UUID, MealDraft, Date) async throws -> Void)?
+    /// The logged meal being corrected; nil = a new capture.
+    private(set) var editingId: UUID?
+    var isEditing: Bool { editingId != nil }
     private let lists: (recipes: @Sendable () async throws -> [Recipe], shelf: @Sendable () async throws -> [PantryRow])?
     private let usualsLoader: (@Sendable () async throws -> [UsualMeal])?
     private let outbox: FoodOutbox?
@@ -101,11 +110,12 @@ final class MealComposerModel {
     var changed: () -> Void = {}
 
     init(drafter: any MealDrafting, saver: @escaping @Sendable (MealDraft, UUID, Date) async throws -> BoopCore.Meal,
+         updater: (@Sendable (UUID, MealDraft, Date) async throws -> Void)? = nil,
          lists: (recipes: @Sendable () async throws -> [Recipe], shelf: @Sendable () async throws -> [PantryRow])? = nil,
          usuals: (@Sendable () async throws -> [UsualMeal])? = nil,
          outbox: FoodOutbox?, online: @escaping () -> Bool = { true }, clock: @escaping () -> Date = { Date() },
          calendar: Calendar = .current, kind: MealKind = .meal) {
-        self.drafter = drafter; self.saver = saver; self.lists = lists; self.usualsLoader = usuals; self.outbox = outbox; self.online = online
+        self.drafter = drafter; self.saver = saver; self.updater = updater; self.lists = lists; self.usualsLoader = usuals; self.outbox = outbox; self.online = online
         self.clock = clock; self.calendar = calendar; self.kind = kind
         capturedAt = clock()
     }
@@ -113,6 +123,7 @@ final class MealComposerModel {
     convenience init(food: FoodClient, outbox: FoodOutbox?, online: @escaping () -> Bool, clock: @escaping () -> Date = { BoopClock.now() },
                      kind: MealKind = .meal) {
         self.init(drafter: food, saver: { draft, ref, at in try await food.save(draft, clientRef: ref, capturedAt: at) },
+                  updater: { id, draft, at in try await food.updateMeal(id, with: draft, at: at) },
                   lists: (recipes: { try await food.recipes() }, shelf: { try await food.pantry() }),
                   usuals: { try await food.usuals(slot: FoodClient.slot(at: BoopClock.now(), cal: .current, kind: kind)) },
                   outbox: outbox, online: online, clock: clock, kind: kind)
@@ -333,6 +344,14 @@ final class MealComposerModel {
         stage = .draft
     }
 
+    /// A logged meal opened for correction (`mezo-r36n9.184`): its lines as a draft, at its own time; the save goes over it.
+    func beginEdit(_ meal: BoopCore.Meal) {
+        draft = MealDraft(editing: meal)
+        chosenAt = meal.loggedAt; capturedAt = meal.loggedAt
+        editingId = meal.id
+        stage = .draft
+    }
+
     /// A capture that failed, looked over: its words and photo come back into the picker, so nothing is retyped.
     /// It replaces the failed card once the new one is safe.
     func adoptFailed(_ card: PendingDraft, photo: Data?) {
@@ -446,6 +465,7 @@ final class MealComposerModel {
 
     func save() async -> SaveOutcome {
         guard var d = draft, !d.items.isEmpty, !saving else { return .failed("Nincs mit menteni.") }
+        if let editingId { return await saveCorrection(d, of: editingId) }
         d.photo = photo ?? d.photo
         saving = true; defer { saving = false }
         draft = d
@@ -461,6 +481,28 @@ final class MealComposerModel {
             return .failed("Nincs net — a vázlat itt marad, próbáld újra, amint van.")
         } catch FoodFetchError.unauthorized {
             return .failed("Újra be kell jelentkezned, aztán mentsd újra.")
+        } catch FoodFetchError.rejected {
+            return .failed(Self.rejectedSaveLine(d))
+        } catch {
+            return .failed("Nem sikerült elmenteni — próbáld újra.")
+        }
+    }
+
+    /// A correction goes over the logged meal: never a new meal, never a parked card; the stored photo stays.
+    private func saveCorrection(_ draft: MealDraft, of id: UUID) async -> SaveOutcome {
+        guard let updater else { return .failed("Most nem tudom javítani.") }
+        var d = draft; d.photo = nil
+        saving = true; defer { saving = false }
+        do {
+            try await updater(id, d, capturedAt)
+            changed()
+            return .saved("\(draftTitle(d)) javítva · \(huInt(Int(d.total.kcal.rounded()))) kcal")
+        } catch FoodFetchError.offline {
+            return .failed("Nincs net — a javítás itt marad, próbáld újra, amint van.")
+        } catch FoodFetchError.unauthorized {
+            return .failed("Újra be kell jelentkezned, aztán mentsd újra.")
+        } catch FoodFetchError.notFound {
+            return .failed("Ezt az étkezést közben törölted, nincs mit javítani.")
         } catch FoodFetchError.rejected {
             return .failed(Self.rejectedSaveLine(d))
         } catch {
@@ -523,6 +565,7 @@ private struct MealComposerHost: View {
         m.text = start.text
         m.minWorking = .milliseconds(2600)
         m.changed = { [weak ritmus] in ritmus?.mealDraftsChanged() }
+        if let meal = start.editing { m.beginEdit(meal) }
         if let card = start.card {
             let bytes = card.photoRef.flatMap { ritmus?.food.photoData($0) }
             if case .ready = card.state {
@@ -545,7 +588,7 @@ private struct MealComposerHost: View {
         switch model.stage {
         case .pick: model.kind == .drink ? "Mit ittál?" : "Mit ettél?"
         case .working: model.hasPhoto ? "Nézem a tányért" : "Egy pillanat"
-        case .draft: model.adopted ? "Nézd át" : "Ezt látom"
+        case .draft: model.isEditing ? "Javítás" : model.adopted ? "Nézd át" : "Ezt látom"
         case .queued: "Eltettem"
         case .recipes: "Melyik receptet?"
         case .pantry: "Mit a kamrából?"
@@ -599,7 +642,7 @@ private struct MealComposerHost: View {
             case .recipe, .pantry, .barcode, .usual: break
             case .drink: await model.loadUsualDrinks()
             case .serving: if let facts = start.serving { model.showServing(facts, source: .catalog, code: "") }
-            case .pick: break
+            case .pick, .edit: break
             }
         }
         .task { model.profile = try? await food.sensitivity() }
@@ -885,7 +928,7 @@ private struct MealComposerHost: View {
             // one more thing onto the same plate
             EtelSheetCard(label: "HOZZÁTESZEK MÉG") {
                 HStack(spacing: 8) {
-                    entrance("camera-ink", "Fotó") { choosePhoto() }
+                    if !model.isEditing { entrance("camera-ink", "Fotó") { choosePhoto() } }
                     entrance("book-sage", "Recept") { model.addMore(.recipes) }
                     entrance("bowl-sage", "Kamra") { model.addMore(.pantry) }
                     entrance("search-ink", "Vonalkód") { scan.reset(); model.addMore(.barcode) }
@@ -917,8 +960,8 @@ private struct MealComposerHost: View {
                     .background(Capsule().fill(model.canSave ? AnyShapeStyle(LinearGradient(colors: [.white, Hue.fuel.glow.opacity(0.9)], startPoint: .leading, endPoint: .trailing)) : AnyShapeStyle(.white.opacity(0.25))))
                 }
                 .buttonStyle(.plain).disabled(!model.canSave)
-                Button { confirmDiscard = true } label: {
-                    Text(model.adopted ? "Elvetem" : "Mégsem").nkFont(15).foregroundStyle(.white.opacity(0.85))
+                Button { if model.isEditing { onDone(nil) } else { confirmDiscard = true } } label: {
+                    Text(model.adopted && !model.isEditing ? "Elvetem" : "Mégsem").nkFont(15).foregroundStyle(.white.opacity(0.85))
                         .padding(.horizontal, 20).frame(height: 52)
                         .background(Capsule().fill(.white.opacity(0.1)).overlay(Capsule().stroke(.white.opacity(0.18))))
                 }
