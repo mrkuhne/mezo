@@ -2,9 +2,9 @@ import SwiftUI
 import BoopCore
 import BoopDesign
 
-/// The Évad colour world. The approved spike's `.forma` (the violet dusk): the season is about the body's course, and
-/// the system map paints its four pillars in their own worlds on top of it.
-let evadHue: Hue = .forma
+/// The Évad colour world: its own evening violet since it became the tenth orb (`mezo-r36n9.196`, decision #138) —
+/// `.forma` must never identify the Évad room again. The system map paints its four pillars in their own worlds on top.
+let evadHue: Hue = .evad
 
 /// The Évad page's sub-pages, presented at page level (boop-ios.md §9).
 enum EvadSub: String, Identifiable {
@@ -25,7 +25,10 @@ enum EvadSub: String, Identifiable {
 struct EvadPage: View {
     @Environment(EvadStore.self) private var store: EvadStore?
     @Environment(KapacitasStore.self) private var kapacitas: KapacitasStore?
-    @Environment(\.openPlace) private var openPlace
+    @Environment(\.openDestination) private var openDestination
+    /// Step 1 of `mezo-r36n9.196`: the Évad orb opens this page inside a plain room frame — its back button returns
+    /// to the ring. Temporary glue, replaced by the Évad room in step 2.
+    @Environment(\.closeRoom) private var closeRoom
     @State private var tab = "Évad"
     @State private var open: EvadSub?
     @State private var swapMeal: EvadMenuMeal?
@@ -37,7 +40,7 @@ struct EvadPage: View {
             if let store, let o = store.overview {
                 season(o, store: store)
             } else if let store, store.empty {
-                EvadEmpty(start: { open = .uj })
+                EvadEmpty(start: { open = .uj }, onBack: closeRoom)
             } else if let problem = store?.problem {
                 waiting(headline: "Most nem érem el az évadodat", state: .failed(evadErrorText(problem), {
                     Task { await store?.load(force: true) }
@@ -62,7 +65,7 @@ struct EvadPage: View {
                 case .ujkiserlet: EvadNewExperimentPage(close: { open = nil })
                 case .atrendezes:
                     AtrendezesPage(monday: kapacitasNextMonday(after: kapacitasMonday(for: Date())), crumb: "Évad",
-                                   close: { open = nil }, ask: { open = nil; openPlace(.boop) })
+                                   close: { open = nil }, ask: { open = nil; openDestination(.chat) })
                 }
             }
             .environment(store)
@@ -105,7 +108,8 @@ struct EvadPage: View {
         let verdict = evadVerdict(o)
         return NKAreaPage(hue: evadHue, name: "Évad", eyebrow: evadEyebrow(o.head), level: evadLevel(o.head),
                           headline: verdict.headline, sentence: verdict.sentence, glyph: "link-deep",
-                          actions: [NKAreaAction(glyph: "spark-cream", label: "Szabályok", action: { open = .szabalyok })]) {
+                          actions: [NKAreaAction(glyph: "spark-cream", label: "Szabályok", action: { open = .szabalyok })],
+                          onBack: closeRoom) {
             NKAreaTabs(tabs: [NKAreaTab("Évad"), NKAreaTab("Menü", dot: o.menu?.status == "proposed"),
                               NKAreaTab("Lista", badge: evadListLeft(store.menu.list)), NKAreaTab("Hatás")],
                        hue: evadHue, selected: $tab)
@@ -129,7 +133,7 @@ struct EvadPage: View {
     /// Loading or failed before any overview: the page's head with one block saying which.
     private func waiting(headline: String, state: NKBlockState) -> some View {
         NKAreaPage(hue: evadHue, name: "Évad", eyebrow: "Évad", level: nil, headline: headline, sentence: "",
-                   glyph: "link-deep") {
+                   glyph: "link-deep", onBack: closeRoom) {
             NKBare("Az évadod", hue: evadHue, glyph: "link-deep", state: state) { EmptyView() }
         }
     }
@@ -138,11 +142,12 @@ struct EvadPage: View {
 /// No season yet (screen 13): what a season is, and the draft Boop already put together. Nothing starts without his OK.
 struct EvadEmpty: View {
     let start: @MainActor @Sendable () -> Void
+    var onBack: (@MainActor @Sendable () -> Void)? = nil
     var body: some View {
         NKAreaPage(hue: evadHue, name: "Évad", eyebrow: "Még nincs évadod", level: nil,
                    headline: "Indítsunk egy évadot",
                    sentence: "Egy évad *néhány hétig tart*: benne van a célod, az edzésed, az étkezésed és az alvásod, és mindegyik a többihez igazodik.",
-                   glyph: "link-deep") {
+                   glyph: "link-deep", onBack: onBack) {
             NKNote("A mostani súlycélodból és mezociklusodból már összeállítottam egy javaslatot. Csak akkor indul el, ha jóváhagyod.", hue: evadHue)
             NKActions([NKAction(glyph: "plus-ink", title: "Megnézem", primary: true, action: start)], hue: evadHue)
         }

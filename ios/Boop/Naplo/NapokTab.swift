@@ -3,53 +3,30 @@ import UIKit
 import BoopCore
 import BoopDesign
 
-/// Napló (spec §7.7): "Napok" — the last 14 days as glass rows, newest first; a day with nothing is simply absent.
-/// Tap a day for its summary and energy curve. "Minták" stays a placeholder until Boop's patterns exist (B8).
-struct NaploView: View {
+/// The Nap room's Napok tab (`mezo-r36n9.196`, was the Napló place, spec §7.7): the last 14 days as glass rows, newest
+/// first; the week is always there, an empty day is a row too. A tap asks the room to open that day (the day's sheet
+/// hangs at the room's page level, boop-ios.md §9). The old „Minták" placeholder is gone — it said nothing.
+struct NapokTab: View {
     @Environment(RitmusEnvironment.self) private var env: RitmusEnvironment?
-    @State private var open: OpenDay?
-
-    private struct OpenDay: Identifiable { let id: String }
+    let open: (String) -> Void
 
     var body: some View {
-        PlacePage(hue: .alvas, title: "Napló", line: "Amit a napjaidból tanulunk") {
+        Group {
             if let env { days(env) } else { empty }
-            VStack(alignment: .leading, spacing: 10) {
-                NKMono("MINTÁK")
-                Text("Amint elég napod összegyűlik, itt látod, mi hat mire.").nkFont(15).foregroundStyle(.white.opacity(0.6))
-            }
-            .padding(20).frame(maxWidth: .infinity, alignment: .leading).nkGlass()
         }
         // The daily loop arrives a moment after the first frame: the task starts again when it does.
-        .task(id: env.map(ObjectIdentifier.init)) {
-            await env?.refreshNaplo()
-            #if DEBUG
-            // Simulator review: `-previewOpen naploDay` opens yesterday's day.
-            if UserDefaults.standard.string(forKey: "previewOpen") == "naploDay", let env, open == nil,
-               let y = env.calendar.date(byAdding: .day, value: -1, to: env.clock()) { open = OpenDay(id: env.day(of: y)) }
-            #endif
-        }
-        .sheet(item: $open) { day in
-            if let env {
-                NaploDayDetail(env: env, date: day.id)
-                    .presentationDetents([.large])
-                    .presentationBackground(NK.ground)
-                    .presentationCornerRadius(34)
-                    .presentationDragIndicator(.visible)
-            }
-        }
+        .task(id: env.map(ObjectIdentifier.init)) { await env?.refreshNaplo() }
     }
 
     @ViewBuilder private func days(_ env: RitmusEnvironment) -> some View {
         let range = NaploDays.range(endingOn: env.today)
         let (closes, checkIns) = NaploDays.sources(from: NaploDays.days(from: range.from, to: range.to).map { env.ledger.ledger(for: $0) })
         let rows = NaploDays.rows(closes: closes, checkIns: checkIns, from: range.from, to: range.to)
-        // The week is always there (`mezo-r36n9.159`): an empty day is a row too, so its catch-ups can be found.
         let entries = NaploDays.weekEntries(rows: rows, today: env.today)
         VStack(alignment: .leading, spacing: 12) {
             NKMono("A NAPOK").padding(.leading, 4)
             ForEach(entries) { entry in
-                Button { open = OpenDay(id: entry.id) } label: {
+                Button { open(entry.id) } label: {
                     switch entry {
                     case .day(let row): NaploDayRowView(row: row, today: env.today, calendar: env.calendar)
                     case .empty(let date): NaploEmptyDayRow(date: date, today: env.today, calendar: env.calendar)

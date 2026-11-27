@@ -2,14 +2,15 @@ import SwiftUI
 import BoopCore
 import BoopDesign
 
-/// The nine life areas of the home screen's ring, clockwise from the top (owner decision 2026-11-13; the ninth,
-/// **Súly**, on 2026-11-24 — `mezo-r36n9.158`). Five of them are the metrics Boop carries in the brief; **Pénz**
+/// The ten life areas of the home screen's ring, clockwise from the top (owner decision 2026-11-13; the ninth,
+/// **Súly**, on 2026-11-24 — `mezo-r36n9.158`; the tenth, **Évad**, between Energia and Súly on 2026-11-27 —
+/// `mezo-r36n9.196`, decision #132). Five of them are the metrics Boop carries in the brief; **Pénz**
 /// (live since L5, its number from the week's budget — `mezo-r36n9.153`), **Levél** and **Súly** have a page and a
 /// colour world of their own without a metric.
 enum Area: Int, CaseIterable, Identifiable {
     /// The day itself, at the top of the ring: the owner gave it its own orb on 2026-11-16 (decision #41). It is
     /// the whole day, so it leads rather than following the parts of it.
-    case nap, alvas, etel, edzes, energia, suly, forma, penz, level
+    case nap, alvas, etel, edzes, energia, evad, suly, forma, penz, level
 
     var id: Int { rawValue }
 
@@ -21,6 +22,7 @@ enum Area: Int, CaseIterable, Identifiable {
         case .etel: "Étel"
         case .edzes: "Edzés"
         case .energia: "Energia"
+        case .evad: "Évad"
         case .suly: "Súly"
         case .forma: "Forma"
         case .penz: "Pénz"
@@ -36,7 +38,7 @@ enum Area: Int, CaseIterable, Identifiable {
         case .edzes: .mozgas
         case .energia: .pulzus
         case .forma: .forma
-        case .nap, .penz, .level, .suly: nil
+        case .nap, .penz, .level, .suly, .evad: nil
         }
     }
 
@@ -47,13 +49,14 @@ enum Area: Int, CaseIterable, Identifiable {
         case .penz: .penz
         case .level: .level
         case .suly: .suly
+        case .evad: .evad
         default: hue
         }
     }
 
     /// The day is live but has no metric room: it opens the day's own page instead of a drill-down. Pénz and Súly
     /// are live without a metric: their orbs read their own stores, not the brief (`mezo-r36n9.153`, `.158`).
-    var live: Bool { hue != nil || self == .nap || self == .penz || self == .suly }
+    var live: Bool { hue != nil || self == .nap || self == .penz || self == .suly || self == .evad }
 
     /// The orb's four colours. The world's own where there is one; the day's is Boop's cool teal.
     var orb: [Color] {
@@ -87,7 +90,9 @@ func dayFullness(_ brief: Brief?) -> Int? {
 /// number the Étel room shows — the day's meal points; owner 2026-11-24, "egy szám", `mezo-r36n9.152`), **Pénz**
 /// (the week's remaining as a share of its budget; owner 2026-11-24, "százalék", `mezo-r36n9.153`) and **Súly**
 /// (how well the weight course follows the season's plan, `sulyPaceScore`; `mezo-r36n9.158`).
-func ringItem(_ area: Area, brief: Brief?, foodDay: FoodDay? = nil, penz: PenzAllowance? = nil, suly: Int? = nil) -> NKRingItem {
+/// **Évad** shows this week's adherence (`evadWeekScore`, `mezo-r36n9.196`).
+func ringItem(_ area: Area, brief: Brief?, foodDay: FoodDay? = nil, penz: PenzAllowance? = nil, suly: Int? = nil,
+              evad: Int? = nil) -> NKRingItem {
     var display = "–"
     var level = 0.12
     func fill(_ n: Int) -> Double { min(1, max(0.08, Double(n) / 100)) }
@@ -101,6 +106,8 @@ func ringItem(_ area: Area, brief: Brief?, foodDay: FoodDay? = nil, penz: PenzAl
         if let penz, let share = penzWeekShare(penz) { display = "\(share)"; level = fill(share) }
     case .suly:
         if let suly { display = "\(suly)"; level = fill(suly) }
+    case .evad:
+        if let evad { display = "\(evad)"; level = fill(evad) }
     default:
         if let hue = area.hue, let brief {
             let copy = maiCopy(brief, metricKey(for: hue))
