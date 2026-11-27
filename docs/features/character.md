@@ -13,7 +13,7 @@ key_files:
 related: [companion, proactive, insights, me, _platform-api-backend]
 ---
 
-> **2026-11-28 — reviewed after Boop Sport S2 (`mezo-r36n9.202`, no behaviour change).** `SportInterferenceDetector` now delegates the heavy-session rule and the 14-day decline-pair count to train's pure `service/sport/SportInterference`, which the Sport reads' `SPORT_LOAD_DECLINE` hint shares — same numbers, `SportInterferenceDetectorTest` green. See [`train.md`](train.md) §4 *Sport read models*.
+> **2026-11-28 — reviewed after Boop Sport S2 (`mezo-r36n9.202`, no behaviour change).** `SportInterferenceDetector` now delegates the heavy-session rule and the 14-day decline-pair count to train's pure `service/sport/SportInterference`, which the Sport reads' `SPORT_LOAD_DECLINE` hint shares — same numbers, character `DetectorTest` green. See [`train.md`](train.md) §4 *Sport read models*.
 
 > **2026-11-26 — Meso adherence follows the ledger (Boop B7 K3 final review, `mezo-r36n9.17`).** `CharacterSignalReads.gatherMeso` passes the effective planned gym dates over the whole trend window (`trendStart..day`, 8 weeks — the motivation detector asks for every check-in day back to `trendStart`; K3 re-review) (`EffectivePlanService.plannedGymDates` over `TrainDayAdjustmentPort.effectiveSessions`, the flags' rule) as `MesoContext.plannedDates`; `MesoAdherenceDetector` and `MotivationFollowThroughDetector` ask `MesoContext.planned(date)`, so a moved session done on its new day is never a miss. Test: `DetectorTest.mesoAdherence_judgesTheEffectivePlannedDates`.
 
