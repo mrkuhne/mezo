@@ -206,10 +206,12 @@ struct KezdolapView: View {
                     NKTitleRow(bellCount: 0, onBell: { toast = soonToast("Értesítések") }, onPlus: nil,
                                onAvatar: openAccount)
                         .padding(.top, 54)
+                        .dynamicTypeSize(...DynamicTypeSize.xxLarge)
                     Spacer(minLength: 0)
                     ringView(side: ring)
                     boopLine
                         .padding(.top, 28)
+                        .dynamicTypeSize(...DynamicTypeSize.accessibility1)
                     Spacer(minLength: 0)
                     // room for the floating „+" in the bottom corner
                     Color.clear.frame(height: 40 + geo.safeAreaInsets.bottom)
@@ -241,6 +243,9 @@ struct KezdolapView: View {
         }
         .frame(width: side, height: side)
         .frame(maxWidth: .infinity)
+        // The names sit in fixed gaps between ten orbs: past this size they would run into their neighbours. Each
+        // orb still reads its full name and number to VoiceOver.
+        .dynamicTypeSize(...DynamicTypeSize.xLarge)
     }
 
     /// Boop's own orb in the middle of the ring: no number, and it opens Boop's chat (decision #134).

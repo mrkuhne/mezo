@@ -95,6 +95,8 @@ struct BoopTabView: View {
             Text("Kérdezz bármit a mai napodról — tudom, mi történt.")
                 .nkFont(14).foregroundStyle(.white.opacity(0.75)).multilineTextAlignment(.center).padding(.horizontal, 24)
         }
+        // The head has a fixed height: past this size its words would run into the first block.
+        .dynamicTypeSize(...DynamicTypeSize.xxLarge)
     }
 
     // MARK: - What Boop sees, what you can ask
