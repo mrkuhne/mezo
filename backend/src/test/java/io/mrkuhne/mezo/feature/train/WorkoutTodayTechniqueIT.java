@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.PrescribedSet;
 import io.mrkuhne.mezo.api.dto.SetLegKind;
+import io.mrkuhne.mezo.api.dto.SkippedTechnique;
 import io.mrkuhne.mezo.api.dto.Technique;
 import io.mrkuhne.mezo.api.dto.TodayExercise;
 import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
@@ -206,6 +207,10 @@ class WorkoutTodayTechniqueIT extends AbstractIntegrationTest {
             assertThat(s.getLegs()).isNullOrEmpty();
         });
         assertSuppressed(t); // the echo says plain too
+        // ...but says what the mesocycle has on it, and why it is off today (mezo-r36n9.195)
+        assertThat(t.getSkippedToday().getTechnique()).isEqualTo(Technique.REST_DROP);
+        assertThat(t.getSkippedToday().getChallenge()).isTrue();
+        assertThat(t.getSkippedToday().getReason()).isEqualTo(SkippedTechnique.ReasonEnum.DELOAD);
     }
 
     @Test
@@ -261,6 +266,8 @@ class WorkoutTodayTechniqueIT extends AbstractIntegrationTest {
 
         assertThat(res.getComeback()).isNotNull();
         assertSuppressed(bench(res));
+        assertThat(bench(res).getSkippedToday().getReason()).isEqualTo(SkippedTechnique.ReasonEnum.GENTLE);
+        assertThat(bench(res).getSkippedToday().getTechnique()).isEqualTo(Technique.REST_DROP);
     }
 
     @Test
@@ -306,12 +313,17 @@ class WorkoutTodayTechniqueIT extends AbstractIntegrationTest {
     void sportDayHidesChallenge() {
         Fixture f = fixture(2, true, null, true, true);
         sportDay(f, true);
-        assertSuppressed(bench(workoutService.getToday(f.owner(), null)));
+        TodayExercise sport = bench(workoutService.getToday(f.owner(), null));
+        assertSuppressed(sport);
+        assertThat(sport.getSkippedToday().getChallenge()).isTrue();
+        assertThat(sport.getSkippedToday().getTechnique()).isNull();
+        assertThat(sport.getSkippedToday().getReason()).isEqualTo(SkippedTechnique.ReasonEnum.SPORT);
 
         // the same run on a day without a sport slot keeps the challenge
         jdbc.update("update sport_schedule_slot set day_of_week = ?", (LocalDate.now().getDayOfWeek().getValue()) % 7);
         TodayExercise rest = bench(workoutService.getToday(f.owner(), null));
         assertThat(rest.getChallenge()).isTrue();
+        assertThat(rest.getSkippedToday()).isNull(); // nothing left out on a normal day
         assertThat(working(rest).get(2).getTechnique()).isEqualTo(Technique.PARTIALS);
     }
 
@@ -321,7 +333,10 @@ class WorkoutTodayTechniqueIT extends AbstractIntegrationTest {
         f.bench().setTechniqueSource("planner");
         train.save(f.bench());
         sportDay(f, true);
-        assertSuppressed(bench(workoutService.getToday(f.owner(), null)));
+        TodayExercise t = bench(workoutService.getToday(f.owner(), null));
+        assertSuppressed(t);
+        assertThat(t.getSkippedToday().getTechnique()).isEqualTo(Technique.DROP);
+        assertThat(t.getSkippedToday().getChallenge()).isFalse();
         // the stored row is untouched
         assertThat(f.bench().getTechniqueSource()).isEqualTo("planner");
     }
@@ -331,6 +346,7 @@ class WorkoutTodayTechniqueIT extends AbstractIntegrationTest {
         Fixture f = fixture(2, true, "drop", false, true);
         sportDay(f, true); // the fixture row is owner-sourced
         TodayExercise t = bench(workoutService.getToday(f.owner(), null));
+        assertThat(t.getSkippedToday()).isNull(); // the owner's technique stands, no challenge to drop
         assertThat(t.getTechnique()).isEqualTo(Technique.DROP);
         assertThat(t.getTechniqueSource().getValue()).isEqualTo("owner");
         assertThat(working(t).get(2).getTechnique()).isEqualTo(Technique.DROP);

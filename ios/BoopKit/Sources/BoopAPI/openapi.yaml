@@ -1472,6 +1472,106 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/mesocycles/{id}/restart':
+    post:
+      tags:
+        - Train
+      operationId: restartMesocycle
+      summary: >-
+        Restart the active mesocycle from week 1 today, carrying its current
+        state (mezo-r36n9.177)
+      description: >-
+        One transaction. Closes the active run exactly like closeMesocycle
+        (closedAt, frozen report, AI review after commit) and stamps a new
+        ACTIVE run starting today from the old run's CURRENT state — every edit
+        made to its days, settings and priorities. The new run keeps the old
+        run's template (a legacy run gets one materialized and linked).
+        updateTemplate=true also overwrites that template with the run's state.
+        Any failure (e.g. SEASON_REQUIRED) changes nothing.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MesocycleRestartRequest'
+      responses:
+        '200':
+          description: The new active run
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MesocycleResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Mesocycle not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            Not the active run (TRAIN_MESO_NOT_ACTIVE) or no season covers today
+            (SEASON_REQUIRED)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/mesocycles/{id}/save-to-template':
+    post:
+      tags:
+        - Train
+      operationId: saveMesocycleToTemplate
+      summary: >-
+        Overwrite the run's template with the run's current state
+        (mezo-r36n9.177)
+      description: >-
+        Full replace of the template's plan with the run's days, settings and
+        priorities; a legacy run without a template gets one created and linked.
+        Idempotent. The run itself is not changed.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The template id that now carries the run's state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MesoRerunResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Mesocycle not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: The run is archived (TRAIN_MESO_NOT_ACTIVE)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/train/meso-plans/generate:
     post:
       tags:
@@ -17929,6 +18029,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/capacity/season-hints:
+    get:
+      tags:
+        - Capacity
+      operationId: getCapacitySeasonHints
+      summary: Learned patterns worth knowing when planning a new season
+      description: >
+        Read-only hints for the Új évad flow (shown beside the training days):
+        the learned patterns that are shown (evidence >= 3, consistent >= 2, at
+        least half consistent, standing out against the other days), strongest
+        first. A weekday pattern carries its weekday. Empty when nothing has
+        been learned yet. Never calls a model.
+      responses:
+        '200':
+          description: The hints
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CapacitySeasonHints'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/capacity/adjustments:
     get:
       tags:
@@ -21185,6 +21310,14 @@ components:
         templateId:
           type: string
           format: uuid
+    MesocycleRestartRequest:
+      type: object
+      description: Optional restart options
+      properties:
+        updateTemplate:
+          type: boolean
+          default: false
+          description: Also overwrite the run's template with its current state
     MesocycleCloseRequest:
       type: object
       description: Optional self-eval note captured when closing a mesocycle
@@ -22443,6 +22576,15 @@ components:
             Best partials reps at the challenge set's prescribed weight, among
             earlier sessions of the same setup (the same technique before the
             half reps, or none); null when none.
+        skippedToday:
+          allOf:
+            - $ref: '#/components/schemas/SkippedTechnique'
+          nullable: true
+          description: >-
+            The technique and/or challenge the mesocycle plans on this exercise
+            that today's prescription leaves out (deload week, gentle day, sport
+            day — mezo-r36n9.195), so the player can still say what belongs to
+            it; null when nothing was left out.
         id:
           type: string
           format: uuid
@@ -22615,6 +22757,32 @@ components:
         - rest_pause
         - top_pause
       description: Intensity technique applied to the last working set of an exercise.
+    SkippedTechnique:
+      type: object
+      required:
+        - challenge
+        - reason
+      properties:
+        technique:
+          allOf:
+            - $ref: '#/components/schemas/Technique'
+          nullable: true
+          description: >-
+            The planned technique left out today; null when only the challenge
+            was left out.
+        challenge:
+          type: boolean
+          description: The planned challenge was left out today.
+        reason:
+          type: string
+          enum:
+            - DELOAD
+            - GENTLE
+            - SPORT
+          description: >-
+            DELOAD — the mesocycle's deload week; GENTLE — a comeback or
+            readiness-lightened day; SPORT — a sport day loading the same
+            muscles.
     TechniqueSource:
       type: string
       enum:
@@ -42549,6 +42717,49 @@ components:
           description: >-
             Rule-built Hungarian sentence when the load outgrew recovery three
             weeks running; else null
+        patterns:
+          type: array
+          items:
+            $ref: '#/components/schemas/CapacityPattern'
+          description: >-
+            The shown learned patterns ("Amit a mozgatásokból tanultam"),
+            strongest first
+        deloadForward:
+          allOf:
+            - $ref: '#/components/schemas/CapacityDeloadHint'
+          nullable: true
+          description: >
+            Advisory only (owner decision #121): the load outgrew recovery three
+            weeks running and a lighter (deload) week of the running block lies
+            later than next week — worth bringing forward. Nothing is written;
+            the phone offers only "Megbeszélem Boop-pal". Null otherwise.
+    CapacityDeloadHint:
+      type: object
+      required:
+        - fromWeek
+        - toWeek
+        - title
+        - body
+      properties:
+        fromWeek:
+          type: integer
+          description: The 1-based season week of the planned lighter week
+        toWeek:
+          type: integer
+          description: The 1-based season week it would be worth moving to (next week)
+        title:
+          type: string
+        body:
+          type: string
+    CapacitySeasonHints:
+      type: object
+      required:
+        - hints
+      properties:
+        hints:
+          type: array
+          items:
+            $ref: '#/components/schemas/CapacityPattern'
     CapacitySeasonWeek:
       type: object
       required:
@@ -42662,6 +42873,7 @@ components:
         - proposals
         - adjustments
         - patterns
+        - history
       properties:
         monday:
           type: string
@@ -42682,6 +42894,15 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CapacityPattern'
+          description: 'The shown learned patterns ("Ebből tanulok"), strongest first'
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/CapacityHistoryItem'
+          description: >
+            "Korábban áttettük" beyond this week — accepted, declined and
+            taken-back proposals of the 8 weeks before, newest first, at most
+            12, each with its outcome word and line
         allEffects:
           type: array
           nullable: true
@@ -42800,6 +43021,65 @@ components:
           type: string
           format: date-time
           nullable: true
+        outcomeWord:
+          type: string
+          nullable: true
+          description: >-
+            Once the day is lived (the nightly pass): "bevált", "nem segített",
+            "maradt így", ...
+        outcomeSub:
+          type: string
+          nullable: true
+          description: >-
+            The outcome line ("Az edzés megvolt · a nap rendben lett · ...");
+            only the known parts
+    CapacityHistoryItem:
+      type: object
+      required:
+        - proposalId
+        - kind
+        - day
+        - status
+        - title
+        - word
+      properties:
+        proposalId:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum:
+            - MOVE_SESSION_DAY
+            - SHIFT_SESSION_TIME
+            - SHORTEN_SESSION
+            - LIGHTEN_SESSION
+            - SWAP_SESSION_KIND
+            - SKIP_SESSION
+            - SHIFT_BEDTIME
+            - MOVE_MEAL_ENERGY
+            - CALENDAR_TODO
+        day:
+          type: string
+          format: date
+        status:
+          type: string
+          enum:
+            - accepted
+            - declined
+            - undone
+        title:
+          type: string
+        word:
+          type: string
+          description: The outcome word; "még nem tudom" for an accepted one not yet lived
+        sub:
+          type: string
+          nullable: true
+          description: The outcome line
+        good:
+          type: boolean
+          nullable: true
+          description: 'Accepted only: whether the day went well after it'
     CapacityProposalStep:
       type: object
       required:
@@ -42847,13 +43127,28 @@ components:
         - key
         - line
         - evidence
+        - consistent
       properties:
         key:
           type: string
+          description: 'e.g. weekday-overload:THURSDAY, move-kind-works:MOVE_SESSION_DAY'
         line:
           type: string
+          description: The pattern's title
+        body:
+          type: string
+          nullable: true
+          description: The evidence sentence (counts from the rule)
         evidence:
           type: integer
+          description: How many times the situation occurred
+        consistent:
+          type: integer
+          description: How many of those went the pattern's way
+        weekday:
+          type: string
+          nullable: true
+          description: The weekday a weekday pattern is about (MONDAY..SUNDAY)
     CapacityProposalAcceptRequest:
       type: object
       required:

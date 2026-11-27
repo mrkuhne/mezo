@@ -22576,6 +22576,15 @@ components:
             Best partials reps at the challenge set's prescribed weight, among
             earlier sessions of the same setup (the same technique before the
             half reps, or none); null when none.
+        skippedToday:
+          allOf:
+            - $ref: '#/components/schemas/SkippedTechnique'
+          nullable: true
+          description: >-
+            The technique and/or challenge the mesocycle plans on this exercise
+            that today's prescription leaves out (deload week, gentle day, sport
+            day — mezo-r36n9.195), so the player can still say what belongs to
+            it; null when nothing was left out.
         id:
           type: string
           format: uuid
@@ -22748,6 +22757,32 @@ components:
         - rest_pause
         - top_pause
       description: Intensity technique applied to the last working set of an exercise.
+    SkippedTechnique:
+      type: object
+      required:
+        - challenge
+        - reason
+      properties:
+        technique:
+          allOf:
+            - $ref: '#/components/schemas/Technique'
+          nullable: true
+          description: >-
+            The planned technique left out today; null when only the challenge
+            was left out.
+        challenge:
+          type: boolean
+          description: The planned challenge was left out today.
+        reason:
+          type: string
+          enum:
+            - DELOAD
+            - GENTLE
+            - SPORT
+          description: >-
+            DELOAD — the mesocycle's deload week; GENTLE — a comeback or
+            readiness-lightened day; SPORT — a sport day loading the same
+            muscles.
     TechniqueSource:
       type: string
       enum:

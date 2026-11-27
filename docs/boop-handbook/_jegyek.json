@@ -1988,5 +1988,16 @@
     ],
     "mit_kapsz": "A lapok tetején lefelé húzva a felső rész a helyén marad, nem nyílik fölötte üres szürke csík; a billentyűzet bárhol eltűnik, ha a szövegen kívül koppintasz, a beírt szöveg megmarad.",
     "szulo": "mezo-r36n9"
+  },
+  "mezo-r36n9.195": {
+    "cim": "Edzés közben előre látszik a kihívás és a speciális utolsó szett",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "munkamenet": "mezociklus-kihivas-jelzes",
+    "mit_kapsz": "A gyakorlat neve alatt kiírt mondat mondja meg, hogy lesz-e kihívás és milyen lesz az utolsó szett (például Myo, utána félismétlések, a csúcsod 12). Pihenőhéten, kímélő napon vagy sportnapon is látod, mi tartozik a gyakorlathoz a mezociklusban, és miért marad ki ma.",
+    "szulo": "mezo-r36n9"
   }
 }

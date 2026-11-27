@@ -195,7 +195,11 @@ public struct TrainClient: Sendable {
             imageStartURL: e.imageStartUrl, imageEndURL: e.imageEndUrl,
             replacesName: e.replacesName, replacedByName: e.replacedByName, planSlot: e.planSlot ?? true,
             technique: e.technique.map { SetTechnique(wire: $0.value1.rawValue) },
-            challenge: e.challenge ?? false, challengeBest: e.challengeBest)
+            challenge: e.challenge ?? false, challengeBest: e.challengeBest,
+            skippedToday: e.skippedToday.map {
+                SkippedTechnique(technique: $0.value1.technique.map { SetTechnique(wire: $0.value1.rawValue) },
+                                 challenge: $0.value1.challenge, reason: .init(wire: $0.value1.reason.rawValue))
+            })
     }
 
     /// The exercise's sets. With the engine on, they are its own per-set targets verbatim. With it off there are
