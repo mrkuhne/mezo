@@ -672,15 +672,15 @@
     },
     "kezikonyv:06-etel/01-etel-szoba-ma": {
       "page_id": "4168968e-752b-8195-9564-d1ced1b8d194",
-      "hash": "dea1f300548b"
+      "hash": "95ba4cb07ec3"
     },
     "kezikonyv:06-etel/02-etkezes-rogzitese": {
       "page_id": "4168968e-752b-8164-b1d7-d8aa78d82e63",
-      "hash": "f167d5badf9c"
+      "hash": "32e2b269df8c"
     },
     "kezikonyv:06-etel/03-etkezes-ertekelese": {
       "page_id": "4168968e-752b-81ee-b603-ce33a392a527",
-      "hash": "e8757f49e08d"
+      "hash": "5cb28687abc6"
     },
     "kezikonyv:06-etel/04-napi-keret": {
       "page_id": "4168968e-752b-8109-800f-e787a78acfe6",
@@ -1744,7 +1744,7 @@
     },
     "funkciok:meal-javitas-torles": {
       "page_id": "41e8968e-752b-8136-bea3-feb9597c9dc7",
-      "hash": "def67532ec10"
+      "hash": "eaabc04d7f49"
     },
     "funkciok:meal-napi-keret": {
       "page_id": "41e8968e-752b-8143-87c4-d6e1a4874491",
@@ -3336,7 +3336,7 @@
     },
     "jegyek:mezo-r36n9.184": {
       "page_id": "4258968e-752b-8120-9091-c0c8758e57be",
-      "hash": "c00ecb2becab"
+      "hash": "d21e11b756f0"
     },
     "dontesek:d-2026-11-27-kartyak-vissza": {
       "page_id": "4258968e-752b-8144-856f-f00a24ccb0d3",
@@ -3385,6 +3385,18 @@
     "funkciok:capacity-elorejelzes": {
       "page_id": "4258968e-752b-8136-9f90-f17a577da01c",
       "hash": "5031ff928336"
+    },
+    "dontesek:d-2026-11-27-etkezes-javitas": {
+      "page_id": "4258968e-752b-817d-9ff5-d88b6f5e7c67",
+      "hash": "6f9e3550da38"
+    },
+    "dontesek:d-2026-11-27-etel-ma-proba": {
+      "page_id": "4258968e-752b-812e-8b3a-f4e6a8c88027",
+      "hash": "a677a22c041e"
+    },
+    "kiadasok:fd1788065": {
+      "page_id": "4258968e-752b-815f-ba13-e68238c3391c",
+      "hash": "b0c1f1a76702"
     }
   }
 }
