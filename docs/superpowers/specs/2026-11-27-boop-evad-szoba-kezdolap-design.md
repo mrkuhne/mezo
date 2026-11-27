@@ -188,8 +188,14 @@ left) leaves at any step **without changing anything**. Each page has its own il
 
 The weekly menu and shopping list move from Évad to Étel. The builder decides placement after looking at the room:
 expected — inside the **Hét** tab (menu for next week + the list as a sub-page), or a new tab if Hét gets crowded (the
-same "no crowded page" rule applies). The season's allowed recipes (Évad › Menü › Receptek) stay reachable from the menu
-page. The Ma-wall menu card and the review's page 4 open it there.
+same "no crowded page" rule applies). The Ma-wall menu card and the review's page 4 open it there.
+
+**Which recipes the menu may use** (owner decision 2026-11-27, #129): marked **on the recipe itself**. Étel › Receptek:
+every recipe card and recipe page carries a „Menübe jöhet" toggle (writes the season's allowed-recipe set — same server
+data as today's Évad › Menü › Kiválasztott receptek, `season_allowed_recipe`); the tab gets a filter chip „Menübe jöhet"
+showing only the marked ones. The menu page shows one row „N recept a menüben" → Receptek with that filter on. The
+separate selection list (`EvadRecipesPage`) goes. Sensitivity conflicts keep today's rule (shown, not selectable).
+Without a season the toggle is hidden (no set to write). The rules (Szabályok) stay in Évad › Terv.
 
 ### 4.5 Nap room (step 1)
 
