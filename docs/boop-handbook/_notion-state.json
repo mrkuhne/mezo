@@ -752,7 +752,7 @@
     },
     "kezikonyv:07-edzes/10-sport-futas": {
       "page_id": "4168968e-752b-8189-bcd3-caf1aa23fda3",
-      "hash": "c66293a500e8"
+      "hash": "43d7c8c2ce06"
     },
     "kezikonyv:07-edzes/11-kihagyas-kimelo": {
       "page_id": "4168968e-752b-8119-981d-e24f027f7f4f",
@@ -1680,7 +1680,7 @@
     },
     "funkciok:train-sport-naplo": {
       "page_id": "41e8968e-752b-81bf-a781-f210bd559e51",
-      "hash": "933e792bfd10"
+      "hash": "658655ea4b39"
     },
     "funkciok:train-futoblokk": {
       "page_id": "41e8968e-752b-81d9-b652-fb36e983cd51",
@@ -2740,7 +2740,7 @@
     },
     "kezikonyv:04-terv/09-heti-menu": {
       "page_id": "41f8968e-752b-81ab-9fad-e4404d499e3a",
-      "hash": "893974ee6ad1"
+      "hash": "576dd8e67746"
     },
     "funkciok:season-heti-menu": {
       "page_id": "41f8968e-752b-8118-aa9a-d8e0bc97f53c",
@@ -3476,7 +3476,7 @@
     },
     "jegyek:mezo-r36n9.201": {
       "page_id": "4258968e-752b-81bc-9234-cb3837e124bf",
-      "hash": "744bfd1aaa29"
+      "hash": "b021bb7b2b0a"
     },
     "jegyek:mezo-r36n9.188": {
       "page_id": "4258968e-752b-8145-8c90-e92a8764d74b",
@@ -3525,6 +3525,10 @@
     "kiadasok:d066f5882": {
       "page_id": "4258968e-752b-810c-8058-f17fe94d2174",
       "hash": "1871e87e30b6"
+    },
+    "kiadasok:6637251ec": {
+      "page_id": "4258968e-752b-819e-acd0-d9a40c76fbeb",
+      "hash": "55a3c7e074cd"
     }
   }
 }

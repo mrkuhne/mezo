@@ -45,10 +45,18 @@
 
 ## Kész, ha… (copied from the slice map §S1)
 
-- [ ] a slot and an event with kind `running`, `football`, `other` save and read back (contract IT); an unknown kind is 400
-- [ ] a day with gym 07:00 + volleyball 18:00: logging the volleyball leaves the gym session not done, and vice versa (IT)
-- [ ] a volleyball Health workout ticks the sport, a strength workout ticks the gym (IT with fixtures)
-- [ ] a day with two sport windows gives two pre-session snacks in the menu source (unit test)
-- [ ] focused ITs + `ArchitectureTest` green with `-Dmezo.test.use-testcontainers=true`; `check-ios-contract` green;
+- [x] a slot and an event with kind `running`, `football`, `other` save and read back (contract IT); an unknown kind is 400
+- [x] a day with gym 07:00 + volleyball 18:00: logging the volleyball leaves the gym session not done, and vice versa (IT)
+- [x] a volleyball Health workout ticks the sport, a strength workout ticks the gym (IT with fixtures)
+- [x] a day with two sport windows gives two pre-session snacks in the menu source (unit test)
+- [x] focused ITs + `ArchitectureTest` green with `-Dmezo.test.use-testcontainers=true`; `check-ios-contract` green;
       codemap regenerated; `lint-docs` 0/0; `docs/features/train.md` + `boop` doc updated
-- [ ] merged, `deploy` green for the commit, prod `\d sport_schedule_slot` shows the widened CHECK
+- [x] merged, `deploy` green for the commit, prod `\d sport_schedule_slot` shows the widened CHECK
+
+**Evidence (2026-11-28):** `BoopSportLayerIT` 10/10 (both layers, Health-workout kinds, one workout ticks one
+occurrence, midnight), `SportContractIT` 17 + `SportEventContractIT` 12 (`running`/`football`/`other` round-trip,
+`race` 400), `MenuPlannerTest` 16 + `SeasonMenuSourceAdapterTest` (two windows → two snacks), `TodaySportContractIT` 3;
+200 focused ITs + `ArchitectureTest` green with Testcontainers; `check-ios-contract` 252/252; codemap; `lint-docs`
+0 error / 0 stale. Fresh review: 1 important + 4 minor fixed in `d2dd13e28`. Merge `6637251ec` → v3.48.0, `deploy`
+green, pod on 3.48.0, prod `ck_sport_schedule_slot_sport` / `ck_sport_event_sport` / `ck_sport_session_sport` list
+the eleven kinds, changeset `1.1.0:202611271200_mezo-r36n9.201_sport_kinds_widen` applied.

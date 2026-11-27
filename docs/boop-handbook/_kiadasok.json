@@ -1153,5 +1153,14 @@
       "mezo-r36n9.200"
     ],
     "mi_valtozott": "A Hét fül hétfőtől vasárnapig mutatja a hetet, nyíllal visszalapozhatsz a korábbi hetekre. Fent egy fő kártya a három számmal és a kalória-oszlopokkal (oldalra húzva a fehérje), a mai nap oszlopa világít. A napok oldalra görgethető, doboz nélküli kártyasorban jönnek, ugyanabban a sorrendben, mint az oszlopok, a mai napon nyitva; a hátralévő napok halványak. A hét részletei kártyán a rögzített napok, a fehérje-, szénhidrát- és zsírátlag a célhoz mérve, az edzésnapok, a kihagyott étkezések, a kímélő napok és a célhoz legközelebb zárt nap."
+  },
+  "6637251ec": {
+    "cim": "Sport 1. lépés: a kondi és a sport két külön réteg, 11 sportfajta",
+    "datum": "2026-11-28",
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.201"
+    ],
+    "mi_valtozott": "Egy beírt vagy az órán rögzített röpi már csak a sportot pipálja ki, a kondit nem — és fordítva, egy kondi vagy erősítő edzés csak a kondit. Egy óra-edzés egy napon csak egyszer számít. A heti sportbeosztásba és az egyszeri alkalmakba mostantól 11 fajta kerülhet (a futás is), nem csak röpi, cross és TRX. A heti menüben minden aznapi sportalkalom elé jár egy uzsonna. A szerver az Edzés napjának azt is megmondja, ha aznap sport van — az app ezt a Sport területtel kezdi mutatni."
   }
 }
