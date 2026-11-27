@@ -115,6 +115,7 @@ final class EtelStore {
         case .success(let v): plan = v; planProblem = nil
         case .failure(let e): planProblem = e
         }
+        hideWaitingDeletes()
         switch await s {
         case .success(let (proto, stash)):
             applyProtocol(proto, stash: stash)
@@ -135,9 +136,94 @@ final class EtelStore {
     func loadDay(food: FoodClient, now: Date) async {
         self.food = food; self.now = now
         switch await Self.attempt({ try await food.day(now) }) {
-        case .success(let v): day = v; dayVersion += 1; dayProblem = nil
+        case .success(let v): day = v; dayVersion += 1; dayProblem = nil; hideWaitingDeletes()
         case .failure(let e): dayProblem = e
         }
+    }
+
+    // MARK: - Deleting a logged meal (mezo-r36n9.184)
+
+    /// A meal taken off the page while its Visszavonás runs, and where it sat (its place in the day, in each window).
+    private struct RemovedMeal { let meal: BoopCore.Meal; let index: Int; let windows: [Int: Int] }
+    /// Deletes waiting for their toast to run out; and the ones on their way to the server (still hidden on a reload).
+    private var waitingDeletes: [UUID: RemovedMeal] = [:]
+    @ObservationIgnored private var sendingDeletes: [UUID: RemovedMeal] = [:]
+
+    func isPendingDelete(_ id: UUID) -> Bool { waitingDeletes[id] != nil }
+
+    /// Takes the meal off the page at once: out of the day, its numbers out of the eaten total, back into what is left,
+    /// out of its plan window. Nothing goes to the server yet. False when it is already going (a second route).
+    @discardableResult
+    func removeLocally(_ meal: BoopCore.Meal) -> Bool {
+        guard waitingDeletes[meal.id] == nil, sendingDeletes[meal.id] == nil, let removed = takeOff(meal.id) else { return false }
+        waitingDeletes[meal.id] = removed
+        return true
+    }
+
+    /// Visszavonás: the meal and its numbers come back exactly; the server never hears of it.
+    func undoDelete(_ id: UUID) {
+        guard let r = waitingDeletes.removeValue(forKey: id) else { return }
+        putBack(r)
+    }
+
+    /// The toast ran out: the server deletes it. Nil on success (or nothing to do); a refusal puts the meal back and
+    /// says so.
+    func commitDelete(_ id: UUID) async -> String? {
+        guard let r = waitingDeletes.removeValue(forKey: id) else { return nil }
+        sendingDeletes[id] = r
+        defer { sendingDeletes[id] = nil }
+        do {
+            guard let food else { throw FoodFetchError.server }
+            try await food.deleteMeal(id)
+            return nil
+        } catch {
+            putBack(r)
+            return "Nem sikerült törölni — visszatettem."
+        }
+    }
+
+    /// Leaving the room or the app: every waiting delete goes now. The first refusal's line, if any.
+    @discardableResult
+    func commitAllDeletes() async -> String? {
+        var line: String?
+        for id in Array(waitingDeletes.keys) { if let l = await commitDelete(id), line == nil { line = l } }
+        return line
+    }
+
+    /// A fresh read brings back a meal whose delete is still waiting or on its way: take it off again.
+    private func hideWaitingDeletes() {
+        for id in Array(waitingDeletes.keys) { if let r = takeOff(id) { waitingDeletes[id] = r } }
+        for id in Array(sendingDeletes.keys) { if let r = takeOff(id) { sendingDeletes[id] = r } }
+    }
+
+    private func takeOff(_ id: UUID) -> RemovedMeal? {
+        guard var d = day, let i = d.meals.firstIndex(where: { $0.id == id }) else { return nil }
+        let meal = d.meals.remove(at: i)
+        d.consumed.kcal -= meal.macros.kcal; d.consumed.p -= meal.macros.p
+        d.consumed.c -= meal.macros.c; d.consumed.f -= meal.macros.f
+        var windows: [Int: Int] = [:]
+        if var p = plan {
+            p.remaining = p.remaining.map { Macros(kcal: $0.kcal + meal.macros.kcal, p: $0.p + meal.macros.p, c: $0.c + meal.macros.c, f: $0.f + meal.macros.f) }
+            for w in p.windows.indices { if let k = p.windows[w].loggedMealIds.firstIndex(of: id) { windows[w] = k; p.windows[w].loggedMealIds.remove(at: k) } }
+            plan = p
+        }
+        day = d; dayVersion += 1
+        return RemovedMeal(meal: meal, index: i, windows: windows)
+    }
+
+    private func putBack(_ r: RemovedMeal) {
+        guard var d = day, !d.meals.contains(where: { $0.id == r.meal.id }) else { return }
+        let m = r.meal
+        d.meals.insert(m, at: min(r.index, d.meals.count))
+        d.consumed.kcal += m.macros.kcal; d.consumed.p += m.macros.p; d.consumed.c += m.macros.c; d.consumed.f += m.macros.f
+        if var p = plan {
+            p.remaining = p.remaining.map { Macros(kcal: $0.kcal - m.macros.kcal, p: $0.p - m.macros.p, c: $0.c - m.macros.c, f: $0.f - m.macros.f) }
+            for (w, k) in r.windows where p.windows.indices.contains(w) {
+                p.windows[w].loggedMealIds.insert(m.id, at: min(k, p.windows[w].loggedMealIds.count))
+            }
+            plan = p
+        }
+        day = d; dayVersion += 1
     }
 
     /// The taken groups of `day` as the phone last saved them (the room and Ma's rows share this key).
@@ -678,6 +764,9 @@ struct EtelRoom: View {
     /// The meal composer, presented at page level (boop-ios.md §9).
     @State private var composer: MealStart?
     @State private var toast: String?
+    /// The meal whose delete is waiting on the toast's Visszavonás (`mezo-r36n9.184`).
+    @State private var undoMeal: UUID?
+    @Environment(\.scenePhase) private var scenePhase
     /// The dimension whose sheet is open (page level, boop-ios.md §9).
     @State private var dimension: DimensionSelection?
     /// The Receptek tab's sheet: a recipe, an import, or the workshop (one at a time, page level).
@@ -736,7 +825,10 @@ struct EtelRoom: View {
         .refreshable { await reload() }
         .toolbar(.hidden, for: .navigationBar)
         .background(RoomSwipeBack().frame(width: 0, height: 0).accessibilityHidden(true))
-        .nkToast($toast)
+        .nkToast($toast, action: undoMeal == nil ? nil : "Visszavonás") { undoDelete() }
+        // A waiting delete never outlives the room or the app in the foreground.
+        .onDisappear { Task { await store.commitAllDeletes() } }
+        .onChange(of: scenePhase) { _, phase in if phase != .active { Task { await store.commitAllDeletes() } } }
         // Read the flag here so the page re-renders when it flips (boop-ios.md §9).
         .sheet(item: Binding(get: { [d = dimension] in d }, set: { dimension = $0 })) { d in
             DimensionSheet(selection: d)
@@ -875,6 +967,36 @@ struct EtelRoom: View {
             }
         }
         .task(id: ritmus?.mealDraftsTick) { await store.refreshPending(ritmus?.food) }
+    }
+
+    // MARK: Deleting a meal (mezo-r36n9.184)
+
+    /// The undo toast's length (the kit's action toast); the server delete fires when it runs out.
+    static let undoSeconds = 6.0
+
+    /// Takes a logged meal off the page now; the server deletes it when the Visszavonás toast runs out.
+    func deleteMeal(_ m: BoopCore.Meal, title: String) {
+        if let older = undoMeal, older != m.id { Task { await commitDelete(older) } }
+        guard store.removeLocally(m) else { return }
+        undoMeal = m.id
+        toast = "Töröltem: \(title)"
+        Task {
+            try? await Task.sleep(for: .seconds(Self.undoSeconds))
+            await commitDelete(m.id)
+        }
+    }
+
+    private func commitDelete(_ id: UUID) async {
+        if undoMeal == id { undoMeal = nil }
+        guard store.isPendingDelete(id) else { return }
+        if let line = await store.commitDelete(id) { toast = line } else { await reload() }
+    }
+
+    private func undoDelete() {
+        guard let id = undoMeal else { return }
+        store.undoDelete(id)
+        undoMeal = nil
+        toast = nil
     }
 
     private func reload() async {
