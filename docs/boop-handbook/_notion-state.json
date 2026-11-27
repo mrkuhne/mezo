@@ -472,35 +472,35 @@
     },
     "kezikonyv:01-alapok/gyors-rogzites": {
       "page_id": "4168968e-752b-81eb-833a-d4a89c813fb9",
-      "hash": "84214400e422"
+      "hash": "97ba6d8c005f"
     },
     "kezikonyv:01-alapok/kepek": {
       "page_id": "4178968e-752b-8106-9d11-eeb4865798e8",
-      "hash": "77385adec950"
+      "hash": "471e451d9632"
     },
     "kezikonyv:01-alapok/kezdolap": {
       "page_id": "41a8968e-752b-812f-87dd-e3a938084198",
-      "hash": "bba95a92d670"
+      "hash": "0d9e2d4f1a55"
     },
     "kezikonyv:01-alapok/napkelte-kinezet": {
       "page_id": "4168968e-752b-812a-9b5f-fd8f477ccda4",
-      "hash": "c309f17df34e"
+      "hash": "715044cb670e"
     },
     "kezikonyv:01-alapok/navigacio": {
       "page_id": "4168968e-752b-81f1-a428-f1eff627e50a",
-      "hash": "a6dbcb1f253e"
+      "hash": "07bb33218762"
     },
     "kezikonyv:01-alapok/net-nelkul": {
       "page_id": "4168968e-752b-815c-bee7-c4032ca1468f",
-      "hash": "8fc80571f282"
+      "hash": "8a349232a87c"
     },
     "kezikonyv:01-alapok/telepites-a-telefonra": {
       "page_id": "4168968e-752b-8185-b34c-c477fe6deb9b",
-      "hash": "9c32018e2089"
+      "hash": "a485bbf823e7"
     },
     "kezikonyv:01-alapok/terulet-vaz": {
       "page_id": "41a8968e-752b-8155-94b9-d2ecc92c2f61",
-      "hash": "57c38396a580"
+      "hash": "0af9b1614c4f"
     },
     "kezikonyv:02-ma/00-attekintes": {
       "page_id": "4168968e-752b-81e7-9587-d27ec99c8ca4",
@@ -3104,7 +3104,7 @@
     },
     "kezikonyv:01-alapok/lapok-bezarasa": {
       "page_id": "4238968e-752b-8141-a471-fbe38783b294",
-      "hash": "ca8b902971ac"
+      "hash": "3abf8b8d9023"
     },
     "kezikonyv:06-etel/11-italok": {
       "page_id": "4238968e-752b-813b-b3b4-d7e91aa05173",
@@ -3421,6 +3421,18 @@
     "jegyek:mezo-r36n9.192": {
       "page_id": "4258968e-752b-8171-a079-d0f370a989e3",
       "hash": "d94933153899"
+    },
+    "jegyek:mezo-r36n9.191": {
+      "page_id": "4258968e-752b-81cf-83b0-f5fca65347fd",
+      "hash": "4327593939ed"
+    },
+    "kiadasok:2090f37b1": {
+      "page_id": "4258968e-752b-814b-9e22-e262cf5a6409",
+      "hash": "d1d8d792ca69"
+    },
+    "kezikonyv:01-alapok/gorgetes-es-billentyuzet": {
+      "page_id": "4258968e-752b-81a3-ac44-f8b92bdc589d",
+      "hash": "92c153b8a70d"
     }
   }
 }
