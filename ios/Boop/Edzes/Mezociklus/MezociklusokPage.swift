@@ -67,8 +67,11 @@ struct MezociklusokPage: View {
     @ViewBuilder private var sections: some View {
         if let running = g.running { hero(running) }
         if !g.upcoming.isEmpty {
-            NKBare("KÖVETKEZIK", hue: hue, glyph: "clock-ink") {
-                VStack(spacing: 12) { ForEach(g.upcoming) { plannedCard($0) } }
+            SpikeCard(label: "Következik", hue: hue, glyph: "clock-ink") {
+                VStack(spacing: 0) { ForEach(Array(g.upcoming.enumerated()), id: \.element.id) { i, m in
+                    if i > 0 { Divider().overlay(.white.opacity(0.12)) }
+                    plannedCard(m)
+                } }
             }
         }
         if !g.templates.isEmpty {
@@ -77,8 +80,11 @@ struct MezociklusokPage: View {
             }
         }
         if !g.closed.isEmpty {
-            NKBare("LEZÁRTAK", hue: hue, glyph: "check-ink") {
-                VStack(spacing: 12) { ForEach(g.closed) { closedCard($0) } }
+            SpikeCard(label: "Lezártak", hue: hue, trailing: "\(g.closed.count)", glyph: "check-ink") {
+                VStack(spacing: 0) { ForEach(Array(g.closed.enumerated()), id: \.element.id) { i, m in
+                    if i > 0 { Divider().overlay(.white.opacity(0.12)) }
+                    closedCard(m)
+                } }
             }
         }
     }
@@ -133,7 +139,7 @@ struct MezociklusokPage: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 MezoMiniCurve(loads: m.loads).frame(width: 64)
             }
-            .padding(14).nkGlass(22).contentShape(RoundedRectangle(cornerRadius: 22))
+            .padding(.vertical, 12).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
@@ -190,7 +196,7 @@ struct MezociklusokPage: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 MezoMiniCurve(loads: m.loads).frame(width: 52).opacity(0.8)
             }
-            .padding(14).nkGlass(22).contentShape(RoundedRectangle(cornerRadius: 22))
+            .padding(.vertical, 12).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)

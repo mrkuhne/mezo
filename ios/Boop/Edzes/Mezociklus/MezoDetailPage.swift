@@ -21,19 +21,24 @@ struct MezoDetailPage: View {
     var body: some View {
         NKAreaSubPage(hue: hue, crumb: "Mezociklusaim", eyebrow: eyebrow, title: card.title, sentence: sentence, onBack: onBack) {
             if !card.loads.isEmpty {
-                NKBare("A HETEK ÍVE", hue: hue, glyph: "chart-deep") {
-                    NKBlockTimeline(mezoTimeline(card), hue: hue, caption: timelineCaption)
+                SpikeHero {
+                    VStack(alignment: .leading, spacing: 12) {
+                        NKBare("A HETEK ÍVE", hue: hue, glyph: "chart-deep") {
+                            SpikeWeeksArc(weeks: mezoTimeline(card), hue: hue)
+                        }
+                        Text(timelineCaption).nkFont(12.5).foregroundStyle(.white.opacity(0.6))
+                    }
                 }
             }
             if card.kind == .closed, card.hasReport, let id = card.blockId { reportTeaser(id) }
             if !card.days.isEmpty {
-                NKBare("A HÉT NAPJAI", hue: hue, glyph: "dumbbell-ink") {
+                SpikeCard(label: "A hét napjai", hue: hue, glyph: "dumbbell-ink") {
                     NKCarousel(card.days.enumerated().map { MezoDayItem(index: $0.offset, day: $0.element) }, hue: hue,
                                height: min(dayCardHeight, 360), widthFraction: 0.46) { item in dayCard(item.day) }
                 }
             }
             if !card.heat.isEmpty {
-                NKBare("MIT KAPNAK AZ IZMOK", hue: hue, glyph: "body-cream") {
+                SpikeCard(label: "Mit kapnak az izmok", hue: hue, glyph: "body-cream") {
                     HStack(spacing: 18) {
                         NKBodyMap(mezoHeat(card), hue: hue, views: .both).frame(height: 170).accessibilityHidden(true)
                         VStack(alignment: .leading, spacing: 10) {
@@ -96,7 +101,7 @@ struct MezoDetailPage: View {
     }
 
     private func reportTeaser(_ id: String) -> some View {
-        NKBare("HOGY SIKERÜLT", hue: hue, glyph: "medal-sun") {
+        SpikeCard(label: "Hogy sikerült", hue: hue, glyph: "medal-sun") {
             Button { showReport = true } label: {
                 HStack(spacing: 16) {
                     MezoRing(value: card.adherence, hue: hue, size: 70)
@@ -107,7 +112,7 @@ struct MezoDetailPage: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     Image(systemName: "chevron.right").foregroundStyle(.white.opacity(0.45))
                 }
-                .padding(16).nkGlass(22).contentShape(RoundedRectangle(cornerRadius: 22))
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityElement(children: .ignore)
@@ -131,7 +136,7 @@ struct MezoDetailPage: View {
             Spacer(minLength: 0)
             Text("\(d.exerciseCount) gyakorlat").nkFont(12, design: .monospaced).foregroundStyle(.white.opacity(0.5))
         }
-        .padding(14).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading).nkGlass(22)
+        .padding(14).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading).spikeInner(22)
         .accessibilityElement(children: .combine)
     }
 

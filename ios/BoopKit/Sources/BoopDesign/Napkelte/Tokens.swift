@@ -117,12 +117,18 @@ public enum Hue: Int, CaseIterable, Sendable {
     public var roomSky: [Color] {
         switch self {
         case .fuel: [Color(hex: 0x4A8796), Color(hex: 0xA8D9CB), Color(hex: 0xF6F9E8)]
+        // SPIKE (mezo-r36n9.197): -spikeSky 2 = a lighter, less dense Mozgás room sky.
+        case .mozgas where UserDefaults.standard.string(forKey: "spikeSky") == "2":
+            [Color(hex: 0x5C7FC0), Color(hex: 0xF4BC8E), Color(hex: 0xFFEFCB)]
         default: sky
         }
     }
 
     /// The dark top under `roomSky`.
-    public var roomTop: Color { self == .fuel ? Color(hex: 0x3D5F5C) : top }
+    public var roomTop: Color {
+        if self == .mozgas, UserDefaults.standard.string(forKey: "spikeSky") == "2" { return Color(hex: 0x34507E) }
+        return self == .fuel ? Color(hex: 0x3D5F5C) : top
+    }
 
     /// The hue's dark top, the base of the deep ground.
     public var top: Color {

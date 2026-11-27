@@ -251,6 +251,7 @@ public struct NKAreaPage<Content: View>: View {
                 // room for the area's own bar to float over the page's end
                 Color.clear.frame(height: tabs.isEmpty ? 100 : 150)
             }
+            .offset(y: -CGFloat(UserDefaults.standard.double(forKey: "spikeOffset"))) // SPIKE mezo-r36n9.197
             .nkTopBounceLock()
         }
         .overlay(alignment: .bottom) {
@@ -502,6 +503,7 @@ public struct NKAreaSubPage<Content: View>: View {
                 MirroredLand(sky: .room(hue)).padding(.top, -20)
                 Color.clear.frame(height: 100)
             }
+            .offset(y: -CGFloat(UserDefaults.standard.double(forKey: "spikeOffset"))) // SPIKE
             .nkTopBounceLock()
         }
         .scrollIndicators(.hidden)

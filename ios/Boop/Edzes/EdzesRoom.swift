@@ -411,7 +411,7 @@ struct EdzesRoom: View {
     @ViewBuilder private var content: some View {
         switch EdzesTab(rawValue: selected) ?? .ma {
         case .ma: ma
-        case .blokk: blokk
+        case .blokk: spikeBlokk
         case .gyakorlatok: gyakorlatok
         case .elozmenyek: elozmenyek
         }
@@ -420,12 +420,11 @@ struct EdzesRoom: View {
     // MARK: - Ma
 
     @ViewBuilder private var ma: some View {
-        kovetkezik
         highlight
-        todaysLoad
-        timeline
-        exercises
-        NKBare("AZ EDZÉS TERÜLET", hue: hue) { menu }
+        kovetkezik
+        spikeExercises
+        spikeTimeline
+        SpikeCard(label: "Az Edzés terület", hue: hue) { menu }
         NKAskRow(hue: hue, text: "Kérdezd meg Boopot a mai edzésről") { openPlace(.boop) }
     }
 
@@ -456,7 +455,7 @@ struct EdzesRoom: View {
                              hue: hue, done: done, progress: runningProgress,
                              missions: store?.missions.count ?? 0, released: released.count,
                              action: (done && store?.session == nil) ? nil : { startOrResume() },
-                             onResult: done ? result : nil)
+                             onResult: done ? result : nil, stats: spikeStats, back: spikeLoadPage)
         } else if let w = workout, !w.isRestDay, let title = w.title {
             // The brief has no session but the training plan does (a day started across
             // midnight, or a brief that has not caught up): the plan is the honest thing.
@@ -465,7 +464,7 @@ struct EdzesRoom: View {
                              done: doneToday, progress: runningProgress, missions: store?.missions.count ?? 0,
                              released: released.count,
                              action: (doneToday && store?.session == nil) ? nil : { startOrResume() },
-                             onResult: doneToday ? result : nil)
+                             onResult: doneToday ? result : nil, stats: spikeStats, back: spikeLoadPage)
         } else if let w = workout, w.isRestDay {
             NKHighlight(hue: hue, label: "ma", text: "Ma nincs edzés", sub: "A mezociklusod szerint ez pihenőnap.")
         } else if let c = brief.map({ maiCopy($0, .mozgas) }) {
@@ -604,6 +603,63 @@ struct EdzesRoom: View {
         return sets.sorted { ($0.value, $1.key) > ($1.value, $0.key) }
             .prefix(5)
             .map { (muscle: $0.key, sets: $0.value, level: Double($0.value) / Double(top)) }
+    }
+
+    // SPIKE (mezo-r36n9.197) — Ma pieces in the new hierarchy.
+    private var spikeStats: [(String, String)] {
+        let s = edzesSummary(workout, brief: brief)
+        return [(s.exercises.map { "\($0)" } ?? "–", "gyakorlat"),
+                (s.workingSets.map { "\($0)" } ?? "–", "éles sorozat"),
+                (s.minutes.map { "\($0)" } ?? "–", "perc")]
+    }
+
+    private var spikeLoadPage: AnyView? {
+        let heat = edzesBodyHeat(workout)
+        guard !heat.isEmpty else { return nil }
+        return AnyView(VStack(alignment: .leading, spacing: 14) {
+            Text("A MAI TERHELÉS").nkFont(10, .medium, design: .monospaced).tracking(1.4).foregroundStyle(hue.glow)
+            HStack(alignment: .top, spacing: 16) {
+                NKBodyMap(heat, hue: hue).frame(maxHeight: 210)
+                VStack(spacing: 10) {
+                    ForEach(muscleLoadRows, id: \.muscle) { row in
+                        HStack(spacing: 10) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(row.muscle.capitalizedFirst).nkFont(13).foregroundStyle(.white.opacity(0.85))
+                                NKLevelBar(level: row.level, hue: hue)
+                            }
+                            Text("\(row.sets)").font(.nkNumber(18)).foregroundStyle(.white).frame(width: 24, alignment: .trailing)
+                        }
+                    }
+                    Spacer(minLength: 0)
+                }
+                .frame(maxWidth: .infinity)
+            }
+        })
+    }
+
+    @ViewBuilder private var spikeExercises: some View {
+        if let w = workout, !w.exercises.isEmpty {
+            SpikeCard(label: "A mai gyakorlatok", hue: hue, trailing: "\(w.exercises.count) gyakorlat") {
+                NKCarousel(w.exercises, hue: hue, height: 190) { e in
+                    ExerciseCard(exercise: e, hue: hue, done: isDone(e))
+                }
+            }
+        } else {
+            exercises
+        }
+    }
+
+    @ViewBuilder private var spikeTimeline: some View {
+        let weeks = edzesTimeline(block)
+        if !weeks.isEmpty, let b = block {
+            SpikeCard(label: "Hol tartasz", hue: hue, trailing: "\(b.currentWeek). hét \(mezoOf(b.weeks))",
+                      action: { selected = EdzesTab.blokk.rawValue }) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(b.shortTitle).nkFont(15, .semibold).foregroundStyle(.white)
+                    SpikeWeeksArc(weeks: weeks, hue: hue, height: 84)
+                }
+            }
+        }
     }
 
     /// **Hol tartasz a blokkban** — the eight weeks as time, their height as difficulty, the
@@ -865,6 +921,91 @@ struct EdzesRoom: View {
         }
     }
 
+    // SPIKE (mezo-r36n9.197) — the Mezociklus tab in the new hierarchy: hero with the weeks' arc, cards per unit.
+    @ViewBuilder private var spikeBlokk: some View {
+        if let b = block {
+            SpikeHero {
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack(alignment: .top, spacing: 10) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack(spacing: 8) {
+                                Capsule().fill(hue.glow).frame(width: 3, height: 13)
+                                NKGlyph("cycle-ink", hue.glow.opacity(0.9), size: 14)
+                                NKMono("A MEZOCIKLUSOD")
+                            }
+                            Text(b.title).nkFont(24, .semibold).foregroundStyle(.white)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Text("\(b.currentWeek). hét \(mezoOf(b.weeks)) · \(b.split)")
+                                .nkFont(13.5).foregroundStyle(.white.opacity(0.65))
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        SpikeMoreMenu {
+                            if EdzesSpike.menuHidden {
+                                Button { withRunning { mezoFlow.sheet = .restart($0) } } label: { Label("Újraindítás", systemImage: "arrow.counterclockwise") }
+                                Button(role: .destructive) { withRunning { mezoFlow.sheet = .close($0) } } label: { Label("Lezárás", systemImage: "flag.checkered") }
+                            }
+                            Button { withRunning { mezoFlow.saveRunning = $0 } } label: { Label("Mentés a sablonba", systemImage: "square.and.arrow.down") }
+                        }
+                    }
+                    SpikeWeeksArc(weeks: edzesTimeline(b), hue: hue)
+                    SpikeActions(primary: .init(title: "Szerkesztés", action: { page = .builder }),
+                                 quiet: EdzesSpike.menuHidden ? [] : [
+                                    .init(title: "Újraindítás", action: { withRunning { mezoFlow.sheet = .restart($0) } }),
+                                    .init(title: "Lezárás", action: { withRunning { mezoFlow.sheet = .close($0) } })])
+                    if let mezoOfflineReason {
+                        Text(mezoOfflineReason).nkFont(12.5).foregroundStyle(.white.opacity(0.6))
+                    }
+                }
+            }
+            if let weekReview, plan != nil {
+                WeekReviewEntrance(model: weekReview, hue: hue, zoom: planZoom, openReview: { page = .review })
+            }
+            SpikeCard(label: "A heted", hue: hue, trailing: store?.blockAgeText) {
+                if b.days.isEmpty {
+                    NKNoFreshData("A mezociklus napjai még nem érkeztek meg")
+                } else {
+                    NKCarousel(b.days, hue: hue, height: 150) { day in
+                        DayCard(day: day, hue: hue, done: isDayDone(day), today: day.isCurrent)
+                    }
+                }
+            }
+            SpikeCard(label: "Izmok ezen a héten", hue: hue,
+                      trailing: "\(blockWeekSummary(muscleBands(b)).total) szett", action: { page = .blockLoad }) {
+                if b.muscles.isEmpty {
+                    Text("Az izomcsoportok bontása még nem érkezett meg.").nkFont(13).foregroundStyle(.white.opacity(0.6))
+                } else {
+                    SpikeMuscleBars(bands: muscleBands(b), hue: hue)
+                }
+            }
+            mezoTiles
+            NKAskRow(hue: hue, text: "Kérdezd meg Boopot az edzéstervedről") { openPlace(.boop) }
+        } else if store?.blockProblem != nil {
+            SpikeHero { NKBare("A MEZOCIKLUSOD", hue: hue) { NKNoFreshData("A mezociklusodat most nem érem el") } }
+            mezoTiles
+            NKAskRow(hue: hue, text: "Kérdezd meg Boopot az edzéstervedről") { openPlace(.boop) }
+        } else {
+            SpikeHero {
+                VStack(alignment: .leading, spacing: 16) {
+                    NKBare("A MEZOCIKLUSOD", hue: hue, glyph: "cycle-ink") {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Nincs futó mezociklusod").nkFont(24, .semibold).foregroundStyle(.white)
+                            Text("Amint elindítasz egyet, itt áll, hányadik hetén jársz, mit hoz a hét, és melyik izomcsoport mennyit kap.")
+                                .nkFont(13.5).foregroundStyle(.white.opacity(0.65)).fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    if plan != nil {
+                        SpikeActions(primary: .init(title: "Új mezociklus", action: { openNewBlock() }))
+                    }
+                }
+            }
+            if let planned = mezo?.groups.upcoming.first {
+                MezoPlannedCard(card: planned, hue: hue) { mezoFlow.cover = .detail(planned) }
+            }
+            mezoTiles
+            NKAskRow(hue: hue, text: "Kérdezd meg Boopot az edzéstervedről") { openPlace(.boop) }
+        }
+    }
+
     /// Mezociklusaim · Éves terv — always there, whatever state the running one is in.
     @ViewBuilder private var mezoTiles: some View {
         if plan != nil {
@@ -994,7 +1135,7 @@ private struct ExerciseCard: View {
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .nkGlass()
+        .spikeInner()
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(exercise.name), \(SubMuscles.name(exercise.muscle))\(done ? ", megvan" : "")")
     }
@@ -1015,10 +1156,48 @@ private struct TodaySessionCard: View {
     let action: (() -> Void)?
     /// „Megnézem a mai eredményt" on a done day, when the phone still has the result.
     var onResult: (() -> Void)? = nil
+    // SPIKE (mezo-r36n9.197): three stat numbers in the hero, and the day's load as page 2.
+    var stats: [(String, String)] = []
+    var back: AnyView? = nil
+    @State private var heroPage = 0
+    @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.accessibilityVoiceOverEnabled) private var voiceOver
+    @ScaledMetric(relativeTo: .body) private var heroHeight: CGFloat = 286
 
     private var takenMissions: Int { max(0, missions - released) }
 
     var body: some View {
+        Group {
+            if let back {
+                if typeSize.isAccessibilitySize || voiceOver {
+                    VStack(alignment: .leading, spacing: 22) { front; back }
+                } else {
+                    VStack(spacing: 10) {
+                        TabView(selection: $heroPage) {
+                            front.frame(maxHeight: .infinity, alignment: .top).tag(0)
+                            back.frame(maxHeight: .infinity, alignment: .top).tag(1)
+                        }
+                        .tabViewStyle(.page(indexDisplayMode: .never))
+                        .frame(height: min(heroHeight, 460))
+                        HStack(spacing: 6) {
+                            ForEach(0..<2) { i in
+                                Capsule().fill(.white.opacity(heroPage == i ? 0.85 : 0.25))
+                                    .frame(width: heroPage == i ? 16 : 6, height: 6)
+                            }
+                        }
+                        .accessibilityHidden(true)
+                    }
+                }
+            } else {
+                front
+            }
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .nkGlass(28)
+    }
+
+    private var front: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
                 Text(label.uppercased())
@@ -1041,9 +1220,14 @@ private struct TodaySessionCard: View {
             }
             Text(title).nkFont(27, design: .serif).foregroundStyle(.white)
                 .fixedSize(horizontal: false, vertical: true)
-            if !sub.isEmpty {
-                Text(sub).nkFont(13, design: .monospaced).foregroundStyle(.white.opacity(0.6))
+            let shownSub = stats.isEmpty ? sub : (sub.components(separatedBy: " · ").first(where: { $0.contains(":") }) ?? "")
+            if !shownSub.isEmpty {
+                Text(shownSub).nkFont(13, design: .monospaced).foregroundStyle(.white.opacity(0.6))
                     .fixedSize(horizontal: false, vertical: true)
+            }
+            if !stats.isEmpty {
+                HStack(spacing: 12) { ForEach(stats, id: \.1) { SpikeStat(number: $0.0, word: $0.1) } }
+                    .padding(.vertical, 4)
             }
             if let progress {
                 VStack(alignment: .leading, spacing: 5) {
@@ -1080,9 +1264,6 @@ private struct TodaySessionCard: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .nkGlass()
     }
 }
 
@@ -1123,7 +1304,7 @@ private struct DayCard: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .nkGlass()
+        .spikeInner()
         .accessibilityElement(children: .combine)
     }
 }
