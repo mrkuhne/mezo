@@ -81,6 +81,53 @@ struct FoodRecipeClientTests {
         #expect(try await food().recipeBreakdown(UUID(uuidString: recipeId)!).breakdown == nil)
     }
 
+    @Test func recipeBreakdownMapsPayloadsAndContributors() async throws {
+        stub.on("getRecipeBreakdown", .json(200, #"""
+        {"fitsFor":[],"breakdown":{"value":0.74,"confidence":0.82,"tagline":"Fehérjében erős.","dimensions":[
+         {"id":"macro","label":"Makró","weight":0.25,"score":0.84,"detail":"m","macro":{"ratioP":0.31,"ratioC":0.42,"ratioF":0.27,"targetP":"30%","targetC":"45%","targetF":"25%","kcalShareOfDay":0.2}},
+         {"id":"micro","label":"Rost","weight":0.1,"score":0.5,"detail":"r","micros":[{"name":"Rost","value":"4 g","pct":40,"status":"low"}]},
+         {"id":"who","label":"WHO","weight":0.15,"score":0.41,"detail":"w","context":[{"label":"Só","value":"1,9 g"}],
+          "contributors":[{"name":"Feta","nutrient":"salt","amount":1.2,"unit":"g","share":0.63},{"name":"Kenyér","nutrient":"salt","amount":0.4,"unit":"g","share":0.21}]},
+         {"id":"nova","label":"NOVA","weight":0.1,"score":0.9,"detail":"n","nova":{"dominant":1,"stack":[{"nova":1,"pct":80,"label":"Feldolgozatlan"}],"items":[{"name":"Kenyér","nova":3,"warning":false}]}}],
+         "improve":[{"text":"Cseréld a feta felét túróra.","impact":"-só","dimension":"who"}],"tools":[]}}
+        """#))
+        let b = try #require(try await food().recipeBreakdown(UUID(uuidString: recipeId)!).breakdown)
+        #expect(b.dimensions[0].macro == DimensionMacro(ratioP: 0.31, ratioC: 0.42, ratioF: 0.27, targetP: "30%", targetC: "45%", targetF: "25%"))
+        #expect(b.dimensions[1].micros == [DimensionMicro(name: "Rost", value: "4 g", pct: 40, status: "low")])
+        #expect(b.dimensions[2].context == [DimensionFact(label: "Só", value: "1,9 g")])
+        #expect(b.dimensions[2].contributors.map(\.name) == ["Feta", "Kenyér"])
+        #expect(b.dimensions[2].contributors[0] == Contributor(name: "Feta", nutrient: "salt", amount: 1.2, unit: "g", share: 0.63))
+        #expect(b.dimensions[3].nova == DimensionNova(dominant: 1, stack: [NovaShare(nova: 1, pct: 80, label: "Feldolgozatlan")],
+                                                       items: [NovaItem(name: "Kenyér", nova: 3, warning: false)]))
+        #expect(b.improve.first?.dimension == "who")
+    }
+
+    @Test func recipeBreakdownToleratesOldEnvelope() async throws {
+        stub.on("getRecipeBreakdown", .json(200, #"{"fitsFor":[],"breakdown":{"value":0.6,"confidence":0.5,"dimensions":[{"id":"who","label":"WHO","weight":0.2,"score":0.5,"detail":"x"}],"improve":[{"text":"t","impact":"+rost"}],"tools":[]}}"#))
+        let b = try #require(try await food().recipeBreakdown(UUID(uuidString: recipeId)!).breakdown)
+        #expect(b.dimensions[0].contributors.isEmpty && b.dimensions[0].context.isEmpty && b.dimensions[0].macro == nil)
+        #expect(b.improve[0].dimension == nil)
+    }
+
+    @Test func breakdownVoteReadsUpVerdict() async throws {
+        stub.on("listFeedback", .json(200, #"[{"artifactKind":"recipe_breakdown","artifactId":"\#(recipeId)","verdict":"up","updatedAt":"2026-11-28T10:00:00Z"}]"#))
+        #expect(try await food().breakdownVote(recipeId: UUID(uuidString: recipeId)!) == true)
+        stub.on("listFeedback", .json(200, "[]"))
+        #expect(try await food().breakdownVote(recipeId: UUID(uuidString: recipeId)!) == nil)
+    }
+
+    @Test func setBreakdownVoteSendsOrDeletes() async throws {
+        stub.on("putFeedback", .json(200, #"{"artifactKind":"recipe_breakdown","artifactId":"\#(recipeId)","verdict":"down","updatedAt":"2026-11-28T10:00:00Z"}"#))
+        try await food().setBreakdownVote(recipeId: UUID(uuidString: recipeId)!, up: false)
+        #expect(stub.sent.last?.path == "/api/companion/feedback")
+        let sentVote = (try? JSONSerialization.jsonObject(with: Data((stub.sent.last?.body ?? "").utf8))) as? [String: Any]
+        #expect(sentVote?["verdict"] as? String == "down" && sentVote?["artifactKind"] as? String == "recipe_breakdown")
+        stub.on("deleteFeedback", .status(204))
+        try await food().setBreakdownVote(recipeId: UUID(uuidString: recipeId)!, up: nil)
+        #expect(stub.sent.last?.op == "deleteFeedback")
+        #expect(stub.sent.last?.path == "/api/companion/feedback/recipe_breakdown/\(recipeId)")
+    }
+
     @Test func aWorkshopTurnSendsTheHistoryAndTheDraft() async throws {
         stub.on("workshopTurn", .json(200, #"{"reply":"Íme.","draft":{"name":"Túrós tál","category":"breakfast","servings":1,"steps":["Keverd."],"lines":[{"source":"pantry","pantryItemId":"\#(pantryId)","name":"Zab","amount":60,"unit":"g"},{"source":"estimate","name":"Túró","amount":200,"unit":"g"}]}}"#))
         let draft = WorkshopDraft(name: "Régi", category: "lunch", servings: 2, steps: [], lines: [WorkshopLine(source: "estimate", name: "Rizs", amount: 100, unit: "g")])

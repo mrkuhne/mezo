@@ -141,20 +141,78 @@ public struct ScoreDimension: Equatable, Sendable {
     public var coverage: Double?
     /// The coach's one or two sentences on this dimension, when it has written them.
     public var note: String?
+    /// The numbers behind the score — exactly one of these is filled, matching `id` (the server's per-dimension payload).
+    public var macro: DimensionMacro?
+    public var micros: [DimensionMicro]
+    public var nova: DimensionNova?
+    public var context: [DimensionFact]
+    /// Recipe template only: the ingredients behind this dimension's nutrient, largest first (never the AI's).
+    public var contributors: [Contributor]
 
-    public init(id: String, label: String, weight: Double, score: Double, detail: String, coverage: Double? = nil, note: String? = nil) {
+    public init(id: String, label: String, weight: Double, score: Double, detail: String, coverage: Double? = nil, note: String? = nil,
+                macro: DimensionMacro? = nil, micros: [DimensionMicro] = [], nova: DimensionNova? = nil,
+                context: [DimensionFact] = [], contributors: [Contributor] = []) {
         self.id = id; self.label = label; self.weight = weight; self.score = score; self.detail = detail
         self.coverage = coverage; self.note = note
+        self.macro = macro; self.micros = micros; self.nova = nova; self.context = context; self.contributors = contributors
     }
 
     /// 0…100, or nil for a degraded dimension.
     public var points: Int? { weight > 0 ? Int((score * 100).rounded()) : nil }
 }
 
+/// The plate's P/C/F energy shares against the target shares ("30%").
+public struct DimensionMacro: Equatable, Sendable {
+    public var ratioP: Double, ratioC: Double, ratioF: Double
+    public var targetP: String, targetC: String, targetF: String
+    public init(ratioP: Double, ratioC: Double, ratioF: Double, targetP: String, targetC: String, targetF: String) {
+        self.ratioP = ratioP; self.ratioC = ratioC; self.ratioF = ratioF; self.targetP = targetP; self.targetC = targetC; self.targetF = targetF
+    }
+}
+
+/// One nutrition-quality row ("Rost", "4 g", 40 % of the allotment).
+public struct DimensionMicro: Equatable, Sendable {
+    public var name: String, value: String, pct: Int, status: String
+    public init(name: String, value: String, pct: Int, status: String) { self.name = name; self.value = value; self.pct = pct; self.status = status }
+}
+
+public struct NovaShare: Equatable, Sendable {
+    public var nova: Int, pct: Int, label: String
+    public init(nova: Int, pct: Int, label: String) { self.nova = nova; self.pct = pct; self.label = label }
+}
+
+public struct NovaItem: Equatable, Sendable {
+    public var name: String, nova: Int, warning: Bool
+    public init(name: String, nova: Int, warning: Bool) { self.name = name; self.nova = nova; self.warning = warning }
+}
+
+/// The kcal-weighted processing mix of the plate.
+public struct DimensionNova: Equatable, Sendable {
+    public var dominant: Int, stack: [NovaShare], items: [NovaItem]
+    public init(dominant: Int, stack: [NovaShare], items: [NovaItem]) { self.dominant = dominant; self.stack = stack; self.items = items }
+}
+
+/// One deterministic label/value fact of a dimension.
+public struct DimensionFact: Equatable, Sendable {
+    public var label: String, value: String
+    public init(label: String, value: String) { self.label = label; self.value = value }
+}
+
+/// One ingredient behind a nutrient: per-serving `amount` in `unit`, `share` 0…1 of the recipe's total.
+/// `nutrient`: salt | sugar | saturated_fat | fiber | kcal.
+public struct Contributor: Equatable, Sendable {
+    public var name: String, nutrient: String, amount: Double, unit: String, share: Double
+    public init(name: String, nutrient: String, amount: Double, unit: String, share: Double) {
+        self.name = name; self.nutrient = nutrient; self.amount = amount; self.unit = unit; self.share = share
+    }
+}
+
 public struct MealImprove: Equatable, Sendable {
     public var text: String
     public var impact: String
-    public init(text: String, impact: String) { self.text = text; self.impact = impact }
+    /// The dimension id this tip lifts (recipe prose); nil when the server didn't say.
+    public var dimension: String?
+    public init(text: String, impact: String, dimension: String? = nil) { self.text = text; self.impact = impact; self.dimension = dimension }
 }
 
 public struct MealBreakdown: Equatable, Sendable {
