@@ -138,8 +138,8 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### boop
 
-*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-26, in-progress) ·
-  [docs/features/capacity.md](features/capacity.md) (updated 2026-11-26, in-progress)
+*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-27, in-progress) ·
+  [docs/features/capacity.md](features/capacity.md) (updated 2026-11-27, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/boop`
   - **sub-features:** `port`
@@ -165,7 +165,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### capacity
 
-*BE + API* · read next: [docs/features/capacity.md](features/capacity.md) (updated 2026-11-26, in-progress)
+*BE + API* · read next: [docs/features/capacity.md](features/capacity.md) (updated 2026-11-27, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/capacity`
   - **sub-features:** `port`
@@ -177,27 +177,29 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `CapacityPatternRepository`, `CapacityProposalRepository`, `DayAdjustmentRepository`
   - **services:** `AdjustmentDraft`, `AdjustmentPayload`, `AdjustmentRules`, `BoopCapacityAdapter`,
     `CalendarTodoWatcher`, `CapacityCalculator`, `CapacityCalendarAdapter`, `CapacityCheckinAdapter`,
-    `CapacityContextAdapter`, `CapacityContextRenderer`, `CapacityDay`, `CapacityDayService`, `CapacityLock`,
-    `CapacityMealAdapter`, `CapacityMetricsAdapter`, `CapacityReasonFacts`, `CapacitySeasonAdapter`,
-    `CapacitySkipAdapter`, `CapacitySleepAdapter`, `CapacityTrainAdapter`, `CrossEffectCalculator`,
-    `DayAdjustmentService`, `DayAdjustmentView`, `DemandCalculator`, `DraftWeek`, `Effects`, `EventFeedbackService`,
-    `EventScore`, `EventScoringRunner`, `EventScoringService`, `HuDays`, `LearningState`, `LedgerReadAdapter`,
-    `LiveReplanListener`, `NewBlockListener`, `ProposalCompareLines`, `ProposalDraft`, `ProposalFingerprint`,
-    `ProposalGenerator`, `ProposalService`, `ProposalWordingWriter`, `RuleEventScore`, `SeasonLoadModel`,
-    `SeasonLoadService`, `Verdicts`, `WeekPicture`, `WeekPictureService`
+    `CapacityContextAdapter`, `CapacityContextRenderer`, `CapacityDay`, `CapacityDayService`,
+    `CapacityLearningService`, `CapacityLock`, `CapacityMealAdapter`, `CapacityMetricsAdapter`, `CapacityPatterns`,
+    `CapacityReasonFacts`, `CapacitySeasonAdapter`, `CapacitySkipAdapter`, `CapacitySleepAdapter`,
+    `CapacityTrainAdapter`, `CrossEffectCalculator`, `DayAdjustmentService`, `DayAdjustmentView`, `DemandCalculator`,
+    `DraftWeek`, `Effects`, `EventFeedbackService`, `EventScore`, `EventScoringRunner`, `EventScoringService`,
+    `HuDays`, `LearningState`, `LedgerReadAdapter`, `LiveReplanListener`, `NewBlockListener`, `OutcomeJob`,
+    `ProposalCompareLines`, `ProposalDraft`, `ProposalFingerprint`, `ProposalGenerator`, `ProposalService`,
+    `ProposalWordingWriter`, `RuleEventScore`, `SeasonLoadModel`, `SeasonLoadService`, `SundayPreviewJob`, `Verdicts`,
+    `WeekPicture`, `WeekPictureService`
   - **controllers→contract:** `CapacityController`→`CapacityApi`
   - **mappers:** `CapacityAdjustmentMapper`, `CapacityProposalMapper`, `CapacitySeasonMapper`
   - **config:** `CapacityProperties`
   - **other:** `AdjustmentKind`, `AdjustmentState`, `CapacityCalendarPort`, `CapacityCheckinPort`, `CapacityMealPort`,
     `CapacityMetricsPort`, `CapacitySeasonPort`, `CapacitySkipPort`, `CapacitySleepPort`, `CapacityTrainPort`,
     `FeedbackEffect`, `ProposalStatus`, `ScoreSource`
-- **Contract** `api/feature/capacity/capacity.yml` — 8 operations
-  - **endpoints:** PUT /api/capacity/event-feedback · GET /api/capacity/season · GET /api/capacity/adjustments ·
-    DELETE /api/capacity/adjustments/{id} · GET /api/capacity/week · POST /api/capacity/proposals/regenerate ·
-    POST /api/capacity/proposals/{id}/accept · POST /api/capacity/proposals/{id}/decline
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/capacity` — 16 IT + 12 unit
+- **Contract** `api/feature/capacity/capacity.yml` — 9 operations
+  - **endpoints:** PUT /api/capacity/event-feedback · GET /api/capacity/season · GET /api/capacity/season-hints ·
+    GET /api/capacity/adjustments · DELETE /api/capacity/adjustments/{id} · GET /api/capacity/week ·
+    POST /api/capacity/proposals/regenerate · POST /api/capacity/proposals/{id}/accept ·
+    POST /api/capacity/proposals/{id}/decline
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/capacity` — 17 IT + 15 unit
   - **ITs:** `CalendarTodoWatcherIT`, `CapacityAdjustmentApiIT`, `CapacityApiIT`, `CapacityContextAdapterIT`,
-    `CapacityDayServiceIT`, `CapacityFeedbackIT`, `CapacityRepositoryIT`, `CapacitySeasonIT`,
+    `CapacityDayServiceIT`, `CapacityFeedbackIT`, `CapacityLearningIT`, `CapacityRepositoryIT`, `CapacitySeasonIT`,
     `CrossEffectCalculatorIT`, `DayAdjustmentServiceIT`, `EventScoringBackgroundIT`, `EventScoringServiceIT`,
     `LedgerReadersIT`, `LiveReplanListenerIT`, `ProposalAllEffectsFailureIT`, `ProposalRephraseIT`
   - **populators:** `BiometricProfilePopulator`, `CalendarEventPopulator`, `DailyMetricPopulator`, `DatabasePopulator`,
@@ -585,7 +587,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### dayclose
 
-*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-26, in-progress) ·
+*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-27, in-progress) ·
   [docs/features/dayclose.md](features/dayclose.md) (updated 2026-11-26, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/dayclose`
@@ -1483,8 +1485,8 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### wearable
 
-*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-26, in-progress) ·
-  [docs/features/capacity.md](features/capacity.md) (updated 2026-11-26, in-progress)
+*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-27, in-progress) ·
+  [docs/features/capacity.md](features/capacity.md) (updated 2026-11-27, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/wearable`
   - **entities→tables:** `CalendarEventEntity`→`calendar_event`, `DailyMetricEntity`→`daily_metric`,
