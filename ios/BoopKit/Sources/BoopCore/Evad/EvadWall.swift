@@ -12,6 +12,8 @@ enum EvadWallID {
     /// S4: Boop's experiment proposal (its primary „Indulhat" starts it) and a just-finished result.
     static let proposal = "evad-exp-proposal-"
     static let result = "evad-exp-result-"
+    /// The Sunday weekly review (`mezo-r36n9.196`), one card per week: the id ends with that week's Monday.
+    static let review = "evad-review-"
 }
 
 /// The Évad source's candidates:
