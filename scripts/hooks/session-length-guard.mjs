@@ -81,8 +81,9 @@ function main(raw) {
     .join('; ');
   const msg =
     `SESSION-LENGTH GUARD (mezo-lwsig): ${why}. At the next safe point (tests green or work committed — never ` +
-    `mid-edit), switch to the munkamenet skill, mode "lezárás": if the task is done, finish and archive this ` +
-    `session; if not, push the branch, write the handoff into the bd issue and continue in a fresh session. ` +
+    `mid-edit), switch to the munkamenet skill, mode "lezárás": if about 25 steps or fewer remain, finish here and ` +
+    `archive this session; if more, push the branch, write the handoff into the bd issue, start ONE fresh session, ` +
+    `detach it (detach_session) and archive this one at once — never wait for it, no Notion push before a handoff. ` +
     `Tell the owner in one Hungarian sentence that you are wrapping up to save tokens.`;
 
   process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: event, additionalContext: msg } }));

@@ -16,9 +16,10 @@ to switch to **lezárás** mid-task — do that at the next safe point (tests gr
 
 1. **Is this the right session?** If this session already finished a task, or it is long (guard fired, or you are past
    ~100 turns), do NOT start here: `start_session` (`initiation: "user_asked"`, `context: "fresh"`, worktree) with a
-   self-contained brief — the owner's words, the bd id if known, the area — and tell him in one line where it runs.
+   self-contained brief — the owner's words, the bd id if known, the area — then **detach it at once**
+   (`detach_session` with the new session's id, so it is not your child) and tell him in one line where it runs.
 2. **One bd issue.** Find (`bd search`, `bd ready`) or create the issue; claim it. Boop work goes under epic
-   `mezo-r36n9` with its `_jegyek.json` row (edit the source now; the Notion push waits for lezárás).
+   `mezo-r36n9` with its `_jegyek.json` row (edit the source now; the Notion push waits for the end of the series).
 3. **Memories, narrowly.** `bd memories <keyword>` for the 1–3 areas you will touch. No full list unless unsure.
 4. **Kész, ha…** Write the done-checklist into the issue (`bd update <id> --acceptance "..."`), per CLAUDE.md.
 5. Then the flow below, or straight to work for a small fix.
@@ -38,31 +39,45 @@ to switch to **lezárás** mid-task — do that at the next safe point (tests gr
    lezárás instead — no PR, no discard menu; local `--no-ff` merge per CLAUDE.md §Git Workflow.
 
 Working rules while in the task: subagents on `model: "sonnet"` (most capable only for the final review / hard
-design); read narrowly (`sed -n`, `grep`, `tail` on long output); no Notion MCP calls in the main session.
+design); read narrowly (`sed -n`, `grep`, `tail` on long output; in a continuation session read only your step's
+section of the plan); no Notion MCP calls in the main session.
 
 ## Lezárás — finish, or hand off
 
 Replaces `superpowers:finishing-a-development-branch` (no options menu, no PR, no discard).
+
+**First decide: finish here, or hand off?** If all that is left is the close-out (merge, deploy/install, Notion,
+report) or anything else of **about 25 steps or fewer**, finish here — even if the guard fired. A new session costs
+more to start than those steps cost here (audit 2026-11-27, mezo-g641l). Only a bigger remainder goes to **B**.
+
+A **series** is one piece of work with all its handoff sessions. Notion is pushed **once per series**, by the session
+that finishes it (or when the series stops to wait for the owner) — never by a session that hands off.
 
 **A. The work is done** (gates green):
 1. Merge per CLAUDE.md §Git Workflow (rebase main → `--no-ff` merge → push → delete branch); deploy/install if the
    change needs it.
 2. `bd close <id>`; file remaining work as new bd issues (minors under the epic).
 3. Product changed → update the sources (`_jegyek.json`, `_kiadasok.json`, `_dontesek.json`, handbook page,
-   `_funkciok.json`) and push Notion **once** through a sonnet worker (`boop-notion` skill §2); commit
-   `_notion-state.json`.
+   `_funkciok.json`), commit and push them, then push Notion **once for the whole series**: the `boop-notion-sync`
+   agent → commit `_notion-state.json` → push → `unlock` (`boop-notion` skill §2).
 4. `node scripts/check-beads-backup.mjs --fix` → commit; `git pull --rebase && bd dolt push && git push`.
 5. Hungarian report: what he can now do, what was checked, what is not done.
 6. **Archive this session**: `archive_session` with `session_id: "self"` — only after the report is written, and
    only if the owner did not ask to keep it open. Say so in the report's last line ("ezt a munkamenetet lezárom").
 
-**B. The work is not done** (guard fired, or the task outgrew the session):
+**B. Hand off** (more than ~25 steps left: guard fired, or the task outgrew the session):
 1. Commit and push the branch (never leave work only in the worktree).
 2. Write the handoff into the bd issue (`bd update <id> --notes "..."`): branch name, what is done, what is next,
-   traps found, exact commands to resume.
-3. `start_session` (`context: "fresh"`, `use_worktree: true`, `source_branch` = this branch) whose brief is: "Continue
-   bd <id> on branch <branch>; read `bd show <id>` notes first; finish with the munkamenet skill (lezárás)."
-4. Tell the owner in one line where it continues, then archive this session (`"self"`).
+   traps found, exact commands to resume, and which Notion sources still wait for the series-end push.
+3. `start_session` **one** successor (`context: "fresh"`, `use_worktree: true`, `source_branch` = this branch) whose
+   brief is: "Continue bd <id> on branch <branch>; read `bd show <id>` notes first and only your step of the plan;
+   finish with the munkamenet skill (lezárás)."
+4. **Detach it right away**: `detach_session` with the new session's id. It stops being your child, so its turns do
+   not wake you, and the owner talks to it directly.
+5. Tell the owner in one line where it continues (with the link), then archive this session (`"self"`). **Never wait
+   for the successor**, never relay its reports, never keep this session open as a coordinator, no Notion push.
+   If the app refuses the detach, archive anyway (a running session is not archived with you). If it refuses the
+   start itself (the turn came from another session or an event), leave the proposal card, say so, and stop.
 
 ## Takarítás — weekly cleanup (or on request)
 
@@ -78,6 +93,8 @@ Replaces `superpowers:finishing-a-development-branch` (no options menu, no PR, n
    lezárható ones. Never archive a coordinating session whose child still has unmerged work (archiving a parent
    takes its idle children with it). Sessions of other projects are not yours — leave them.
 4. Report what was archived and what is left; verify the befejezendő branches still exist.
+5. `node scripts/boop-notion-sync.mjs check` — if something waits and no series that owns it is still running, push
+   it once (`boop-notion` §2).
 
 ## Feladattípusok — the playbook
 

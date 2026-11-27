@@ -1548,10 +1548,10 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### scripts
 
-- **scripts/:** backup-live-db.sh, boop-notion-sync.mjs, check-beads-backup.mjs, check-generator-toolchain.mjs,
-  check-ios-contract.mjs, com.mezo.db-backup.plist, gen-body-geometry-swift.mjs, gen-codemap.mjs, gen-codemap.test.mjs,
-  import-exercise-images.mjs, lint-conflict-markers.mjs, lint-docs.mjs, lint-liquibase.mjs, purge-restart.sql,
-  setup-git.sh
+- **scripts/:** backup-live-db.sh, boop-notion-sync.mjs, boop-notion-sync.test.mjs, check-beads-backup.mjs,
+  check-generator-toolchain.mjs, check-ios-contract.mjs, com.mezo.db-backup.plist, gen-body-geometry-swift.mjs,
+  gen-codemap.mjs, gen-codemap.test.mjs, import-exercise-images.mjs, lint-conflict-markers.mjs, lint-docs.mjs,
+  lint-liquibase.mjs, purge-restart.sql, setup-git.sh
 
 ## Unaligned
 

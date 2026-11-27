@@ -50,8 +50,9 @@ bd close <id>         # Complete work
    node scripts/check-beads-backup.mjs --fix   # then commit the result
    ```
    It cannot be a CI gate — the runner has no Dolt DB — so it belongs here.
-4. **Sync the owner's Notion "Boop" space** if you changed anything about the product (see
-   §The owner's Notion "Boop" space): `node scripts/boop-notion-sync.mjs check` must exit 0.
+4. **Sync the owner's Notion "Boop" space** if this session finishes a work series that changed the product (see
+   §The owner's Notion "Boop" space): `node scripts/boop-notion-sync.mjs check` must exit 0. A session that hands
+   off does not sync.
 5. Push everything (if push fails, resolve and retry until it succeeds):
    ```bash
    git pull --rebase && bd dolt push && git push
@@ -74,12 +75,15 @@ Notion calls made inside that bloated context were ~10 %. So:
   re-copy it when the repo script changes).
 - **One task, one session.** When the task is done (merged + pushed + reported), the next task starts in a **new
   session** (`start_session` / tell the owner) — never keep a session going across days or unrelated slices. Past
-  ~150 turns or ~250k context, wrap up and hand off with a short brief instead of continuing.
+  ~250k context, wrap up and hand off with a short brief instead of continuing.
+- **Clean handoff** (mezo-g641l): if about 25 steps or fewer remain, finish here. Otherwise start **one** successor,
+  `detach_session` it, and archive yourself at once — never wait for it or stay open as its coordinator.
 - **Subagents on the cheap model by default.** Pass `model: "sonnet"` for implementers, spec checks, lookups,
   Notion sync and recon (`researcher`/`investigator` are pinned to sonnet). Use the most capable model only for the
   final fresh-context review and genuinely design-heavy work. Prefer doing a handful of reads yourself over a subagent.
-- **Notion: batch and delegate.** Edit the sources as you go; push at most twice per session (after the claim, at
-  report time), through a fresh sonnet worker — never Notion MCP calls in the main session (`boop-notion` skill §2).
+- **Notion: once per series, one at a time.** Edit the sources as you go; the session that finishes the work pushes
+  once through the `boop-notion-sync` worker, under the script's lock — never Notion MCP calls in the main session
+  (`boop-notion` skill §2).
 - **Read narrowly.** `sed -n`/`grep` the lines you need; don't cat large files or logs; pipe long build/test output
   through `tail`/`grep`. Persistent bd memories are no longer injected at start — search them with
   `bd memories <keyword>` before working on an area.
@@ -131,8 +135,8 @@ Notion rows — edit the source, then sync (a manual edit is overwritten by the 
 
 **The rule — any session that changes the product** (iPhone/Watch app, the backend or AI it uses, its data, its
 plan, its look) keeps the space true **in the same session**:
-1. **Start:** `node scripts/boop-notion-sync.mjs check`. A lagging Notion is a debt you pay first (sync it before
-   your own work), like a red main.
+1. **Start:** no sync. Notion may lag while a work series runs; whoever finishes next pushes everything pending
+   (`takarítás` catches leftovers).
 2. **Every work item is a bd issue under epic `mezo-r36n9`** with a row in `_jegyek.json` (Hungarian title,
    *mit kapsz*, your session name) — so it is on the board. Claim → *Épül*; review / waiting for deploy / waiting
    on the owner → `bd label add <id> allapot:ellenorzes|elesitesre-var|var-rad`.
@@ -141,7 +145,8 @@ plan, its look) keeps the space true **in the same session**:
    README) — the handbook must describe the product as it is on `main`.
 5. **Merge to main the owner can feel** → a row in `_kiadasok.json` (key = merge commit short sha).
    A server feature reaching the app (or a new backend feature) → update its row in `_funkciok.json`.
-6. **Before you report:** sync through a sonnet worker (`plan` → apply → `check` exits 0; §Token diet) and commit `_notion-state.json` with your change.
+6. **At the end of the series, before you report:** sync once through the `boop-notion-sync` worker (`check` exits 0),
+   commit and push `_notion-state.json`, `unlock` (`boop-notion` §2). A session that hands off skips this.
    No Notion tools in the session → say so in the report and file a `notion-sync` bd issue under the epic; never
    skip silently.
 
