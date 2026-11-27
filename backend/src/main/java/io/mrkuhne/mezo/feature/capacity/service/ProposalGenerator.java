@@ -105,8 +105,9 @@ public final class ProposalGenerator {
         }
         return deloadWeeks.stream().filter(d -> d > next && d <= weeks.size()).min(Integer::compare)
             .map(d -> new DeloadHint(d, next, "Előrébb hoznám a könnyebb hetet.",
-                "Három hete több a teher, mint amennyit a pihenés visszaad. A tervben a " + d
-                    + ". hét a könnyebb, de már a jövő hét (a " + next + ".) jobban jönne. Ha gondolod, beszéljük meg."));
+                "Három hete több a teher, mint amennyit a pihenés visszaad. A tervben " + HuDays.article(String.valueOf(d))
+                    + " " + d + ". hét a könnyebb, de már a jövő hét (" + HuDays.article(String.valueOf(next)) + " "
+                    + next + ".) jobban jönne. Ha gondolod, beszéljük meg."));
     }
 
     public static List<ProposalDraft> forWeek(WeekPicture w, List<Pattern> patterns, CapacityProperties p) {

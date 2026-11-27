@@ -163,6 +163,19 @@ public class CapacityLearningService {
         return written;
     }
 
+    /**
+     * The moves the move-kind patterns learn from: accepted, about a day of the pattern window ({@code >= from}),
+     * with a settled outcome (a night still pending is not judged yet).
+     */
+    static List<MoveFact> moveFacts(List<CapacityProposalEntity> proposals, LocalDate from) {
+        return proposals.stream()
+            .filter(p -> ProposalStatus.ACCEPTED.wire().equals(p.getStatus()) && !p.getDay().isBefore(from))
+            .filter(p -> p.getOutcome() != null && p.getOutcome().get("good") instanceof Boolean
+                && !Boolean.TRUE.equals(p.getOutcome().get("sleepPending")))
+            .map(p -> new MoveFact(p.getKind(), (Boolean) p.getOutcome().get("good")))
+            .toList();
+    }
+
     /** One proposal's outcome map (see the class comment). */
     static Map<String, Object> outcome(CapacityProposalEntity p, List<LocalDate> touched, DayRead day,
                                        Map<LocalDate, List<Session>> sessions, DayFeel feel, Integer sleepAfter,
@@ -171,9 +184,11 @@ public class CapacityLearningService {
         String verdict = day == null ? null : day.day().verdict();
         Integer rating = feel == null ? null : feel.dayRating();
         Integer evening = feel == null ? null : feel.eveningEnergy();
+        // the night after the day ends at the 03:30 pass at the earliest: a row synced before then may be partial
+        boolean sleepPending = !p.getDay().plusDays(1).isBefore(today);
         boolean good = !"túl sok".equals(verdict)
             && (rating == null || rating >= GOOD_DAY_RATING)
-            && (sleepAfter == null || sleepAfter >= need - CapacityPatterns.SLEEP_SLACK_MIN)
+            && (sleepPending || sleepAfter == null || sleepAfter >= need - CapacityPatterns.SLEEP_SLACK_MIN)
             && (!"skipped".equals(session) || AdjustmentKind.SKIP_SESSION.name().equals(p.getKind()));
         Map<String, Object> o = new LinkedHashMap<>();
         o.put("session", session);
@@ -182,10 +197,10 @@ public class CapacityLearningService {
         o.put("eveningEnergy", evening);
         o.put("sleepMin", sleepAfter);
         o.put("sleepNeedMin", need);
-        o.put("sleepPending", sleepAfter == null && !p.getDay().plusDays(1).isBefore(today));
+        o.put("sleepPending", sleepPending);
         o.put("good", good);
         o.put("word", word(p.getStatus(), good));
-        o.put("sub", sub(session, verdict, rating, sleepAfter));
+        o.put("sub", sub(session, verdict, rating, sleepPending ? null : sleepAfter));
         return o;
     }
 
@@ -254,10 +269,7 @@ public class CapacityLearningService {
         LocalDate from = today.minusDays(PATTERN_WINDOW_DAYS);
         LocalDate to = today.minusDays(1);
         List<DayFact> facts = dayFacts(owner, from, to, today);
-        List<MoveFact> moves = proposals.findByCreatedByAndStatusAndDeletedFalse(owner, ProposalStatus.ACCEPTED.wire())
-            .stream().filter(p -> p.getOutcome() != null && p.getOutcome().get("good") instanceof Boolean)
-            .map(p -> new MoveFact(p.getKind(), (Boolean) p.getOutcome().get("good")))
-            .toList();
+        List<MoveFact> moves = moveFacts(proposals.findByCreatedByAndDayBetweenAndDeletedFalse(owner, from, to), from);
         List<Found> found = CapacityPatterns.find(facts, moves);
 
         Map<String, CapacityPatternEntity> existing = new HashMap<>();

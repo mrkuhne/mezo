@@ -410,7 +410,7 @@ class ProposalGeneratorTest {
         var hint = ProposalGenerator.deloadForward(weeks, 4, List.of(7)).orElseThrow();
         assertThat(hint.fromWeek()).isEqualTo(7);
         assertThat(hint.toWeek()).isEqualTo(5);
-        assertThat(hint.body()).contains("7.").contains("5.");
+        assertThat(hint.body()).contains("a 7.").contains("(az 5.)");
 
         // not three over in a row → quiet
         List<SeasonLoadModel.WeekOut> mixed = List.of(wk(1, false, true), wk(2, false, false), wk(3, false, true),

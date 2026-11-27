@@ -1,7 +1,6 @@
 package io.mrkuhne.mezo.feature.capacity.service;
 
 import io.mrkuhne.mezo.feature.capacity.repository.CalendarEventScoreRepository;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -31,7 +30,7 @@ public class OutcomeJob {
     @Scheduled(cron = "0 30 3 * * *", zone = "${mezo.wearable.zone:Europe/Budapest}")
     public void run() {
         LocalDate today = learning.today();
-        List<UUID> scored = scores.ownersSince(Instant.now().minus(SCORED_OWNER_DAYS, ChronoUnit.DAYS));
+        List<UUID> scored = scores.ownersSince(learning.now().minus(SCORED_OWNER_DAYS, ChronoUnit.DAYS));
         for (UUID owner : learning.owners(scored, today)) {
             runFor(owner, today);
         }

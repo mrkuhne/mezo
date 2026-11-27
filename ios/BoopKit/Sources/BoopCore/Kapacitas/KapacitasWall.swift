@@ -30,26 +30,35 @@ public enum KapacitasWallID {
 ///     `expiresAt` is the session start, after which the change no longer helps.
 /// Every word and verdict comes from the server's week; nothing is computed here. `excluding` are proposals the phone
 /// has already accepted offline (queued); `todaySessionStart` is today's planned session from the brief.
+/// `currentWeek` is the week holding today when the wall already shows next week (Sunday from 18:00, K4): an urgent
+/// today-proposal lives there, so it is read from it; the week card stays next week's.
 public func kapacitasWallCandidates(week: KapacitasWeek?, now: Date, todaySessionStart: Date? = nil,
-                                    excluding: Set<String> = [], timeZone: TimeZone = .current) -> [WallCandidate] {
-    guard let week, week.monday == kapacitasWallMonday(now, timeZone: timeZone) else { return [] }
-    let open = week.proposals.filter { $0.status == "open" && !excluding.contains($0.id) }
-    guard let top = open.first else { return [] }
+                                    excluding: Set<String> = [], timeZone: TimeZone = .current,
+                                    currentWeek: KapacitasWeek? = nil) -> [WallCandidate] {
     let today = kapacitasYMD(now, timeZone: timeZone)
-    let why = top.why.first ?? "Van egy nap a héten, ami több lenne, mint amennyit bírsz."
+    func openOf(_ w: KapacitasWeek?) -> [KapacitasProposal] {
+        w?.proposals.filter { $0.status == "open" && !excluding.contains($0.id) } ?? []
+    }
 
+    let thisMonday = kapacitasMonday(for: now, timeZone: timeZone)
     if let start = todaySessionStart, start > now, start.timeIntervalSince(now) < 3 * 3600,
-       let p = open.first(where: { $0.day == today }) {
+       let home = [week, currentWeek].compactMap({ $0 }).first(where: { $0.monday == thisMonday }),
+       let p = openOf(home).first(where: { $0.day == today }) {
         return [WallCandidate(
             id: KapacitasWallID.today + p.id, role: .expires, kind: .teendo, area: WallSources.kapacitas,
             expiresAt: start,
-            text: [verdictSentence(week, day: today, today: today), "Az edzés előtt még átrendezném."]
+            text: [verdictSentence(home, day: today, today: today), "Az edzés előtt még átrendezném."]
                 .compactMap { $0 }.joined(separator: " "),
             sub: p.title,
             primary: "Megnézem", secondary: KapacitasWallID.notNow,
             settled: "Átrendezés megnézve",
-            why: p.why.first ?? why)]
+            why: p.why.first ?? "Van egy nap a héten, ami több lenne, mint amennyit bírsz.")]
     }
+
+    guard let week, week.monday == kapacitasWallMonday(now, timeZone: timeZone) else { return [] }
+    let open = openOf(week)
+    guard let top = open.first else { return [] }
+    let why = top.why.first ?? "Van egy nap a héten, ami több lenne, mint amennyit bírsz."
 
     let count = "\(kapacitasCountWord(open.count)) dolgot tennék át a héten."
     let lead = verdictSentence(week, day: top.day, today: today)

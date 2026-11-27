@@ -93,6 +93,27 @@ struct KapacitasWallTests {
         #expect(late.first?.role == .improves)
     }
 
+    /// K4 review minor: from Sunday 18:00 the wall shows next week, but a live today-proposal about Sunday sits in the
+    /// current week — it must still reach the wall as the urgent card.
+    @Test func sundayEveningTodayProposalFromTheCurrentWeek() throws {
+        let sundayEvening = KapacitasWeek(monday: "2026-11-23", days: Self.days, proposals: [
+            Self.proposal("s1", "SHORTEN_SESSION", day: "2026-11-29"),
+        ])
+        let next = KapacitasWeek(monday: "2026-11-30", days: [], proposals: [
+            Self.proposal("n1", "MOVE_SESSION_DAY", day: "2026-12-02"),
+        ])
+        let start = Self.at(29, 20)
+        let cards = kapacitasWallCandidates(week: next, now: Self.at(29, 18, 30), todaySessionStart: start,
+                                            timeZone: Self.zone, currentWeek: sundayEvening)
+        let c = try #require(cards.first)
+        #expect(cards.count == 1)
+        #expect(c.id == "kapacitas-ma-s1" && c.role == .expires && c.expiresAt == start)
+        // no session ahead: next week's card, the current week's proposal does not leak into it
+        let calm = kapacitasWallCandidates(week: next, now: Self.at(29, 18, 30), timeZone: Self.zone,
+                                           currentWeek: sundayEvening)
+        #expect(calm.first?.role == .improves && calm.first?.text.contains("Egy dolgot") == true)
+    }
+
     @Test func noCardWithoutProposals() {
         #expect(kapacitasWallCandidates(week: nil, now: Self.at(24, 9), timeZone: Self.zone).isEmpty)
         let calm = KapacitasWeek(monday: "2026-11-23", days: Self.days, proposals: [
