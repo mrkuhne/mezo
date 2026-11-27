@@ -2,18 +2,24 @@ import SwiftUI
 import BoopCore
 import BoopDesign
 
-/// Where the home screen sends you.
+/// Where the home screen sends you (`mezo-r36n9.196`): the Nap room on one of its tabs, an area's room, or Boop's chat.
 enum KezdolapRoute: Equatable {
-    /// Today's Nap page as it is (the morning brief, the day, the proposals).
-    case nap
-    /// The Nap page with that area's room already open.
-    case room(Hue)
-    /// The day's own page — the eighth orb (owner, 2026-11-16, decision #41). Since the day page itself became
-    /// the Élet spike's Ma screen (`mezo-r36n9.56`), this orb and the ring's centre land on the **same** page;
-    /// the full list of the day is one fold inside it.
-    case day
+    /// The Nap room (decision #135): Ma (the day page) or Napok (the last 14 days).
+    case nap(NapTab)
+    /// An area's room, on the tab it asks for (nil = its own default).
+    case room(RoomEntry)
+    /// Boop's chat — the ring's centre orb (decision #134).
+    case chat
 
-    var room: Hue? { if case .room(let h) = self { h } else { nil } }
+    /// The route a destination asks for; `.home` asks for none.
+    init?(_ d: BoopDestination) {
+        switch d {
+        case .home: return nil
+        case .nap(let t): self = .nap(t)
+        case .room(let e): self = .room(e)
+        case .chat: self = .chat
+        }
+    }
 }
 
 /// **The home screen** (owner 2026-11-13): "boop" at the top, the nine life areas as living orbs laid out on a
@@ -21,8 +27,9 @@ enum KezdolapRoute: Equatable {
 /// across it (the cool blue world — no lilac here, owner round 2).
 ///
 /// The orbs **fade in out of the fog** when the screen opens. Tapping one **zooms into that orb** and cross-fades to
-/// its area; coming back fades the area out and the ring back in. Tapping Boop opens today's Nap page, which is not
-/// replaced — it moves one level in. Nine areas since 2026-11-24 (Súly, `mezo-r36n9.158`); every one is live.
+/// its area; coming back fades the area out and the ring back in. Since the barless home (`mezo-r36n9.196`) there is no
+/// bottom bar: Boop's orb in the middle opens the chat, the Nap orb the Nap room (Ma · Napok), and the floating „+"
+/// opens the capture sheet. Ten areas — Évad is the tenth, its number this week's adherence.
 struct KezdolapView: View {
     @Environment(MorningStore.self) private var morning: MorningStore?
     /// The Étel orb's number is the Étel room's own (the day's meal points), the Pénz orb's the week's remaining share
@@ -30,16 +37,18 @@ struct KezdolapView: View {
     @Environment(\.foodClient) private var food
     @Environment(PenzStore.self) private var penz: PenzStore?
     @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
-    /// The "+" sheet's "Edzés indítása" asks the ring to open the Edzés room (`mezo-r36n9.154`).
+    /// Where something outside the ring asks to go (the "+" sheet's "Edzés indítása", a „Kérdezd meg Boopot" row,
+    /// a restored old place): the ring opens it.
     @Environment(RitmusRouter.self) private var router: RitmusRouter?
-    @Environment(\.openPick) private var openPick
+    @Environment(\.openCapture) private var openCapture
+    /// The Évad orb's number: this week's adherence (`mezo-r36n9.196`).
+    @Environment(EvadStore.self) private var evad: EvadStore?
     /// The Súly orb's number is the pace score of the Súly store (`mezo-r36n9.158`).
     @Environment(SulyStore.self) private var suly: SulyStore?
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openAccount) private var openAccount
     @Environment(\.setRoomOpen) private var setRoomOpen
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.kezdolapHomeReset) private var homeResetTick
     @State private var route: KezdolapRoute? = KezdolapView.initialRoute
     /// The ring is zoomed into the tapped orb and faded out; the area page is up over it.
     @State private var zoomed = false
@@ -67,8 +76,14 @@ struct KezdolapView: View {
                     .allowsHitTesting(route == nil)
                     .accessibilityHidden(route != nil)
                 if let route {
-                    NapView(initialRoom: route.room, onHome: closeRoute)
+                    routePage(route)
+                        .environment(\.nkFloatingPlus, route != .chat)
                         .opacity(pageIn ? 1 : 0)
+                }
+                // The floating „+" (decision #134): on the ring, and raised above a room's bar; never over the chat.
+                if route != .chat {
+                    NKFloatingPlus(raised: route != nil) { openCapture() }
+                        .transition(.opacity)
                 }
             }
             .onAppear { screen = box }
@@ -81,17 +96,25 @@ struct KezdolapView: View {
         .onAppear { if route != nil { zoomed = true; pageIn = true } }
         // The home is Ma's root now, so the brief is fetched and kept fresh from here.
         .background { if let morning { MorningTriggers(store: morning) } }
-        // The bottom bar's "Ma" tapped again while a page is open: back to the ring.
-        .onChange(of: homeResetTick) { if route != nil { closeRoute() } }
         // The Étel, Pénz and Súly numbers: on arrival, when the app comes back, when a meal, an expense or a weigh-in lands.
         .task { await loadNumbers() }
         .onChange(of: scenePhase) { _, phase in if phase == .active { Task { await loadNumbers(force: true) } } }
         .onChange(of: ritmus?.mealDraftsTick) { Task { await loadFood() } }
         .onChange(of: ritmus?.penzTick) { Task { await penz?.load(force: true) } }
         .onChange(of: ritmus?.weightTick) { Task { await suly?.load(force: true) } }
-        // The "+" sheet asked for a room (from any place of the bar): the ring opens it once it is up.
-        .onAppear { if let hue = router?.takeRoom() { openArea(hue) } }
-        .onChange(of: router?.room) { _, hue in if let hue { router?.room = nil; openArea(hue) } }
+        // Somewhere asked for from outside the ring (the "+" sheet, a page's „Kérdezd meg Boopot", a restored old
+        // place): the ring opens it once it is up.
+        .onAppear { if let d = router?.takeDestination() { go(d) } }
+        .onChange(of: router?.destination) { _, d in if d != nil, let d = router?.takeDestination() { go(d) } }
+    }
+
+    /// The page a route shows.
+    @ViewBuilder private func routePage(_ route: KezdolapRoute) -> some View {
+        switch route {
+        case .nap(let tab): NapView(initialNapTab: tab, onHome: closeRoute)
+        case .room(let entry): NapView(initialRoom: entry.hue, onHome: closeRoute)
+        case .chat: BoopTabView(onBack: closeRoute)
+        }
     }
 
     /// The ring's own numbers: the day's meals, the week's money, the weight's pace. None blocks the ring; each shows "–" until it is here.
@@ -103,6 +126,8 @@ struct KezdolapView: View {
         await loadFood()
         await penz?.load()
         await suly?.load(force: force)
+        await evad?.load()
+        await evad?.loadWeek(force: force)
     }
 
     private func loadFood() async {
@@ -110,15 +135,16 @@ struct KezdolapView: View {
         await etel.loadDay(food: food, now: Date())
     }
 
-    /// A room asked for from outside the ring: opened from the ring's centre, or — with a page already up — after the
-    /// ring has come back (two moves never overlap).
-    private func openArea(_ hue: Hue) {
+    /// A destination asked for from outside the ring: opened from the ring's centre, or — with a page already up —
+    /// after the ring has come back (two moves never overlap). `.home` just closes what is open.
+    private func go(_ d: BoopDestination) {
         let centre = CGPoint(x: screen.midX, y: screen.midY)
+        guard let new = KezdolapRoute(d) else { if route != nil { closeRoute() }; return }
         if route == nil {
-            openRoute(.room(hue), from: centre, in: screen)
-        } else {
+            openRoute(new, from: centre, in: screen)
+        } else if route != new {
             closeRoute()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { openRoute(.room(hue), from: centre, in: screen) }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { openRoute(new, from: centre, in: screen) }
         }
     }
 
@@ -161,7 +187,8 @@ struct KezdolapView: View {
 
     private var home: some View {
         GeometryReader { geo in
-            let ring = min(geo.size.width - 10, geo.size.height * 0.50)
+            // The spike's sizes (decision #134): with no bar under it the ring takes more of the height.
+            let ring = min(geo.size.width - 6, geo.size.height * (geo.size.width < 380 ? 0.60 : 0.56))
             ZStack {
                 // The backdrop never takes part in the zoom: a blurred fog canvas scaled six times over is what the
                 // phone could not keep up with. It only fades, while the ring alone grows out of the tapped orb.
@@ -182,11 +209,10 @@ struct KezdolapView: View {
                     Spacer(minLength: 0)
                     ringView(side: ring)
                     boopLine
-                        .padding(.top, 34)
-                    quickDoors
-                        .padding(.top, 26).padding(.horizontal, 22)
+                        .padding(.top, 28)
                     Spacer(minLength: 0)
-                    Color.clear.frame(height: 112)
+                    // room for the floating „+" in the bottom corner
+                    Color.clear.frame(height: 40 + geo.safeAreaInsets.bottom)
                 }
                 // Only the ring and its words dive into the orb; everything is frozen first, so the whole layer is
                 // one unchanging picture the phone can simply scale.
@@ -200,74 +226,44 @@ struct KezdolapView: View {
                         value: NKBackdrop(hue: Self.world, heroHeight: geo.size.height + geo.safeAreaInsets.top,
                                           scrollY: 0))
         }
-        .ignoresSafeArea(edges: .top)
+        .ignoresSafeArea(edges: [.top, .bottom])
     }
 
     private func ringView(side: CGFloat) -> some View {
-        // Nine orbs: 56 pt where the ring is wide, smaller where it is not (a short phone's ring is its height), so
-        // every name keeps clear of the orb under it (`mezo-r36n9.158`).
-        NKOrbRing(items: Area.allCases.map { ringItem($0, brief: brief, foodDay: etel.day, penz: penz?.allowance, suly: suly?.score) },
-                  orbSize: side < 360 ? 46 : (side < 400 ? 52 : 56), live: route == nil) { item, point in
+        // Ten orbs: 54 pt where the ring is wide, smaller where it is not (a short phone's ring is its height), so
+        // every name keeps clear of the orb under it (`mezo-r36n9.158`, `.196`).
+        NKOrbRing(items: Area.allCases.map { ringItem($0, brief: brief, foodDay: etel.day, penz: penz?.allowance,
+                                                      suly: suly?.score, evad: evad?.weekScore) },
+                  orbSize: side < 360 ? 44 : (side < 400 ? 50 : 54), live: route == nil) { item, point in
             open(item, at: point)
         } center: {
-            boopCenter
+                boopCenter(size: side < 360 ? 104 : 122)
         }
         .frame(width: side, height: side)
         .frame(maxWidth: .infinity)
     }
 
-    /// Boop's own orb in the middle of the ring: no number, and it opens today's Nap page.
-    private var boopCenter: some View {
+    /// Boop's own orb in the middle of the ring: no number, and it opens Boop's chat (decision #134).
+    private func boopCenter(size: CGFloat) -> some View {
         // The orb's own gestures (slosh, ripple) would eat the tap, so the door is a circle over it.
         ZStack {
-            LivingOrb(palette: boopOrb, size: 122, level: 0.72, glow: true, motion: motion,
+            LivingOrb(palette: boopOrb, size: size, level: 0.72, glow: true, motion: motion,
                       animated: !reduceMotion && route == nil)
                 .allowsHitTesting(false)
             GeometryReader { g in
                 let c = g.frame(in: .global)
                 Circle().fill(.clear).contentShape(Circle())
-                    .onTapGesture { openRoute(.nap, from: CGPoint(x: c.midX, y: c.midY), in: screen) }
+                    .onTapGesture { openRoute(.chat, from: CGPoint(x: c.midX, y: c.midY), in: screen) }
             }
         }
-        .frame(width: 122, height: 122)
+        .frame(width: size, height: size)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Boop · \(kezdolapLine(brief)). A napod megnyitása")
+        .accessibilityLabel("Boop · beszélgetés megnyitása")
+        .accessibilityHint(kezdolapLine(brief))
         .accessibilityAddTraits(.isButton)
     }
 
-    /// The quick log's own doors on the home screen (owner 2026-11-24, `mezo-r36n9.157`): the five he records most,
-    /// each one tap from the ring — a glass circle with a glyph and a quiet mono name, the ring's own vocabulary at a
-    /// smaller size. The bar's "+" keeps every other door.
-    private var quickDoors: some View {
-        HStack(spacing: 0) {
-            ForEach(Self.doors, id: \.label) { d in
-                Button { openPick(d.pick) } label: {
-                    VStack(spacing: 7) {
-                        NKGlyph(d.glyph, .white, size: 19)
-                            .frame(width: 46, height: 46)
-                            .glassEffect(.regular.interactive(), in: .circle)
-                        Text(d.label).nkFont(10, .medium, design: .monospaced).tracking(1.1)
-                            .foregroundStyle(.white.opacity(0.72)).lineLimit(1).minimumScaleFactor(0.8)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("\(d.name) rögzítése")
-            }
-        }
-    }
-
-    /// The five doors, in the order he reaches for them.
-    static let doors: [(glyph: String, label: String, name: String, pick: CapturePick)] = [
-        ("bowl-cream", "ÉTKEZÉS", "Étkezés", .meal(.pick, text: "")),
-        ("drop-sky", "VÍZ", "Víz", .quick(.water)),
-        ("scale-ink", "SÚLY", "Súly", .quick(.weight)),
-        ("spark-cream", "CHECK-IN", "Check-in", .cover(.checkin)),
-        ("book-sage", "NAPLÓ", "Napló", .quick(.journal)),
-    ]
-
-    /// Boop's line under the ring: the day in a few words, and the second way into the Nap page.
+    /// Boop's line under the ring: the day in a few words, and the second way into Boop's chat.
     private var boopLine: some View {
         VStack(spacing: 6) {
             Text(kezdolapLine(brief))
@@ -276,12 +272,12 @@ struct KezdolapView: View {
                 .multilineTextAlignment(.center)
                 .lineLimit(2).minimumScaleFactor(0.7)
                 .shadow(color: .black.opacity(0.55), radius: 10)
-            Text("A NAPOD").nkFont(11, .medium, design: .monospaced).tracking(2.2)
+            Text("KÉRDEZD BOOPOT").nkFont(11, .medium, design: .monospaced).tracking(2.2)
                 .foregroundStyle(.white.opacity(0.62))
         }
         .padding(.horizontal, 28)
         .contentShape(Rectangle())
-        .onTapGesture { openRoute(.nap, from: CGPoint(x: screen.midX, y: screen.midY), in: screen) }
+        .onTapGesture { openRoute(.chat, from: CGPoint(x: screen.midX, y: screen.midY), in: screen) }
         .accessibilityHidden(true)
     }
 
@@ -290,31 +286,33 @@ struct KezdolapView: View {
     private func open(_ item: NKRingItem, at point: CGPoint) {
         guard let area = Area(rawValue: Int(item.id) ?? -1) else { return }
         if area == .nap {
-            openRoute(.day, from: point, in: screen)
+            openRoute(.nap(.ma), from: point, in: screen)
         } else if let world = area.world {
             // Pénz and Levél have a page before they have data (`mezo-r36n9.57`): it is the page the owner
             // approved in the spike, and every tab of it says what will be there instead of a made-up number.
-            openRoute(.room(world), from: point, in: screen)
+            openRoute(.room(RoomEntry(world)), from: point, in: screen)
         } else {
             toast = area.soonLine
         }
     }
 
-    /// Simulator review: `-previewHome nap|alvas|etel|edzes|energia|suly|forma|penz|level|nap-oldal` opens the home
-    /// already moved on.
+    /// Simulator review: `-previewHome nap|napok|chat|alvas|etel|edzes|energia|evad|suly|forma|penz|level` opens the
+    /// home already moved on.
     private static var initialRoute: KezdolapRoute? {
         #if DEBUG
         switch UserDefaults.standard.string(forKey: "previewHome") {
-        case "nap": return .nap
-        case "alvas": return .room(.alvas)
-        case "etel": return .room(.fuel)
-        case "edzes": return .room(.mozgas)
-        case "energia": return .room(.pulzus)
-        case "forma": return .room(.forma)
-        case "penz": return .room(.penz)
-        case "level": return .room(.level)
-        case "suly": return .room(.suly)
-        case "nap-oldal": return .day
+        case "nap", "nap-oldal": return .nap(.ma)
+        case "napok": return .nap(.napok)
+        case "chat": return .chat
+        case "alvas": return .room(RoomEntry(.alvas))
+        case "etel": return .room(RoomEntry(.fuel))
+        case "edzes": return .room(RoomEntry(.mozgas))
+        case "energia": return .room(RoomEntry(.pulzus))
+        case "evad": return .room(RoomEntry(.evad))
+        case "forma": return .room(RoomEntry(.forma))
+        case "penz": return .room(RoomEntry(.penz))
+        case "level": return .room(RoomEntry(.level))
+        case "suly": return .room(RoomEntry(.suly))
         default: return nil
         }
         #else
@@ -336,14 +334,5 @@ extension EnvironmentValues {
     var closeRoom: (@MainActor @Sendable () -> Void)? {
         get { self[CloseRoomKey.self] }
         set { self[CloseRoomKey.self] = newValue }
-    }
-}
-
-private struct KezdolapHomeResetKey: EnvironmentKey { static let defaultValue = 0 }
-extension EnvironmentValues {
-    /// Bumped by the shell when the bar's "Ma" is tapped while Ma is already the place: the home screen comes back.
-    var kezdolapHomeReset: Int {
-        get { self[KezdolapHomeResetKey.self] }
-        set { self[KezdolapHomeResetKey.self] = newValue }
     }
 }

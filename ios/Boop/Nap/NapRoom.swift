@@ -49,3 +49,6 @@ struct NapRoomPage<Ma: View, Napok: View>: View {
         }
     }
 }
+
+/// A day opened from the Napok tab (its `yyyy-MM-dd`): the day's sheet hangs at the Nap room's page level.
+struct NapOpenDay: Identifiable, Equatable { let id: String }

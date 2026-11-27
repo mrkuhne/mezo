@@ -39,7 +39,7 @@ struct MaWall: View {
     /// Átrendezés page, which the Nap page presents at page level (boop-ios.md §9).
     @Environment(KapacitasStore.self) private var kapacitas: KapacitasStore?
     @Environment(\.openAtrendezes) private var openAtrendezes
-    @Environment(\.openPlace) private var openPlace
+    @Environment(\.openDestination) private var openDestination
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -234,7 +234,7 @@ struct MaWall: View {
             }
             return
         }
-        else if c.area == WallSources.evad { evad?.pendingSub = evadWallOpens(c.id); openPlace(.terv) }
+        else if c.area == WallSources.evad { evad?.pendingSub = evadWallOpens(c.id); openDestination(.room(RoomEntry(.evad))) }
         else if c.area == WallSources.kapacitas { openAtrendezes?() }
         settle(id: c.id, line: c.settled)
     }

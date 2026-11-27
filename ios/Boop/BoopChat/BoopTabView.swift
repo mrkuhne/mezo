@@ -34,6 +34,8 @@ struct ChipFace: Equatable {
 /// right, Boop's serif answers with the orb), and the composer — text, or the mic that fills the field. Without the net
 /// a question waits on the phone and goes when the net is back.
 struct BoopTabView: View {
+    /// The way back to the ring (`mezo-r36n9.196`): the chat is a room the ring's centre orb opens. nil = no back button.
+    var onBack: (@MainActor @Sendable () -> Void)? = nil
     @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
     @Environment(\.scenePhase) private var scenePhase
     @State private var input = ""
@@ -69,7 +71,17 @@ struct BoopTabView: View {
                 .onChange(of: chat?.lines.count) { withAnimation { proxy.scrollTo("end", anchor: .bottom) } }
                 .onChange(of: chat?.answering) { withAnimation { proxy.scrollTo("end", anchor: .bottom) } }
             }
-            composer.keepsKeyboard().padding(.bottom, typing ? 10 : 92)
+            composer.keepsKeyboard().padding(.bottom, typing ? 10 : 24)
+        }
+        .overlay(alignment: .topLeading) {
+            if let onBack {
+                Button { onBack() } label: {
+                    Image(systemName: "chevron.left").font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
+                        .frame(width: 44, height: 44).glassEffect(.clear, in: .circle)
+                }
+                .buttonStyle(.plain).accessibilityLabel("Vissza")
+                .padding(.leading, 16).padding(.top, 8)
+            }
         }
         .nkToast($toast)
         .task { await chat?.refresh() }

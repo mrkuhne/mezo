@@ -803,7 +803,7 @@ struct EtelRoom: View {
     /// Set when the home screen's ring opened this room with no navigation stack around it.
     @Environment(\.closeRoom) private var closeRoom
     @Environment(\.foodClient) private var food
-    @Environment(\.openPlace) private var openPlace
+    @Environment(\.openDestination) private var openDestination
     /// The season store's client: the Hét tab reads the server's day judgement through it (B6 S2).
     @Environment(EvadStore.self) private var evad: EvadStore?
     @SceneStorage("etel.tab") private var selected: String = EtelTab.ma.rawValue
@@ -858,14 +858,14 @@ struct EtelRoom: View {
                              NKAreaAction(glyph: "cup-cream", label: "Ital rögzítése") { composer = MealStart(entrance: .drink) },
                              NKAreaAction(glyph: "repeat-deep", label: "Frissítés") { Task { await reload() } }],
                    onBack: { if let closeRoom { closeRoom() } else { dismiss() } },
-                   onAsk: { openPlace(.boop) }) {
+                   onAsk: { openDestination(.chat) }) {
             switch tab {
             case .ma:
                 EtelMa(store: store, onToast: { toast = $0 },
                        onRetry: { Task { await reload() } },
                        onCapture: { composer = MealStart(entrance: $0) }, onCompose: { composer = $0 },
                        onDelete: { deleteMeal($0, title: $1) }, onCard: cardAction,
-                       onSheet: { etelSheet = $0 }, onAsk: { openPlace(.boop) })
+                       onSheet: { etelSheet = $0 }, onAsk: { openDestination(.chat) })
             case .receptek:
                 EtelReceptek(store: store, onImport: { recipeSheet = .importer($0) }, onWorkshop: { recipeSheet = .workshop },
                              onCooked: { recipeSheet = .cooked(.input) },

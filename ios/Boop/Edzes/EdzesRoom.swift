@@ -53,7 +53,7 @@ struct EdzesRoom: View {
     @Environment(\.dismiss) private var dismiss
     /// Set when the home screen's ring opened this room with no navigation stack around it.
     @Environment(\.closeRoom) private var closeRoom
-    @Environment(\.openPlace) private var openPlace
+    @Environment(\.openDestination) private var openDestination
     @Environment(\.trainClient) private var train
     @Environment(\.planClient) private var plan
     @Environment(\.serverCache) private var cache
@@ -129,7 +129,7 @@ struct EdzesRoom: View {
                              NKAreaAction(glyph: "repeat-deep", label: "Beállítások") { showGym = true },
                              NKAreaAction(glyph: "bell-cream", label: "Pihenő vége") { showRestEnd = true }],
                    onBack: { if let closeRoom { closeRoom() } else { dismiss() } },
-                   onAsk: { openPlace(.boop) }) {
+                   onAsk: { openDestination(.chat) }) {
             content
             Color.clear.frame(height: 10)
         }
@@ -185,7 +185,7 @@ struct EdzesRoom: View {
                                 onOpenSeason: { note in
                                     page = nil
                                     if let note { toast = note }
-                                    openPlace(.terv)
+                                    openDestination(.room(RoomEntry(.evad)))
                                 })
                 }
             case .review:
@@ -426,7 +426,7 @@ struct EdzesRoom: View {
         timeline
         exercises
         NKBare("AZ EDZÉS TERÜLET", hue: hue) { menu }
-        NKAskRow(hue: hue, text: "Kérdezd meg Boopot a mai edzésről") { openPlace(.boop) }
+        NKAskRow(hue: hue, text: "Kérdezd meg Boopot a mai edzésről") { openDestination(.chat) }
     }
 
     /// Today's session in a sentence. The brief's own title and time stay the source — it is
@@ -839,11 +839,11 @@ struct EdzesRoom: View {
             blockLoadCard(b)
             weekCarousel(b)
             mezoTiles
-            NKAskRow(hue: hue, text: "Kérdezd meg Boopot az edzéstervedről") { openPlace(.boop) }
+            NKAskRow(hue: hue, text: "Kérdezd meg Boopot az edzéstervedről") { openDestination(.chat) }
         } else if store?.blockProblem != nil {
             NKBare("A MEZOCIKLUSOD", hue: hue) { NKNoFreshData("A mezociklusodat most nem érem el") }
             mezoTiles
-            NKAskRow(hue: hue, text: "Kérdezd meg Boopot az edzéstervedről") { openPlace(.boop) }
+            NKAskRow(hue: hue, text: "Kérdezd meg Boopot az edzéstervedről") { openDestination(.chat) }
         } else {
             if let planned = mezo?.groups.upcoming.first {
                 MezoPlannedCard(card: planned, hue: hue) { mezoFlow.cover = .detail(planned) }
@@ -861,7 +861,7 @@ struct EdzesRoom: View {
                 .padding(.horizontal, 20)
             }
             mezoTiles
-            NKAskRow(hue: hue, text: "Kérdezd meg Boopot az edzéstervedről") { openPlace(.boop) }
+            NKAskRow(hue: hue, text: "Kérdezd meg Boopot az edzéstervedről") { openDestination(.chat) }
         }
     }
 
@@ -951,13 +951,13 @@ struct EdzesRoom: View {
     @ViewBuilder private var gyakorlatok: some View {
         NKNotLiveYet(hue: hue, title: "A gyakorlataid",
                      line: "A súlyaid, a rekordjaid és minden gyakorlat egy helyen. Az edzés-szakasz hozza, a Watch-appal együtt.")
-        NKAskRow(hue: hue, text: "Kérdezd meg Boopot egy gyakorlatról") { openPlace(.boop) }
+        NKAskRow(hue: hue, text: "Kérdezd meg Boopot egy gyakorlatról") { openDestination(.chat) }
     }
 
     @ViewBuilder private var elozmenyek: some View {
         NKNotLiveYet(hue: hue, title: "Az eddigi edzéseid",
                      line: "A telefon ma csak a mai napot látja az edzésekből. A teljes előzmény az edzés-szakasszal érkezik.")
-        NKAskRow(hue: hue, text: "Kérdezd meg Boopot a fejlődésedről") { openPlace(.boop) }
+        NKAskRow(hue: hue, text: "Kérdezd meg Boopot a fejlődésedről") { openDestination(.chat) }
     }
 }
 

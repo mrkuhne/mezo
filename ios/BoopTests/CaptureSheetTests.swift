@@ -26,19 +26,15 @@ struct CaptureSheetTests {
         #expect(Set(QuickLog.allCases).count == 6)
     }
 
-    /// The home screen's five doors (owner 2026-11-24, `mezo-r36n9.157`): the frequent five, in his order, each one tap.
-    @Test func homeDoorsAreTheFiveFrequentOnes() {
-        #expect(KezdolapView.doors.map(\.label) == ["ÉTKEZÉS", "VÍZ", "SÚLY", "CHECK-IN", "NAPLÓ"])
-        #expect(KezdolapView.doors.map(\.pick) == [.meal(.pick, text: ""), .quick(.water), .quick(.weight), .cover(.checkin), .quick(.journal)])
-        #expect(KezdolapView.doors.map(\.glyph) == ["bowl-cream", "drop-sky", "scale-ink", "spark-cream", "book-sage"])
-    }
-
-    @Test func everyHomeDoorIsAlsoOnTheSheet() {
+    /// The home screen's five doors left with the bar (`mezo-r36n9.196`, decision #134): every one of them is still a
+    /// tap away on the „+" sheet the floating button opens.
+    @Test func everyFormerHomeDoorIsOnTheSheet() {
         let onSheet = Set(CaptureSheet.doors.map { "\($0.pick)" })
-        for d in KezdolapView.doors {
-            if case .meal = d.pick { continue }   // the meal card itself is on the sheet
-            #expect(onSheet.contains("\(d.pick)"), "\(d.label) is not a sheet door")
+        for pick: CapturePick in [.quick(.water), .quick(.weight), .cover(.checkin), .quick(.journal)] {
+            #expect(onSheet.contains("\(pick)"), "\(pick) is not a sheet door")
         }
+        // the meal: the sheet's own food card and its chips
+        #expect(CaptureSheet.foodChips.contains { if case .meal = $0.pick { true } else { false } })
     }
 
     @Test func quickSheetsSayTheirAmountsInHisUnits() {
