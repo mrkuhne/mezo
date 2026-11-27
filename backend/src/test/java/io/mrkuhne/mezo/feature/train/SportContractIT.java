@@ -142,6 +142,15 @@ class SportContractIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testLogSportSession_shouldReturn201_whenRunning() {
+        SportSessionResponse created = postForBody("/api/train/sport-sessions",
+            SportSessionCreateRequest.builder().sport("running").duration(35).rpe(new BigDecimal("6")).build(),
+            ownerAuthHeaders(), HttpStatus.CREATED, SportSessionResponse.class);
+
+        assertThat(created.getSport()).isEqualTo("running");
+    }
+
+    @Test
     void testLogSportSession_shouldReturn400InvalidValue_whenSportNotAllowed() {
         String body = postForBody("/api/train/sport-sessions",
             sessionReq().sport("kajak").build(),
@@ -210,9 +219,24 @@ class SportContractIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testReplaceSportSchedule_shouldRoundTripWidenedKinds_whenRunningFootballOther() {
+        // Boop Sport S1 (mezo-r36n9.201): slots take the log's ten kinds + running.
+        HttpHeaders auth = ownerAuthHeaders();
+        putForList("/api/train/sport-schedule",
+            List.of(slot(0, "07:00", 40, "training", "running"),
+                slot(2, "19:00", 90, "match", "football"),
+                slot(4, "18:00", 60, "training", "other")), auth);
+
+        List<SportScheduleSlotResponse> after =
+            getForList("/api/train/sport-schedule", auth, HttpStatus.OK, SportScheduleSlotResponse.class);
+        assertThat(after).extracting(SportScheduleSlotResponse::getSport)
+            .containsExactly("running", "football", "other");
+    }
+
+    @Test
     void testReplaceSportSchedule_shouldReturn400InvalidValue_whenSportUnknown() {
         String body = putForBody("/api/train/sport-schedule",
-            List.of(slot(0, "18:15", 90, "training", "tennis")),
+            List.of(slot(0, "18:15", 90, "training", "race")),
             ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
         assertHasFieldError(body, "sport", "VALIDATION_INVALID_VALUE");
     }

@@ -15,7 +15,7 @@ import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
 /**
- * One-off (non-recurring) sport event (volleyball | cross | trx) — a dated session/match outside
+ * One-off (non-recurring) sport event (any of the eleven sport kinds) — a dated session/match outside
  * the weekly {@link SportScheduleSlotEntity} rhythm (mezo-e1sp). Unlike the schedule slots it is
  * long-lived (individually created/deleted, never full-replaced); {@code kind}/{@code sport}
  * share the slot table's CHECK vocabularies.
@@ -53,7 +53,7 @@ public class SportEventEntity extends OwnedEntity {
 
     @NotNull
     @Column(nullable = false)
-    private String sport = "volleyball"; // 'volleyball' | 'cross' | 'trx' (DB CHECK)
+    private String sport = "volleyball"; // one of the eleven sport kinds (DB CHECK, mezo-r36n9.201)
 
     @Column
     private String location;

@@ -119,6 +119,8 @@ public class TrainController implements TrainApi {
     private final WorkoutService workoutService;
     private final WorkoutExerciseChangeService workoutExerciseChangeService;
     private final SportService sportService;
+    /** Boop Sport S1 (mezo-r36n9.201): today's sport on the Edzés day read. */
+    private final io.mrkuhne.mezo.feature.train.service.WorkoutWindowQueryService workoutWindowQueryService;
     private final SportSlotSkipService sportSlotSkipService;
     private final GymScheduleService gymScheduleService;
     private final GymProfileService gymProfileService;
@@ -426,7 +428,11 @@ public class TrainController implements TrainApi {
 
     @Override
     public WorkoutTodayResponse getTodayWorkout(UUID templateSessionId) {
-        return workoutService.getToday(currentUserId.get(), templateSessionId);
+        UUID user = currentUserId.get();
+        WorkoutTodayResponse today = workoutService.getToday(user, templateSessionId);
+        // The second layer (mezo-r36n9.201): never a rest day when sport is on — same "today" as getToday.
+        today.setSportToday(workoutWindowQueryService.sportToday(user, java.time.LocalDate.now()));
+        return today;
     }
 
     @Override

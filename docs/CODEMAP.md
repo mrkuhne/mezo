@@ -146,7 +146,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
   - **entities→tables:** `BoopBriefEntity`→`boop_brief`, `WorkoutTimeOverrideEntity`→`workout_time_override`
   - **repositories:** `BoopBriefRepository`, `WorkoutTimeOverrideRepository`
   - **services:** `BoopBriefService`, `BoopBriefStore`, `BoopDay`, `BoopDayAssembler`, `BoopPrompts`, `BoopScores`,
-    `BoopVerdictWriter`, `EnergyCurveModel`, `RuleVerdicts`, `SessionTimeService`
+    `BoopVerdictWriter`, `BoopWorkoutKinds`, `EnergyCurveModel`, `RuleVerdicts`, `SessionTimeService`
   - **controllers→contract:** `BoopController`→`BoopApi`
   - **mappers:** `BoopBriefMapper`
   - **config:** `BoopProperties`
@@ -154,10 +154,10 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 - **Contract** `api/feature/boop/boop.yml` — 4 operations
   - **endpoints:** GET /api/boop/brief · POST /api/boop/brief/regenerate · PUT /api/boop/session-time ·
     DELETE /api/boop/session-time
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/boop` — 11 IT + 8 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/boop` — 12 IT + 9 unit
   - **ITs:** `BoopBriefCapacityIT`, `BoopBriefCapacityOffIT`, `BoopBriefConcurrencyIT`, `BoopBriefLateWordsIT`,
     `BoopBriefServiceIT`, `BoopContractIT`, `BoopDayAssemblerIT`, `BoopRepositoriesIT`, `BoopSessionDoneIT`,
-    `BoopVerdictWriterIT`, `SessionTimeIT`
+    `BoopSportLayerIT`, `BoopVerdictWriterIT`, `SessionTimeIT`
   - **populators:** `BoopBriefPopulator`, `CalendarEventPopulator`, `CheckInPopulator`, `DailyMetricPopulator`,
     `DatabasePopulator`, `IntentionPopulator`, `MealPopulator`, `PatternPopulator`, `RecoveryPeriodPopulator`,
     `SleepGoalPopulator`, `SleepLogPopulator`, `TrainPopulator`, `WearableWorkoutPopulator`, `WeightLogPopulator`,
@@ -1312,7 +1312,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     GET /api/seasons/experiments · POST /api/seasons/experiments · POST /api/seasons/experiments/{id}/start ·
     PUT /api/seasons/experiments/{id}/days · POST /api/seasons/experiments/{id}/dismiss ·
     POST /api/seasons/experiments/{id}/keep
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/season` — 17 IT + 9 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/season` — 17 IT + 10 unit
   - **ITs:** `AdherenceServiceIT`, `ExperimentApiIT`, `ExperimentServiceIT`, `MenuServiceIT`, `MesocycleGateIT`,
     `MesocycleRestartGateIT`, `SeasonApiIT`, `SeasonBlockRearrangeIT`, `SeasonBlockRelinkIT`,
     `SeasonContextExperimentFaultIT`, `SeasonInsightsIT`, `SeasonMenuApiIT`, `SeasonOverviewIT`, `SeasonPortsIT`,
@@ -1440,7 +1440,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     GET /api/train/run-sessions · POST /api/train/run-sessions · GET /api/train/timing-profile ·
     POST /api/train/year-plans/preview · POST /api/train/year-plans · GET /api/train/year-plans/active ·
     PATCH /api/train/year-plans/blocks/{blockId} · POST /api/train/year-plans/{id}/archive
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 147 IT + 64 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 148 IT + 64 unit
   - **ITs:** `BlockCoverageIT`, `BlockExerciseSuggestionsIT`, `CatalogMediaResolutionIT`, `CatalogWriteContractIT`,
     `ClosingBlockIT`, `ClosingBlockSwitchOffIT`, `ClosingBlockVolumeFlagIT`, `ComebackTodayIT`, `CrossDayWorkoutIT`,
     `CustomWorkoutIT`, `ExerciseCatalogContractIT`, `ExerciseCatalogLoaderIT`, `ExerciseCatalogPermissionIT`,
@@ -1461,10 +1461,10 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `RunSessionNoLevelUpApiIT`, `RunningContractIT`, `ScheduleGoalRecomputeIT`, `SetLegLogIT`,
     `SetRecommendationServiceIT`, `SportContractIT`, `SportEventContractIT`, `SportServiceIT`, `SportSessionRangeIT`,
     `SportSlotSkipContractIT`, `SportSlotSkipPersistenceIT`, `TechniqueAiRefinerIT`, `TechniqueExclusionIT`,
-    `TechniquePlanServiceIT`, `TimingProfileIT`, `TimingProfileSwitchOffIT`, `TrainContractIT`, `TrainSeedDataIT`,
-    `TrainServiceIT`, `TrainStylePropertiesIT`, `TrainTechniquePropertiesIT`, `TrainingYearPlanRepositoryIT`,
-    `VolumeAmountMigrationRunnerIT`, `VolumeArcContractIT`, `VolumeArcVolumeFlagIT`, `VolumeLedgerIT`,
-    `VolumeLedgerSwitchOffIT`, `VolumeProgressionTierIT`, `VolumePropertiesIT`, `WarmupExclusionIT`,
+    `TechniquePlanServiceIT`, `TimingProfileIT`, `TimingProfileSwitchOffIT`, `TodaySportContractIT`, `TrainContractIT`,
+    `TrainSeedDataIT`, `TrainServiceIT`, `TrainStylePropertiesIT`, `TrainTechniquePropertiesIT`,
+    `TrainingYearPlanRepositoryIT`, `VolumeAmountMigrationRunnerIT`, `VolumeArcContractIT`, `VolumeArcVolumeFlagIT`,
+    `VolumeLedgerIT`, `VolumeLedgerSwitchOffIT`, `VolumeProgressionTierIT`, `VolumePropertiesIT`, `WarmupExclusionIT`,
     `WeekProposalApiAutoIT`, `WeekProposalApiIT`, `WeekProposalAutoIT`, `WeekProposalAutoSwitchOffIT`,
     `WeekProposalDaySaveIT`, `WeekProposalLoadLinesIT`, `WeekProposalLoadLinesSwitchOffIT`, `WeekProposalManualIT`,
     `WeekProposalRunModeIT`, `WeekProposalStallFailureIT`, `WeekProposalStallIT`, `WeekProposalTechniqueIT`,

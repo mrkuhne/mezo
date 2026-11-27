@@ -45,13 +45,18 @@ public class SeasonMenuSourceAdapter implements SeasonMenuSourcePort {
         for (LocalDate d = from; !d.isAfter(to); d = d.plusDays(1)) {
             DayPlanService.Skeleton sk = dayPlans.skeleton(owner, d);
             boolean gym = sk.sessions().stream().anyMatch(s -> !"sport".equals(s.kind()));
-            WorkoutWindowQueryService.Window sport = sk.sessions().stream()
-                .filter(s -> "sport".equals(s.kind())).findFirst().orElse(null);
+            // Every sport window of the day (Boop Sport S1, mezo-r36n9.201) — each gets its own pre-session snack.
+            List<DayFrame.SportWindow> sports = sk.sessions().stream()
+                .filter(s -> "sport".equals(s.kind()) && s.start() != null)
+                .sorted(java.util.Comparator.comparing(WorkoutWindowQueryService.Window::start))
+                .map(s -> new DayFrame.SportWindow(s.label(), s.start().getHour() * 60 + s.start().getMinute()))
+                .toList();
+            DayFrame.SportWindow first = sports.isEmpty() ? null : sports.get(0);
             List<FrameWindow> windows = sk.windows().stream()
                 .map(w -> new FrameWindow(w.slot(), w.ordinal(), w.label(), w.budget(), w.atMin()))
                 .toList();
-            out.add(new DayFrame(d, gym, sport != null, sport == null ? null : sport.label(),
-                sport == null ? null : sport.start().getHour() * 60 + sport.start().getMinute(), windows));
+            out.add(new DayFrame(d, gym, first != null, first == null ? null : first.name(),
+                first == null ? null : first.startMin(), sports, windows));
         }
         return out;
     }

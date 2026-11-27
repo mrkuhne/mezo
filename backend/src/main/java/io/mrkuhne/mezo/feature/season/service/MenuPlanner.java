@@ -62,11 +62,33 @@ public final class MenuPlanner {
         }
     }
 
+    /** One sport occurrence of a day: its name and its start in owner-zone minutes (Boop Sport S1). */
+    public record SportStart(String name, int startMin) {
+    }
+
     /**
-     * One day to plan: its kind, the first sport session's name and start (null without sport) and its windows in
-     * clock order (only windows with a budget — a kímélő day has none and is planned empty).
+     * One day to plan: its kind, the first sport session's name and start (null without sport), every sport session
+     * in clock order (each gets a pre-session snack — Boop Sport S1, mezo-r36n9.201) and its windows in clock order
+     * (only windows with a budget — a kímélő day has none and is planned empty).
      */
-    public record DayBudget(LocalDate date, String kind, String sportName, Integer sportStartMin, List<Window> windows) {
+    public record DayBudget(LocalDate date, String kind, String sportName, Integer sportStartMin,
+                            List<SportStart> sports, List<Window> windows) {
+
+        public DayBudget {
+            sports = sports == null ? List.of() : List.copyOf(sports);
+        }
+
+        /** The single-sport shape. */
+        public DayBudget(LocalDate date, String kind, String sportName, Integer sportStartMin, List<Window> windows) {
+            this(date, kind, sportName, sportStartMin,
+                sportStartMin == null ? List.of() : List.of(new SportStart(sportName, sportStartMin)), windows);
+        }
+
+        /** Every sport of the day; the first one is the day's {@code sportName} / {@code sportStartMin}. */
+        public DayBudget(LocalDate date, String kind, List<SportStart> sports, List<Window> windows) {
+            this(date, kind, sports.isEmpty() ? null : sports.get(0).name(),
+                sports.isEmpty() ? null : sports.get(0).startMin(), sports, windows);
+        }
     }
 
     /** One planned meal. {@code recipeId} null = an ingredient tip ({@code name} is the tip text). */
@@ -144,19 +166,31 @@ public final class MenuPlanner {
         return fitError(r, w) <= FIT_PCT / 100.0;
     }
 
-    /** The day's windows with the sport day's pre-session snack marked (or added when the day has none there). */
+    /**
+     * The day's windows with a pre-session snack per sport session marked (or added when the day has none there).
+     * Sessions are handled in clock order; a window already marked for an earlier session is not reused, so two
+     * sessions get two snacks (Boop Sport S1, mezo-r36n9.201).
+     */
     public static List<Window> withPreSession(DayBudget day) {
         List<Window> ws = new ArrayList<>(day.windows());
-        if (day.sportStartMin() == null || ws.isEmpty()) {
+        if (ws.isEmpty()) {
             return ws;
         }
-        int start = day.sportStartMin();
-        String label = capitalize(day.sportName() == null ? "Sport" : day.sportName()) + " előtt";
+        List<SportStart> sports = day.sports().stream().sorted(Comparator.comparingInt(SportStart::startMin)).toList();
+        for (SportStart s : sports) {
+            ws = withPreSession(ws, s.startMin(), s.name());
+        }
+        return ws;
+    }
+
+    private static List<Window> withPreSession(List<Window> in, int start, String sportName) {
+        List<Window> ws = new ArrayList<>(in);
+        String label = capitalize(sportName == null ? "Sport" : sportName) + " előtt";
         int pre = -1;
         boolean anyBefore = false;
         for (int i = 0; i < ws.size(); i++) {
             Window w = ws.get(i);
-            boolean before = w.atMin() < start && w.atMin() >= start - PRE_SESSION_REACH_MIN;
+            boolean before = !w.preSession() && w.atMin() < start && w.atMin() >= start - PRE_SESSION_REACH_MIN;
             anyBefore |= before;
             if (before && w.slot() == SlotKey.SNACK) {
                 pre = i; // the latest snack before the session
@@ -180,7 +214,8 @@ public final class MenuPlanner {
                 (int) Math.round(b.p() * keep), (int) Math.round(b.c() * keep), (int) Math.round(b.f() * keep)),
                 w.atMin(), w.preSession()));
         }
-        int ordinal = 1 + (int) ws.stream().filter(w -> w.slot() == SlotKey.SNACK).count();
+        // max + 1, not count + 1: zero-budget windows are dropped upstream, so snack ordinals can have gaps.
+        int ordinal = 1 + ws.stream().filter(w -> w.slot() == SlotKey.SNACK).mapToInt(Window::ordinal).max().orElse(0);
         Window added = new Window(SlotKey.SNACK, ordinal, label,
             new Macros4(snack, Math.round(snack * 0.1f / 4), Math.round(snack * 0.7f / 4), Math.round(snack * 0.2f / 9)),
             Math.max(0, start - PRE_SESSION_LEAD_MIN), true);

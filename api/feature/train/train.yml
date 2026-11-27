@@ -5129,6 +5129,29 @@ components:
           description: >-
             Kímélő mód (Kihagyás S2, mezo-q4xt2.2): today's session is lightened — a comeback
             ramp session after a recovery period, or a released protected day. Null otherwise.
+        sportToday:
+          type: array
+          description: >-
+            Boop Sport S1 (mezo-r36n9.201): today's sport occurrences (weekly slots + one-off events − skips; a
+            logged session is done) in clock order — the second layer next to the gym day, so a sport-only day is
+            not a rest day. Always present (possibly empty), independent of templateSessionId.
+          items:
+            $ref: '#/components/schemas/TodaySport'
+    TodaySport:
+      type: object
+      required: [sport, time, durationMin, done]
+      properties:
+        sport:
+          type: string
+          description: One of the eleven sport kinds (volleyball, running, …)
+        time:
+          type: string
+          description: HH:mm — the log's clock time when logged, else the slot / event's
+        durationMin:
+          type: integer
+        done:
+          type: boolean
+          description: A sport session was logged for this occurrence today
     TodayComeback:
       type: object
       required: [index, total, mode]
@@ -6023,7 +6046,7 @@ components:
       properties:
         sport:
           type: string
-          pattern: '^(volleyball|cross|trx|bike|swim|football|basketball|tennis|hike|other)$'
+          pattern: '^(volleyball|cross|trx|bike|swim|football|basketball|tennis|hike|running|other)$'
           description: Modality discriminator; defaults to volleyball server-side when omitted.
         date:
           type: string
@@ -6097,7 +6120,7 @@ components:
           maxLength: 40
         sport:
           type: string
-          pattern: '^(volleyball|cross|trx)$'
+          pattern: '^(volleyball|cross|trx|bike|swim|football|basketball|tennis|hike|running|other)$'
           description: Sport discriminator; defaults to volleyball server-side when omitted.
     SportScheduleSlotResponse:
       type: object
@@ -6128,7 +6151,7 @@ components:
           type: string
         sport:
           type: string
-          description: volleyball | cross | trx
+          description: 'One of the eleven sport kinds (the log''s ten + running, mezo-r36n9.201)'
     SportEventCreateRequest:
       type: object
       description: A dated one-off sport event outside the weekly rhythm
@@ -6153,7 +6176,7 @@ components:
           description: Defaults to training server-side when omitted.
         sport:
           type: string
-          pattern: '^(volleyball|cross|trx)$'
+          pattern: '^(volleyball|cross|trx|bike|swim|football|basketball|tennis|hike|running|other)$'
           description: Sport discriminator; defaults to volleyball server-side when omitted.
         location:
           type: string
@@ -6187,7 +6210,7 @@ components:
           enum: [training, match]
         sport:
           type: string
-          description: volleyball | cross | trx
+          description: 'One of the eleven sport kinds (the log''s ten + running, mezo-r36n9.201)'
         location:
           type: string
         intensityLabel:
@@ -6260,7 +6283,7 @@ components:
           type: string
           description: >-
             Modality discriminator
-            (volleyball|cross|trx|bike|swim|football|basketball|tennis|hike|other).
+            (volleyball|cross|trx|bike|swim|football|basketball|tennis|hike|running|other).
         date:
           type: string
           format: date

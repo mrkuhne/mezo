@@ -305,6 +305,12 @@ public class BoopBriefService {
                 }
             }
         }
+        if (!d.sport().isEmpty()) { // only when present, so a sport-less day keeps its hash (mezo-r36n9.201)
+            b.append("|sport:");
+            for (BoopDay.Sport sp : d.sport()) {
+                b.append(sp.sport()).append(',').append(sp.time()).append(',').append(sp.done()).append(';');
+            }
+        }
         b.append("|recovery:");
         if (d.recovery() != null) {
             b.append(d.recovery().reason()).append(',').append(d.recovery().day());

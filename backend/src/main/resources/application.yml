@@ -3099,6 +3099,7 @@ mezo:
         bike:       { light: 5.8, moderate: 6.8, hard: 8.0 }   # 01019 leisure 9.4 mph; 01016 self-selected moderate pace; 01030 12–13.9 mph moderate effort
         hike:       { light: 5.3, moderate: 6.0, hard: 7.8 }   # 17082 fields/hillsides no load; 17080 cross country; 17012 backpacking with daypack
         run:        { light: 7.5, moderate: 9.3, hard: 10.5 }  # 12020 jogging self-selected pace; 12050 6–6.3 mph; 12060 6.7 mph / 9 min-mile
+        running:    { light: 7.5, moderate: 9.3, hard: 10.5 }  # the sport-log kind (mezo-r36n9.201) — same codes as run
         other:      { light: 3.0, moderate: 4.0, hard: 6.0 }   # fallback for unmapped kinds (e.g. kajak); mirrors volleyball's generic band
     # Training styles (mezo-r36n9.79, spec §6.2) — binds onto TrainStyleProperties. Stamped onto every
     # exercise of a styled block; working-sets null = keep the plan's, leg-reserve null = reserve.

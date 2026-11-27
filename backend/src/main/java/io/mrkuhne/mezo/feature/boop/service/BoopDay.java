@@ -37,7 +37,7 @@ public record BoopDay(
         HrToday hrToday,
         Integer steps,
         Integer activeKcal,
-        /** Today's planned gym session (not skipped, not a rest day), or null. */
+        /** Today's planned gym session (not skipped, not a rest day), or null. Gym only — sport is {@link #sport}. */
         Session session,
         /** Yesterday's load, each session once: logged gym/sport sessions plus unmatched live Health workouts (zeros when none). */
         WorkoutLoad yesterdayLoad,
@@ -56,7 +56,28 @@ public record BoopDay(
         Weight weight,
         Recovery recovery,
         /** Boop B6 Évad: the active season's rules as {@code "[Évad] "} lines; "" without a season. */
-        String seasonRules) {
+        String seasonRules,
+        /** Boop Sport S1 (mezo-r36n9.201): today's sport, the second layer next to {@link #session}; clock order,
+         *  empty without sport. A sport log or the sport's own Health workout ticks these, never the gym. */
+        List<Sport> sport) {
+
+    public BoopDay {
+        sport = sport == null ? List.of() : List.copyOf(sport);
+    }
+
+    /** The pre-sport shape — season rules, no sport layer. */
+    public BoopDay(LocalDate date, Sleep sleep, int sleepTargetMin, LocalTime bedtimeTarget, int nightsKnown,
+                   List<Integer> deepSleepWeek, List<Integer> restingHrWeek, Double baselineRestingHr,
+                   Double baselineDeepMin, Integer restingHr, HrToday hrToday, Integer steps, Integer activeKcal,
+                   Session session, WorkoutLoad yesterdayLoad, List<Meal> meals, int kcalSoFar, int kcalTarget,
+                   int proteinG, int proteinTarget, int carbsG, int fatG, List<Checkin> checkins, Intention intention,
+                   List<Observation> observations, Calendar calendar, Weight weight, Recovery recovery,
+                   String seasonRules) {
+        this(date, sleep, sleepTargetMin, bedtimeTarget, nightsKnown, deepSleepWeek, restingHrWeek, baselineRestingHr,
+            baselineDeepMin, restingHr, hrToday, steps, activeKcal, session, yesterdayLoad, meals, kcalSoFar,
+            kcalTarget, proteinG, proteinTarget, carbsG, fatG, checkins, intention, observations, calendar, weight,
+            recovery, seasonRules, List.of());
+    }
 
     /** The pre-season shape — no season rules. */
     public BoopDay(LocalDate date, Sleep sleep, int sleepTargetMin, LocalTime bedtimeTarget, int nightsKnown,
@@ -76,7 +97,7 @@ public record BoopDay(
         return new BoopDay(date, sleep, sleepTargetMin, bedtimeTarget, nightsKnown, deepSleepWeek, restingHrWeek,
             baselineRestingHr, baselineDeepMin, restingHr, hrToday, steps, activeKcal, session, yesterdayLoad, meals,
             kcalSoFar, kcalTarget, proteinG, proteinTarget, carbsG, fatG, checkins, intention, observations, calendar,
-            weight, recovery, rules == null ? "" : rules);
+            weight, recovery, rules == null ? "" : rules, sport);
     }
 
     /** Number of quarter-hour busy slots covering 06:00–24:00. */
@@ -115,6 +136,25 @@ public record BoopDay(
     }
 
     public record Exercise(String name, int sets) {}
+
+    /**
+     * One planned or logged sport occurrence of the day (Boop Sport S1). {@code sport} is one of the eleven kinds;
+     * {@code time} its clock start (the log's when logged, else the slot / event's), {@code minutes} its length.
+     * {@code done}: logged that day, or the sport's own Health workout overlapped it; {@code doneMinutes} /
+     * {@code avgHr} from that workout when there is one, else the log's minutes.
+     */
+    public record Sport(String sport, LocalTime time, Integer minutes, boolean done, Integer doneMinutes,
+                        Integer avgHr) {
+
+        /** A planned sport not (yet) known to be done. */
+        public Sport(String sport, LocalTime time, Integer minutes) {
+            this(sport, time, minutes, false, null, null);
+        }
+
+        Sport withDone(Integer doneMinutes, Integer avgHr) {
+            return new Sport(sport, time, minutes, true, doneMinutes, avgHr);
+        }
+    }
 
     public record WorkoutLoad(int minutes, int kcal) {}
 

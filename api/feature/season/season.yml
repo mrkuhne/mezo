@@ -378,7 +378,7 @@ components:
         dayOfWeek: { type: integer, minimum: 0, maximum: 6, description: '0 = hétfő .. 6 = vasárnap' }
         time: { type: string, pattern: '^\d{2}:\d{2}$' }
         durationMin: { type: integer, minimum: 15, maximum: 360 }
-        sport: { type: string, pattern: '^(volleyball|cross|trx)$' }
+        sport: { type: string, pattern: '^(volleyball|cross|trx|bike|swim|football|basketball|tennis|hike|running|other)$' }
     SeasonSleepAnchor:
       type: object
       required: [anchor, time]

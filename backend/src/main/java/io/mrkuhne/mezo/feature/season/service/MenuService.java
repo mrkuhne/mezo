@@ -347,7 +347,9 @@ public class MenuService {
             .filter(w -> w.budget() != null && w.budget().kcal() > 0)
             .map(w -> new MenuPlanner.Window(w.slot(), w.ordinal(), w.label(), w.budget(), w.atMin(), false))
             .toList();
-        return new MenuPlanner.DayBudget(f.date(), kind, f.sportName(), f.sportStartMin(), windows);
+        List<MenuPlanner.SportStart> sports = f.sports().stream()
+            .map(s -> new MenuPlanner.SportStart(s.name(), s.startMin())).toList();
+        return new MenuPlanner.DayBudget(f.date(), kind, sports, windows);
     }
 
     /** The window budgets of the days, keyed date|slot|ordinal, with the pre-session snacks included. */

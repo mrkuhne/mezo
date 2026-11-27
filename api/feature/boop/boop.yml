@@ -255,6 +255,12 @@ components:
         stepsGoal: { type: integer }
         activeKcal: { type: integer, nullable: true, description: null without a wearable day (never a fake 0) }
         session: { $ref: '#/components/schemas/BoopSession' }
+        sport:
+          type: array
+          description: >-
+            Boop Sport S1 (mezo-r36n9.201) — today's sport, the second layer next to the gym `session`, in clock
+            order; empty without sport. A sport log or that sport's own Health workout ticks it, never the gym.
+          items: { $ref: '#/components/schemas/BoopSport' }
         meals:
           type: array
           items: { $ref: '#/components/schemas/BoopMeal' }
@@ -322,6 +328,16 @@ components:
             properties:
               name: { type: string }
               sets: { type: integer }
+    BoopSport:
+      type: object
+      required: [sport, time, done]
+      properties:
+        sport: { type: string, description: 'One of the eleven sport kinds (volleyball, running, …)' }
+        time: { type: string, description: 'HH:mm — the log''s clock time when logged, else the slot / event''s' }
+        minutes: { type: integer, nullable: true }
+        done: { type: boolean, description: 'Logged today, or the sport''s own Health workout overlapped it' }
+        doneMinutes: { type: integer, nullable: true }
+        avgHr: { type: integer, nullable: true }
     BoopMeal:
       type: object
       required: [time, title, kcal, proteinG, logged]

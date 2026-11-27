@@ -55,7 +55,7 @@ public class SportService {
     public SportSessionResponse logSportSession(UUID createdBy, SportSessionCreateRequest req) {
         SportSessionEntity s = new SportSessionEntity();
         s.setCreatedBy(createdBy); // server-side ownership — never from the client
-        // ten ids: volleyball|cross|trx|bike|swim|football|basketball|tennis|hike|other
+        // eleven ids: volleyball|cross|trx|bike|swim|football|basketball|tennis|hike|running|other
         s.setSport(req.getSport() != null ? req.getSport() : "volleyball");
         s.setDate(req.getDate() != null ? req.getDate() : LocalDate.now());
         s.setTime(req.getTime() != null ? req.getTime() : LocalTime.now().format(HH_MM));
@@ -133,7 +133,7 @@ public class SportService {
             s.setTime(in.getTime());
             s.setDurationMin(in.getDurationMin());
             s.setKind(in.getKind());
-            if (in.getSport() != null) s.setSport(in.getSport()); // volleyball|cross|trx; entity defaults volleyball
+            if (in.getSport() != null) s.setSport(in.getSport()); // any of the eleven kinds; entity defaults volleyball
             s.setLocation(in.getLocation());
             s.setIntensityLabel(in.getIntensityLabel());
             fresh.add(slotRepository.save(s));
@@ -162,7 +162,7 @@ public class SportService {
         e.setTime(req.getTime());
         e.setDurationMin(req.getDurationMin());
         if (req.getKind() != null) e.setKind(req.getKind()); // training|match; entity defaults training
-        if (req.getSport() != null) e.setSport(req.getSport()); // volleyball|cross|trx; entity defaults volleyball
+        if (req.getSport() != null) e.setSport(req.getSport()); // any of the eleven kinds; entity defaults volleyball
         e.setLocation(req.getLocation());
         e.setIntensityLabel(req.getIntensityLabel());
         return mapper.toEventResponse(eventRepository.save(e));

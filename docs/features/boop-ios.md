@@ -1378,6 +1378,16 @@ Tables (changeset `202611101300_mezo-r36n9.7_boop_brief.sql`, both soft-delete, 
 
 Tunables (`mezo.boop`, `BoopProperties`): `steps-goal` 9000, `regen-per-day` 3, `nights-needed` 14, `llm-timeout` 8s.
 
+### Sport S1 — gym and sport as two layers on the brief (`mezo-r36n9.201`, 2026-11-27, backend only)
+`BoopDay` (the brief's day sheet) gains **`sport[]`** (`BoopSport {sport, time, minutes, done, doneMinutes, avgHr}`)
+next to the gym `session`; it comes from `WorkoutWindowQueryService.windowsFor` (slots + events − skips). Done is
+matched **by kind** (`BoopDayAssembler.training`, pure `BoopWorkoutKinds`): a finished gym instance or a strength
+Health workout ticks the gym; a sport log (the resolver pairs it with the nearest plan) or that sport's own Health
+workout (`volleyball`, `running`, `cycling` for bike, `hiit` for cross/TRX, …) ticks the sport; Health `other` ticks
+neither. Before S1 any logged sport or any ≥ 20 min workout near the gym window ticked the gym. The brief fingerprint
+adds a `|sport:` part only when the day has sport (sport-less days keep their hash). Not yet read by the app — S3
+builds the Sport area on it; the Edzés room can read `sportToday[]` on the today workout read (`train.md` §4).
+
 ### B3 API operations (the generator filter, `ios/BoopKit/Sources/BoopAPI/openapi-generator-config.yaml`)
 
 Added to the `filter.operations` list in B3: `listCheckInsForDay`, `saveCheckIn`, `getCheckInPlan`, `getIntentionDay`, `addFocus`, `removeFocus`, `createJournalEntry`, `transcribeVoiceNote`, `putDayClose`, `getDayClose`, `listDayCloses`, `generateDayCloseLine`, `generateCheckInLine`, `listConversations`, `createConversation`, `listMessages`, `sendMessage`, `getDayContext`. Contract changes behind them (`api/feature/{biometrics,intention,journal,dayclose,companion,boop}`): `CheckInSnapshot`, `capturedAt` on check-ins, `clientRef` on goals and journal entries, the whole `DayClose` tag, conversation `channel`, `GET /api/companion/day-context`, and `BoopSession.done` / `planGoals` on the brief. Write ordering and idempotency are described in §3.
