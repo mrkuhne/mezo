@@ -329,6 +329,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
+				CODE_SIGN_ENTITLEMENTS = BoopWidgets.entitlements;
 				INFOPLIST_FILE = "BoopWidgets-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Boop;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
@@ -354,6 +355,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
+				CODE_SIGN_ENTITLEMENTS = BoopWidgets.entitlements;
 				INFOPLIST_FILE = "BoopWidgets-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Boop;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;

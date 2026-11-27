@@ -10,5 +10,6 @@ struct BoopWidgetsBundle: WidgetBundle {
 
     var body: some Widget {
         WorkoutLiveActivity()
+        ProbeWidget()
     }
 }
