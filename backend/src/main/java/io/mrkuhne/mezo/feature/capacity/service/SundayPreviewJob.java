@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.feature.capacity.repository.CalendarEventScoreRepository;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
@@ -32,9 +33,10 @@ public class SundayPreviewJob {
 
     @Scheduled(cron = "${mezo.capacity.sunday.cron:0 0 18 * * SUN}", zone = "${mezo.wearable.zone:Europe/Budapest}")
     public void run() {
-        LocalDate today = learning.today();
-        List<UUID> scored = scores.ownersSince(Instant.now().minus(OutcomeJob.SCORED_OWNER_DAYS, ChronoUnit.DAYS));
-        LocalDate monday = nextMonday(today);
+        Instant now = learning.now();
+        LocalDate today = LocalDate.ofInstant(now, learning.zoneId());
+        List<UUID> scored = scores.ownersSince(now.minus(OutcomeJob.SCORED_OWNER_DAYS, ChronoUnit.DAYS));
+        LocalDate monday = targetMonday(now, learning.zoneId());
         for (UUID owner : learning.owners(scored, today)) {
             try {
                 int n = proposals.week(owner, monday).proposals().size();
@@ -45,8 +47,11 @@ public class SundayPreviewJob {
         }
     }
 
-    /** The Monday after {@code today} in his zone (Sunday 23:30 local is still this week's Sunday). */
-    static LocalDate nextMonday(LocalDate today) {
-        return today.with(TemporalAdjusters.next(DayOfWeek.MONDAY));
+    /**
+     * The Monday after {@code now}'s day judged in his zone, never in UTC: a UTC Sunday 23:30 that is already Monday 00:30
+     * in Budapest targets the Monday after that one.
+     */
+    static LocalDate targetMonday(Instant now, ZoneId zone) {
+        return LocalDate.ofInstant(now, zone).with(TemporalAdjusters.next(DayOfWeek.MONDAY));
     }
 }

@@ -94,7 +94,17 @@ public class CapacityLearningService {
 
     /** His today in the owner zone. */
     public LocalDate today() {
-        return LocalDate.now(clock.getIfAvailable(Clock::systemUTC).withZone(zone()));
+        return LocalDate.ofInstant(now(), zoneId());
+    }
+
+    /** The instant the nightly passes run at (the test clock when one is present). */
+    public Instant now() {
+        return clock.getIfAvailable(Clock::systemUTC).instant();
+    }
+
+    /** The owner zone the passes judge days in. */
+    public ZoneId zoneId() {
+        return zone();
     }
 
     /** Owners the nightly pass visits: anyone with a proposal or a scored event lately. */
