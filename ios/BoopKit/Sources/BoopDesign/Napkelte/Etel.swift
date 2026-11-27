@@ -20,21 +20,22 @@ public extension View {
 /// A room head's sky: the mood photo fills it, toned down, with the hue's own sky gradient over it — dark at the top,
 /// thinning at the horizon, closing into the page ground at the bottom. `photo == nil` is the painted landscape.
 public struct NKPhotoSky: View {
-    let hue: Hue, photo: Image?
-    public init(hue: Hue, photo: Image?) { self.hue = hue; self.photo = photo }
+    let sky: NKSky, photo: Image?
+    public init(hue: Hue, photo: Image?) { self.sky = .hue(hue); self.photo = photo }
+    public init(sky: NKSky, photo: Image?) { self.sky = sky; self.photo = photo }
     public var body: some View {
         if let photo {
             ZStack {
                 photo.resizable().scaledToFill().nkPhotoTone()
                 LinearGradient(stops: [
-                    .init(color: hue.sky[0].opacity(0.85), location: 0),
-                    .init(color: hue.sky[1].opacity(0.42), location: 0.55),
-                    .init(color: hue.sky[2].opacity(0.30), location: 0.72),
-                    .init(color: NK.deepGround(hue)[0].opacity(0.92), location: 1),
+                    .init(color: sky.colors[0].opacity(0.85), location: 0),
+                    .init(color: sky.colors[1].opacity(0.42), location: 0.55),
+                    .init(color: sky.colors[2].opacity(0.30), location: 0.72),
+                    .init(color: NK.deepGround(sky)[0].opacity(0.92), location: 1),
                 ], startPoint: .top, endPoint: .bottom)
             }
         } else {
-            PaintedLandscape(hue: hue)
+            PaintedLandscape(sky: sky)
         }
     }
 }

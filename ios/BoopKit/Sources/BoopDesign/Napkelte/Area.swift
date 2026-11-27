@@ -247,7 +247,7 @@ public struct NKAreaPage<Content: View>: View {
                 VStack(spacing: 22) { content }
                     .padding(.horizontal, 18).padding(.top, 18).padding(.bottom, 40)
                     .background(FloatingLights(hue: hue).padding(.vertical, -100))
-                MirroredLand(hue: hue).padding(.top, -20)
+                MirroredLand(sky: .room(hue)).padding(.top, -20)
                 // room for the area's own bar to float over the page's end
                 Color.clear.frame(height: tabs.isEmpty ? 100 : 150)
             }
@@ -269,14 +269,14 @@ public struct NKAreaPage<Content: View>: View {
             withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.3)) { position.scrollTo(y: tabsOffset) }
         }
         .ignoresSafeArea(edges: .top)
-        .background(NKGround(hue: hue))
+        .background(NKGround(sky: .room(hue)))
         .preferredColorScheme(.dark)
     }
 
     private var head: some View {
         ZStack(alignment: .top) {
             Color.clear.frame(height: 346)
-                .overlay { NKPhotoSky(hue: hue, photo: photo) }
+                .overlay { NKPhotoSky(sky: .room(hue), photo: photo) }
                 .clipped()
                 .mask(LinearGradient(stops: [.init(color: .black, location: 0.58), .init(color: .clear, location: 1)],
                                      startPoint: .top, endPoint: .bottom))
@@ -457,7 +457,7 @@ public struct NKAreaSubPage<Content: View>: View {
             VStack(spacing: 0) {
                 ZStack(alignment: .top) {
                     Color.clear.frame(height: 286)
-                        .overlay { NKPhotoSky(hue: hue, photo: photo) }
+                        .overlay { NKPhotoSky(sky: .room(hue), photo: photo) }
                         .clipped()
                         .mask(LinearGradient(stops: [.init(color: .black, location: 0.55),
                                                      .init(color: .clear, location: 1)],
@@ -498,13 +498,13 @@ public struct NKAreaSubPage<Content: View>: View {
                 VStack(spacing: 22) { content }
                     .padding(.horizontal, 18).padding(.top, 14).padding(.bottom, 40)
                     .background(FloatingLights(hue: hue).padding(.vertical, -100))
-                MirroredLand(hue: hue).padding(.top, -20)
+                MirroredLand(sky: .room(hue)).padding(.top, -20)
                 Color.clear.frame(height: 100)
             }
         }
         .scrollIndicators(.hidden)
         .ignoresSafeArea(edges: .top)
-        .background(NKGround(hue: hue))
+        .background(NKGround(sky: .room(hue)))
         .preferredColorScheme(.dark)
     }
 }
