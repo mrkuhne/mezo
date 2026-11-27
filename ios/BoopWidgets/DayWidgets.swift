@@ -160,7 +160,7 @@ struct DayFace: View {
                 case .normal:
                     ForEach(Array(entry.day.upcoming.prefix(3).enumerated()), id: \.offset) { _, t in
                         HStack(spacing: 10) {
-                            Text(WidgetCopy.clock(t.at)).font(.nkNumber(17)).monospacedDigit().frame(width: 46, alignment: .leading)
+                            Text(WidgetCopy.clock(t.at)).font(.nkNumber(17)).monospacedDigit().lineLimit(1).fixedSize().frame(minWidth: 48, alignment: .leading)
                             Text(t.title).font(.system(size: 15)).lineLimit(1)
                         }
                         .foregroundStyle(.white)

@@ -1764,7 +1764,7 @@
       "Ma",
       "Edzés"
     ],
-    "mit_kapsz": "Bármire beállítható emlékeztető, mint az Apple Emlékeztetők appjában (pl. vitamin 8:00-kor): ébresztőként egész képernyőn szól, némításon és alvó módon is, „Kész” gombbal (az elnémítás csak csend), a kiegészítőknél a „Bevettem” be is írja a napodba. Utána widgetek a főképernyőre és a zárolt képernyőre (a következő teendő, a mai nap kipipálható emlékeztetőkkel, a napközbeni kérdés), és edzés közben a zárolt képernyőn a gyakorlat és a pihenő visszaszámlálója gombokkal.",
+    "mit_kapsz": "Bármire beállítható emlékeztető, mint az Apple Emlékeztetők appjában (pl. vitamin 8:00-kor): ébresztőként egész képernyőn szól, némításon és alvó módon is, „Kész” gombbal (az elnémítás csak csend), a kiegészítőknél a „Bevettem” be is írja a napodba. Edzés közben a zárolt képernyőn a gyakorlat és a pihenő visszaszámlálója gombokkal. Három widget a fő- és a zárolt képernyőre: a következő teendő, a mai nap kipipálható emlékeztetőkkel, és egy sor az óra alatt — az ingyenes Apple-fiókkal is. (A napközbeni kérdés widgetje külön jegyben jön.)",
     "munkamenet": "boop-ebreszto-widget"
   },
   "mezo-r36n9.174": {
@@ -1909,5 +1909,16 @@
     ],
     "mit_kapsz": "Ha egy hét túl sok, a Boop először az edzések áthelyezését keresi egy üres napra, és csak akkor javasol kihagyást, ha nincs jobb.",
     "szulo": "mezo-r36n9.17"
+  },
+  "mezo-r36n9.190": {
+    "cim": "Napközbeni kérdés widget a kezdőképernyőn",
+    "tipus": "Funkció",
+    "szakasz": "Életpanel",
+    "terulet": [
+      "Napló",
+      "Ma"
+    ],
+    "mit_kapsz": "A napközbeni kérdéseket egy widgetből is megválaszolhatod, az app megnyitása nélkül: kérdésenként egy koppintás egy számrácson. Előtte közösen eldöntjük, hogyan jelenjen meg a fájdalom és a sóvárgás kérdése, mert ezek nem férnek bele egy számrácsba.",
+    "szulo": "mezo-r36n9.172"
   }
 }

@@ -181,6 +181,14 @@ and the extension read the same App Group file, (c) the extension can read the t
 - **Keychain sharing fails but App Group works** → widgets ship; their buttons queue taps in the App Group and the
   app sends them on its next open / background wake (the widget shows the tap at once).
 
+> **Probe result (on the owner's phone, 2026-11-27) — a fourth outcome the list above did not foresee:** the free team
+> **refuses the App Group** (the generated profiles carry an empty group list), but a **shared Keychain access group
+> (`$(AppIdentifierPrefix)io.mrkuhne.boop.shared`) works**. So the widget snapshot travels as a Keychain item
+> (`BoopShared/SharedKeychain`, `WidgetSnapshotStore`), not as an App Group file, and the widget buttons need no tick
+> queue: `WidgetReminderTickIntent` is a `LiveActivityIntent` whose `perform` runs in the app process (the same
+> „Kész” path as the alarm). Read §7.2's "App Group" as "shared Keychain item". The Napközbeni kérdés widget is
+> deferred (`mezo-r36n9.190`).
+
 `install-on-phone.sh` passes `CODE_SIGN_ENTITLEMENTS` on the command line, which would apply the app's entitlements
 to the extension — it must move to per-target settings before the extension exists.
 

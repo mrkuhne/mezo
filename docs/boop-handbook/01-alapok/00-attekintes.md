@@ -34,7 +34,8 @@ Nincs. (Az egyes funkciók oldalain.)
 Nincs. (Az egyes funkciók oldalain.)
 
 ## Mi jön még
-- A fizetős Apple-fiók (kb. 2026-11-25): nincs heti újratelepítés, jöhetnek a szerverről küldött értesítések és a widget.
+- A fizetős Apple-fiók: nincs heti újratelepítés, jöhetnek a szerverről küldött értesítések. (A widgetek már az
+  ingyenes fiókkal is működnek, 2026-11-27 óta.)
 - A „+” lap étel- és edzésrögzítése a B4 (Étel) és B5 (Edzés) szakaszban.
 
 ## Mi marad ki

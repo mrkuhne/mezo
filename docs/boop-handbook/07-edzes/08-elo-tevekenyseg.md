@@ -41,8 +41,8 @@ ettől még ugyanúgy megy a Boopban.
 Nincs új — a sorozatok ugyanúgy az edzésbe kerülnek, mint a Boopból rögzítve.
 
 ## Mi jön még
-A kezdőképernyő és a zárolt képernyő widgetei (Következő, Mai nap, Napközbeni kérdés, a zárolt képernyő sora) — az
-Emlékeztetők és ébresztők második lépésének folytatása.
+A kezdő- és a zárolt képernyő widgetei elkészültek (lásd *Widgetek a kezdő- és a zárolt képernyőn*); a Napközbeni
+kérdés widget külön jegyben jön.
 
 ## Mi marad ki
 A súly vagy az ismétlés átírása a kártyáról (ahhoz a Boopot kell megnyitni); a kártya nem frissül távolról, a szerverről.

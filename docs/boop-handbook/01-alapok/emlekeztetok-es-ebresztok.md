@@ -48,7 +48,9 @@ osszefoglalo: Bármire állíthatsz emlékeztetőt, a vitaminhoz igazi ébreszt�
 | `supplements-taken.json` | Mely vitamincsoportot vetted be melyik napon (14 napig őrzi) |
 
 ## Mi jön még
-- **Második lépés:** négy widget (Következő, Mai nap, Napközbeni kérdés, zárolt képernyős sor) és az edzéskártya a zárolt képernyőn (Kész · +15 mp · Tovább).
+- A második lépés elkészült: az edzéskártya a zárolt képernyőn és három widget (Következő, Mai nap pipálható
+  emlékeztetőkkel, zárolt képernyős sor) — lásd a *Widgetek a kezdő- és a zárolt képernyőn* oldalt.
+- A **Napközbeni kérdés** widget külön jegyben jön (a fájdalom és a sóvárgás kérdése nem fér bele egy számrácsba).
 - Az ébresztők éles telefonon való végigpróbálása még hátravan.
 
 ## Mi marad ki
