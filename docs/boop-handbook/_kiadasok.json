@@ -1162,5 +1162,14 @@
       "mezo-r36n9.201"
     ],
     "mi_valtozott": "Egy beírt vagy az órán rögzített röpi már csak a sportot pipálja ki, a kondit nem — és fordítva, egy kondi vagy erősítő edzés csak a kondit. Egy óra-edzés egy napon csak egyszer számít. A heti sportbeosztásba és az egyszeri alkalmakba mostantól 11 fajta kerülhet (a futás is), nem csak röpi, cross és TRX. A heti menüben minden aznapi sportalkalom elé jár egy uzsonna. A szerver az Edzés napjának azt is megmondja, ha aznap sport van — az app ezt a Sport területtel kezdi mutatni."
+  },
+  "cdf3053d4": {
+    "cim": "Étel Receptek és Kamra: kártyás rend, kiemelt felső kártya, lapozható legjobb receptek",
+    "datum": "2026-11-28",
+    "szakasz": "B4 Étel",
+    "jegyek": [
+      "mezo-r36n9.207"
+    ],
+    "mi_valtozott": "A Receptek és a Kamra fül is kártyákra került, mint a Ma és a Hét. Felül egy kiemelt kártya mutatja a számokat és egy kis sávot: a Receptekben, mire valók a receptjeid, a Kamrában, mennyire feldolgozott, ami a polcon van. A Receptekben új az „A legjobbak neked” sor: a legjobb pontszámú receptjeid oldalra lapozható kártyákon, fotóval. Minden gomb, keresés és szűrő megmaradt; a legnagyobb betűméretnél a számok és a gombok egymás alá kerülnek."
   }
 }
