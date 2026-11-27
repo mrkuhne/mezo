@@ -672,7 +672,7 @@
     },
     "kezikonyv:06-etel/01-etel-szoba-ma": {
       "page_id": "4168968e-752b-8195-9564-d1ced1b8d194",
-      "hash": "505117952750"
+      "hash": "26b7f53dda4f"
     },
     "kezikonyv:06-etel/02-etkezes-rogzitese": {
       "page_id": "4168968e-752b-8164-b1d7-d8aa78d82e63",
@@ -684,7 +684,7 @@
     },
     "kezikonyv:06-etel/04-napi-keret": {
       "page_id": "4168968e-752b-8109-800f-e787a78acfe6",
-      "hash": "b1cd327a5280"
+      "hash": "2d80da8978ad"
     },
     "kezikonyv:06-etel/05-receptek": {
       "page_id": "4168968e-752b-816b-af92-d893e20f59e2",
@@ -3509,6 +3509,22 @@
     "dontesek:d-2026-11-27-edzes-proba": {
       "page_id": "4258968e-752b-81fb-9b27-e8a301479f21",
       "hash": "c559bd659fbb"
+    },
+    "jegyek:mezo-r36n9.200": {
+      "page_id": "4258968e-752b-8116-a5b5-e5d9a9bd4a02",
+      "hash": "9fc1bb657e5f"
+    },
+    "dontesek:d-2026-11-27-etel-het-naptari": {
+      "page_id": "4258968e-752b-8149-906c-e68f9eee7f85",
+      "hash": "82f3dee28039"
+    },
+    "dontesek:d-2026-11-27-carousel-doboz-nelkul": {
+      "page_id": "4258968e-752b-81b2-b772-d2aa98391fb9",
+      "hash": "35fe7d82e2d1"
+    },
+    "kiadasok:d066f5882": {
+      "page_id": "4258968e-752b-810c-8058-f17fe94d2174",
+      "hash": "1871e87e30b6"
     }
   }
 }
