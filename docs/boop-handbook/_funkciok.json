@@ -722,11 +722,15 @@
   "meal-javitas-torles": {
     "cim": "Rögzített étkezés javítása és törlése",
     "terulet": "Étel",
-    "app": "Nincs még",
+    "app": "Kész",
     "mit_tud": "Egy már elmentett étkezés tételei utólag átírhatók, vagy az egész étkezés törölhető.",
-    "app_megjegyzes": "Az appban egy elmentett étkezést még nem lehet átírni vagy törölni; erre nincs külön jegy.",
-    "jegyek": [],
-    "kezikonyv": [],
+    "app_megjegyzes": "Az étkezés saját oldaláról (vagy a sor elhúzásával) a Javítás ugyanarra az étkezésre ment, a Törlés pedig 6 másodpercig visszavonható.",
+    "jegyek": [
+      "mezo-r36n9.184"
+    ],
+    "kezikonyv": [
+      "06-etel/01-etel-szoba-ma"
+    ],
     "csomag": "meal"
   },
   "meal-napi-keret": {

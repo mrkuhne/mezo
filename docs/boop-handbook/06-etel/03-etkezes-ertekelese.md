@@ -16,6 +16,10 @@ Mentés után minden étkezés kap:
 - egy **rövid szöveges értékelést** Boop hangján: egy jelmondat, egy összefoglaló, legfeljebb három javítási ötlet;
 - 0–2 **vércukor-tippet** („legközelebb laposabb lesz, ha…”), és egy vércukor-sávot (alacsony / közepes / magas).
 
+**Hol olvasod (2026-11-27):** az étkezés **saját oldalán**, amit a Ma fülön az étkezés sorára (vagy az italra)
+koppintva nyitsz meg: fent a számok, alatta a hozzávalók, majd Boop értékelése — előbb az elmentett szöveg jelenik
+meg, a nyolc szempont rácsa pedig koppintásra magyarázza meg magát. Ugyanitt van a **Javítás** és a **Törlés**.
+
 A webes appban ez egy részletes, szempontonkénti fa. A Boopban egyszerűbb lesz: pontszám, jelmondat és egy javítási sor,
 a részletek egy koppintásra.
 
