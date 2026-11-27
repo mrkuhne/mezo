@@ -1811,5 +1811,18 @@
     "miert": "Ott jelölöd, ahol a recepteket amúgy is böngészed; nincs külön, eldugott lista.",
     "kovetkezmeny": "A külön „Kiválasztott receptek” lista megszűnik.",
     "levaltotta": "A Kiválasztott receptek lista az Évad Menü fülén."
+  },
+  "d-2026-11-27-evad-szoba-proba": {
+    "datum": "2026-11-27",
+    "terulet": [
+      "Terv",
+      "Alapok"
+    ],
+    "cim": "Az új kezdőlap és az Évad szoba próbaváltozata elfogadva",
+    "suly": "Közepes",
+    "valasztas": "A szimulátoros próbaváltozat 27 képernyője lett az irány: tíz gömb sáv nélkül, Nap szoba (Ma · Napok), Évad szoba esti lila éggel (Most · Hét · Terv · Kísérlet), ötlapos vasárnapi átnézés, menü és lista az Étel Hét fülén.",
+    "miert": "„Tetszik.” — „Elfogadom.”",
+    "kovetkezmeny": "Jöhet az építési terv, utána két lépésben az építés.",
+    "levaltotta": ""
   }
 }
