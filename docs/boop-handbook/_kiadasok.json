@@ -1050,5 +1050,19 @@
       "mezo-r36n9.177"
     ],
     "mi_valtozott": "Az Edzés negyedik fülének neve „Mezociklus” lett, és az appban mindenhol „mezociklus” áll a „blokk” helyett. A fül tetején a futó mezociklusod kártyája: innen szerkeszted, újraindítod ma az 1. héttől (a módosításaiddal együtt, kérésre a sablont is frissítve) vagy lezárod egy rövid saját értékeléssel; a „…” menüből sablonba mented. Alul a „Mezociklusaim” oldal mutatja a futót, a következőket, a sablonjaidat és a lezártakat; bármelyikre koppintva előbb a részletei nyílnak meg, elindítani csak az alsó gombbal lehet. Lezáráskor grafikus zárójelentés készül (terv és valóság hetenként, erő, Boop értékelése), a sablon pedig külön, a futót nem érintve is szerkeszthető."
+  },
+  "7dc303fa1": {
+    "cim": "Edzés a zárolt képernyőn — a gyakorlat, a cél és a pihenő gombokkal, feloldás nélkül",
+    "datum": "2026-11-27",
+    "verzio": "",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app"
+    ],
+    "szakasz": "Emlékeztetők és widgetek",
+    "jegyek": [
+      "mezo-r36n9.172"
+    ],
+    "mi_valtozott": "Edzés közben a zárolt képernyőn és a Dynamic Islandben egy kártya mutatja a gyakorlatot, hányadik sorozatnál tartasz, a célt (például „80 kg × 8”) és a pihenő visszaszámlálóját. A kártya gombjaival feloldás nélkül rögzíted a sorozatot („Kész”), adsz még 15 másodpercet („+15 mp”) vagy lépsz tovább („Tovább”) — akkor is, ha a Boop be van zárva. A kezdőképernyő widgetei a következő lépésben jönnek."
   }
 }
