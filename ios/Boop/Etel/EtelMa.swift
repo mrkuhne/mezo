@@ -117,8 +117,9 @@ struct EtelMa: View {
                         .rotationEffect(.degrees(-90))
                     VStack(spacing: 2) {
                         Text(centre.top).nkFont(13).foregroundStyle(.white.opacity(0.65)).lineLimit(1).minimumScaleFactor(0.6)
+                        // The ring is a fixed 166 pt: at the largest text sizes the number shrinks to fit, never "1…".
                         Text(centre.number).font(.nkNumber(44)).foregroundStyle(.white).monospacedDigit()
-                            .lineLimit(1).minimumScaleFactor(0.5)
+                            .lineLimit(1).minimumScaleFactor(0.2)
                         Text(centre.bottom).nkFont(12).foregroundStyle(.white.opacity(0.6)).lineLimit(1).minimumScaleFactor(0.6)
                     }
                     .padding(20)
@@ -179,7 +180,9 @@ struct EtelMa: View {
             NKMono("A NAP MENETE")
             if let curve = etelDayCurve(day: day, plan: store.plan, now: store.clock) {
                 NKCurve(values: curve.values, labels: curve.labels, hue: hue, target: curve.target, nowIndex: curve.nowIndex, planAfterNow: true)
-                HStack(spacing: 14) {
+                // At the largest text sizes the three keys stack: side by side they broke mid-word ("meg-ette-d").
+                let keys = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 6)) : AnyLayout(HStackLayout(spacing: 14))
+                keys {
                     legend("megetted", dashed: false)
                     legend("a mai terv", dashed: true)
                     legend("a kereted", dashed: true, white: true)
@@ -217,34 +220,40 @@ struct EtelMa: View {
             }
         }()
         let now = w?.state == .now
+        // At the largest text sizes the name and hours take the full width and the numbers + „+" go under them.
+        let big = typeSize.isAccessibilitySize
+        let head = big ? AnyLayout(VStackLayout(alignment: .leading, spacing: 6)) : AnyLayout(HStackLayout(alignment: .center, spacing: 10))
         return VStack(alignment: .leading, spacing: 4) {
-            HStack(alignment: .center, spacing: 10) {
+            head {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 7) {
-                        Text(name).font(.nkSerif(20)).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
+                        Text(name).nkFont(20, design: .serif).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
                         if now {
                             Text("MOST").nkFont(10, .semibold, design: .monospaced).foregroundStyle(NK.ground)
                                 .padding(.horizontal, 7).padding(.vertical, 3).background(Capsule().fill(hue.glow))
                         }
                     }
-                    if let w { Text("\(w.from)–\(w.to)").nkFont(12).foregroundStyle(.white.opacity(0.5)) }
+                    if let w { Text("\(w.from)–\(w.to)").nkFont(12).foregroundStyle(.white.opacity(0.5)).fixedSize() }
                 }
                 .accessibilityElement(children: .combine)
                 .accessibilityAddTraits(.isHeader)
-                Spacer(minLength: 6)
+                if !big { Spacer(minLength: 6) }
+                HStack(alignment: .center, spacing: 10) {
                 if let total = etelWindowTotal(item, window: w) {
-                    VStack(alignment: .trailing, spacing: 1) {
+                    VStack(alignment: big ? .leading : .trailing, spacing: 1) {
                         Text(total.value).font(.custom(Lagy.outfitFamily, size: 20, relativeTo: .title3).weight(.medium))
                             .foregroundStyle(now && !isLogged(item) ? hue.glow : .white).monospacedDigit()
                         Text(total.unit).nkFont(11).foregroundStyle(.white.opacity(0.5))
                     }
                     .accessibilityElement(children: .combine)
                 }
+                if big { Spacer(minLength: 6) }
                 Button { onCompose(MealStart(entrance: .pick, at: w.flatMap { etelWindowCaptureTime($0, now: store.clock) })) } label: {
                     Image(systemName: "plus").nkFont(15, .semibold).foregroundStyle(.white)
                         .frame(width: 44, height: 44).background(Circle().fill(.white.opacity(0.12)).padding(4))
                 }
                 .buttonStyle(.plain).accessibilityLabel("Étkezés rögzítése: \(name)")
+                }
             }
             .padding(.bottom, 4)
             switch item {
@@ -277,18 +286,26 @@ struct EtelMa: View {
     /// A logged meal inside its window's card: a tap opens its own page; swipe left or long-press to correct or delete.
     private func mealRow(_ m: BoopCore.Meal, _ label: String) -> some View {
         let title = mealTitle(m, slotLabel: label)
-        return HStack(spacing: 12) {
+        // At the largest text sizes the kcal + points go under the title, so the title never breaks mid-word.
+        let big = typeSize.isAccessibilitySize
+        let row = big ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(spacing: 12))
+        return row {
+              HStack(spacing: 12) {
                 NKThumb(image: store.photos[m.id].map { Image(uiImage: $0) }, glyph: "bowl-cream", size: 52)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(title).nkFont(15.5, .medium).foregroundStyle(.white).lineLimit(3).multilineTextAlignment(.leading)
-                    HStack(spacing: 6) {
-                        Text(timeText(m.loggedAt)).nkFont(12).foregroundStyle(.white.opacity(0.55))
+                    Text(title).nkFont(15.5, .medium).foregroundStyle(.white).lineLimit(big ? nil : 3).multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: big)
+                    let info = big ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2)) : AnyLayout(HStackLayout(spacing: 6))
+                    info {
+                        Text(timeText(m.loggedAt)).nkFont(12).foregroundStyle(.white.opacity(0.55)).fixedSize()
                         Text("F \(Int(m.macros.p.rounded())) · Sz \(Int(m.macros.c.rounded())) · Zs \(Int(m.macros.f.rounded()))")
-                            .nkFont(11.5, design: .monospaced).foregroundStyle(.white.opacity(0.5)).lineLimit(1).minimumScaleFactor(0.7)
+                            .nkFont(11.5, design: .monospaced).foregroundStyle(.white.opacity(0.5)).lineLimit(big ? 2 : 1).minimumScaleFactor(0.7)
                     }
                 }
-                Spacer(minLength: 6)
-                VStack(alignment: .trailing, spacing: 3) {
+              }
+                if !big { Spacer(minLength: 6) }
+              HStack(spacing: 12) {
+                VStack(alignment: big ? .leading : .trailing, spacing: 3) {
                     Text(huInt(Int(m.macros.kcal.rounded()))).font(.custom(Lagy.outfitFamily, size: 17, relativeTo: .body).weight(.medium))
                         .foregroundStyle(.white).monospacedDigit()
                     if let points = mealPoints(m) {
@@ -296,7 +313,9 @@ struct EtelMa: View {
                             .padding(.horizontal, 7).padding(.vertical, 2.5).background(Capsule().fill(hue.glow.opacity(0.16)))
                     }
                 }
+                if big { Spacer(minLength: 6) }
                 Image(systemName: "chevron.right").nkFont(12, .semibold).foregroundStyle(.white.opacity(0.35))
+              }
             }
             .padding(.vertical, 8)
             .contentShape(Rectangle())
@@ -357,7 +376,7 @@ struct EtelMa: View {
             Path { p in p.move(to: CGPoint(x: 0, y: 1)); p.addLine(to: CGPoint(x: 16, y: 1)) }
                 .stroke(white ? Color.white.opacity(0.55) : hue.glow, style: StrokeStyle(lineWidth: 2, lineCap: .round, dash: dashed ? [2, 4] : []))
                 .frame(width: 16, height: 2)
-            Text(text).nkFont(11.5).foregroundStyle(.white.opacity(0.6))
+            Text(text).nkFont(11.5).foregroundStyle(.white.opacity(0.6)).lineLimit(1).minimumScaleFactor(0.7)
         }
         .accessibilityHidden(true)
     }
