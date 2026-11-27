@@ -17,7 +17,7 @@
 1. **No backend change is needed.** Every read exists: `EvadClient.adherence(from:to:)` (per-day + summary), `overview()`, `KapacitasStore.loadWeek/season`, `PlanClient.activeYearPlan()` via `YearPlanModel`, `EvadMenuStore.recipes()/putRecipes`. The review's done state stays on the phone (spec §11.4).
 2. **Recipe toggle writes a full set.** `putRecipes(id:recipeIds:)` replaces the season's whole allowed set, so a per-recipe toggle is a read-modify-write; Task 10 serialises it in `EvadMenuStore`. Étel `Recipe.id` is a `UUID`, `EvadRecipeOption.id` a `String` — match on `uuidString.lowercased()` (verify against the preview transport and one live row before Task 16).
 3. **„Respects the existing notification settings"** (spec §4.3): there is no weekly-review switch today; this plan arms the Sunday notification only when notification permission is already granted (never prompts) and adds no new setting. If the owner wants an off switch, it is a follow-up.
-4. **Decisions #124–#130 are not yet rows in `docs/boop-handbook/_dontesek.json`** — Task 6 adds them.
+4. Decisions #124–#130 are already rows in `docs/boop-handbook/_dontesek.json` (keys `d-2026-11-27-evad-szoba`, `-menu-etelbe`, `-kezdolap-sav-nelkul`, `-naplo-nap-szobaba`, `-ev-az-evadban`, `-menu-recept-jeloles`, `-evad-szoba-proba`) and the ticket row is in `_jegyek.json`; Task 6 only checks them.
 
 ## Global Constraints
 
@@ -254,7 +254,7 @@ var destination: BoopDestination?; func go(_ d: BoopDestination); func takeDesti
 ### Task 6: Step 1 docs and mirror
 
 **Files:**
-- Modify: `docs/boop-handbook/01-alapok/kezdolap.md` (ten orbs, no bar, centre → Boop, „+"), `01-alapok/navigacio.md` (rooms only, no places), `01-alapok/gyors-rogzites.md` (doors gone, floating „+"), `03-naplo/napok-lista.md` (now Nap › Napok), `docs/boop-handbook/_dontesek.json` (rows for #124–#130, keys `d-2026-11-27-evad-szoba`, `-menu-etelbe`, `-nincs-also-sav`, `-napok-nap-szobaban`, `-ev-az-evadban`, `-recept-menube`, `-evad-proba`), `_funkciok.json` (Évad betartás note: „a kezdőlap Évad gömbje a heti betartást mutatja")
+- Modify: `docs/boop-handbook/01-alapok/kezdolap.md` (ten orbs, no bar, centre → Boop, „+"), `01-alapok/navigacio.md` (rooms only, no places), `01-alapok/gyors-rogzites.md` (doors gone, floating „+"), `03-naplo/napok-lista.md` (now Nap › Napok), `_funkciok.json` (Évad betartás note: „a kezdőlap Évad gömbje a heti betartást mutatja")
 - Modify: `docs/features/boop-ios.md` (§2 home + Nap room + chat, §9 „one destination type, no spine" gotcha, §10 key files), `ios/README.md` (flags: remove `-previewTab`/`-previewSwitch`; add `-previewHome nap|napok|chat|evad`), `docs/superpowers/specs/2026-11-13-boop-kezdolap-design.md` (one-line superseded note)
 
 - [ ] **Step 1: Write the docs** (Hungarian business language in the handbook; format per `docs/boop-handbook/README.md`).
