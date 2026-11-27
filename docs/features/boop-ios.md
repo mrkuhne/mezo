@@ -336,7 +336,7 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   `NKRowList` (`NKAreaRow` with a photo thumbnail or a glyph medallion, a four-way `NKRowState`, chips, a level bar
   with `NKLevelTick` landmarks), `NKSearchableRowList` (owning or caller-owned query), `NKHeatStrip`,
   `NKCompareColumns`, `NKMenuGrid`, `NKAskRow`, and `NKAreaSubPage` for a page inside an area. It wears the **warm**
-  treatment (decision #12): no card around the stats, the curve, the composition or the rows — `NKBare` gives them a
+  treatment (decision #12; its no-card part is **retired by #119, 2026-11-27** — pages are being moved to hero + glass cards): no card around the stats, the curve, the composition or the rows — `NKBare` gives them a
   hue tick and a label, and carries that block's own loading and failed-with-"Újra" state (`NKBlockState`), because
   every section of a room loads and fails on its own. `.nkStale(NKStale(age:loud:))` marks a block drawn from older
   data. The page returns to the tab row on a tab change, and only when it is below it. **`EtelRoom` is the proof:**

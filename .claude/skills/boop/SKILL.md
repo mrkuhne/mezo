@@ -36,7 +36,8 @@ Hungarian, business language** (CLAUDE.md §Communication) — no file names, no
 - **No plain text-and-list pages** (2026-11-26, `mezo-r36n9.177`, owner: „puritán és béna”). Every screen needs
   visual hierarchy and its own graphics: a hero element, glass cards, a mini graphic showing the thing's shape
   (week curve, ring, body map, time strip), carousels. All-rows lists only for search/settings-like pages. Applies
-  from the FIRST spike round. Anything he can start or overwrite opens for review first; actions sit at the bottom.
+  from the FIRST spike round. **Never propose the „kevés kártya, sok egymondatos tény” / no-card direction again**
+  (#119, 2026-11-27, `mezo-r36n9.184`, „egybefolyik, nincs vezetve a szemem”) — it is retired for every screen. Anything he can start or overwrite opens for review first; actions sit at the bottom.
 - **Standalone, not a port** (2026-11-11). Boop reuses the backend's engines (goal engine, gym progression,
   meal scoring + AI draft, check-in, journal, sleep log, chat platform) and **hides** the web clutter
   (gamification, quests, titles, habits, needs rings, activity, medication (the supplement stack is kept, simplified), life goals, tutorial,
@@ -186,7 +187,7 @@ research `docs/superpowers/research/boop-life/`, executable look: the Élet spik
 **The B order is unchanged — nothing here starts before B6 ships, except L0.**
 Owner decisions: money and mail are rooms, not a fifth bar button · **Terv is the home of the areas** · an area is
 its own app (own top tabs with badges, built from the shared area-page kit) · **warm is the look** (photo heads,
-the hue on key numbers, no card around stats/curve/composition/rows) · **Ma is a living wall, not a timeline**,
+the hue on key numbers; its *no card* part is RETIRED — #119, 2026-11-27) · **Ma is a living wall, not a timeline**,
 and the **0–100 score leaves the home** · area names are Alvás, Étel, Edzés, Energia, Forma, Pénz, Levél ·
 never ask him for a password.
 

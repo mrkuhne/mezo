@@ -1878,5 +1878,16 @@
     ],
     "mit_kapsz": "Az emlékeztetők és ébresztők első lépése utáni apró javítások: a lefekvés-kapcsoló megmondja, miért kapcsol vissza, időzóna-váltásnál az ébresztők azonnal igazodnak, és néhány ritka hiba megszűnik.",
     "szulo": "mezo-r36n9"
+  },
+  "mezo-r36n9.184": {
+    "cim": "Étel Ma újratervezése: vezetett szem, kalória és makrók fókuszban, étkezés saját oldala, utólagos javítás és törlés",
+    "tipus": "Funkció",
+    "szakasz": "B4 Étel",
+    "terulet": [
+      "Étel"
+    ],
+    "mit_kapsz": "Az Étel Ma oldal tagolt lesz: felül egy jól látható kalória- és makróösszesítő, alatta egyértelműen elválasztott étkezésblokkok. Egy rögzített étkezésre koppintva megnyílik a saját oldala Boop értékelésével, és ott (vagy a sorát elhúzva) kijavíthatod vagy törölheted.",
+    "szulo": "mezo-r36n9",
+    "munkamenet": "etel-ma-ux-ui-redesign"
   }
 }
