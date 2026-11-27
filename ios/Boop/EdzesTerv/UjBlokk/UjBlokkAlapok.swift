@@ -95,6 +95,7 @@ struct UjBlokkAlapok: View {
                             .nkFont(12.5).foregroundStyle(.white.opacity(0.55)).fixedSize(horizontal: false, vertical: true)
                     }
                 }
+                .nkTopBounceLock()
                 .padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 30)
             }
             .scrollIndicators(.hidden)

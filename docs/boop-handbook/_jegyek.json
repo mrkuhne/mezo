@@ -1978,5 +1978,15 @@
     "munkamenet": "etel-ma-lezaras",
     "allapot": "Később",
     "mit_kapsz": "Az app talpas betűs címei és nagy számai is követik a telefonon beállított betűméretet, így nagyobb betűvel minden szöveg egyformán könnyen olvasható."
+  },
+  "mezo-r36n9.191": {
+    "cim": "A lap teteje nem húzható le, a billentyűzet bezárul mellé koppintva",
+    "tipus": "Hiba",
+    "szakasz": "Kezdőlap",
+    "terulet": [
+      "Alapok"
+    ],
+    "mit_kapsz": "A lapok tetején lefelé húzva a felső rész a helyén marad, nem nyílik fölötte üres szürke csík; a billentyűzet bárhol eltűnik, ha a szövegen kívül koppintasz, a beírt szöveg megmarad.",
+    "szulo": "mezo-r36n9"
   }
 }

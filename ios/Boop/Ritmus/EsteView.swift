@@ -32,6 +32,7 @@ struct EsteView: View {
                 }
                 .padding(.horizontal, 16).padding(.top, -40).padding(.bottom, 50)
             }
+            .nkTopBounceLock()
             .animation(.spring(response: 0.5, dampingFraction: 0.85), value: flow.showsSummary)
         }
         .scrollIndicators(.hidden)

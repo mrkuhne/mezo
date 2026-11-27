@@ -133,6 +133,7 @@ struct EvesTervTerkep: View {
                     blocks(plan)
                     archiveButton
                 }
+                .nkTopBounceLock()
                 .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 40)
                 .animation(reduceMotion ? nil : .smooth(duration: 0.3), value: plan)
             }

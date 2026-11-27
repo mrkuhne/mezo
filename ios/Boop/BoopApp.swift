@@ -9,6 +9,7 @@ struct BoopApp: App {
     init() {
         Lagy.registerFonts()
         ReminderPresenter.install()     // the bedtime reminder also shows while Boop is open
+        KeyboardDismiss.install()       // a tap outside the text closes the keyboard, on every screen
         #if DEBUG
         // Simulator review of a notification tap from a cold launch: the cover is asked for before any view exists.
         if let cold = UserDefaults.standard.string(forKey: "previewColdTap").flatMap({ RitmusCover(route: "boop://" + $0) }) {
