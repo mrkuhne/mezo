@@ -1816,5 +1816,78 @@
     ],
     "mit_kapsz": "Ritka eset: ha egy már lezárt áttétel célnapjára később új edzés kerül, az az edzés is látszani fog.",
     "szulo": "mezo-r36n9.17"
+  },
+  "mezo-r36n9.181": {
+    "cim": "Recept logolása összetevőnként, grammban, a recept jelölésével",
+    "tipus": "Funkció",
+    "szakasz": "Kezdőlap",
+    "terulet": [
+      "Étel"
+    ],
+    "mit_kapsz": "Ha receptet rögzítesz, az étkezésbe nem egyetlen „1 adag” sor kerül, hanem minden hozzávaló külön, egy adagra jutó grammal (például rizs 80 g, csirkemell 150 g) — mentés előtt egyenként átírhatod őket. Minden ilyen soron ott a jelölés: „Csirkés rizs része”, az elmentett étkezés kártyáján pedig „Csirkés rizs receptből” cím alatt látod a hozzávalókat.",
+    "munkamenet": "recept-osszetevonkent"
+  },
+  "mezo-r36n9.182": {
+    "cim": "Az iPhone-app néhány automata tesztje hibát jelez (kiegészítő-pipálás, lefekvés-emlékeztető)",
+    "tipus": "Hiba",
+    "szakasz": "Emlékeztetők és widgetek",
+    "terulet": [
+      "Étel"
+    ],
+    "mit_kapsz": "Az app ellenőrző tesztjei közül néhány a kiegészítők kipipálásánál és a lefekvés-emlékeztetőnél elbukik; javítás után újra minden teszt zöld, így a jövőbeli hibák nem bújnak el mögöttük.",
+    "munkamenet": "recept-osszetevonkent"
+  },
+  "mezo-r36n9.177": {
+    "cim": "Mezociklusaim: minden mezociklusod egy helyen — indítás, lezárás, újraindítás, sablonok",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Az Edzés „Mezociklus” fülén látod a futó mezociklusodat, és egy koppintással szerkeszted, újraindítod az 1. héttől (a módosításaiddal együtt) vagy lezárod zárójelentéssel. A Mezociklusaim oldalon ott van minden sablonod, a következő és a lezárt mezociklusaid — mindegyiket előbb megnézed, aztán döntesz. A sablonokat is szerkesztheted. A „blokk” szó mindenhol „mezociklus” lett.",
+    "szulo": "mezo-r36n9",
+    "munkamenet": "mezociklus-kezeles"
+  },
+  "mezo-r36n9.183": {
+    "cim": "Mezociklusaim telepítése a telefonodra és végigkattintása",
+    "tipus": "Feladat",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Az új Mezociklusaim oldal a telefonodon is ott lesz; végigkattintjuk a listát, egy részletoldalt és egy sablonmentést. Újraindítást csak a kifejezett engedélyeddel próbálunk, mert az lezárja a most futó mezociklusodat.",
+    "szulo": "mezo-r36n9",
+    "munkamenet": "mezociklus-kezeles",
+    "szakasz": "B5 Edzés + Watch"
+  },
+  "mezo-r36n9.180": {
+    "cim": "Egy időnként elbukó ellenőrző teszt a reggeli áttételnél",
+    "tipus": "Hiba",
+    "szakasz": "B3 Napi ritmus",
+    "terulet": [
+      "Ma"
+    ],
+    "mit_kapsz": "Az app egyik ellenőrző tesztje terhelés alatt néha ok nélkül elbukik; javítás után megbízhatóan zöld lesz, így a kiadások nem akadnak meg miatta.",
+    "szulo": "mezo-r36n9"
+  },
+  "mezo-r36n9.176": {
+    "cim": "Emlékeztetők: apró pótlások az első lépés után",
+    "tipus": "Apróságok",
+    "szakasz": "B3 Napi ritmus",
+    "terulet": [
+      "Ma"
+    ],
+    "mit_kapsz": "Az emlékeztetők és ébresztők első lépése utáni apró javítások: a lefekvés-kapcsoló megmondja, miért kapcsol vissza, időzóna-váltásnál az ébresztők azonnal igazodnak, és néhány ritka hiba megszűnik.",
+    "szulo": "mezo-r36n9"
+  },
+  "mezo-r36n9.184": {
+    "cim": "Étel Ma újratervezése: vezetett szem, kalória és makrók fókuszban, étkezés saját oldala, utólagos javítás és törlés",
+    "tipus": "Funkció",
+    "szakasz": "B4 Étel",
+    "terulet": [
+      "Étel"
+    ],
+    "mit_kapsz": "Az Étel Ma oldal tagolt lesz: felül egy jól látható kalória- és makróösszesítő, alatta egyértelműen elválasztott étkezésblokkok. Egy rögzített étkezésre koppintva megnyílik a saját oldala Boop értékelésével, és ott (vagy a sorát elhúzva) kijavíthatod vagy törölheted.",
+    "szulo": "mezo-r36n9",
+    "munkamenet": "etel-ma-ux-ui-redesign"
   }
 }

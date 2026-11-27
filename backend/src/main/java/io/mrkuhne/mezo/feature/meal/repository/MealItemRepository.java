@@ -90,10 +90,10 @@ public interface MealItemRepository extends JpaRepository<MealItemEntity, UUID> 
         + "and om.deleted = false and o.recipeId = mi.recipeId and om.mealDate < :since)")
     List<UUID> findRecipesFirstEatenSince(@Param("owner") UUID owner, @Param("since") LocalDate since);
 
-    /** Pantry foods (a pantry line, not a recipe) first ever eaten on or after {@code since} (Évad S4). */
+    /** Pantry foods (a pantry line, not a recipe nor a recipe's ingredient — mezo-r36n9.181) first ever eaten on or after {@code since} (Évad S4). */
     @Query("select distinct mi.pantryItemId from MealItemEntity mi join mi.meal m "
         + "where m.createdBy = :owner and m.deleted = false and mi.source = 'pantry' and mi.pantryItemId is not null "
-        + "and m.mealDate >= :since "
+        + "and mi.recipeId is null and m.mealDate >= :since "
         + "and not exists (select 1 from MealItemEntity o join o.meal om where om.createdBy = :owner "
         + "and om.deleted = false and o.source = 'pantry' and o.pantryItemId = mi.pantryItemId and om.mealDate < :since)")
     List<UUID> findPantryFoodsFirstEatenSince(@Param("owner") UUID owner, @Param("since") LocalDate since);

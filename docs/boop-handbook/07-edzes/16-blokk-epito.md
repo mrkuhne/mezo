@@ -10,9 +10,9 @@ osszefoglalo: A futó blokkodat a telefonon igazítod izmonként, naponként és
 ---
 
 ## Mit csinál
-**Az Edzés → Blokk fülön** két új dolog van.
+**Az Edzés → Mezociklus fülön** két új dolog van.
 
-**A heti átnézés kártyája.** Hétfőn, amikor a szerver összerakja a hét javaslatát, a Blokk fül tetején megjelenik: „Új hét ·
+**A heti átnézés kártyája.** Hétfőn, amikor a szerver összerakja a hét javaslatát, a Mezociklus fül tetején megjelenik: „Új hét ·
 jóváhagyásra vár — 4 izomnál változna valami” (például). Két gomb van rajta:
 - **Átnézem** — megnyílik a pakli: izmonként egy kártya, rajta gyakorlatonként egy csempe (például „Hétfő · Evezés: 2 → 3
   sorozat”, alatta az okok kis címkéken: „minden sorozat megvolt”, „könnyen ment”). Minden csempének saját **elfogadom** és
@@ -24,7 +24,7 @@ jóváhagyásra vár — 4 izomnál változna valami” (például). Két gomb v
 
 Ha a hét már életbe lépett, a kártya azt mutatja: „Indulhat, a hét számai élnek”, és a pakli csak visszanézhető.
 
-**A blokképítő** („Blokk szerkesztése”) egy teljes képernyő saját, háromgombos sávval:
+**A blokképítő** („Szerkesztés” a futó mezociklus kártyáján; a heti átnézés kártyájáról a duplikált gomb 2026-11-26-án megszűnt; sablonra nyitva „SABLON SZERKESZTÉSE” — lásd [Mezociklusaim](20-mezociklusaim.md)) egy teljes képernyő saját, háromgombos sávval:
 - **Izmok** — a test képe, alatta izmonként egy kártya: a szint (Tartás · Építés · Hangsúly) egy kapcsolón, egy félköríves mérőn
   a sáv és a te heti számod, alatta kis címkéken a sáv és hogy melyik napon hány sorozat van (például „Sáv 14–22 · Hétfő 6 ·
   Csütörtök 5”), a kártya alján pedig mindig ott van, **miért ez a sáv** (a szint és a sport alapján), és ha az izom kilóg a sávjából, egy **konkrét javaslat** („+1 Lehúzás
@@ -118,7 +118,7 @@ sárga jelzés szól. Az **edzésidő a pihenőkkel együtt** számolt. Ha az é
 **„Mégsem, eldobom”** gomb lezárja a blokkot — lásd [Új blokk és tervjelöltek](18-uj-blokk-tervjeloltek.md).
 
 Az építő és a pakli abból a gombból, illetve kártyából **nagyul ki**, amire koppintottál, és lefelé húzva oda zsugorodik vissza; az
-építő már a Blokk fül megnyitásakor betölt a háttérben, így várakozás nélkül nyílik.
+építő már a Mezociklus fül megnyitásakor betölt a háttérben, így várakozás nélkül nyílik.
 
 **A tervezett blokk a saját napján indul (éves terv).** Ha az új blokkot „Jövő hétfőn” kezdéssel hoztad létre, a megadott napon tényleg elindul, és onnantól az a futó blokkod (az előzőt lezárja) — de csak ha az évad megengedi, és csak a futó blokknál későbbi tervezett blokkot indítja el. Ha a blokk az éves terv blokkja volt, és még el sem kezdted, a **„Mégsem, eldobom”** a blokkot visszaállítja „tervezett”-re az éves tervben; ha az éves tervben **kihagyod** ezt a blokkot, a hozzá készült, még el nem kezdett tervezett blokk **törlődik** (a szerkesztéseid vele együtt). Lásd [Éves terv](19-eves-terv.md).
 

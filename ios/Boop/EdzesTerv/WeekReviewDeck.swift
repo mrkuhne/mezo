@@ -541,15 +541,15 @@ private struct ReviewSummaryCard: View {
 /// not slid up from the bottom; a full page zooms out of what was tapped, like the home ring's orbs).
 enum PlanZoom: String { case builder, review }
 
-/// The card on Edzés → Blokk: the week waiting for approval (Átnézem / Elfogadom átnézés nélkül), what took effect,
-/// and the way into the builder. Shows nothing for the week when there is no proposal.
+/// The card on Edzés → Mezociklus: the week waiting for approval (Átnézem / Elfogadom átnézés nélkül) and what took
+/// effect. Shows nothing when there is no proposal. The way into the builder is the mezociklus card's Szerkesztés
+/// (mezo-r36n9.177).
 struct WeekReviewEntrance: View {
     let model: WeekReviewModel
     let hue: Hue
     /// The namespace the builder and the deck zoom out of.
     let zoom: Namespace.ID
     let openReview: @MainActor @Sendable () -> Void
-    let openBuilder: @MainActor @Sendable () -> Void
     @State private var accepting = false
 
     var body: some View {
@@ -576,8 +576,6 @@ struct WeekReviewEntrance: View {
                     .matchedTransitionSource(id: PlanZoom.review, in: zoom)
                 }
             }
-            NKActions([NKAction(glyph: "dumbbell-ink", title: "Blokk szerkesztése", primary: true, action: openBuilder)], hue: hue)
-                .matchedTransitionSource(id: PlanZoom.builder, in: zoom)
         }
     }
 

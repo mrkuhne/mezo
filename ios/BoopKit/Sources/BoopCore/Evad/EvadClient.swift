@@ -166,7 +166,7 @@ public func evadErrorText(_ error: PlanFetchError) -> String {
         case "SEASON_NOT_EDITABLE": "Ez az évad már lezárult, ezért nem változtatható."
         case "SEASON_ACTIVE_EXISTS": "Már fut egy évadod."
         case "SEASON_PROFILE_REQUIRED": "Az évad számaihoz előbb a testadataid kellenek (magasság, születési dátum, nem)."
-        case "SEASON_BLOCK_NEEDS_GYM_DAY": "Amíg fut az edzésblokk, legalább egy edzésnap kell."
+        case "SEASON_BLOCK_NEEDS_GYM_DAY": "Amíg fut a mezociklus, legalább egy edzésnap kell."
         case "MENU_NOT_PROPOSED": "Ezt a menüt már jóváhagytad, ezért nem állítom össze újra."
         case "EXPERIMENT_ALREADY_RUNNING": "Már fut egy kísérlet. Egyszerre csak egy futhat, hogy tiszta legyen az eredmény."
         case "EXPERIMENT_NOT_PROPOSED": "Ez a javaslat már nem aktuális."

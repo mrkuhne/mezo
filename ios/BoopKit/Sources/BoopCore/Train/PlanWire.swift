@@ -7,7 +7,7 @@ import Foundation
 
 // MARK: - The running block
 
-public struct WireBlock: Decodable, Equatable, Sendable {
+public struct WireBlock: Codable, Equatable, Sendable {
     public let id: String
     public let title: String
     public let shortTitle: String?
@@ -22,9 +22,16 @@ public struct WireBlock: Decodable, Equatable, Sendable {
     public let weeklyReviewMode: String?
     public let startDate: String?
     public let days: [WireDay]?
+    // The mezociklus list (mezo-r36n9.177) — absent on older answers.
+    public var endDate: String? = nil
+    public var closedAt: String? = nil
+    public var templateId: String? = nil
+    public var hasReport: Bool? = nil
+    public var split: String? = nil
+    public var goal: String? = nil
 }
 
-public struct WireDay: Decodable, Equatable, Sendable {
+public struct WireDay: Codable, Equatable, Sendable {
     public let id: String
     public let day: String
     public let type: String
@@ -549,6 +556,9 @@ public enum WireJSON: Codable, Equatable, Sendable {
     public subscript(key: String) -> WireJSON? { if case .object(let o) = self { o[key] } else { nil } }
     public var string: String? { if case .string(let s) = self { s } else { nil } }
     public var array: [WireJSON]? { if case .array(let a) = self { a } else { nil } }
+    public var int: Int? {
+        switch self { case .int(let i): i; case .double(let d): Int(d); default: nil }
+    }
 }
 
 /// A `MesoTemplateUpsertRequest` as the server generated it — opaque on the phone, a few read-only peeks for display.
@@ -563,6 +573,71 @@ public struct WireTemplate: Codable, Equatable, Sendable {
     public var trainingStyle: String? { json["trainingStyle"]?.string }
     public var dayCount: Int { json["days"]?.array?.count ?? 0 }
     public var exerciseCount: Int { (json["days"]?.array ?? []).reduce(0) { $0 + ($1["exercises"]?.array?.count ?? 0) } }
+    // A saved template's peeks (`MesoTemplateResponse`, mezo-r36n9.177).
+    public var id: String? { json["id"]?.string }
+    public var runCount: Int { json["runCount"]?.int ?? 0 }
+    public var weeks: Int { json["weeks"]?.int ?? phaseCurve.count }
+    public var phaseCurve: [String] { (json["phaseCurve"]?.array ?? []).compactMap(\.string) }
+    public var split: String? { json["split"]?.string }
+    public var shortTitle: String? { json["shortTitle"]?.string }
+}
+
+/// GET /api/train/mesocycles/{id}/report — the end-of-mezociklus report, lenient: everything but the id may be absent.
+public struct WireReport: Decodable, Equatable, Sendable {
+    public struct Adherence: Decodable, Equatable, Sendable {
+        public let plannedSessions: Int?
+        public let completedSessions: Int?
+        public let plannedWeeks: Int?
+        public let completedWeeks: Int?
+        public let completionPct: Int?
+    }
+    public struct VolumeWeek: Decodable, Equatable, Sendable {
+        public let week: Int
+        public let phase: String?
+        public let planned: Int?
+        public let actual: Int?
+    }
+    public struct MuscleArc: Decodable, Equatable, Sendable {
+        public let muscle: String
+        public let weeks: [VolumeWeek]?
+    }
+    public struct Volume: Decodable, Equatable, Sendable {
+        public let muscles: [MuscleArc]?
+    }
+    public struct Strength: Decodable, Equatable, Sendable {
+        public let exerciseName: String
+        public let muscle: String?
+        public let firstTopKg: Double?
+        public let lastTopKg: Double?
+        public let firstTopReps: Int?
+        public let lastTopReps: Int?
+        public let deltaKg: Double?
+    }
+    public struct Highlight: Decodable, Equatable, Sendable {
+        public let exerciseName: String
+        public let kind: String?
+        public let date: String?
+        public let value: Double?
+    }
+    public struct Records: Decodable, Equatable, Sendable {
+        public let medalCount: Int?
+        public let top: [Highlight]?
+    }
+
+    public let mesocycleId: String
+    public let title: String?
+    public let startDate: String?
+    public let endDate: String?
+    public let weeks: Int?
+    public let selfEval: String?
+    public let aiEval: String?
+    /// `pending` | `ready` | `failed` (an unknown value is kept as is).
+    public let aiEvalStatus: String?
+    public let aiEvalEnabled: Bool?
+    public let adherence: Adherence?
+    public let volume: Volume?
+    public let strength: [Strength]?
+    public let records: Records?
 }
 
 /// POST /api/train/meso-plans/candidates. Absent optionals are omitted.

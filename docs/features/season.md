@@ -262,7 +262,7 @@ Train asks `SeasonGatePort.allowsMesocycleStart(owner, start)` on the two real s
 (template start `POST /api/train/meso-templates/{id}/start` and re-run `POST /api/train/mesocycles/{id}/rerun`) and a
 real activation `POST /api/train/mesocycles/{id}/activate` of a non-active block. It passes when a season is active,
 or a planned one starts within `planned-lead-days` (7) of the block's start and has not ended. Otherwise **409
-`SEASON_REQUIRED`** (the phone's Blokk builder says „Edzésblokk csak évadhoz indulhat. Az Évad oldalon indíthatsz
+`SEASON_REQUIRED`** (the phone's mezociklus builder (the tab was „Blokk" until 2026-11-26, `mezo-r36n9.177`) says „Edzésblokk csak évadhoz indulhat. Az Évad oldalon indíthatsz
 egyet."). **Running blocks are untouched** — the idempotent re-activate of an active block is not gated, and the block
 that was running before seasons existed keeps running. Single workouts and sport sessions are not gated.
 
@@ -598,7 +598,7 @@ S3's Liquibase file is `202611231000_mezo-r36n9.16_season_menu.sql`. S2 adds no 
   skeleton and recipe candidates, the sensitivity profile, recipe lines with their catalog item.
 - **meal → season** (S3): `meal/port/SeasonMenuPort` ← `SeasonMenuAdapter` (allowed recipes, approved meals).
 - **→ biometrics / wearable / check-in / fuel / meal / journal** (S4): `SeasonMetricsPort.experimentSignals`,
-  `SeasonExperimentSourcePort` ← `SeasonExperimentSourceAdapter` (stack, meals, journal); `SeasonTrainPort.trainEvents`.
+  `SeasonExperimentSourcePort` ← `SeasonExperimentSourceAdapter` (stack, meals, journal); `SeasonTrainPort.trainEvents`. A pantry meal line that carries a `recipeId` (an ingredient of a recipe logged ingredient by ingredient, `mezo-r36n9.181`) counts for the recipe under `recipeSnapshotName`, never as a new food.
 
 ## 6. How to use it (consume)
 

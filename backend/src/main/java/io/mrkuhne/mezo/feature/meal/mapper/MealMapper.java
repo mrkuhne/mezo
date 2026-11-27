@@ -52,6 +52,7 @@ public interface MealMapper {
         return MealItemResponse.builder()
             .source(i.getSource())
             .recipeId(i.getRecipeId())
+            .recipeName(i.getRecipeSnapshotName())
             .pantryItemId(i.getPantryItemId())
             .amount(i.getAmount())
             .unit(i.getUnit())

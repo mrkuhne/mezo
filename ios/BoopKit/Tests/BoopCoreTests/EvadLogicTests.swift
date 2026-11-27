@@ -108,7 +108,7 @@ struct EvadLogicTests {
 
         #expect(rows.map(\.title) == ["Hétfő · Felső A", "Szerda · Alsó A", "Péntek · Felső A", "Kimarad · Felső B"])
         #expect(rows.map(\.body) == ["Marad a helyén.", "Eddig kedden volt.", "Új nap: a hétfői edzés még egyszer.",
-                                      "Eddig csütörtökön volt, a blokk többi napja viszi tovább a hetet."])
+                                      "Eddig csütörtökön volt, a mezociklus többi napja viszi tovább a hetet."])
     }
 
     @Test func blockWeekRowsSurviveADayWithoutAWeekday() {
@@ -117,7 +117,7 @@ struct EvadLogicTests {
         ], dropped: [EvadBlockDay(weekday: -1, title: "Más", change: "drop", fromWeekday: nil)])
 
         #expect(evadBlockWeekRows(week).map(\.body) == ["Új helyre kerül.",
-                                                         "Kimarad, a blokk többi napja viszi tovább a hetet."])
+                                                         "Kimarad, a mezociklus többi napja viszi tovább a hetet."])
     }
 
     @Test func compareRowsCarryTheWeeklyTotal() {

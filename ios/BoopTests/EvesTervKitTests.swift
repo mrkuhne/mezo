@@ -72,9 +72,9 @@ struct EvesTervKitTests {
         #expect(evesNoteText(note("{\"code\":\"emphasis_once\",\"group\":\"calf\"}"))
                 == "Vádli: csak egyszer tudtam fókuszba tenni.")
         #expect(evesNoteText(note("{\"code\":\"pair_relaxed\",\"ordinal\":5}"))
-                == "Az 5. blokkban szokatlan párt raktam össze, másképp nem jött ki.")
+                == "Az 5. mezociklusban szokatlan párt raktam össze, másképp nem jött ki.")
         #expect(evesNoteText(note("{\"code\":\"mixed_focus\",\"ordinal\":8}"))
-                == "A 8. blokk fókusza felsőtest- és lábizmot is vegyít.")
+                == "A 8. mezociklus fókusza felsőtest- és lábizmot is vegyít.")
         #expect(evesNoteText(note("{\"code\":\"something_new\",\"group\":\"calf\",\"ordinal\":1}")) == nil)
         #expect(evesNoteText(note("{\"code\":\"no_focus_this_year\",\"group\":\"calf\"}")) == nil)
     }
@@ -83,21 +83,21 @@ struct EvesTervKitTests {
         let p = plan()
         let n = note("{\"code\":\"no_focus_this_year\",\"group\":\"calf\",\"blockId\":\"b2\",\"replaces\":\"glute\"}")
         #expect(evesNoFocusTitle(n) == "Vádli idén nem kap fókuszt")
-        #expect(evesNoFocusAction(n, plan: p) == "Áttehetem a 2. blokkba a far helyére")
+        #expect(evesNoFocusAction(n, plan: p) == "Áttehetem a 2. mezociklusba a far helyére")
         #expect(evesNoFocusNewFocus(n, plan: p) == ["quad", "calf"])
         let add = note("{\"code\":\"no_focus_this_year\",\"group\":\"calf\",\"blockId\":\"b2\"}")
-        #expect(evesNoFocusAction(add, plan: p) == "Áttehetem a 2. blokkba")
+        #expect(evesNoFocusAction(add, plan: p) == "Áttehetem a 2. mezociklusba")
     }
 
     @Test func mapLinesFollowTheServerFacts() {
         let clean = evesMapLines(plan()).map(\.text)
         #expect(clean.contains("Idén minden izom legalább egyszer fókuszba kerül; a bicepsz, a tricepsz és a vádli egyszer, a többi kétszer."))
-        #expect(clean.contains("Egy izom sosem kerül fókuszba két egymást követő blokkban."))
+        #expect(clean.contains("Egy izom sosem kerül fókuszba két egymást követő mezociklusban."))
         #expect(clean.contains("A végén 2 hét könnyű szinten tartás, előtte 2 tartalék hét betegségre, nyaralásra."))
 
         let late = evesMapLines(plan(overrun: 1, consWeeks: 1, buffer: 0,
                                      warnings: #"[{"code":"focus_consecutive","group":"glute","ordinal":2}]"#)).map(\.text)
-        #expect(!late.contains("Egy izom sosem kerül fókuszba két egymást követő blokkban."))
+        #expect(!late.contains("Egy izom sosem kerül fókuszba két egymást követő mezociklusban."))
         #expect(late.contains("A végén 1 hét könnyű szinten tartás."))
         #expect(late.contains("A lezárás 1 hétre rövidült."))
         #expect(late.contains("A csúszás miatt az év 1 héttel később ér véget."))
@@ -140,19 +140,19 @@ struct EvesTervKitTests {
         func u(_ title: String, _ status: String = "active") -> WireYearUnlinked {
             try! JSONDecoder().decode(WireYearUnlinked.self, from: Data(#"{"mesocycleId":"m","title":"\#(title)","startDate":"2026-11-02","status":"\#(status)"}"#.utf8))
         }
-        #expect(evesUnlinkedText(u("Erő alapozás")) == "Az „Erő alapozás” nov. 2-től fut, de egyik éves blokkhoz sincs kötve.")
-        #expect(evesUnlinkedText(u("Nyári blokk")) == "A „Nyári blokk” nov. 2-től fut, de egyik éves blokkhoz sincs kötve.")
+        #expect(evesUnlinkedText(u("Erő alapozás")) == "Az „Erő alapozás” nov. 2-től fut, de egyik éves mezociklushoz sincs kötve.")
+        #expect(evesUnlinkedText(u("Nyári blokk")) == "A „Nyári blokk” nov. 2-től fut, de egyik éves mezociklushoz sincs kötve.")
         // A planned run does not run yet: it starts on its day.
-        #expect(evesUnlinkedText(u("Erő alapozás", "planned")) == "Az „Erő alapozás” nov. 2-től indul, de egyik éves blokkhoz sincs kötve.")
-        #expect(evesUnlinkedTitle(u("Erő alapozás")) == "A futó blokkod nincs az éves tervben")
-        #expect(evesUnlinkedTitle(u("Erő alapozás", "planned")) == "A tervezett blokkod nincs az éves tervben")
+        #expect(evesUnlinkedText(u("Erő alapozás", "planned")) == "Az „Erő alapozás” nov. 2-től indul, de egyik éves mezociklushoz sincs kötve.")
+        #expect(evesUnlinkedTitle(u("Erő alapozás")) == "A futó mezociklusod nincs az éves tervben")
+        #expect(evesUnlinkedTitle(u("Erő alapozás", "planned")) == "A tervezett mezociklusod nincs az éves tervben")
     }
 
     /// A planned block already linked to a planned run is edited in the block builder; the sheet says so.
     @Test func linkedPlannedBlockPointsToTheBuilder() {
         let linked = plan(block2Meso: #""m2""#)
         let b2 = linked.blocks[1]
-        #expect(evesLinkedPlannedText(b2) == "Indul nov. 2-től. A blokkot a blokképítőben tudod módosítani.")
+        #expect(evesLinkedPlannedText(b2) == "Indul nov. 2-től. A mezociklust a mezociklus-építőben tudod módosítani.")
         #expect(evesLinkedPlannedText(plan().blocks[1]) == nil, "an unlinked planned block is edited here")
         #expect(evesLinkedPlannedText(plan(block2: "skipped", block2Meso: #""m2""#).blocks[1]) == nil)
     }
@@ -175,7 +175,7 @@ struct EvesTervKitTests {
     }
 
     @Test func yearErrorsSpeakHisLanguage() {
-        #expect(evesErrorText(.conflict("TRAIN_YEAR_BLOCK_LOCKED")) == "Ez a blokk már fut vagy lezárult, ezért nem változhat.")
+        #expect(evesErrorText(.conflict("TRAIN_YEAR_BLOCK_LOCKED")) == "Ez a mezociklus már fut vagy lezárult, ezért nem változhat.")
         #expect(evesErrorText(.offline) == planErrorText(.offline))
     }
 }

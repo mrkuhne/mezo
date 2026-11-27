@@ -24,8 +24,10 @@ import org.hibernate.type.SqlTypes;
  * One ordered, polymorphic line of a {@link MealEntity} (FK {@code meal_id},
  * {@code ON DELETE CASCADE}). Lines are ordered within a meal by {@code lineOrder}.
  *
- * <p>The line is polymorphic on {@code source} ({@code 'recipe'} | {@code 'pantry'}): exactly one
- * of {@code recipeId} / {@code pantryItemId} is set (DB CHECK {@code ck_meal_item_arm}). BOTH are
+ * <p>The line is polymorphic on {@code source} ({@code 'recipe'} | {@code 'pantry'}): a recipe line
+ * sets {@code recipeId} only, a pantry line sets {@code pantryItemId} and MAY also carry
+ * {@code recipeId} as a "part of recipe" marker when the recipe was logged ingredient by ingredient
+ * (mezo-r36n9.181, DB CHECK {@code ck_meal_item_arm}). BOTH are
  * PLAIN UUID columns (FK to {@code recipe}/{@code pantry_item}, {@code ON DELETE RESTRICT}),
  * deliberately NOT JPA associations: the {@code snapshot*} fields capture the live source's name +
  * per-basis macros at write time so a later edit/delete of the source never silently rewrites this
@@ -127,4 +129,12 @@ public class MealItemEntity extends OwnedEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "recipe_overrides", columnDefinition = "jsonb")
     private List<MealItemRecipeOverrideJson> recipeOverrides;
+
+    /**
+     * The recipe's name frozen at log time on a pantry line that is part of a recipe
+     * (mezo-r36n9.181); null on every other line. Kept so the meal still reads "from <recipe>"
+     * after the recipe is renamed or deleted.
+     */
+    @Column(name = "recipe_snapshot_name")
+    private String recipeSnapshotName;
 }

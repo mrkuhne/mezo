@@ -1020,5 +1020,35 @@
       "mezo-r36n9.172"
     ],
     "mi_valtozott": "Új Emlékeztetők oldal: bármire felvehetsz emlékeztetőt (cím, időpont, ismétlés), és mindegyiknél eldöntöd, hogy Ébresztő legyen (teljes képernyős, lezárt és lenémított telefonon is szól) vagy csendes Értesítés. A kiegészítőknél egy „Emlékeztess” kapcsoló ébresztőt állít; az ébresztő „Bevettem” gombja feloldás nélkül rögzíti a bevételt és elhallgattatja az ébresztőt. A Ma oldalon látod és kipipálhatod a mai emlékeztetőket, a „+” lap Emlékeztető kapuja az oldalt nyitja meg. Edzésnél a pihenő végét rezgés jelzi, vagy választhatsz ébresztőt."
+  },
+  "9a960b2b2": {
+    "cim": "Recept rögzítése összetevőnként, grammban, a recept jelölésével",
+    "datum": "2026-11-26",
+    "verzio": "3.44.0",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app",
+      "Háttérrendszer"
+    ],
+    "szakasz": "Kezdőlap",
+    "jegyek": [
+      "mezo-r36n9.181"
+    ],
+    "mi_valtozott": "Ha receptet rögzítesz (a Recept bejárattal vagy a recept oldalán egy koppintással), az étkezésbe minden hozzávaló külön sorban kerül, egy adagra jutó grammal, és mentés előtt egyenként átírhatod vagy leveheted őket. Minden ilyen soron ott a „… része” jelölés, az elmentett étkezés kártyáján pedig „… receptből” cím alatt látod a hozzávalókat. Ha egy hozzávalót nem lehet grammra bontani, a recept a régi módon, egyetlen „1 adag” sorként kerül be."
+  },
+  "e11d2839f": {
+    "cim": "Mezociklusaim: minden mezociklusod egy helyen",
+    "datum": "2026-11-26",
+    "verzio": "3.45.0",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app",
+      "Háttérrendszer"
+    ],
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.177"
+    ],
+    "mi_valtozott": "Az Edzés negyedik fülének neve „Mezociklus” lett, és az appban mindenhol „mezociklus” áll a „blokk” helyett. A fül tetején a futó mezociklusod kártyája: innen szerkeszted, újraindítod ma az 1. héttől (a módosításaiddal együtt, kérésre a sablont is frissítve) vagy lezárod egy rövid saját értékeléssel; a „…” menüből sablonba mented. Alul a „Mezociklusaim” oldal mutatja a futót, a következőket, a sablonjaidat és a lezártakat; bármelyikre koppintva előbb a részletei nyílnak meg, elindítani csak az alsó gombbal lehet. Lezáráskor grafikus zárójelentés készül (terv és valóság hetenként, erő, Boop értékelése), a sablon pedig külön, a futót nem érintve is szerkeszthető."
   }
 }

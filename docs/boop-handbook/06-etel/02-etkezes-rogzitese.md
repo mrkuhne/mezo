@@ -18,6 +18,13 @@ A rögzítő egy oldalon mindent egyszerre fogad:
 - **Fotó** (kamera vagy képtár) **és szöveg együtt:** fotó mellett a szövegmező „Segíts Boopnak a fotóhoz” lesz
   (például „másfél adag, olívaolajjal sütve”). A gomb ilyenkor „Kiszámolom a fotóból és a leírásból”.
 - **Leírás nélkül:** Recept · Kamra · Vonalkód · Szokásos. A recept- és a kamraválasztóban **keresőmező és szűrő** van (2026-11-21): beírhatod a nevét (ékezet nélkül is megtalálja), a recepteket étkezés szerint (reggeli, ebéd, vacsora, nassolás), a kamrát kategória szerint szűrheted — ugyanúgy, mint a Receptek és a Kamra fülön.
+- **Recept összetevőnként** (2026-11-26): ha receptet választasz, a tányérra nem egyetlen „1 adag” sor kerül, hanem a
+  recept **minden hozzávalója külön sorban, egy adagra jutó grammal** (például rizs 80 g, csirkemell 150 g,
+  olívaolaj 5 g). Mindegyik soron ott a jelölés: „*Csirkés rizs része*”, és egyenként átírhatod vagy leveheted őket
+  (például ha aznap kevesebb rizs volt). Az étkezés neve a recept neve lesz. Az elmentett étkezés kártyáján
+  „*Csirkés rizs receptből*” cím alatt látod a hozzávalókat grammal és kalóriával. Ugyanígy működik a recept
+  oldalán az egy koppintásos rögzítés is. **Ha egy hozzávalót nem lehet grammra bontani** (például darabban van
+  megadva, vagy már nincs a kamrádban), a recept a régi módon, egyetlen „1 adag” sorként kerül be.
 
 Számolás közben a fotón fénycsík megy végig sarokjelekkel, a felirat lépésenként mondja, mit csinál Boop
 (fotó nélkül a gömb lüktet). Utána jön a **vázlat**: fotó, időpont, négy makró-csempe, és a tányér tételei külön
@@ -49,7 +56,7 @@ időpont; a szkennelés-animáció; és egy élőbb, színesebb rögzítő. A t�
 | Tábla | Mit tárol |
 |---|---|
 | `meal` | Az étkezés feje: időpont, nap, étkezési alkalom, eredet, pontszám |
-| `meal_item` | A tételek (recept, kamra-tétel vagy becslés), befagyasztott tápértékkel |
+| `meal_item` | A tételek (recept, kamra-tétel vagy becslés), befagyasztott tápértékkel; egy recept hozzávalójánál a recept azonosítója és neve is (jelölés) |
 | `ai_draft_outcome` | Mi lett az AI-vázlatokkal: elfogadva, átírva, elvetve |
 
 ## Mi jön még

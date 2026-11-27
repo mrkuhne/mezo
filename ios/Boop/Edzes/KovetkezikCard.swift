@@ -46,16 +46,16 @@ struct KovetkezikContent: Equatable {
         } else {
             title = evesFocusTitle(block)
             let m = plan.loadingBlocks
-            meta = "\(block.weeks) hét · \(from) · \(block.ordinal). blokk \(evesNumArticle(m)) \(m)-\(evesBolBol(m))"
+            meta = "\(block.weeks) hét · \(from) · \(block.ordinal). mezociklus \(evesNumArticle(m)) \(m)-\(evesBolBol(m))"
             let list = evesList(focus)
             switch next.reason {
             case "last_week":
                 // The running year block's last day; when the running block is not the year's, the day before the next.
                 let end = plan.blocks.first { $0.status == "running" && !$0.isConsolidation }?.lastDay
                     ?? evesAdding(days: -1, to: next.startsOn) ?? next.startsOn
-                sentence = "A mostani blokkod \(kovetkezikEndDay(end, today: today)) ér véget. Most \(list) kerül fókuszba, minden más Tartáson marad."
+                sentence = "A mostani mezociklusod \(kovetkezikEndDay(end, today: today)) ér véget. Most \(list) kerül fókuszba, minden más Tartáson marad."
             case "no_block":
-                sentence = "Most nincs futó blokkod. A terv szerint \(list) jön, minden más Tartáson marad."
+                sentence = "Most nincs futó mezociklusod. A terv szerint \(list) jön, minden más Tartáson marad."
             default:
                 sentence = nil
             }
@@ -111,7 +111,7 @@ func ujBlokkYearSentence(_ p: YearBlockPrefill) -> String {
     if p.consolidation { return "Az éves terved lezárása. A hossza és a szintek a tervből jönnek." }
     let ordered = evesGroupOrder.filter(p.focus.contains) + p.focus.filter { !evesGroupOrder.contains($0) }
     let title = ordered.first.map { ([evesMuscle($0)] + ordered.dropFirst().map(evesMuscleLower)).joined(separator: " + ") }
-    let named = [p.ordinal > 0 ? "Az éves terved \(p.ordinal). blokkja" : "Az éves terved blokkja", title].compactMap { $0 }
+    let named = [p.ordinal > 0 ? "Az éves terved \(p.ordinal). mezociklusa" : "Az éves terved mezociklusa", title].compactMap { $0 }
     return named.joined(separator: ": ") + ". Kitöltöttem, amit tudok; átállíthatod."
 }
 

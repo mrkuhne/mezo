@@ -1472,6 +1472,106 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/mesocycles/{id}/restart':
+    post:
+      tags:
+        - Train
+      operationId: restartMesocycle
+      summary: >-
+        Restart the active mesocycle from week 1 today, carrying its current
+        state (mezo-r36n9.177)
+      description: >-
+        One transaction. Closes the active run exactly like closeMesocycle
+        (closedAt, frozen report, AI review after commit) and stamps a new
+        ACTIVE run starting today from the old run's CURRENT state — every edit
+        made to its days, settings and priorities. The new run keeps the old
+        run's template (a legacy run gets one materialized and linked).
+        updateTemplate=true also overwrites that template with the run's state.
+        Any failure (e.g. SEASON_REQUIRED) changes nothing.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MesocycleRestartRequest'
+      responses:
+        '200':
+          description: The new active run
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MesocycleResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Mesocycle not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            Not the active run (TRAIN_MESO_NOT_ACTIVE) or no season covers today
+            (SEASON_REQUIRED)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/mesocycles/{id}/save-to-template':
+    post:
+      tags:
+        - Train
+      operationId: saveMesocycleToTemplate
+      summary: >-
+        Overwrite the run's template with the run's current state
+        (mezo-r36n9.177)
+      description: >-
+        Full replace of the template's plan with the run's days, settings and
+        priorities; a legacy run without a template gets one created and linked.
+        Idempotent. The run itself is not changed.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The template id that now carries the run's state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MesoRerunResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Mesocycle not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: The run is archived (TRAIN_MESO_NOT_ACTIVE)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/train/meso-plans/generate:
     post:
       tags:
@@ -21185,6 +21285,14 @@ components:
         templateId:
           type: string
           format: uuid
+    MesocycleRestartRequest:
+      type: object
+      description: Optional restart options
+      properties:
+        updateTemplate:
+          type: boolean
+          default: false
+          description: Also overwrite the run's template with its current state
     MesocycleCloseRequest:
       type: object
       description: Optional self-eval note captured when closing a mesocycle
@@ -28296,6 +28404,13 @@ components:
           type: string
           format: uuid
           nullable: true
+        recipeName:
+          type: string
+          nullable: true
+          description: >-
+            mezo-r36n9.181 - on a pantry line that is part of a recipe logged
+            ingredient by ingredient, the recipe's name frozen at log time
+            (recipeId is then the marker); null on every other line.
         pantryItemId:
           type: string
           format: uuid

@@ -40,6 +40,9 @@ struct RootView: View {
             } else if UserDefaults.standard.bool(forKey: "previewKapacitas") {
                 // The Átrendezés page and Minden hatása on fixtures (B7 K3): `-kapOpen atrendezes|hatas`.
                 KapacitasPreviewRoot()
+            } else if UserDefaults.standard.string(forKey: "previewMezo") != nil {
+                // The Mezociklus tab, its pages and sheets on fixtures (mezo-r36n9.177).
+                MezoPreviewRoot()
             } else if UserDefaults.standard.bool(forKey: "previewBlokk") || UserDefaults.standard.bool(forKey: "previewUjBlokk") {
                 // The block builder and the weekly review on fixtures (mezo-r36n9.83).
                 PlanPreviewRoot()

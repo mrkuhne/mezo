@@ -72,6 +72,26 @@ struct MealDetail: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("\(huInt(Int(meal.macros.kcal.rounded()))) kcal · F \(Int(meal.macros.p.rounded())) g · Sz \(Int(meal.macros.c.rounded())) g · Zs \(Int(meal.macros.f.rounded())) g")
                 .nkFont(12.5, design: .monospaced).foregroundStyle(.white.opacity(0.7)).fixedSize(horizontal: false, vertical: true)
+            ForEach(recipePartGroups(meal), id: \.recipeId) { group in
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 6) {
+                        NKGlyph("book-sage", .white.opacity(0.7), size: 13)
+                        Text("\(group.name) receptből").nkFont(13, .medium).foregroundStyle(.white.opacity(0.85))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .accessibilityElement(children: .combine)
+                    ForEach(Array(group.items.enumerated()), id: \.offset) { _, item in
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            Text(item.name).nkFont(13).foregroundStyle(.white.opacity(0.75)).fixedSize(horizontal: false, vertical: true)
+                            Spacer(minLength: 6)
+                            Text("\(huQuantity(item.amount, item.unit)) · \(huInt(Int(item.contribution.kcal.rounded()))) kcal")
+                                .nkFont(12, design: .monospaced).foregroundStyle(.white.opacity(0.6))
+                        }
+                        .padding(.leading, 19)
+                        .accessibilityElement(children: .combine)
+                    }
+                }
+            }
             DimensionGrid(entries: dimensionRow(meal)) { entry in
                 onDimension(DimensionSelection(entry: entry, mealTitle: title, coachNote: coach?.dimensionNotes[entry.id]))
             }

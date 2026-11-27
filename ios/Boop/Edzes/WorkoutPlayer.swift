@@ -980,7 +980,7 @@ struct WorkoutPlayer: View {
                 // Two swaps, said apart (owner, 2026-11-23): the old „Végleg lecserélem" was in fact today's swap,
                 // and read as the opposite of what he wanted — a change for today, not just „később".
                 menuRow("repeat-deep", "Ma mást csinálok helyette") { sheet = .swap(id, false) }
-                menuRow("repeat-deep", "Lecserélem a blokkban is") { sheet = .swap(id, true) }
+                menuRow("repeat-deep", "Lecserélem a mezociklusban is") { sheet = .swap(id, true) }
                 menuRow("medal-sun", "Rekordok") { sheet = .records(id) }
                 menuRow("camera-ink", "Technika") { sheet = .technique(id) }
                 menuRow("plus-ink", "Egy szettel több") {
@@ -1099,7 +1099,7 @@ struct WorkoutPlayer: View {
             swapProblem = problem
             if problem == nil {
                 sheet = nil
-                say(wholeBlock ? "\(c.name) — lecserélve, a blokk végéig" : "\(c.name) — ma ezt csinálod helyette")
+                say(wholeBlock ? "\(c.name) — lecserélve, a mezociklus végéig" : "\(c.name) — ma ezt csinálod helyette")
             }
         }
     }
