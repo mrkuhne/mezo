@@ -63,6 +63,13 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-11-27 — Boop B7 K4 „Előrejelzés” shipped; B7 Napi kapacitás done (`mezo-r36n9.17`, merge `df974dcad`, v3.46.0).**
+  `OutcomeJob` (03:30 owner zone) fills each lived proposal's outcome (session, verdict, rating, sleep with a pending
+  night, good + Hungarian word) and recomputes `capacity_pattern` (pure `CapacityPatterns`, shown at ≥ 3 evidence);
+  `SundayPreviewJob` (Sunday 18:00) generates next week, the phone's wall/Átrendezés switch to it from 18:00 local;
+  `CapacitySeasonLoad.deloadForward` is an advisory card on Évad's Teher (decision #121, one-tap move `mezo-r36n9.187`);
+  `GET /api/capacity/season-hints` for Új évad. Also `.185`: proposals sample the plan as planned, at most one skip a week.
+  Docs [capacity.md](../features/capacity.md) §4, [boop-ios.md](../features/boop-ios.md).
 - **2026-11-25 — Boop Évad: one accept moves the running block too (`mezo-r36n9.122`).** Spec §5.12-1 delivered: Módosítás previews the block's re-arranged week and *Elfogadom* moves goal, slots, sleep need and block in one transaction (evaluator-chosen repeat / drop, fingerprint covers the block); S1's gym-day lock removed. [`season.md`](../features/season.md).
 - **2026-11-25 — Boop Éves terv S3 + S4: the year map and following it (`mezo-r36n9.113`).**
   Server (S3): `training_year_plan` / `training_year_block`, the pure `YearGenerator` (alternating upper/lower focus blocks,

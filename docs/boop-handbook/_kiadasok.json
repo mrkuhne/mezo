@@ -1078,5 +1078,21 @@
       "mezo-r36n9.184"
     ],
     "mi_valtozott": "Az Étel szoba Ma oldala három jól elváló részre tagolódik: felül egy kártya a mai kalóriagyűrűvel és a fehérje / szénhidrát / zsír sávokkal (oldalra lapozva a nap görbéje), alatta étkezésenként egy-egy kártya, végül a víz, a kiegészítők és az italok. A szoba ege világosabb zöld lett. Egy rögzített étkezésre koppintva megnyílik a saját oldala a számokkal, a hozzávalókkal és Boop értékelésével. Innen a Javítás kitöltve nyitja meg a rögzítőt, és ugyanarra az étkezésre ment (az időpont marad, Boop újraértékel); a Törlés (az oldalon, a sort balra húzva vagy hosszan nyomva) azonnal leveszi, és pár másodpercig a „Visszavonás” visszahozza. Internet nélkül a két gomb halvány, és megmondja, miért."
+  },
+  "df974dcad": {
+    "cim": "Boop megtanulja, mi vált be — és vasárnap este már a jövő hetet mutatja",
+    "datum": "2026-11-27",
+    "verzio": "v3.46.0",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app",
+      "Szerver"
+    ],
+    "szakasz": "Napi kapacitás",
+    "jegyek": [
+      "mezo-r36n9.17",
+      "mezo-r36n9.185"
+    ],
+    "mi_valtozott": "Az Átrendezés lapon a „Korábban áttettük” rész most megmondja, hogyan sült el egy-egy áthelyezés („bevált”, „nem segített”, „maradt így”), egy rövid sorral arról, mi történt aznap. Ha valami legalább háromszor ugyanúgy alakult, Boop az „Ebből tanulok” részben kimondja (például: „a csütörtökök rendre túl sokak”). Vasárnap este hattól a fal és az Átrendezés már a jövő hetet mutatja, amit Boop addigra előre átnézett. Az Évad Teher részén, ha három hete több a teher, mint amennyit a pihenés visszaad, Boop szól, hogy előrébb hozná a könnyebb hetet — ez csak tanács, semmit nem állít át, és „Megbeszélem Boop-pal” gombbal beszélhetsz róla. Új évad indításakor a második lépés mutatja, mit tanult Boop a korábbi mozgatásokból. A jövő heti javaslatok között már nem csak edzéskihagyás szerepel: hetente legfeljebb egy kihagyást javasol, és inkább áthelyez."
   }
 }

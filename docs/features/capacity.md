@@ -18,7 +18,7 @@ related: [boop-ios, companion, _platform-language, train]
 
 # Capacity — how much the day demands vs. how much he can carry
 
-> **2026-11-27 — K4 „Előrejelzés” built (`mezo-r36n9.17`): outcomes, learned patterns, the Sunday preview, the season's advisory lighter-week card (decision #121) and new-season hints — see §4 *Outcomes and patterns (K4)*. B7 is complete with K4.**
+> **2026-11-27 — K4 „Előrejelzés” shipped (`mezo-r36n9.17`, merge `df974dcad`, backend v3.46.0): outcomes, learned patterns, the Sunday preview, the season's advisory lighter-week card (decision #121) and new-season hints — see §4 *Outcomes and patterns (K4)*. B7 is complete with K4.**
 >
 > **2026-11-26 — K3 „Átrendezés” shipped (`mezo-r36n9.17`, merge `c8a8ef330`, backend v3.43.0 live; tables `day_adjustment` / `capacity_proposal` / `capacity_live_state` present, empty until the first accept).** The phone build with the Átrendezés page is installed separately (the K2 build cannot decode the `KAPACITAS` skip reason). K4 (outcomes, patterns, Sunday preview, season proposals) is next.
 
