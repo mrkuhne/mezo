@@ -57,7 +57,8 @@ struct SportDemoRoom: View {
     var body: some View {
         let h = head
         NKAreaPage(hue: hue, name: "Sport", eyebrow: "Sport · \(tab)",
-                   level: state == .ready || state == .offline ? 0.5 : nil, display: state == .ready || state == .offline ? "2/4" : nil,
+                   level: state == .ready || state == .offline ? (moment == .done ? 0.75 : 0.5) : nil,
+                   display: state == .ready || state == .offline ? (moment == .done ? "3/4" : "2/4") : nil,
                    headline: h.0, sentence: h.1, glyph: "ball-sun",
                    tabs: [NKAreaTab("Ma", badge: moment == .after ? 1 : 0), NKAreaTab("Hét"), NKAreaTab("Napló"), NKAreaTab("Beosztás")],
                    selectedTab: $tab,
@@ -157,7 +158,7 @@ private struct SportMa: View {
 
     private func hint(_ text: String, ok: Bool) -> some View {
         HStack(alignment: .top, spacing: 10) {
-            NKGlyph(ok ? "check-sage" : "bolt-peach", .white, size: 16).padding(.top, 2)
+            NKGlyph(ok ? "check-ink" : "bolt-peach", .white, size: 16).padding(.top, 2)
             Text(text).nkFont(14).foregroundStyle(.white.opacity(0.88)).fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -175,7 +176,7 @@ private struct SportMa: View {
             }
             switch moment {
             case .before:
-                HStack(spacing: 22) { bigNumber("6 ó 20 p", "múlva kezdődik"); bigNumber("3/4", "e heti röpi", lit: true) }
+                HStack(spacing: 22) { bigNumber("6 ó 20 p", "múlva kezdődik"); bigNumber("2/4", "e heti röpi kész", lit: true) }
                 Text("Indítsd el az órádon a Röplabda edzést — utána innen töltöm ki a naplót.")
                     .nkFont(13).foregroundStyle(.white.opacity(0.65)).fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 10) {
@@ -254,7 +255,7 @@ private struct SportMa: View {
         HStack(spacing: 6) {
             Circle().fill(color).frame(width: 8, height: 8)
             Text(text).nkFont(12.5).foregroundStyle(.white.opacity(0.8))
-            if done { NKGlyph("check-sage", .white, size: 12) }
+            if done { NKGlyph("check-ink", .white, size: 12) }
         }
     }
 
@@ -567,7 +568,7 @@ private struct SportLogSheet: View {
                 Text(prefilled ? "Röplabda · ma 18:04" : "Mit sportoltál?").font(.nkSerif(28)).foregroundStyle(.white)
                 if prefilled {
                     VStack(alignment: .leading, spacing: 8) {
-                        HStack(spacing: 6) { NKGlyph("check-sage", .white, size: 14); Text("Az órádról").nkFont(13, .semibold).foregroundStyle(.white) }
+                        HStack(spacing: 6) { NKGlyph("check-ink", .white, size: 14); Text("Az órádról").nkFont(13, .semibold).foregroundStyle(.white) }
                         HStack(spacing: 22) { bigNumber("1 ó 57 p", "18:04–20:01"); bigNumber("812", "kcal", lit: true); bigNumber("138", "átlagpulzus") }
                     }
                     .padding(16).nkGlass(22)

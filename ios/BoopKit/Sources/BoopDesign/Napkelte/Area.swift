@@ -371,7 +371,7 @@ public struct NKAreaBar: View {
         case "Check-inek": "check-ink"
         case "Figyelt": "search-ink"
         case "Szabályok": "scale-ink"
-        case "Fiókok": "repeat-deep"
+        case "Fiókok", "Beosztás": "repeat-deep"
         case "Napirend", "Terv", "Tervezett": "clock-ink"
         case "Mezociklus": "cycle-ink"
         case "Mi hat rá": "bolt-ink"
