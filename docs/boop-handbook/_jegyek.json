@@ -1988,5 +1988,16 @@
     ],
     "mit_kapsz": "A lapok tetején lefelé húzva a felső rész a helyén marad, nem nyílik fölötte üres szürke csík; a billentyűzet bárhol eltűnik, ha a szövegen kívül koppintasz, a beírt szöveg megmarad.",
     "szulo": "mezo-r36n9"
+  },
+  "mezo-r36n9.196": {
+    "cim": "Új kezdőlap sáv nélkül, és az Évad saját szobája vasárnapi átnézéssel",
+    "tipus": "Funkció",
+    "szakasz": "Évad",
+    "terulet": [
+      "Terv",
+      "Alapok"
+    ],
+    "mit_kapsz": "A kezdőlapon tíz gömb, alsó sáv nélkül; az Évad saját gömböt és szobát kap (Most · Hét · Terv · Kísérlet), vasárnap este pedig Boop lépésenként végigvezet a héten és a jövő héten.",
+    "szulo": "mezo-r36n9"
   }
 }
