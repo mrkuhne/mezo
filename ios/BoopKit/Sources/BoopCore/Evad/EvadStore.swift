@@ -28,6 +28,8 @@ public final class EvadStore {
     /// How old `week` is when it came from the cache; nil for a fresh read.
     public private(set) var weekAge: TimeInterval?
     @ObservationIgnored private var weekFrom: String?
+    /// The Monday of the week on screen: a failed read of another week drops it rather than passing it off as this one.
+    @ObservationIgnored private var weekMonday: String?
 
     /// A cached overview older than this is not shown: a month-old season week is not this week.
     public static let maxAge: TimeInterval = 14 * 86_400
@@ -93,23 +95,31 @@ public final class EvadStore {
     /// `force` it reads once per week; offline it serves the cached week of the same Monday.
     public func loadWeek(now: Date = Date(), calendar: Calendar = .current, force: Bool = false) async {
         guard let range = evadMostRange(now: now, calendar: calendar) else {
-            week = nil; weekAge = nil; weekFrom = nil
+            week = nil; weekAge = nil; weekFrom = nil; weekMonday = nil
             return
         }
         guard let client else { return }
         guard force || weekFrom != range.to || weekAge != nil else { return }
         do throws(PlanFetchError) {
             let fresh = try await client.adherence(from: range.from, to: range.to)
-            week = fresh; weekAge = nil; weekFrom = range.to
+            week = fresh; weekAge = nil; weekFrom = range.to; weekMonday = range.from
             try? await cache?.put(fresh, endpoint: Self.weekEndpoint, date: range.from)
         } catch .offline {
             if let hit = await cache?.get(EvadAdherenceResponse.self, endpoint: Self.weekEndpoint, date: range.from,
                                           maxAge: Self.maxAge) {
-                week = hit.value; weekAge = hit.age; weekFrom = range.to
+                week = hit.value; weekAge = hit.age; weekFrom = range.to; weekMonday = range.from
+            } else {
+                dropWeek(unless: range.from)
             }
         } catch {
-            // a refusal or fault keeps whatever is on screen
+            // a refusal or fault keeps what is on screen — but only while it is the same week
+            dropWeek(unless: range.from)
         }
+    }
+
+    private func dropWeek(unless monday: String) {
+        guard weekMonday != monday else { return }
+        week = nil; weekAge = nil; weekFrom = nil; weekMonday = nil
     }
 
     // MARK: - Módosítás

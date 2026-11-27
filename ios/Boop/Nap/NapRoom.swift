@@ -52,3 +52,31 @@ struct NapRoomPage<Ma: View, Napok: View>: View {
 
 /// A day opened from the Napok tab (its `yyyy-MM-dd`): the day's sheet hangs at the Nap room's page level.
 struct NapOpenDay: Identifiable, Equatable { let id: String }
+
+/// The Nap room opened on Napok: the list reads only the phone's own day log, so it never waits for the brief or Health
+/// (the old Napló place did not either). Ma switches to the full room, whose empty states say what is missing.
+struct NapokOnlyRoom: View {
+    let brief: Brief?
+    let onBack: @MainActor @Sendable () -> Void
+    let onMa: @MainActor @Sendable () -> Void
+    @State private var tab = NapTab.napok
+    @State private var openDay: NapOpenDay?
+    @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
+    @Environment(\.openDestination) private var openDestination
+
+    var body: some View {
+        NapRoomPage(brief: brief, tab: $tab, onBack: onBack, onAsk: { openDestination(.chat) }) {
+            EmptyView()
+        } napok: {
+            NapokTab { openDay = NapOpenDay(id: $0) }
+        }
+        .onChange(of: tab) { _, t in if t == .ma { onMa() } }
+        .sheet(item: $openDay) { day in
+            if let ritmus {
+                NaploDayDetail(env: ritmus, date: day.id)
+                    .presentationDetents([.large]).presentationBackground(NK.ground).presentationCornerRadius(34)
+                    .presentationDragIndicator(.visible)
+            }
+        }
+    }
+}

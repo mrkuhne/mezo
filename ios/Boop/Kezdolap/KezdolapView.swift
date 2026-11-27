@@ -50,6 +50,9 @@ struct KezdolapView: View {
     @Environment(\.setRoomOpen) private var setRoomOpen
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var route: KezdolapRoute? = KezdolapView.initialRoute
+    /// A close is running (the page is fading out); what was asked meanwhile opens once it is done.
+    @State private var closing = false
+    @State private var pending: KezdolapRoute?
     /// The ring is zoomed into the tapped orb and faded out; the area page is up over it.
     @State private var zoomed = false
     @State private var pageIn = false
@@ -79,6 +82,8 @@ struct KezdolapView: View {
                     routePage(route)
                         .environment(\.nkFloatingPlus, route != .chat)
                         .opacity(pageIn ? 1 : 0)
+                        // a page on its way out takes no more taps
+                        .allowsHitTesting(!closing)
                 }
                 // The floating „+" (decision #134): on the ring, and raised above a room's bar; never over the chat.
                 if route != .chat {
@@ -111,11 +116,20 @@ struct KezdolapView: View {
     /// The page a route shows.
     @ViewBuilder private func routePage(_ route: KezdolapRoute) -> some View {
         switch route {
-        case .nap(let tab): NapView(initialNapTab: tab, onHome: closeRoute)
-        case .room(let entry): NapView(initialRoom: entry.hue, onHome: closeRoute)
-        case .chat: BoopTabView(onBack: closeRoute)
+        case .nap(.napok):
+            // The day list never waits for the brief or Health; Ma switches to the full room.
+            NapokOnlyRoom(brief: brief, onBack: back, onMa: { self.route = .nap(.ma) })
+        case .nap(let tab): NapView(initialNapTab: tab, onHome: back)
+        case .room(let entry) where entry.hue == .evad:
+            // The season never waited for the morning brief: Évad opens even offline or without Health.
+            EvadPage().environment(\.closeRoom, back)
+        case .room(let entry): NapView(initialRoom: entry.hue, onHome: back)
+        case .chat: BoopTabView(onBack: back)
         }
     }
+
+    /// The way back to the ring every route page gets.
+    private var back: @MainActor @Sendable () -> Void { { closeRoute() } }
 
     /// The ring's own numbers: the day's meals, the week's money, the weight's pace. None blocks the ring; each shows "–" until it is here.
     /// `force` re-reads the Súly store even when it has a picture: the scale's weigh-in arrives through the Health
@@ -139,12 +153,16 @@ struct KezdolapView: View {
     /// after the ring has come back (two moves never overlap). `.home` just closes what is open.
     private func go(_ d: BoopDestination) {
         let centre = CGPoint(x: screen.midX, y: screen.midY)
-        guard let new = KezdolapRoute(d) else { if route != nil { closeRoute() }; return }
-        if route == nil {
+        guard let new = KezdolapRoute(d) else {
+            if closing { pending = nil } else if route != nil { closeRoute() }
+            return
+        }
+        if closing {
+            pending = new          // the latest ask wins; it opens as soon as the ring is back
+        } else if route == nil {
             openRoute(new, from: centre, in: screen)
         } else if route != new {
-            closeRoute()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { openRoute(new, from: centre, in: screen) }
+            closeRoute(then: new)
         }
     }
 
@@ -171,14 +189,25 @@ struct KezdolapView: View {
         }
     }
 
-    /// Back out: the page fades away and the ring settles back out of the fog.
-    private func closeRoute() {
+    /// Back out: the page fades away and the ring settles back out of the fog; `next` opens once the ring is back.
+    /// A second close while one is running (a double tap on back) only updates what opens next.
+    private func closeRoute(then next: KezdolapRoute? = nil) {
+        if closing { if let next { pending = next }; return }
+        closing = true
+        pending = next
         setRoomOpen(false)
         let k = nkMotionScale
         withAnimation(reduceMotion ? .easeInOut(duration: 0.25) : .easeIn(duration: 0.3 * k)) { pageIn = false }
         withAnimation(reduceMotion ? .easeInOut(duration: 0.3) : .easeOut(duration: 0.6 * k)) { zoomed = false }
         // The page leaves once it has faded; until then it cross-fades with the ring coming back.
-        DispatchQueue.main.asyncAfter(deadline: .now() + (reduceMotion ? 0.3 : 0.34 * k)) { route = nil }
+        DispatchQueue.main.asyncAfter(deadline: .now() + (reduceMotion ? 0.3 : 0.34 * k)) {
+            route = nil
+            closing = false
+            if let p = pending {
+                pending = nil
+                openRoute(p, from: CGPoint(x: screen.midX, y: screen.midY), in: screen)
+            }
+        }
         // The room may have changed what the orbs say (a meal logged, an expense typed): read the numbers again.
         Task { await loadNumbers(force: true) }
     }

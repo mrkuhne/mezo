@@ -114,6 +114,26 @@ struct EvadStoreWeekTests {
         #expect(store.week != nil && store.weekScore == nil)
     }
 
+    /// A new week whose read fails (offline with no cache, or a server fault) never shows last week's number as this week's.
+    @Test func newWeekFailureDropsLastWeek() async {
+        let stub = StubTransport()
+        stub.on("getSeasonOverview", .json(200, EvadFixtures.overviewJSON()))
+        stub.on("getAdherence", .json(200, Self.weekJSON))
+        let store = EvadStore(client: EvadClient(raw: EvadClientTests.raw(stub)), cache: nil)
+        await store.load()
+        await store.loadWeek(now: Self.thursday, calendar: EvadWeekTests.budapest)
+        #expect(store.weekScore == 83)
+        stub.on("getAdherence", .fail(URLError(.notConnectedToInternet)))
+        await store.loadWeek(now: EvadWeekTests.date("2026-12-01T10:00"), calendar: EvadWeekTests.budapest)
+        #expect(store.week == nil && store.weekScore == nil)
+        // the same week failing keeps what is on screen
+        stub.on("getAdherence", .json(200, Self.weekJSON))
+        await store.loadWeek(now: EvadWeekTests.date("2026-12-02T10:00"), calendar: EvadWeekTests.budapest)
+        stub.on("getAdherence", .json(500, "{}"))
+        await store.loadWeek(now: EvadWeekTests.date("2026-12-03T10:00"), calendar: EvadWeekTests.budapest)
+        #expect(store.weekScore == 83)
+    }
+
     @Test func mondayMakesNoCall() async {
         let stub = StubTransport()
         let store = EvadStore(client: EvadClient(raw: EvadClientTests.raw(stub)), cache: nil)

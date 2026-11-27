@@ -96,8 +96,6 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
     /// The way back to the home screen's ring: the title row's left slot becomes a back button, and closing the
     /// room the ring opened returns there instead of leaving Ma bare. nil = Ma is the place's own root.
     let onHome: (@MainActor @Sendable () -> Void)?
-    /// The Nap room's tab it opens on (`mezo-r36n9.196`): Ma, or Napok (the old Napló place).
-    let initialNapTab: NapTab
     let below: (MaiContext) -> Below
     let drill: (Hue, MaiContext) -> Drill
     let sheets: (MaiContext) -> Sheets
@@ -107,7 +105,6 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
          @ViewBuilder below: @escaping (MaiContext) -> Below,
          @ViewBuilder drill: @escaping (Hue, MaiContext) -> Drill, sheets: @escaping (MaiContext) -> Sheets) {
         self.brief = brief; self.initialRoom = initialRoom; self.onHome = onHome
-        self.initialNapTab = initialNapTab
         self.below = below; self.drill = drill; self.sheets = sheets
         _napTab = State(initialValue: initialNapTab)
     }
@@ -138,7 +135,6 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
     /// The label of the toast's action (nil = "Visszavonom" when there is an undo).
     @State private var toastAction: String?
     @Environment(\.openURL) private var openURL
-    @Environment(\.openAccount) private var openAccount
     @Environment(\.openMeal) private var openMeal
     @Environment(\.foodClient) private var food
     /// B3: the hero's check-in pill opens the full-screen check-in (the evening one, the close).
@@ -178,7 +174,6 @@ struct MaiView<Below: View, Drill: View, Sheets: ViewModifier>: View {
                         NapokTab { openDay = NapOpenDay(id: $0) }
                     }
                     .toolbar(.hidden, for: .navigationBar)
-                    // the shell's painted landscape shows through the stack
                     .containerBackground(.clear, for: .navigation)
                     .navigationDestination(for: Hue.self) { h in drill(h, ctx) }
                 }
