@@ -91,8 +91,8 @@ playbook §5 short sessions).
   pages vertically at accessibility Dynamic Type / VoiceOver. Lifted from `EtelMa.heroCard`.
 - **`NKCardActions`** — the in-card action row: one primary capsule (white) + up to two quiet ones, or a „…" menu
   for the rest; reflows to a column at large type (`ViewThatFits`). Replaces the free pill rows.
-- **Room sky**: `Hue.roomSky` gets a `mozgas` case **only if** the owner picks the lighter step in the spike
-  (two steps shown side by side, as for Étel #123).
+- **Room sky** (owner picked the lighter step, #129): `Hue.roomSky` gets a `mozgas` case
+  `[0x5C7FC0, 0xF4BC8E, 0xFFEFCB]` and `roomTop` `0x34507E` (the spike's `-spikeSky 2`).
 - Étel Ma switches to `NKSectionCard` / `NKPagedHero` with **no visible change** (screenshot-compared in the step).
 
 ### 5.2 Mezociklus tab (step 2 — the owner's worst page)
@@ -103,8 +103,7 @@ Top → bottom:
    (`NKBlockTimeline` grown into the hero, from existing data — `edzesTimeline(b)` already gives one bar per week
    with the phase load, the current/past/future state and the deload flag; no new data). Under it the in-card
    actions: **Szerkesztés** primary; Újraindítás · Lezárás · Mentés a sablonba behind a „…" menu in the hero header
-   (my call — removes the free three-pill row; the spike shows both this and a variant with Újraindítás · Lezárás as
-   two quiet capsules in the same card, the owner picks).
+   (**owner picked the „…" menu over visible quiet capsules, #129**).
 2. **Heti átnézés entrance** — unchanged (Évad-owned), in its current slot.
 3. **„A heted" card** — the day carousel (`DayCard`s) inside the card; today's day ringed, done days ticked.
 4. **„Izmok ezen a héten" card** — this week's top muscles as slim bars with set counts (the data behind today's
@@ -118,13 +117,14 @@ line; the Tovább row stays.
 
 ### 5.3 Ma tab (step 3)
 
-1. **Következik card** — unchanged (already a card).
-2. **Hero — „A mai edzés"** (`NKPagedHero`):
+1. **Hero — „A mai edzés"** (`NKPagedHero`):
    - *Page 1:* label (ma / pótlás / megvolt), session title, three stat numbers (perc · gyakorlat · sorozat), time;
      primary **Indítás / Folytatás** (or **Eredmény** when done); the „Másik napot csinálok ma" / „Mégis a mai napot"
      quiet links inside the card.
    - *Page 2:* „A mai terhelés" — today's body map (moved from its own block).
    - Rest day: „Pihenőnap" + the next session's title and day; no page 2.
+2. **Következik card** — unchanged content, moved **under the hero** (owner OK #129: at the top two orange primaries
+   competed).
 3. **„A mai gyakorlatok" card** — the `ExerciseCard` carousel inside the card.
 4. **„Hol tartasz" card** — a compact weeks' arc (same graphic as the Mezociklus hero, small), tap → Mezociklus tab.
 5. **„Az Edzés terület" card** — the menu grid inside a card.
@@ -171,6 +171,23 @@ screenshot before/after the rendrakás; each in normal, empty, loading, error, o
 the sky at today's and a lighter step side by side. Sheets, report, load pages and builder follow the same rule and
 are shown at each step's end.
 
+### 6.1 Spike result (2026-11-27, owner OK — decision #129)
+
+Branch `spike/boop-edzes-ujratervezes` (`bb7edca44`, throwaway). Shown: Ma and Mezociklus tabs (top and lower
+parts), the „…" menu vs visible capsules, sky 1 vs 2, Mezociklusaim, Mezociklus részlet, no block / failed /
+offline (`-spikeState nincs|hiba|offline`), iPhone 16e, XXXL type. Accepted as the direction. Glitches the build
+fixes (they are part of each step's *Kész, ha…*):
+- **XXXL:** the hero's three stat words truncate („gyakorl", „éles") — the stats stack vertically at accessibility
+  sizes; the block title breaks mid-word („Hypertrop / hy") — allow word-wrap with `minimumScaleFactor`, never a
+  mid-word break; the muscle bars' name and number collide — row becomes name over bar at accessibility sizes;
+  the „ÚJ HÉT" entrance's secondary capsule overflows — `NKCardActions` reflow to a column.
+- **Menu grid** inside „Az Edzés terület" card: tiles keep the faint inner fill (no second glass) — use the
+  inner-card treatment, same as the day/exercise cards.
+- **Loading flash:** the Mezociklus tab briefly shows „Nincs futó mezociklusod" before the block arrives — show the
+  hero's calm loading state until the first answer (or the cache) decides.
+- **Ma hero height:** the fixed pager height leaves empty space on page 1 when there is no running progress; the
+  spike filled it with the „Másik napot csinálok ma" link (now inside the hero, as §5.3 says) — measure per state.
+
 ## 7. Steps (each one session, own bd child under `.197`, merged to main on its own)
 
 0. Spike + slice plan (owner OKs).
@@ -183,11 +200,10 @@ are shown at each step's end.
 
 ### 7.1 Sequencing and gates (my calls, from the builder check)
 
-- **Step 0 is the spike** (§6) and its owner OK, which also settles the sky step and the „…" menu vs visible
-  capsules. Then the slice plan (owner OK). No step builds before both.
+- **Step 0 is the spike** (§6, done — #129: lighter sky, „…" menu). Then the slice plan (owner OK). No step builds
+  before both.
 - **Step 1 adds the kit pieces as new files** (`NKSectionCard.swift`, `NKPagedHero.swift`, `NKCardActions.swift`)
-  and touches `Tokens.swift` only if the owner picks the lighter sky — so it does not collide with `.188`'s edits
-  to `Tokens`/`Area`/`Frames`/`Glass`.
+  and the `mozgas` sky case in `Tokens.swift` (a two-line edit — rebase onto `.188` if it is in flight there).
 - **Steps 5 and 6 start with a status check** of `.125`/`.150`/`.15` (player) and `.113`/`.114` (builder): if one
   is still in flight on those files, the step waits or rebases onto its branch after it merges; never two writers on
   one file.
