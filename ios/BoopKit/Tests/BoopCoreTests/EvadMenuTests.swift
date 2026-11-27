@@ -220,4 +220,67 @@ struct EvadMenuTests {
         #expect(later.listOffline && later.list != nil)
         #expect(!later.menuOffline && later.menuAgeText == nil)
     }
+    // MARK: - „Menübe jöhet" (mezo-r36n9.196)
+
+    private static func optionsJSON(allowed: [String]) -> String {
+        let rows = ["a", "b", "c", "d"].map { id in
+            #"{"id":"\#(id)","name":"Recept \#(id)","category":"dinner","kcal":500,"allowed":\#(allowed.contains(id)),"usable":true,"reason":null}"#
+        } + [#"{"id":"x","name":"Mogyorós","category":"dinner","kcal":500,"allowed":false,"usable":false,"reason":"mogyoró van benne"}"#]
+        return "[" + rows.joined(separator: ",") + "]"
+    }
+
+    @MainActor private static func toggleStore(_ stub: StubTransport) async -> EvadMenuStore {
+        stub.on("listSeasonRecipes", .json(200, optionsJSON(allowed: ["a", "b"])))
+        let store = EvadMenuStore(client: EvadClient(raw: EvadClientTests.raw(stub)), cache: nil,
+                                  clock: { Self.at(2026, 11, 18) }, calendar: Self.cal)
+        await store.loadRecipeOptions()
+        return store
+    }
+
+    private static func putBodies(_ stub: StubTransport) -> [String] {
+        stub.sent.filter { $0.op == "putSeasonRecipes" }.compactMap(\.body).map { $0.replacingOccurrences(of: " ", with: "") }
+    }
+
+    @Test @MainActor func toggleSendsTheWholeSetWithOneChanged() async {
+        let stub = StubTransport()
+        let store = await Self.toggleStore(stub)
+        #expect(store.allowedIds == ["a", "b"])
+        stub.on("putSeasonRecipes", .json(200, EvadFixtures.seasonJSON))
+        stub.on("listSeasonRecipes", .json(200, Self.optionsJSON(allowed: ["a", "b", "c"])))
+        await store.setAllowed("c", on: true, seasonId: "s1")
+        #expect(Self.putBodies(stub) == [#"{"recipeIds":["a","b","c"]}"#])
+        #expect(stub.sent.last { $0.op == "putSeasonRecipes" }?.path == "/api/seasons/s1/recipes")
+        #expect(store.allowedIds == ["a", "b", "c"] && store.actionProblem == nil)
+    }
+
+    @Test @MainActor func twoTogglesKeepBoth() async {
+        let stub = StubTransport()
+        let store = await Self.toggleStore(stub)
+        stub.on("putSeasonRecipes", .slowJson(200, EvadFixtures.seasonJSON, ms: 150))
+        stub.on("putSeasonRecipes", .json(200, EvadFixtures.seasonJSON))
+        stub.on("listSeasonRecipes", .json(200, Self.optionsJSON(allowed: ["a", "b", "c", "d"])))
+        let first = Task { await store.setAllowed("c", on: true, seasonId: "s1") }
+        try? await Task.sleep(for: .milliseconds(30))
+        let second = Task { await store.setAllowed("d", on: true, seasonId: "s1") }
+        await first.value; await second.value
+        let bodies = Self.putBodies(stub)
+        #expect(bodies.last == #"{"recipeIds":["a","b","c","d"]}"#, "the second write carries the first")
+        #expect(store.allowedIds == ["a", "b", "c", "d"])
+    }
+
+    @Test @MainActor func offlineToggleChangesNothing() async {
+        let stub = StubTransport()
+        let store = await Self.toggleStore(stub)
+        stub.on("putSeasonRecipes", .fail(URLError(.notConnectedToInternet)))
+        await store.setAllowed("c", on: true, seasonId: "s1")
+        #expect(store.allowedIds == ["a", "b"])
+        #expect(store.actionProblem == "Ehhez internet kell.")
+    }
+
+    @Test @MainActor func blockedRecipeIsRefused() async {
+        let stub = StubTransport()
+        let store = await Self.toggleStore(stub)
+        await store.setAllowed("x", on: true, seasonId: "s1")
+        #expect(Self.putBodies(stub).isEmpty && store.allowedIds == ["a", "b"])
+    }
 }

@@ -121,6 +121,59 @@ public final class EvadMenuStore {
         await loadMenu(force: true)
     }
 
+    // MARK: - „Menübe jöhet" on the recipe (`mezo-r36n9.196` step 2)
+
+    /// The season's recipe options (allowed, usable, reason); nil until read.
+    public private(set) var recipeOptions: [EvadRecipeOption]?
+    /// Wanted states not yet confirmed by the server (recipe id → on), applied over `recipeOptions`.
+    @ObservationIgnored private var desired: [String: Bool] = [:]
+    @ObservationIgnored private var writing = false
+    public private(set) var recipeOptionsProblem: PlanFetchError?
+
+    public func loadRecipeOptions(force: Bool = false) async {
+        guard let client else { recipeOptionsProblem = .unauthorized; return }
+        guard force || recipeOptions == nil else { return }
+        do { recipeOptions = try await client.recipes(); recipeOptionsProblem = nil }
+        catch { recipeOptionsProblem = error }
+    }
+
+    /// The recipes in the season's menu set, with his not-yet-confirmed taps applied.
+    public var allowedIds: Set<String> {
+        var ids = Set((recipeOptions ?? []).filter(\.allowed).map(\.id))
+        for (id, on) in desired { if on { ids.insert(id) } else { ids.remove(id) } }
+        return ids
+    }
+
+    /// One recipe in or out of the season's menu set. The server takes the whole set, so this is a read-modify-write;
+    /// taps made while a write is under way ride the next write (two quick taps keep both). A recipe that does not fit
+    /// his rules is refused. Offline → „Ehhez internet kell." and the set stays as it was.
+    public func setAllowed(_ recipeId: String, on: Bool, seasonId: String) async {
+        guard let client else { return }
+        guard let option = recipeOptions?.first(where: { $0.id == recipeId }), option.usable || !on else { return }
+        desired[recipeId] = on
+        actionProblem = nil
+        guard !writing else { return }
+        writing = true
+        defer { writing = false }
+        while !desired.isEmpty {
+            let batch = desired
+            let ids = allowedIds.sorted()
+            do {
+                _ = try await client.putRecipes(id: seasonId, recipeIds: ids)
+                recipeOptions = recipeOptions?.map {
+                    EvadRecipeOption(id: $0.id, name: $0.name, category: $0.category, kcal: $0.kcal,
+                                     allowed: ids.contains($0.id), usable: $0.usable, reason: $0.reason)
+                }
+                for (id, v) in batch where desired[id] == v { desired[id] = nil }
+            } catch {
+                desired = [:]
+                actionProblem = error == .offline ? "Ehhez internet kell." : evadErrorText(error)
+                return
+            }
+        }
+        await loadRecipeOptions(force: true)
+    }
+
     // MARK: - The list
 
     public func loadList(force: Bool = false) async {
