@@ -1327,7 +1327,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 *BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-24, done) ·
   [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-11-25, done) ·
   [docs/features/season.md](features/season.md) (updated 2026-11-25, in-progress) ·
-  [docs/features/train.md](features/train.md) (updated 2026-11-26, done)
+  [docs/features/train.md](features/train.md) (updated 2026-11-27, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/train`
   - **sub-features:** `port`

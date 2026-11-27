@@ -1126,5 +1126,14 @@
       "mezo-r36n9.191"
     ],
     "mi_valtozott": "Az Étel szobában és a Mezociklusok listán sem lehet többé lehúzni a lap tetejét, így ott sem nyílik szürke csík. Az Étel szobát a fejében álló Frissítés gomb frissíti, a Mezociklusok lista minden megnyitáskor magától frissül."
+  },
+  "11b3e49c9": {
+    "cim": "Edzés közben előre látszik a kihívás és a speciális utolsó szett",
+    "datum": "2026-11-27",
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.195"
+    ],
+    "mi_valtozott": "A gyakorlat neve alatt a rövid címkék helyett kiírt mondat mondja meg, milyen lesz az utolsó szett, és ha kihívás is van, a csúcsodat is. Pihenőhéten, kímélő napon és sportnapon egy halvány sor jelzi, mi tartozik a gyakorlathoz a mezociklusban, és miért marad ki ma."
   }
 }
