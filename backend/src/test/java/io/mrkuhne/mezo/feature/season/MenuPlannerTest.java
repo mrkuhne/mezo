@@ -206,6 +206,14 @@ class MenuPlannerTest {
     }
 
     @Test
+    void addedSnackTakesAFreeOrdinalWhenOrdinalsHaveGaps() {
+        DayBudget gap = new DayBudget(MONDAY, MenuPlanner.KIND_SPORT, "röplabda", 420, List.of(
+            w(SlotKey.SNACK, 2, "Uzsonna", 300, 960)));
+        List<Window> ws = MenuPlanner.withPreSession(gap);
+        assertThat(ws).extracting(Window::ordinal).doesNotHaveDuplicates();
+    }
+
+    @Test
     void singleSportConstructorStillMeansOneWindow() {
         DayBudget one = new DayBudget(MONDAY, MenuPlanner.KIND_SPORT, "röplabda", 1080, List.of());
         assertThat(one.sports()).containsExactly(new MenuPlanner.SportStart("röplabda", 1080));

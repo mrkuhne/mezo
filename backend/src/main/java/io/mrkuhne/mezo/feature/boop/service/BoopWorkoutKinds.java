@@ -19,7 +19,7 @@ public final class BoopWorkoutKinds {
     /** Sport kind → the Health activity types that are that sport. A kind missing here matches only its own name. */
     private static final Map<String, Set<String>> SPORT = Map.of(
         "bike", Set.of("cycling", "bike"),
-        "hike", Set.of("hiking", "walking", "hike"),
+        "hike", Set.of("hiking", "hike"), // not walking: an auto-detected walk is not a hike
         "swim", Set.of("swimming", "swim"),
         "football", Set.of("soccer", "football"),
         "running", Set.of("running", "run"),

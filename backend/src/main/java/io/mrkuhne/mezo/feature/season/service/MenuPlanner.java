@@ -214,7 +214,8 @@ public final class MenuPlanner {
                 (int) Math.round(b.p() * keep), (int) Math.round(b.c() * keep), (int) Math.round(b.f() * keep)),
                 w.atMin(), w.preSession()));
         }
-        int ordinal = 1 + (int) ws.stream().filter(w -> w.slot() == SlotKey.SNACK).count();
+        // max + 1, not count + 1: zero-budget windows are dropped upstream, so snack ordinals can have gaps.
+        int ordinal = 1 + ws.stream().filter(w -> w.slot() == SlotKey.SNACK).mapToInt(Window::ordinal).max().orElse(0);
         Window added = new Window(SlotKey.SNACK, ordinal, label,
             new Macros4(snack, Math.round(snack * 0.1f / 4), Math.round(snack * 0.7f / 4), Math.round(snack * 0.2f / 9)),
             Math.max(0, start - PRE_SESSION_LEAD_MIN), true);

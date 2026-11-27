@@ -25,7 +25,8 @@ class BoopWorkoutKindsTest {
     void eachSportFindsItsOwnHealthType() {
         assertThat(BoopWorkoutKinds.fitsSport("running", "running")).isTrue();
         assertThat(BoopWorkoutKinds.fitsSport("cycling", "bike")).isTrue();
-        assertThat(BoopWorkoutKinds.fitsSport("walking", "hike")).isTrue();
+        assertThat(BoopWorkoutKinds.fitsSport("hiking", "hike")).isTrue();
+        assertThat(BoopWorkoutKinds.fitsSport("walking", "hike")).isFalse();
         assertThat(BoopWorkoutKinds.fitsSport("hiit", "cross")).isTrue();
         assertThat(BoopWorkoutKinds.fitsSport("hiit", "trx")).isTrue();
     }

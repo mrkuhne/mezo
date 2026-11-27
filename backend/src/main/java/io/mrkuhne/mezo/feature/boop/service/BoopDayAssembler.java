@@ -273,8 +273,10 @@ public class BoopDayAssembler {
         List<WearableWorkoutEntity> workouts = wearableWorkouts
             .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDate(user, date, date);
         BoopDay.Session planned = session(user, date);
-        BoopDay.Session gym = planned == null ? null : markGymDone(planned, logged, workouts, date, zone);
-        return new Training(gym, sport(user, date, logged, workouts, zone));
+        // One Health workout ticks one occurrence at most, across both layers (gym first, then sport in clock order).
+        java.util.Set<WearableWorkoutEntity> used = new java.util.HashSet<>();
+        BoopDay.Session gym = planned == null ? null : markGymDone(planned, logged, workouts, used, date, zone);
+        return new Training(gym, sport(user, date, workouts, used, zone));
     }
 
     /**
@@ -284,12 +286,14 @@ public class BoopDayAssembler {
      * workout matched to the gym log (or the window match) when there is one; otherwise the log's own minutes.
      */
     private BoopDay.Session markGymDone(BoopDay.Session planned, List<LoggedSession> allLogged,
-                                        List<WearableWorkoutEntity> workouts, LocalDate date, ZoneId zone) {
+                                        List<WearableWorkoutEntity> workouts,
+                                        java.util.Set<WearableWorkoutEntity> used, LocalDate date, ZoneId zone) {
         List<LoggedSession> logged = allLogged.stream().filter(l -> l.kind() == LoggedSession.Kind.GYM).toList();
         if (!logged.isEmpty()) {
             for (WearableWorkoutEntity w : workouts) {
                 boolean matches = reconciler.match(health(w), logged).isPresent();
                 if (matches && workoutMinutes(w) > 0) {
+                    used.add(w);
                     return planned.withDone(workoutMinutes(w), w.getAvgHr());
                 }
             }
@@ -301,7 +305,10 @@ public class BoopDayAssembler {
         }
         return windowMatch(workouts, date, planned.time(), planned.minutes(), zone,
                 w -> BoopWorkoutKinds.isGym(w.getActivityType()))
-            .map(w -> planned.withDone(workoutMinutes(w), w.getAvgHr()))
+            .map(w -> {
+                used.add(w);
+                return planned.withDone(workoutMinutes(w), w.getAvgHr());
+            })
             .orElse(planned);
     }
 
@@ -310,34 +317,25 @@ public class BoopDayAssembler {
      * nearest plan); a not-logged occurrence turns done on that sport's own Health workout of at least
      * {@value #MIN_DONE_MINUTES} minutes overlapping it ±2 h. A gym workout never ticks a sport.
      */
-    private List<BoopDay.Sport> sport(UUID user, LocalDate date, List<LoggedSession> logged,
-                                      List<WearableWorkoutEntity> workouts, ZoneId zone) {
-        List<LoggedSession> sportLogs = logged.stream().filter(l -> l.kind() == LoggedSession.Kind.SPORT).toList();
+    private List<BoopDay.Sport> sport(UUID user, LocalDate date, List<WearableWorkoutEntity> workouts,
+                                      java.util.Set<WearableWorkoutEntity> used, ZoneId zone) {
         List<BoopDay.Sport> out = new ArrayList<>();
-        java.util.Set<WearableWorkoutEntity> used = new java.util.HashSet<>();
         for (WorkoutWindowQueryService.Window w : workoutWindows.windowsFor(user, date)) {
             if (!"sport".equals(w.kind()) || w.start() == null) {
                 continue;
             }
             String kind = w.label() == null ? "volleyball" : w.label();
-            Integer minutes = w.end() == null ? null
-                : (int) Duration.between(w.start(), w.end()).toMinutes();
+            Integer minutes = w.end() == null ? null : spanMinutes(w.start(), w.end());
             BoopDay.Sport planned = new BoopDay.Sport(kind, w.start(), minutes);
-            if (w.done()) {
-                Optional<WearableWorkoutEntity> lent = workouts.stream()
-                    .filter(x -> !used.contains(x) && workoutMinutes(x) > 0 && BoopWorkoutKinds.fitsSport(x.getActivityType(), kind)
-                        && reconciler.match(health(x), sportLogs).isPresent())
-                    .filter(x -> windowMatch(List.of(x), date, w.start(), minutes, zone, y -> true).isPresent())
-                    .findFirst();
-                lent.ifPresent(used::add);
-                out.add(lent.map(x -> planned.withDone(workoutMinutes(x), x.getAvgHr()))
-                    .orElseGet(() -> planned.withDone(minutes, null)));
-                continue;
-            }
+            // The sport's own Health workout around this occurrence — claimed, so it never ticks a second one.
             Optional<WearableWorkoutEntity> match = windowMatch(workouts, date, w.start(), minutes, zone,
                 x -> !used.contains(x) && BoopWorkoutKinds.fitsSport(x.getActivityType(), kind));
             match.ifPresent(used::add);
-            out.add(match.map(x -> planned.withDone(workoutMinutes(x), x.getAvgHr())).orElse(planned));
+            if (match.isPresent()) {
+                out.add(planned.withDone(workoutMinutes(match.get()), match.get().getAvgHr()));
+            } else {
+                out.add(w.done() ? planned.withDone(minutes, null) : planned);
+            }
         }
         out.sort(java.util.Comparator.comparing(BoopDay.Sport::time));
         return List.copyOf(out);
@@ -355,6 +353,12 @@ public class BoopDayAssembler {
             .filter(w -> fits.test(w) && workoutMinutes(w) >= MIN_DONE_MINUTES
                 && w.getStartAt().isBefore(to) && w.getEndAt().isAfter(from))
             .max(java.util.Comparator.comparingInt(BoopDayAssembler::workoutMinutes));
+    }
+
+    /** Minutes from start to end on a clock; a session crossing midnight wraps (22:30 → 00:00 = 90). */
+    private static int spanMinutes(LocalTime start, LocalTime end) {
+        long m = Duration.between(start, end).toMinutes();
+        return (int) (m < 0 ? m + 24 * 60 : m);
     }
 
     private static WorkoutReconciler.HealthWorkout health(WearableWorkoutEntity w) {

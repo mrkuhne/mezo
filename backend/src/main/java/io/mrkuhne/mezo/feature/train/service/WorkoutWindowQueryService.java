@@ -87,7 +87,8 @@ public class WorkoutWindowQueryService {
             .map(w -> new io.mrkuhne.mezo.api.dto.TodaySport()
                 .sport(w.label() == null ? "volleyball" : w.label())
                 .time(w.start().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")))
-                .durationMin(w.end() == null ? 0 : (int) java.time.Duration.between(w.start(), w.end()).toMinutes())
+                .durationMin(w.end() == null ? 0
+                    : (int) Math.floorMod(java.time.Duration.between(w.start(), w.end()).toMinutes(), 24 * 60))
                 .done(w.done()))
             .toList();
     }

@@ -136,6 +136,54 @@ class BoopSportLayerIT extends AbstractIntegrationTest {
         assertThat(day.sport()).hasSize(1);
     }
 
+    @Test
+    void oneRunWorkoutTicksOnlyOneOfTwoRuns() {
+        // review finding: a logged run must claim its Health workout, so a later unlogged run is not ticked by it.
+        UUID user = databasePopulator.populateUser("layer7@test.local");
+        var early = train.createScheduleSlot(user, 1, "07:00", 45, "training");
+        early.setSport("running");
+        var late = train.createScheduleSlot(user, 1, "08:30", 45, "training");
+        late.setSport("running");
+        train.createSportSession(user, DAY, "running", null, null, "6").setTime("07:00");
+        var w = workoutPopulator.createWorkout(user, "hk-r1", DAY, "running", local(7, 0), local(7, 45));
+        w.setAvgHr(150);
+        wearableWorkouts.saveAndFlush(w);
+
+        BoopDay day = assembler.assemble(user, DAY);
+
+        assertThat(day.sport()).hasSize(2);
+        assertThat(day.sport().get(0).done()).isTrue();
+        assertThat(day.sport().get(0).avgHr()).isEqualTo(150);
+        assertThat(day.sport().get(1).done()).isFalse();
+    }
+
+    @Test
+    void oneIntervalWorkoutBehindTheGymLogDoesNotTickCross() {
+        UUID user = databasePopulator.populateUser("layer8@test.local");
+        var session = plannedKedd(user, "17:00");
+        var cross = train.createScheduleSlot(user, 1, "19:00", 60, "training");
+        cross.setSport("cross");
+        var instance = train.createWorkoutInstance(user, session, DAY, "completed");
+        instance.setStartedAt(local(17, 0));
+        instance.setFinishedAt(local(18, 0));
+        workoutSessions.saveAndFlush(instance);
+        workoutPopulator.createWorkout(user, "hk-h1", DAY, "hiit", local(17, 0), local(18, 0));
+
+        BoopDay day = assembler.assemble(user, DAY);
+
+        assertThat(day.session().done()).isTrue();
+        assertThat(day.sport()).singleElement().satisfies(s -> assertThat(s.done()).isFalse());
+    }
+
+    @Test
+    void lateSlotCrossingMidnightKeepsPositiveMinutes() {
+        UUID user = databasePopulator.populateUser("layer9@test.local");
+        train.createScheduleSlot(user, 1, "22:30", 90, "training");
+
+        assertThat(assembler.assemble(user, DAY).sport()).singleElement()
+            .satisfies(s -> assertThat(s.minutes()).isEqualTo(90));
+    }
+
     private io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity kedd;
 
     private UUID gymAndVolleyballDay(String email) {
