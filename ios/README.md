@@ -45,6 +45,7 @@ exercise rows and numbers are invented, and no workout is saved.
 | `-previewNotify checkin\|este` | rings the real check-in / close reminder at the next whole minute (background the app; a tap opens the cover) |
 | `-preview shell` / `-preview onboarding` | signs in a local preview user; the brief and Health endpoints answer from `PreviewTransport` |
 | `-previewEdzesRestEnd YES` | the Edzés room opens on the „Pihenő vége” sheet (rest-end signal setting, mezo-r36n9.172); reach the room with `-previewDrill mozgas` (the Ma launch ignores it in some builds — tapping the Edzés orb works) |
+| `-previewLiveActivity set\|rest\|stale\|technique\|debrief` | puts a sample workout card (invented numbers) on the Lock Screen / Dynamic Island; combine with `-preview shell`, then lock the simulator. Its buttons act on no workout, and in this run no real card is started or ended (mezo-r36n9.172) |
 | `-previewEmpty YES` | Nap shows the empty states instead of the brief |
 | `-previewTab ma\|terv\|naplo\|boop` | opens that place of the spine (`terv` is the Évad place since B6 S1; the key kept its old name) |
 | `-previewPhase reggel\|napkozben\|este` | Ma's clock reads 08:10 / 13:40 / 21:10 today (the phase strip, plan card, MOST, close-out follow) |
