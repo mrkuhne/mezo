@@ -318,8 +318,9 @@ final class MealComposerModel {
     }
 
     /// Writes the draft down as a card before any save is tried (see `FoodOutbox.park`). Never blocks the save.
+    /// A correction never parks: a parked copy of an edited meal would later save as a second meal (`mezo-r36n9.184`).
     private func ensureParked() async {
-        guard let outbox, let d = draft else { return }
+        guard editingId == nil, let outbox, let d = draft else { return }
         let id = cardId ?? clientRef
         if parkedPhotoRef == nil, let photo { parkedPhotoRef = try? outbox.storePhoto(photo, rescale: false) }
         guard (try? outbox.park(d, id: id, capturedAt: capturedAt, text: text.isEmpty ? nil : text, photoRef: parkedPhotoRef)) != nil else { return }

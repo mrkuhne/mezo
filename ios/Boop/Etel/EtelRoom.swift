@@ -190,7 +190,8 @@ final class EtelStore {
             try await food.deleteMeal(id)
             return nil
         } catch {
-            putBack(r)
+            // A reload during the call re-recorded where the meal sat: put it back there.
+            putBack(sendingDeletes[id] ?? r)
             return "Nem sikerült törölni — visszatettem."
         }
     }
@@ -798,6 +799,8 @@ struct EtelRoom: View {
     @State private var toast: String?
     /// The meal whose delete is waiting on the toast's Visszavonás (`mezo-r36n9.184`).
     @State private var undoMeal: UUID?
+    /// The delete's own toast line: any other toast in the 6 s carries no Visszavonás.
+    @State private var undoLine: String?
     @Environment(\.scenePhase) private var scenePhase
     /// The dimension whose sheet is open (page level, boop-ios.md §9).
     @State private var dimension: DimensionSelection?
@@ -865,10 +868,11 @@ struct EtelRoom: View {
         .refreshable { await reload() }
         .toolbar(.hidden, for: .navigationBar)
         .background(RoomSwipeBack().frame(width: 0, height: 0).accessibilityHidden(true))
-        .nkToast($toast, action: undoMeal == nil ? nil : "Visszavonás") { undoDelete() }
-        // A waiting delete never outlives the room or the app in the foreground.
-        .onDisappear { Task { await store.commitAllDeletes() } }
-        .onChange(of: scenePhase) { _, phase in if phase != .active { Task { await store.commitAllDeletes() } } }
+        .nkToast($toast, action: undoMeal != nil && toast == undoLine ? "Visszavonás" : nil) { undoDelete() }
+        // A waiting delete never outlives the room or the app in the foreground. Only the background counts: the
+        // inactive phase (Control Center, a Face ID prompt, a call banner) comes back with the toast still up.
+        .onDisappear { commitAllNow() }
+        .onChange(of: scenePhase) { _, phase in if phase == .background { commitAllNow() } }
         // Read the flag here so the page re-renders when it flips (boop-ios.md §9).
         .sheet(item: Binding(get: { [d = dimension] in d }, set: { dimension = $0 })) { d in
             DimensionSheet(selection: d)
@@ -1019,7 +1023,8 @@ struct EtelRoom: View {
         if let older = undoMeal, older != m.id { Task { await commitDelete(older) } }
         guard store.removeLocally(m) else { return }
         undoMeal = m.id
-        toast = "Töröltem: \(title)"
+        undoLine = "Töröltem: \(title)"
+        toast = undoLine
         Task {
             try? await Task.sleep(for: .seconds(Self.undoSeconds))
             await commitDelete(m.id)
@@ -1030,6 +1035,20 @@ struct EtelRoom: View {
         if undoMeal == id { undoMeal = nil }
         guard store.isPendingDelete(id) else { return }
         if let line = await store.commitDelete(id) { toast = line } else { await reload() }
+    }
+
+    /// Leaving the room or the app: every waiting delete goes now, and its Visszavonás leaves with it (it could no
+    /// longer bring the meal back). A background task lets the request finish after the app leaves the screen.
+    private func commitAllNow() {
+        guard undoMeal != nil else { return }
+        undoMeal = nil
+        if toast == undoLine { toast = nil }
+        undoLine = nil
+        let task = UIApplication.shared.beginBackgroundTask(withName: "boop.meal-delete")
+        Task {
+            if let line = await store.commitAllDeletes() { toast = line }
+            if task != .invalid { UIApplication.shared.endBackgroundTask(task) }
+        }
     }
 
     private func undoDelete() {

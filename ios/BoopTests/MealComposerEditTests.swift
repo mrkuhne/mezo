@@ -71,6 +71,17 @@ struct MealComposerEditTests {
         #expect(await outbox.pendingDrafts().isEmpty)
     }
 
+    /// Review finding: „HOZZÁTESZEK MÉG” during a correction parked the edited draft as a card — saving that card later
+    /// created a second meal. A correction never parks, whether it is saved or cancelled.
+    @Test func addingMoreWordsWhileCorrectingNeverParksACard() async throws {
+        let outbox = box(); let m = model(outbox)
+        m.beginEdit(meal())
+        m.moreText = "és egy adag rizs"
+        await m.addFromBoop(photo: nil)
+        #expect(m.draft?.items.count == 3)
+        #expect(await outbox.pendingDrafts().isEmpty)
+    }
+
     @Test func aRefusedCorrectionSaysWhyAndAGoneMealSaysSo() async {
         let m = model(box()); m.beginEdit(meal())
         await calls.setFail(.rejected)
