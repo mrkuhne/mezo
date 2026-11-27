@@ -2029,9 +2029,9 @@
     "terulet": [
       "Sport"
     ],
-    "mit_kapsz": "Egy beírt röpi többé nem pipálja ki a kondit; a heti beosztásba 11 sportfajta kerülhet; a heti menü minden sportalkalomhoz ad uzsonnát.",
+    "mit_kapsz": "Egy beírt röpi többé nem pipálja ki a kondit (és fordítva); a heti beosztásba és az egyszeri alkalmakba 11 sportfajta kerülhet, a futás is; a heti menü minden sportalkalom elé ad uzsonnát; az Edzés napja tudja, ha aznap sport van.",
     "szulo": "mezo-r36n9.188",
-    "munkamenet": "sport-terulet-terv"
+    "munkamenet": "sport-s1-szerver"
   },
   "mezo-r36n9.202": {
     "cim": "Sport 2. lépés — szerver: a Sport adatai",

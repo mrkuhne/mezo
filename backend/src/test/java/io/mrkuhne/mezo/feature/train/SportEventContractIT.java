@@ -99,9 +99,24 @@ class SportEventContractIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testCreateSportEvent_shouldRoundTripWidenedKinds_whenRunningFootballOther() {
+        // Boop Sport S1 (mezo-r36n9.201): events take the log's ten kinds + running.
+        HttpHeaders auth = ownerAuthHeaders();
+        LocalDate day = LocalDate.now().plusDays(2);
+        for (String sport : List.of("running", "football", "other")) {
+            SportEventResponse created = postForBody("/api/train/sport-events", eventReq(day).sport(sport).build(),
+                auth, HttpStatus.CREATED, SportEventResponse.class);
+            assertThat(created.getSport()).isEqualTo(sport);
+        }
+        List<SportEventResponse> events =
+            getForList("/api/train/sport-events", auth, HttpStatus.OK, SportEventResponse.class);
+        assertThat(events).extracting(SportEventResponse::getSport).contains("running", "football", "other");
+    }
+
+    @Test
     void testCreateSportEvent_shouldReturn400InvalidValue_whenSportUnknown() {
         String body = postForBody("/api/train/sport-events",
-            eventReq(LocalDate.now()).sport("tennis").build(),
+            eventReq(LocalDate.now()).sport("race").build(),
             ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
         assertHasFieldError(body, "sport", "VALIDATION_INVALID_VALUE");
     }

@@ -36,7 +36,8 @@ vacsora) a kalóriájukkal.
 - **Adag:** minden recept adagját az ablak kalóriájához igazítja (fél adagtól dupla adagig, negyed adagos lépésekben).
 - **Változatosság:** ugyanaz a vacsora három napon belül nem ismétlődik, amíg van más választás; amiből kevesebbet
   használt a héten, az előnyt kap.
-- **Sportnap:** a sport előtti uzsonna „Röplabda előtt” néven jelenik meg, és inkább szénhidrátos ételt kap.
+- **Sportnap:** a sport előtti uzsonna „Röplabda előtt” néven jelenik meg, és inkább szénhidrátos ételt kap. Ha egy
+  napon több sportalkalom van (például reggel futás, este röpi), mindegyik elé jár egy saját uzsonna (2026-11-27-től).
 - **Hét közbeni módosítás:** ha szerdán elfogadsz egy változtatást az évadban, a jóváhagyott hét hátralévő napjai
   (csütörtöktől) igazodnak az új keretekhez: ami még belefér, marad (új adaggal), ami nem, lecserélődik. A már elmúlt
   napokhoz nem nyúl. A Módosítás oldal ezt előre jelzi („A hét hátralévő napjai”), a bevásárlólista pedig egy rövid

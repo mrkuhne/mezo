@@ -76,6 +76,23 @@ public class WorkoutWindowQueryService {
     }
 
     /**
+     * Today's sport for the Edzés day read (Boop Sport S1, mezo-r36n9.201): the date's sport windows in clock order —
+     * the same resolution as every other consumer (slots + events − skips, a logged session = done).
+     */
+    @Transactional(readOnly = true)
+    public List<io.mrkuhne.mezo.api.dto.TodaySport> sportToday(UUID userId, LocalDate date) {
+        return windowsFor(userId, date).stream()
+            .filter(w -> "sport".equals(w.kind()) && w.start() != null)
+            .sorted(java.util.Comparator.comparing(Window::start))
+            .map(w -> new io.mrkuhne.mezo.api.dto.TodaySport()
+                .sport(w.label() == null ? "volleyball" : w.label())
+                .time(w.start().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")))
+                .durationMin(w.end() == null ? 0 : (int) java.time.Duration.between(w.start(), w.end()).toMinutes())
+                .done(w.done()))
+            .toList();
+    }
+
+    /**
      * One date's windows — delegates to the ranged {@link #windowsFor(UUID, LocalDate, LocalDate)}
      * with a one-day range (mezo-jcpt.6 F1: a hand-duplicated per-day implementation was how the
      * F2 sort-order parity bug happened — a single resolution path makes that drift structurally

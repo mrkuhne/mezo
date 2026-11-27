@@ -181,6 +181,38 @@ class MenuPlannerTest {
     }
 
     @Test
+    void dayWithTwoSportWindowsGetsTwoPreSessionSnacks() {
+        // Boop Sport S1 (mezo-r36n9.201): a morning run and an evening volleyball — each gets its own snack.
+        DayBudget two = new DayBudget(MONDAY, MenuPlanner.KIND_SPORT, List.of(
+            new MenuPlanner.SportStart("futás", 420), new MenuPlanner.SportStart("röplabda", 1080)), List.of(
+            w(SlotKey.BREAKFAST, 1, "Reggeli", 600, 480),
+            w(SlotKey.LUNCH, 1, "Ebéd", 800, 750),
+            w(SlotKey.SNACK, 1, "Uzsonna", 300, 960),
+            w(SlotKey.DINNER, 1, "Vacsora", 800, 1230)));
+        List<Window> pre = MenuPlanner.withPreSession(two).stream().filter(Window::preSession).toList();
+        assertThat(pre).extracting(Window::label).containsExactly("Futás előtt", "Röplabda előtt");
+        assertThat(pre.get(0).atMin()).isLessThan(420);
+        assertThat(pre.get(1).atMin()).isEqualTo(960);
+    }
+
+    @Test
+    void twoCloseSportWindowsStillGetTwoSnacks() {
+        DayBudget close = new DayBudget(MONDAY, MenuPlanner.KIND_SPORT, List.of(
+            new MenuPlanner.SportStart("röplabda", 1020), new MenuPlanner.SportStart("röplabda", 1140)), List.of(
+            w(SlotKey.LUNCH, 1, "Ebéd", 800, 750),
+            w(SlotKey.SNACK, 1, "Uzsonna", 300, 930),
+            w(SlotKey.DINNER, 1, "Vacsora", 800, 1260)));
+        assertThat(MenuPlanner.withPreSession(close).stream().filter(Window::preSession)).hasSize(2);
+    }
+
+    @Test
+    void singleSportConstructorStillMeansOneWindow() {
+        DayBudget one = new DayBudget(MONDAY, MenuPlanner.KIND_SPORT, "röplabda", 1080, List.of());
+        assertThat(one.sports()).containsExactly(new MenuPlanner.SportStart("röplabda", 1080));
+        assertThat(new DayBudget(MONDAY, MenuPlanner.KIND_REST, null, null, List.of()).sports()).isEmpty();
+    }
+
+    @Test
     void anotherVariantGivesAnotherMenu() {
         MenuWeek a = MenuPlanner.plan(week(), library(), NONE, 4, 0);
         MenuWeek b = MenuPlanner.plan(week(), library(), NONE, 4, 1);

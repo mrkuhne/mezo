@@ -23,10 +23,26 @@ public interface SeasonMenuSourcePort {
 
     /**
      * A day's frame: whether gym and/or sport is planned, the first sport's name and start (minutes; null without
-     * sport) and its windows in clock order.
+     * sport), every sport window of the day in clock order (Boop Sport S1, mezo-r36n9.201) and its meal windows in
+     * clock order.
      */
     record DayFrame(LocalDate date, boolean gym, boolean sport, String sportName, Integer sportStartMin,
-                    List<FrameWindow> windows) {
+                    List<SportWindow> sports, List<FrameWindow> windows) {
+
+        /** One sport occurrence: its name (the sport kind) and its start in owner-zone minutes. */
+        public record SportWindow(String name, int startMin) {
+        }
+
+        public DayFrame {
+            sports = sports == null ? List.of() : List.copyOf(sports);
+        }
+
+        /** The single-sport shape: the first sport (if any) is the only one. */
+        public DayFrame(LocalDate date, boolean gym, boolean sport, String sportName, Integer sportStartMin,
+                        List<FrameWindow> windows) {
+            this(date, gym, sport, sportName, sportStartMin,
+                sportStartMin == null ? List.of() : List.of(new SportWindow(sportName, sportStartMin)), windows);
+        }
     }
 
     /** One ingredient line of a recipe: {@code recipeServings} servings use {@code amount unit} of it. */

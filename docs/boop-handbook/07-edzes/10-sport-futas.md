@@ -10,9 +10,13 @@ osszefoglalo: Röplabda, kerékpár, úszás és más sportok naplója heti beos
 ---
 
 ## Mit csinál
-- **Sportalkalmak naplója:** fajta (például röplabda, cross, TRX, kerékpár, úszás, foci, kosár, tenisz, túra, egyéb), időtartam,
-  megterhelés (RPE 1–10), szettek vagy körök, és egy kalóriabecslés.
-- **Heti sport-beosztás** (edzés vagy meccs) és **egyszeri események**.
+- **Sportalkalmak naplója:** 11 fajta (röplabda, cross, TRX, kerékpár, úszás, foci, kosár, tenisz, túra, futás, egyéb),
+  időtartam, megterhelés (RPE 1–10), szettek vagy körök, és egy kalóriabecslés.
+- **Heti sport-beosztás** (edzés vagy meccs) és **egyszeri események** — 2026-11-27-től ugyanaz a 11 fajta kerülhet bele,
+  korábban csak röpi, cross és TRX.
+- **A kondi és a sport két külön réteg** (2026-11-27): egy beírt röpi vagy az órán rögzített röpi csak a sportot pipálja ki,
+  egy befejezett kondi vagy erősítő edzés az órán csak a kondit. Korábban egy beírt röpi a kondit is „megvolt”-nak mutatta.
+  Az Edzés napja azt is tudja, ha aznap sport van, így egy sportnap nem „pihenőnap” (az app ezt a Sport területtel kapja meg).
 - **Futóblokkok:** hetekre bontott terv, alkalmanként bemelegítés / munka / pihenő / levezetés szakaszokkal (sprint, piramis,
   egyenletes), cél-megterheléssel; és futásnapló.
 
