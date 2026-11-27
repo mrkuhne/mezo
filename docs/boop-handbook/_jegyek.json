@@ -2091,7 +2091,7 @@
   "mezo-r36n9.197": {
     "cim": "Az Edzés összes oldalának áttervezése: kiemelt fő elem, üvegkártyák, látható egységek",
     "tipus": "Funkció",
-    "szakasz": "B5 Edzés",
+    "szakasz": "B5 Edzés + Watch",
     "terulet": [
       "Edzés"
     ],
@@ -2102,7 +2102,7 @@
   "mezo-r36n9.197.1": {
     "cim": "Edzés 1: közös kártyaelemek és a világosabb Edzés ég",
     "tipus": "Funkció",
-    "szakasz": "B5 Edzés",
+    "szakasz": "B5 Edzés + Watch",
     "terulet": [
       "Edzés"
     ],
@@ -2113,7 +2113,7 @@
   "mezo-r36n9.197.2": {
     "cim": "Edzés 2: a Mezociklus fül új kinézete",
     "tipus": "Funkció",
-    "szakasz": "B5 Edzés",
+    "szakasz": "B5 Edzés + Watch",
     "terulet": [
       "Edzés"
     ],
@@ -2124,7 +2124,7 @@
   "mezo-r36n9.197.3": {
     "cim": "Edzés 3: a Ma fül új kinézete",
     "tipus": "Funkció",
-    "szakasz": "B5 Edzés",
+    "szakasz": "B5 Edzés + Watch",
     "terulet": [
       "Edzés"
     ],
@@ -2135,7 +2135,7 @@
   "mezo-r36n9.197.4": {
     "cim": "Edzés 4: a mezociklus aloldalak új kinézete",
     "tipus": "Funkció",
-    "szakasz": "B5 Edzés",
+    "szakasz": "B5 Edzés + Watch",
     "terulet": [
       "Edzés"
     ],
@@ -2146,7 +2146,7 @@
   "mezo-r36n9.197.5": {
     "cim": "Edzés 5: rendrakás edzés közben",
     "tipus": "Funkció",
-    "szakasz": "B5 Edzés",
+    "szakasz": "B5 Edzés + Watch",
     "terulet": [
       "Edzés"
     ],
@@ -2157,7 +2157,7 @@
   "mezo-r36n9.197.6": {
     "cim": "Edzés 6: a blokképítő igazítása",
     "tipus": "Funkció",
-    "szakasz": "B5 Edzés",
+    "szakasz": "B5 Edzés + Watch",
     "terulet": [
       "Edzés"
     ],
