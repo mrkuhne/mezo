@@ -41,6 +41,8 @@ private final class FakeCenter: ReminderCenter, @unchecked Sendable {
     func isPending(id: String) async -> Bool { pending.contains(id) }
 }
 
+// Every reminder here passes its own settings (`hasStore: { false }` = the UserDefaults path): the defaults read the
+// process-global `ReminderHub`, which the host app binds when the suites run together.
 private func defaults() -> UserDefaults {
     let name = "bedtime-tests-\(UUID().uuidString)"
     let d = UserDefaults(suiteName: name)!
@@ -63,7 +65,7 @@ struct BedtimeReminderTests {
         #expect(BedtimeTime.label(for: "00:15") == "23:45")
         // what production hands the notification centre for a 00:15 bedtime: 23:45, the evening before
         let center = FakeCenter(.allowed)
-        _ = await BedtimeReminder(center: center, defaults: defaults()).toggle(target: "00:15")
+        _ = await BedtimeReminder(center: center, defaults: defaults(), settings: { BoopReminderSettings() }, saveSettings: { _ in }, hasStore: { false }).toggle(target: "00:15")
         #expect(center.scheduled.first?.hour == 23 && center.scheduled.first?.minute == 45)
     }
 
@@ -83,7 +85,7 @@ struct BedtimeReminderTests {
 
     @Test func firstTapAsksThenSchedulesHalfAnHourBefore() async {
         let center = FakeCenter()
-        let r = BedtimeReminder(center: center, defaults: defaults())
+        let r = BedtimeReminder(center: center, defaults: defaults(), settings: { BoopReminderSettings() }, saveSettings: { _ in }, hasStore: { false })
         let toast = await r.toggle(target: "22:45")
         #expect(center.requests == 1)
         #expect(center.scheduled.count == 1)
@@ -98,33 +100,33 @@ struct BedtimeReminderTests {
     @Test func untapCancels() async {
         let center = FakeCenter(.allowed)
         let store = defaults()
-        let r = BedtimeReminder(center: center, defaults: store)
+        let r = BedtimeReminder(center: center, defaults: store, settings: { BoopReminderSettings() }, saveSettings: { _ in }, hasStore: { false })
         _ = await r.toggle(target: "22:30")
         let toast = await r.toggle(target: "22:30")
         #expect(!r.isOn)
         #expect(center.cancelled == [BedtimeReminder.id])
         #expect(center.requests == 0)          // already allowed: no second prompt
         #expect(toast?.text == BedtimeText.off)
-        #expect(BedtimeReminder(center: center, defaults: store).isOn == false)
+        #expect(BedtimeReminder(center: center, defaults: store, settings: { BoopReminderSettings() }, saveSettings: { _ in }, hasStore: { false }).isOn == false)
     }
 
     @Test func deniedPermissionStaysOffWithAGentleWord() async {
         let center = FakeCenter(grants: false)
-        let r = BedtimeReminder(center: center, defaults: defaults())
+        let r = BedtimeReminder(center: center, defaults: defaults(), settings: { BoopReminderSettings() }, saveSettings: { _ in }, hasStore: { false })
         let toast = await r.toggle(target: "22:30")
         #expect(!r.isOn)
         #expect(center.scheduled.isEmpty)
         #expect(toast?.text == BedtimeText.denied)
         #expect(toast?.opensSettings == true)     // the toast carries a "Beállítások" button
         // denied before: no prompt again, same word
-        let again = await BedtimeReminder(center: FakeCenter(.denied), defaults: defaults()).toggle(target: "22:30")
+        let again = await BedtimeReminder(center: FakeCenter(.denied), defaults: defaults(), settings: { BoopReminderSettings() }, saveSettings: { _ in }, hasStore: { false }).toggle(target: "22:30")
         #expect(again?.text == BedtimeText.denied)
         #expect(again?.opensSettings == true)
     }
 
     @Test func noTargetNoReminder() async {
         let center = FakeCenter(.allowed)
-        let r = BedtimeReminder(center: center, defaults: defaults())
+        let r = BedtimeReminder(center: center, defaults: defaults(), settings: { BoopReminderSettings() }, saveSettings: { _ in }, hasStore: { false })
         #expect(await r.toggle(target: nil)?.text == BedtimeText.noTarget)
         #expect(!r.isOn && center.scheduled.isEmpty)
     }
@@ -132,8 +134,8 @@ struct BedtimeReminderTests {
     @Test func stateSurvivesARelaunchAndFollowsANewTarget() async {
         let center = FakeCenter(.allowed)
         let store = defaults()
-        _ = await BedtimeReminder(center: center, defaults: store).toggle(target: "22:30")
-        let relaunched = BedtimeReminder(center: center, defaults: store)
+        _ = await BedtimeReminder(center: center, defaults: store, settings: { BoopReminderSettings() }, saveSettings: { _ in }, hasStore: { false }).toggle(target: "22:30")
+        let relaunched = BedtimeReminder(center: center, defaults: store, settings: { BoopReminderSettings() }, saveSettings: { _ in }, hasStore: { false })
         #expect(relaunched.isOn)
         #expect(relaunched.time == "22:00")
         await relaunched.refresh(target: "23:00")
@@ -148,9 +150,9 @@ struct BedtimeReminderTests {
     @Test func permissionWithdrawnInSettingsTurnsItOff() async {
         let center = FakeCenter(.allowed)
         let store = defaults()
-        _ = await BedtimeReminder(center: center, defaults: store).toggle(target: "22:30")
+        _ = await BedtimeReminder(center: center, defaults: store, settings: { BoopReminderSettings() }, saveSettings: { _ in }, hasStore: { false }).toggle(target: "22:30")
         center.permission = .denied
-        let r = BedtimeReminder(center: center, defaults: store)
+        let r = BedtimeReminder(center: center, defaults: store, settings: { BoopReminderSettings() }, saveSettings: { _ in }, hasStore: { false })
         await r.refresh(target: "22:30")
         #expect(!r.isOn)
     }
@@ -158,7 +160,7 @@ struct BedtimeReminderTests {
     @Test func aSecondTapWhileTheFirstIsRunningIsIgnored() async {
         let center = FakeCenter(grants: true)
         center.promptDelay = .milliseconds(200)
-        let r = BedtimeReminder(center: center, defaults: defaults())
+        let r = BedtimeReminder(center: center, defaults: defaults(), settings: { BoopReminderSettings() }, saveSettings: { _ in }, hasStore: { false })
         async let first = r.toggle(target: "22:30")
         async let second = r.toggle(target: "22:30")
         let (a, b) = await (first, second)
@@ -171,9 +173,9 @@ struct BedtimeReminderTests {
     @Test func aDroppedRequestIsScheduledAgainOnLaunch() async {
         let center = FakeCenter(.allowed)
         let store = defaults()
-        _ = await BedtimeReminder(center: center, defaults: store).toggle(target: "22:30")
+        _ = await BedtimeReminder(center: center, defaults: store, settings: { BoopReminderSettings() }, saveSettings: { _ in }, hasStore: { false }).toggle(target: "22:30")
         center.pending.removeAll()          // the system lost it (restore, settings reset)
-        let r = BedtimeReminder(center: center, defaults: store)
+        let r = BedtimeReminder(center: center, defaults: store, settings: { BoopReminderSettings() }, saveSettings: { _ in }, hasStore: { false })
         await r.refresh(target: "22:30")
         #expect(r.isOn)
         #expect(center.pending.contains(BedtimeReminder.id))
@@ -185,7 +187,7 @@ struct BedtimeReminderTests {
         let store = defaults()
         store.set(true, forKey: "bedtimeReminder.on")      // an old install: on, but no target kept
         store.set("22:00", forKey: "bedtimeReminder.time")
-        let r = BedtimeReminder(center: center, defaults: store)
+        let r = BedtimeReminder(center: center, defaults: store, settings: { BoopReminderSettings() }, saveSettings: { _ in }, hasStore: { false })
         await r.refresh(target: nil)
         #expect(!r.isOn)
         #expect(center.scheduled.isEmpty)
@@ -194,8 +196,8 @@ struct BedtimeReminderTests {
     @Test func aBriefWithoutATargetKeepsTheLastKnownOne() async {
         let center = FakeCenter(.allowed)
         let store = defaults()
-        _ = await BedtimeReminder(center: center, defaults: store).toggle(target: "23:00")
-        let r = BedtimeReminder(center: center, defaults: store)
+        _ = await BedtimeReminder(center: center, defaults: store, settings: { BoopReminderSettings() }, saveSettings: { _ in }, hasStore: { false }).toggle(target: "23:00")
+        let r = BedtimeReminder(center: center, defaults: store, settings: { BoopReminderSettings() }, saveSettings: { _ in }, hasStore: { false })
         await r.refresh(target: nil)
         #expect(r.isOn)
         #expect(r.time == "22:30")

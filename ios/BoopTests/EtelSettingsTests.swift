@@ -152,7 +152,7 @@ struct EtelSettingsTests {
         transport.on("getMealCoachForDay", 200, #"{"verdicts":[]}"#)
         transport.on("getProtocol", 200, #"{"history":[]}"#)
         transport.on("getPantry", 200, #"{"ingredients":[],"imports":[],"suggestions":[],"stash":[]}"#)
-        let s = EtelStore()
+        let s = EtelStore.isolated()
         await s.load(food: food, now: Date())
         #expect(s.day?.fuelMode == "GUIDANCE")
         transport.on("getRecovery", 200, recovery(start: food.ymd(Date())))

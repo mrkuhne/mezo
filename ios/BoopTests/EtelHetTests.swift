@@ -234,7 +234,7 @@ struct EtelHetLoadTests {
 
     @Test func aHungAdherenceCallNeverHoldsTheWeek() async {
         let (food, evad) = clients { _ in try await Task.sleep(for: .seconds(30)); return (200, "{}") }
-        let store = EtelStore()
+        let store = EtelStore.isolated()
         let started = Date()
         await store.loadWeek(food: food, evad: evad, now: Date())
         #expect(Date().timeIntervalSince(started) < 5, "the load returns without waiting for the judgement")
@@ -247,7 +247,7 @@ struct EtelHetLoadTests {
         let (food, evad) = clients { _ in
             (200, #"{"days":[{"date":"2026-11-13","judged":false,"excused":true,"excuse":"kimelo","sessionPlanned":false}],"summary":{"foodInBand":0,"foodJudged":0,"sessionsDone":0,"sessionsPlanned":0,"nightsOk":0,"nightsJudged":0,"excusedDays":1}}"#)
         }
-        let store = EtelStore()
+        let store = EtelStore.isolated()
         await store.loadWeek(food: food, evad: evad, now: Date())
         await store.weekAdherenceTask?.value
         #expect(store.weekAdherence.map(\.excuse) == ["kimelo"])
