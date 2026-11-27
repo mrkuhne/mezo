@@ -3333,6 +3333,18 @@
     "kezikonyv:07-edzes/20-mezociklusaim": {
       "page_id": "4248968e-752b-81d6-9999-cd970298e62b",
       "hash": "bbfc275960b2"
+    },
+    "jegyek:mezo-r36n9.184": {
+      "page_id": "4258968e-752b-8120-9091-c0c8758e57be",
+      "hash": "c00ecb2becab"
+    },
+    "dontesek:d-2026-11-27-kartyak-vissza": {
+      "page_id": "4258968e-752b-8144-856f-f00a24ccb0d3",
+      "hash": "c36aca1239f7"
+    },
+    "dontesek:d-2026-11-27-etel-ma-harom-szint": {
+      "page_id": "4258968e-752b-81e0-b762-d622743e6a42",
+      "hash": "79ffae6d190d"
     }
   }
 }
