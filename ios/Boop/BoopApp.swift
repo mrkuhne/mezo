@@ -8,7 +8,6 @@ struct BoopApp: App {
     @UIApplicationDelegateAdaptor(BoopAppDelegate.self) private var appDelegate
     init() {
         Lagy.registerFonts()
-        SharedProbe.write()             // TEMPORARY free-team probe (mezo-r36n9.172 Task 11)
         ReminderPresenter.install()     // the bedtime reminder also shows while Boop is open
         #if DEBUG
         // Simulator review of a notification tap from a cold launch: the cover is asked for before any view exists.

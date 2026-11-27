@@ -90,6 +90,11 @@ struct RootView: View {
             }
         }
         .background { if let ritmus, case .ready = session.state { RitmusTriggers(env: ritmus, morning: morning) } }
+        .background {
+            if case .ready(let me) = session.state, let store = ReminderHub.store {
+                WidgetTriggers(store: store, morning: morning).id(me.id)
+            }
+        }
         .background { if let ritmus, let penz, case .ready = session.state { PenzTriggers(env: ritmus, store: penz) } }
         .background {
             if let ritmus, let kapacitasStore, case .ready = session.state { KapacitasTriggers(env: ritmus, store: kapacitasStore) }
@@ -203,6 +208,25 @@ private struct ReminderTriggers: View {
                 seen = store.file.reminders
                 Task { await scheduler.refresh(askPermission: ask) }
             }
+    }
+}
+
+/// Keeps the widgets' snapshot true (`mezo-r36n9.172`): the day's plan arriving or changing (a meal logged, the session
+/// moved), every reminder edit or tick, and a return to the foreground or the background (a new day).
+private struct WidgetTriggers: View {
+    let store: ReminderStore
+    let morning: MorningStore?
+    @Environment(\.scenePhase) private var scenePhase
+    var body: some View {
+        Color.clear
+            .task(id: morning?.brief) { write() }
+            .onChange(of: store.changes) { write() }
+            .onChange(of: scenePhase) { _, phase in if phase != .inactive { write() } }
+    }
+
+    private func write() {
+        if let brief = morning?.brief { WidgetSnapshotWriter.write(brief: brief, store: store) }
+        else { WidgetSnapshotWriter.refreshReminders(store: store) }
     }
 }
 

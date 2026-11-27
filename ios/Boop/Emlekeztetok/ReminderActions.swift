@@ -58,6 +58,17 @@ enum ReminderActions {
         let scheduler = ReminderHub.scheduler ?? parts.map { HeadlessContext.scheduler(for: $0) }  // the one cached headless chain
         await done(key: key, store: store, supplement: supplement, center: SystemReminderCenter(),
                    refresh: { await scheduler?.refresh(askPermission: false) })
+        WidgetSnapshotWriter.refreshReminders(store: store)     // the widgets show the tick, whichever button made it
+    }
+
+    /// The „Mai nap” widget's tick circle: an open occurrence goes through `done(key:)`, a ticked one opens again.
+    static func widgetTick(key: String, wasDone: Bool) async {
+        guard wasDone else { return await done(key: key) }
+        guard let store = currentStore(), let rid = reminderId(ofKey: key),
+              store.file.reminders.contains(where: { $0.id == rid }) else { return }
+        store.untick(key)
+        WidgetSnapshotWriter.refreshReminders(store: store)
+        await ReminderHub.scheduler?.refresh(askPermission: false)   // re-arm a ring still ahead today
     }
 
     /// The alarm's „Kész” / „Bevettem”: first the ringing alert goes away (a `.custom` secondary button runs its intent
@@ -71,7 +82,7 @@ enum ReminderActions {
     /// A tick from the page or Ma's fold: a done row opens again (reminder only), an open one goes through the same path
     /// as the alarm's „Kész” / „Bevettem” (tick, supplement intake for a linked reminder, snooze cancelled, re-armed).
     static func toggleTick(_ row: TodayRow, store: ReminderStore) {
-        if row.done { store.untick(row.key) } else { Task { await done(key: row.key) } }
+        if row.done { store.untick(row.key); WidgetSnapshotWriter.refreshReminders(store: store) } else { Task { await done(key: row.key) } }
     }
 
     /// Tick, cancel a pending snooze of the reminder, then the supplement tick if linked to a group, then the refresh.
