@@ -2087,5 +2087,82 @@
     "mit_kapsz": "A Sport gömb a körön, a sport saját kártyája a nap oldalán és a falon, az Edzés sportnapon „Ma sport van”-t ír; telepítés a telefonodra.",
     "szulo": "mezo-r36n9.188",
     "munkamenet": "sport-terulet-terv"
+  },
+  "mezo-r36n9.197": {
+    "cim": "Az Edzés összes oldalának áttervezése: kiemelt fő elem, üvegkártyák, látható egységek",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés",
+    "terulet": [
+      "Edzés"
+    ],
+    "munkamenet": "edzos-ux-ui-redesign",
+    "mit_kapsz": "Az Edzés minden oldalán első pillantásra látod, mi tartozik össze: felül egy kiemelt fő elem (például a hetek íve), alatta minden egység saját üvegkártyán, a menük a kártyákon belül. Elsőként a Mezociklus fül, utána a Ma és a többi oldal; a lejátszóban csak rendrakás.",
+    "szulo": "mezo-r36n9"
+  },
+  "mezo-r36n9.197.1": {
+    "cim": "Edzés 1: közös kártyaelemek és a világosabb Edzés ég",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés",
+    "terulet": [
+      "Edzés"
+    ],
+    "munkamenet": "edzes-ujratervezes",
+    "mit_kapsz": "Az új kártyák, a lapozható fő kártya és a kártyán belüli gombsor közös elemként; az Edzés ege világosabb, kékesebb. Az Étel oldalon semmi nem változik.",
+    "szulo": "mezo-r36n9.197"
+  },
+  "mezo-r36n9.197.2": {
+    "cim": "Edzés 2: a Mezociklus fül új kinézete",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés",
+    "terulet": [
+      "Edzés"
+    ],
+    "munkamenet": "edzes-ujratervezes",
+    "mit_kapsz": "Felül a futó mezociklus a hetek ívével és a Szerkesztés gombbal, a ritka lépések a „…” menüben; alatta külön kártyán a heted, az izmok és a továbblépések.",
+    "szulo": "mezo-r36n9.197"
+  },
+  "mezo-r36n9.197.3": {
+    "cim": "Edzés 3: a Ma fül új kinézete",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés",
+    "terulet": [
+      "Edzés"
+    ],
+    "munkamenet": "edzes-ujratervezes",
+    "mit_kapsz": "Felül a mai edzés kártyája (lapozva a mai terhelés), alatta a Következik, a mai gyakorlatok, a Hol tartasz és a terület menüje, mind külön kártyán.",
+    "szulo": "mezo-r36n9.197"
+  },
+  "mezo-r36n9.197.4": {
+    "cim": "Edzés 4: a mezociklus aloldalak új kinézete",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés",
+    "terulet": [
+      "Edzés"
+    ],
+    "munkamenet": "edzes-ujratervezes",
+    "mit_kapsz": "A Mezociklusaim, a mezociklus részletei, a zárójelentés és a terhelés oldalak ugyanígy: fő kártya felül, egységenként kártya.",
+    "szulo": "mezo-r36n9.197"
+  },
+  "mezo-r36n9.197.5": {
+    "cim": "Edzés 5: rendrakás edzés közben",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés",
+    "terulet": [
+      "Edzés"
+    ],
+    "munkamenet": "edzes-ujratervezes",
+    "mit_kapsz": "Az eligazítás, az összegzés és a lejátszó tartalma kártyákba rendezve; egyetlen gomb sem mozdul el.",
+    "szulo": "mezo-r36n9.197"
+  },
+  "mezo-r36n9.197.6": {
+    "cim": "Edzés 6: a blokképítő igazítása",
+    "tipus": "Funkció",
+    "szakasz": "B5 Edzés",
+    "terulet": [
+      "Edzés"
+    ],
+    "munkamenet": "edzes-ujratervezes",
+    "mit_kapsz": "A blokképítő és a nap szerkesztése ugyanazokra a kártyaelemekre áll; akkor indul, ha a rajta futó másik munka elkészült.",
+    "szulo": "mezo-r36n9.197"
   }
 }

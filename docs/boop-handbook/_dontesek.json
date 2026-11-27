@@ -1796,5 +1796,17 @@
     "miert": "„Mehet így.”",
     "kovetkezmeny": "Indulhat az építés, első lépés a szerver.",
     "levaltotta": "Az 1. kör saját testtérképe."
+  },
+  "d-2026-11-27-edzes-proba": {
+    "datum": "2026-11-27",
+    "terulet": [
+      "Edzés"
+    ],
+    "cim": "Az Edzés új kinézetének próbaváltozata elfogadva, világosabb éggel",
+    "suly": "Közepes",
+    "valasztas": "A szimulátoros képek lettek az irány minden Edzés oldalra: felül egy fő kártya (a mai edzés, illetve a futó mezociklus a hetek ívével), alatta minden egység a saját kártyájában. Az Újraindítás és a Lezárás a „…” menü mögé kerül, a fő gomb a Szerkesztés. A Ma fülön a „Következik” kártya a mai edzés kártyája alá kerül. Az Edzés szoba ege a világosabb, kékesebb változat.",
+    "miert": "Mehet; a ritka, komoly lépések ne legyenek véletlenül az ujja alatt; fent egy fő gomb legyen, ne kettő.",
+    "kovetkezmeny": "Jöhet a terv, utána lépésenként az építés, mindegyik a saját munkamenetében.",
+    "levaltotta": "A futó mezociklus kártyáján a három szabad gomb sora, és a sötétebb meleg narancs Edzés ég."
   }
 }
