@@ -34,6 +34,7 @@ struct RootView: View {
             // Simulator review of the shared area-page kit: every block on one page, no sign-in needed.
             if UserDefaults.standard.bool(forKey: "previewKit") {
                 KitGallery()
+            } else if UserDefaults.standard.bool(forKey: "previewRecept") { ReceptErtekelesDemoRoot() // THROWAWAY spike (spike/boop-receptertekeles)
             } else if UserDefaults.standard.bool(forKey: "previewEvesTerv") {
                 // The Éves terv on fixtures (mezo-r36n9.113).
                 EvesTervPreviewRoot()
