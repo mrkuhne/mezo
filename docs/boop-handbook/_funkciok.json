@@ -3992,5 +3992,48 @@
       "07-edzes/19-eves-terv"
     ],
     "csomag": "train"
+  },
+  "capacity-napi-biras": {
+    "cim": "Napi bírás: mennyit kér a nap és mennyit bírsz",
+    "terulet": "Napló és napi ritmus",
+    "app": "Kész",
+    "mit_tud": "A naptár programjait az MI felcímkézi, a szerver összeadja a nap terhét, és a saját szokásos napjaidhoz mérve kiszámolja, mennyit bírsz; ebből lesz a reggeli szó (laza, rendben, szoros, túl sok).",
+    "app_megjegyzes": "A Ma oldal reggeli sora, a napod oldalán a „Mennyit bírsz ma” rész, és a programok címkézése.",
+    "jegyek": [
+      "mezo-r36n9.17"
+    ],
+    "kezikonyv": [
+      "02-ma/napi-kapacitas-atrendezes"
+    ],
+    "csomag": "capacity"
+  },
+  "capacity-atrendezes": {
+    "cim": "Átrendezés: heti javaslatok jóváhagyással",
+    "terulet": "Napló és napi ritmus",
+    "app": "Kész",
+    "mit_tud": "Ha egy nap vagy hét túl sok, szabályok alapján javaslatokat ad (edzés áttétele, rövidítése, lefekvés, étel, programteendő) minden kereszthatással; a jóváhagyott áttétel mindenhol látszik, az Évad terve nem változik. Napközben is szól, ha a nap rosszabbra fordul.",
+    "app_megjegyzes": "Az Átrendezés oldal, a Ma fal kártyája, a napod oldala és az Évad „A jövő heted” része.",
+    "jegyek": [
+      "mezo-r36n9.17"
+    ],
+    "kezikonyv": [
+      "02-ma/napi-kapacitas-atrendezes"
+    ],
+    "csomag": "capacity"
+  },
+  "capacity-elorejelzes": {
+    "cim": "Előrejelzés: tanulás az áttételekből, vasárnapi átnézés",
+    "terulet": "Napló és napi ritmus",
+    "app": "Kész",
+    "mit_tud": "Éjjel beírja, hogyan sült el egy-egy áttétel, ebből mintákat tanul (csak ha legalább háromszor előfordult), vasárnap este átnézi a jövő hetet, az évadban szól, ha a könnyebb hetet érdemes előrébb hozni, és tanácsot ad az új évadhoz.",
+    "app_megjegyzes": "Átrendezés: „Korábban áttettük”, „Ebből tanulok”; Évad: „Amit a mozgatásokból tanultam” és a könnyebb hét kártya (csak szól); Új évad 2. lépés.",
+    "jegyek": [
+      "mezo-r36n9.17",
+      "mezo-r36n9.187"
+    ],
+    "kezikonyv": [
+      "02-ma/napi-kapacitas-atrendezes"
+    ],
+    "csomag": "capacity"
   }
 }

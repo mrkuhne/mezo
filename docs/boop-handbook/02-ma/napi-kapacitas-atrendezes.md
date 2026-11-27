@@ -2,7 +2,7 @@
 cim: Napi bírás és Átrendezés
 szint: Funkció
 terulet: Ma
-allapot: Részben kész
+allapot: Élesben
 hol: [iPhone app, Háttérrendszer, AI, Naptár, Apple Health]
 szulo: 00-attekintes
 szakasz: [B7]
@@ -21,7 +21,16 @@ osszefoglalo: Reggel egy mondatban megtudod, belefér-e a nap; ha egy nap vagy h
   súlycél), és egyenként hagyod jóvá.
 - **Az Évad oldalon** hétről hétre látod a terhedet a pihenésedhez mérve, és Boop szól, ha a teher hetek óta
   gyorsabban nő, mint ahogy pihensz.
-- **Előre szól:** vasárnap este átnézi a jövő hetet, és ha túl sok lenne, már akkor javasol.
+- **Előre szól:** vasárnap este 18 órakor átnézi a jövő hetet, és ha túl sok lenne, már akkor javasol; ettől kezdve
+  a Ma oldal kártyája és az Átrendezés már a jövő hetet mutatja.
+- **Tanul az áttételekből:** az Átrendezés oldal „Korábban áttettük” része megmutatja, hogyan sült el egy-egy
+  áttétel (például „bevált — az edzés megvolt”, „maradt így”), az elmúlt nyolc hétre visszamenőleg. Az „Ebből tanulok”
+  rész csak azt a mintát mutatja, ami legalább háromszor előfordult, és legalább kétszer úgy is alakult (például: „A
+  csütörtök a gyenge pontod — az elmúlt 8 hét 6 csütörtökéből 4 volt túl sok”).
+- **Az Évadban:** a „Mennyit bírsz az évadban” számok alatt „Amit a mozgatásokból tanultam” sorolja a mintákat. Ha
+  három hete több a teher, mint amennyit a pihenés visszaad, és a könnyebb hét még messze van, Boop egy kártyán szól,
+  hogy érdemes lenne előrébb hozni. Ez csak szól: egyetlen gombja a „Megbeszélem Boop-pal”, a tervhez nem nyúl.
+- **Új évadnál** az edzésnapok mellett ott vannak a tanulságok, hogy tudatosan tedd le a napokat.
 
 ## Hogyan működik
 1. A telefon a naptár minden adatát elküldi (cím, időpont, résztvevők, helyszín, ismétlődés). Az MI minden programot
@@ -49,17 +58,19 @@ figyel.
 ## Beállítások
 | Beállítás | Mit állít | Alapérték |
 |---|---|---|
-| (épül) | A reggeli szavak határai, a vasárnapi átnézés időpontja, a javaslatok száma | vasárnap 18:00, legfeljebb 5 javaslat egy hétre |
+| (a szerveren) | A reggeli szavak határai, a vasárnapi átnézés időpontja, a javaslatok száma | vasárnap 18:00, legfeljebb 5 javaslat egy hétre |
+| (a szerveren) | Mikor mutat egy mintát | legalább 3 előfordulás, ebből legalább 2 és legalább a fele úgy alakult |
 
 ## Adattáblák
 | Tábla | Mit tárol |
 |---|---|
 | `calendar_event_score` | Programonként a fárasztás címkéi |
 | `day_adjustment` | A jóváhagyott heti áttételek (ez az, amit az app mindenhol olvas) |
-| `capacity_proposal` | Minden javaslat és a döntésed (hogy hogyan sült el, azt az előrejelzés lépés tölti) |
+| `capacity_proposal` | Minden javaslat, a döntésed, és éjjel 3:30-kor beírja, hogyan sült el a nap utána |
+| `capacity_pattern` | A tanult minták: hányszor fordult elő, hányszor alakult úgy |
 
 ## Mi jön még
-Négy lépésben épül: alap (címkézés és becslés), reggel és Évad, Átrendezés, előrejelzés. Az első három kész:
+Négy lépésben épült: alap (címkézés és becslés), reggel és Évad, Átrendezés, előrejelzés. Mind a négy kész:
 - a Ma oldal reggeli sorában a nap szava és az oka, a napod oldalán a „Mennyit bírsz ma”, a „Mi visz el ma energiát”
   és az „Amiből gazdálkodsz” rész, az Évad oldalon a heti teher és pihenés képe;
 - **Átrendezés:** ha egy nap túl sok, a Ma oldalon megjelenik egy kártya, ami az Átrendezés oldalra visz. Ott minden
@@ -70,8 +81,13 @@ Négy lépésben épül: alap (címkézés és becslés), reggel és Évad, Átr
 - Ha közben az Évad oldalon módosítod az edzésnapjaidat, vagy új blokk indul, a terv nyer: a már nem illő áttételek
   lejárnak, a már letolt edzések viszont megmaradnak a múltban.
 
-Hátravan: a vasárnapi előrejelzés, és hogy a Boop a korábbi áttételekből tanuljon („Korábban áttettük”, „Ebből tanulok”).
+- **Előrejelzés:** vasárnap esti átnézés, a korábbi áttételek kimenete, a tanult minták az Átrendezésen, az Évadban
+  és az Új évadnál, és a könnyebb hét előrehozásáról szóló kártya.
+
+Következik: a könnyebb hét előrehozása egy koppintással, a hatásaival együtt (külön jegy). Addig a Boop csak szól.
 
 ## Mi marad ki
 - A Boop nem ír a naptáradba, és nem mond le helyetted megbeszélést.
-- Az Évad tervét egy javaslat nem módosítja; ha egy javaslat a tervet érintené, az Évad saját módosító oldalát nyitja meg.
+- Az Évad tervét egy javaslat nem módosítja. A könnyebb hétről szóló évadkártya csak szól (döntés 2026-11-27, „Csak
+  szóljon”); a tervet továbbra is az Évad saját módosító oldalán változtatod.
+- A mintákat szabályok számolják, az MI nem talál ki mintát és számot.

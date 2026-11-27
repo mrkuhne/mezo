@@ -154,9 +154,9 @@ final class KapacitasPreviewModel: @unchecked Sendable {
                                      "evidence": 3, "consistent": 2, "weekday": "THURSDAY"]]
                 week["history"] = [
                     ["proposalId": "7d000000-0000-4000-8000-000000000001", "kind": "MOVE_SESSION_DAY", "day": Self.day(monday, -6),
-                     "status": "accepted", "title": "Hátedzés: kedd → szerda", "word": "jól", "sub": "megvolt", "good": true],
+                     "status": "accepted", "title": "Hátedzés: kedd → szerda", "word": "bevált", "sub": "az edzés megvolt", "good": true],
                     ["proposalId": "7d000000-0000-4000-8000-000000000002", "kind": "SHIFT_BEDTIME", "day": Self.day(monday, -11),
-                     "status": "accepted", "title": "Lefekvés 23:30, reggeli edzés 8:00", "word": "félig", "sub": "rövid edzés",
+                     "status": "accepted", "title": "Lefekvés 23:30, reggeli edzés 8:00", "word": "nem segített", "sub": "rövidebben edzettél",
                      "good": false],
                     ["proposalId": "7d000000-0000-4000-8000-000000000003", "kind": "MOVE_SESSION_DAY", "day": Self.day(monday, -18),
                      "status": "declined", "title": "Lábnap csütörtök → péntek", "word": "maradt így", "sub": NSNull(),
