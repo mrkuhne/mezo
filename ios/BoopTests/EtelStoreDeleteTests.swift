@@ -20,7 +20,9 @@ struct EtelStoreDeleteTests {
         transport.on("getMealCoachForDay", 200, #"{"verdicts":[]}"#)
         transport.on("getProtocol", 200, #"{"active":null,"history":[]}"#)
         transport.on("getPantry", 200, #"{"ingredients":[],"imports":[],"suggestions":[],"stash":[]}"#)
-        let store = EtelStore()
+        // Its own taken file and no reminders: never the process-global hub other suites drive in parallel.
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent("etel-delete-\(UUID().uuidString)/supplements-taken.json")
+        let store = EtelStore(taken: SupplementTakenStore(fileURL: file), tick: { _, _ in }, reminders: { nil })
         await store.load(food: FoodClient(client: makeClient(tokens: MemoryTokenStore("t"), transport: transport)), now: Date())
         return store
     }
