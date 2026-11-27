@@ -1144,5 +1144,14 @@
       "mezo-r36n9.198"
     ],
     "mi_valtozott": "A Fehérje, Szénhidrát és Zsír sáv alatt a „még N g” helyett most az áll, mennyiből mennyit ettél (például „120/176 g”). Kímélő napon továbbra is csak a megevett mennyiség látszik."
+  },
+  "d066f5882": {
+    "cim": "Étel Hét: naptári hét, napok sorrendben, kártyás rend",
+    "datum": "2026-11-27",
+    "szakasz": "B4 Étel",
+    "jegyek": [
+      "mezo-r36n9.200"
+    ],
+    "mi_valtozott": "A Hét fül hétfőtől vasárnapig mutatja a hetet, nyíllal visszalapozhatsz a korábbi hetekre. Fent egy fő kártya a három számmal és a kalória-oszlopokkal (oldalra húzva a fehérje), a mai nap oszlopa világít. A napok oldalra görgethető, doboz nélküli kártyasorban jönnek, ugyanabban a sorrendben, mint az oszlopok, a mai napon nyitva; a hátralévő napok halványak. A hét részletei kártyán a rögzített napok, a fehérje-, szénhidrát- és zsírátlag a célhoz mérve, az edzésnapok, a kihagyott étkezések, a kímélő napok és a célhoz legközelebb zárt nap."
   }
 }
