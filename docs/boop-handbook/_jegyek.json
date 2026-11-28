@@ -2351,5 +2351,16 @@
     "munkamenet": "receptertekeles-gyors",
     "mit_kapsz": "Egy új recept megnyitásakor az értékelés azonnal látszik, Boop részletes szövege pedig pár perc alatt magától megjelenik, nem kell újra megnyitni.",
     "szulo": "mezo-r36n9"
+  },
+  "mezo-r36n9.220": {
+    "cim": "Receptértékelés: angol szó a rost-mondatban",
+    "tipus": "Hiba",
+    "szakasz": "B4 Étel",
+    "terulet": [
+      "Étel"
+    ],
+    "munkamenet": "receptertekeles-gyors",
+    "mit_kapsz": "A rost magyarázatában az „allotment” helyett magyar szó áll, és Boop szövege sem veszi át többé.",
+    "szulo": "mezo-r36n9"
   }
 }

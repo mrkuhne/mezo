@@ -1330,5 +1330,21 @@
       "mezo-r36n9.197"
     ],
     "mi_valtozott": "Az eligazítás tetején egy fő kártya áll a nap nevével, a várható idővel és a három számmal, alatta „A mai sor” egy kártyán. Emelés közben a gyakorlat neve, a mai technika, a jegyzeted és a technikás sorozat lépései egy kártyát alkotnak, a terv sora és a sorozatok táblázata egy halkabbat; pihenőn a „Következik” a leghalkabb kártya, a három kérdés egy kártyán áll. Az összegzés tetején egy fő kártya mutatja az eredményt, a rekordok és a megdolgoztatott izmok külön kártyán. A lapok (jegyzet, szett javítása, „Mit csinálunk vele?”, rekordok, technika, „Mit csinálsz helyette?”, „Pihenő vége”, „Mi van a termemben”, edzés pótlása) tartalma is kártyán ül. Mérve: mind a 21 képernyőn minden gomb pontosan ugyanakkora és ugyanott van, mint előtte — csökkentett mozgásnál is. Ezzel az Edzés újratervezés mind a hat lépése kész."
+  },
+  "8124c3d31": {
+    "cim": "Receptértékelés: a kártya azonnal jön, Boop szövege magától töltődik be",
+    "datum": "2026-11-28",
+    "verzio": "",
+    "tipus": "Javítás",
+    "hova": [
+      "iPhone app",
+      "Háttérrendszer",
+      "Telefonra telepítve"
+    ],
+    "szakasz": "B4 Étel",
+    "jegyek": [
+      "mezo-r36n9.219"
+    ],
+    "mi_valtozott": "Egy új vagy megváltozott recept megnyitásakor eddig az értékelés meg sem jelent, mert Boop gazdagabb szövege kb. két percig készül, a telefon pedig 40 másodperc után feladta. Most a kártya azonnal látszik a számokkal és a címsorral, egy halk sor jelzi, hogy Boop írja a részletes magyarázatot, és a szöveg magától beúszik, amint kész — nem kell újranyitni. Egy receptet egyszerre csak egyszer íratunk meg."
   }
 }
