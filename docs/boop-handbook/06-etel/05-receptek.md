@@ -10,12 +10,16 @@ osszefoglalo: A saját receptjeid pontszámmal és címkékkel; új receptet elm
 ---
 
 ## Mit csinál
-**A Receptek fül:**
+**A Receptek fül** (2026-11-28 óta kártyás rendben, mint a Ma és a Hét):
 
-- fent négy út egy új recepthez: **Ezt főztem** · Linkből · Fotóból · Receptműhely;
-- „A könyvtárad számokban”: hány recept, átlagos pontszám, hány hordoz jelzést neked;
-- a könyvtár: keresés, szűrés étkezés szerint, receptenként egy sor — név, címkék (kalória, fehérje, idő), külön
-  sorban a sárga érzékenység-jelzés, jobbra a recept saját pontszáma gyűrűben.
+- **felül a kiemelt kártya** („A receptkönyved”): hány recept, átlagos pontszám, hány hordoz jelzést neked, alatta egy
+  kis sáv, ami megmutatja, mire valók a receptjeid (reggeli, ebéd, vacsora, nasi — darabszámmal);
+- **„Új recept” kártya**: négy út egy új recepthez — **Ezt főztem** · Linkből · Fotóból · Receptműhely;
+- **„A legjobbak neked”**: oldalra lapozható sor a legjobb pontszámú (legfeljebb öt) receptedből, mindegyik saját
+  kártyán fotóval, pontgyűrűvel, étkezéssel, kalóriával és fehérjével; koppintásra nyílik a receptlap. A sor nincs
+  kártyába zárva, és csak akkor látszik, ha legalább három receptednek van pontszáma;
+- **„A könyvtárad” kártya**: keresés, szűrés étkezés szerint, receptenként egy sor — név, címkék (kalória, fehérje,
+  idő), külön sorban a sárga érzékenység-jelzés, jobbra a recept saját pontszáma gyűrűben.
 
 **A receptlap:** címkék (étkezés, idő, adag, feldolgozottság), négy makró-csempe egy adagra, „Megeszem 1 adagot”;
 „Amire figyelsz” soronként a figyelt allergénekkel; hozzávalók, számozott lépések, és hogy eddig mikor etted.
@@ -65,7 +69,7 @@ műhely-behúzás átnézője ugyanezt tudja.
 A tulajdonos 2026-11-17-én kérte az „Ezt főztem”-et (spec `2026-11-17-boop-ezt-foztem-design.md`), 2026-11-19-én pedig
 a recept- és kamraoldalak átrendezését: tagolás, ikonok, címkék, látható pontszám és a szempontok, és hogy az
 érzékenység ne törje szét a sort. 2026-11-27-én azt jelezte, hogy a webes appban gazdagabb volt a receptértékelés;
-a 2026-11-28-i újratervezés (döntések #124–#125) ezt hozta vissza és tette túl: napi hatás, rangsor, részletlap,
+a 2026-11-28-i újratervezés (döntések #139–#140) ezt hozta vissza és tette túl: napi hatás, rangsor, részletlap,
 ételre szabott szöveg.
 
 ## Beállítások

@@ -148,7 +148,7 @@ recipes → what to change → feedback.
 `recipe_breakdown`, artifact = recipe id): read the existing vote on open (`GET /feedback/{kind}/{id}`), vote
 optimistically, revert + toast on failure. Shown only when there is AI prose (web mezo-76f6 rule).
 
-### 5.4 Approved spike (owner OK 2026-11-28, decisions #124–#125) — this OVERRIDES §5.1 where they differ
+### 5.4 Approved spike (owner OK 2026-11-28, decisions #139–#140) — this OVERRIDES §5.1 where they differ
 
 Spike branch `spike/boop-receptertekeles` (`ios/Boop/ReceptDemo/ReceptErtekelesDemo.swift`, launch
 `-previewRecept YES -previewReceptState full|loading|detail`); screenshots `assets/receptertekeles/`
@@ -167,7 +167,7 @@ Spike branch `spike/boop-receptertekeles` (`ios/Boop/ReceptDemo/ReceptErtekelesD
    existing per-dimension payload: `context` rows, `micros`, `macro` ratio/targets, `nova` stack + items — today
    dropped by the iOS mapping), **HONNAN JÖN** (per-ingredient contribution, see 6), **ÍGY JAVÍTHATÓ** (the tips whose
    `dimension` is this one), Boop note, Kész; tapping the dim background closes it.
-5. **Étel colours (decision #125, Étel-wide):** one main colour **green** `#3FBF8F` and two sub colours **honey**
+5. **Étel colours (decision #140, Étel-wide):** one main colour **green** `#3FBF8F` and two sub colours **honey**
    `#F4C860` and **coral** `#F28B6E`; every dimension its own shade of the three families (macro green, micro lime
    `#A9D86B`, who coral, fat_quality honey, nova mint `#7FDCC0`, plant_diversity leaf `#6CC46A`, energy_density
    apricot `#F5A65B`, portion rose `#F2A3B3`). Day bars: kcal green, protein coral, carbs honey, fat mint; „eddig ma"

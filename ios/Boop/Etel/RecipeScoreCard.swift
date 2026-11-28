@@ -4,7 +4,7 @@ import BoopDesign
 
 // The recipe's evaluation in the recipe sheet (mezo-r36n9.199, spec §5.4 — the approved spike): hero rosette with the
 // verdict → „Ha ma megennéd" → „Miből áll össze" (2 × 4 tiles; a tile opens the detail page) → „A receptjeid között" →
-// „Így lenne jobb" → „Hasznos volt?". Étel colours (decision #125). The day and rank blocks are local math.
+// „Így lenne jobb" → „Hasznos volt?". Étel colours (decision #140). The day and rank blocks are local math.
 
 /// The short tile name and glyph of each template dimension.
 enum RecipeDimensionLook {

@@ -19,7 +19,7 @@ reference only, **not merged**).
 iOS 26, Swift Testing, swift-openapi-generator (filter `ios/BoopKit/Sources/BoopAPI/openapi-generator-config.yaml`).
 
 **Spec:** `docs/superpowers/specs/2026-11-27-boop-receptertekeles-design.md` (§5.4 overrides §5.1) · decisions
-#124–#125 · bd `mezo-r36n9.199` (acceptance = *Kész, ha…* at the end).
+#139–#140 · bd `mezo-r36n9.199` (acceptance = *Kész, ha…* at the end).
 
 ## Global Constraints
 
@@ -234,7 +234,7 @@ without inventing figures.
 
 ## Kész, ha…
 
-- [ ] The built card matches the approved spike (order, rosette, 2×4 tiles, blurred detail page, colours #124–#125).
+- [ ] The built card matches the approved spike (order, rosette, 2×4 tiles, blurred detail page, colours #139–#140).
 - [ ] A recipe opens with verdict, confidence, fitsFor, summary, day block, tiles, rank, tips (with dimension pill),
   feedback; an old cached recipe regenerates its prose with a tagline on first open.
 - [ ] Detail page shows MIT MÉR, MIÉRT ENNYI (3–4 sentences), A SZÁMOK, HONNAN JÖN (when facts exist), ÍGY JAVÍTHATÓ.

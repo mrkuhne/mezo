@@ -1,6 +1,6 @@
 import SwiftUI
 
-// Étel colours (decision #125, owner 2026-11-28): one main colour — green — and two sub colours, honey and coral.
+// Étel colours (decision #140, owner 2026-11-28): one main colour — green — and two sub colours, honey and coral.
 // Every score dimension wears its own shade of the three families. This slice uses it in the recipe evaluation; the
 // rest of Étel follows in its own issue.
 
