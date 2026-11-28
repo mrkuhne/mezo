@@ -1346,5 +1346,18 @@
       "mezo-r36n9.219"
     ],
     "mi_valtozott": "Egy új vagy megváltozott recept megnyitásakor eddig az értékelés meg sem jelent, mert Boop gazdagabb szövege kb. két percig készül, a telefon pedig 40 másodperc után feladta. Most a kártya azonnal látszik a számokkal és a címsorral, egy halk sor jelzi, hogy Boop írja a részletes magyarázatot, és a szöveg magától beúszik, amint kész — nem kell újranyitni. Egy receptet egyszerre csak egyszer íratunk meg."
+  },
+  "ada498e93": {
+    "datum": "2026-11-28",
+    "verzio": "",
+    "tipus": "Javítás",
+    "hova": [
+      "iPhone app"
+    ],
+    "szakasz": "B5 Edzés",
+    "jegyek": [
+      "mezo-r36n9.221"
+    ],
+    "mi_valtozott": "Az Edzés oldalain a lapozható sorok (mai gyakorlatok, a heted, sablonjaim, a hét napjai) nincsenek többé egy nagy kártyába zárva: csak a lapozható lapok állnak a címük alatt, és alattuk a pöttyök mutatják, hány van még. Ez mostantól az egész app szabálya."
   }
 }
