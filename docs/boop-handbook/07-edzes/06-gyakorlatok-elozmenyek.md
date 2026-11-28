@@ -10,6 +10,9 @@ osszefoglalo: A gyakorlat-katalógus videóval, a rekordjaid, a lezárt edzések
 ---
 
 ## Mit csinál
+*A telefonon ma mindkét fül egyetlen kártya („Gyakorlatok”, illetve „Előzmények” fejjel), benne a „Még nem él” üzenet és hogy
+mikor érkezik; alatta a „Kérdezd meg Boopot” sor (2026-11-28, az Edzés újratervezése). Az alábbi a teljes, tervezett tartalom.*
+
 **Gyakorlatok fül:**
 - gyakorlat-katalógus videóval és képekkel, izomcsoport szerint;
 - rekordok gyakorlatonként (legjobb súly, becsült egyismétléses maximum).

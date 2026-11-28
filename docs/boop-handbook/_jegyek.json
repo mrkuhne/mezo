@@ -2161,8 +2161,8 @@
     "terulet": [
       "Edzés"
     ],
-    "munkamenet": "edzes-ujratervezes",
-    "mit_kapsz": "A blokképítő és a nap szerkesztése ugyanazokra a kártyaelemekre áll; akkor indul, ha a rajta futó másik munka elkészült.",
+    "munkamenet": "edzes-6-blokkepito",
+    "mit_kapsz": "A blokképítő (Izmok, Napok, Mezociklus fül) és a nap szerkesztésének lapjai ugyanazokra a kártyaelemekre állnak, mint az Edzés többi oldala; a Gyakorlatok és Előzmények fül üzenete kártyába kerül. Egyetlen gomb sem mozdul el.",
     "szulo": "mezo-r36n9.197"
   },
   "mezo-r36n9.200": {
