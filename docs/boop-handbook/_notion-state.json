@@ -752,7 +752,7 @@
     },
     "kezikonyv:07-edzes/10-sport-futas": {
       "page_id": "4168968e-752b-8189-bcd3-caf1aa23fda3",
-      "hash": "fea86d707308"
+      "hash": "9854ecf37128"
     },
     "kezikonyv:07-edzes/11-kihagyas-kimelo": {
       "page_id": "4168968e-752b-8119-981d-e24f027f7f4f",
@@ -3456,7 +3456,7 @@
     },
     "jegyek:mezo-r36n9.206": {
       "page_id": "4258968e-752b-812b-b484-d9ac057b9f07",
-      "hash": "032499bd711a"
+      "hash": "3d8bf769c857"
     },
     "jegyek:mezo-r36n9.205": {
       "page_id": "4258968e-752b-81e5-a01b-dbe1fde14601",
@@ -3480,7 +3480,7 @@
     },
     "jegyek:mezo-r36n9.188": {
       "page_id": "4258968e-752b-8145-8c90-e92a8764d74b",
-      "hash": "ac35dafca1df"
+      "hash": "d9b3794e3e73"
     },
     "dontesek:d-2026-11-27-sport-gomb": {
       "page_id": "4258968e-752b-81d6-82f6-fadd3a2c46df",
@@ -3616,7 +3616,7 @@
     },
     "funkciok:train-sport-het": {
       "page_id": "4268968e-752b-81e0-abd1-c6841eb1032d",
-      "hash": "50e5a766375d"
+      "hash": "d6f7397ad009"
     },
     "funkciok:train-sport-terheles": {
       "page_id": "4268968e-752b-8132-8f0a-fca09cbe73ef",
@@ -3749,6 +3749,14 @@
     "jegyek:mezo-r36n9.222": {
       "page_id": "4268968e-752b-814b-8df8-dfe9e06d192d",
       "hash": "efea16d059d4"
+    },
+    "kiadasok:2daaf7e06": {
+      "page_id": "4268968e-752b-81ce-83ab-e0f56791b7e4",
+      "hash": "9d78a41bc066"
+    },
+    "jegyek:mezo-r36n9.224": {
+      "page_id": "4268968e-752b-81dd-9aba-cc657f711699",
+      "hash": "7403f4df2b49"
     }
   }
 }
