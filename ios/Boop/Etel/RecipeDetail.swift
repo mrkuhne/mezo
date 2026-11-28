@@ -37,7 +37,12 @@ struct RecipeDetailSheet: View {
     @State private var busyPhoto = false
     @State private var askRemove = false
     /// The dimension whose explanation is open (a sheet over this sheet).
-    @State private var dimension: DimensionSelection?
+    @State private var openDim: ScoreDimension?
+    @State private var vote: Bool?
+    /// He tapped a vote in this sheet: the stored one read later must not overwrite it.
+    @State private var voteTouched = false
+    @State private var voteWrite: Task<Void, Never>?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private enum LoadState { case loading, ready, unavailable }
 
@@ -53,9 +58,9 @@ struct RecipeDetailSheet: View {
                 steps(recipe)
                 history
             }
-            .sheet(item: Binding(get: { [d = dimension] in d }, set: { dimension = $0 })) { d in
-                DimensionSheet(selection: d)
-            }
+            .blur(radius: openDim == nil ? 0 : 14)
+            .accessibilityHidden(openDim != nil)
+            .overlay { dimensionDetail }
             .mealPhotoLibrary(isPresented: $showLibrary) { data in
                 guard let data else { onToast("Ezt a képet nem tudom megnyitni"); return }
                 Task { await setPhoto(data, recipe) }
@@ -133,17 +138,20 @@ struct RecipeDetailSheet: View {
 
     // MARK: the score
 
-    /// The recipe's own score and the dimensions it is judged on — the same engine that scores a logged meal, without
-    /// the day's context. A tile opens that dimension's explanation.
+    /// The recipe's evaluation (mezo-r36n9.199): while it loads the fit ring + „számolom", on failure a retry, then the
+    /// approved card — hero, today, the eight dimensions, the rank, the tips, the vote.
+    @ViewBuilder
     private func score(_ r: Recipe) -> some View {
-        EtelSheetCard(label: "BOOP ÉRTÉKELÉSE", trailing: "egy adagra") {
-            switch breakdownState {
-            case .loading:
+        switch breakdownState {
+        case .loading:
+            EtelSheetCard(label: "BOOP ÉRTÉKELÉSE", trailing: "egy adagra") {
                 HStack(spacing: 14) {
                     EtelScoreRing(points: etelPoints(r.fit), size: 64)
-                    Text("A részleteket számolom…").nkFont(13.5).foregroundStyle(.white.opacity(0.5))
+                    Text("Átnézem a hozzávalókat, számolom…").nkFont(13.5).foregroundStyle(.white.opacity(0.5))
                 }
-            case .unavailable:
+            }
+        case .unavailable:
+            EtelSheetCard(label: "BOOP ÉRTÉKELÉSE", trailing: "egy adagra") {
                 HStack(spacing: 14) {
                     EtelScoreRing(points: etelPoints(r.fit), size: 64)
                     VStack(alignment: .leading, spacing: 8) {
@@ -156,50 +164,49 @@ struct RecipeDetailSheet: View {
                         .buttonStyle(.plain)
                     }
                 }
-            case .ready:
-                if let b = breakdown?.breakdown {
-                    HStack(alignment: .center, spacing: 14) {
-                        EtelScoreRing(points: Int((b.value * 100).rounded()), size: 64)
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("a recept pontszáma").nkFont(13).foregroundStyle(.white.opacity(0.6))
-                            if let fits = breakdown?.fitsFor, !fits.isEmpty {
-                                NKFlowRow(spacing: 6, rowSpacing: 6) {
-                                    ForEach(fits, id: \.self) { EtelPill(text: recipeFitLabel($0), tone: .hue) }
-                                }
-                            }
-                        }
-                    }
-                    if let tagline = b.tagline, !tagline.isEmpty {
-                        Text(tagline).nkFont(18, design: .serif).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
-                    }
-                    if let summary = b.summary, !summary.isEmpty {
-                        Text(summary).nkFont(14).lineSpacing(3).foregroundStyle(.white.opacity(0.8)).fixedSize(horizontal: false, vertical: true)
-                    }
-                    VStack(alignment: .leading, spacing: 8) {
-                        NKMono("SZEMPONTOK")
-                        DimensionGrid(entries: recipeBreakdownRows(b)) { entry in
-                            dimension = DimensionSelection(entry: entry, mealTitle: r.name, coachNote: entry.dimension?.note)
-                        }
-                        Text("Koppints egy szempontra, és megmutatom, miért annyi.").nkFont(12).foregroundStyle(.white.opacity(0.45))
-                    }
-                    if !b.improve.isEmpty {
-                        VStack(alignment: .leading, spacing: 10) {
-                            NKMono("ÍGY LENNE JOBB")
-                            ForEach(Array(b.improve.enumerated()), id: \.offset) { _, tip in
-                                HStack(alignment: .top, spacing: 10) {
-                                    NKGlyph("spark-cream", Hue.fuel.glow, size: 15).padding(.top, 2)
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(tip.text).nkFont(14).lineSpacing(2).foregroundStyle(.white.opacity(0.88)).fixedSize(horizontal: false, vertical: true)
-                                        if !tip.impact.isEmpty { EtelPill(text: tip.impact, tone: .hue) }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    Text("Ehhez a recepthez még nincs pontszám — nincs benne kalória, amiből számolni lehetne.")
-                        .nkFont(13.5).foregroundStyle(.white.opacity(0.6)).fixedSize(horizontal: false, vertical: true)
-                }
+            }
+        case .ready:
+            if let breakdown {
+                RecipeScoreCard(recipe: r, breakdown: breakdown, day: store.day,
+                                todayYmd: store.currentFood?.ymd(Date()) ?? "", recipes: store.recipes, logs: logs, vote: vote,
+                                onVote: { setVote($0, r) },
+                                onOpen: { d in withAnimation(reduceMotion ? nil : .snappy) { openDim = d } })
+            }
+        }
+    }
+
+    /// The tapped dimension in full, rising over the blurred sheet; a tap on the dim background closes it.
+    @ViewBuilder
+    private var dimensionDetail: some View {
+        if let d = openDim, let b = breakdown?.breakdown {
+            let ex = dimensionExtremes(b.dimensions)
+            ZStack(alignment: .bottom) {
+                Color.black.opacity(0.45).ignoresSafeArea()
+                    .onTapGesture { closeDetail() }
+                    .accessibilityLabel("Bezárás").accessibilityAddTraits(.isButton)
+                RecipeDimensionDetail(dimension: d, isWeak: d.id == ex.weakest, isStrong: d.id == ex.strongest,
+                                      tips: b.improve.filter { $0.dimension == d.id }, close: closeDetail)
+                    .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
+            }
+            .transition(.opacity)
+        }
+    }
+
+    private func closeDetail() { withAnimation(reduceMotion ? nil : .snappy) { openDim = nil } }
+
+    /// Optimistic vote; on failure it snaps back and says so. Writes are serialized (a fast toggle never lands out of
+    /// order on the server), and once he has tapped, a late read of the stored vote no longer overwrites his choice.
+    private func setVote(_ value: Bool?, _ r: Recipe) {
+        let before = vote
+        vote = value
+        voteTouched = true
+        let previous = voteWrite
+        voteWrite = Task {
+            await previous?.value
+            guard let food = store.currentFood else { vote = before; onToast("Nem sikerült elmenteni"); return }
+            do { try await food.setBreakdownVote(recipeId: r.id, up: value) } catch {
+                if vote == value { vote = before }
+                onToast("Nem sikerült elmenteni")
             }
         }
     }
@@ -307,6 +314,15 @@ struct RecipeDetailSheet: View {
         if Task.isCancelled { return }
         switch gotLogs { case .success(let v): logs = v; logsProblem = false; case .failure: logsProblem = true }
         switch gotBreakdown { case .success(let v): breakdown = v; breakdownState = .ready; case .failure: breakdownState = .unavailable }
+        if breakdown?.breakdown?.summary?.isEmpty == false, !voteTouched {
+            let stored = try? await food.breakdownVote(recipeId: r.id)
+            if !voteTouched && !Task.isCancelled { vote = stored }
+        }
+        #if DEBUG
+        // Simulator review: `-receptDim who` opens that dimension's page once the evaluation is in.
+        if let id = UserDefaults.standard.string(forKey: "receptDim"),
+           let d = breakdown?.breakdown?.dimensions.first(where: { $0.id == id }) { openDim = d }
+        #endif
     }
 
     private func log(_ r: Recipe) async {

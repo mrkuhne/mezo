@@ -1922,5 +1922,29 @@
     "miert": "„Tetszik.” — „Elfogadom.”",
     "kovetkezmeny": "Jöhet az építési terv, utána két lépésben az építés.",
     "levaltotta": ""
+  },
+  "d-2026-11-28-recept-ertekeles-proba": {
+    "datum": "2026-11-28",
+    "terulet": [
+      "Étel"
+    ],
+    "cim": "A receptértékelés próbaváltozata elfogadva",
+    "suly": "Közepes",
+    "valasztas": "Sorrend: ítélet, „Ha ma megennéd”, aztán a szempontok két sor csempén. A csempére koppintva elmosott háttér előtt részletes oldal jön fel: mit mér, miért ennyi, a számok, honnan jön (hozzávalónként), hogyan javítható.",
+    "miert": "„Jó, mehet” — a rövid szöveg koppintásra eddig is zavart, a lista-szerű kártya nem tetszett.",
+    "kovetkezmeny": "Jöhet a terv, utána az építés.",
+    "levaltotta": "A szempontlap rövid szövege és a sima számrács."
+  },
+  "d-2026-11-28-etel-szinek": {
+    "datum": "2026-11-28",
+    "terulet": [
+      "Étel"
+    ],
+    "cim": "Az Étel kap egy fő színt és két mellékszínt",
+    "suly": "Közepes",
+    "valasztas": "Fő szín a zöld, mellékszín a méz és a korall; a szempontok ikonjai mind más árnyalatot kapnak ebből a három családból.",
+    "miert": "„Nagyon egyszínű nekem az egész Étel domain.”",
+    "kovetkezmeny": "Először a receptértékelésen jelenik meg, az Étel többi része később követi.",
+    "levaltotta": "Az egyszínű zöld Étel."
   }
 }

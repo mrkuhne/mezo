@@ -25,7 +25,10 @@ struct PreviewTransport: ClientTransport {
         // `-previewOpen chatAsk`: Boop takes his time, so the waiting look can be seen.
         let slowAnswer = operationID == "sendMessage" && UserDefaults.standard.string(forKey: "previewOpen") == "chatAsk"
         // „Ezt főztem" reads for a while, so its working face can be looked at
-        try await Task.sleep(for: .milliseconds(slowAnswer ? 8_000 : operationID == "cookedRecipe" ? 3_000 : 400))
+        // `-receptState slow|error`: the recipe evaluation's loading / unavailable look.
+        let receptState = operationID == "getRecipeBreakdown" ? UserDefaults.standard.string(forKey: "receptState") : nil
+        try await Task.sleep(for: .milliseconds(slowAnswer || receptState == "slow" ? 8_000 : operationID == "cookedRecipe" ? 3_000 : 400))
+        if receptState == "error" { throw URLError(.notConnectedToInternet) }
         // `-previewOffline YES`: the daily loop's writes and Boop's lines find no net (they stay on the phone).
         if UserDefaults.standard.bool(forKey: "previewOffline"), Self.ritmusOps.contains(operationID) {
             throw URLError(.notConnectedToInternet)
@@ -139,6 +142,7 @@ struct PreviewTransport: ClientTransport {
         "patchProtocolItem", "deleteProtocolItem", "getRecovery", "upsertRecovery", "deleteRecovery", "recoveryCheckIn",
         "listPlannedSkips", "undoPlannedSkip",
         "cookedRecipe", "quickAddPantryItem", "updatePantryItem", "getPantryItemBreakdown", "getPantryCatalogBreakdown",
+        "listFeedback", "putFeedback", "deleteFeedback",
     ]
     private static let seedMealId = "5b0e8a52-1c3d-4e0e-9a52-7d9d4c1a0b01"
     private static let recipeId = "7d2a0c74-3e5f-4a2a-9c74-9f1f6e3c2d03"
@@ -354,18 +358,24 @@ struct PreviewTransport: ClientTransport {
         case "recipeLogs":
             return json(#"{"recentLogs":[{"mealId":"\#(seedMealId)","slot":"lunch","loggedAt":"\#(ISO8601DateFormatter().string(from: Date().addingTimeInterval(-3 * 86400)))","kcal":660,"p":50,"c":75,"f":15,"score":0.78},{"mealId":"\#(UUID().uuidString.lowercased())","slot":"dinner","loggedAt":"\#(ISO8601DateFormatter().string(from: Date().addingTimeInterval(-9 * 86400)))","kcal":640,"p":48,"c":70,"f":16,"score":0.71}]}"#)
         case "getRecipeBreakdown":
-            func dim(_ id: String, _ label: String, _ w: Double, _ score: Double, _ detail: String, _ note: String? = nil) -> String {
-                #"{"id":"\#(id)","label":"\#(label)","weight":\#(w),"score":\#(score),"detail":"\#(detail)","coverage":1\#(note.map { #","note":"\#($0)""# } ?? "")}"#
+            func dim(_ id: String, _ label: String, _ w: Double, _ score: Double, _ detail: String, _ note: String? = nil, extra: String = "") -> String {
+                #"{"id":"\#(id)","label":"\#(label)","weight":\#(w),"score":\#(score),"detail":"\#(detail)","coverage":1\#(note.map { #","note":"\#($0)""# } ?? "")\#(extra)}"#
             }
-            let dims = [dim("macro", "Makrók", 0.25, 0.82, "A fehérje a recept energiájának 28%-a, a szénhidrát 45%, a zsír 27%.", "A fehérje aránya pont ott van, ahol egy edzés utáni tányérnál szeretném."),
-                        dim("micro", "Rost", 0.1, 0.7, "Adagonként 7 g rost."),
-                        dim("who", "WHO", 0.15, 0.88, "Hozzáadott cukor nincs, a só 0,9 g, a telített zsír az energia 6%-a."),
+            func src(_ name: String, _ nutrient: String, _ amount: Double, _ unit: String, _ share: Double) -> String {
+                #"{"name":"\#(name)","nutrient":"\#(nutrient)","amount":\#(amount),"unit":"\#(unit)","share":\#(share)}"#
+            }
+            let dims = [dim("macro", "Makrók", 0.25, 0.82, "A fehérje a recept energiájának 28%-a, a szénhidrát 45%, a zsír 27%.", "A fehérje aránya pont ott van, ahol egy edzés utáni tányérnál szeretném.",
+                            extra: #","macro":{"ratioP":0.28,"ratioC":0.45,"ratioF":0.27,"targetP":"30%","targetC":"45%","targetF":"25%","kcalShareOfDay":0.22}"#),
+                        dim("micro", "Rost", 0.1, 0.7, "Adagonként 7 g rost: a barna rizs és a brokkoli adja a zömét, a csirke semmit.",
+                            extra: #","micros":[{"name":"Rost","value":"7 g","pct":70,"status":"ok"}],"contributors":[\#(src("Barna rizs", "fiber", 3.9, "g", 0.56)),\#(src("Brokkoli", "fiber", 2.6, "g", 0.37))]"#),
+                        dim("who", "Só és cukor", 0.15, 0.48, "A cukorral nincs gond, a sót viszont a szójaszósz viszi: egy adagban 1,4 g, ami az étkezésre jutó keret kétszerese. A rizs és a csirke szinte sómentes.",
+                            extra: #","context":[{"label":"Cukor","value":"az energia 4%-a"},{"label":"Só","value":"1,4 g"}],"contributors":[\#(src("Szójaszósz", "salt", 0.9, "g", 0.64)),\#(src("Fokhagymasó", "salt", 0.4, "g", 0.29)),\#(src("Csirkemell", "salt", 0.1, "g", 0.07))]"#),
                         dim("fat_quality", "Zsírminőség", 0.1, 0.74, "A zsír kétharmada telítetlen."),
                         dim("nova", "Feldolgozottság", 0.15, 0.95, "Minden összetevő nyers vagy minimálisan feldolgozott."),
                         dim("plant_diversity", "Növényi változatosság", 0.1, 0.5, "Két különböző növényi összetevő van benne.", "Egy marék zöld vagy egy színes zöldség sokat dobna rajta."),
                         dim("energy_density", "Energiasűrűség", 0.05, 0.8, "1,3 kcal jut egy grammra."),
                         dim("portion", "Adagméret", 0.1, 0.77, "Egy adag a reggeli kereted 92%-a.")].joined(separator: ",")
-            return json(#"{"fitsFor":["post_workout","lunch"],"breakdown":{"value":0.78,"confidence":0.9,"tagline":"Jó fehérjeforrás, kiegyensúlyozott tányér","summary":"A recept fehérjében erős, a zsír mértékletes, és nincs benne feldolgozott összetevő. A növényi oldala a leggyengébb: kevés benne a különböző zöldség.","dimensions":[\#(dims)],"improve":[{"text":"Tegyél mellé egy marék spenótot vagy paradicsomot.","impact":"+ növényi változatosság"},{"text":"A rizs felét cseréld barna rizsre.","impact":"+ rost"}],"tools":[]}}"#)
+            return json(#"{"fitsFor":["post_workout","lunch"],"breakdown":{"value":0.78,"confidence":0.9,"tagline":"Jó fehérjeforrás, kiegyensúlyozott tányér","summary":"A recept fehérjében erős, a zsír mértékletes, és nincs benne feldolgozott összetevő. A növényi oldala a leggyengébb: kevés benne a különböző zöldség.","dimensions":[\#(dims)],"improve":[{"text":"A szójaszósz felét cseréld citromlére: a só 1,4 g-ról 0,9 g-ra esik.","impact":"-só","dimension":"who"},{"text":"Tegyél mellé egy marék spenótot (30 g).","impact":"+1 zöld","dimension":"plant_diversity"}],"tools":[]}}"#)
         case "workshopTurn":
             let obj = (try? JSONSerialization.jsonObject(with: Data(sent.utf8))) as? [String: Any]
             let asked = (obj?["message"] as? String ?? "").replacingOccurrences(of: "\"", with: "")
@@ -375,6 +385,10 @@ struct PreviewTransport: ClientTransport {
             return (HTTPResponse(status: .ok, headerFields: h), HTTPBody(pixel))
         case "putRecipeImage": return json(#"{"bytes":\#(pixel.count),"width":1,"height":1}"#)
         case "deleteRecipeImage": return (HTTPResponse(status: .noContent), nil)
+        case "listFeedback": return json("[]")
+        case "putFeedback":
+            return json(#"{"artifactKind":"recipe_breakdown","artifactId":"\#(recipeId)","verdict":"up","updatedAt":"2026-11-28T10:00:00Z"}"#)
+        case "deleteFeedback": return (HTTPResponse(status: .noContent), nil)
         case "importRecipeFromUrl", "importRecipeFromText", "importRecipeFromPhoto":
             return json(#"{"result":{"name":"Tejszínes gombás tészta","category":"dinner","servings":2,"steps":["Főzd meg a tésztát.","Pirítsd meg a gombát.","Keverd össze a kettőt."],"sourceUrl":null,"structured":true,"needsReview":true,"lines":[{"source":"estimate","name":"tészta","amount":200,"unit":"g","match":{"state":"matched","onShelf":false,"amountDoubt":false,"alternatives":[],"catalogId":"33359b8f-e90a-45d5-8b8f-a4c13d1d0f2f","confidence":0.9,"needsReview":false},"sourceText":"20 dkg tészta"},{"source":"estimate","name":"Tejszín","amount":2,"unit":"dl","match":{"state":"confirm","onShelf":false,"amountDoubt":false,"alternatives":[],"catalogId":"33359b8f-e90a-45d5-8b8f-a4c13d1d0f2f","confidence":0.5,"needsReview":true},"sourceText":"2 dl főzőtejszín","allergens":{"milk":"contains"}},{"source":"estimate","name":"gomba","amount":250,"unit":"g","match":{"state":"missing","onShelf":false,"amountDoubt":false,"alternatives":[],"confidence":0.2,"needsReview":true},"sourceText":"25 dkg gomba"}]}}"#)
         case "getPantry":

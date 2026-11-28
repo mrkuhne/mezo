@@ -28120,6 +28120,40 @@ components:
           description: >-
             1-2 mondatos AI-jegyzet ehhez a dimenzióhoz (meal-coach tölti;
             determinisztikusan null)
+        contributors:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/MealContributorRow'
+          description: >-
+            Recipe template only (mezo-r36n9.199): the top ingredients behind a
+            nutrient dimension (who: salt + sugar, fat_quality: saturated fat,
+            micro: fibre, nova: kcal of NOVA 3-4 lines), computed
+            deterministically from the per-serving line snapshots on every read
+            — never by the LLM. null on logged meals and on dimensions with no
+            such nutrient.
+    MealContributorRow:
+      type: object
+      required:
+        - name
+        - nutrient
+        - amount
+        - unit
+        - share
+      properties:
+        name:
+          type: string
+        nutrient:
+          type: string
+          pattern: ^(salt|sugar|saturated_fat|fiber|kcal)$
+        amount:
+          type: number
+          description: 'Per serving, in `unit`'
+        unit:
+          type: string
+        share:
+          type: number
+          description: 'This line''s share of the recipe''s total of the nutrient, 0..1'
     MealMacroDetail:
       type: object
       required:
@@ -28360,6 +28394,12 @@ components:
           type: string
         impact:
           type: string
+        dimension:
+          type: string
+          nullable: true
+          description: >-
+            The dimension id this tip lifts (recipe prose, mezo-r36n9.199); null
+            when unknown.
     MealToolRow:
       type: object
       required:

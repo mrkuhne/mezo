@@ -35,10 +35,11 @@ import org.springframework.test.context.ActiveProfiles;
 class RecipeBreakdownApiIT extends ApiIntegrationTest {
 
     private static final String CANNED_PROSE = """
-        {"summary":"Fake sablon-olvasat.","fitsFor":["Post-workout · este","Fehérje-fókusz"],\
+        {"summary":"Fake sablon-olvasat.","tagline":"Fehérjében erős, a só húzza le.",\
+        "fitsFor":["Post-workout · este","Fehérje-fókusz"],\
         "details":{"macro":"Fake makró magyarázat.","micro":"Fake mikró magyarázat.",\
         "nova":"Fake nova magyarázat."},\
-        "improve":[{"text":"Adj hozzá zöldséget.","impact":"+rost"}]}""";
+        "improve":[{"text":"Adj hozzá zöldséget.","impact":"+rost","dimension":"energy_density"}]}""";
 
     private static final String SENTINEL_NAME = "Túrós tál [fake-recipe-fit:" + CANNED_PROSE + "]";
 
@@ -200,6 +201,9 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
             });
         assertThat(res.getBreakdown().getImprove()).hasSize(1);
         assertThat(res.getBreakdown().getImprove().getFirst().getImpact()).isEqualTo("+rost");
+        // a live dimension survives; a degraded one (micro here) would be dropped — RecipeBreakdownProseServiceTest
+        assertThat(res.getBreakdown().getImprove().getFirst().getDimension()).isEqualTo("energy_density");
+        assertThat(res.getBreakdown().getTagline()).isEqualTo("Fehérjében erős, a só húzza le.");
         assertThat(res.getBreakdown().getTools())
             .anyMatch(t -> "llm:sablon-olvasat".equals(t.getName()));
 
@@ -210,6 +214,8 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
         var entity = recipeRepository.findById(recipe).orElseThrow();
         assertThat(entity.getBreakdown()).isNotNull();
         assertThat(entity.getBreakdown().summary()).isEqualTo("Fake sablon-olvasat.");
+        assertThat(entity.getBreakdown().proseVersion())
+            .isEqualTo(io.mrkuhne.mezo.feature.recipe.service.RecipeBreakdownProseService.PROSE_VERSION);
         assertThat(entity.getFitsFor()).containsExactly("Post-workout · este", "Fehérje-fókusz");
         // and the recipe read now carries the persisted fitsFor
         assertThat(detail.getMezoFit().getFitsFor()).containsExactly("Post-workout · este", "Fehérje-fókusz");
@@ -317,6 +323,48 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
         var restored = recipeRepository.findById(recipe).orElseThrow().getBreakdown();
         assertThat(restored.dimensions()).hasSize(8);
         assertThat(restored.summary()).isEqualTo("Fake sablon-olvasat.");
+    }
+
+    @Test
+    void testGetBreakdown_shouldRegenerate_whenCachedProseVersionIsOld() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID food = createFood(auth, "Túró", "110");
+        UUID recipe = createRecipe(auth, SENTINEL_NAME, food);
+        getBreakdown(auth, recipe); // persists the current-version prose
+
+        // Same numbers, but written by the previous prompt generation (no proseVersion, no tagline):
+        // matches() must treat it as stale even though every number still agrees.
+        var entity = recipeRepository.findById(recipe).orElseThrow();
+        var cur = entity.getBreakdown();
+        entity.setBreakdown(new MealBreakdownJson(cur.value(), cur.confidence(), "Ez egy régi olvasat.", null,
+            cur.dimensions(), cur.improve(), cur.tools(), cur.formulaVersion()));
+        recipeRepository.saveAndFlush(entity);
+
+        RecipeBreakdownResponse res = getBreakdown(auth, recipe);
+
+        assertThat(res.getBreakdown().getSummary()).isEqualTo("Fake sablon-olvasat.");
+        assertThat(res.getBreakdown().getTagline()).isEqualTo("Fehérjében erős, a só húzza le.");
+        var stored = recipeRepository.findById(recipe).orElseThrow().getBreakdown();
+        assertThat(stored.proseVersion())
+            .isEqualTo(io.mrkuhne.mezo.feature.recipe.service.RecipeBreakdownProseService.PROSE_VERSION);
+    }
+
+    @Test
+    void testGetBreakdown_shouldCarryContributors_evenWhenServedFromCache() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID food = createFoodWithFacts(auth, "Zabpehely");
+        UUID recipe = createRecipe(auth, SENTINEL_NAME, food);
+
+        for (int read = 0; read < 2; read++) { // first read enriches + persists, second serves the cache
+            var micro = getBreakdown(auth, recipe).getBreakdown().getDimensions().stream()
+                .filter(d -> "micro".equals(d.getId())).findFirst().orElseThrow();
+            assertThat(micro.getContributors()).singleElement().satisfies(c -> {
+                assertThat(c.getName()).isEqualTo("Zabpehely");
+                assertThat(c.getNutrient()).isEqualTo("fiber");
+                assertThat(c.getAmount()).isEqualByComparingTo("4.0"); // 3.2 g/100 g × 250 g ÷ 2
+                assertThat(c.getShare()).isEqualByComparingTo("1");
+            });
+        }
     }
 
     /** A minimal old-shape dimension for seeding a stale 4-dim cache. */

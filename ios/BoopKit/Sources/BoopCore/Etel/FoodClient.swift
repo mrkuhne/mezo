@@ -338,6 +338,39 @@ public struct FoodClient: Sendable {
         }
     }
 
+    /// The owner's „Hasznos volt?" vote on a recipe's AI evaluation: true = up, false = down, nil = none yet.
+    public func breakdownVote(recipeId: UUID) async throws -> Bool? {
+        try await call {
+            switch try await client.listFeedback(query: .init(kind: "recipe_breakdown", ids: [recipeId.wire])) {
+            case .ok(let ok):
+                guard let row = try ok.body.json.first(where: { $0.artifactId.lowercased() == recipeId.wire.lowercased() }) else { return nil }
+                return row.verdict == "up"
+            case .unauthorized: throw FoodFetchError.unauthorized
+            case .badRequest, .undocumented: throw FoodFetchError.server
+            }
+        }
+    }
+
+    /// Stores (true/false) or clears (nil) the vote on a recipe's AI evaluation.
+    public func setBreakdownVote(recipeId: UUID, up: Bool?) async throws {
+        try await call {
+            if let up {
+                switch try await client.putFeedback(body: .json(.init(artifactKind: "recipe_breakdown", artifactId: recipeId.wire,
+                                                                      verdict: up ? "up" : "down"))) {
+                case .ok: return
+                case .unauthorized: throw FoodFetchError.unauthorized
+                case .badRequest, .undocumented: throw FoodFetchError.server
+                }
+            } else {
+                switch try await client.deleteFeedback(path: .init(artifactKind: "recipe_breakdown", artifactId: recipeId.wire)) {
+                case .noContent: return
+                case .unauthorized: throw FoodFetchError.unauthorized
+                case .badRequest, .undocumented: throw FoodFetchError.server
+                }
+            }
+        }
+    }
+
     /// The recipe's template score (the same envelope as a logged meal's, without the day's context).
     public func recipeBreakdown(_ id: UUID) async throws -> RecipeBreakdown {
         try await call {
@@ -1151,9 +1184,23 @@ extension FoodClient {
         MealBreakdown(value: b.value, confidence: b.confidence, tagline: b.tagline, summary: b.summary,
                       dimensions: b.dimensions.map { d in
                           ScoreDimension(id: d.id, label: d.label, weight: d.weight, score: d.score, detail: d.detail,
-                                         coverage: d.coverage, note: d.note)
+                                         coverage: d.coverage, note: d.note,
+                                         macro: d.macro.map { m in
+                                             DimensionMacro(ratioP: m.value1.ratioP, ratioC: m.value1.ratioC, ratioF: m.value1.ratioF,
+                                                            targetP: m.value1.targetP, targetC: m.value1.targetC, targetF: m.value1.targetF)
+                                         },
+                                         micros: (d.micros ?? []).map { DimensionMicro(name: $0.name, value: $0.value, pct: $0.pct, status: $0.status) },
+                                         nova: d.nova.map { n in
+                                             DimensionNova(dominant: n.value1.dominant,
+                                                           stack: n.value1.stack.map { NovaShare(nova: $0.nova, pct: $0.pct, label: $0.label) },
+                                                           items: n.value1.items.map { NovaItem(name: $0.name, nova: $0.nova, warning: $0.warning) })
+                                         },
+                                         context: (d.context ?? []).map { DimensionFact(label: $0.label, value: $0.value) },
+                                         contributors: (d.contributors ?? []).map {
+                                             Contributor(name: $0.name, nutrient: $0.nutrient, amount: $0.amount, unit: $0.unit, share: $0.share)
+                                         })
                       },
-                      improve: b.improve.map { MealImprove(text: $0.text, impact: $0.impact) })
+                      improve: b.improve.map { MealImprove(text: $0.text, impact: $0.impact, dimension: $0.dimension) })
     }
 
     static func map(_ v: Components.Schemas.MealCoachVerdict) -> MealCoach? {

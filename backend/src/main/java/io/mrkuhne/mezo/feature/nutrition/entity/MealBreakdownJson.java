@@ -42,14 +42,33 @@ public record MealBreakdownJson(
      * the SAME call as the verdict. {@code null} (not generated / pre-feature envelope) and empty
      * (the plate already smooths) are distinct — the FE falls back to its computed swaps on null.
      */
-    List<GlucoseTip> glucose
+    List<GlucoseTip> glucose,
+    /**
+     * The recipe-prose PROMPT generation that wrote {@code summary}/{@code tagline}/details
+     * (mezo-r36n9.199, {@code RecipeBreakdownProseService.PROSE_VERSION}). The recipe cache treats
+     * null/older as stale so a prompt change re-narrates lazily. Never on the wire; null on meals.
+     */
+    Integer proseVersion
 ) {
 
     /** The pre-glucose shape — every deterministic writer and copy site; {@code glucose} stays null. */
     public MealBreakdownJson(BigDecimal value, BigDecimal confidence, String summary, String tagline,
                              List<Dimension> dimensions, List<ImproveRow> improve, List<ToolRow> tools,
                              Integer formulaVersion) {
-        this(value, confidence, summary, tagline, dimensions, improve, tools, formulaVersion, null);
+        this(value, confidence, summary, tagline, dimensions, improve, tools, formulaVersion, null, null);
+    }
+
+    /** The pre-proseVersion shape (meal coach); {@code proseVersion} stays null. */
+    public MealBreakdownJson(BigDecimal value, BigDecimal confidence, String summary, String tagline,
+                             List<Dimension> dimensions, List<ImproveRow> improve, List<ToolRow> tools,
+                             Integer formulaVersion, List<GlucoseTip> glucose) {
+        this(value, confidence, summary, tagline, dimensions, improve, tools, formulaVersion, glucose, null);
+    }
+
+    /** A copy with other dimensions — every other component kept. */
+    public MealBreakdownJson withDimensions(List<Dimension> dims) {
+        return new MealBreakdownJson(value, confidence, summary, tagline, dims, improve, tools,
+            formulaVersion, glucose, proseVersion);
     }
 
     /** One next-time swap for a flatter glucose response: a short title + one sentence. */
@@ -87,8 +106,33 @@ public record MealBreakdownJson(
         NovaDetail nova,
         List<ContextRow> context,
         TimingDetail timing,
-        String note
+        String note,
+        /** Recipe template only (mezo-r36n9.199): top ingredients behind this dimension's nutrient,
+         *  overlaid on every read by {@code RecipeContributors}; null on meals / other dimensions. */
+        List<Contributor> contributors
     ) {
+
+        /** The pre-contributors shape — every existing writer; {@code contributors} stays null. */
+        public Dimension(String id, String label, BigDecimal weight, BigDecimal score, BigDecimal coverage,
+                         String detail, MacroDetail macro, List<MicroRow> micros, NovaDetail nova,
+                         List<ContextRow> context, TimingDetail timing, String note) {
+            this(id, label, weight, score, coverage, detail, macro, micros, nova, context, timing, note, null);
+        }
+
+        public Dimension withContributors(List<Contributor> rows) {
+            return new Dimension(id, label, weight, score, coverage, detail, macro, micros, nova, context,
+                timing, note, rows);
+        }
+
+        public Dimension withDetail(String text) {
+            return new Dimension(id, label, weight, score, coverage, text, macro, micros, nova, context,
+                timing, note, contributors);
+        }
+    }
+
+    /** One ingredient behind a nutrient: per-serving {@code amount} in {@code unit}, {@code share} 0..1 of the
+     *  recipe's total. {@code nutrient}: salt | sugar | saturated_fat | fiber | kcal. */
+    public record Contributor(String name, String nutrient, BigDecimal amount, String unit, BigDecimal share) {
     }
 
     /**
@@ -137,8 +181,12 @@ public record MealBreakdownJson(
                                String windowSource) {
     }
 
-    /** P8 prose — always empty in v0. */
-    public record ImproveRow(String text, String impact) {
+    /** A prose tip; {@code dimension} = the dimension id it lifts (recipe prose, mezo-r36n9.199), else null. */
+    public record ImproveRow(String text, String impact, String dimension) {
+
+        public ImproveRow(String text, String impact) {
+            this(text, impact, null);
+        }
     }
 
     /** Honest provenance: what the deterministic scorer read/computed ({@code read|compute|write}). */

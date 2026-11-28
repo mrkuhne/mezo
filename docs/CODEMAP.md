@@ -606,7 +606,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### fuel
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-24, done)
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-28, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/fuel`
   - **entities→tables:** `FuelSettingsEntity`→`fuel_settings`, `MealSlotTemplateEntity`→`meal_slot_template`,
@@ -859,7 +859,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### meal
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-24, done)
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-28, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/meal`
   - **sub-features:** `port`
@@ -947,7 +947,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### nutrition
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-24, done)
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-28, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/nutrition`
   - **entities→tables:** `DietSettingsEntity`→`diet_settings`, `SensitivityProfileEntity`→`sensitivity_profile`
@@ -1223,16 +1223,16 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### recipe
 
-*BE + API* · read next: [docs/features/recipe.md](features/recipe.md) (updated 2026-11-19, done)
+*BE + API* · read next: [docs/features/recipe.md](features/recipe.md) (updated 2026-11-28, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/recipe`
   - **entities→tables:** `RecipeEntity`→`recipe`, `RecipeIngredientEntity`→`recipe_ingredient`
   - **repositories:** `RecipeIngredientRepository`, `RecipeRepository`
   - **services:** `RecipeAllergenRollup`, `RecipeBreakdownLlm`, `RecipeBreakdownProseService`,
-    `RecipeBreakdownService`, `RecipeCookedExtraction`, `RecipeCookedLlm`, `RecipeCookedSelection`,
-    `RecipeCookedService`, `RecipeDraftLines`, `RecipeExtractionService`, `RecipeImageService`, `RecipeImportLlm`,
-    `RecipeImportService`, `RecipeJsonLdParser`, `RecipeService`, `RecipeSnapshotRefresher`, `RecipeWorkshopLlm`,
-    `RecipeWorkshopService`, `RecipeWorkshopValidator`
+    `RecipeBreakdownService`, `RecipeContributors`, `RecipeCookedExtraction`, `RecipeCookedLlm`,
+    `RecipeCookedSelection`, `RecipeCookedService`, `RecipeDraftLines`, `RecipeExtractionService`,
+    `RecipeImageService`, `RecipeImportLlm`, `RecipeImportService`, `RecipeJsonLdParser`, `RecipeService`,
+    `RecipeSnapshotRefresher`, `RecipeWorkshopLlm`, `RecipeWorkshopService`, `RecipeWorkshopValidator`
   - **controllers→contract:** `RecipeController`→`RecipeApi`, `RecipeCookedController`→`RecipeCookedApi`,
     `RecipeImageController`→`RecipeImageApi`, `RecipeImportController`→`RecipeImportApi`,
     `RecipeWorkshopController`→`RecipeWorkshopApi`
@@ -1248,7 +1248,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 - **Contract** `api/feature/recipe/recipe.yml` — 7 operations
   - **endpoints:** GET /api/recipe · POST /api/recipe · GET /api/recipe/{id} · PUT /api/recipe/{id} ·
     DELETE /api/recipe/{id} · GET /api/recipe/{id}/breakdown · POST /api/recipe/workshop/turn
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/recipe` — 18 IT + 10 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/recipe` — 18 IT + 11 unit
   - **ITs:** `RecipeAllergenRecomputeRunnerIT`, `RecipeApiIT`, `RecipeBreakdownApiIT`, `RecipeBreakdownFallbackApiIT`,
     `RecipeCookedIT`, `RecipeCookedLlmUnavailableApiIT`, `RecipeCookedSwitchOffApiIT`, `RecipeImageIT`,
     `RecipeImportIT`, `RecipeImportLlmUnavailableApiIT`, `RecipeImportSsrfApiIT`, `RecipeImportSwitchOffApiIT`,
@@ -1324,7 +1324,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### train
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-24, done) ·
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-28, done) ·
   [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-11-25, done) ·
   [docs/features/season.md](features/season.md) (updated 2026-11-28, in-progress) ·
   [docs/features/train.md](features/train.md) (updated 2026-11-27, done)
