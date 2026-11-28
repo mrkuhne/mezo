@@ -2,7 +2,7 @@
 title: Boop — native iOS app
 type: feature-domain
 status: in-progress
-updated: 2026-11-27
+updated: 2026-11-28
 tags: [ios, etel-ma, meal-detail, level, l1-l2-level, evad, b6-evad, season, penz, l5-penz, blokk-epito, heti-atnezes, kezdolap, area-kit, l0, elo-fal, l0b, b4-etel, food, barcode, meal-photos, sensitivities, b3-napi-ritmus, offline-first, outbox, dayclose, b1-adatalap, health-samples, apns, swiftui, boop, napkelte, lagy, auth, onboarding, healthkit, eventkit, wearable, morning-brief, energy-curve, voice]
 key_files:
   - ios/Boop
@@ -17,6 +17,8 @@ related: [season, penz, mail, fuel, pantry, recipe, dayclose, intention, journal
 ---
 
 # Boop — native iOS app — Feature Documentation
+
+> **2026-11-28 — The Edzés redesign's shared cards; the lighter Mozgás room sky (`mezo-r36n9.197.1`, step 1 of 6, decisions #119 #129; spec [`2026-11-27-boop-edzes-ujratervezes-design.md`](../superpowers/specs/2026-11-27-boop-edzes-ujratervezes-design.md) §5.1, plan [`2026-11-27-boop-edzes-ujratervezes.md`](../superpowers/plans/2026-11-27-boop-edzes-ujratervezes.md) Task 1).** New kit files in `BoopDesign/Napkelte/`: `NKSectionCard.swift` — `NKSectionCard(label, hue:, glyph:, trailing: NKCardTrailing (.none/.text/.menu(AnyView)/.chevron), state: NKBlockState, onOpen:)`, the `NKBare` head on `nkGlass(24)` (padding 16/12; `onOpen` is a tap gesture plus a „Megnyitás" accessibility action, so the card's own buttons keep their taps), `NKMoreMenu` (the 44 pt „…" circle, label „Továbbiak") and `View.nkInnerCard(radius: 20)` (fill white 0.06, stroke 0.08 — no glass on glass); `NKPagedHero.swift` — `NKPagedHero(pages: [AnyView], height:)`, radius 28, capsule dots (`showsDots(pageCount:)` false for one page), pages stacked at accessibility sizes / VoiceOver (`stacks(accessibilitySize:voiceOver:)`); `NKCardActions.swift` — one primary capsule (`.white` or `.hue(Hue)`) + at most `maxQuiet` = 2 quiet ones (asserted), `NKCardAction(title, glyph:, enabled:, action:)`, a `ViewThatFits` row that falls back to a column. `NKBare` gained an internal `trailingView` init for the card's menu/chevron. `Hue.roomSky`/`roomTop` got the `.mozgas` case `[0x5C7FC0, 0xF4BC8E, 0xFFEFCB]` / `0x34507E`, so every `NKAreaPage(hue: .mozgas)` — the Edzés room — paints it now; the Mozgás orb elsewhere keeps `sky`. **Étel · Ma** moved onto `NKSectionCard` / `NKPagedHero` with no visible change (simulator before/after: normal, XXXL with the stacked hero, kímélő day, lower cards). Gallery: `-previewKit YES` shows the four cards (add `-previewScroll N`, which the gallery now honours). Tests: `NapkelteTokensTests.mozgasRoomSkyIsTheSpikeStep2`, `NapkelteCardsTests`. Steps 2–6 (`.197.2`–`.6`) move the Edzés pages onto these.
 
 > **2026-11-27 — The player says the challenge and the special last set in words, also on a day that skips them (`mezo-r36n9.195`).** Contract: `TodayExercise.skippedToday` (`SkippedTechnique {technique?, challenge, reason DELOAD|GENTLE|SPORT}`), set in `WorkoutService.getToday` where the technique overlay is suppressed — deload week → DELOAD, comeback / readiness lighten → GENTLE (an invalid catalog pick gets none), sport day → SPORT with the dropped challenge (and a dropped planner technique); null on a normal day. App: `PlannedExercise`/`SessionExercise.skippedToday`; the pure `BoopCore/Train/TechniqueHeadline` builds the head's sentence (`today(technique:challenge:best:)`) and the dim skipped line (`skipped(_:keptTechnique:)`); `TechniqueHeadlineRow` / `TechniqueSkippedRow` (`Edzes/PlayerTechnique.swift`) replace `TechniquePill`/`ChallengePill` under the name in `WorkoutPlayer.exerciseHead`. Preview: `-previewEdzesSkipped deload|gentle|sport` (with `-previewEdzesTechnique YES`), `-previewEdzesAt N`. Tests: `TechniqueHeadlineTests`, `WorkoutTodayTechniqueIT` (deload/comeback/sport assertions).
 
@@ -352,6 +354,9 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   it moved onto `NKAreaPage` with every sheet, flow and section unchanged. A full-screen flow with its own chrome
   (the workout player, the check-in, the evening close) stays a page-level cover outside this system.
   Review: `-previewKit YES` renders every block and every awkward state on one page (`Kezdolap/KitGallery.swift`).
+  **Section cards (2026-11-28, `mezo-r36n9.197.1`):** `NKSectionCard` (one glass card per logical unit, trailing
+  text / „…" menu / chevron, `onOpen`), `NKPagedHero` (the page's one hero, 1–3 pages), `NKCardActions` (one primary +
+  ≤ 2 quiet, row → column) and `nkInnerCard()` for anything inside a card; Étel · Ma is built on them.
 
 - **The area pages (shipped 2026-11-16, `mezo-r36n9.57`; the build target is the Élet spike's own area screens —
   `BoopSpike/EletRooms.swift` + `EletContent.swift`, run with `-elet YES`, not the older PNGs).** The owner

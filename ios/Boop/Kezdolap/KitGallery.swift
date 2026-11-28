@@ -28,6 +28,46 @@ struct KitGallery: View {
                                   NKHighlightAction("Könnyítés", weight: .secondary) { note = "Könnyítés" },
                                   NKHighlightAction("Ma kihagyom", weight: .link) { note = "Kihagyom" }])
 
+            // The Edzés redesign's shared cards (mezo-r36n9.197.1): a paged hero, section cards with each trailing
+            // kind, the in-card action row in both primary styles, and an inner card (no glass on glass).
+            NKPagedHero(pages: [
+                AnyView(VStack(alignment: .leading, spacing: 6) {
+                    NKMono("FUTÓ MEZOCIKLUS")
+                    Text("3. hét · 5. nap").nkFont(28, design: .serif).foregroundStyle(.white)
+                    Text("Hét hétből a harmadik").nkFont(13).foregroundStyle(.white.opacity(0.6))
+                }.frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 18)),
+                AnyView(VStack(alignment: .leading, spacing: 6) {
+                    NKMono("A HÉT")
+                    Text("13 / 16 sorozat").nkFont(22, .medium).foregroundStyle(.white)
+                }.frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 18)),
+            ], height: 120)
+
+            NKSectionCard("Következik", hue: hue, glyph: "chart-deep",
+                          trailing: .menu(AnyView(NKMoreMenu {
+                              Button("Újraindítás") { note = "Újraindítás" }
+                              Button("Lezárás", role: .destructive) { note = "Lezárás" }
+                          }))) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Láb és core · 48 perc").nkFont(17, design: .serif).foregroundStyle(.white)
+                    Text("Öt gyakorlat, a guggolás a fő emelés.").nkFont(13).foregroundStyle(.white.opacity(0.6))
+                        .padding(12).frame(maxWidth: .infinity, alignment: .leading).nkInnerCard()
+                    NKCardActions(primary: NKCardAction("Indítás", glyph: "play.fill") { note = "Indítás" },
+                                  quiet: [NKCardAction("Csere") { note = "Csere" },
+                                          NKCardAction("Kihagyom", enabled: false) { note = "Kihagyom" }],
+                                  primaryStyle: .hue(hue))
+                }
+            }
+
+            NKSectionCard("Mezociklusaim", hue: hue, trailing: .chevron, onOpen: { note = "Mezociklusaim" }) {
+                Text("Két korábbi blokk, az utolsó 6 hetes volt.").nkFont(13).foregroundStyle(.white.opacity(0.7))
+            }
+
+            NKSectionCard("Hol tartasz", hue: hue, trailing: .text("2 órája")) {
+                NKCardActions(primary: NKCardAction("Szerkesztés") { note = "Szerkesztés" })
+            }
+
+            NKSectionCard("Az izmaid", hue: hue, state: .loading) { EmptyView() }
+
             NKBare("A hét", hue: hue, trailing: "3-ból 2") {
                 NKStatRow([NKStat(value: "13", target: "16", unit: "sorozat", label: "ezen a héten", hot: true),
                            NKStat(value: "84", unit: "perc", label: "összesen", trend: 1, age: "2 napja"),
@@ -157,6 +197,9 @@ struct KitGallery: View {
             NKAskRow(hue: hue, text: "Kérdezz Boopot az edzéseidről") { note = "Boop" }
         }
         .nkToast($note)
+        // `-previewScroll N` opens the gallery scrolled, as it does the tab pages (review of the lower blocks).
+        .environment(\.nkInitialScrollY, UserDefaults.standard.object(forKey: "previewScroll") == nil
+                     ? nil : CGFloat(UserDefaults.standard.double(forKey: "previewScroll")))
     }
 }
 #endif

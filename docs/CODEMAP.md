@@ -138,7 +138,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### boop
 
-*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-27, in-progress) ·
+*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-28, in-progress) ·
   [docs/features/capacity.md](features/capacity.md) (updated 2026-11-27, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/boop`
@@ -587,7 +587,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### dayclose
 
-*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-27, in-progress) ·
+*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-28, in-progress) ·
   [docs/features/dayclose.md](features/dayclose.md) (updated 2026-11-26, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/dayclose`
@@ -1485,7 +1485,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### wearable
 
-*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-27, in-progress) ·
+*BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-28, in-progress) ·
   [docs/features/capacity.md](features/capacity.md) (updated 2026-11-27, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/wearable`
