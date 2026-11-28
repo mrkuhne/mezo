@@ -17,6 +17,8 @@ related: [boop-ios, goal-engine, train, fuel, companion, _platform-api-backend]
 
 # Évad — the season (Boop B6) — Feature Documentation
 
+> **2026-11-28 — iPhone only, no backend change (`mezo-r36n9.196`).** The Évad page became the Évad room (Most · Hét · Terv · Kísérlet; the Hatás tab is now Kísérlet), the weekly menu + shopping list moved to Étel › Hét, recipes are marked „Menübe jöhet" on the recipe itself (the same `PUT` of the whole allowed-recipe set) and a guided Sunday weekly review was added — see [`boop-ios.md`](boop-ios.md) §2 *Évad room*.
+
 > **2026-11-21 — Évad S4 (`mezo-r36n9.16`): experiments.** `season_experiment`, the pure `ExperimentEvaluator`
 > (baseline = the equally long window before the start; < ceil(0.7 × length) marked days → insufficient; a signal is
 > clear only at |Cliff's δ| ≥ 0.33 with ≥ 5 days a side), seven signals on `SeasonMetricsPort`, `ExperimentService`

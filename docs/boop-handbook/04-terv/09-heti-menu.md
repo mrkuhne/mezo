@@ -10,7 +10,7 @@ osszefoglalo: Vasárnap este Boop összeállítja a jövő heti menüt a kivála
 ---
 
 ## Mit csinál
-Az Évad oldal **Menü** fülén a jövő heti menü látszik: hét napkártya (lapozható), mindegyiken a nap teljes kalóriája,
+Az **Étel szoba Hét fülén** (2026-11-28 óta; régen az Évad Menü füle volt, döntés #133) a jövő heti menü látszik: hét napkártya (lapozható), mindegyiken a nap teljes kalóriája,
 hogy edzésnap, sportnap (például röplabda) vagy pihenőnap, és az étkezések ablakonként (reggeli, ebéd, uzsonna,
 vacsora) a kalóriájukkal.
 - **Jóváhagyom** — a menü élesedik: az Étel szoba napi tervében ezek az ételek jönnek javaslatként, és elkészül a
@@ -18,9 +18,12 @@ vacsora) a kalóriájukkal.
 - **Koppints egy ételre** — Boop felajánl más kiválasztott recepteket, amelyek ugyanabba az ablakba férnek (az adagot az
   ablak kalóriájához igazítja). Amit te választasz, azt később sem cseréli le magától.
 - **Kérek másikat** — egy másik összeállítás ugyanarra a hétre (amíg nincs jóváhagyva).
-- **Kiválasztott receptek** — itt jelölöd ki, melyik receptjeidből állhat össze a menü. Ami ütközik az érzékenységeiddel
-  vagy feldolgozottabb, mint az évad szabálya engedi, az halványan látszik, az okával, és nem jelölhető.
-- Ha **még nincs kiválasztott recepted**, a fül ezt kéri először („Válaszd ki, melyik receptjeidből álljon a menü”).
+- **Menübe jöhet** — hogy mely receptjeidből állhat össze a menü, azt 2026-11-28 óta a recepteknél jelölöd (Étel ›
+  Receptek: minden receptnél egy „Menübe jöhet” kapcsoló, és egy „Menübe jöhet · N” szűrő; döntés #137). A menü lapján
+  egy sor („12 recept a menüben”) a szűrt listára visz. Ami ütközik az érzékenységeiddel vagy feldolgozottabb, mint az
+  évad szabálya engedi, ott a kapcsoló helyett az ok látszik. Évad nélkül a kapcsoló rejtve van; internet nélkül a
+  koppintás azt mondja: „Ehhez internet kell.”
+- Ha **még egy receptet sem jelöltél meg**, a menü ezt kéri először („Válaszd ki, melyik receptjeidből álljon a menü”).
 - Ha **kevés a recept** a héthez, a menü ismétel, és ezt meg is mondja.
 - Ha egy ablakba egyik recepted sem fér bele, ott egy egyszerű alapanyag-javaslat áll (például „kb. 150 g csirkemell
   és 200 g rizs belefér”), soha nem üres sor.
@@ -52,7 +55,7 @@ nélkül (#61–#64).
 ## Beállítások
 - Szabályok → „Vasárnap este kérem a jövő heti menüt” (ki is kapcsolható; ekkor a fülön kézzel kérhetsz menüt).
 - Szabályok → feldolgozottsági szabály (ami feldolgozottabb, nem kerül a menübe).
-- Kiválasztott receptek (a Menü fülről).
+- „Menübe jöhet” jelölés a recepteknél.
 
 ## Adattáblák
 `season_menu_week` (a hét: javaslat vagy jóváhagyva), `season_menu_meal` (az étkezések: ablak, recept, adag, kalória),

@@ -21,6 +21,11 @@ osszefoglalo: A saját receptjeid pontszámmal és címkékkel; új receptet elm
 - **„A könyvtárad” kártya**: keresés, szűrés étkezés szerint, receptenként egy sor — név, címkék (kalória, fehérje,
   idő), külön sorban a sárga érzékenység-jelzés, jobbra a recept saját pontszáma gyűrűben.
 
+- **„Menübe jöhet”** (2026-11-28 óta, döntés #137): minden receptsoron és a receptlapon egy kapcsoló, amivel
+  jelzed, hogy a recept szerepelhet a heti menüben; a könyvtár fölött egy **„Menübe jöhet · N”** szűrő csak ezeket
+  mutatja. Évad nélkül a kapcsoló nem látszik; ha a recept nem fér az évad szabályaiba, a kapcsoló helyett az ok áll;
+  internet nélkül a koppintás ezt mondja: „Ehhez internet kell.” Két gyors koppintás is mindkettőt megtartja.
+
 **A receptlap:** címkék (étkezés, idő, adag, feldolgozottság), négy makró-csempe egy adagra, „Megeszem 1 adagot”;
 „Amire figyelsz” soronként a figyelt allergénekkel; hozzávalók, számozott lépések, és hogy eddig mikor etted.
 

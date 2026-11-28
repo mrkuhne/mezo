@@ -10,7 +10,7 @@ osszefoglalo: A jóváhagyott heti menüből Boop összeadja, mit kell megvenned
 ---
 
 ## Mit csinál
-Az Évad oldal **Lista** fülén a jóváhagyott heti menü bevásárlólistája látszik.
+Az **Étel szoba Hét fülén** (2026-11-28 óta; régen az Évad Lista füle volt, döntés #133) a jóváhagyott heti menü bevásárlólistája látszik.
 - **Polcok szerint:** Zöldség, gyümölcs · Hús, hal · Tejtermék · Kamra · Egyéb.
 - **Minden tételnél** a mennyiség (például „1,4 kg”, „600 g”) és alatta, melyik ételhez kell („Csirkés rizstál ×3”).
 - **Pipálás:** koppintásra kipipálod, ami a kosárba került; a pipa a szerveren marad (újratelepítés után is megvan). Ha
@@ -36,7 +36,7 @@ A „csak ezek a receptek” étrend gyakorlati párja: ha tudod, mit eszel, tud
 Eat mintáját követik: nem kerülnek fel maguktól, mert otthon általában megvannak.
 
 ## Beállítások
-Szokásos tételek szerkesztése a Lista fülön.
+Szokásos tételek szerkesztése az Étel Hét fülének listaoldalán.
 
 ## Adattáblák
 `shopping_list` (hetente egy), `shopping_item` (a tételek: mennyiség, polc, mihez kell, kipipálva, változott),
