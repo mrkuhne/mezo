@@ -11,10 +11,11 @@ osszefoglalo: Néhány kérdés után Boop összerak egy több hetes edzés-mezo
 
 ## Mit csinál
 
-**A Mezociklus fül (B5, 2026-11-17 — ez már él; a fül neve 2026-11-26 óta „Mezociklus”, részletek: [Mezociklusaim](20-mezociklusaim.md)):**
+**A Mezociklus fül (B5, 2026-11-17 — ez már él; a fül neve 2026-11-26 óta „Mezociklus”, 2026-11-28 óta új kinézettel —
+a fül felépítése: [Mezociklusaim](20-mezociklusaim.md)):**
 
-- **A mezociklus terhelése:** a mezociklus hetei egy sorban (idő balra-jobbra, magasság = mennyit kér a hét), alatta a hét
-  összes sorozata. Rákoppintva megnyílik **A mezociklus terhelése** oldal, és ott az áll, amit tudni akarsz:
+- **A mezociklus terhelése:** a hetek íve a fő kártyán áll (idő balra-jobbra, magasság = mennyit kér a hét); az
+  **Izmok ezen a héten** kártya mutatja a hét öt legtöbbet dolgozó izmát és a hét összes sorozatát. Rákoppintva megnyílik **A mezociklus terhelése** oldal, és ott az áll, amit tudni akarsz:
   - egy mondat arról, hány izomcsoportot edzel ezen a héten, hányban van még hova nőni, hány érte el a felső
     értékét, és mennyivel több vagy kevesebb ez a múlt hétnél;
   - a hét **összes sorozata egy nagy számként**, mellette a **test**, amin minden izom annyira van kitöltve,

@@ -33,6 +33,16 @@ struct PreviewTransport: ClientTransport {
         if UserDefaults.standard.bool(forKey: "previewOffline"), Self.ritmusOps.contains(operationID) {
             throw URLError(.notConnectedToInternet)
         }
+        // `-previewEdzesState nincs|hiba|offline` (mezo-r36n9.197.2): the Edzés room with no running block, a failed load,
+        // no net — the Mezociklus tab's hero states.
+        switch UserDefaults.standard.string(forKey: "previewEdzesState") {
+        case "nincs" where operationID == "listMesocycles":
+            var h = HTTPFields(); h[.contentType] = "application/json"
+            return (HTTPResponse(status: .ok, headerFields: h), HTTPBody("[]"))
+        case "hiba" where Self.trainOps.contains(operationID): return (HTTPResponse(status: .internalServerError), nil)
+        case "offline" where Self.trainOps.contains(operationID): throw URLError(.notConnectedToInternet)
+        default: break
+        }
         // `previewFoodOffline` (set it at runtime with `defaults write` to cut the net while the app runs): drafting and
         // saving a meal find no net, so the capture stays on the phone.
         if UserDefaults.standard.bool(forKey: "previewFoodOffline"), ["draftMealFromAi", "createMeal", "lookupPantryItem"].contains(operationID) {

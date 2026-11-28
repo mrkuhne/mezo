@@ -77,9 +77,10 @@ public struct NKHighlight: View {
                 NKFlowRow(spacing: 10, rowSpacing: 10) {
                     ForEach(strong) { a in
                         Button(action: a.action) {
-                            Text(a.title).nkFont(15, .semibold)
+                            Text(a.title).nkFont(15, .semibold).multilineTextAlignment(.center)
+                                .fixedSize(horizontal: false, vertical: true)
                                 .foregroundStyle(a.weight == .primary ? NK.ground : .white)
-                                .padding(.horizontal, 20).frame(height: 44)
+                                .padding(.horizontal, 20).padding(.vertical, 4).frame(minHeight: 44)
                                 .background {
                                     if a.weight == .primary { Capsule().fill(.white.opacity(0.95)) }
                                     else { Capsule().stroke(.white.opacity(0.45)) }
@@ -305,7 +306,7 @@ public struct NKFlowRow: Layout {
         let maxW = proposal.width ?? 320
         var x: CGFloat = 0, y: CGFloat = 0, rowH: CGFloat = 0
         for v in subviews {
-            let s = v.sizeThatFits(.unspecified)
+            let s = Self.size(v, maxWidth: maxW)
             if x > 0 && x + s.width > maxW { x = 0; y += rowH + rowSpacing; rowH = 0 }
             x += s.width + spacing; rowH = max(rowH, s.height)
         }
@@ -314,11 +315,17 @@ public struct NKFlowRow: Layout {
     public func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
         var x = bounds.minX, y = bounds.minY, rowH: CGFloat = 0
         for v in subviews {
-            let s = v.sizeThatFits(.unspecified)
+            let s = Self.size(v, maxWidth: bounds.width)
             if x > bounds.minX && x + s.width > bounds.maxX { x = bounds.minX; y += rowH + rowSpacing; rowH = 0 }
             v.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(s))
             x += s.width + spacing; rowH = max(rowH, s.height)
         }
+    }
+    /// An item's own width — but never wider than the row: one too wide for it gets the row's width and wraps inside
+    /// (a capsule at the largest text sizes, mezo-r36n9.197.2), instead of running past the card's edge.
+    private static func size(_ v: LayoutSubview, maxWidth: CGFloat) -> CGSize {
+        let s = v.sizeThatFits(.unspecified)
+        return s.width > maxWidth ? v.sizeThatFits(ProposedViewSize(width: maxWidth, height: nil)) : s
     }
 }
 

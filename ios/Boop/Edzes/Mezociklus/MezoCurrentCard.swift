@@ -2,103 +2,148 @@ import SwiftUI
 import BoopCore
 import BoopDesign
 
-/// The running mezociklus at the top of the Mezociklus tab: where he is, and what he can do with it
-/// (mezo-r36n9.177, spike `MezoCurrentCardSpike`). The builder zooms out of the Szerkesztés pill.
-struct MezoCurrentCard: View {
-    let title: String
-    let week: Int
-    let weeks: Int
-    let split: String
-    let hue: Hue
-    let zoom: Namespace.ID
-    /// Set while the server cannot be reached: the buttons that write say why they do nothing.
-    var offlineReason: String?
-    let onEdit: () -> Void
-    let onRestart: () -> Void
-    let onClose: () -> Void
-    let onSaveTemplate: () -> Void
+/// What the Mezociklus hero shows (Edzés redesign, spec 2026-11-27 §5.2 and §6.1, mezo-r36n9.197.2). A block — fresh
+/// or cached — always wins; without one, the hero waits calmly until the first answer decided, so a cold start never
+/// flashes „Nincs futó mezociklusod" before the block arrives.
+enum MezoHeroState: Equatable {
+    case loading
+    case running(BlockPlan)
+    case none(planned: MezoCard?)
+    case failed(String)
 
-    var body: some View {
-        NKBare("A MEZOCIKLUSOD", hue: hue, glyph: "cycle-ink") {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(title).nkFont(22, .semibold).foregroundStyle(.white)
-                        Text("\(week). hét \(mezoOf(weeks)) · \(split)")
-                            .nkFont(13).foregroundStyle(.white.opacity(0.65))
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .accessibilityElement(children: .combine)
-                    Menu {
-                        Button { onSaveTemplate() } label: { Label("Mentés a sablonba", systemImage: "square.and.arrow.down") }
-                    } label: {
-                        Image(systemName: "ellipsis").font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
-                            .frame(width: 44, height: 44)
-                            .background(Circle().fill(.white.opacity(0.10)).overlay(Circle().stroke(.white.opacity(0.18))))
-                    }
-                    .accessibilityLabel("Továbbiak")
-                    .accessibilityHint("Mentés a sablonba")
-                }
-                NKLevelBar(level: Double(week) / Double(max(weeks, 1)), hue: hue)
-                    .accessibilityHidden(true)
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 8) { pills }
-                    VStack(spacing: 8) { pills }
-                }
-                if let offlineReason {
-                    Text(offlineReason).nkFont(12.5).foregroundStyle(.white.opacity(0.6))
-                }
-            }
-        }
-    }
-
-    @ViewBuilder private var pills: some View {
-        pill("Szerkesztés", primary: true, action: onEdit)
-            .matchedTransitionSource(id: PlanZoom.builder, in: zoom)
-        pill("Újraindítás", action: onRestart)
-        pill("Lezárás", action: onClose)
-    }
-
-    private func pill(_ title: String, primary: Bool = false, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title).nkFont(14.5, .semibold).lineLimit(1).minimumScaleFactor(0.8)
-                .foregroundStyle(primary ? NK.ground : .white)
-                .padding(.horizontal, 10)
-                .frame(maxWidth: .infinity, minHeight: 44)
-                .background {
-                    if primary { Capsule().fill(.white) }
-                    else { Capsule().fill(.white.opacity(0.10)).overlay(Capsule().stroke(.white.opacity(0.18))) }
-                }
-                .contentShape(Capsule())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(title)
+    static func resolve(block: BlockPlan?, firstAnswerArrived: Bool, failure: String?, planned: MezoCard?) -> MezoHeroState {
+        if let block { return .running(block) }
+        if let failure { return .failed(failure) }
+        return firstAnswerArrived ? .none(planned: planned) : .loading
     }
 }
 
-/// No running mezociklus, but one is planned: it shows here, and the only move is to look at it first.
-struct MezoPlannedCard: View {
-    let card: MezoCard
+/// **The hero of the Mezociklus tab** — the page's one point: the running mezociklus with its weeks' arc and
+/// Szerkesztés; its rarer actions (Újraindítás, Lezárás, Mentés a sablonba) in the head's „…" menu (#129). Without a
+/// running one it says so, with the planned one (if any) as its body and Új mezociklus as its action.
+struct MezoHero: View {
+    let state: MezoHeroState
     let hue: Hue
-    let onOpen: () -> Void
+    /// The namespace the builder zooms out of (from the Szerkesztés capsule).
+    let zoom: Namespace.ID
+    /// Set while the server cannot be reached: the actions that write say why they do nothing.
+    var offlineReason: String?
+    /// Whether a new mezociklus can be started from here.
+    var canCreate = true
+    var onEdit: () -> Void = {}
+    var onRestart: () -> Void = {}
+    var onClose: () -> Void = {}
+    var onSaveTemplate: () -> Void = {}
+    var onNew: () -> Void = {}
+    var onOpenPlanned: (MezoCard) -> Void = { _ in }
 
     var body: some View {
-        NKBare("KÖVETKEZIK", hue: hue, glyph: "cycle-ink") {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(alignment: .center, spacing: 14) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(card.title).nkFont(22, .semibold).foregroundStyle(.white)
-                        Text([card.dateText, mezoLine(card)].filter { !$0.isEmpty }.joined(separator: " · "))
-                            .nkFont(13).foregroundStyle(.white.opacity(0.65))
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    MezoMiniCurve(loads: card.loads).frame(width: 64)
+        VStack(alignment: .leading, spacing: 16) {
+            head
+            switch state {
+            case .loading:
+                HStack(spacing: 10) {
+                    ProgressView().tint(.white.opacity(0.6)).controlSize(.small)
+                    Text("Töltöm a mezociklusodat…").nkFont(13.5).foregroundStyle(.white.opacity(0.6))
                 }
+                .frame(maxWidth: .infinity, minHeight: 120, alignment: .leading)
                 .accessibilityElement(children: .combine)
-                MezoButton(title: "Megnézem", action: onOpen)
-                    .accessibilityHint("Előbb megnézed, utána döntesz az indításról")
+            case .running(let b):
+                running(b)
+            case .none(let planned):
+                none(planned)
+            case .failed(let line):
+                NKNoFreshData(line)
             }
         }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .nkGlass(28)
+    }
+
+    private var head: some View {
+        HStack(spacing: 8) {
+            Capsule().fill(hue.glow).frame(width: 3, height: 13)
+            NKGlyph("cycle-ink", hue.glow.opacity(0.9), size: 14)
+            // The hero's own label wraps instead of being cut (the „…" button shares its row).
+            Text("A MEZOCIKLUSOD").nkFont(12, .medium, design: .monospaced).tracking(1.4)
+                .foregroundStyle(.white.opacity(0.6))
+                .dynamicTypeSize(...DynamicTypeSize.accessibility2)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 8)
+            if case .running = state {
+                NKMoreMenu {
+                    Button { onRestart() } label: { Label("Újraindítás", systemImage: "arrow.counterclockwise") }
+                    Button(role: .destructive) { onClose() } label: { Label("Lezárás", systemImage: "flag.checkered") }
+                    Button { onSaveTemplate() } label: { Label("Mentés a sablonba", systemImage: "square.and.arrow.down") }
+                }
+                .accessibilityHint("Újraindítás, lezárás, mentés a sablonba")
+            }
+        }
+        .frame(minHeight: 44)
+    }
+
+    @ViewBuilder private func running(_ b: BlockPlan) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            title(b.title)
+            Text("\(b.currentWeek). hét \(mezoOf(b.weeks)) · \(b.split)")
+                .nkFont(13.5).foregroundStyle(.white.opacity(0.65))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .accessibilityElement(children: .combine)
+        EdzesWeeksArc(weeks: edzesTimeline(b), hue: hue)
+        NKCardActions(primary: NKCardAction("Szerkesztés", action: onEdit))
+            .matchedTransitionSource(id: PlanZoom.builder, in: zoom)
+        if let offlineReason {
+            Text(offlineReason).nkFont(12.5).foregroundStyle(.white.opacity(0.6))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    @ViewBuilder private func none(_ planned: MezoCard?) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            title("Nincs futó mezociklusod")
+            if planned == nil {
+                Text("Amint elindítasz egyet, itt áll, hányadik hetén jársz, mit hoz a hét, és melyik izomcsoport mennyit kap.")
+                    .nkFont(13.5).foregroundStyle(.white.opacity(0.65)).fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        if let planned {
+            // The planned one is the hero's body: look at it first, then decide about starting it.
+            HStack(alignment: .center, spacing: 14) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("KÖVETKEZIK").nkFont(10.5, .semibold, design: .monospaced).tracking(1.4).foregroundStyle(hue.glow)
+                    Text(planned.title).nkFont(19, .semibold).foregroundStyle(.white)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text([planned.dateText, mezoLine(planned)].filter { !$0.isEmpty }.joined(separator: " · "))
+                        .nkFont(13).foregroundStyle(.white.opacity(0.65)).fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                MezoMiniCurve(loads: planned.loads).frame(width: 64).accessibilityHidden(true)
+            }
+            .padding(14)
+            .nkInnerCard()
+            .accessibilityElement(children: .combine)
+        }
+        if let (primary, quiet) = noneActions(planned) {
+            NKCardActions(primary: primary, quiet: quiet)
+        }
+    }
+
+    /// Új mezociklus leads; the planned one's Megnézem sits beside it (before starting, he looks at it first).
+    private func noneActions(_ planned: MezoCard?) -> (NKCardAction, [NKCardAction])? {
+        let look = planned.map { p in NKCardAction("Megnézem") { onOpenPlanned(p) } }
+        if canCreate { return (NKCardAction("Új mezociklus", action: onNew), look.map { [$0] } ?? []) }
+        return look.map { ($0, []) }
+    }
+
+    /// The block's title: wraps between words, shrinks a little before it would break inside one, and stops growing
+    /// past the first accessibility size (spike glitch „Hypertrop / hy").
+    private func title(_ text: String) -> some View {
+        Text(text).nkFont(24, .semibold).foregroundStyle(.white)
+            .lineLimit(3).minimumScaleFactor(0.8)
+            .dynamicTypeSize(...DynamicTypeSize.accessibility1)
+            .fixedSize(horizontal: false, vertical: true)
     }
 }
 

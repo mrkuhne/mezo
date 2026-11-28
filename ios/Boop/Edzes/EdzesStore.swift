@@ -49,6 +49,9 @@ final class EdzesStore {
     private(set) var block: Cached<BlockPlan>?
     private(set) var blockProblem: TrainFetchError?
     private(set) var blockLoaded = false
+    /// The first block answer (or failure) has come back: until then the Mezociklus hero shows its calm loading state,
+    /// never „Nincs futó mezociklusod" (mezo-r36n9.197.2).
+    private(set) var blockAnswered = false
     /// Another day of this week's plan he chose to do today („Másik napot csinálok ma", mezo-r36n9.163); nil is
     /// today's own. Every read of „today" asks the server for that day until he goes back.
     private(set) var pickedDay: UUID? {
@@ -510,7 +513,7 @@ final class EdzesStore {
     /// The running block. Same rule as the day: the server first, the cache only when there is
     /// no network, and the age always said.
     func loadBlock(force: Bool = false) async {
-        guard let client else { blockLoaded = true; return }
+        guard let client else { blockLoaded = true; blockAnswered = true; return }
         guard force || !blockLoaded else { return }
         blockLoaded = true
         let key = "current"
@@ -535,6 +538,7 @@ final class EdzesStore {
                 blockProblem = failure
             }
         }
+        blockAnswered = true
     }
 
     /// What he has ever done, per exercise — the one thing that can say „ez rekordkísérlet" truthfully. Loaded
