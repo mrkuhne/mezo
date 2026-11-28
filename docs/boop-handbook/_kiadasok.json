@@ -1286,5 +1286,20 @@
       "mezo-r36n9.197"
     ],
     "mi_valtozott": "Minden mezociklus-aloldal tetején egy fő kártya áll: a Mezociklusaimon a futó mezociklus a hetek ívével és a testtel; a részletoldalon a hetek íve egy címkével (fut · következik · lezárt · sablon); a zárójelentésen az eredmény gyűrűje a két számmal és Boop egy mondatával; a terhelés oldalon a hét összes szettje, a test és az öt legtöbbet dolgozó izom; egy izom oldalán a hetenkénti oszlopok. Alattuk minden csoport — Következik, Sablonjaim, Lezártak, A hét napjai, Mit kapnak az izmok, Erő, Boop értékelése, A határai — saját kártyán, a sorok egy kártyán belül. Az újraindítás és a lezárás lapján a számok, a kapcsoló és a megjegyzés mező kártyára került. Minden gomb és adat a helyén maradt; a legnagyobb betűméretnél semmi nem vágódik le."
+  },
+  "0979ac45c": {
+    "cim": "Étel Ma: a nagy kör felirata nagy betűméretnél is teljesen olvasható",
+    "datum": "2026-11-28",
+    "verzio": "",
+    "tipus": "Javítás",
+    "hova": [
+      "iPhone app",
+      "Telefonra telepítve"
+    ],
+    "szakasz": "B4 Étel",
+    "jegyek": [
+      "mezo-r36n9.218"
+    ],
+    "mi_valtozott": "A legnagyobb betűméretnél az Étel Ma nagy körének felső felirata eddig levágódott (például „ma nincs k…”). Most ilyenkor a kör kicsit nagyobb, a felirata két sorba törhet, és teljesen kiolvasható. Normál betűméretnél semmi nem változott."
   }
 }
