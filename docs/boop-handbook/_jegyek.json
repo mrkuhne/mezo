@@ -2340,5 +2340,16 @@
     "munkamenet": "edzes-ujratervezes",
     "mit_kapsz": "A legnagyobb betűméretnél a nagy kör felső felirata („ma nincs keret”) eddig levágódott; most a kör nagyobb, a felirat két sorba törhet, és teljesen olvasható.",
     "szulo": "mezo-r36n9"
+  },
+  "mezo-r36n9.219": {
+    "cim": "Receptértékelés: a kártya azonnal jön, a szöveg magától töltődik be",
+    "tipus": "Hiba",
+    "szakasz": "B4 Étel",
+    "terulet": [
+      "Étel"
+    ],
+    "munkamenet": "receptertekeles-gyors",
+    "mit_kapsz": "Egy új recept megnyitásakor az értékelés azonnal látszik, Boop részletes szövege pedig pár perc alatt magától megjelenik, nem kell újra megnyitni.",
+    "szulo": "mezo-r36n9"
   }
 }
