@@ -1,6 +1,11 @@
 package io.mrkuhne.mezo.feature.recipe;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.startsWith;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import io.mrkuhne.mezo.api.dto.MealBreakdown;
 import io.mrkuhne.mezo.api.dto.PantryItemRequest;
@@ -14,8 +19,10 @@ import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryCatalogRepository;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
 import io.mrkuhne.mezo.feature.recipe.repository.RecipeRepository;
+import io.mrkuhne.mezo.feature.recipe.service.RecipeBreakdownLlm;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -23,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 /**
  * Template-breakdown endpoint e2e (mezo-bw3y) against the deterministic {@code FakeCompanionLlm}:
@@ -30,6 +38,9 @@ import org.springframework.test.context.ActiveProfiles;
  * answer, driving canned prose through the real prompt → parse → merge → persist path. A recipe
  * WITHOUT the sentinel gets the prompt echo (unparseable) → the deterministic-envelope degrade,
  * which doubles as the LLM-failure path.
+ *
+ * <p>Since mezo-r36n9.219 the prose is written in the BACKGROUND: a cache miss answers at once with
+ * the deterministic envelope + {@code prosePending=true}; {@link #awaitProse} polls like the phone does.
  */
 @ActiveProfiles("companion-fake")
 class RecipeBreakdownApiIT extends ApiIntegrationTest {
@@ -45,6 +56,10 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
 
     @Autowired
     private RecipeRepository recipeRepository;
+
+    /** Spied to count model calls per recipe (the user message starts with "RECEPT: <name>"). */
+    @MockitoSpyBean
+    private RecipeBreakdownLlm breakdownLlm;
 
     @Autowired
     private PantryItemRepository pantryItemRepository;
@@ -134,6 +149,19 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
             RecipeBreakdownResponse.class);
     }
 
+    /** Re-fetches like the phone until the background prose has landed (summary present). */
+    private RecipeBreakdownResponse awaitProse(HttpHeaders auth, UUID id) {
+        return await().atMost(Duration.ofSeconds(15)).pollInterval(Duration.ofMillis(50))
+            .until(() -> getBreakdown(auth, id),
+                r -> r.getBreakdown() != null && r.getBreakdown().getSummary() != null);
+    }
+
+    /** Re-fetches until the background work for {@code id} is over (no longer pending). */
+    private RecipeBreakdownResponse awaitSettled(HttpHeaders auth, UUID id) {
+        return await().atMost(Duration.ofSeconds(15)).pollInterval(Duration.ofMillis(50))
+            .until(() -> getBreakdown(auth, id), r -> !Boolean.TRUE.equals(r.getProsePending()));
+    }
+
     /** The grams of fiber the fit actually scored, read out of the micro dimension's "Rost" row
      *  ({@code "{fiber} g"}). */
     private static double fiberGramsOf(MealBreakdown breakdown) {
@@ -169,10 +197,18 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
         UUID food = createFood(auth, "Túró", "110");
         UUID recipe = createRecipe(auth, SENTINEL_NAME, food);
 
-        RecipeBreakdownResponse res = getBreakdown(auth, recipe);
+        // the first read answers at once: full deterministic envelope, prose still being written
+        RecipeBreakdownResponse first = getBreakdown(auth, recipe);
+        assertThat(first.getBreakdown()).isNotNull();
+        assertThat(first.getBreakdown().getValue()).isNotNull();
+        assertThat(first.getBreakdown().getDimensions()).hasSize(8);
+        assertThat(first.getProsePending()).isTrue();
 
-        assertThat(res.getBreakdown()).isNotNull();
+        RecipeBreakdownResponse res = awaitProse(auth, recipe);
+
+        assertThat(res.getProsePending()).isFalse();
         assertThat(res.getBreakdown().getSummary()).isEqualTo("Fake sablon-olvasat.");
+        assertThat(res.getBreakdown().getValue()).isEqualByComparingTo(first.getBreakdown().getValue());
         assertThat(res.getFitsFor()).containsExactly("Post-workout · este", "Fehérje-fókusz");
         // 8 template dimensions (mezo-7797): the meal surface minus context, plus portion last;
         // weights renormalized over the live ones (there is NO context row in a template envelope)
@@ -248,7 +284,7 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
         HttpHeaders auth = ownerAuthHeaders();
         UUID food = createFood(auth, "Túró", "110");
         UUID recipe = createRecipe(auth, SENTINEL_NAME, food);
-        getBreakdown(auth, recipe); // generates + persists
+        awaitProse(auth, recipe); // generates + persists
 
         // Rename WITHOUT the sentinel via the repository (a PUT would null the cache): a fresh LLM
         // pass would now echo → degrade prose-less, so a returned summary proves the cache hit.
@@ -267,7 +303,7 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
         HttpHeaders auth = ownerAuthHeaders();
         UUID food = createFood(auth, "Túró", "110");
         UUID recipe = createRecipe(auth, SENTINEL_NAME, food);
-        RecipeBreakdownResponse first = getBreakdown(auth, recipe);
+        RecipeBreakdownResponse first = awaitProse(auth, recipe);
 
         // drop the sentinel (fresh LLM pass would degrade) AND drift the pantry numbers.
         // NOTE: macros are frozen line SNAPSHOTS (a pantry kcal edit does NOT move the fit) — the
@@ -284,7 +320,7 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
         upd.setNova(4);
         putForBody("/api/pantry/" + food, upd, auth, HttpStatus.OK, PantryItemResponse.class);
 
-        RecipeBreakdownResponse res = getBreakdown(auth, recipe);
+        RecipeBreakdownResponse res = awaitSettled(auth, recipe);
 
         // numbers no longer match the cache → regenerated; prose degraded (echo unparseable)
         assertThat(res.getBreakdown()).isNotNull();
@@ -313,7 +349,7 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
         entity.setFitsFor(List.of("régi"));
         recipeRepository.saveAndFlush(entity);
 
-        RecipeBreakdownResponse res = getBreakdown(auth, recipe);
+        RecipeBreakdownResponse res = awaitProse(auth, recipe);
 
         // size mismatch (4 != 8) forces a regenerate -> the fresh 8-dimension template envelope
         assertThat(res.getBreakdown().getDimensions()).extracting(d -> d.getId())
@@ -330,7 +366,7 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
         HttpHeaders auth = ownerAuthHeaders();
         UUID food = createFood(auth, "Túró", "110");
         UUID recipe = createRecipe(auth, SENTINEL_NAME, food);
-        getBreakdown(auth, recipe); // persists the current-version prose
+        awaitProse(auth, recipe); // persists the current-version prose
 
         // Same numbers, but written by the previous prompt generation (no proseVersion, no tagline):
         // matches() must treat it as stale even though every number still agrees.
@@ -340,7 +376,7 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
             cur.dimensions(), cur.improve(), cur.tools(), cur.formulaVersion()));
         recipeRepository.saveAndFlush(entity);
 
-        RecipeBreakdownResponse res = getBreakdown(auth, recipe);
+        RecipeBreakdownResponse res = awaitProse(auth, recipe);
 
         assertThat(res.getBreakdown().getSummary()).isEqualTo("Fake sablon-olvasat.");
         assertThat(res.getBreakdown().getTagline()).isEqualTo("Fehérjében erős, a só húzza le.");
@@ -355,8 +391,10 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
         UUID food = createFoodWithFacts(auth, "Zabpehely");
         UUID recipe = createRecipe(auth, SENTINEL_NAME, food);
 
-        for (int read = 0; read < 2; read++) { // first read enriches + persists, second serves the cache
-            var micro = getBreakdown(auth, recipe).getBreakdown().getDimensions().stream()
+        // read 0: prose-less + pending (contributors already there); read 1: after the prose landed; read 2: cache
+        for (int read = 0; read < 3; read++) {
+            var body = read == 0 ? getBreakdown(auth, recipe) : awaitProse(auth, recipe);
+            var micro = body.getBreakdown().getDimensions().stream()
                 .filter(d -> "micro".equals(d.getId())).findFirst().orElseThrow();
             assertThat(micro.getContributors()).singleElement().satisfies(c -> {
                 assertThat(c.getName()).isEqualTo("Zabpehely");
@@ -378,7 +416,7 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
         HttpHeaders auth = ownerAuthHeaders();
         UUID food = createFood(auth, "Túró", "110");
         UUID recipe = createRecipe(auth, SENTINEL_NAME, food);
-        getBreakdown(auth, recipe); // generates + persists
+        awaitProse(auth, recipe); // generates + persists
         assertThat(recipeRepository.findById(recipe).orElseThrow().getBreakdown()).isNotNull();
 
         putForBody("/api/recipe/" + recipe, recipeReq(SENTINEL_NAME, food), auth,
@@ -397,7 +435,7 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
         RecipeResponse created =
             postForBody("/api/recipe", req, auth, HttpStatus.CREATED, RecipeResponse.class);
 
-        RecipeBreakdownResponse first = getBreakdown(auth, created.getId());
+        RecipeBreakdownResponse first = awaitProse(auth, created.getId());
         assertThat(recipeRepository.findById(created.getId()).orElseThrow().getBreakdown()).isNotNull();
 
         // ONLY the role changes — every macro/fact input stays byte-identical. Two independent
@@ -410,7 +448,7 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
 
         assertThat(recipeRepository.findById(created.getId()).orElseThrow().getBreakdown()).isNull();
 
-        RecipeBreakdownResponse second = getBreakdown(auth, created.getId());
+        RecipeBreakdownResponse second = awaitProse(auth, created.getId());
         assertThat(second.getBreakdown().getValue())
             .isGreaterThan(first.getBreakdown().getValue());
     }
@@ -431,6 +469,43 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
 
         assertThat(res.getBreakdown()).isNull();
         assertThat(res.getFitsFor()).isEmpty();
+        assertThat(res.getProsePending()).isFalse(); // nothing to explain, nothing to wait for
+        assertThat(recipeRepository.findById(recipe).orElseThrow().getBreakdown()).isNull();
+    }
+
+    @Test
+    void testGetBreakdown_shouldCallTheModelOnce_whenThePhonePollsWhileTheProseIsWritten() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID food = createFood(auth, "Túró", "110");
+        String name = "Polltál [fake-recipe-fit:" + CANNED_PROSE + "]";
+        UUID recipe = createRecipe(auth, name, food);
+
+        for (int i = 0; i < 5; i++) { // a burst of re-fetches, like the sheet's poll
+            getBreakdown(auth, recipe);
+        }
+        awaitProse(auth, recipe);
+        getBreakdown(auth, recipe); // a later open: served from the cache
+
+        verify(breakdownLlm, times(1)).complete(anyString(), startsWith("RECEPT: " + name));
+    }
+
+    @Test
+    void testGetBreakdown_shouldStopPendingAndNotRetry_whenTheProseFails() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID food = createFood(auth, "Túró", "110");
+        UUID recipe = createRecipe(auth, "Hibatál", food); // no sentinel: the echo is unparseable
+
+        assertThat(getBreakdown(auth, recipe).getProsePending()).isTrue();
+        RecipeBreakdownResponse settled = awaitSettled(auth, recipe);
+
+        // the failure answers prose-less and not-pending (the phone stops polling) ...
+        assertThat(settled.getProsePending()).isFalse();
+        assertThat(settled.getBreakdown().getSummary()).isNull();
+        assertThat(settled.getBreakdown().getValue()).isNotNull();
+        // ... and further reads inside the back-off do not ask the model again
+        getBreakdown(auth, recipe);
+        getBreakdown(auth, recipe);
+        verify(breakdownLlm, times(1)).complete(anyString(), startsWith("RECEPT: Hibatál"));
         assertThat(recipeRepository.findById(recipe).orElseThrow().getBreakdown()).isNull();
     }
 

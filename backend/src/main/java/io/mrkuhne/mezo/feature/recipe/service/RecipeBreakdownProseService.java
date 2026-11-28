@@ -13,6 +13,7 @@ import io.mrkuhne.mezo.techcore.message.UserMessages;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
@@ -110,27 +111,53 @@ public class RecipeBreakdownProseService {
     private final LlmCallContextHolder llmCallContextHolder;
     private final UserMessages messages;
 
+    /** The two prompt halves of one prose call, built while the recipe (and its lazy lines) is
+     *  still attached — the slow model call itself then runs outside any transaction (mezo-r36n9.219). */
+    public record Prompt(String system, String user) {
+    }
+
+    /** True when there is a model to ask (the companion is on) — otherwise no prose will ever come. */
+    public boolean available() {
+        return llm.getIfAvailable() != null;
+    }
+
     /** Prose-merged envelope + fitsFor, or null when enrichment is unavailable/failed (caller degrades). */
     public Enriched enrich(RecipeEntity recipe, MealBreakdownJson det) {
-        RecipeBreakdownLlm port = llm.getIfAvailable();
-        if (port == null) {
+        Prompt prompt = prepare(recipe, det);
+        return prompt == null ? null : complete(recipe.getId(), prompt, det);
+    }
+
+    /** The prompt for {@code recipe}, or null when the companion is off (no model to ask). Reads the
+     *  lazy {@code recipe.lines}, so call it inside a transaction; resolves the account language on
+     *  the calling thread (bind the actor first on a pool thread). */
+    public Prompt prepare(RecipeEntity recipe, MealBreakdownJson det) {
+        if (llm.getIfAvailable() == null) {
             return null; // companion off — deterministic envelope is served un-enriched
         }
+        String systemPrompt = "hu".equals(messages.language()) ? SYSTEM_PROMPT : SYSTEM_PROMPT_NEUTRAL;
+        return new Prompt(systemPrompt, userMessage(recipe, det));
+    }
+
+    /** The model call + parse + merge — slow (prose v2 measured ~110 s), touches no entity, so it
+     *  runs with no transaction open. Null on any failure (the caller degrades). */
+    public Enriched complete(UUID recipeId, Prompt prompt, MealBreakdownJson det) {
+        RecipeBreakdownLlm port = llm.getIfAvailable();
+        if (port == null) {
+            return null;
+        }
         try {
-            String systemPrompt = "hu".equals(messages.language()) ? SYSTEM_PROMPT : SYSTEM_PROMPT_NEUTRAL;
             String answer = llmCallContextHolder.runWith(
-                new LlmCallContext("recipe_breakdown", "prose", "recipe", recipe.getId()),
-                () -> port.complete(systemPrompt, userMessage(recipe, det)));
+                new LlmCallContext("recipe_breakdown", "prose", "recipe", recipeId),
+                () -> port.complete(prompt.system(), prompt.user()));
             String json = answer.substring(answer.indexOf('{'), answer.lastIndexOf('}') + 1);
             ExtractedProse prose = objectMapper.readValue(json, ExtractedProse.class);
             if (prose.summary() == null || prose.summary().isBlank()) {
-                log.warn("Recipe breakdown prose: blank summary for {} — degrading", recipe.getId());
+                log.warn("Recipe breakdown prose: blank summary for {} — degrading", recipeId);
                 return null;
             }
             return new Enriched(merge(det, prose), fitsFor(prose));
         } catch (Exception e) {
-            log.warn("Recipe breakdown prose failed for {} — serving deterministic envelope",
-                recipe.getId(), e);
+            log.warn("Recipe breakdown prose failed for {} — serving deterministic envelope", recipeId, e);
             return null;
         }
     }

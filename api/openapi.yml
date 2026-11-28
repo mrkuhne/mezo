@@ -28025,6 +28025,14 @@ components:
           type: array
           items:
             type: string
+        prosePending:
+          type: boolean
+          description: >-
+            True while Boop is still writing the AI explanation (summary,
+            tagline, per-dimension details, tips) in the background — the
+            deterministic envelope is already complete; re-fetch in a few
+            seconds. False/absent when the prose is present or will not come (AI
+            off, a recent failure).
     RecipeIngredientRequest:
       type: object
       required:

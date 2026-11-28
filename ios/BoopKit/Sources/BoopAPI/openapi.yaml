@@ -53,6 +53,15 @@ tags:
       record); in manual mode the user decides line by line (accept / keep).
       Nothing is force-decided: a pending proposal expires at the next week
       boundary.
+  - name: Sport
+    description: >-
+      Boop Sport S2 (mezo-r36n9.202, spec 2026-11-27 §5.7) — read models of the
+      phone's Sport area: the week's two lanes (gym and sport are two layers),
+      tonight's moment, load on one scale (session-RPE × minutes), body heat,
+      the shoulder line and the rest gap between the layers with Boop's hints.
+      Read-only. Weeks are ISO weeks (Monday–Sunday) in the owner's zone; `week`
+      takes any date of the week (default: this week). No invented numbers — an
+      unknown effort, duration or sport kind is null or no heat.
   - name: Goal
     description: Goal domain — goal-rooted timeline (trajectory + quality guards + window)
   - name: BiometricProfile
@@ -4464,6 +4473,131 @@ paths:
             The proposal is no longer pending, or its week has passed
             (TRAIN_WEEK_PROPOSAL_CLOSED); a retry that only repeats the stored
             decisions (no rest flag) returns 200 instead
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/train/sport/overview:
+    get:
+      tags:
+        - Sport
+      operationId: getSportOverview
+      summary: >-
+        The week's gym + sport lanes, totals, the sport week count and tonight's
+        moment
+      parameters:
+        - $ref: '#/components/parameters/SportWeekParam'
+      responses:
+        '200':
+          description: The week
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SportOverviewResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/train/sport/load:
+    get:
+      tags:
+        - Sport
+      operationId: getSportLoad
+      summary: >-
+        Weekly sport and gym load on one scale (session-RPE × minutes), oldest
+        week first
+      parameters:
+        - $ref: '#/components/parameters/SportWeeksParam'
+      responses:
+        '200':
+          description: 'One row per week, ending with this week'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SportLoadResponse'
+        '400':
+          description: weeks outside 1..26 (VALIDATION_*)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/train/sport/body:
+    get:
+      tags:
+        - Sport
+      operationId: getSportBody
+      summary: >-
+        Per-muscle heat of the week for gym, sport and the two together (one
+        scale, 0..1)
+      parameters:
+        - $ref: '#/components/parameters/SportWeekParam'
+      responses:
+        '200':
+          description: The week's muscles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SportBodyResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/train/sport/shoulder:
+    get:
+      tags:
+        - Sport
+      operationId: getSportShoulder
+      summary: 'Weekly average shoulder strain after sport, oldest week first'
+      parameters:
+        - $ref: '#/components/parameters/SportWeeksParam'
+      responses:
+        '200':
+          description: 'One row per week, ending with this week'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SportShoulderResponse'
+        '400':
+          description: weeks outside 1..26 (VALIDATION_*)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/train/sport/gaps:
+    get:
+      tags:
+        - Sport
+      operationId: getSportGaps
+      summary: >-
+        Per day of the week the gym and sport blocks, the rest gap between them,
+        and Boop's hints
+      parameters:
+        - $ref: '#/components/parameters/SportWeekParam'
+      responses:
+        '200':
+          description: The week's days and hints
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SportGapsResponse'
+        '401':
+          description: Missing/invalid token
           content:
             application/json:
               schema:
@@ -22520,6 +22654,35 @@ components:
             Kímélő mód (Kihagyás S2, mezo-q4xt2.2): today's session is lightened
             — a comeback ramp session after a recovery period, or a released
             protected day. Null otherwise.
+        sportToday:
+          type: array
+          description: >-
+            Boop Sport S1 (mezo-r36n9.201): today's sport occurrences (weekly
+            slots + one-off events − skips; a logged session is done) in clock
+            order — the second layer next to the gym day, so a sport-only day is
+            not a rest day. Always present (possibly empty), independent of
+            templateSessionId.
+          items:
+            $ref: '#/components/schemas/TodaySport'
+    TodaySport:
+      type: object
+      required:
+        - sport
+        - time
+        - durationMin
+        - done
+      properties:
+        sport:
+          type: string
+          description: 'One of the eleven sport kinds (volleyball, running, …)'
+        time:
+          type: string
+          description: 'HH:mm — the log''s clock time when logged, else the slot / event''s'
+        durationMin:
+          type: integer
+        done:
+          type: boolean
+          description: A sport session was logged for this occurrence today
     TodayComeback:
       type: object
       required:
@@ -23709,7 +23872,7 @@ components:
         sport:
           type: string
           pattern: >-
-            ^(volleyball|cross|trx|bike|swim|football|basketball|tennis|hike|other)$
+            ^(volleyball|cross|trx|bike|swim|football|basketball|tennis|hike|running|other)$
           description: >-
             Modality discriminator; defaults to volleyball server-side when
             omitted.
@@ -23786,7 +23949,8 @@ components:
           maxLength: 40
         sport:
           type: string
-          pattern: ^(volleyball|cross|trx)$
+          pattern: >-
+            ^(volleyball|cross|trx|bike|swim|football|basketball|tennis|hike|running|other)$
           description: >-
             Sport discriminator; defaults to volleyball server-side when
             omitted.
@@ -23821,7 +23985,9 @@ components:
           type: string
         sport:
           type: string
-          description: volleyball | cross | trx
+          description: >-
+            One of the eleven sport kinds (the log's ten + running,
+            mezo-r36n9.201)
     SportEventCreateRequest:
       type: object
       description: A dated one-off sport event outside the weekly rhythm
@@ -23846,7 +24012,8 @@ components:
           description: Defaults to training server-side when omitted.
         sport:
           type: string
-          pattern: ^(volleyball|cross|trx)$
+          pattern: >-
+            ^(volleyball|cross|trx|bike|swim|football|basketball|tennis|hike|running|other)$
           description: >-
             Sport discriminator; defaults to volleyball server-side when
             omitted.
@@ -23884,7 +24051,9 @@ components:
             - match
         sport:
           type: string
-          description: volleyball | cross | trx
+          description: >-
+            One of the eleven sport kinds (the log's ten + running,
+            mezo-r36n9.201)
         location:
           type: string
         intensityLabel:
@@ -23959,7 +24128,7 @@ components:
           type: string
           description: >-
             Modality discriminator
-            (volleyball|cross|trx|bike|swim|football|basketball|tennis|hike|other).
+            (volleyball|cross|trx|bike|swim|football|basketball|tennis|hike|running|other).
         date:
           type: string
           format: date
@@ -24900,6 +25069,490 @@ components:
         keepRest:
           type: boolean
           description: Keep every still-undecided line
+    SportItemState:
+      type: string
+      enum:
+        - PLANNED
+        - DONE
+        - SKIPPED
+        - MISSED
+      description: >-
+        PLANNED = still ahead (today or later); DONE = logged (gym instance
+        finished / sport session logged); SKIPPED = skipped with a reason;
+        MISSED = a past planned occurrence neither done nor skipped
+    SportLaneItem:
+      type: object
+      required:
+        - layer
+        - state
+      properties:
+        layer:
+          type: string
+          enum:
+            - GYM
+            - SPORT
+        sport:
+          type: string
+          nullable: true
+          description: The sport kind (SPORT layer only)
+        label:
+          type: string
+          nullable: true
+          description: The planned gym day's type ("Pull"); null when nothing names it
+        time:
+          type: string
+          nullable: true
+          description: 'HH:mm start'
+        durationMin:
+          type: integer
+          nullable: true
+        state:
+          $ref: '#/components/schemas/SportItemState'
+        load:
+          type: integer
+          nullable: true
+          description: Session-RPE × minutes of the done session; null when unknown
+        skipId:
+          type: string
+          format: uuid
+          nullable: true
+          description: The skip to undo (SKIPPED only)
+    SportWeekDay:
+      type: object
+      required:
+        - date
+        - gym
+        - sport
+      properties:
+        date:
+          type: string
+          format: date
+        gym:
+          type: array
+          items:
+            $ref: '#/components/schemas/SportLaneItem'
+        sport:
+          type: array
+          items:
+            $ref: '#/components/schemas/SportLaneItem'
+    SportWeekTotals:
+      type: object
+      required:
+        - gymMinutes
+        - sportMinutes
+        - movementMinutes
+        - gymSessions
+        - sportSessions
+      description: Done sessions only
+      properties:
+        gymMinutes:
+          type: integer
+        sportMinutes:
+          type: integer
+        movementMinutes:
+          type: integer
+        gymSessions:
+          type: integer
+        sportSessions:
+          type: integer
+    SportWeekCount:
+      type: object
+      required:
+        - done
+        - planned
+      properties:
+        done:
+          type: integer
+          description: Logged sport sessions of the week
+        planned:
+          type: integer
+          description: >-
+            Planned sport occurrences of the week (slots + events, skipped ones
+            included)
+    SportHealthWorkout:
+      type: object
+      required:
+        - activityType
+        - start
+        - minutes
+      description: A workout the Watch / Health recorded
+      properties:
+        activityType:
+          type: string
+        start:
+          type: string
+          format: date-time
+        minutes:
+          type: integer
+        kcal:
+          type: integer
+          nullable: true
+        avgHr:
+          type: integer
+          nullable: true
+    SportLoggedSession:
+      type: object
+      required:
+        - id
+        - sport
+      properties:
+        id:
+          type: string
+          format: uuid
+        sport:
+          type: string
+        durationMin:
+          type: integer
+          nullable: true
+        rpe:
+          type: number
+          nullable: true
+        load:
+          type: integer
+          nullable: true
+        kcal:
+          type: integer
+          nullable: true
+        setsPlayed:
+          type: integer
+          nullable: true
+        shoulderStrain:
+          type: integer
+          nullable: true
+    SportSkipInfo:
+      type: object
+      required:
+        - id
+        - reason
+        - freePass
+        - serious
+      properties:
+        id:
+          type: string
+          format: uuid
+        reason:
+          $ref: '#/components/schemas/PlannedSkipReason'
+        reasonText:
+          type: string
+          nullable: true
+        freePass:
+          type: boolean
+          description: The week's free soft skip
+        serious:
+          type: boolean
+    SportTonight:
+      type: object
+      required:
+        - sport
+        - moment
+      description: >-
+        Today's sport. BEFORE = planned, not yet recorded; RECORDED = a Health
+        workout of that sport exists today and no log yet (health = the
+        pre-fill); DONE = logged (health = the matched workout, when any);
+        SKIPPED = skipped.
+      properties:
+        sport:
+          type: string
+        time:
+          type: string
+          nullable: true
+          description: 'HH:mm'
+        durationMin:
+          type: integer
+          nullable: true
+        kind:
+          type: string
+          nullable: true
+          enum:
+            - training
+            - match
+          description: The slot / event's kind; null for an unplanned workout
+        location:
+          type: string
+          nullable: true
+        moment:
+          type: string
+          enum:
+            - BEFORE
+            - RECORDED
+            - DONE
+            - SKIPPED
+        startsInMinutes:
+          type: integer
+          nullable: true
+          description: BEFORE only — minutes until the start (negative once started)
+        health:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/SportHealthWorkout'
+        session:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/SportLoggedSession'
+        skip:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/SportSkipInfo'
+    SportHint:
+      type: object
+      required:
+        - key
+        - date
+        - severity
+      description: >-
+        One of Boop's interference hints; the phone words it. GAP_TIGHT (< 3 h
+        between the gym and the sport the same day), GAP_SHORT (3–6 h),
+        SPORT_BEFORE_LEG_MORNING (sport, then a lower-body gym session before
+        noon next day), SPORT_LOAD_DECLINE (≥ 2 heavy sport → next-day
+        rep-decline pairs in the last 14 days).
+      properties:
+        key:
+          type: string
+          enum:
+            - GAP_TIGHT
+            - GAP_SHORT
+            - SPORT_BEFORE_LEG_MORNING
+            - SPORT_LOAD_DECLINE
+        date:
+          type: string
+          format: date
+          description: The day the hint is about (the gym day for the leg morning)
+        severity:
+          type: string
+          enum:
+            - INFO
+            - WATCH
+        sport:
+          type: string
+          nullable: true
+        gapHours:
+          type: number
+          nullable: true
+        heavy:
+          type: boolean
+          nullable: true
+          description: The sport session met the heavy rule (shoulder ≥ 6 or RPE ≥ 8)
+        pairs:
+          type: integer
+          nullable: true
+          description: SPORT_LOAD_DECLINE only
+    SportOverviewResponse:
+      type: object
+      required:
+        - weekStart
+        - weekEnd
+        - today
+        - days
+        - totals
+        - hints
+      properties:
+        weekStart:
+          type: string
+          format: date
+        weekEnd:
+          type: string
+          format: date
+        today:
+          type: string
+          format: date
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/SportWeekDay'
+        totals:
+          $ref: '#/components/schemas/SportWeekTotals'
+        weekCount:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/SportWeekCount'
+          description: null when the week has no sport rhythm
+        tonight:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/SportTonight'
+          description: Only for the current week
+        hints:
+          type: array
+          items:
+            $ref: '#/components/schemas/SportHint'
+    SportLoadWeek:
+      type: object
+      required:
+        - weekStart
+        - sportLoad
+        - gymLoad
+        - sportSessions
+        - gymSessions
+        - sportUnknown
+        - gymUnknown
+      properties:
+        weekStart:
+          type: string
+          format: date
+        sportLoad:
+          type: integer
+          description: Sum of the known sport loads
+        gymLoad:
+          type: integer
+          description: Sum of the known gym loads
+        sportSessions:
+          type: integer
+        gymSessions:
+          type: integer
+        sportUnknown:
+          type: integer
+          description: Sport sessions without effort or duration (not in sportLoad)
+        gymUnknown:
+          type: integer
+          description: Gym sessions without a done working set (not in gymLoad)
+    SportLoadResponse:
+      type: object
+      required:
+        - weeks
+      properties:
+        weeks:
+          type: array
+          items:
+            $ref: '#/components/schemas/SportLoadWeek'
+    SportMuscleHeat:
+      type: object
+      required:
+        - muscle
+        - gymLoad
+        - sportLoad
+        - gym
+        - sport
+        - together
+      properties:
+        muscle:
+          type: string
+          description: 'A fine catalogue token (quad, shoulder-side…) or a legacy coarse key'
+        gymLoad:
+          type: integer
+        sportLoad:
+          type: integer
+        gym:
+          type: number
+          description: 0..1 — gymLoad ÷ the top gym muscle
+        sport:
+          type: number
+          description: 0..1 — sportLoad ÷ the top sport muscle
+        together:
+          type: number
+          description: 0..1 — (gym + sport) ÷ the top combined muscle
+    SportBodyResponse:
+      type: object
+      required:
+        - weekStart
+        - muscles
+        - sharedMuscles
+        - sportUnknown
+      properties:
+        weekStart:
+          type: string
+          format: date
+        muscles:
+          type: array
+          items:
+            $ref: '#/components/schemas/SportMuscleHeat'
+        sharedMuscles:
+          type: integer
+          description: Muscles that got work from both layers
+        shoulderAverage:
+          type: number
+          nullable: true
+          description: The week's average shoulder strain after sport
+        sportUnknown:
+          type: integer
+          description: >-
+            Sport sessions that add no heat (no effort, no duration or an
+            unmapped kind)
+    SportShoulderWeek:
+      type: object
+      required:
+        - weekStart
+        - sessions
+      properties:
+        weekStart:
+          type: string
+          format: date
+        average:
+          type: number
+          nullable: true
+          description: One decimal; null when no session carried a value
+        sessions:
+          type: integer
+          description: Sessions with a shoulder value
+    SportShoulderResponse:
+      type: object
+      required:
+        - weeks
+      properties:
+        weeks:
+          type: array
+          items:
+            $ref: '#/components/schemas/SportShoulderWeek'
+    SportBlock:
+      type: object
+      required:
+        - layer
+        - start
+        - end
+        - done
+      properties:
+        layer:
+          type: string
+          enum:
+            - GYM
+            - SPORT
+        sport:
+          type: string
+          nullable: true
+        start:
+          type: string
+          description: 'HH:mm'
+        end:
+          type: string
+          description: 'HH:mm'
+        done:
+          type: boolean
+    SportGapDay:
+      type: object
+      required:
+        - date
+        - blocks
+      properties:
+        date:
+          type: string
+          format: date
+        blocks:
+          type: array
+          items:
+            $ref: '#/components/schemas/SportBlock'
+        gapHours:
+          type: number
+          nullable: true
+          description: >-
+            Shortest rest between a gym and a sport block; null unless both
+            layers are on the day
+    SportGapsResponse:
+      type: object
+      required:
+        - weekStart
+        - days
+        - hints
+      properties:
+        weekStart:
+          type: string
+          format: date
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/SportGapDay'
+        hints:
+          type: array
+          items:
+            $ref: '#/components/schemas/SportHint'
     ExpenditureExplanationResponse:
       type: object
       description: >-
@@ -27372,6 +28025,14 @@ components:
           type: array
           items:
             type: string
+        prosePending:
+          type: boolean
+          description: >-
+            True while Boop is still writing the AI explanation (summary,
+            tagline, per-dimension details, tips) in the background — the
+            deterministic envelope is already complete; re-fetch in a few
+            seconds. False/absent when the prose is present or will not come (AI
+            off, a recent failure).
     RecipeIngredientRequest:
       type: object
       required:
@@ -38228,6 +38889,15 @@ components:
           description: null without a wearable day (never a fake 0)
         session:
           $ref: '#/components/schemas/BoopSession'
+        sport:
+          type: array
+          description: >-
+            Boop Sport S1 (mezo-r36n9.201) — today's sport, the second layer
+            next to the gym `session`, in clock order; empty without sport. A
+            sport log or that sport's own Health workout ticks it, never the
+            gym.
+          items:
+            $ref: '#/components/schemas/BoopSport'
         meals:
           type: array
           items:
@@ -38363,6 +39033,31 @@ components:
                 type: string
               sets:
                 type: integer
+    BoopSport:
+      type: object
+      required:
+        - sport
+        - time
+        - done
+      properties:
+        sport:
+          type: string
+          description: 'One of the eleven sport kinds (volleyball, running, …)'
+        time:
+          type: string
+          description: 'HH:mm — the log''s clock time when logged, else the slot / event''s'
+        minutes:
+          type: integer
+          nullable: true
+        done:
+          type: boolean
+          description: 'Logged today, or the sport''s own Health workout overlapped it'
+        doneMinutes:
+          type: integer
+          nullable: true
+        avgHr:
+          type: integer
+          nullable: true
     BoopMeal:
       type: object
       required:
@@ -41217,7 +41912,8 @@ components:
           maximum: 360
         sport:
           type: string
-          pattern: ^(volleyball|cross|trx)$
+          pattern: >-
+            ^(volleyball|cross|trx|bike|swim|football|basketball|tennis|hike|running|other)$
     SeasonSleepAnchor:
       type: object
       required:
@@ -43536,3 +44232,22 @@ components:
         nopes:
           type: integer
           description: Consecutive "nem érdekel" taps
+  parameters:
+    SportWeekParam:
+      name: week
+      in: query
+      required: false
+      description: Any date of the wanted ISO week; default this week in the owner's zone
+      schema:
+        type: string
+        format: date
+    SportWeeksParam:
+      name: weeks
+      in: query
+      required: false
+      description: 'How many weeks, ending with this one'
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 26
+        default: 6

@@ -42,11 +42,16 @@ struct RecipeDetailSheet: View {
     /// He tapped a vote in this sheet: the stored one read later must not overwrite it.
     @State private var voteTouched = false
     @State private var voteWrite: Task<Void, Never>?
+    /// The re-fetch for the background explanation ran out of time (~3 min): stop saying it is being written.
+    @State private var proseGaveUp = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private enum LoadState { case loading, ready, unavailable }
 
     private var recipe: Recipe? { store.recipes.first { $0.id == recipeId } }
+
+    /// The card is shown and Boop is still writing its words — the sheet re-fetches until they arrive.
+    private var proseWriting: Bool { !proseGaveUp && RecipeProsePoll.awaitingProse(breakdown) }
 
     var body: some View {
         if let recipe {
@@ -74,6 +79,7 @@ struct RecipeDetailSheet: View {
                 Button("Mégsem", role: .cancel) {}
             } message: { Text("A recept marad, csak a fotója törlődik.") }
             .task(id: recipeId) { await loadExtras(recipe) }
+            .task(id: proseWriting) { if proseWriting { await pollProse(recipe) } }
         } else {
             NKSheetFrame(hue: .fuel, eyebrow: "RECEPT", title: "Nincs meg ez a recept") {
                 Text("Úgy tűnik, már nincs a könyvtáradban.").nkFont(14).foregroundStyle(.white.opacity(0.7))
@@ -171,7 +177,8 @@ struct RecipeDetailSheet: View {
                 RecipeScoreCard(recipe: r, breakdown: breakdown, day: store.day,
                                 todayYmd: store.currentFood?.ymd(Date()) ?? "", recipes: store.recipes, logs: logs, vote: vote,
                                 onVote: { setVote($0, r) },
-                                onOpen: { d in withAnimation(reduceMotion ? nil : .snappy) { openDim = d } })
+                                onOpen: { d in withAnimation(reduceMotion ? nil : .snappy) { openDim = d } },
+                                proseWriting: proseWriting)
             }
         }
     }
@@ -314,16 +321,43 @@ struct RecipeDetailSheet: View {
         // A load the sheet restarted (the library refreshed under it) must not leave its cancellation as "unavailable".
         if Task.isCancelled { return }
         switch gotLogs { case .success(let v): logs = v; logsProblem = false; case .failure: logsProblem = true }
-        switch gotBreakdown { case .success(let v): breakdown = v; breakdownState = .ready; case .failure: breakdownState = .unavailable }
-        if breakdown?.breakdown?.summary?.isEmpty == false, !voteTouched {
-            let stored = try? await food.breakdownVote(recipeId: r.id)
-            if !voteTouched && !Task.isCancelled { vote = stored }
+        switch gotBreakdown {
+        case .success(let v): breakdown = v; breakdownState = .ready; proseGaveUp = false
+        case .failure: breakdownState = .unavailable
         }
+        await loadVote(r)
         #if DEBUG
         // Simulator review: `-receptDim who` opens that dimension's page once the evaluation is in.
         if let id = UserDefaults.standard.string(forKey: "receptDim"),
            let d = breakdown?.breakdown?.dimensions.first(where: { $0.id == id }) { openDim = d }
         #endif
+    }
+
+    /// The stored vote, once there is an explanation to vote on (a vote he already tapped here wins).
+    private func loadVote(_ r: Recipe) async {
+        guard breakdown?.breakdown?.summary?.isEmpty == false, !voteTouched, let food = store.currentFood else { return }
+        let stored = try? await food.breakdownVote(recipeId: r.id)
+        if !voteTouched && !Task.isCancelled { vote = stored }
+    }
+
+    /// Boop writes the explanation in the background (~2 min on the server, mezo-r36n9.219): re-fetch every ~8 s until
+    /// it arrives, for at most ~3 min. A failed fetch just waits for the next round; closing the sheet cancels it.
+    private func pollProse(_ r: Recipe) async {
+        let started = Date()
+        while RecipeProsePoll.shouldPoll(breakdown, elapsed: Date().timeIntervalSince(started)) {
+            try? await Task.sleep(for: RecipeProsePoll.interval)
+            if Task.isCancelled { return }
+            guard let food = store.currentFood, let fresh = try? await food.recipeBreakdown(r.id) else { continue }
+            if Task.isCancelled { return }
+            if fresh.breakdown?.summary?.isEmpty == false, !voteTouched {
+                // read the vote BEFORE swapping the card in: the swap ends this task
+                let stored = try? await food.breakdownVote(recipeId: r.id)
+                if Task.isCancelled { return }
+                if !voteTouched { vote = stored }
+            }
+            breakdown = fresh
+        }
+        if RecipeProsePoll.awaitingProse(breakdown) { proseGaveUp = true }
     }
 
     private func log(_ r: Recipe) async {

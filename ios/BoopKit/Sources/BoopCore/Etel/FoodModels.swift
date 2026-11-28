@@ -500,7 +500,12 @@ public struct RecipeLog: Equatable, Sendable, Identifiable {
 public struct RecipeBreakdown: Equatable, Sendable {
     public var breakdown: MealBreakdown?
     public var fitsFor: [String]
-    public init(breakdown: MealBreakdown?, fitsFor: [String] = []) { self.breakdown = breakdown; self.fitsFor = fitsFor }
+    /// Boop is still writing the AI explanation in the background (mezo-r36n9.219): the numbers are complete, the
+    /// summary / tagline / tips arrive on a later fetch.
+    public var prosePending: Bool
+    public init(breakdown: MealBreakdown?, fitsFor: [String] = [], prosePending: Bool = false) {
+        self.breakdown = breakdown; self.fitsFor = fitsFor; self.prosePending = prosePending
+    }
 }
 
 /// One ingredient of a recipe about to be saved. Either `catalogId` (a catalog food the server puts on the shelf at save)
