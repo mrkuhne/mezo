@@ -17,16 +17,22 @@ to switch to **lezárás** mid-task — do that at the next safe point (tests gr
 ## The tree — fő session and al-sessions (owner rule, 2026-11-28)
 
 - **Series** = one piece of work the owner asked for (a feature, a slice, a bug) with all its steps.
-- **Fő session** = the session in which the owner started the series. It is where he talks: brainstorm, spec, spike,
-  plan, decisions, the final report. It does **not build** once the plan is approved — every build step runs in an
-  **al-session** it starts. It stays open until the series ends.
+- **Fő session** = the session in which the owner started the series — **the one room where he talks**: scope,
+  brainstorm questions, spec, decisions, the final report. Research runs in background `researcher`/`investigator`
+  agents (summaries only), never as a session. The heavy, low-talk phases go to **al-sessions** it starts: the
+  simulator spike, the plan writing, and every build round (*vegyes* flow, owner decision 2026-11-28, §The flow).
+  It stays open until the series ends.
 - **Al-session** = one step, started by the fő session with `start_session` (`initiation: "user_asked"`,
   `context: "fresh"`, `use_worktree: true`). **Never detach it** — the link is what lets the owner see it under the fő
   session. An al-session **never starts sessions itself** (no grandchildren): when it needs a successor, it says so in
   its záró blokk and the fő session starts the next one.
 - **Thin fő session (the token price of the tree):** when an al-session reports back, the fő session answers in at
   most two lines — note it, start the next step if the plan says so, or ask the owner — and reads nothing else. No
-  code, no logs, no file reads in the fő session after the plan OK. If the fő session itself hits the guard, it writes
+  code, no logs, no screenshots, no file reads in the fő session after the spec OK.
+- **Starting the next phase needs one click from the owner.** The app refuses `start_session` on a turn that another
+  session's message started, so when an al-session reports, the fő session puts up the next phase as a card
+  (`initiation: "own_initiative"`) and says in one line: „kattints a kártyára a következő lépéshez”. On the owner's
+  own turn it starts the al-session directly. If the fő session itself hits the guard, it writes
   its záró blokk (with the prompt for a new fő session) and stops; it does not archive while an al-session still runs.
 - **Parallel al-sessions** only when they touch different files (playbook §5.3). Max ~3 at once.
 - A request that is **not part of this series** (new feature, unrelated bug) is a new series: it gets its own fő
@@ -40,6 +46,8 @@ opened). Hungarian, no ids, no "Mezo", ≤ 50 characters:
 | Kind | Shape | Example |
 |---|---|---|
 | Fő session | `<Terület> — <sorozat>` | `Sport — terület újratervezés` |
+| Spike al-session | `<Terület> · próbaváltozat` | `Sport · próbaváltozat` |
+| Plan al-session | `<Terület> · terv` | `Sport · terv` |
 | Al-session | `<Terület> <n>/<össz> · <lépés>` | `Sport 3/5 · Ma fül + rögzítés` |
 | Folytatás of a step | same step, `+` suffix | `Sport 3/5+ · Ma fül + rögzítés` |
 | Lezárás-only step | `<Terület> · lezárás` | `Sport · lezárás` |
@@ -93,11 +101,26 @@ session only sees the first 400 characters of it.
 
 ## The flow — superpowers inside the frame (mezo-dl3h3)
 
-1. `superpowers:brainstorming` — step 1 = `brainstorm-recon`; no Visual Companion for Boop (visual iteration is the
-   simulator's job). *(fő session)*
-2. Spec in `docs/superpowers/specs/` → owner OK. *(fő session)*
-3. Simulator spike → owner OK (only when something visible changes). *(fő session, or an al-session for a big spike)*
-4. `superpowers:writing-plans` (with the *Kész, ha…* list, and the steps numbered n/össz) → owner OK. *(fő session)*
+**Vegyes flow** (owner decision 2026-11-28): talk stays in the fő session, heavy low-talk phases get al-sessions.
+
+| # | Phase | Where | Hands back to the fő session |
+|---|---|---|---|
+| 1 | Scope + `superpowers:brainstorming` questions (step 1 = `brainstorm-recon`, agents in the background; no Visual Companion for Boop) | **fő session** | — |
+| 2 | Spec in `docs/superpowers/specs/` → owner OK | **fő session** | — |
+| 3 | Simulator spike → owner OK (only when something visible changes). The owner gives his visual feedback **in this al-session**. | **al-session** `· próbaváltozat` | spike decision + screenshots path, committed |
+| 4 | `superpowers:writing-plans` from spec + spike (with the *Kész, ha…* list, steps numbered n/össz). Owner OK is asked in the fő session from the al-session's short summary. | **al-session** `· terv` | plan path + 5-line summary |
+| 5 | Each plan step / round | **al-session** `n/össz · …` | záró blokk |
+| 6 | Final report + Notion (series end) | last al-session, report relayed in the fő session | — |
+
+**Size rule:** a small change, a bug or anything ≤ ~25 steps runs entirely in **one** session (the fő session) —
+no al-sessions. A medium task with no visible change skips phase 3. Phases 3 and 4 may share one al-session when the
+spike is small (one screen).
+
+Per phase:
+1. Brainstorming in the fő session: questions one at a time, Hungarian business language.
+2. Spec → owner OK.
+3. Spike al-session: brief = spec path + what to show; it iterates with the owner, commits, záró blokk.
+4. Plan al-session: brief = spec + spike paths; `superpowers:writing-plans`; recommends inline execution.
 5. Execution: each plan step in an al-session, inline `superpowers:executing-plans` there.
    `superpowers:subagent-driven-development` is opt-in, only for a large step with clearly independent tasks — then
    every dispatch passes `model: "sonnet"`, no per-task reviewer agents unless the plan marks the task risky, and one
