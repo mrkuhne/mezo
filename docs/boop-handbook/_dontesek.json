@@ -1970,5 +1970,17 @@
     "miert": "Azok napok óta nem mozdultak, és egyik friss munka sem nyúl ezekhez a képernyőkhöz.",
     "kovetkezmeny": "Ha a régi munkák folytatódnak, ők igazodnak az új kinézethez.",
     "levaltotta": "A terv előfeltétele, hogy az 5–6. lépés csak azok után indul."
+  },
+  "d-2026-11-28-lapozo-kartya-nelkul": {
+    "datum": "2026-11-28",
+    "terulet": [
+      "Alapok",
+      "Edzés"
+    ],
+    "cim": "Lapozó sor soha nincs kártyában",
+    "suly": "Kicsi",
+    "valasztas": "Minden lapozható kártyasor az egész appban kártyakeret nélkül áll a címe alatt, és alatta mindig ott vannak a pöttyök, hogy hány lap van.",
+    "miert": "A kártyában lévő kártyák dobozt adnak a dobozban; a lapok maguk az üvegkártyák.",
+    "kovetkezmeny": "Az Edzés oldalain azonnal így lett; minden új képernyő eleve így készül."
   }
 }

@@ -9,6 +9,10 @@ import SwiftUI
 ///
 /// The cards stop where they are swiped to (`.viewAligned`), each one a little narrower than
 /// the page so the next one peeks — the second signal that the row continues.
+///
+/// **Never put it inside a card** (owner, 2026-11-28, mezo-r36n9.221): the row stands bare under a section head
+/// (`NKBare`), not in an `NKSectionCard` or any glass panel — its cards are the glass, a card around them is a box
+/// in a box. The dots stay under it.
 public struct NKCarousel<Item: Identifiable, Card: View>: View {
     let items: [Item]
     let hue: Hue

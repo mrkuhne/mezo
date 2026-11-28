@@ -729,10 +729,11 @@ struct EdzesRoom: View {
         }
     }
 
-    /// **A mai gyakorlatok** — the session's exercises, one card each, swipeable, inside the card.
+    /// **A mai gyakorlatok** — the session's exercises, one card each, swipeable. A carousel is never inside a card
+    /// (owner, 2026-11-28): the row and its dots stand bare under the section head.
     @ViewBuilder private var exercises: some View {
         if let w = workout, !w.exercises.isEmpty {
-            NKSectionCard("A mai gyakorlatok", hue: hue, trailing: .text("\(w.exercises.count) gyakorlat")) {
+            NKBare("A mai gyakorlatok", hue: hue, trailing: "\(w.exercises.count) gyakorlat") {
                 NKCarousel(w.exercises, hue: hue, height: 190) { e in
                     ExerciseCard(exercise: e, hue: hue, done: isDone(e))
                 }
@@ -999,7 +1000,8 @@ struct EdzesRoom: View {
     /// **A heted** — the week's days as a carousel: pick a day, see what it asks for. It moved
     /// here from Ma (owner, 2026-11-17): Ma is today, the week is the block's business.
     private func weekCarousel(_ b: BlockPlan) -> some View {
-        NKSectionCard("A heted", hue: hue, trailing: store?.blockAgeText.map { .text($0) } ?? .none) {
+        // Bare, not a card: a carousel is never inside a card (owner, 2026-11-28).
+        NKBare("A heted", hue: hue, trailing: store?.blockAgeText) {
             if b.days.isEmpty {
                 NKNoFreshData("A mezociklus napjai még nem érkeztek meg")
             } else {

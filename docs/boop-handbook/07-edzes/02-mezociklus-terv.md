@@ -30,7 +30,7 @@ a fül felépítése: [Mezociklusaim](20-mezociklusaim.md)):**
   **Amin az egész áll:** egy izom felső értéke **nem az, amennyit elbír**, hanem az, ameddig *ez a terv* viszi — a
   szerepe szerint. Egy szinten tartott izomnak azt mondani, hogy „még 8 szett fér bele", olyan ígéret lenne, amit
   a terv soha nem tett.
-- **A heted:** a mezociklus napjai lapozható kártyákon (hétfőtől vasárnapig), mindegyiken a nap típusa, mely
+- **A heted:** a mezociklus napjai lapozható kártyákon (hétfőtől vasárnapig; a sor nincs külön keretbe zárva, alatta pöttyök), mindegyiken a nap típusa, mely
   izomcsoportokat dolgoztatja és hány gyakorlat. A mai nap meg van jelölve, a már megcsinált napok ki vannak
   pipálva. (Korábban ez a Ma oldalon volt; a Ma a mai napról szól, a hét a blokk dolga — 2026-11-17.)
 
