@@ -3692,7 +3692,7 @@
     },
     "jegyek:mezo-r36n9.219": {
       "page_id": "4268968e-752b-8128-a392-e0ad326140fe",
-      "hash": "b881373ed74d"
+      "hash": "4554c59bc723"
     },
     "dontesek:d-2026-11-28-munkamenet-fa": {
       "page_id": "4268968e-752b-8180-bb50-ef6b7f52a850",
@@ -3709,6 +3709,14 @@
     "kiadasok:6d84e16ab": {
       "page_id": "4268968e-752b-8140-b3df-e95901bb4a90",
       "hash": "6e0557c10bfa"
+    },
+    "jegyek:mezo-r36n9.220": {
+      "page_id": "4268968e-752b-81c1-ab5d-c256c31d4bf4",
+      "hash": "5ffa6620150f"
+    },
+    "kiadasok:8124c3d31": {
+      "page_id": "4268968e-752b-81f0-8510-fcfae371963e",
+      "hash": "1948b42a7088"
     }
   }
 }
