@@ -3460,7 +3460,7 @@
     },
     "jegyek:mezo-r36n9.205": {
       "page_id": "4258968e-752b-81e5-a01b-dbe1fde14601",
-      "hash": "514ef103fa37"
+      "hash": "ff9dd3bb2fca"
     },
     "jegyek:mezo-r36n9.204": {
       "page_id": "4258968e-752b-8104-9d47-e33c7848e067",
@@ -3689,6 +3689,14 @@
     "kiadasok:0979ac45c": {
       "page_id": "4268968e-752b-814f-950c-f2b832806601",
       "hash": "7ca41ce2fd03"
+    },
+    "jegyek:mezo-r36n9.219": {
+      "page_id": "4268968e-752b-8128-a392-e0ad326140fe",
+      "hash": "b881373ed74d"
+    },
+    "dontesek:d-2026-11-28-munkamenet-fa": {
+      "page_id": "4268968e-752b-8180-bb50-ef6b7f52a850",
+      "hash": "b20c229a610a"
     }
   }
 }
