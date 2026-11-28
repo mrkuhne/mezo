@@ -472,7 +472,7 @@
     },
     "kezikonyv:01-alapok/gyors-rogzites": {
       "page_id": "4168968e-752b-81eb-833a-d4a89c813fb9",
-      "hash": "97ba6d8c005f"
+      "hash": "a87b55c0323a"
     },
     "kezikonyv:01-alapok/kepek": {
       "page_id": "4178968e-752b-8106-9d11-eeb4865798e8",
@@ -480,15 +480,15 @@
     },
     "kezikonyv:01-alapok/kezdolap": {
       "page_id": "41a8968e-752b-812f-87dd-e3a938084198",
-      "hash": "0d9e2d4f1a55"
+      "hash": "639839d9a395"
     },
     "kezikonyv:01-alapok/napkelte-kinezet": {
       "page_id": "4168968e-752b-812a-9b5f-fd8f477ccda4",
-      "hash": "715044cb670e"
+      "hash": "3b33bc3eda13"
     },
     "kezikonyv:01-alapok/navigacio": {
       "page_id": "4168968e-752b-81f1-a428-f1eff627e50a",
-      "hash": "07bb33218762"
+      "hash": "5f8a86884b5f"
     },
     "kezikonyv:01-alapok/net-nelkul": {
       "page_id": "4168968e-752b-815c-bee7-c4032ca1468f",
@@ -592,7 +592,7 @@
     },
     "kezikonyv:03-naplo/napok-lista": {
       "page_id": "4168968e-752b-8154-b39e-c2567a928484",
-      "hash": "116e9c8a65e4"
+      "hash": "015215e2a888"
     },
     "kezikonyv:03-naplo/widget-es-zarolt-kepernyo": {
       "page_id": "4168968e-752b-81fc-8eee-d3c3791cb992",
@@ -672,7 +672,7 @@
     },
     "kezikonyv:06-etel/01-etel-szoba-ma": {
       "page_id": "4168968e-752b-8195-9564-d1ced1b8d194",
-      "hash": "26b7f53dda4f"
+      "hash": "22b906091824"
     },
     "kezikonyv:06-etel/02-etkezes-rogzitese": {
       "page_id": "4168968e-752b-8164-b1d7-d8aa78d82e63",
@@ -688,11 +688,11 @@
     },
     "kezikonyv:06-etel/05-receptek": {
       "page_id": "4168968e-752b-816b-af92-d893e20f59e2",
-      "hash": "7d884bf8f26c"
+      "hash": "e3f7b85c1683"
     },
     "kezikonyv:06-etel/06-kamra": {
       "page_id": "4168968e-752b-81cc-96d5-c3f0fa42540c",
-      "hash": "3c262020731f"
+      "hash": "73c84bf6ce9a"
     },
     "kezikonyv:06-etel/07-allergenek": {
       "page_id": "4168968e-752b-81eb-8603-dfc38fa7a4e8",
@@ -2124,7 +2124,7 @@
     },
     "funkciok:meal-celmotor-adat": {
       "page_id": "41e8968e-752b-816b-9677-e0e6bdc10cb8",
-      "hash": "9f6a7fda5189"
+      "hash": "772c8ba320d1"
     },
     "funkciok:goal-sulycel": {
       "page_id": "41e8968e-752b-81a9-b154-e3890bc0e42c",
@@ -3472,7 +3472,7 @@
     },
     "jegyek:mezo-r36n9.202": {
       "page_id": "4258968e-752b-8114-9b5e-f43ba93006a9",
-      "hash": "bae1cfaa716f"
+      "hash": "2f4b350ec6f8"
     },
     "jegyek:mezo-r36n9.201": {
       "page_id": "4258968e-752b-81bc-9234-cb3837e124bf",
@@ -3529,6 +3529,54 @@
     "kiadasok:6637251ec": {
       "page_id": "4258968e-752b-819e-acd0-d9a40c76fbeb",
       "hash": "55a3c7e074cd"
+    },
+    "jegyek:mezo-r36n9.207": {
+      "page_id": "4268968e-752b-81c9-b0a3-ea73692304f4",
+      "hash": "16a269142db5"
+    },
+    "jegyek:mezo-r36n9.210": {
+      "page_id": "4268968e-752b-81c6-ba58-d9b5c8f8fb15",
+      "hash": "e359b3c58b93"
+    },
+    "jegyek:mezo-r36n9.208": {
+      "page_id": "4268968e-752b-81d9-a1f7-d407f03a45c4",
+      "hash": "cde0985ed88f"
+    },
+    "dontesek:d-2026-11-27-evad-szoba": {
+      "page_id": "4268968e-752b-8136-8e64-f1b91d349730",
+      "hash": "3712503243b1"
+    },
+    "dontesek:d-2026-11-27-menu-etelbe": {
+      "page_id": "4268968e-752b-8154-a7e4-d2e5ba898211",
+      "hash": "65ab15a861a0"
+    },
+    "dontesek:d-2026-11-27-kezdolap-sav-nelkul": {
+      "page_id": "4268968e-752b-81b6-9ad7-c98906ee56a6",
+      "hash": "8bb2474db594"
+    },
+    "dontesek:d-2026-11-27-naplo-nap-szobaba": {
+      "page_id": "4268968e-752b-8133-99d6-ec2a315dc8c1",
+      "hash": "765e25f294d5"
+    },
+    "dontesek:d-2026-11-27-ev-az-evadban": {
+      "page_id": "4268968e-752b-810f-a2ff-c837e58453b8",
+      "hash": "5ffffce09e81"
+    },
+    "dontesek:d-2026-11-27-menu-recept-jeloles": {
+      "page_id": "4268968e-752b-81cc-866e-e7c8a077f43f",
+      "hash": "15eaac5d11f4"
+    },
+    "dontesek:d-2026-11-27-evad-szoba-proba": {
+      "page_id": "4268968e-752b-81fc-9d10-e00884fa0fbc",
+      "hash": "5c5a60f23948"
+    },
+    "kiadasok:cdf3053d4": {
+      "page_id": "4268968e-752b-8135-b018-c8a86ca6d1d4",
+      "hash": "7f1a71203f14"
+    },
+    "kiadasok:1428c2232": {
+      "page_id": "4268968e-752b-81a1-9c92-e9b7ad52093b",
+      "hash": "00fb51e3c04a"
     }
   }
 }
