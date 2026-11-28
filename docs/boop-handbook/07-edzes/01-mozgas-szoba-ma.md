@@ -10,6 +10,16 @@ osszefoglalo: Az Edzés gömbről nyíló szoba mutatja a mai edzést a valódi 
 ---
 
 ## Mit csinál
+- **A Ma fül rendje (2026-11-28, az Edzés újratervezés 3. lépése, döntés #129):** felül **egy kiemelt kártya, „A mai
+  edzés"**: a címke (ma / pótlás / megvolt), a mai edzés neve, az időpont, három nagy szám (**perc · gyakorlat · éles
+  sorozat**), futó edzésnél a „FUT" jel és a haladás, és **egy gomb**: Indítás, Folytatom, vagy megvolt napon
+  „Megnézem a mai eredményt". Ugyanebben a kártyában, halkan, a „Másik napot csinálok ma" és a „Mégis a mai napot
+  csinálom" link. A kártya **elhúzva** megmutatja a mai terhelést az izomtérképen. Pihenőnapon a kártya „Pihenőnap",
+  alatta a következő edzés neve és napja (például „Következő: Alsó A · szerda") — itt nincs második lap. Alatta külön
+  kártyán, sorban: a **Következik** (az éves terv következő mezociklusa — felülre került, hogy ne két narancs gomb
+  versengjen), **A mai gyakorlatok** lapozva, **Hol tartasz** (a mezociklus hetei kicsiben; koppintásra a Mezociklus
+  fül), **Az Edzés terület** menüje, végül a „Kérdezd meg Boopot" sor. Legnagyobb betűméretnél a három szám egymás
+  alá kerül, és a kártya lapjai is egymás alatt állnak — semmi nem vágódik le.
 - **A mai edzés** a reggeli összefoglalóban és az Edzés szobában: cím, időpont, becsült hossz, a gyakorlatok és a sorozatszám
   (ha aznap könnyítés van, már a könnyített sorozatszámmal).
 - **A mai terhelés (B5):** egy **izomtérkép** — ugyanaz a test, amit a webes appban is használsz —, rajta azok az
