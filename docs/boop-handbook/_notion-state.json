@@ -716,11 +716,11 @@
     },
     "kezikonyv:07-edzes/01-mozgas-szoba-ma": {
       "page_id": "4168968e-752b-81b1-add3-c4f79e1b44e6",
-      "hash": "271b67b63d87"
+      "hash": "3f6fcc77ac57"
     },
     "kezikonyv:07-edzes/02-mezociklus-terv": {
       "page_id": "4168968e-752b-81c0-9ca3-e89afff341e8",
-      "hash": "5de81c912723"
+      "hash": "1204cb864c4d"
     },
     "kezikonyv:07-edzes/03-edzeslejatszo": {
       "page_id": "4168968e-752b-8153-a900-cd5b2e535717",
@@ -3332,7 +3332,7 @@
     },
     "kezikonyv:07-edzes/20-mezociklusaim": {
       "page_id": "4248968e-752b-81d6-9999-cd970298e62b",
-      "hash": "c6b40b705710"
+      "hash": "fb3123177faf"
     },
     "jegyek:mezo-r36n9.184": {
       "page_id": "4258968e-752b-8120-9091-c0c8758e57be",
@@ -3725,6 +3725,14 @@
     "dontesek:d-2026-11-28-lapozo-kartya-nelkul": {
       "page_id": "4268968e-752b-81b8-a1d8-c81aeeacb6a9",
       "hash": "3ba791abb2e3"
+    },
+    "jegyek:mezo-r36n9.221": {
+      "page_id": "4268968e-752b-812c-91a1-c497eac03fbb",
+      "hash": "4f5dd052d19b"
+    },
+    "kiadasok:ada498e93": {
+      "page_id": "4268968e-752b-816e-b0dd-c30146f87e09",
+      "hash": "aa2e6d522645"
     }
   }
 }
