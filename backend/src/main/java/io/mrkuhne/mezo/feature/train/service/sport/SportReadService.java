@@ -366,8 +366,14 @@ public class SportReadService {
         }
         for (PlannedSkipPolicy.Verdict v : skipsOn(d, day, PlannedSkipEntity.Kind.SPORT)) {
             Optional<SportScheduleSlotEntity> slot = slotAt(d, v.row().dayOfWeek(), v.row().time());
+            String skipped = slot.map(SportScheduleSlotEntity::getSport).orElse(null);
+            // skipped, then played anyway: the logged session's DONE item stands for the occurrence
+            if (out.stream().anyMatch(i -> i.getState() == SportItemState.DONE
+                    && (skipped == null || skipped.equals(i.getSport())))) {
+                continue;
+            }
             out.add(new SportLaneItem().layer(SportLaneItem.LayerEnum.SPORT)
-                .sport(slot.map(SportScheduleSlotEntity::getSport).orElse(null)).time(v.row().time())
+                .sport(skipped).time(v.row().time())
                 .durationMin(slot.map(SportScheduleSlotEntity::getDurationMin).orElse(null))
                 .state(SportItemState.SKIPPED).skipId(undoableId(v)));
         }
@@ -421,7 +427,7 @@ public class SportReadService {
                     claimed).ifPresent(claimed::add);
             }
         }
-        Optional<Window> pending = sport.stream().filter(w -> !w.done()).findFirst();
+        Optional<Window> pending = pending(sport, now.atZone(zone).toLocalTime());
         if (pending.isPresent()) {
             Window w = pending.get();
             SportTonight t = planned(d, today, w);
@@ -479,6 +485,22 @@ public class SportReadService {
             return t;
         }
         return null;
+    }
+
+    /**
+     * Tonight's not-done window: the first one still in play (its end + the pre-fill slack not yet passed), else
+     * the last not-done one — so an earlier missed session never hides the evening's.
+     */
+    static Optional<Window> pending(List<Window> sortedSport, LocalTime nowLocal) {
+        List<Window> open = sortedSport.stream().filter(w -> !w.done()).toList();
+        int now = nowLocal.toSecondOfDay() / 60;
+        return open.stream()
+            .filter(w -> {
+                LocalTime end = w.end() != null ? w.end() : w.start();
+                return end.toSecondOfDay() / 60 + (int) MATCH_SLACK.toMinutes() > now;
+            })
+            .findFirst()
+            .or(() -> open.isEmpty() ? Optional.empty() : Optional.of(open.get(open.size() - 1)));
     }
 
     /** Tonight's card from a planned window, with the slot / event's kind and place when one sits at that time. */

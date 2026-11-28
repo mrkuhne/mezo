@@ -1149,7 +1149,9 @@ A custom (meso-less) workout template is an ordinary `workout_session` TEMPLATE 
     pre-fill, DONE with the session and its matched workout, SKIPPED with the skip's reason and free-pass flag) and
     `hints[]`. `skipId` / `tonight.skip` are set only for a USER skip (the one `DELETE /api/train/skips/{id}` can
     undo); an advice or kímélő-protected skip shows SKIPPED with no id. Tonight never guesses a sport: a skip whose slot
-    is gone does not make a card. Plans come from `WorkoutWindowQueryService.windowsFor` (THE resolver: slots + events − skips),
+    is gone does not make a card. Tonight's window is the first not-done one still in play (its end + 2 h not yet
+    passed), else the last not-done one — an earlier missed session never hides the evening's. A skipped slot that was
+    played anyway shows once, as DONE (final review 2, `mezo-r36n9.202`). Plans come from `WorkoutWindowQueryService.windowsFor` (THE resolver: slots + events − skips),
     skips from `PlannedSkipService`, Health workouts through `train/port/SportHealthPort` (adapter
     `wearable/service/SportHealthAdapter`, wearable → train is the existing direction).
   - `GET /api/train/sport/load?weeks=` — per week `gymLoad` / `sportLoad` on **one scale: session-RPE × minutes

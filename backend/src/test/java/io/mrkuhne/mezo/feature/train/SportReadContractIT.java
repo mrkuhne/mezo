@@ -201,6 +201,23 @@ class SportReadContractIT extends ApiIntegrationTest {
         });
     }
 
+    @Test
+    void testGetSportOverview_shouldShowOneDoneItem_whenASkippedSlotIsPlayedAnyway() {
+        RegisteredUser user = registerUser("Sport Skipped Then Played");
+        LocalDate today = today();
+        train.createScheduleSlot(user.id(), dow(today), "00:00", 60, "training");
+        putForBody("/api/train/skips", PlannedSkipRequest.builder()
+                .date(today).kind(PlannedSkipKind.SPORT).dayOfWeek(dow(today)).time("00:00")
+                .reasonCategory(PlannedSkipReason.TIRED).build(),
+            user.headers(), HttpStatus.OK, PlannedSkipResponse.class);
+        train.createSportSessionAt(user.id(), today, "00:05", 60);
+
+        SportOverviewResponse o = overview(user);
+        assertThat(day(o, today).getSport()).extracting(SportLaneItem::getState)
+            .containsExactly(SportItemState.DONE);
+        assertThat(o.getTonight().getMoment()).isEqualTo(SportTonight.MomentEnum.DONE);
+    }
+
     // ---- a fixture week: lanes, load, body, shoulder, gaps ---------------------------------------
 
     @Test

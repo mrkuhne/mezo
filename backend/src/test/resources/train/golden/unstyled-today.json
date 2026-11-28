@@ -446,5 +446,6 @@
     "repUp" : 2,
     "hold" : 0
   },
-  "comeback" : null
+  "comeback" : null,
+  "sportToday" : [ ]
 }
