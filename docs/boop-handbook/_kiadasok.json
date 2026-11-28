@@ -1375,5 +1375,18 @@
       "mezo-r36n9.205"
     ],
     "mi_valtozott": "A Sport terület Napló fülén látod az elmúlt négy hetet (alkalmak, átlagos megterhelés, váll) és az elmúlt 12 hét minden alkalmát; egy kártyára koppintva kijavíthatod vagy törölheted az alkalmat, és a heti szám is frissül. A Test fülön az izomtérkép mutatja, mit terhelt a héten a kondi, a sport és a kettő együtt, alatta a vállad 6 hétre a 7-es vonallal, a pihenő a kondi és a sport között, és a jelzések mellett egy „miért?” lap."
+  },
+  "bbcaa3490": {
+    "datum": "2026-11-28",
+    "verzio": "",
+    "tipus": "Javítás",
+    "hova": [
+      "iPhone app"
+    ],
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.223"
+    ],
+    "mi_valtozott": "A Sport terület Ma fülén az „Ezen a héten” sor lapozható kártyasor lett: a mai napon nyílik, szabadon áll a címe alatt, és alatta pöttyök mutatják, hány nap van még. Így az egész appban egyformán viselkednek a lapozható sorok."
   }
 }
