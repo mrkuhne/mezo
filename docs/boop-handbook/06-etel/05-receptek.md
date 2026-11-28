@@ -18,9 +18,21 @@ osszefoglalo: A saját receptjeid pontszámmal és címkékkel; új receptet elm
   sorban a sárga érzékenység-jelzés, jobbra a recept saját pontszáma gyűrűben.
 
 **A receptlap:** címkék (étkezés, idő, adag, feldolgozottság), négy makró-csempe egy adagra, „Megeszem 1 adagot”;
-**Boop értékelése**: a pontszám, mire jó („edzés után jó”), egymondatos ítélet, összefoglaló, a szempontok csempéi
-(koppintásra magyarázat) és „Így lenne jobb” tippek; „Amire figyelsz” soronként a figyelt allergénekkel; hozzávalók,
-számozott lépések, és hogy eddig mikor etted.
+„Amire figyelsz” soronként a figyelt allergénekkel; hozzávalók, számozott lépések, és hogy eddig mikor etted.
+
+**Boop értékelése** (2026-11-28 óta, az Étel színeivel: zöld, méz, korall):
+
+- **rozetta** — a pontszám középen, körülötte szempontonként egy szirom, minél hosszabb, annál jobb; mellette egy
+  címsor, ami erre az ételre szól (például „Fehérjében erős reggeli, a só húzza le”), a megbízhatóság, mire jó, és egy
+  rövid összefoglaló;
+- **Ha ma megennéd** — a mai napod eddigi kalóriája és makrói, és hová jutnál ezzel az adaggal; ha túllépnéd a keretet,
+  azt is megmondja („120 kcal felett”), kímélő napon keret nélkül;
+- **Miből áll össze** — nyolc csempe, a leggyengébb sárga ponttal; egy csempére koppintva az oldal elhomályosul, és
+  egy részletes lap jön fel: mit mér, miért ennyi, a számok, **honnan jön** (melyik hozzávaló hozza a sót, a cukrot, a
+  telített zsírt, a rostot) és hogyan javítható; koppintás mellé bezárja;
+- **A receptjeid között** — hányadik a pontszáma a receptjeid közül, miben a legjobb, és hányszor etted;
+- **Így lenne jobb** — konkrét csere mennyiséggel, mellette, melyik szemponton javít;
+- **Hasznos volt?** — Igen / Nem, Boop ebből tanul.
 
 **„Ezt főztem”:** elmondod (diktálva), beírod és/vagy lefotózod (legfeljebb 6 kép), miből és mennyit főztél. Boop
 kiolvassa a hozzávalókat, és az **átnézőben** minden sor egyike:
@@ -42,13 +54,19 @@ műhely-behúzás átnézője ugyanezt tudja.
    nélkül.
 3. A mennyiséget a háttérrendszer a kamra-tétel egységébe váltja (30 deka → 300 g, 2 dl → 200 ml); amit nem lehet
    biztosan, azt megjelöli.
-4. A recept pontszámát szabályok adják (nyolc szempont), a szöveget (ítélet, összefoglaló, tippek) az AI írja.
+4. A recept pontszámát szabályok adják (nyolc szempont), a szöveget (címsor, összefoglaló, szempontonként 3–4 mondat,
+   tippek) az AI írja — csak a szabályok számait magyarázza, saját számot nem talál ki. A „honnan jön” sorokat nem az
+   AI, hanem a hozzávalók tápértéke adja, minden megnyitáskor frissen. A régi, sablonos szövegek a recept következő
+   megnyitásakor újraíródnak. A „Ha ma megennéd” a telefonon számolódik a mai étkezéseidből, ugyanúgy, mint az Étel
+   „Ma” fülén.
 5. Egy dupla koppintás sem hoz létre két receptet.
 
 ## Miért így
 A tulajdonos 2026-11-17-én kérte az „Ezt főztem”-et (spec `2026-11-17-boop-ezt-foztem-design.md`), 2026-11-19-én pedig
 a recept- és kamraoldalak átrendezését: tagolás, ikonok, címkék, látható pontszám és a szempontok, és hogy az
-érzékenység ne törje szét a sort.
+érzékenység ne törje szét a sort. 2026-11-27-én azt jelezte, hogy a webes appban gazdagabb volt a receptértékelés;
+a 2026-11-28-i újratervezés (döntések #124–#125) ezt hozta vissza és tette túl: napi hatás, rangsor, részletlap,
+ételre szabott szöveg.
 
 ## Beállítások
 | Beállítás | Mit állít | Alapérték |
@@ -65,6 +83,7 @@ a recept- és kamraoldalak átrendezését: tagolás, ikonok, címkék, láthat�
 |---|---|
 | `recipe` | A recept: név, kategória, adagszám, idők, címkék, kedvenc, szerep, és a mentés azonosítója a dupla mentés ellen |
 | `recipe_ingredient` | A hozzávalók, kamra-tételhez kötve, tápérték-pillanatképpel |
+| `message_feedback` | A „Hasznos volt?” válasz receptenként (Igen / Nem), a visszajelzések közös táblájában |
 
 ## Mi jön még
 - B6: „csak ezek a receptek N hétig” étrendi terv és bevásárlólista.
