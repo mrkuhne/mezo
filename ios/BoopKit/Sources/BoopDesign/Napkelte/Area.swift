@@ -347,8 +347,11 @@ public struct NKAreaPage<Content: View>: View {
                         NKMono(eyebrow.uppercased())
                         Spacer(minLength: 0)
                     }
+                    // capped: at the largest accessibility sizes a 34 pt serif word („Nagyjából") is wider than an SE
+                    // and broke mid-word; two steps below the top it still grows ~1.9× and words stay whole
                     Text(headline).nkFont(34, design: .serif).foregroundStyle(.white)
                         .fixedSize(horizontal: false, vertical: true)
+                        .dynamicTypeSize(...DynamicTypeSize.accessibility2)
                     NKHueText(sentence, hue: hue, size: 15.5)
                         .fixedSize(horizontal: false, vertical: true)
                 }

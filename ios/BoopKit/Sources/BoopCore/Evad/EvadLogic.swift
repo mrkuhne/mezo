@@ -468,6 +468,9 @@ public func evadMostRange(now: Date, calendar: Calendar = .current) -> (from: St
 
 /// `yyyy-MM-dd` of `date` in `calendar`'s time zone.
 public func evadYMD(_ date: Date, calendar: Calendar = .current) -> String {
-    let c = calendar.dateComponents([.year, .month, .day], from: date)
+    // the server's dates are Gregorian whatever the phone's calendar is (a Buddhist year would read 2569)
+    var g = Calendar(identifier: .gregorian)
+    g.timeZone = calendar.timeZone
+    let c = g.dateComponents([.year, .month, .day], from: date)
     return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
 }

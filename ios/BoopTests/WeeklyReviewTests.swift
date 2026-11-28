@@ -9,6 +9,7 @@ fileprivate final class ReviewCenter: ReminderCenter, @unchecked Sendable {
     var requests: [(id: String, day: DateComponents, hour: Int, minute: Int, route: String)] = []
     var cancelled: [String] = []
     var pending: Set<String>
+    var removedDeliveredPrefixes: [String] = []
     init(_ p: ReminderPermission = .allowed, pending: Set<String> = []) { permission = p; self.pending = pending }
     func status() async -> ReminderPermission { permission }
     func request() async -> Bool { permission = .allowed; return true }
@@ -21,7 +22,7 @@ fileprivate final class ReviewCenter: ReminderCenter, @unchecked Sendable {
     func isPending(id: String) async -> Bool { pending.contains(id) }
     func pendingIds(withPrefix prefix: String) async -> [String] { pending.filter { $0.hasPrefix(prefix) }.sorted() }
     func removeDelivered(ids: [String]) {}
-    func removeDelivered(withPrefix prefix: String) {}
+    func removeDelivered(withPrefix prefix: String) { removedDeliveredPrefixes.append(prefix) }
 }
 
 @MainActor
@@ -91,6 +92,14 @@ struct WeeklyReviewTests {
         let wed = try #require(cal.date(from: DateComponents(year: 2026, month: 11, day: 25, hour: 10)))
         await reminder.refresh(now: wed, hasSeason: true)
         #expect(center.requests.isEmpty && center.permission == .notDetermined)
+    }
+
+    @Test func signOutClearsTheReviewNotification() async {
+        // review finding: the id carries no user, so a pending Sunday request must not outlive the account
+        let center = ReviewCenter(.allowed, pending: [evadReviewReminderPrefix + "2026-11-23", "boop.other"])
+        await WeeklyReviewReminder.signedOut(center: center)
+        #expect(center.pending == ["boop.other"])
+        #expect(center.removedDeliveredPrefixes == [evadReviewReminderPrefix])
     }
 
     @Test func reviewRouteOpensTheFlow() async {

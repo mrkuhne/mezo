@@ -92,4 +92,13 @@ struct EvadReviewTests {
         let all = evadCandidates(EvadFixtures.overview(), review: c, now: Self.at("2026-11-29T19:00"), calendar: Self.bud)
         #expect(all.contains { $0.id == c.id })
     }
+
+    @Test func datesStayGregorianOnAnotherPhoneCalendar() throws {
+        var buddhist = Calendar(identifier: .buddhist)
+        buddhist.timeZone = TimeZone(identifier: "Europe/Budapest")!
+        var g = Calendar(identifier: .gregorian); g.timeZone = buddhist.timeZone
+        let sunday = try #require(g.date(from: DateComponents(year: 2026, month: 11, day: 29, hour: 19)))
+        #expect(evadYMD(sunday, calendar: buddhist) == "2026-11-29")
+        #expect(evadReviewWindow(now: sunday, calendar: buddhist) == EvadReviewWindow(weekMonday: "2026-11-23", nextMonday: "2026-11-30"))
+    }
 }

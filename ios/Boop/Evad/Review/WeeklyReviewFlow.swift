@@ -119,6 +119,7 @@ struct WeeklyReviewFlow: View {
         HStack {
             Button("Később", action: close)
                 .buttonStyle(.plain).nkFont(15, .medium).foregroundStyle(.white)
+                .lineLimit(1).fixedSize().dynamicTypeSize(...DynamicTypeSize.accessibility2)
                 .padding(.horizontal, 16).frame(minHeight: 40)
                 .glassEffect(.clear.interactive(), in: .capsule)
                 .accessibilityHint("Kilép, semmi nem változik")
@@ -169,8 +170,12 @@ struct WeeklyReviewFlow: View {
     private func finish() {
         let log = weeklyReviewLog()
         log.markDone(window.weekMonday, takeaway: takeaway)
-        let hasSeason = store?.overview != nil
-        Task { await WeeklyReviewReminder(center: SystemReminderCenter(), log: log).refresh(now: Date(), hasSeason: hasSeason) }
+        RitmusRouter.shared.reviewDoneTick += 1
+        // unknown (offline, no cache) is not "no season": only a known answer re-arms or clears the notification
+        if let store, store.overview != nil || store.empty {
+            let hasSeason = store.overview != nil
+            Task { await WeeklyReviewReminder(center: SystemReminderCenter(), log: log).refresh(now: Date(), hasSeason: hasSeason) }
+        }
         close()
     }
 }

@@ -125,8 +125,9 @@ public final class EvadMenuStore {
 
     /// The season's recipe options (allowed, usable, reason); nil until read.
     public private(set) var recipeOptions: [EvadRecipeOption]?
-    /// Wanted states not yet confirmed by the server (recipe id → on), applied over `recipeOptions`.
-    @ObservationIgnored private var desired: [String: Bool] = [:]
+    /// Wanted states not yet confirmed by the server (recipe id → on), applied over `recipeOptions`. Observed: the
+    /// tick reads `allowedIds`, so a tap must redraw it before the server answers.
+    private var desired: [String: Bool] = [:]
     @ObservationIgnored private var writing = false
     public private(set) var recipeOptionsProblem: PlanFetchError?
 
@@ -171,7 +172,8 @@ public final class EvadMenuStore {
                 return
             }
         }
-        await loadRecipeOptions(force: true)
+        // No re-read: each confirmed write already set `recipeOptions`, and a slow read answered from before a later
+        // write would turn that write's tick off (and the next write would drop it on the server).
     }
 
     // MARK: - The list

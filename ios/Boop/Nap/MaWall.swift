@@ -61,7 +61,9 @@ struct MaWall: View {
         r.register(WallSource(id: "brief") { [brief] input in
             briefWallCandidates(brief, now: input.now)
         })
-        r.register(WallSource(id: WallSources.evad) { [overview = evad?.overview, experiments = evad?.experiments.data, reviewDone = weeklyReviewLog().doneWeeks] input in
+        r.register(WallSource(id: WallSources.evad) { [overview = evad?.overview, experiments = evad?.experiments.data, reviewDone = weeklyReviewLog().doneWeeks,
+                                                        doneTick = RitmusRouter.shared.reviewDoneTick] input in
+            _ = doneTick   // read in body, so a finished review redraws the wall
             let window = evadReviewWindow(now: input.now)
             let review = evadReviewCandidate(window: window, hasSeason: overview != nil,
                                              done: window.map { reviewDone.contains($0.weekMonday) } ?? false)

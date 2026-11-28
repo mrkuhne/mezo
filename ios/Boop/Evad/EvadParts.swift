@@ -147,6 +147,9 @@ struct EvadDayDotsView: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("A hét napjai: \(evadDayDotsSpoken(dots))")
+        .accessibilityAction(named: Text("Megnyitom a napokat")) {
+            if let d = dots.last(where: { $0.state != .future }) { onDay?(d.date) }
+        }
     }
 
     @ViewBuilder private func dot(_ s: EvadDayState, size: CGFloat = 30) -> some View {

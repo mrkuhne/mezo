@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import Observation
 @testable import BoopCore
 
 /// Invented menu and list payloads ("például") — never the owner's figures.
@@ -266,6 +267,35 @@ struct EvadMenuTests {
         let bodies = Self.putBodies(stub)
         #expect(bodies.last == #"{"recipeIds":["a","b","c","d"]}"#, "the second write carries the first")
         #expect(store.allowedIds == ["a", "b", "c", "d"])
+    }
+
+    @Test @MainActor func aStaleReadAfterAWriteCannotDropATap() async {
+        // review finding: a slow re-read answered from before the second write must not turn the second tick off
+        let stub = StubTransport()
+        let store = await Self.toggleStore(stub)
+        stub.on("putSeasonRecipes", .json(200, EvadFixtures.seasonJSON))
+        stub.on("putSeasonRecipes", .json(200, EvadFixtures.seasonJSON))
+        stub.on("listSeasonRecipes", .json(200, Self.optionsJSON(allowed: ["a", "b"])))   // stale: neither c nor d
+        await store.setAllowed("c", on: true, seasonId: "s1")
+        await store.setAllowed("d", on: true, seasonId: "s1")
+        #expect(store.allowedIds == ["a", "b", "c", "d"], "the confirmed writes are the truth, not a later read")
+        #expect(Self.putBodies(stub).last == #"{"recipeIds":["a","b","c","d"]}"#)
+    }
+
+    @Test @MainActor func aTapIsSeenAtOnceWhileAWriteRuns() async {
+        // review finding: the tick must flip on the tap, not when the server answers
+        let stub = StubTransport()
+        let store = await Self.toggleStore(stub)
+        stub.on("putSeasonRecipes", .slowJson(200, EvadFixtures.seasonJSON, ms: 200))
+        stub.on("putSeasonRecipes", .json(200, EvadFixtures.seasonJSON))
+        let first = Task { await store.setAllowed("c", on: true, seasonId: "s1") }
+        try? await Task.sleep(for: .milliseconds(30))
+        nonisolated(unsafe) var changed = false
+        withObservationTracking { _ = store.allowedIds } onChange: { changed = true }
+        await store.setAllowed("d", on: true, seasonId: "s1")   // rides the running write, returns at once
+        #expect(changed, "allowedIds changed for SwiftUI before any answer")
+        #expect(store.allowedIds.contains("d"))
+        await first.value
     }
 
     @Test @MainActor func offlineToggleChangesNothing() async {

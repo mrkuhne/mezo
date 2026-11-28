@@ -107,7 +107,7 @@ struct RecipeDetailSheet: View {
                     EtelMacroTiles(kcal: s.kcal, p: s.p, c: s.c, f: s.f)
                 }
                 NKPill(logging ? "Rögzítem…" : "Megeszem 1 adagot", glyph: "plate-deep") { Task { await log(r) } }.disabled(logging)
-                EtelMenuToggleRow(recipe: r)
+                EtelMenuToggleRow(recipe: r, showsProblem: true)
                 photoControls(r)
             }
             .padding(18)

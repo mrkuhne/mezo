@@ -296,11 +296,24 @@ struct EtelMenuCard: View {
 struct EtelMenuToggleRow: View {
     let recipe: Recipe
     var leading: CGFloat = 0
+    /// The recipe sheet shows the store's problem („Ehhez internet kell.") under the row; the Receptek list shows it once.
+    var showsProblem = false
     @Environment(EvadStore.self) private var evad: EvadStore?
 
     private var seasonId: String? { evad?.overview?.season.id }
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            row
+            if showsProblem, let p = evad?.menu.actionProblem {
+                Text(p).nkFont(12).foregroundStyle(.white.opacity(0.6))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.leading, leading).padding(.bottom, 10)
+            }
+        }
+    }
+
+    @ViewBuilder private var row: some View {
         let t = etelMenuToggle(recipe, options: evad?.menu.recipeOptions, hasSeason: seasonId != nil, allowed: evad?.menu.allowedIds)
         switch t {
         case .hidden: EmptyView()

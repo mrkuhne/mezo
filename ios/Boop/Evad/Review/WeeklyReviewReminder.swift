@@ -37,6 +37,14 @@ import BoopCore
     }
 }
 
+extension WeeklyReviewReminder {
+    /// Sign-out: the request id carries no user, so the waiting Sunday request and a delivered one go with the account.
+    static func signedOut(center: ReminderCenter) async {
+        for id in await center.pendingIds(withPrefix: evadReviewReminderPrefix) { center.cancel(id: id) }
+        center.removeDelivered(withPrefix: evadReviewReminderPrefix)
+    }
+}
+
 /// The signed-in user's review log on this phone.
 @MainActor func weeklyReviewLog() -> EvadReviewLog {
     EvadReviewLog(defaults: .standard, userKey: ReminderHub.userKey ?? "anon")
