@@ -1271,5 +1271,20 @@
       "mezo-r36n9.204"
     ],
     "mi_valtozott": "A Sport terület Hét fülén látszik a heted két sávban (felül kondi, alul sport; kész vagy tervben), a heti mozgás, a kondi és a sport összideje, és a terhelés az elmúlt 6 hétre. Itt veszed fel és szerkeszted a rendszeres sportalkalmaidat (sport, nap, kezdés, hossz, edzés vagy meccs, hely); egy doboz megmondja, mennyi idő lesz aznap a kondi és a sport között, és ha azon a napon már van egy másik alkalom. Törlés visszavonással, egyszeri események (például egy torna) felvétele és törlése. Ha egy mentés nem sikerül, semmi nem vész el: a lap nyitva marad, és újra lehet próbálni. A telefonra a Sport 6. lépésben kerül fel."
+  },
+  "df63cb281": {
+    "cim": "A Mezociklusaim, a mezociklus részletei, a zárójelentés és a terhelés oldalak is fő kártyát és egységenként üvegkártyát kaptak",
+    "datum": "2026-11-28",
+    "verzio": "",
+    "tipus": "Kinézet",
+    "hova": [
+      "iPhone app",
+      "Telefonra telepítve"
+    ],
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.197"
+    ],
+    "mi_valtozott": "Minden mezociklus-aloldal tetején egy fő kártya áll: a Mezociklusaimon a futó mezociklus a hetek ívével és a testtel; a részletoldalon a hetek íve egy címkével (fut · következik · lezárt · sablon); a zárójelentésen az eredmény gyűrűje a két számmal és Boop egy mondatával; a terhelés oldalon a hét összes szettje, a test és az öt legtöbbet dolgozó izom; egy izom oldalán a hetenkénti oszlopok. Alattuk minden csoport — Következik, Sablonjaim, Lezártak, A hét napjai, Mit kapnak az izmok, Erő, Boop értékelése, A határai — saját kártyán, a sorok egy kártyán belül. Az újraindítás és a lezárás lapján a számok, a kapcsoló és a megjegyzés mező kártyára került. Minden gomb és adat a helyén maradt; a legnagyobb betűméretnél semmi nem vágódik le."
   }
 }
