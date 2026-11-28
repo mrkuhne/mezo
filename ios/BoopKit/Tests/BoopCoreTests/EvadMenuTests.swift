@@ -110,7 +110,7 @@ struct EvadMenuTests {
         #expect(c.role == .expires && c.area == WallSources.evad && c.primary == "Átnézem")
         #expect(c.expiresAt == Self.cal.date(from: DateComponents(year: 2026, month: 11, day: 23)))
         #expect(evadCandidates(o, now: sunday, calendar: Self.cal).contains { $0.id == c.id })
-        #expect(evadWallOpens(c.id) == "menu")
+        #expect(evadWallTarget(c.id) == .etelMenu)
         // Saturday (before the menu day) — not yet; Monday (the week has started) — gone
         #expect(evadMenuCandidate(o, now: Self.at(2026, 11, 21, 20), calendar: Self.cal) == nil)
         #expect(evadMenuCandidate(o, now: Self.at(2026, 11, 23, 8), calendar: Self.cal) == nil)

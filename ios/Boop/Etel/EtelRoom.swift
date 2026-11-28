@@ -840,6 +840,7 @@ struct EtelRoom: View {
         #if DEBUG
         let preview = UserDefaults.standard.string(forKey: "etelTab").flatMap(EtelTab.init(rawValue:))
         _selected = SceneStorage(wrappedValue: (preview ?? tab).rawValue, "etel.tab")
+        _menuOnly = State(initialValue: UserDefaults.standard.bool(forKey: "etelMenuOnly"))
         #else
         _selected = SceneStorage(wrappedValue: tab.rawValue, "etel.tab")
         #endif

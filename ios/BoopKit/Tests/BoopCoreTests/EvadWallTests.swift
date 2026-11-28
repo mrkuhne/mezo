@@ -37,7 +37,7 @@ struct EvadWallTests {
         #expect(c.happenedAt == Self.cal.startOfDay(for: Self.at(2026, 12, 22)),
                 "it happened today, so a meal logged later today still wins the slot")
         #expect(!c.notifiable, "no new notification policy: only .expires may ring")
-        #expect(evadWallOpens(c.id) == nil, "it opens the Évad page itself")
+        #expect(evadWallTarget(c.id) == .evad(tab: "Terv", sub: nil), "it opens Évad › Terv")
         // the last day says „ma"; a week before still counts, eight days before does not
         #expect(evadCandidates(Self.overview(), now: Self.at(2026, 12, 27, 20), calendar: Self.cal).first?.text.contains("Ma") == true)
         #expect(evadCandidates(Self.overview(), now: Self.at(2026, 12, 20), calendar: Self.cal).count == 1)
@@ -55,7 +55,7 @@ struct EvadWallTests {
         #expect(c.text.contains("Kevesebbet égetsz, mint gondoltuk"))
         #expect(c.why == "A terv napi 2650 kcal-lal számolt, de inkább 2580 körül égetsz.", "the why is the overview's own body")
         #expect(c.expiresAt == nil && !c.notifiable)
-        #expect(evadWallOpens(c.id) == "modositas", "Átnézem opens Évad → Módosítás")
+        #expect(evadWallTarget(c.id) == .evad(tab: "Terv", sub: "modositas"), "Átnézem opens Évad › Terv › Módosítás")
         #expect(!c.why.isEmpty)
         // both at once near the end of the season: one per role
         let both = evadCandidates(Self.overview(insights: Self.learned), now: Self.at(2026, 12, 24), calendar: Self.cal)
@@ -69,7 +69,7 @@ struct EvadWallTests {
         #expect(id(Self.at(2026, 11, 18)) == mon && id(Self.at(2026, 11, 22, 21)) == mon, "the same card all week, so a dismissal holds")
         #expect(id(Self.at(2026, 11, 23)) != mon, "a new week may say it again")
         #expect(mon.contains("2026-W47") && mon.contains("s1"))
-        #expect(evadWallOpens(mon) == "modositas")
+        #expect(evadWallTarget(mon) == .evad(tab: "Terv", sub: "modositas"))
     }
 
     @Test func seasonEndWhyHasNoRepeatedEndLine() throws {
@@ -96,7 +96,7 @@ struct EvadWallTests {
         #expect(c.rank < 0.7, "below the food tip")
         #expect(!c.notifiable)
         #expect(evadWallProposalID(c.id) == "p1")
-        #expect(evadWallOpens(c.id) == "hatas")
+        #expect(evadWallTarget(c.id) == .evad(tab: "Kísérlet", sub: nil))
         // no season → no card, even with a proposal
         #expect(evadCandidates(nil, experiments: x, now: Self.at(2026, 11, 20), calendar: Self.cal).isEmpty)
     }
@@ -109,7 +109,7 @@ struct EvadWallTests {
         #expect(c.sub.hasPrefix("14 nap · "))
         #expect(c.happenedAt == Self.cal.date(from: DateComponents(year: 2026, month: 11, day: 19)))
         #expect(!c.notifiable && evadWallProposalID(c.id) == nil)
-        #expect(evadWallOpens(c.id) == "kiserlet:d1", "a tap opens Évad → Hatás → that result")
+        #expect(evadWallTarget(c.id) == .evad(tab: "Kísérlet", sub: "kiserlet:d1"), "a tap opens Évad › Kísérlet › that result")
         // within three days (the day it finished and the next two); later it is not news
         #expect(evadCandidates(Self.overview(), experiments: x, now: Self.at(2026, 11, 21), calendar: Self.cal)
             .contains { $0.role == .happened })

@@ -4,7 +4,7 @@ import HTTPTypes
 import OpenAPIRuntime
 import BoopCore
 
-/// Simulator review only (`-preview shell -previewTab terv`): the season API answered locally with the approved spike's
+/// Simulator review only (`-preview shell -previewHome evad`, `-evadTab Most|Hét|Terv|Kísérlet`): the season API answered locally with the approved spike's
 /// invented, real-looking figures (84,1 kg → 82, 4 edzés + 2 röplabda, 2440 / 2270 kcal …) — never the owner's. The
 /// Mac's firewall blocks the simulator app's network, so this is how the Évad page is looked at. The consequences of a
 /// change come from the spike's toy model; on the phone they are the server's goal engine.
