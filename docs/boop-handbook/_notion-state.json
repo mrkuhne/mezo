@@ -688,7 +688,7 @@
     },
     "kezikonyv:06-etel/05-receptek": {
       "page_id": "4168968e-752b-816b-af92-d893e20f59e2",
-      "hash": "e3f7b85c1683"
+      "hash": "85a0bc79a17c"
     },
     "kezikonyv:06-etel/06-kamra": {
       "page_id": "4168968e-752b-81cc-96d5-c3f0fa42540c",
@@ -3577,6 +3577,30 @@
     "kiadasok:1428c2232": {
       "page_id": "4268968e-752b-81a1-9c92-e9b7ad52093b",
       "hash": "00fb51e3c04a"
+    },
+    "jegyek:mezo-r36n9.196": {
+      "page_id": "4268968e-752b-81fc-83dd-f7d6abedf12f",
+      "hash": "f1224d44c351"
+    },
+    "jegyek:mezo-r36n9.211": {
+      "page_id": "4268968e-752b-8132-9691-c33ce7e2f262",
+      "hash": "299263aefe40"
+    },
+    "jegyek:mezo-r36n9.199": {
+      "page_id": "4268968e-752b-81ac-8fb7-dc57a188f408",
+      "hash": "973536fe52b1"
+    },
+    "jegyek:mezo-r36n9.212": {
+      "page_id": "4268968e-752b-8156-91bd-f0dc2946e2b4",
+      "hash": "d3fb3555fb40"
+    },
+    "dontesek:d-2026-11-28-recept-ertekeles-proba": {
+      "page_id": "4268968e-752b-81e3-9ec1-c695ce41e9dc",
+      "hash": "f441b9924baf"
+    },
+    "dontesek:d-2026-11-28-etel-szinek": {
+      "page_id": "4268968e-752b-8124-b6b0-e20aecf6994e",
+      "hash": "06fefa2414ba"
     }
   }
 }
