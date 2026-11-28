@@ -752,7 +752,7 @@
     },
     "kezikonyv:07-edzes/10-sport-futas": {
       "page_id": "4168968e-752b-8189-bcd3-caf1aa23fda3",
-      "hash": "43d7c8c2ce06"
+      "hash": "2a1d872efcca"
     },
     "kezikonyv:07-edzes/11-kihagyas-kimelo": {
       "page_id": "4168968e-752b-8119-981d-e24f027f7f4f",
@@ -1684,979 +1684,979 @@
     },
     "funkciok:train-futoblokk": {
       "page_id": "41e8968e-752b-81d9-b652-fb36e983cd51",
-      "hash": "5eb974d62c9f"
+      "hash": "150f8ca89e7b"
     },
     "funkciok:train-sajat-edzesek": {
       "page_id": "41e8968e-752b-81ff-a495-ec597f63c057",
-      "hash": "8da82b05be8f"
+      "hash": "babbdaed6202"
     },
     "funkciok:train-kihagyas": {
       "page_id": "41e8968e-752b-815d-8b17-da0fef46442f",
-      "hash": "3b266b1cfad5"
+      "hash": "0daccd06a1f8"
     },
     "funkciok:train-kimelo-mod": {
       "page_id": "41e8968e-752b-81f2-a97e-f6ae7b77af3a",
-      "hash": "f9806b0f603c"
+      "hash": "37e55e4409cf"
     },
     "funkciok:train-reggeli-keszenlet": {
       "page_id": "41e8968e-752b-8181-92ff-d61564690063",
-      "hash": "4898824a7cf9"
+      "hash": "7d1f9d741db0"
     },
     "funkciok:train-idotartam-becsles": {
       "page_id": "41e8968e-752b-8122-995c-dd0f6d89e823",
-      "hash": "a7ea24a7619f"
+      "hash": "a48df0e23d7c"
     },
     "funkciok:train-zaro-gyakorlatok": {
       "page_id": "41e8968e-752b-81d8-8080-dc9d2724216a",
-      "hash": "b8356b57b4e9"
+      "hash": "211c3a6724f6"
     },
     "funkciok:train-felbehagyott-edzes-zarasa": {
       "page_id": "41e8968e-752b-814c-9043-c35143875ec4",
-      "hash": "adcda553bfce"
+      "hash": "76b9b71fd715"
     },
     "funkciok:train-edzes-energia": {
       "page_id": "41e8968e-752b-81aa-aa41-f31313c77053",
-      "hash": "a02defa69668"
+      "hash": "134f414b7143"
     },
     "funkciok:train-ermek": {
       "page_id": "41e8968e-752b-81d8-8811-e64d7ef0cb48",
-      "hash": "2575ee751a54"
+      "hash": "9aedf8521789"
     },
     "funkciok:wearable-edzesek-egeszsegbol": {
       "page_id": "41e8968e-752b-8113-b028-d2795dd6d369",
-      "hash": "f1012e7f8413"
+      "hash": "b769ba95886e"
     },
     "funkciok:companion-blokkzaro-ertekeles": {
       "page_id": "41e8968e-752b-81ff-859b-e5ecd43ede9f",
-      "hash": "c93f58f1bc33"
+      "hash": "0dac2b076c30"
     },
     "funkciok:proactive-edzes-kihivasok": {
       "page_id": "41e8968e-752b-81f0-81c6-ef5fb867bc51",
-      "hash": "b26289b03ed7"
+      "hash": "7d6721ee38a6"
     },
     "funkciok:meal-ai-vazlat": {
       "page_id": "41e8968e-752b-8111-a7d6-f1525e153544",
-      "hash": "5577290e76eb"
+      "hash": "e097731f8a2e"
     },
     "funkciok:meal-rogzites": {
       "page_id": "41e8968e-752b-81bb-a4b6-face14858bab",
-      "hash": "2ead53eea344"
+      "hash": "e715d8ef181b"
     },
     "funkciok:meal-javitas-torles": {
       "page_id": "41e8968e-752b-8136-bea3-feb9597c9dc7",
-      "hash": "eaabc04d7f49"
+      "hash": "746120598e45"
     },
     "funkciok:meal-napi-keret": {
       "page_id": "41e8968e-752b-8143-87c4-d6e1a4874491",
-      "hash": "e21d9f8d219a"
+      "hash": "2cc0d3715f19"
     },
     "funkciok:meal-heti-kep": {
       "page_id": "41e8968e-752b-814b-96b4-e2db96cfa493",
-      "hash": "b826d8b0b7c6"
+      "hash": "0697c9c1c614"
     },
     "funkciok:meal-napi-terv-tipp": {
       "page_id": "41e8968e-752b-814d-899b-ffe806f99b17",
-      "hash": "1429e9684d56"
+      "hash": "8890ddad5aa1"
     },
     "funkciok:meal-szokasosak": {
       "page_id": "41e8968e-752b-8163-935a-e8e262416554",
-      "hash": "4e7bd5e6207d"
+      "hash": "57e113120006"
     },
     "funkciok:meal-boop-ertekeles": {
       "page_id": "41e8968e-752b-81bd-9368-e75d6333ec39",
-      "hash": "c25c2df66dc6"
+      "hash": "f85959639371"
     },
     "funkciok:meal-ertekeles-hatterben": {
       "page_id": "41e8968e-752b-810c-9b8e-c52b416ca327",
-      "hash": "80e23d0605cc"
+      "hash": "f6e4d4cd0ced"
     },
     "funkciok:meal-viz": {
       "page_id": "41e8968e-752b-8198-bbbd-fc05cf793032",
-      "hash": "6a1d1fc5c82b"
+      "hash": "37eca12238f8"
     },
     "funkciok:meal-etelfoto": {
       "page_id": "41e8968e-752b-8105-a4b7-faec954502c8",
-      "hash": "4af516b29b7e"
+      "hash": "a972b448b418"
     },
     "funkciok:meal-osszes-foto-torles": {
       "page_id": "41e8968e-752b-817e-9e38-eeb4fc96dbb4",
-      "hash": "c011b15a9d9d"
+      "hash": "caf18934feba"
     },
     "funkciok:meal-recept-elozmeny": {
       "page_id": "41e8968e-752b-8115-9606-da9d0f0708b7",
-      "hash": "00a08fe3ee42"
+      "hash": "067493dc768e"
     },
     "funkciok:meal-ujraszamolas": {
       "page_id": "41e8968e-752b-8155-932f-f44c7940c49b",
-      "hash": "ec0db6aa8232"
+      "hash": "8a92c50e25e5"
     },
     "funkciok:nutrition-napi-cel": {
       "page_id": "41e8968e-752b-81c5-999d-d24f9f82b68f",
-      "hash": "b2656f864d0a"
+      "hash": "6cab0e894a21"
     },
     "funkciok:nutrition-pontozas": {
       "page_id": "41e8968e-752b-8148-9c5d-e6c3ab9b235c",
-      "hash": "d4857958f1c0"
+      "hash": "639922569a62"
     },
     "funkciok:nutrition-etrendi-beallitasok": {
       "page_id": "41e8968e-752b-8116-9127-f1333a507481",
-      "hash": "4080e1f6c3f9"
+      "hash": "ab11b68a42d1"
     },
     "funkciok:nutrition-erzekenyseg-profil": {
       "page_id": "41e8968e-752b-81ba-acb2-c93543c5e3f4",
-      "hash": "fa0e7d5e65cc"
+      "hash": "64fc1536c0bc"
     },
     "funkciok:nutrition-erzekenyseg-jelzes": {
       "page_id": "41e8968e-752b-8195-ae20-f5184baaec7d",
-      "hash": "d04599e541f4"
+      "hash": "466dcbce6741"
     },
     "funkciok:nutrition-napi-terv-motor": {
       "page_id": "41e8968e-752b-812d-91f8-e0c7033b39a7",
-      "hash": "48c66dd72c59"
+      "hash": "b639309a1f4a"
     },
     "funkciok:fuel-etkezesi-ritmus": {
       "page_id": "41e8968e-752b-818d-abda-e0c61f4c0a68",
-      "hash": "d576c32fe840"
+      "hash": "d321c7a77fd2"
     },
     "funkciok:fuel-stack-lista": {
       "page_id": "41e8968e-752b-81d8-92e9-c7be2be9ce54",
-      "hash": "3cb0a32224de"
+      "hash": "7cad46eedc90"
     },
     "funkciok:fuel-bevetel": {
       "page_id": "41e8968e-752b-81e6-a8d2-ecba25d4e012",
-      "hash": "0d9fca67735e"
+      "hash": "4a6982a0b890"
     },
     "funkciok:fuel-elhelyezes": {
       "page_id": "41e8968e-752b-81e3-bda8-ff346e786e4d",
-      "hash": "4c957a3218ee"
+      "hash": "490a3894a7bb"
     },
     "funkciok:fuel-kezi-athelyezes": {
       "page_id": "41e8968e-752b-818b-9928-ee1ca9e73e56",
-      "hash": "74746c8b17ef"
+      "hash": "dd53e69c5ec5"
     },
     "funkciok:fuel-idosav-sablon": {
       "page_id": "41e8968e-752b-8186-95d5-e1d11d811330",
-      "hash": "d81f669fdfce"
+      "hash": "97a14b9aa5e7"
     },
     "funkciok:fuel-sablon-ai-ertekeles": {
       "page_id": "41e8968e-752b-8134-a2e2-fab51b678c31",
-      "hash": "bdf29a69d39e"
+      "hash": "cdefef015a9d"
     },
     "funkciok:fuel-stack-indulo": {
       "page_id": "41e8968e-752b-81dc-8c87-e5f0888bf729",
-      "hash": "bf5ad7b3e6d1"
+      "hash": "61bd44e777c3"
     },
     "funkciok:recipe-konyvtar": {
       "page_id": "41e8968e-752b-81fb-aaca-ea81a9166189",
-      "hash": "b36a1ef51eaa"
+      "hash": "6e34e74b9247"
     },
     "funkciok:recipe-javitas-torles": {
       "page_id": "41e8968e-752b-81cd-a7b5-ce29ea47a6f6",
-      "hash": "e34ad3ba68d6"
+      "hash": "054759f614c0"
     },
     "funkciok:recipe-behuzas-link": {
       "page_id": "41e8968e-752b-8155-8aa3-c9cf7617dd44",
-      "hash": "a51e91b7ce1a"
+      "hash": "a61a2ca4eb9a"
     },
     "funkciok:recipe-behuzas-szoveg-foto": {
       "page_id": "41e8968e-752b-81fe-bd6a-e7f07a29aef6",
-      "hash": "3ee7eaac8b55"
+      "hash": "0db5993dae24"
     },
     "funkciok:recipe-ezt-foztem": {
       "page_id": "41e8968e-752b-81b4-9ad5-f183e9c76c12",
-      "hash": "7ff3a263a3d7"
+      "hash": "86cb231ce117"
     },
     "funkciok:recipe-receptmuhely": {
       "page_id": "41e8968e-752b-8117-9369-eb4493a871f6",
-      "hash": "dc45d3c02b17"
+      "hash": "0dd00bae1842"
     },
     "funkciok:recipe-recept-ertekeles": {
       "page_id": "41e8968e-752b-819d-bef9-fc79fd4efb45",
-      "hash": "c63e1243c469"
+      "hash": "a8cdc98a2634"
     },
     "funkciok:recipe-receptfoto": {
       "page_id": "41e8968e-752b-81ad-b425-e481667d7b48",
-      "hash": "05847f582339"
+      "hash": "f8712ea8ff0a"
     },
     "funkciok:recipe-allergen-osszesites": {
       "page_id": "41e8968e-752b-8103-b1c8-fb3417ad8f77",
-      "hash": "0d2f7cc1081d"
+      "hash": "ef10e902a178"
     },
     "funkciok:recipe-frissul-a-kamraval": {
       "page_id": "41e8968e-752b-8192-9a83-fc3c2b0cb3c8",
-      "hash": "a4f0dbe70078"
+      "hash": "4e3a306e8bc5"
     },
     "funkciok:pantry-kamra-lista": {
       "page_id": "41e8968e-752b-81a1-a70d-dd44f01fa9df",
-      "hash": "5ab5400fac93"
+      "hash": "991d4806d67e"
     },
     "funkciok:pantry-katalogusbol": {
       "page_id": "41e8968e-752b-8152-b47b-e94f6971320d",
-      "hash": "7f26212778cf"
+      "hash": "2595b12f937c"
     },
     "funkciok:pantry-kezzel": {
       "page_id": "41e8968e-752b-8144-85d8-f6b8749b92c8",
-      "hash": "9bf46157a7a4"
+      "hash": "657bb312f15c"
     },
     "funkciok:pantry-gyors-becsles": {
       "page_id": "41e8968e-752b-81d4-ada6-f627f21c5685",
-      "hash": "880744ccdbf6"
+      "hash": "acd9a013face"
     },
     "funkciok:pantry-vonalkod": {
       "page_id": "41e8968e-752b-8199-ae96-c28166f9c483",
-      "hash": "5dc26f610810"
+      "hash": "ea5dd1a3adf4"
     },
     "funkciok:pantry-termekoldal": {
       "page_id": "41e8968e-752b-814e-9580-deee9aed3a10",
-      "hash": "c7e8609342f7"
+      "hash": "39c5b27a8dba"
     },
     "funkciok:pantry-cimkefoto": {
       "page_id": "41e8968e-752b-8198-95ef-c033ace2be10",
-      "hash": "36855d6be01c"
+      "hash": "54ca5c00d378"
     },
     "funkciok:pantry-pontositas": {
       "page_id": "41e8968e-752b-818e-9078-f28606f1af51",
-      "hash": "11469f7bd8c8"
+      "hash": "36725b7fe25e"
     },
     "funkciok:pantry-torles": {
       "page_id": "41e8968e-752b-817a-97fa-d299e0f053ca",
-      "hash": "bd0113f0ba9f"
+      "hash": "92a9ea5e98a1"
     },
     "funkciok:pantry-tetel-pontszam": {
       "page_id": "41e8968e-752b-8197-977c-e63e9024e65c",
-      "hash": "e4993dda073d"
+      "hash": "5dfcc506ceb9"
     },
     "funkciok:pantry-kiegeszito-tetelek": {
       "page_id": "41e8968e-752b-81f3-8864-fb6fe61c6c95",
-      "hash": "0f20d80785f1"
+      "hash": "19633cbcf2c1"
     },
     "funkciok:pantry-ar-keszlet": {
       "page_id": "41e8968e-752b-8172-8da5-c628e309c821",
-      "hash": "eabfefee5222"
+      "hash": "4045d4c9b5c7"
     },
     "funkciok:pantry-katalogus-feltoltes": {
       "page_id": "41e8968e-752b-8175-956d-db1f795a1560",
-      "hash": "ecce6bf2d7e8"
+      "hash": "32509782f1c2"
     },
     "funkciok:wearable-ejszakak": {
       "page_id": "41e8968e-752b-81e5-9c17-e75e51e285ef",
-      "hash": "15f574bb602b"
+      "hash": "6b919ee64ad1"
     },
     "funkciok:wearable-napi-ertekek": {
       "page_id": "41e8968e-752b-815e-b4e8-c6591526e7ea",
-      "hash": "22278ea32d18"
+      "hash": "358ae577ac36"
     },
     "funkciok:wearable-egyedi-meresek": {
       "page_id": "41e8968e-752b-8158-bea8-ceb86a6be384",
-      "hash": "75b8750f26b7"
+      "hash": "dff859ce411d"
     },
     "funkciok:wearable-torlesek": {
       "page_id": "41e8968e-752b-8150-b048-d1c8ff196dd3",
-      "hash": "c02887293014"
+      "hash": "e43c6d249680"
     },
     "funkciok:biometrics-testadatok": {
       "page_id": "41e8968e-752b-81bc-94a9-f055717e9845",
-      "hash": "e9b6f7f9dfe0"
+      "hash": "716ae1bbd67f"
     },
     "funkciok:biometrics-sulynaplo": {
       "page_id": "41e8968e-752b-81a8-9c57-ea8348c47a7a",
-      "hash": "58d917dece9a"
+      "hash": "94d9d005b243"
     },
     "funkciok:biometrics-suly-egeszsegbol": {
       "page_id": "41e8968e-752b-8162-9468-f6352e78efca",
-      "hash": "204aa9807fee"
+      "hash": "01f69427070d"
     },
     "funkciok:biometrics-suly-trend": {
       "page_id": "41e8968e-752b-8175-a211-f5f15901235f",
-      "hash": "c6e80d996193"
+      "hash": "55fab9103f80"
     },
     "funkciok:biometrics-alvas-egy-ejszaka": {
       "page_id": "41e8968e-752b-8121-a335-c24d2889d60b",
-      "hash": "f7283ee70c8d"
+      "hash": "67c70587153e"
     },
     "funkciok:biometrics-kezi-alvasnaplo": {
       "page_id": "41e8968e-752b-816b-976a-fe767f3ab624",
-      "hash": "f1bca279a58c"
+      "hash": "66a40972c487"
     },
     "funkciok:biometrics-alvas-kepernyokep": {
       "page_id": "41e8968e-752b-81a3-ac19-f2ea0408abfd",
-      "hash": "c00703504104"
+      "hash": "9b7a9f8da870"
     },
     "funkciok:biometrics-alvascel": {
       "page_id": "41e8968e-752b-8153-8ee8-ec52369df54c",
-      "hash": "d88814f76ec8"
+      "hash": "2c22d818e7e0"
     },
     "funkciok:biometrics-alvashiany": {
       "page_id": "41e8968e-752b-81a9-8031-dbaac7e22eab",
-      "hash": "5f9c76ce85c7"
+      "hash": "39296882bee6"
     },
     "funkciok:medication-gyogyszerek": {
       "page_id": "41e8968e-752b-81e9-b8dd-db59a8a919aa",
-      "hash": "d4b0c5ce7d19"
+      "hash": "59458f005a13"
     },
     "funkciok:medication-adagok": {
       "page_id": "41e8968e-752b-816c-8b0f-df7226a2a517",
-      "hash": "af9b54e5a2ff"
+      "hash": "c7eb44e330de"
     },
     "funkciok:medication-ciklus-fazis": {
       "page_id": "41e8968e-752b-8183-baba-d67a27367d68",
-      "hash": "227c61f23f6b"
+      "hash": "03e69d213cf4"
     },
     "funkciok:proactive-diagnozis": {
       "page_id": "41e8968e-752b-81a4-bf03-cb16532e8da4",
-      "hash": "cb22aac1b039"
+      "hash": "74682d83f4e4"
     },
     "funkciok:wearable-naptar": {
       "page_id": "41e8968e-752b-8183-a015-f5e5481b3615",
-      "hash": "d78bf6b2c0c1"
+      "hash": "df5b83796958"
     },
     "funkciok:wearable-checkin-pillanatkep": {
       "page_id": "41e8968e-752b-8189-8055-cd3e27491998",
-      "hash": "4ddd6ab555b8"
+      "hash": "c1905142ae7f"
     },
     "funkciok:biometrics-checkin": {
       "page_id": "41e8968e-752b-8134-a798-d3a6e90f0804",
-      "hash": "20ffae972290"
+      "hash": "6fb04e55a570"
     },
     "funkciok:biometrics-checkin-kerdesek": {
       "page_id": "41e8968e-752b-819e-948c-e1cae17fdf93",
-      "hash": "10f420797b82"
+      "hash": "229f154bda84"
     },
     "funkciok:journal-szabad-naplo": {
       "page_id": "41e8968e-752b-8104-a831-ef44574ae072",
-      "hash": "37e4af5088d2"
+      "hash": "cfd5b042ac7d"
     },
     "funkciok:journal-emlekezet": {
       "page_id": "41e8968e-752b-816c-aed7-f18db5f6bb8b",
-      "hash": "92ecc6781a6c"
+      "hash": "ac0090f3284b"
     },
     "funkciok:journal-dontesnaplo": {
       "page_id": "41e8968e-752b-812a-9795-f0f004983fe1",
-      "hash": "de229962f53f"
+      "hash": "dd94613da671"
     },
     "funkciok:journal-hala": {
       "page_id": "41e8968e-752b-81ec-b494-fda7c0fa96b3",
-      "hash": "0942695225b9"
+      "hash": "aeb6200a4e4f"
     },
     "funkciok:dayclose-esti-zaras": {
       "page_id": "41e8968e-752b-8125-9d59-d32a340088a0",
-      "hash": "d9f88dc4cda0"
+      "hash": "5ababf58cc15"
     },
     "funkciok:dayclose-napok-lista": {
       "page_id": "41e8968e-752b-81ce-9016-f5e0dd004b26",
-      "hash": "06caf3534297"
+      "hash": "b9b766984908"
     },
     "funkciok:dayclose-boop-mondat": {
       "page_id": "41e8968e-752b-811b-8392-c33f55bc1818",
-      "hash": "351ce825374b"
+      "hash": "b2a810d6d752"
     },
     "funkciok:dayclose-checkin-mondat": {
       "page_id": "41e8968e-752b-81ab-b59a-ff8c119ea902",
-      "hash": "bcf7fa199b2a"
+      "hash": "b181209b8391"
     },
     "funkciok:dayclose-egy-helyen": {
       "page_id": "41e8968e-752b-817b-9579-e46265068474",
-      "hash": "121f819909d1"
+      "hash": "8eb5fec03ed8"
     },
     "funkciok:intention-napi-cel": {
       "page_id": "41e8968e-752b-814b-ab55-cc36aa16a32f",
-      "hash": "2ff013735538"
+      "hash": "44e4e4f563cf"
     },
     "funkciok:intention-hitvallas": {
       "page_id": "41e8968e-752b-81db-95e4-d6f0d5aea744",
-      "hash": "1ba60853f644"
+      "hash": "3ce607e4ac1c"
     },
     "funkciok:intention-esti-reflexio": {
       "page_id": "41e8968e-752b-8145-b800-ebd538459d97",
-      "hash": "3ea255f840b5"
+      "hash": "aa8223ef8997"
     },
     "funkciok:ritual-napzaras": {
       "page_id": "41e8968e-752b-8152-a5b3-db8596939b20",
-      "hash": "2756575bd284"
+      "hash": "49451291336a"
     },
     "funkciok:ritual-regi-zarasok": {
       "page_id": "41e8968e-752b-812c-be59-c40f09650199",
-      "hash": "4ba813c6d7d3"
+      "hash": "b89443e5b0ee"
     },
     "funkciok:habit-napi-rutin": {
       "page_id": "41e8968e-752b-8157-890f-dc70ebcb4e77",
-      "hash": "53fd3873b203"
+      "hash": "6de525c04ba4"
     },
     "funkciok:habit-automatikus": {
       "page_id": "41e8968e-752b-81b6-8b7a-e883e2be63d1",
-      "hash": "d396949a2f3f"
+      "hash": "a5a8b047242d"
     },
     "funkciok:habit-erosseg": {
       "page_id": "41e8968e-752b-81ab-b580-f86e9a08bea4",
-      "hash": "5c951e6a3544"
+      "hash": "0886de88ac28"
     },
     "funkciok:habit-rutinepito": {
       "page_id": "41e8968e-752b-81cf-9877-f33ac3823801",
-      "hash": "9befa198439b"
+      "hash": "102bfcaf974a"
     },
     "funkciok:habit-ai-javaslat": {
       "page_id": "41e8968e-752b-81fe-9cd3-fce2fa5f6c2f",
-      "hash": "7b81450975f8"
+      "hash": "f0686bb223b1"
     },
     "funkciok:needs-zaras-pillanatkep": {
       "page_id": "41e8968e-752b-8178-9c96-f1c36588acac",
-      "hash": "bb1b25d5edc7"
+      "hash": "45c88eabd782"
     },
     "funkciok:needs-osszegzes": {
       "page_id": "41e8968e-752b-81cb-8110-e7f8118425d7",
-      "hash": "ac713bfdf9d5"
+      "hash": "7b1100fe51b7"
     },
     "funkciok:companion-heti-ertekeles": {
       "page_id": "41e8968e-752b-8178-a303-df3a0dd9b9bd",
-      "hash": "4937050c8064"
+      "hash": "cf14a63f1bc4"
     },
     "funkciok:companion-napertekeles": {
       "page_id": "41e8968e-752b-8180-a361-ccddafa14474",
-      "hash": "0a3f2b75bdc7"
+      "hash": "1c25e6ccc2fa"
     },
     "funkciok:boop-nap-terve-es-idovonal": {
       "page_id": "41e8968e-752b-81d1-9517-f3f66ca27cb2",
-      "hash": "ae314dccf87d"
+      "hash": "49ca8c4a6d8a"
     },
     "funkciok:boop-edzes-utkozes-attolas": {
       "page_id": "41e8968e-752b-818f-be6d-e0a1cafc8ea7",
-      "hash": "5f1c69e5a899"
+      "hash": "dfbe215df040"
     },
     "funkciok:meal-celmotor-adat": {
       "page_id": "41e8968e-752b-816b-9677-e0e6bdc10cb8",
-      "hash": "772c8ba320d1"
+      "hash": "dc84e24b4018"
     },
     "funkciok:goal-sulycel": {
       "page_id": "41e8968e-752b-81a9-b154-e3890bc0e42c",
-      "hash": "c2d59393455d"
+      "hash": "8becb387ef77"
     },
     "funkciok:goal-napi-keret": {
       "page_id": "41e8968e-752b-817a-92a3-c656b1f01945",
-      "hash": "cc4965ab383a"
+      "hash": "dca20590cc46"
     },
     "funkciok:goal-realis-tempo": {
       "page_id": "41e8968e-752b-8116-bd73-e9f89e5823db",
-      "hash": "637cb3e9295f"
+      "hash": "b0b1bc03a279"
     },
     "funkciok:goal-vedokorlatok": {
       "page_id": "41e8968e-752b-81d5-b3d8-c3a66d56cce0",
-      "hash": "030d2a1fd4d2"
+      "hash": "b893c4fa0740"
     },
     "funkciok:goal-attekintes": {
       "page_id": "41e8968e-752b-8185-b50b-c06096bbff18",
-      "hash": "84e68e433dd5"
+      "hash": "eb46c5f61191"
     },
     "funkciok:goal-tervkapcsolat": {
       "page_id": "41e8968e-752b-8188-8213-f30899ea41ad",
-      "hash": "de59c6625285"
+      "hash": "1d96f704d268"
     },
     "funkciok:goal-ujraszamolas": {
       "page_id": "41e8968e-752b-8141-9fc9-f1671244a7ad",
-      "hash": "45eb54425e80"
+      "hash": "99c3922a9802"
     },
     "funkciok:goal-idovonal": {
       "page_id": "41e8968e-752b-81f2-9b7e-ff4a33e7ffa5",
-      "hash": "a20ab23c7b88"
+      "hash": "3ba23e6d97c8"
     },
     "funkciok:goal-heti-korrekcio": {
       "page_id": "41e8968e-752b-8174-b625-d46ed1558799",
-      "hash": "68612e063c7b"
+      "hash": "a5217aa603fe"
     },
     "funkciok:goal-megtanult-energiaigeny": {
       "page_id": "41e8968e-752b-8113-9618-ea6096d03c12",
-      "hash": "9d5ff739b040"
+      "hash": "87bdb8ec050d"
     },
     "funkciok:goal-tanulas-heti-kartya": {
       "page_id": "41e8968e-752b-8129-97a2-ce1b7786ebdc",
-      "hash": "c76e33917bf6"
+      "hash": "1028c0827e25"
     },
     "funkciok:goal-hogy-tanultam": {
       "page_id": "41e8968e-752b-819c-a0f2-df20035b32f7",
-      "hash": "25a5a8482448"
+      "hash": "c54059bbe506"
     },
     "funkciok:goal-nap-jelolese": {
       "page_id": "41e8968e-752b-8167-b701-e555bb55fdf5",
-      "hash": "0ce8c1863ba6"
+      "hash": "dfdcb25ca272"
     },
     "funkciok:lifegoal-celok": {
       "page_id": "41e8968e-752b-8156-b73f-e231398ed9ad",
-      "hash": "3c54d39f7aae"
+      "hash": "0e903a310b2a"
     },
     "funkciok:lifegoal-pillerek-jelek": {
       "page_id": "41e8968e-752b-81cc-9540-cb8188929b13",
-      "hash": "87e911b88cbc"
+      "hash": "d4b048ac1244"
     },
     "funkciok:lifegoal-ai-javaslat": {
       "page_id": "41e8968e-752b-8124-a792-d0bfdcb6cc4d",
-      "hash": "48a5724629f6"
+      "hash": "0acdd091eb8d"
     },
     "funkciok:lifegoal-haladas": {
       "page_id": "41e8968e-752b-819a-b097-e99c230c6782",
-      "hash": "958a146f4554"
+      "hash": "ec30330ef6dd"
     },
     "funkciok:lifegoal-ejszakai-ertekeles": {
       "page_id": "41e8968e-752b-81a8-a420-e9bb079995a9",
-      "hash": "411a72a40523"
+      "hash": "6d63ab948412"
     },
     "funkciok:lifegoal-boop-kontextus": {
       "page_id": "41e8968e-752b-8104-b04a-f1f217b28f94",
-      "hash": "9637990a3c3a"
+      "hash": "52feddc20e59"
     },
     "funkciok:season-oldal": {
       "page_id": "41e8968e-752b-8166-a1ba-c40db8998f5d",
-      "hash": "455e7b6ffc1e"
+      "hash": "f331cfb1622d"
     },
     "funkciok:season-uj-evad": {
       "page_id": "41e8968e-752b-8101-8c12-dc1e587ab600",
-      "hash": "65c3ca9dcb3f"
+      "hash": "57de9d90e5c0"
     },
     "funkciok:season-modositas": {
       "page_id": "41e8968e-752b-8175-a2c4-d66824bd8ed8",
-      "hash": "5063444a378f"
+      "hash": "097179b5307c"
     },
     "funkciok:season-szabalyok": {
       "page_id": "41e8968e-752b-81fc-b6fa-f225dddf0d96",
-      "hash": "91f83b5a110d"
+      "hash": "6917b7e53d31"
     },
     "funkciok:season-alvasigeny": {
       "page_id": "41e8968e-752b-8149-bd2d-d5f02c04ca87",
-      "hash": "970cf84208d6"
+      "hash": "bc33e83304a4"
     },
     "funkciok:season-blokk-kapu": {
       "page_id": "41e8968e-752b-81ac-9715-c13bf6170e9a",
-      "hash": "a91ad205a91d"
+      "hash": "ade60141e70e"
     },
     "funkciok:season-korabbi-evadok": {
       "page_id": "41e8968e-752b-81d5-9c79-cb6edadf37ac",
-      "hash": "84636eec5d37"
+      "hash": "149c308e3cd1"
     },
     "funkciok:companion-negyedeves-attekintes": {
       "page_id": "41e8968e-752b-81af-9238-f19c8f0ed757",
-      "hash": "1f071a5a38b5"
+      "hash": "ea75517b2af2"
     },
     "funkciok:companion-eletcel-javaslat": {
       "page_id": "41e8968e-752b-8129-b619-d292ddc88524",
-      "hash": "ac83b0e49ffa"
+      "hash": "6421fb919811"
     },
     "funkciok:proactive-n1-kiserletek": {
       "page_id": "41e8968e-752b-81f5-8749-ed04fe92d9c0",
-      "hash": "174fd093a0df"
+      "hash": "5732259b6183"
     },
     "funkciok:companion-beszelgetes": {
       "page_id": "41e8968e-752b-81ce-8f0b-caa8e6a5ccfc",
-      "hash": "38a03137bb8b"
+      "hash": "f0543fe629f7"
     },
     "funkciok:companion-beszelgetesek-kezelese": {
       "page_id": "41e8968e-752b-810a-99df-fa8f4a0a3061",
-      "hash": "f0c468172069"
+      "hash": "b5f5cdcc3e19"
     },
     "funkciok:companion-elo-valasz": {
       "page_id": "41e8968e-752b-8133-9451-eba0d9e75e27",
-      "hash": "c12556c251e5"
+      "hash": "28e9deeb8296"
     },
     "funkciok:companion-mai-nap-blokk": {
       "page_id": "41e8968e-752b-81c4-820e-e8321530b3c3",
-      "hash": "04c5fce5eb2f"
+      "hash": "637262ddb7ac"
     },
     "funkciok:companion-hangbevitel": {
       "page_id": "41e8968e-752b-8158-96bc-dbf7e53a4312",
-      "hash": "4d61ddc028e1"
+      "hash": "b8a4f2770ba5"
     },
     "funkciok:companion-adatlekeres": {
       "page_id": "41e8968e-752b-816f-b590-c0a2051a329f",
-      "hash": "bb9e4316e23c"
+      "hash": "9e18f2ef11b3"
     },
     "funkciok:companion-allando-hatterkep": {
       "page_id": "41e8968e-752b-815d-a700-cdc25217e17d",
-      "hash": "5efb5666d2b4"
+      "hash": "266425b8e20a"
     },
     "funkciok:companion-valasz-ellenorzes": {
       "page_id": "41e8968e-752b-811f-9c4d-d797ffcdddc9",
-      "hash": "14743c8cebe0"
+      "hash": "baa0570cbdc4"
     },
     "funkciok:companion-ai-kapu": {
       "page_id": "41e8968e-752b-81e2-a96b-cfff35ad4862",
-      "hash": "6e49106af647"
+      "hash": "95eed0dc7c1c"
     },
     "funkciok:companion-emlekezet": {
       "page_id": "41e8968e-752b-8157-a36b-f6211a04eee1",
-      "hash": "763b45ef950a"
+      "hash": "1317825837e3"
     },
     "funkciok:companion-beagyazas": {
       "page_id": "41e8968e-752b-81e2-aef8-e91a7fb52d9a",
-      "hash": "0f9f30e01580"
+      "hash": "d7cb6c8fa65f"
     },
     "funkciok:companion-napi-osszefoglalo": {
       "page_id": "41e8968e-752b-81cb-b53d-f454af8e11eb",
-      "hash": "c1d16773555c"
+      "hash": "08e8e3998639"
     },
     "funkciok:companion-emlekezet-attekintes": {
       "page_id": "41e8968e-752b-814e-9a58-ed89e1fb4444",
-      "hash": "cf6be9864df9"
+      "hash": "1d8853b61a3c"
     },
     "funkciok:companion-tenyek-gyujtese": {
       "page_id": "41e8968e-752b-8151-a3f7-d4f70a78a6d6",
-      "hash": "bdcfdde92607"
+      "hash": "8d4227f84845"
     },
     "funkciok:companion-tenyek-kezelese": {
       "page_id": "41e8968e-752b-8182-8a14-fb82bd7098cb",
-      "hash": "ff820fde56bf"
+      "hash": "ad31f5de95b6"
     },
     "funkciok:companion-elfelejtes": {
       "page_id": "41e8968e-752b-81ba-87f4-f8eaae77da9d",
-      "hash": "8e8a1f9e15e1"
+      "hash": "d5b62478a237"
     },
     "funkciok:companion-valasz-mogott": {
       "page_id": "41e8968e-752b-8189-a814-fda634be9b6c",
-      "hash": "f7e5ab6a778e"
+      "hash": "c3cbf5025017"
     },
     "funkciok:companion-szemelyes-beallitasok": {
       "page_id": "41e8968e-752b-81a7-9d17-cbfeb56ef1a9",
-      "hash": "44330a82f75b"
+      "hash": "30edf0b4a240"
     },
     "funkciok:companion-beszedstilus-profil": {
       "page_id": "41e8968e-752b-819f-947e-cf217ea0ebb0",
-      "hash": "527105cb58c0"
+      "hash": "0509d0196441"
     },
     "funkciok:companion-emberek-a-beszelgetesbol": {
       "page_id": "41e8968e-752b-8104-8752-eb1112bf5aed",
-      "hash": "f0ab578e2a3d"
+      "hash": "b4ec93bf5996"
     },
     "funkciok:companion-kapcsolati-halo": {
       "page_id": "41e8968e-752b-8172-a5fb-f3274c5d7e93",
-      "hash": "b4902374cea6"
+      "hash": "30b087f5d675"
     },
     "funkciok:companion-eletesemenyek-kapcsolatok": {
       "page_id": "41e8968e-752b-81ea-b073-c489e8e96177",
-      "hash": "f7eb1acd9a06"
+      "hash": "d30af89e5994"
     },
     "funkciok:companion-mintak-boop-eszrevette": {
       "page_id": "41e8968e-752b-8140-bb65-d70cb79e3d91",
-      "hash": "cce33119178b"
+      "hash": "0f396218ee2d"
     },
     "funkciok:companion-mintak-attekintese": {
       "page_id": "41e8968e-752b-8174-8fde-da915f8d15e6",
-      "hash": "7aee2f484322"
+      "hash": "458d281ef325"
     },
     "funkciok:companion-szovegjelek": {
       "page_id": "41e8968e-752b-8123-b0c0-d7dfff536afb",
-      "hash": "147b5a193c81"
+      "hash": "e66a652453ed"
     },
     "funkciok:companion-gyors-eszrevetel": {
       "page_id": "41e8968e-752b-81ad-aed9-fcce6709fb9a",
-      "hash": "5f9f020044f2"
+      "hash": "4fd4606e5ca1"
     },
     "funkciok:companion-hataskovetes": {
       "page_id": "41e8968e-752b-8199-91a1-f593e30c200d",
-      "hash": "b785564b50a7"
+      "hash": "3b70c5b4996c"
     },
     "funkciok:companion-jelzesek": {
       "page_id": "41e8968e-752b-8110-936d-ee1505ba8c8c",
-      "hash": "ed1f767493b5"
+      "hash": "655c93e47857"
     },
     "funkciok:companion-jelzes-nyomkovetes": {
       "page_id": "41e8968e-752b-81cb-b905-e91d991b327d",
-      "hash": "09b0c889c4b6"
+      "hash": "0c6c544ea065"
     },
     "funkciok:companion-visszajelzes": {
       "page_id": "41e8968e-752b-81f1-93c2-c7bf07db010c",
-      "hash": "dc6f2756f770"
+      "hash": "1f002781872a"
     },
     "funkciok:companion-emlek-visszajelzes-admin": {
       "page_id": "41e8968e-752b-81c1-a4f9-f95baf5fce65",
-      "hash": "f6fe2ed1c1e5"
+      "hash": "aaab42a7c3e4"
     },
     "funkciok:companion-adatmegorzes": {
       "page_id": "41e8968e-752b-8187-abd7-c30a4a028cd7",
-      "hash": "fc3ea48118e5"
+      "hash": "1438492ca120"
     },
     "funkciok:boop-reggeli-osszefoglalo": {
       "page_id": "41e8968e-752b-8157-806b-f8a91c735644",
-      "hash": "58eb88f7dab6"
+      "hash": "a3c8ade41416"
     },
     "funkciok:boop-pontszamok-gombok": {
       "page_id": "41e8968e-752b-81cf-ae8b-d9be2d851804",
-      "hash": "eb6e031442c6"
+      "hash": "c477123aa50a"
     },
     "funkciok:boop-ai-mondatok": {
       "page_id": "41e8968e-752b-8144-b8f7-c633d0795371",
-      "hash": "b938c7419e3b"
+      "hash": "8c0a4eddd575"
     },
     "funkciok:boop-okos-ujrageneralas": {
       "page_id": "41e8968e-752b-81e4-887b-efa14f24ed6c",
-      "hash": "9b0649f7106b"
+      "hash": "4b380dc55de9"
     },
     "funkciok:boop-kezi-ujrakeres": {
       "page_id": "41e8968e-752b-8146-a476-c775cb5f0ae7",
-      "hash": "1ea38452686d"
+      "hash": "18ceb46fbe20"
     },
     "funkciok:boop-energiagorbe": {
       "page_id": "41e8968e-752b-818e-b9fc-ea32f4966d33",
-      "hash": "59fc89dbe331"
+      "hash": "4044007991bf"
     },
     "funkciok:boop-reszletes-adatok": {
       "page_id": "41e8968e-752b-81a9-b925-d79cbb336c91",
-      "hash": "48cc8e886575"
+      "hash": "99bcade6b01b"
     },
     "funkciok:boop-boop-eszrevette": {
       "page_id": "41e8968e-752b-816a-afa7-ddbfdfd2c5c4",
-      "hash": "ea48afe363bf"
+      "hash": "ffad163daf3e"
     },
     "funkciok:proactive-napi-hirfolyam": {
       "page_id": "41e8968e-752b-815b-954f-fa47d3d9cbb6",
-      "hash": "d6ac80c20804"
+      "hash": "6d93d72f1281"
     },
     "funkciok:proactive-alvas-suly-reakcio": {
       "page_id": "41e8968e-752b-813e-8350-ca630ecec8ce",
-      "hash": "53f3bef31483"
+      "hash": "da8a878a0267"
     },
     "funkciok:proactive-tanacskartyak": {
       "page_id": "41e8968e-752b-8150-98d8-ea115ff1ea63",
-      "hash": "3b9e7d38ae94"
+      "hash": "e7c37e1bfe4f"
     },
     "funkciok:proactive-egy-koppintasos-alkalmazas": {
       "page_id": "41e8968e-752b-81a5-ae67-c1abcd5b7dbc",
-      "hash": "69cfebf54dc0"
+      "hash": "f1f7462b7c6a"
     },
     "funkciok:proactive-egyszeri-kerdesek": {
       "page_id": "41e8968e-752b-8126-9146-fc013aff1bee",
-      "hash": "b6b230d6fb04"
+      "hash": "a55d33208a50"
     },
     "funkciok:proactive-heti-tervjavaslat": {
       "page_id": "41e8968e-752b-814f-a806-f83ccf98fd51",
-      "hash": "d3745dde1817"
+      "hash": "6036c0d77caf"
     },
     "funkciok:proactive-heti-attekintes": {
       "page_id": "41e8968e-752b-8191-9e05-f6beedcc113a",
-      "hash": "af6143e8f400"
+      "hash": "46a44f59b3fb"
     },
     "funkciok:proactive-het-tanulsagai": {
       "page_id": "41e8968e-752b-8162-868c-cc33a24a48b4",
-      "hash": "a09970585da8"
+      "hash": "afa7aba99860"
     },
     "funkciok:proactive-heti-memoar": {
       "page_id": "41e8968e-752b-8191-84a9-f5e6af344644",
-      "hash": "3c28ad256676"
+      "hash": "f3cc57e95b9e"
     },
     "funkciok:proactive-elorejelzesek": {
       "page_id": "41e8968e-752b-81e4-8645-c7e1bc385d01",
-      "hash": "a7c99fe7a3ac"
+      "hash": "320e4f4fe005"
     },
     "funkciok:proactive-minta-hatasa": {
       "page_id": "41e8968e-752b-8117-8d09-c3f75d4b1693",
-      "hash": "d11c09f31f58"
+      "hash": "a56274d1052e"
     },
     "funkciok:character-ejszakai-erzekelok": {
       "page_id": "41e8968e-752b-8151-b478-c3aa4d6f8f2a",
-      "hash": "79f252e4b5cb"
+      "hash": "8ed3847c9881"
     },
     "funkciok:character-napi-tanacs": {
       "page_id": "41e8968e-752b-81da-903a-d927ca364532",
-      "hash": "4b845680a7f6"
+      "hash": "678756f42d90"
     },
     "funkciok:character-heti-havi-konzilium": {
       "page_id": "41e8968e-752b-813c-83e2-dd2333e3984e",
-      "hash": "2e4381c4723b"
+      "hash": "1c10bd6c36a9"
     },
     "funkciok:character-dossze-a-beszelgetesben": {
       "page_id": "41e8968e-752b-81da-a425-c8bfb0a4e963",
-      "hash": "0313313e7bb8"
+      "hash": "6c549456ccca"
     },
     "funkciok:character-dosszie-szakertoi-oldalak": {
       "page_id": "41e8968e-752b-81f1-902f-e7165e72378d",
-      "hash": "55d3eda359a6"
+      "hash": "b468bba83625"
     },
     "funkciok:character-allitas-visszajelzes": {
       "page_id": "41e8968e-752b-81da-91c6-e01b8e653bab",
-      "hash": "c535edee3192"
+      "hash": "46f246c83528"
     },
     "funkciok:character-allitas-elozmeny-visszavonas": {
       "page_id": "41e8968e-752b-81ad-83f3-dd97c27e7a71",
-      "hash": "2c21c5595b8e"
+      "hash": "0cbffb2ec264"
     },
     "funkciok:character-futasok-atlathatosag": {
       "page_id": "41e8968e-752b-816c-9317-fcab13a0db06",
-      "hash": "4988ff1e349b"
+      "hash": "009543afe70b"
     },
     "funkciok:character-esti-kiadas": {
       "page_id": "41e8968e-752b-8107-9801-c8a4cf798c72",
-      "hash": "32229a5f9be0"
+      "hash": "aad4f4b30c01"
     },
     "funkciok:character-csapat-chat": {
       "page_id": "41e8968e-752b-812c-9783-cbb077bb5a57",
-      "hash": "73cfd9c70b92"
+      "hash": "7f1742b0491e"
     },
     "funkciok:character-valaszok-a-falon": {
       "page_id": "41e8968e-752b-81e4-ad0d-fc95d51db7b8",
-      "hash": "7441151774ef"
+      "hash": "1062f14a206e"
     },
     "funkciok:character-erettsegi-gorbe": {
       "page_id": "41e8968e-752b-81c4-ad42-ee14d0ee9941",
-      "hash": "f2c9c9f8acb2"
+      "hash": "daf599c5c626"
     },
     "funkciok:llmlog-ai-hivasnaplo": {
       "page_id": "41e8968e-752b-81d9-a6dd-f7cf03997bc0",
-      "hash": "f9ea95f3b64a"
+      "hash": "888f8f1c894d"
     },
     "funkciok:llmlog-koltsegkeret": {
       "page_id": "41e8968e-752b-8106-9094-e8becbd526ce",
-      "hash": "3d03b9cadff2"
+      "hash": "4de253b39c93"
     },
     "funkciok:llmlog-szovegek-torlese": {
       "page_id": "41e8968e-752b-815b-be9e-f7ee679e55df",
-      "hash": "be7098399777"
+      "hash": "93d10a0aadfe"
     },
     "funkciok:llmlog-koltseg-kimutatas": {
       "page_id": "41e8968e-752b-8176-95eb-e4e0393d5cd7",
-      "hash": "ab0d5840b6ce"
+      "hash": "2c2e0329094e"
     },
     "funkciok:llmlog-ai-vazlat-fogadtatas": {
       "page_id": "41e8968e-752b-81f3-af1a-ef3187a9364b",
-      "hash": "e9b04bf06bd2"
+      "hash": "18e28c784c48"
     },
     "funkciok:people-emberek-listaja": {
       "page_id": "41e8968e-752b-8124-8833-dcd54b271112",
-      "hash": "a86ac3cf90d4"
+      "hash": "e6d9d1d6e592"
     },
     "funkciok:people-emlitesek-felismerese": {
       "page_id": "41e8968e-752b-8199-8446-c1c880e45b8e",
-      "hash": "9e5fdb4a0d89"
+      "hash": "91fd007e938d"
     },
     "funkciok:people-kezi-emlites": {
       "page_id": "41e8968e-752b-8114-a76f-ebbe8e3a0cbe",
-      "hash": "f0f2c2fdb83b"
+      "hash": "443b3111a2cd"
     },
     "funkciok:people-javasolt-szemelyek": {
       "page_id": "41e8968e-752b-8171-bc25-dd89b83f430d",
-      "hash": "5d04c468a1c5"
+      "hash": "1e383b89cffa"
     },
     "funkciok:people-hangulat-iv": {
       "page_id": "41e8968e-752b-81cd-bbe2-ee6cad59c7bc",
-      "hash": "7200f181c144"
+      "hash": "da97915d35e3"
     },
     "funkciok:people-tenyek-emberekrol": {
       "page_id": "41e8968e-752b-818f-864c-c43143a60912",
-      "hash": "c3b376600728"
+      "hash": "b1ad266d2629"
     },
     "funkciok:people-emberek-a-beszelgetesben": {
       "page_id": "41e8968e-752b-8163-8de2-de331709f72d",
-      "hash": "2b4ebdc4d011"
+      "hash": "608d15501c02"
     },
     "funkciok:penz-heti-maradek": {
       "page_id": "41e8968e-752b-811f-910e-c5fb338054b9",
-      "hash": "1b1b32a0a13c"
+      "hash": "f1f6c1b03e33"
     },
     "funkciok:penz-kiadas-rogzites": {
       "page_id": "41e8968e-752b-81c8-98fb-fbb04ef7d963",
-      "hash": "9fe0b419cf21"
+      "hash": "7d1b1845256f"
     },
     "funkciok:penz-tetelek": {
       "page_id": "41e8968e-752b-81ad-a88b-c8aeb77ea787",
-      "hash": "53a53f6ffda1"
+      "hash": "a9e9f82ac947"
     },
     "funkciok:penz-banki-sms": {
       "page_id": "41e8968e-752b-81b5-b438-cd1dd49d3110",
-      "hash": "bf7fc072f582"
+      "hash": "78fd3f0c1d8f"
     },
     "funkciok:penz-sms-atnezes": {
       "page_id": "41e8968e-752b-8145-8e56-e7e560c5e017",
-      "hash": "aa22b0f8d986"
+      "hash": "b0627387667c"
     },
     "funkciok:penz-sms-kulcs": {
       "page_id": "41e8968e-752b-81e4-8429-fa7442b9208c",
-      "hash": "2eb90ba995c3"
+      "hash": "a237502f3a2f"
     },
     "funkciok:penz-szamlak": {
       "page_id": "41e8968e-752b-8163-ac4a-ee729ee5c6ec",
-      "hash": "885b7fa91d95"
+      "hash": "98b27f3259dd"
     },
     "funkciok:penz-kategoriak-keretek": {
       "page_id": "41e8968e-752b-8172-93e6-d6f12c039d58",
-      "hash": "823f61dd56bc"
+      "hash": "593f3dfbcc8a"
     },
     "funkciok:penz-ismetlodo": {
       "page_id": "41e8968e-752b-8159-b04b-ed4d41d35012",
-      "hash": "126971de8e72"
+      "hash": "022513591e8b"
     },
     "funkciok:penz-atvezetes": {
       "page_id": "41e8968e-752b-81e2-939a-f96b0f77069d",
-      "hash": "50acd484476c"
+      "hash": "f4d71397fe2f"
     },
     "funkciok:penz-honapzaras": {
       "page_id": "41e8968e-752b-8137-bc6b-c7ed3b7af41e",
-      "hash": "a67e5eda7dab"
+      "hash": "0f8db024dc01"
     },
     "funkciok:penz-beallitasok": {
       "page_id": "41e8968e-752b-8175-9a2f-d03e94244be0",
-      "hash": "5d9d4f9385a6"
+      "hash": "84d5dbf84f13"
     },
     "funkciok:penz-mire-gyujtok": {
       "page_id": "41e8968e-752b-812c-81f4-d09f5f3922e1",
-      "hash": "3c8f36c8d6dd"
+      "hash": "72cc0e0a6a3e"
     },
     "funkciok:penz-deviza": {
       "page_id": "41e8968e-752b-816f-a4f0-d8e923a9f3e9",
-      "hash": "0b5df3d96ba6"
+      "hash": "4b6ed915e94b"
     },
     "funkciok:penz-osszeg-or": {
       "page_id": "41e8968e-752b-81f8-b776-f71a2cb06c11",
-      "hash": "1e7cf3deef87"
+      "hash": "2e325c0a0592"
     },
     "funkciok:penz-portfolio": {
       "page_id": "41e8968e-752b-812b-9729-fd99ecf977f8",
-      "hash": "6d8f86344cf2"
+      "hash": "5ed3bf0f51cb"
     },
     "funkciok:penz-befektetesek": {
       "page_id": "41e8968e-752b-81a7-b35d-c1d7a0e691d6",
-      "hash": "51539b514050"
+      "hash": "2d5f6c023d2c"
     },
     "funkciok:penz-befektetes-esemenyek": {
       "page_id": "41e8968e-752b-8116-8234-df5c3418151a",
-      "hash": "c8c2a0eb9e12"
+      "hash": "4e49e0eb255b"
     },
     "funkciok:penz-arfolyamok": {
       "page_id": "41e8968e-752b-81d0-8102-d350db3b0baa",
-      "hash": "7ac7a462320c"
+      "hash": "1b8b708acc73"
     },
     "funkciok:penz-befektetes-szamlahoz": {
       "page_id": "41e8968e-752b-810e-b138-c2d99937c487",
-      "hash": "64f073c17c1b"
+      "hash": "cecee6f32701"
     },
     "funkciok:penz-napi-hirek": {
       "page_id": "41e8968e-752b-8189-b3be-c8181560f34a",
-      "hash": "7595d00f5945"
+      "hash": "c8733f46000a"
     },
     "funkciok:penz-heti-hosszu-tav": {
       "page_id": "41e8968e-752b-8186-b03e-fec57ea4db98",
-      "hash": "741eb0a6280e"
+      "hash": "51de4509c69a"
     },
     "funkciok:penz-gyakorlo-kereskedes": {
       "page_id": "41e8968e-752b-819d-80ab-e0bffc72dfa5",
-      "hash": "672e6f0d1ed9"
+      "hash": "4c581f51324b"
     },
     "funkciok:penz-gyakorlas-keret-visszanezes": {
       "page_id": "41e8968e-752b-8109-a861-dd57b0a19262",
-      "hash": "f48bd0b6fba8"
+      "hash": "f0f5153d171c"
     },
     "funkciok:penz-termekjegyzek": {
       "page_id": "41e8968e-752b-815e-818b-de2c25b3bb34",
-      "hash": "771aaa5e2e54"
+      "hash": "8c6982f0cc91"
     },
     "funkciok:penz-felosztas-javaslat": {
       "page_id": "41e8968e-752b-8171-abb6-df23fa61a592",
-      "hash": "43eee9f051df"
+      "hash": "375dbdc288cd"
     },
     "funkciok:penz-havi-strategia": {
       "page_id": "41e8968e-752b-81ab-ad06-f4764ef9ca84",
-      "hash": "d383dd46ccb7"
+      "hash": "0aed3d2a8793"
     },
     "funkciok:penz-javaslat-idegen-termek": {
       "page_id": "41e8968e-752b-81d8-9071-fc2f91120062",
-      "hash": "0000adfa28dc"
+      "hash": "5a82d415d683"
     },
     "funkciok:penz-regi-app-import": {
       "page_id": "41e8968e-752b-812e-b40b-c2da36011d7d",
-      "hash": "672167d91e79"
+      "hash": "ab706340bf16"
     },
     "dontesek:d-2026-11-21-kapacitas-jelek": {
       "page_id": "41f8968e-752b-81bc-9572-e6df3d58d7d7",
@@ -2744,11 +2744,11 @@
     },
     "funkciok:season-heti-menu": {
       "page_id": "41f8968e-752b-8118-aa9a-d8e0bc97f53c",
-      "hash": "523214cdb5db"
+      "hash": "bb564d2289e2"
     },
     "funkciok:season-bevasarlolista": {
       "page_id": "41f8968e-752b-81b1-ac90-c676bf1fb4bf",
-      "hash": "f524fb3054ae"
+      "hash": "192fdfa23bda"
     },
     "jegyek:mezo-r36n9.134": {
       "page_id": "41f8968e-752b-8130-b1ec-ed2cf338cde5",
@@ -2824,7 +2824,7 @@
     },
     "funkciok:season-kiserletek": {
       "page_id": "41f8968e-752b-8145-ae7b-ce1a186e6775",
-      "hash": "e67d9b1e134d"
+      "hash": "6f774033abc7"
     },
     "jegyek:mezo-r36n9.136": {
       "page_id": "41f8968e-752b-81c6-9c06-cfd184736883",
@@ -2924,43 +2924,43 @@
     },
     "funkciok:level-tukorfiok": {
       "page_id": "41f8968e-752b-81ca-b38a-ed8c3302ac79",
-      "hash": "d480075df9ef"
+      "hash": "32105f1488d8"
     },
     "funkciok:level-atvetel": {
       "page_id": "41f8968e-752b-817e-b70a-fe28e5447b3c",
-      "hash": "6b04f54e4436"
+      "hash": "26bca0dda502"
     },
     "funkciok:level-vedelem": {
       "page_id": "41f8968e-752b-81aa-b636-c7b1054f8f4e",
-      "hash": "41fa25507650"
+      "hash": "43fbe6df9237"
     },
     "funkciok:level-besorolas": {
       "page_id": "41f8968e-752b-8110-b9c1-cd2e490beac4",
-      "hash": "4358a48a983c"
+      "hash": "0b9bffc56781"
     },
     "funkciok:level-pontozas-tanulas": {
       "page_id": "41f8968e-752b-81aa-9817-f97692b03c38",
-      "hash": "81dd381e51a1"
+      "hash": "133d2ed4f34a"
     },
     "funkciok:level-szabalyok": {
       "page_id": "41f8968e-752b-818c-9fdc-faa51e39bba2",
-      "hash": "b232f9d7af40"
+      "hash": "cacbf7d4c75d"
     },
     "funkciok:level-csengetes": {
       "page_id": "41f8968e-752b-811b-a5d2-c35cf0675675",
-      "hash": "58f307d52d87"
+      "hash": "47b6e04097c2"
     },
     "funkciok:level-koltsegkeret": {
       "page_id": "41f8968e-752b-81d1-93b3-c349777b789b",
-      "hash": "0e9a375b221e"
+      "hash": "4387bd3b9de9"
     },
     "funkciok:level-megorzes": {
       "page_id": "41f8968e-752b-810f-9e16-ff5b7adc6791",
-      "hash": "e384fc59bd01"
+      "hash": "9ceec40e90a9"
     },
     "funkciok:level-egeszseg": {
       "page_id": "41f8968e-752b-8198-ac9e-f0fd1911ee8f",
-      "hash": "9af9817241b7"
+      "hash": "872384cc08a9"
     },
     "kiadasok:984e54af2": {
       "page_id": "41f8968e-752b-81c2-bba7-d8496bfcd2dc",
@@ -3128,11 +3128,11 @@
     },
     "funkciok:train-edzes-potlas": {
       "page_id": "4238968e-752b-819f-bab8-f96899472c87",
-      "hash": "00b3adbfce4c"
+      "hash": "93f3b481c6ef"
     },
     "funkciok:meal-italok": {
       "page_id": "4238968e-752b-815e-bc47-cfb17cbb2186",
-      "hash": "e8d44a1c27ad"
+      "hash": "75a5ce941553"
     },
     "jegyek:mezo-r36n9.170": {
       "page_id": "4238968e-752b-81fb-ab0a-f51bdb12766c",
@@ -3188,7 +3188,7 @@
     },
     "funkciok:train-eves-terv": {
       "page_id": "4238968e-752b-819a-8797-d3a8583033cb",
-      "hash": "963596fe8c7d"
+      "hash": "b02648955aaa"
     },
     "dontesek:d-2026-11-25-level-google-belepes": {
       "page_id": "4238968e-752b-8128-8ff5-fbbed656a8b7",
@@ -3376,15 +3376,15 @@
     },
     "funkciok:capacity-napi-biras": {
       "page_id": "4258968e-752b-8141-81ed-d7204c4a2af3",
-      "hash": "43eff46c4563"
+      "hash": "5b4e7a3c7a03"
     },
     "funkciok:capacity-atrendezes": {
       "page_id": "4258968e-752b-8124-8b77-f06258460d58",
-      "hash": "babd5bb140c9"
+      "hash": "737a884d08a5"
     },
     "funkciok:capacity-elorejelzes": {
       "page_id": "4258968e-752b-8136-9f90-f17a577da01c",
-      "hash": "5031ff928336"
+      "hash": "5e1485c1ac59"
     },
     "dontesek:d-2026-11-27-etkezes-javitas": {
       "page_id": "4258968e-752b-817d-9ff5-d88b6f5e7c67",
@@ -3468,11 +3468,11 @@
     },
     "jegyek:mezo-r36n9.203": {
       "page_id": "4258968e-752b-8160-8dfc-f3a4ff9fe32e",
-      "hash": "b2f9701daf73"
+      "hash": "b50c15e89674"
     },
     "jegyek:mezo-r36n9.202": {
       "page_id": "4258968e-752b-8114-9b5e-f43ba93006a9",
-      "hash": "2f4b350ec6f8"
+      "hash": "cb59ae486c7c"
     },
     "jegyek:mezo-r36n9.201": {
       "page_id": "4258968e-752b-81bc-9234-cb3837e124bf",
@@ -3580,7 +3580,7 @@
     },
     "jegyek:mezo-r36n9.196": {
       "page_id": "4268968e-752b-81fc-83dd-f7d6abedf12f",
-      "hash": "f1224d44c351"
+      "hash": "97bb7927d397"
     },
     "jegyek:mezo-r36n9.211": {
       "page_id": "4268968e-752b-8132-9691-c33ce7e2f262",
@@ -3588,7 +3588,7 @@
     },
     "jegyek:mezo-r36n9.199": {
       "page_id": "4268968e-752b-81ac-8fb7-dc57a188f408",
-      "hash": "31a339f57723"
+      "hash": "787c6aa4131a"
     },
     "jegyek:mezo-r36n9.212": {
       "page_id": "4268968e-752b-8156-91bd-f0dc2946e2b4",
@@ -3608,7 +3608,31 @@
     },
     "jegyek:mezo-r36n9.209": {
       "page_id": "4268968e-752b-8160-b201-ff8e2701aaf4",
-      "hash": "ce7f009d20ee"
+      "hash": "2a45f5c7762a"
+    },
+    "kiadasok:b872d5977": {
+      "page_id": "4268968e-752b-81e2-ba24-d09738125ac1",
+      "hash": "a5e77ff427cb"
+    },
+    "funkciok:train-sport-het": {
+      "page_id": "4268968e-752b-81e0-abd1-c6841eb1032d",
+      "hash": "d0065f02905a"
+    },
+    "funkciok:train-sport-terheles": {
+      "page_id": "4268968e-752b-8132-8f0a-fca09cbe73ef",
+      "hash": "21dde0f228ce"
+    },
+    "funkciok:train-sport-test": {
+      "page_id": "4268968e-752b-8107-a099-eb457104f440",
+      "hash": "998e75290c88"
+    },
+    "funkciok:train-sport-vall": {
+      "page_id": "4268968e-752b-8185-8ef8-f15d573d1586",
+      "hash": "424499127bb9"
+    },
+    "funkciok:train-sport-pihenoido": {
+      "page_id": "4268968e-752b-8145-9d7d-edb5af0bbd9d",
+      "hash": "bfe2e4882bb9"
     }
   }
 }
