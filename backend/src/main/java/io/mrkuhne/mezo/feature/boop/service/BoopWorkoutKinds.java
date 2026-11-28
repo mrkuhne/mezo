@@ -1,4 +1,4 @@
-package io.mrkuhne.mezo.feature.train.service.sport;
+package io.mrkuhne.mezo.feature.boop.service;
 
 import java.util.Locale;
 import java.util.Map;
@@ -10,7 +10,7 @@ import java.util.Set;
  * Health {@code other} ticks neither — too ambiguous to mark a plan done with. Activity types are the server keys the
  * phone sends (lowercased HealthKit names or their short forms: {@code strength}, {@code volleyball}, {@code hiit}…).
  */
-public final class SportWorkoutKinds {
+public final class BoopWorkoutKinds {
 
     private static final Set<String> GYM = Set.of("strength", "traditionalstrengthtraining",
         "functionalstrengthtraining");
@@ -26,7 +26,7 @@ public final class SportWorkoutKinds {
         "cross", INTERVALS,
         "trx", INTERVALS);
 
-    private SportWorkoutKinds() {
+    private BoopWorkoutKinds() {
     }
 
     /** True when the Health workout is a gym (strength) session. */
@@ -42,23 +42,6 @@ public final class SportWorkoutKinds {
             return false;
         }
         return SPORT.getOrDefault(k, Set.of(k)).contains(a);
-    }
-
-    /** Single-kind sports a Health workout names unambiguously (cross / TRX share one Health type → not here). */
-    private static final java.util.List<String> NAMED = java.util.List.of("volleyball", "running", "bike", "hike",
-        "swim", "football", "basketball", "tennis");
-
-    /**
-     * The sport kind a Health workout is, or {@code null} when it names none (a strength workout, {@code other}, an
-     * interval workout that could be cross or TRX). Boop Sport S2 (mezo-r36n9.202): an unplanned Watch workout.
-     */
-    public static String sportOf(String activityType) {
-        for (String kind : NAMED) {
-            if (fitsSport(activityType, kind)) {
-                return kind;
-            }
-        }
-        return null;
     }
 
     private static String norm(String s) {

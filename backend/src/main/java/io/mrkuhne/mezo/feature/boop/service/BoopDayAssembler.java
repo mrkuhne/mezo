@@ -33,7 +33,6 @@ import io.mrkuhne.mezo.feature.train.service.LoggedSessionReadPort;
 import io.mrkuhne.mezo.feature.train.service.RecoveryPeriodService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutWindowQueryService;
-import io.mrkuhne.mezo.feature.train.service.sport.SportWorkoutKinds;
 import io.mrkuhne.mezo.feature.wearable.config.WearableProperties;
 import io.mrkuhne.mezo.feature.wearable.entity.CalendarEventEntity;
 import io.mrkuhne.mezo.feature.wearable.entity.DailyMetricEntity;
@@ -305,7 +304,7 @@ public class BoopDayAssembler {
             return planned; // no planned window → nothing to overlap
         }
         return windowMatch(workouts, date, planned.time(), planned.minutes(), zone,
-                w -> SportWorkoutKinds.isGym(w.getActivityType()))
+                w -> BoopWorkoutKinds.isGym(w.getActivityType()))
             .map(w -> {
                 used.add(w);
                 return planned.withDone(workoutMinutes(w), w.getAvgHr());
@@ -330,7 +329,7 @@ public class BoopDayAssembler {
             BoopDay.Sport planned = new BoopDay.Sport(kind, w.start(), minutes);
             // The sport's own Health workout around this occurrence — claimed, so it never ticks a second one.
             Optional<WearableWorkoutEntity> match = windowMatch(workouts, date, w.start(), minutes, zone,
-                x -> !used.contains(x) && SportWorkoutKinds.fitsSport(x.getActivityType(), kind));
+                x -> !used.contains(x) && BoopWorkoutKinds.fitsSport(x.getActivityType(), kind));
             match.ifPresent(used::add);
             if (match.isPresent()) {
                 out.add(planned.withDone(workoutMinutes(match.get()), match.get().getAvgHr()));

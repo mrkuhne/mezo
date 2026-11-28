@@ -28,15 +28,6 @@ osszefoglalo: Röplabda, kerékpár, úszás és más sportok naplója heti beos
    étkezési ablakot.
 3. A heti tervezett mozgás a súlycél-motor energiaigény-számításába is bemegy.
 4. **A futás ma csak időszakaszokból áll** — nincs távolság vagy tempó, és a futás-rész eddig használatlan volt.
-5. **Sport hete a szerveren (2026-11-28):** a szerver hétfőtől vasárnapig (a te idődben) két sávban adja a kondit és a
-   sportot (tervezett / kész / kihagyott / elmaradt), a mai sportalkalmat — ha az óra már rögzítette, de még nem írtad be,
-   az óra adataival előtöltve —, a heti sportszámot (nincs, ha a hétnek nincs sportja).
-6. **Egy terhelési mérce:** megerőltetés (1–10) × perc, kondira és sportra ugyanúgy. A kondinál a megerőltetés a sorozatok
-   „mennyi maradt a tankban” értékéből jön. Ahol a megerőltetés vagy az idő hiányzik, azt az alkalmat külön megszámolja, nem találgat.
-7. **Testtérkép:** a sportnál fajtánként rögzített, mely izmok mennyit dolgoznak (például röpinél a váll és a comb a legtöbbet);
-   a kondinál az elvégzett sorozatok izmai. Külön, és egy közös skálán együtt.
-8. **Pihenő a kettő között:** 3 óránál kevesebb egy napon → figyelmeztetés, 3–6 óra → jelzés; sport után másnap délelőtti
-   lábnap → jelzés; ha a kemény sport után kétszer is visszaesett másnap az ismétlésszám az utolsó két hétben → jelzés.
 
 ## Miért így
 A spec szerint a sport és a futás megmarad; a futás az órával kap értelmet (távolság, tempó, pulzus), ezért a B5 ott építi újra.
@@ -59,8 +50,7 @@ A spec szerint a sport és a futás megmarad; a futás az órával kap értelmet
 | `run_session_log` | Futásnapló (tényleges megterhelés) |
 
 ## Mi jön még
-B5: futás az óráról távolsággal, tempóval, pulzussal; natív sportnapló. Sport 3. lépés: az app Sport területe (Ma fül,
-hét, terhelés, testtérkép, váll, pihenő) a fenti szerveradatokra épül.
+B5: futás az óráról távolsággal, tempóval, pulzussal; natív sportnapló.
 
 ## Mi marad ki
 Nincs.

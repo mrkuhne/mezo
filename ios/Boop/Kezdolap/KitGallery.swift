@@ -12,6 +12,19 @@ struct KitGallery: View {
     private let hue = Hue.mozgas
 
     var body: some View {
+        if UserDefaults.standard.bool(forKey: "previewKitCards") {
+            // `-previewKitCards YES`: only the Edzés redesign pieces, on a plain page (reviewable without scrolling).
+            ScrollView {
+                VStack(spacing: 14) { edzesKit }.padding(.horizontal, 16).padding(.vertical, 60)
+            }
+            .background(NK.ground.ignoresSafeArea())
+            .nkToast($note)
+        } else {
+            gallery
+        }
+    }
+
+    private var gallery: some View {
         NKAreaPage(
             hue: hue, name: "Edzés", eyebrow: "Edzés · ma", level: 0.62, display: "62", headline: "Van még benne több",
             sentence: "A héten *két edzés* van mögötted, a harmadik ma este fér bele.",
@@ -27,6 +40,8 @@ struct KitGallery: View {
                         actions: [NKHighlightAction("Kezdjük el") { note = "Kezdjük el" },
                                   NKHighlightAction("Könnyítés", weight: .secondary) { note = "Könnyítés" },
                                   NKHighlightAction("Ma kihagyom", weight: .link) { note = "Kihagyom" }])
+
+            edzesKit
 
             NKBare("A hét", hue: hue, trailing: "3-ból 2") {
                 NKStatRow([NKStat(value: "13", target: "16", unit: "sorozat", label: "ezen a héten", hot: true),
@@ -157,6 +172,58 @@ struct KitGallery: View {
             NKAskRow(hue: hue, text: "Kérdezz Boopot az edzéseidről") { note = "Boop" }
         }
         .nkToast($note)
+    }
+
+    @ViewBuilder private var edzesKit: some View {
+        // Edzés redesign kit (mezo-r36n9.197.1): the paged hero, section cards with each trailing kind, the inner
+        // treatment and the in-card action row.
+        NKSectionCard("Következik", hue: hue, glyph: "dumbbell-ink",
+                      trailing: .menu(AnyView(NKMoreMenu {
+                          Button("Újraindítás") { note = "Újraindítás" }
+                          Button("Lezárás") { note = "Lezárás" }
+                          Button("Mentés a sablonba") { note = "Sablon" }
+                      }))) {
+            VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Szerda · Láb").nkFont(17, .semibold).foregroundStyle(.white)
+                    Text("Hat gyakorlat, körülbelül 55 perc").nkFont(14).foregroundStyle(.white.opacity(0.65))
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(12)
+                .nkInnerCard()
+                NKCardActions(primary: NKCardAction("Indítás", glyph: "play.fill") { note = "Indítás" },
+                              quiet: [NKCardAction("Csere") { note = "Csere" },
+                                      NKCardAction("Kihagyom", enabled: false) { note = "Kihagyom" }],
+                              primaryStyle: .hue(hue))
+            }
+        }
+
+        NKSectionCard("Hol tartasz", hue: hue, trailing: .text("2 órája")) {
+            NKCardActions(primary: NKCardAction("Szerkesztés") { note = "Szerkesztés" },
+                          quiet: [NKCardAction("Mentés a sablonba") { note = "Sablon" }])
+        }
+
+        NKSectionCard("A mezociklus napjai", hue: hue, trailing: .chevron, onOpen: { note = "Napok" }) {
+            Text("Öt edzésnap egy héten").nkFont(14).foregroundStyle(.white.opacity(0.75))
+        }
+
+        NKSectionCard("Izmok a héten", hue: hue, state: .loading) { EmptyView() }
+
+        NKPagedHero(pages: [AnyView(heroPage("Futó mezociklus", "3. hét · 5. nap", "Hét hétből a harmadik")),
+                            AnyView(heroPage("A hét", "13 / 16", "sorozat ezen a héten"))],
+                    height: 180)
+
+        NKPagedHero(pages: [AnyView(heroPage("Pihenőnap", "Ma nincs edzés", "Holnap láb jön"))], height: 140)
+    }
+
+    private func heroPage(_ label: String, _ big: String, _ sub: String) -> some View {
+        VStack(spacing: 6) {
+            Text(label.uppercased()).nkFont(12, .semibold).tracking(1.4).foregroundStyle(.white.opacity(0.6))
+            Text(big).nkFont(30, .semibold).foregroundStyle(.white).multilineTextAlignment(.center)
+            Text(sub).nkFont(14).foregroundStyle(.white.opacity(0.7)).multilineTextAlignment(.center)
+        }
+        .padding(.horizontal, 16)
+        .frame(maxWidth: .infinity)
     }
 }
 #endif

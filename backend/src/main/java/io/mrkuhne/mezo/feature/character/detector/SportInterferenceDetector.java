@@ -1,11 +1,9 @@
 package io.mrkuhne.mezo.feature.character.detector;
 
-import io.mrkuhne.mezo.feature.train.service.sport.SportInterference;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -13,12 +11,16 @@ import org.springframework.stereotype.Component;
  * Sport-interference (round 1, spec §4): a heavy sport day (shoulder strain >= 6 or RPE >= 8)
  * followed the next day by a gym session whose sets show a systematic reps-vs-target decline
  * (mean delta <= -1) means the sport load is eating into training capacity. Fires on >= 2 such
- * pairs in the 14-day window, gated on new gym OR new sport data (DetectorGates). The rule itself lives in
- * train's {@link SportInterference} (Boop Sport S2, mezo-r36n9.202) so the Sport area's hints read the same numbers.
+ * pairs in the 14-day window, gated on new gym OR new sport data (DetectorGates).
  */
 @Component
 @ConditionalOnProperty(name = FeaturesConfiguration.CHARACTER_SWITCH, havingValue = "true")
 public class SportInterferenceDetector implements CharacterDetector {
+
+    private static final int SHOULDER_STRAIN_MIN = 6;
+    private static final BigDecimal RPE_MIN = new BigDecimal("8");
+    private static final double DECLINE_THRESHOLD = -1.0;
+    private static final int MIN_PAIRS = 2;
 
     @Override
     public String key() {
@@ -30,17 +32,16 @@ public class SportInterferenceDetector implements CharacterDetector {
         if (!DetectorGates.newGymData(in) && !DetectorGates.newSportData(in)) {
             return List.of();
         }
-        List<SportInterference.SportDay> sport = in.sportSessions().stream()
-            .map(sp -> new SportInterference.SportDay(sp.date(), sp.shoulderStrain(), sp.rpe()))
-            .toList();
-        Map<LocalDate, Double> deltas = new HashMap<>();
-        for (SportInterference.SportDay sp : sport) {
+        int pairs = 0;
+        for (DetectorInput.SportPoint sp : in.sportSessions()) {
+            boolean heavy = (sp.shoulderStrain() != null && sp.shoulderStrain() >= SHOULDER_STRAIN_MIN)
+                    || (sp.rpe() != null && sp.rpe().compareTo(RPE_MIN) >= 0);
+            if (!heavy) continue;
             LocalDate next = sp.date().plusDays(1);
             Double delta = avgRepsVsTargetDelta(in, next);
-            if (delta != null) deltas.put(next, delta);
+            if (delta != null && delta <= DECLINE_THRESHOLD) pairs++;
         }
-        int pairs = SportInterference.declinePairs(sport, deltas);
-        if (pairs < SportInterference.MIN_DECLINE_PAIRS) {
+        if (pairs < MIN_PAIRS) {
             return List.of();
         }
         String summary = "Sport-interferencia: " + pairs

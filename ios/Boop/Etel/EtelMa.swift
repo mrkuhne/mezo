@@ -24,11 +24,9 @@ struct EtelMa: View {
     var onAsk: () -> Void = {}
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var typeSize
-    @Environment(\.accessibilityVoiceOverEnabled) private var voiceOver
     @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
     /// The logged meal whose own page is open.
     @State private var detailMeal: BoopCore.Meal?
-    @State private var heroPage = 0
     @ScaledMetric(relativeTo: .body) private var heroHeight: CGFloat = 268
 
     private let hue = Hue.fuel
@@ -59,9 +57,7 @@ struct EtelMa: View {
 
     private func card<C: View>(_ label: String, trailing: String? = nil, state: NKBlockState = .ready,
                                @ViewBuilder _ content: () -> C) -> some View {
-        NKBare(label, hue: hue, trailing: trailing, state: state, content: content)
-            .padding(.horizontal, 16).padding(.vertical, 12)
-            .nkGlass(24)
+        NKSectionCard(label, hue: hue, trailing: trailing.map(NKCardTrailing.text) ?? .none, state: state, content: content)
     }
 
     private func label(of m: BoopCore.Meal) -> String {
@@ -73,31 +69,8 @@ struct EtelMa: View {
 
     @ViewBuilder private var heroCard: some View {
         if let day = store.day {
-            Group {
-                if typeSize.isAccessibilitySize || voiceOver {
-                    // The largest type sizes (and VoiceOver, which has no page dots to find page 2): both pages one under
-                    // the other, nothing clipped to a fixed height.
-                    VStack(spacing: 22) { heroRingPage(day); heroCurvePage(day) }
-                } else {
-                    VStack(spacing: 10) {
-                        TabView(selection: $heroPage) {
-                            heroRingPage(day).tag(0)
-                            heroCurvePage(day).tag(1)
-                        }
-                        .tabViewStyle(.page(indexDisplayMode: .never))
-                        .frame(height: min(heroHeight, 420) - (guidance ? 40 : 0))
-                        HStack(spacing: 6) {
-                            ForEach(0..<2) { i in
-                                Capsule().fill(.white.opacity(heroPage == i ? 0.85 : 0.25)).frame(width: heroPage == i ? 16 : 6, height: 6)
-                            }
-                        }
-                        .accessibilityHidden(true)
-                    }
-                }
-            }
-            .padding(.vertical, 14)
-            .frame(maxWidth: .infinity)
-            .nkGlass(28)
+            NKPagedHero(pages: [AnyView(heroRingPage(day)), AnyView(heroCurvePage(day))],
+                        height: min(heroHeight, 420) - (guidance ? 40 : 0))
         } else {
             card("MA EDDIG", state: dayState("A mai számaidat most nem látom.")) { EmptyView() }
         }

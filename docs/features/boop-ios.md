@@ -18,6 +18,8 @@ related: [season, penz, mail, fuel, pantry, recipe, dayclose, intention, journal
 
 # Boop — native iOS app — Feature Documentation
 
+> **2026-11-28 — Kit: hero + glass-card pieces and the lighter Edzés sky (`mezo-r36n9.197.1`, step 1 of the Edzés redesign, decision #119).** `NKSectionCard`, `NKPagedHero`, `NKCardActions`, `NKMoreMenu`, `nkInnerCard` join the Napkelte kit; the Edzés room paints `Hue.mozgas.roomSky`; Étel Ma runs on the new pieces unchanged. See §2 *Area kit*.
+
 > **2026-11-28 — The barless home (`mezo-r36n9.196`, step 1 of the Évad-szoba work; decisions #132–#138; spec [`2026-11-27-boop-evad-szoba-kezdolap-design.md`](../superpowers/specs/2026-11-27-boop-evad-szoba-kezdolap-design.md)).** **Current navigation — this supersedes every "spine / place / bar / quick doors" description below.** There is **no bottom bar, no `ShellTab`, no `NKSpineBar`, no `PlacePage`, no panorama place switch and no quick doors**: `ShellView` hosts `KezdolapView` as the root. The ring has **ten orbs** clockwise from the top — Nap, Alvás, Étel, Edzés, Energia, **Évad** (new, violet, shows this week's adherence %, „–" with no season or nothing judged yet), Súly, Forma, Pénz, Levél. The centre orb and Boop's line (caption „KÉRDEZD BOOPOT") open Boop's chat (back button to the ring); the **Nap orb opens the Nap room** (`Nap/NapRoom.swift`: `NapTab`, `napRoomHead`, `NapRoomPage`) with its own bar **Ma** (the day page) · **Napok** (`Naplo/NapokTab.swift`, replaces `NaploView`: the last 14 days, each row opens that day's sheet) · **Boop**; the Évad orb opens today's Évad page in a room frame with a back button (its own tabbed room is step 2). A floating glass  (`NKFloatingPlus`, BoopKit `Napkelte/FloatingPlus.swift`, a11y „Rögzítés") sits bottom-right on the ring, raised above a room's bar, hidden on the chat, and opens the unchanged capture sheet — the five former quick doors are gone from the ring and remain on that sheet. One destination type, `BoopDestination` (`Shell/BoopDestination.swift`: `RoomEntry`, `homeDestination(restored:)`, env `openDestination`), replaces `openPlace`; an old remembered place maps once on launch (Napló → Nap › Napok, Boop → chat, Évad → Évad room, else the ring). Simulator: `-previewTab` and `-previewSwitch` are removed; `-previewHome nap|napok|chat|evad|alvas|etel|edzes|energia|suly|forma|penz|level` opens the home moved on (`nap-oldal` aliases `nap`). See §9 *One destination type, no spine*.
 
 > **2026-11-27 — The player says the challenge and the special last set in words, also on a day that skips them (`mezo-r36n9.195`).** Contract: `TodayExercise.skippedToday` (`SkippedTechnique {technique?, challenge, reason DELOAD|GENTLE|SPORT}`), set in `WorkoutService.getToday` where the technique overlay is suppressed — deload week → DELOAD, comeback / readiness lighten → GENTLE (an invalid catalog pick gets none), sport day → SPORT with the dropped challenge (and a dropped planner technique); null on a normal day. App: `PlannedExercise`/`SessionExercise.skippedToday`; the pure `BoopCore/Train/TechniqueHeadline` builds the head's sentence (`today(technique:challenge:best:)`) and the dim skipped line (`skipped(_:keptTechnique:)`); `TechniqueHeadlineRow` / `TechniqueSkippedRow` (`Edzes/PlayerTechnique.swift`) replace `TechniquePill`/`ChallengePill` under the name in `WorkoutPlayer.exerciseHead`. Preview: `-previewEdzesSkipped deload|gentle|sport` (with `-previewEdzesTechnique YES`), `-previewEdzesAt N`. Tests: `TechniqueHeadlineTests`, `WorkoutTodayTechniqueIT` (deload/comeback/sport assertions).
@@ -354,6 +356,21 @@ spine Ma · Terv · Napló · Boop + "+" (S4 is cancelled); **B3 Napi ritmus** (
   it moved onto `NKAreaPage` with every sheet, flow and section unchanged. A full-screen flow with its own chrome
   (the workout player, the check-in, the evening close) stays a page-level cover outside this system.
   Review: `-previewKit YES` renders every block and every awkward state on one page (`Kezdolap/KitGallery.swift`).
+  **Hero + glass-card pieces (`mezo-r36n9.197.1`, 2026-11-28, decision #119; spec
+  [`2026-11-27-boop-edzes-ujratervezes-design.md`](../superpowers/specs/2026-11-27-boop-edzes-ujratervezes-design.md) §5.1).**
+  New kit files, additive: `NKSectionCard` (`Napkelte/NKSectionCard.swift` — the `NKBare` head on `nkGlass(24)`,
+  padding 16/12, its own `NKBlockState`; trailing `NKCardTrailing` `.none | .text | .menu(AnyView) | .chevron`;
+  optional `onOpen` makes the whole card a tap target via a gesture so inner buttons keep their taps), `NKMoreMenu`
+  (the 44 pt „…" system menu, a11y „Továbbiak"), `View.nkInnerCard(radius: 20)` (fill white 0.06, stroke 0.08 — the
+  no-glass-on-glass rule), `NKPagedHero` (`Napkelte/NKPagedHero.swift` — radius 28, 1–3 swipe pages with capsule
+  dots; `showsDots(pageCount:)` is false for one page; `stacks(accessibilitySize:voiceOver:)` puts the pages under
+  each other at the accessibility sizes and under VoiceOver) and `NKCardActions` (`Napkelte/NKCardActions.swift` —
+  one primary capsule, white or `.hue(_)`, plus at most `maxQuiet = 2` quiet ones; a row via `ViewThatFits`, a
+  column at large type where titles wrap between words). `NKBare` gained an internal `trailingView:` init for the
+  menu/chevron slot. `Tokens.swift`: `Hue.mozgas.roomSky` = `[0x5C7FC0, 0xF4BC8E, 0xFFEFCB]`, `roomTop` `0x34507E`
+  (the Edzés room's lighter sky; the Mozgás orb elsewhere keeps `sky`/`top`). **Étel Ma is the proof:** its private
+  `card()` and hero moved onto `NKSectionCard`/`NKPagedHero` with pixel-identical simulator shots (normal, XXXL,
+  kímélő day). Review: `-previewKit YES -previewKitCards YES` shows only these pieces on a plain page.
 
 - **The area pages (shipped 2026-11-16, `mezo-r36n9.57`; the build target is the Élet spike's own area screens —
   `BoopSpike/EletRooms.swift` + `EletContent.swift`, run with `-elet YES`, not the older PNGs).** The owner
@@ -1390,12 +1407,6 @@ workout (`volleyball`, `running`, `cycling` for bike, `hiit` for cross/TRX, …)
 neither. Before S1 any logged sport or any ≥ 20 min workout near the gym window ticked the gym. The brief fingerprint
 adds a `|sport:` part only when the day has sport (sport-less days keep their hash). Not yet read by the app — S3
 builds the Sport area on it; the Edzés room can read `sportToday[]` on the today workout read (`train.md` §4).
-
-### Sport S2 — the Sport read models (`mezo-r36n9.202`, 2026-11-28, backend only)
-Five GETs under `/api/train/sport/` — `overview` (the week's two lanes, totals, week count, tonight incl. the
-unmatched Watch workout for pre-fill, hints), `load` (6 weeks, session-RPE × minutes), `body` (muscle heat gym /
-sport / together), `shoulder`, `gaps`. Rules and shapes: [`train.md`](train.md) §4 *Sport / volleyball · cross ·
-TRX*. Not yet in the app's generator filter — S3 (`mezo-r36n9.203`) adds them and builds the Sport area.
 
 ### B3 API operations (the generator filter, `ios/BoopKit/Sources/BoopAPI/openapi-generator-config.yaml`)
 

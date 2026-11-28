@@ -96,17 +96,6 @@ class WorkoutReconcilerTest {
     }
 
     @Test
-    void eachSportPairsWithItsOwnHealthTypeNotStrength() {
-        // Boop Sport S2 (mezo-r36n9.202): before, every non-volleyball sport fell to the strength set
-        LoggedSession run = sport("running", 0, 45);
-        assertThat(reconciler.match(health("running", 0, 45), List.of(run))).contains(run);
-        assertThat(reconciler.match(health("strength", 0, 45), List.of(run))).isEmpty();
-        LoggedSession bike = sport("bike", 0, 60);
-        assertThat(reconciler.match(health("cycling", 0, 60), List.of(bike))).contains(bike);
-        assertThat(reconciler.match(health("strength", 0, 60), List.of(sport("swim", 0, 60)))).isEmpty();
-    }
-
-    @Test
     void sportWithoutClockTimeNeverMatches() {
         assertThat(reconciler.match(health("volleyball", 0, 90), List.of(sport("volleyball", null, 90)))).isEmpty();
     }

@@ -2,7 +2,7 @@
 title: Platform · API Contract & Backend Architecture
 type: feature-platform
 status: done
-updated: 2026-11-28
+updated: 2026-11-26
 tags: [platform, backend, data-layer, frontend, boop, b4-etel, idempotency]
 key_files:
   - api/openapi.yml
@@ -12,8 +12,6 @@ key_files:
   - backend/src/main/resources/messages_hu.properties
 related: [_platform-data-layer, _platform-auth-security, _platform-notifications, train, today, fuel, ritual, companion]
 ---
-
-> **2026-11-28 — reviewed after Boop Sport S2 (`mezo-r36n9.202`, additive contract, no platform change).** New fragment `api/feature/train/train-sport.yml` (tag `Sport`, five read-only GETs under `/api/train/sport/`) appended to `api/generate/merge.yml`; train reads Health workouts through its own port `SportHealthPort` (adapter in wearable — the existing wearable → train direction). See [`train.md`](train.md) §4.
 
 > **2026-11-26 — reviewed after Boop Mezociklus kezelés (`mezo-r36n9.177`, no API-layer change).** `TRAIN_MESO_NOT_ACTIVE` (409) added to the message catalogs for the new `restartMesocycle` / `saveMesocycleToTemplate` endpoints (see [`train.md`](train.md)); the error envelope is unchanged.
 

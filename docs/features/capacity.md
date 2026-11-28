@@ -2,7 +2,7 @@
 title: Capacity (day load vs. what the owner can carry)
 type: feature-domain
 status: done
-updated: 2026-11-28
+updated: 2026-11-27
 tags: [capacity, boop, b7-kapacitas, backend, ai, calendar, energy-curve, wearable]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/capacity
@@ -15,8 +15,6 @@ key_files:
   - ios/Boop/Nap/DayCapacity.swift
 related: [boop-ios, companion, _platform-language, train]
 ---
-
-> **2026-11-28 — reviewed after Boop Sport S2 (`mezo-r36n9.202`, no capacity change).** `BoopWorkoutKinds` moved to `train/service/sport/SportWorkoutKinds` (`BoopDayAssembler` imports it from there); behaviour unchanged.
 
 # Capacity — how much the day demands vs. how much he can carry
 
