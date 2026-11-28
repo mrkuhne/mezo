@@ -50,6 +50,8 @@ func areaTabs(_ hue: Hue, brief: Brief) -> AreaTabs {
         AreaTabs(names: ["Ma", "Test", "Napló"], badges: [:])
     case .evad:
         AreaTabs(names: ["Most", "Hét", "Terv", "Kísérlet"], badges: [:])
+    case .sport:
+        AreaTabs(names: ["Ma", "Hét", "Napló", "Test"], badges: [:])
     }
 }
 
@@ -68,6 +70,7 @@ func areaName(_ hue: Hue) -> String {
     case .level: "Levél"
     case .suly: "Súly"
     case .evad: "Évad"
+    case .sport: "Sport"
     }
 }
 
@@ -83,6 +86,7 @@ func areaGlyph(_ hue: Hue) -> String {
     case .level: "e-level"
     case .suly: "scale-ink"
     case .evad: "evad-ink"
+    case .sport: "ball-sun"
     }
 }
 
