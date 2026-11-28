@@ -75,11 +75,14 @@ public enum Hue: Int, CaseIterable, Sendable {
     /// Évad — the tenth area (spike 2026-11-27, `mezo-r36n9.196`): the season, in its own evening-violet world
     /// (dusk plum over an apricot horizon), distinct from Forma's indigo-pink.
     case evad
+    /// Sport — the eleventh area (owner 2026-11-27, `mezo-r36n9.188`, decisions #124–#128): volleyball and the other
+    /// sports beside the gym, in an evening court-light coral world (navy dusk over a coral sun).
+    case sport
 
     /// The five metric worlds; `Hue.allCases` includes Pénz and Levél, which have no metric.
     public static let metrics: [Hue] = [.forma, .alvas, .mozgas, .fuel, .pulzus]
 
-    public var name: String { ["Forma", "Alvás", "Mozgás", "Fuel", "Pulzus", "Pénz", "Levél", "Súly", "Évad"][rawValue] }
+    public var name: String { ["Forma", "Alvás", "Mozgás", "Fuel", "Pulzus", "Pénz", "Levél", "Súly", "Évad", "Sport"][rawValue] }
 
     /// Sky gradient: top, middle, horizon.
     public var sky: [Color] {
@@ -93,6 +96,7 @@ public enum Hue: Int, CaseIterable, Sendable {
         case .level: [Color(hex: 0x1E1A4A), Color(hex: 0x5B4BC4), Color(hex: 0xBFD9F5)]
         case .suly: [Color(hex: 0x3A2606), Color(hex: 0xC9901E), Color(hex: 0xFFE9A8)]
         case .evad: [Color(hex: 0x2A1242), Color(hex: 0x8A4FB8), Color(hex: 0xF4B48E)]
+        case .sport: [Color(hex: 0x1C2350), Color(hex: 0xD9513F), Color(hex: 0xFFC4A0)]
         }
     }
 
@@ -108,13 +112,15 @@ public enum Hue: Int, CaseIterable, Sendable {
         case .level: [Color(hex: 0x1E1A4A), Color(hex: 0x5B4BC4), Color(hex: 0xB3A8F5), Color(hex: 0x7FD8E8)]
         case .suly: [Color(hex: 0x3B2606), Color(hex: 0xCF9426), Color(hex: 0xF4DB8C), Color(hex: 0xFFF6D2)]
         case .evad: [Color(hex: 0x2E0F3E), Color(hex: 0x9440AE), Color(hex: 0xF4B48E), Color(hex: 0xE7A2E6)]
+        case .sport: [Color(hex: 0x3A0F14), Color(hex: 0xD9453A), Color(hex: 0xFF9E7A), Color(hex: 0xFFD7B0)]
         }
     }
 
     /// Glow around the orb, the path's lit line, floating lights.
     public var glow: Color {
         [Color(hex: 0x8B6CF0), Color(hex: 0x4BA8E6), Color(hex: 0xF29A4A), Color(hex: 0x4CC79A), Color(hex: 0xF06A9A),
-         Color(hex: 0x5FD08A), Color(hex: 0x8E82F0), Color(hex: 0xE6B33A), Color(hex: 0xC77DE0)][rawValue]
+         Color(hex: 0x5FD08A), Color(hex: 0x8E82F0), Color(hex: 0xE6B33A), Color(hex: 0xC77DE0),
+         Color(hex: 0xF2674F)][rawValue]
     }
 
     /// The sky of the hue's own room pages: the Étel room is lighter and less saturated than the Fuel orb's world
@@ -140,7 +146,8 @@ public enum Hue: Int, CaseIterable, Sendable {
     /// The hue's dark top, the base of the deep ground.
     public var top: Color {
         [Color(hex: 0x2E2470), Color(hex: 0x0F3552), Color(hex: 0x4A2810), Color(hex: 0x123F33), Color(hex: 0x4A1630),
-         Color(hex: 0x0C2B1A), Color(hex: 0x1E1A4A), Color(hex: 0x3A2606), Color(hex: 0x2A1242)][rawValue]
+         Color(hex: 0x0C2B1A), Color(hex: 0x1E1A4A), Color(hex: 0x3A2606), Color(hex: 0x2A1242),
+         Color(hex: 0x3A1216)][rawValue]
     }
 }
 

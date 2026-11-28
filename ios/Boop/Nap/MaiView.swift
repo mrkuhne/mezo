@@ -19,7 +19,7 @@ func hue(for key: MetricKey) -> Hue {
 /// total, and `Hue.metrics` is the list to iterate when a metric is what you mean.
 func metricKey(for hue: Hue) -> MetricKey {
     switch hue {
-    case .forma, .penz, .level, .suly, .evad: .forma
+    case .forma, .penz, .level, .suly, .evad, .sport: .forma
     case .alvas: .alvas
     case .mozgas: .mozgas
     case .fuel: .fuel
