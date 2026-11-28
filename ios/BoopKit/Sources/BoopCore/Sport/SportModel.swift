@@ -26,6 +26,10 @@ public final class SportStore {
 
     /// The Hét tab's weekly rhythm, events and six-week load (`mezo-r36n9.204`); a write there re-reads the week.
     public let schedule: SportScheduleStore
+    /// The Napló tab's sessions (`mezo-r36n9.205`); a correction or delete re-reads the week, the load and the body.
+    public let journal: SportJournalStore
+    /// The Test tab's muscle heat, shoulder and rest gaps (`mezo-r36n9.205`).
+    public let bodyWeek: SportBodyStore
 
     @ObservationIgnored let client: SportClient?
     @ObservationIgnored private let cache: ServerCache?
@@ -35,8 +39,15 @@ public final class SportStore {
     public init(client: SportClient?, cache: ServerCache?) {
         self.client = client; self.cache = cache
         schedule = SportScheduleStore(client: client, cache: cache)
+        journal = SportJournalStore(client: client, cache: cache)
+        bodyWeek = SportBodyStore(client: client, cache: cache)
         schedule.changed = { [weak self] in await self?.load(force: true) }
         schedule.today = { [weak self] in self?.overview?.today }
+        journal.today = { [weak self] in self?.overview?.today ?? sportPhoneToday() }
+        journal.changed = { [weak self] in
+            guard let self else { return }
+            await load(force: true); await schedule.load(force: true); await bodyWeek.load(force: true)
+        }
     }
 
     // MARK: - What the room and the ring read
