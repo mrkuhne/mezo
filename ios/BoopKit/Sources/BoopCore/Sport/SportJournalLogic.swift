@@ -95,3 +95,15 @@ public func sportJournalCard(_ s: SportSessionRecord) -> SportJournalCard {
                             note: note?.isEmpty == false ? note : nil,
                             accessibility: spoken.joined(separator: ", "))
 }
+
+/// The area head on the Napló tab.
+public func sportJournalHead(_ sessions: [SportSessionRecord], today: String) -> SportHead {
+    guard !sessions.isEmpty else {
+        return SportHead(headline: "A sportnaplód", sentence: "Még üres — az első rögzítés után itt látod az alkalmaidat.")
+    }
+    let from28 = sportAddDays(today, -27)
+    let n = sessions.filter { $0.date >= from28 && $0.date <= today }.count
+    return SportHead(headline: "A sportnaplód",
+                     sentence: n == 0 ? "Az elmúlt négy hétben nem volt alkalom — a régebbieket lent látod."
+                                      : "\(n) alkalom az elmúlt négy hétben. Koppints egyre, ha javítanád.")
+}

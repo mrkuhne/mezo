@@ -2,7 +2,7 @@
 cim: Sport és futás
 szint: Funkció
 terulet: Edzés
-allapot: Tervezve
+allapot: Részben kész
 hol: [iPhone app, Apple Watch, Háttérrendszer]
 szulo: 00-attekintes
 szakasz: [B5]
@@ -48,6 +48,19 @@ osszefoglalo: Röplabda, kerékpár, úszás és más sportok naplója heti beos
    teljes heti rend megy el, a többi alkalom változatlanul. Ha a mentés nem sikerül (például nincs net), a lap nyitva marad
    a beírt adatokkal és egy „Újra próbálom” gombbal.
 
+10. **Napló fül (2026-11-28):** felül az elmúlt négy hét: hány alkalom volt, mennyi az átlagos megterhelés és a váll
+   átlaga, egy vonal az utolsó alkalmak megterheléséről, és egy mondat arról, hányszor ért el a vállad 7-et két hét alatt.
+   Alatta az elmúlt 12 hét minden alkalma kártyán: dátum, sport, terhelés, hossz, megterhelés, szettek, váll, kalória
+   (mért, vagy „kb. — becslés”) és a jegyzet. **Egy kártyára koppintva javíthatod** (sport, hossz, megterhelés, szettek,
+   váll, jegyzet) **vagy törölheted** az alkalmat — ehhez net kell, törlés előtt rákérdez. Utána a heti szám és a Test fül
+   is frissül. Egy még el nem küldött rögzítés „a telefonon vár” jelzéssel látszik.
+11. **Test fül (2026-11-28):** az Edzés izomtérképe a hétre, három nézetben: **Együtt** (a kondi és a sport együtt, soha
+   nem több a teljesnél), **Kondi** és a sport (például **Röpi**). Alatta egy mondat, melyik izom kap mindkettőből; ha egy
+   sportalkalom nem ad terhelést a térképre (hiányzik a megterhelés vagy a hossz, vagy ahhoz a sporthoz nincs izomtérkép),
+   ezt kimondja. **A vállad · 6 hét:** hetenkénti váll-átlag a 7-es figyelmeztető vonallal. **Pihenő a kettő között:**
+   napokra bontva, mikor van kondi és sport, és hány óra jut köztük. **Amire figyelek:** a jelzések, mellettük egy
+   „miért?”, ami megmutatja, mit látott Boop és mit gondol róla a Mozgás és a Szkeptikus — a tervet magától nem változtatja.
+
 ## Miért így
 A spec szerint a sport és a futás megmarad; a futás az órával kap értelmet (távolság, tempó, pulzus), ezért a B5 ott építi újra.
 
@@ -69,8 +82,9 @@ A spec szerint a sport és a futás megmarad; a futás az órával kap értelmet
 | `run_session_log` | Futásnapló (tényleges megterhelés) |
 
 ## Mi jön még
-B5: futás az óráról távolsággal, tempóval, pulzussal; natív sportnapló. Sport 5. lépés: a Napló (alkalmak javítása,
-törlése) és a Test fül (testtérkép, váll, pihenő). Sport 6. lépés: telepítés a telefonra. Egy egyszeri esemény ma még nem
+B5: futás az óráról távolsággal, tempóval, pulzussal. Sport 6. lépés: a sport megjelenik a gömbön, a falon, a nap oldalán
+és az Edzés sportnapján; telepítés a telefonra. Egy kijavított vagy törölt sportalkalom ma még nem igazítja újra a napi
+terhelhetőséget (csak az új rögzítés) — ez külön jegyen van. Egy egyszeri esemény ma még nem
 változtat a kondin (például nem teszi könnyebbé az előtte lévő lábnapot) — ez egy későbbi döntés.
 
 ## Mi marad ki

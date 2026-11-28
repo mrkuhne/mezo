@@ -12,8 +12,9 @@ import BoopCore
 ///   game · the watch recorded it · logged · skipped · a gym-only day („Ma nincs sport" + the next one) · a sport-only day.
 /// - `-sportState ready|empty|loading|error|offline` (default `ready`): no rhythm and no sport yet · the first read
 ///   never answers · the server failing · no net with the week cached five hours ago.
-/// - `-sportSheet log|skip|slot|slotNew|event|eventNew`: the room opens with that sheet up (slot / event = the first one).
+/// - `-sportSheet log|skip|slot|slotNew|event|eventNew|edit|why`: the room opens with that sheet up (slot / event = the first one; edit = the first Napló session, why = the first Test hint).
 /// - `-sportSaveFail YES`: every Hét write fails (the sheet keeps what was entered and offers a retry).
+/// - `-sportJournalEmpty YES`: the Napló has nothing logged yet (S5). `-sportMap Együtt|Kondi|Röpi` picks the Test map.
 /// A skip and its undo change the transport's week, so the room's re-read shows the server's own picture.
 enum SportPreview {
     static var moment: String { UserDefaults.standard.string(forKey: "sportMoment") ?? "before" }
@@ -27,6 +28,8 @@ enum SportPreview {
         if state == "offline" {
             store.debugShow(week(), offline: true, age: 5 * 3600)
             store.schedule.debugShow(slots: slots, events: events(), load: load(), offline: true)
+            store.journal.debugShow(journal(), offline: true)
+            store.bodyWeek.debugShow(body: body(), shoulder: shoulder(), gaps: gaps(), offline: true)
         }
         return store
     }
@@ -95,7 +98,10 @@ enum SportPreview {
                                        moment: "BEFORE", startsInMinutes: 380)
             }
         }
-        var hints: [SportHint] = []
+        var hints: [SportHint] = [SportHint(key: "SPORT_LOAD_DECLINE", date: today, severity: "INFO", sport: "VOLLEYBALL", pairs: 2)]
+        if let d = [0, 1, 4].first(where: { $0 > ti && gymDays.contains($0) && sportDays.contains($0) }) {
+            hints.append(SportHint(key: "GAP_SHORT", date: dates[d], severity: "WATCH", sport: "VOLLEYBALL", gapHours: 4.5))
+        }
         if ti + 1 < 7, gymDays.contains(ti + 1), sportDays.contains(ti) {
             hints.append(SportHint(key: "SPORT_BEFORE_LEG_MORNING", date: dates[ti + 1], severity: "WATCH", sport: "VOLLEYBALL",
                                    heavy: m == "done"))
@@ -130,6 +136,62 @@ enum SportPreview {
         })
     }
 
+    /// Napló (S5): about five weeks of volleyball (Monday, Tuesday, Friday) and one run, newest first.
+    static func journal() -> [SportSessionRecord] {
+        if UserDefaults.standard.bool(forKey: "sportJournalEmpty") || state == "empty" { return [] }
+        let w = week()
+        var out: [SportSessionRecord] = []
+        let rpes: [Double] = [6, 7, 5, 7, 8, 6, 7, 6, 8, 7, 6, 7, 7, 6, 7]
+        let shoulders = [5, 6, 4, 7, 8, 6, 6, 5, 7, 6, 5, 6, 6, 5, 6]
+        var n = 0
+        for back in 0..<5 {
+            let monday = sportAddDays(w.weekStart, -7 * back)
+            for (off, time) in [(0, "18:00"), (1, "18:00"), (4, "19:30")] {
+                let date = sportAddDays(monday, off)
+                guard date < w.today else { continue }
+                let i = n % rpes.count
+                out.append(SportSessionRecord(id: "j\(n)", sport: "volleyball", date: date, time: time, duration: off == 4 ? 90 : 117,
+                                              setsPlayed: off == 4 ? 4 : 5, rpe: rpes[i], shoulderStrain: shoulders[i],
+                                              notes: n == 1 ? "sok ütés a hálónál" : nil, kcal: off == 4 ? 520 : 812,
+                                              kcalIsEstimate: off == 4))
+                n += 1
+            }
+        }
+        out.append(SportSessionRecord(id: "run1", sport: "running", date: sportAddDays(w.weekStart, -9), time: "07:10", duration: 35,
+                                      rpe: 5, kcal: 330, kcalIsEstimate: true))
+        return sportJournalSorted(out)
+    }
+    static func body() -> SportBodyWeek {
+        let m: [(String, Double, Double)] = [("chest-mid", 0.7, 0), ("back-wide", 0.8, 0), ("shoulder-front", 0.5, 0.7),
+                                             ("shoulder-side", 0.6, 0.8), ("shoulder-rear", 0, 0.6), ("biceps-long", 0.5, 0),
+                                             ("triceps-long", 0.45, 0), ("quad", 0.75, 0.7), ("ham", 0.55, 0), ("glute", 0.6, 0.35),
+                                             ("calf", 0, 0.95), ("core", 0, 0.5)]
+        return SportBodyWeek(weekStart: week().weekStart,
+                             muscles: m.map { SportMuscleHeat(muscle: $0.0, gymLoad: Int($0.1 * 1000), sportLoad: Int($0.2 * 1000),
+                                                              gym: $0.1, sport: $0.2, together: min(1, $0.1 + $0.2 * 0.6)) },
+                             sharedMuscles: 4, shoulderAverage: 5.8, sportUnknown: 1)
+    }
+    static func shoulder() -> SportShoulder {
+        let monday = week().weekStart
+        let v: [Double?] = [5.2, 5.5, nil, 6.1, 7.2, 6.0]
+        return SportShoulder(weeks: v.enumerated().map { i, x in
+            SportShoulderWeek(weekStart: sportAddDays(monday, (i - 5) * 7), average: x, sessions: x == nil ? 0 : 3)
+        })
+    }
+    static func gaps() -> SportGaps {
+        let w = week()
+        let days = w.days.map { d -> SportGapDay in
+            var blocks: [SportBlock] = d.gym.map { SportBlock(layer: "GYM", start: "07:00", end: "08:10", done: $0.state == "DONE") }
+            blocks += d.sport.map { s in
+                SportBlock(layer: "SPORT", sport: "VOLLEYBALL", start: s.time ?? "18:00", end: s.time == "19:30" ? "21:00" : "20:00",
+                           done: s.state == "DONE")
+            }
+            let both = !d.gym.isEmpty && !d.sport.isEmpty
+            return SportGapDay(date: d.date, blocks: blocks, gapHours: both ? 9.8 : nil)
+        }
+        return SportGaps(weekStart: w.weekStart, days: days)
+    }
+
     /// No rhythm and nothing logged: the empty state.
     static func emptyWeek() -> SportOverview {
         let w = week()
@@ -144,6 +206,7 @@ final class SportPreviewTransport: ClientTransport, @unchecked Sendable {
     private var skipped: String?
     private var slots: [SportSlot]?
     private var events: [SportEvent]?
+    private var journal: [SportSessionRecord]?
 
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
         let state = SportPreview.state
@@ -193,11 +256,40 @@ final class SportPreviewTransport: ClientTransport, @unchecked Sendable {
             return (HTTPResponse(status: .noContent), nil)
         case "getSportLoad":
             return try json(state == "empty" ? SportLoad(weeks: []) : SportPreview.load())
+        case "listSportSessions":
+            return try json(lock.withLock { journal } ?? SportPreview.journal())
+        case "updateSportSession":
+            if UserDefaults.standard.bool(forKey: "sportSaveFail") { throw URLError(.notConnectedToInternet) }
+            let id = String(request.path?.split(separator: "/").last ?? "")
+            let e = try JSONDecoder().decode(PreviewEdit.self, from: try await Data(collecting: body ?? HTTPBody(), upTo: 1 << 20))
+            let list = lock.withLock { journal } ?? SportPreview.journal()
+            guard let old = list.first(where: { $0.id == id }) else { return (HTTPResponse(status: .notFound), nil) }
+            let saved = SportSessionRecord(id: id, sport: e.sport, date: old.date, time: old.time, duration: e.duration,
+                                           setsPlayed: e.setsPlayed, rounds: e.rounds, rpe: e.rpe, shoulderStrain: e.shoulderStrain,
+                                           notes: e.notes, kcal: e.kcalOverride ?? Int(Double(e.duration) * 6.5),
+                                           kcalIsEstimate: e.kcalOverride == nil)
+            lock.withLock { journal = list.map { $0.id == id ? saved : $0 } }
+            return try json(saved)
+        case "deleteSportSession":
+            if UserDefaults.standard.bool(forKey: "sportSaveFail") { throw URLError(.notConnectedToInternet) }
+            let id = String(request.path?.split(separator: "/").last ?? "")
+            lock.withLock { journal = (journal ?? SportPreview.journal()).filter { $0.id != id } }
+            return (HTTPResponse(status: .noContent), nil)
+        case "getSportBody":
+            return try json(state == "empty" ? SportBodyWeek(weekStart: SportPreview.week().weekStart) : SportPreview.body())
+        case "getSportShoulder":
+            return try json(state == "empty" ? SportShoulder(weeks: []) : SportPreview.shoulder())
+        case "getSportGaps":
+            return try json(state == "empty" ? SportGaps(weekStart: SportPreview.week().weekStart) : SportPreview.gaps())
         default:
             return (HTTPResponse(status: .notFound), nil)
         }
     }
 
+    private struct PreviewEdit: Decodable {
+        let sport: String; let duration: Int; let setsPlayed: Int?; let rounds: Int?; let rpe: Double
+        let shoulderStrain: Int?; let notes: String?; let kcalOverride: Int?
+    }
     private struct PreviewSkip: Encodable { let id: String; let reasonCategory: String; let freePass: Bool; let serious: Bool }
 }
 #endif

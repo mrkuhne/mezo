@@ -259,3 +259,15 @@ public func sportWhy(_ h: SportHint) -> SportWhy? {
         return nil
     }
 }
+
+/// The area head on the Test tab.
+public func sportTestHead(_ b: SportBodyWeek?) -> SportHead {
+    guard let b else { return SportHead(headline: "A tested a héten", sentence: "Töltöm, mit terhelt a kondi és a sport…") }
+    if b.sharedMuscles > 0 {
+        return SportHead(headline: "A tested a héten", sentence: "\(b.sharedMuscles) izmod kap a kondiból és a sportból is — ezekre figyelek.")
+    }
+    if b.muscles.isEmpty {
+        return SportHead(headline: "A tested a héten", sentence: "Ezen a héten még nincs terhelés — a kondi és a sport után itt látod.")
+    }
+    return SportHead(headline: "A tested a héten", sentence: "A kondi és a sport ezen a héten más-más izmokat terhel.")
+}

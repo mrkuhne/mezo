@@ -220,3 +220,20 @@ struct SportBodyLogicTests {
         #expect(sportHints(week).contains { $0.source?.key == "SPORT_LOAD_DECLINE" })
     }
 }
+
+@Suite("Sport Napló + Test — heads")
+struct SportJournalHeadTests {
+    @Test func journalHeadCountsFourWeeksAndSaysEmpty() throws {
+        let list = try SportJournalFixtures.list()
+        #expect(sportJournalHead(list, today: "2026-11-28").sentence.hasPrefix("2 alkalom"))
+        #expect(sportJournalHead([], today: "2026-11-28").sentence.hasPrefix("Még üres"))
+        #expect(sportJournalHead(list, today: "2027-03-01").sentence.contains("nem volt alkalom"))
+    }
+
+    @Test func testHeadNamesSharedMuscles() {
+        #expect(sportTestHead(nil).sentence.contains("Töltöm"))
+        #expect(sportTestHead(SportBodyWeek(weekStart: "2026-11-23", muscles: [SportMuscleHeat(muscle: "quad", gym: 0.5, sport: 0.4, together: 0.9)],
+                                            sharedMuscles: 1)).sentence.hasPrefix("1 izmod"))
+        #expect(sportTestHead(SportBodyWeek(weekStart: "2026-11-23")).sentence.contains("még nincs terhelés"))
+    }
+}
