@@ -1213,5 +1213,19 @@
       "mezo-r36n9.196"
     ],
     "mi_valtozott": "Eltűnt az alsó sáv és a gyűrű alatti öt gyorsgomb. A gyűrűn tíz gömb van: az új lila Évad gömb a heti betartást mutatja százalékban (évad nélkül vagy amíg nincs mit nézni, vonalat). A középső gömb Boop beszélgetését nyitja, a Nap gömb a Nap szobát (Ma és Napok fül — a Napok a régi Napló napjai). Jobbra lent egy lebegő „+” nyitja a rögzítést, minden korábbi gyorsgomb ott van. Az Évad gömb egyelőre a mai Évad oldalt nyitja; a saját fülekkel bíró Évad szoba a következő lépés."
+  },
+  "e31474dea": {
+    "cim": "Az Évad saját szobája (Most · Hét · Terv · Kísérlet), vasárnapi heti átnézés, heti menü az Étel szobában",
+    "datum": "2026-11-28",
+    "tipus": "Funkció",
+    "hova": [
+      "iPhone app",
+      "Telefonra telepítve"
+    ],
+    "szakasz": "B6 Évad",
+    "jegyek": [
+      "mezo-r36n9.196"
+    ],
+    "mi_valtozott": "Az Évad gömb mostantól egy saját szobát nyit négy füllel. A Most a hét eddigi betartását mutatja napokra bontva, és hogy mi jön. A Hét a vasárnapi átnézést, a terhelést és a jövő hetet mutatja, meg azt, amit Boop tanult. A Terv az év sávja (koppintva az Edzés éves terve nyílik), az évad hetei, a cél és a szabályok helye. A Kísérlet a korábbi Hatás fül. Vasárnap 18:00-tól hétfő éjfélig egy ötlépéses heti átnézés vár. A Ma falán és a Hét fülön is megjelenik, és ha az értesítések engedélyezve vannak, vasárnap este egy értesítés is szól. A „Később” semmit nem változtat, a „Kész” egy mondatban összefoglalja a jövő hetet. A heti menü és a bevásárlólista átkerült az Étel szoba Hét fülére. Minden receptnél van egy „Menübe jöhet” kapcsoló, a Receptekben pedig szűrő is tartozik hozzá."
   }
 }
