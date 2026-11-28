@@ -2053,7 +2053,7 @@
     ],
     "mit_kapsz": "A mai esti sport egy helyen: mennyi van a kezdésig, az órád adataiból előtöltött rögzítés, kihagyás indokkal és visszavonással.",
     "szulo": "mezo-r36n9.188",
-    "munkamenet": "sport-terulet-terv"
+    "munkamenet": "sport-s3-app"
   },
   "mezo-r36n9.204": {
     "cim": "Sport 4. lépés — app: Hét fül és heti rend",
@@ -2285,5 +2285,16 @@
     ],
     "mit_kapsz": "Ha az Évad Most fülén egy nap pöttyére koppintasz, egyből az a nap nyílik meg, nem csak a Napok lista.",
     "szulo": "mezo-r36n9"
+  },
+  "mezo-r36n9.216": {
+    "cim": "Sport rögzítés: dupla mentés elleni védelem a szerveren",
+    "tipus": "Feladat",
+    "szakasz": "Sport",
+    "terulet": [
+      "Sport"
+    ],
+    "mit_kapsz": "Ha gyenge a net és a telefon újraküldi a sportrögzítést, a szerver akkor sem menti el kétszer.",
+    "szulo": "mezo-r36n9.188",
+    "munkamenet": "sport-s3-app"
   }
 }

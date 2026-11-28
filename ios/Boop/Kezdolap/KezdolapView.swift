@@ -45,6 +45,7 @@ struct KezdolapView: View {
     @Environment(EvadStore.self) private var evad: EvadStore?
     /// The Súly orb's number is the pace score of the Súly store (`mezo-r36n9.158`).
     @Environment(SulyStore.self) private var suly: SulyStore?
+    @Environment(SportStore.self) private var sport: SportStore?
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openAccount) private var openAccount
     @Environment(\.setRoomOpen) private var setRoomOpen
@@ -142,6 +143,7 @@ struct KezdolapView: View {
         await loadFood()
         await penz?.load()
         await suly?.load(force: force)
+        await sport?.load(force: force)
         await evad?.load()
         await evad?.loadWeek(force: force)
     }
@@ -263,10 +265,10 @@ struct KezdolapView: View {
     }
 
     private func ringView(side: CGFloat) -> some View {
-        // Ten orbs: 54 pt where the ring is wide, smaller where it is not (a short phone's ring is its height), so
+        // Eleven orbs (Sport, mezo-r36n9.203): 54 pt where the ring is wide, smaller where it is not (a short phone's ring is its height), so
         // every name keeps clear of the orb under it (`mezo-r36n9.158`, `.196`).
         NKOrbRing(items: Area.allCases.map { ringItem($0, brief: brief, foodDay: etel.day, penz: penz?.allowance,
-                                                      suly: suly?.score, evad: evad?.weekScore) },
+                                                      suly: suly?.score, evad: evad?.weekScore, sport: sport?.ring) },
                   orbSize: side < 360 ? 44 : (side < 400 ? 50 : 54), live: route == nil) { item, point in
             open(item, at: point)
         } center: {
@@ -274,7 +276,7 @@ struct KezdolapView: View {
         }
         .frame(width: side, height: side)
         .frame(maxWidth: .infinity)
-        // The names sit in fixed gaps between ten orbs: past this size they would run into their neighbours. Each
+        // The names sit in fixed gaps between eleven orbs: past this size they would run into their neighbours. Each
         // orb still reads its full name and number to VoiceOver.
         .dynamicTypeSize(...DynamicTypeSize.xLarge)
     }
@@ -332,7 +334,7 @@ struct KezdolapView: View {
         }
     }
 
-    /// Simulator review: `-previewHome nap|napok|chat|alvas|etel|edzes|energia|evad|suly|forma|penz|level` opens the
+    /// Simulator review: `-previewHome nap|napok|chat|alvas|etel|edzes|energia|evad|suly|sport|forma|penz|level` opens the
     /// home already moved on.
     private static var initialRoute: KezdolapRoute? {
         #if DEBUG
@@ -349,6 +351,7 @@ struct KezdolapView: View {
         case "penz": return .room(RoomEntry(.penz))
         case "level": return .room(RoomEntry(.level))
         case "suly": return .room(RoomEntry(.suly))
+        case "sport": return .room(RoomEntry(.sport))
         default: return nil
         }
         #else

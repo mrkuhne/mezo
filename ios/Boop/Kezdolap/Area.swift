@@ -10,7 +10,7 @@ import BoopDesign
 enum Area: Int, CaseIterable, Identifiable {
     /// The day itself, at the top of the ring: the owner gave it its own orb on 2026-11-16 (decision #41). It is
     /// the whole day, so it leads rather than following the parts of it.
-    case nap, alvas, etel, edzes, energia, evad, suly, forma, penz, level
+    case nap, alvas, etel, edzes, sport, energia, evad, suly, forma, penz, level
 
     var id: Int { rawValue }
 
@@ -21,6 +21,7 @@ enum Area: Int, CaseIterable, Identifiable {
         case .alvas: "Alvás"
         case .etel: "Étel"
         case .edzes: "Edzés"
+        case .sport: "Sport"
         case .energia: "Energia"
         case .evad: "Évad"
         case .suly: "Súly"
@@ -38,7 +39,7 @@ enum Area: Int, CaseIterable, Identifiable {
         case .edzes: .mozgas
         case .energia: .pulzus
         case .forma: .forma
-        case .nap, .penz, .level, .suly, .evad: nil
+        case .nap, .penz, .level, .suly, .evad, .sport: nil
         }
     }
 
@@ -50,13 +51,14 @@ enum Area: Int, CaseIterable, Identifiable {
         case .level: .level
         case .suly: .suly
         case .evad: .evad
+        case .sport: .sport
         default: hue
         }
     }
 
     /// The day is live but has no metric room: it opens the day's own page instead of a drill-down. Pénz and Súly
     /// are live without a metric: their orbs read their own stores, not the brief (`mezo-r36n9.153`, `.158`).
-    var live: Bool { hue != nil || self == .nap || self == .penz || self == .suly || self == .evad }
+    var live: Bool { hue != nil || self == .nap || self == .penz || self == .suly || self == .evad || self == .sport }
 
     /// The orb's four colours. The world's own where there is one; the day's is Boop's cool teal.
     var orb: [Color] {
@@ -92,7 +94,7 @@ func dayFullness(_ brief: Brief?) -> Int? {
 /// (how well the weight course follows the season's plan, `sulyPaceScore`; `mezo-r36n9.158`).
 /// **Évad** shows this week's adherence (`evadWeekScore`, `mezo-r36n9.196`).
 func ringItem(_ area: Area, brief: Brief?, foodDay: FoodDay? = nil, penz: PenzAllowance? = nil, suly: Int? = nil,
-              evad: Int? = nil) -> NKRingItem {
+              evad: Int? = nil, sport: (display: String, level: Double?)? = nil) -> NKRingItem {
     var display = "–"
     var level = 0.12
     func fill(_ n: Int) -> Double { min(1, max(0.08, Double(n) / 100)) }
@@ -108,6 +110,9 @@ func ringItem(_ area: Area, brief: Brief?, foodDay: FoodDay? = nil, penz: PenzAl
         if let suly { display = "\(suly)"; level = fill(suly) }
     case .evad:
         if let evad { display = "\(evad)"; level = fill(evad) }
+    case .sport:
+        // The week's sport sessions done / planned (spec §5.1); „–" without a rhythm.
+        if let sport { display = sport.display; level = sport.level.map { max(0.08, $0) } ?? 0.12 }
     default:
         if let hue = area.hue, let brief {
             let copy = maiCopy(brief, metricKey(for: hue))
