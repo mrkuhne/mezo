@@ -119,4 +119,48 @@ class RecipeBreakdownProseServiceTest {
             .contains("\"tagline\"").contains("\"dimension\"").contains("„Ez egy")
             .contains("- Write Hungarian, tegeződve, tömören.");
     }
+
+    // ---- parse(): tolerate the model's structural slips (mezo-r36n9.219 live, 2026-11-28) ----
+
+    private static final tools.jackson.databind.ObjectMapper JSON = new tools.jackson.databind.ObjectMapper();
+
+    @Test
+    void testParse_shouldHoistImprove_whenTheModelLeftDetailsUnclosed() {
+        // seen live on 2 of 2 recipes: "details" never closed, so improve[] landed INSIDE it and the
+        // top-level object lost its closing brace — Map<String,String> then choked on the array
+        String answer = """
+            {"tagline":"Laktató tányér, a telített zsír húzza le.","summary":"Összegzés.","fitsFor":["Főétel"],\
+            "details":{"macro":"Makró szöveg.","portion":"Adag szöveg.",\
+            "improve":[{"text":"Cseréld a steak felét.","impact":"-telített zsír","dimension":"fat_quality"}]}""";
+
+        RecipeBreakdownProseService.ExtractedProse prose = RecipeBreakdownProseService.parse(JSON, answer);
+
+        assertThat(prose.summary()).isEqualTo("Összegzés.");
+        assertThat(prose.tagline()).isEqualTo("Laktató tányér, a telített zsír húzza le.");
+        assertThat(prose.fitsFor()).containsExactly("Főétel");
+        assertThat(prose.details()).containsOnlyKeys("macro", "portion");
+        assertThat(prose.improve()).singleElement().satisfies(i -> {
+            assertThat(i.text()).isEqualTo("Cseréld a steak felét.");
+            assertThat(i.dimension()).isEqualTo("fat_quality");
+        });
+    }
+
+    @Test
+    void testParse_shouldReadAWellFormedAnswer_andDropNonTextDetails() {
+        String answer = "Itt a válasz: {\"summary\":\"S.\",\"tagline\":\"T.\",\"fitsFor\":[],"
+            + "\"details\":{\"macro\":\"M.\",\"micro\":[\"lista\"],\"who\":null},"
+            + "\"improve\":[{\"text\":\"Tipp.\",\"impact\":\"+rost\",\"dimension\":\"micro\"}]} kész";
+
+        RecipeBreakdownProseService.ExtractedProse prose = RecipeBreakdownProseService.parse(JSON, answer);
+
+        assertThat(prose.summary()).isEqualTo("S.");
+        assertThat(prose.details()).containsOnlyKeys("macro"); // an array or null detail is skipped, not fatal
+        assertThat(prose.improve()).hasSize(1);
+    }
+
+    @Test
+    void testParse_shouldReturnNull_whenThereIsNoReadableJson() {
+        assertThat(RecipeBreakdownProseService.parse(JSON, "Sajnos nem tudok segíteni.")).isNull();
+        assertThat(RecipeBreakdownProseService.parse(JSON, "{\"summary\": \"félbe")).isNull();
+    }
 }

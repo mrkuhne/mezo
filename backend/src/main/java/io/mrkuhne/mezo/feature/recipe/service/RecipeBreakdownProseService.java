@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.feature.recipe.entity.RecipeEntity;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.message.UserMessages;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -19,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 /**
@@ -149,8 +151,11 @@ public class RecipeBreakdownProseService {
             String answer = llmCallContextHolder.runWith(
                 new LlmCallContext("recipe_breakdown", "prose", "recipe", recipeId),
                 () -> port.complete(prompt.system(), prompt.user()));
-            String json = answer.substring(answer.indexOf('{'), answer.lastIndexOf('}') + 1);
-            ExtractedProse prose = objectMapper.readValue(json, ExtractedProse.class);
+            ExtractedProse prose = parse(objectMapper, answer);
+            if (prose == null) {
+                log.warn("Recipe breakdown prose: no readable JSON for {} — degrading", recipeId);
+                return null;
+            }
             if (prose.summary() == null || prose.summary().isBlank()) {
                 log.warn("Recipe breakdown prose: blank summary for {} — degrading", recipeId);
                 return null;
@@ -160,6 +165,77 @@ public class RecipeBreakdownProseService {
             log.warn("Recipe breakdown prose failed for {} — serving deterministic envelope", recipeId, e);
             return null;
         }
+    }
+
+    /**
+     * The model's answer → {@link ExtractedProse}, tolerating the structural slips seen live
+     * (mezo-r36n9.219, 2 of 2 recipes on 2026-11-28): the {@code details} object left unclosed, so
+     * {@code improve[]} lands INSIDE it and the top-level brace goes missing. The tree is read with up
+     * to two closing braces appended, an {@code improve} array found under {@code details} is hoisted,
+     * and only text values count as details (an array/null detail is skipped, never fatal). Null
+     * when there is no readable JSON object at all — the caller degrades.
+     */
+    static ExtractedProse parse(ObjectMapper mapper, String answer) {
+        int start = answer.indexOf('{');
+        int end = answer.lastIndexOf('}');
+        if (start < 0 || end < start) {
+            return null;
+        }
+        JsonNode root = readLenient(mapper, answer.substring(start, end + 1));
+        if (root == null) {
+            return null;
+        }
+        Map<String, String> details = new LinkedHashMap<>();
+        JsonNode improveNode = root.get("improve");
+        JsonNode detailsNode = root.get("details");
+        if (detailsNode != null && detailsNode.isObject()) {
+            for (Map.Entry<String, JsonNode> e : detailsNode.properties()) {
+                if (e.getValue().isString()) {
+                    details.put(e.getKey(), e.getValue().asString());
+                } else if ("improve".equals(e.getKey()) && e.getValue().isArray()
+                    && (improveNode == null || !improveNode.isArray())) {
+                    improveNode = e.getValue(); // hoisted out of the unclosed details object
+                }
+            }
+        }
+        List<ExtractedImprove> improve = new ArrayList<>();
+        if (improveNode != null && improveNode.isArray()) {
+            for (JsonNode i : improveNode) {
+                if (i.isObject()) {
+                    improve.add(new ExtractedImprove(text(i, "text"), text(i, "impact"), text(i, "dimension")));
+                }
+            }
+        }
+        List<String> fitsFor = new ArrayList<>();
+        JsonNode fitsNode = root.get("fitsFor");
+        if (fitsNode != null && fitsNode.isArray()) {
+            for (JsonNode f : fitsNode) {
+                if (f.isString()) {
+                    fitsFor.add(f.asString());
+                }
+            }
+        }
+        return new ExtractedProse(text(root, "summary"), text(root, "tagline"), fitsFor, details, improve);
+    }
+
+    /** The object read with 0, 1 or 2 closing braces appended; null when none of them parses. */
+    private static JsonNode readLenient(ObjectMapper mapper, String json) {
+        for (int missing = 0; missing <= 2; missing++) {
+            try {
+                JsonNode node = mapper.readTree(json + "}".repeat(missing));
+                if (node != null && node.isObject()) {
+                    return node;
+                }
+            } catch (tools.jackson.core.JacksonException e) {
+                // try once more with one more closing brace
+            }
+        }
+        return null;
+    }
+
+    private static String text(JsonNode node, String field) {
+        JsonNode v = node.get(field);
+        return v != null && v.isString() ? v.asString() : null;
     }
 
     private static List<String> fitsFor(ExtractedProse prose) {
