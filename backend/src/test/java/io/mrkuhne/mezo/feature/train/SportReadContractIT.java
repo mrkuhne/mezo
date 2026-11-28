@@ -185,7 +185,7 @@ class SportReadContractIT extends ApiIntegrationTest {
         train.createScheduleSlot(user.id(), dow(today), "18:00", 90, "training");
         PlannedSkipResponse skip = putForBody("/api/train/skips", PlannedSkipRequest.builder()
                 .date(today).kind(PlannedSkipKind.SPORT).dayOfWeek(dow(today)).time("18:00")
-                .reason(PlannedSkipReason.TIRED).build(),
+                .reasonCategory(PlannedSkipReason.TIRED).build(),
             user.headers(), HttpStatus.OK, PlannedSkipResponse.class);
 
         SportOverviewResponse o = overview(user);
