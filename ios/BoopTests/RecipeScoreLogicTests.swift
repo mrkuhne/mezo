@@ -66,6 +66,16 @@ struct RecipeScoreLogicTests {
         #expect(rank.standout?.macro == .protein && rank.standout?.position == 1)
     }
 
+    @Test func rankStripPlacesTheRecipeWhereItsRankSays() {
+        let me = UUID()
+        // Ascending strip 0.5 · 0.74 · 0.74 · 0.9: the tie sits at the top of its group, never on the weaker end.
+        let tied = try? #require(recipeRank(id: me, recipes: [recipe(0.9), recipe(0.74), recipe(0.74, id: me), recipe(0.5)]))
+        #expect(tied?.stripIndex == 2)
+        // All equal: first place, so the right (better) end.
+        let equal = try? #require(recipeRank(id: me, recipes: [recipe(0.7, id: me), recipe(0.7), recipe(0.7), recipe(0.7)]))
+        #expect(equal?.stripIndex == 3)
+    }
+
     @Test func rankIsHiddenBelowThreeScoredRecipesOrWhenUnscored() {
         let me = UUID()
         #expect(recipeRank(id: me, recipes: [recipe(0.9), recipe(0.7, id: me), recipe(nil)]) == nil)

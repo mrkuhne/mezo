@@ -39,7 +39,7 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
         "fitsFor":["Post-workout · este","Fehérje-fókusz"],\
         "details":{"macro":"Fake makró magyarázat.","micro":"Fake mikró magyarázat.",\
         "nova":"Fake nova magyarázat."},\
-        "improve":[{"text":"Adj hozzá zöldséget.","impact":"+rost","dimension":"micro"}]}""";
+        "improve":[{"text":"Adj hozzá zöldséget.","impact":"+rost","dimension":"energy_density"}]}""";
 
     private static final String SENTINEL_NAME = "Túrós tál [fake-recipe-fit:" + CANNED_PROSE + "]";
 
@@ -201,7 +201,8 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
             });
         assertThat(res.getBreakdown().getImprove()).hasSize(1);
         assertThat(res.getBreakdown().getImprove().getFirst().getImpact()).isEqualTo("+rost");
-        assertThat(res.getBreakdown().getImprove().getFirst().getDimension()).isEqualTo("micro");
+        // a live dimension survives; a degraded one (micro here) would be dropped — RecipeBreakdownProseServiceTest
+        assertThat(res.getBreakdown().getImprove().getFirst().getDimension()).isEqualTo("energy_density");
         assertThat(res.getBreakdown().getTagline()).isEqualTo("Fehérjében erős, a só húzza le.");
         assertThat(res.getBreakdown().getTools())
             .anyMatch(t -> "llm:sablon-olvasat".equals(t.getName()));

@@ -39,6 +39,9 @@ struct RecipeDetailSheet: View {
     /// The dimension whose explanation is open (a sheet over this sheet).
     @State private var openDim: ScoreDimension?
     @State private var vote: Bool?
+    /// He tapped a vote in this sheet: the stored one read later must not overwrite it.
+    @State private var voteTouched = false
+    @State private var voteWrite: Task<Void, Never>?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private enum LoadState { case loading, ready, unavailable }
@@ -191,13 +194,20 @@ struct RecipeDetailSheet: View {
 
     private func closeDetail() { withAnimation(reduceMotion ? nil : .snappy) { openDim = nil } }
 
-    /// Optimistic vote; on failure it snaps back and says so.
+    /// Optimistic vote; on failure it snaps back and says so. Writes are serialized (a fast toggle never lands out of
+    /// order on the server), and once he has tapped, a late read of the stored vote no longer overwrites his choice.
     private func setVote(_ value: Bool?, _ r: Recipe) {
         let before = vote
         vote = value
-        Task {
+        voteTouched = true
+        let previous = voteWrite
+        voteWrite = Task {
+            await previous?.value
             guard let food = store.currentFood else { vote = before; onToast("Nem sikerült elmenteni"); return }
-            do { try await food.setBreakdownVote(recipeId: r.id, up: value) } catch { vote = before; onToast("Nem sikerült elmenteni") }
+            do { try await food.setBreakdownVote(recipeId: r.id, up: value) } catch {
+                if vote == value { vote = before }
+                onToast("Nem sikerült elmenteni")
+            }
         }
     }
 
@@ -304,7 +314,15 @@ struct RecipeDetailSheet: View {
         if Task.isCancelled { return }
         switch gotLogs { case .success(let v): logs = v; logsProblem = false; case .failure: logsProblem = true }
         switch gotBreakdown { case .success(let v): breakdown = v; breakdownState = .ready; case .failure: breakdownState = .unavailable }
-        if breakdown?.breakdown?.summary?.isEmpty == false { vote = try? await food.breakdownVote(recipeId: r.id) }
+        if breakdown?.breakdown?.summary?.isEmpty == false, !voteTouched {
+            let stored = try? await food.breakdownVote(recipeId: r.id)
+            if !voteTouched && !Task.isCancelled { vote = stored }
+        }
+        #if DEBUG
+        // Simulator review: `-receptDim who` opens that dimension's page once the evaluation is in.
+        if let id = UserDefaults.standard.string(forKey: "receptDim"),
+           let d = breakdown?.breakdown?.dimensions.first(where: { $0.id == id }) { openDim = d }
+        #endif
     }
 
     private func log(_ r: Recipe) async {

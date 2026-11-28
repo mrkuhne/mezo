@@ -76,4 +76,25 @@ class RecipeContributorsTest {
         assertThat(find(out, "who").contributors()).isNull();
         assertThat(find(out, "macro").contributors()).isNull();
     }
+
+    @Test
+    void testAttach_shouldDropTraceRows_whenAmountRoundsToZero() {
+        MealBreakdownJson out = RecipeContributors.attach(envelope("0.2"), List.of(
+            line("Tej", "100", 1, "0.12"), line("Zabpehely", "100", 1, "0.03")));
+
+        List<Contributor> salt = find(out, "who").contributors();
+        assertThat(salt).extracting(Contributor::name).containsExactly("Tej");
+        assertThat(salt).allSatisfy(c -> assertThat(c.amount().signum()).isPositive());
+    }
+
+    @Test
+    void testAttach_shouldClearStoredRows_whenFreshLinesCarryNone() {
+        Contributor stale = new Contributor("Feta", "salt", new BigDecimal("1.2"), "g", BigDecimal.ONE);
+        MealBreakdownJson stored = envelope("0.2").withDimensions(envelope("0.2").dimensions().stream()
+            .map(d -> d.id().equals("who") ? d.withContributors(List.of(stale)) : d).toList());
+
+        MealBreakdownJson out = RecipeContributors.attach(stored, List.of(line("Túró", "100", 1, null)));
+
+        assertThat(find(out, "who").contributors()).isNull();
+    }
 }

@@ -25,7 +25,10 @@ struct PreviewTransport: ClientTransport {
         // `-previewOpen chatAsk`: Boop takes his time, so the waiting look can be seen.
         let slowAnswer = operationID == "sendMessage" && UserDefaults.standard.string(forKey: "previewOpen") == "chatAsk"
         // „Ezt főztem" reads for a while, so its working face can be looked at
-        try await Task.sleep(for: .milliseconds(slowAnswer ? 8_000 : operationID == "cookedRecipe" ? 3_000 : 400))
+        // `-receptState slow|error`: the recipe evaluation's loading / unavailable look.
+        let receptState = operationID == "getRecipeBreakdown" ? UserDefaults.standard.string(forKey: "receptState") : nil
+        try await Task.sleep(for: .milliseconds(slowAnswer || receptState == "slow" ? 8_000 : operationID == "cookedRecipe" ? 3_000 : 400))
+        if receptState == "error" { throw URLError(.notConnectedToInternet) }
         // `-previewOffline YES`: the daily loop's writes and Boop's lines find no net (they stay on the phone).
         if UserDefaults.standard.bool(forKey: "previewOffline"), Self.ritmusOps.contains(operationID) {
             throw URLError(.notConnectedToInternet)
@@ -372,7 +375,7 @@ struct PreviewTransport: ClientTransport {
                         dim("plant_diversity", "Növényi változatosság", 0.1, 0.5, "Két különböző növényi összetevő van benne.", "Egy marék zöld vagy egy színes zöldség sokat dobna rajta."),
                         dim("energy_density", "Energiasűrűség", 0.05, 0.8, "1,3 kcal jut egy grammra."),
                         dim("portion", "Adagméret", 0.1, 0.77, "Egy adag a reggeli kereted 92%-a.")].joined(separator: ",")
-            return json(#"{"fitsFor":["post_workout","lunch"],"breakdown":{"value":0.78,"confidence":0.9,"tagline":"Jó fehérjeforrás, kiegyensúlyozott tányér","summary":"A recept fehérjében erős, a zsír mértékletes, és nincs benne feldolgozott összetevő. A növényi oldala a leggyengébb: kevés benne a különböző zöldség.","dimensions":[\#(dims)],"improve":[{"text":"A szójaszósz felét cseréld citromlére: a só 1,4 g-ról 0,9 g-ra esik.","impact":"-só","dimension":"who"},{"text":"Tegyél mellé egy marék spenótot (30 g).","impact":"+ növényi változatosság","dimension":"plant_diversity"}],"tools":[]}}"#)
+            return json(#"{"fitsFor":["post_workout","lunch"],"breakdown":{"value":0.78,"confidence":0.9,"tagline":"Jó fehérjeforrás, kiegyensúlyozott tányér","summary":"A recept fehérjében erős, a zsír mértékletes, és nincs benne feldolgozott összetevő. A növényi oldala a leggyengébb: kevés benne a különböző zöldség.","dimensions":[\#(dims)],"improve":[{"text":"A szójaszósz felét cseréld citromlére: a só 1,4 g-ról 0,9 g-ra esik.","impact":"-só","dimension":"who"},{"text":"Tegyél mellé egy marék spenótot (30 g).","impact":"+1 zöld","dimension":"plant_diversity"}],"tools":[]}}"#)
         case "workshopTurn":
             let obj = (try? JSONSerialization.jsonObject(with: Data(sent.utf8))) as? [String: Any]
             let asked = (obj?["message"] as? String ?? "").replacingOccurrences(of: "\"", with: "")

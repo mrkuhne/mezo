@@ -377,6 +377,9 @@ public struct NKSheetFrame<Content: View>: View {
     /// drag — a tall sheet's drag competes with its scroll, and a medium one only steps down.
     let closable: Bool
     @Environment(\.dismiss) private var dismiss
+    /// Simulator review (`-previewScroll`): the sheet opens scrolled, like the area pages.
+    @Environment(\.nkInitialScrollY) private var initialScrollY
+    @State private var position = ScrollPosition()
     public init(hue: Hue, eyebrow: String, title: String, closable: Bool = true, @ViewBuilder content: () -> Content) {
         self.hue = hue; self.eyebrow = eyebrow; self.title = title; self.closable = closable; self.content = content()
     }
@@ -401,6 +404,8 @@ public struct NKSheetFrame<Content: View>: View {
                 VStack(spacing: 12) { content }.padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 40)
             }
         }
+        .scrollPosition($position)
+        .task { if let y = initialScrollY { try? await Task.sleep(for: .seconds(2)); position.scrollTo(y: y) } }
         .scrollIndicators(.hidden)
         .background(NK.ground)
         .preferredColorScheme(.dark)

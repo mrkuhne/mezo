@@ -37,7 +37,7 @@ struct RecipeScoreCard: View {
             VStack(spacing: 12) {
                 hero(b, weakest: ex.weakest)
                 if let impact = recipeDayImpact(day: day, todayYmd: todayYmd, serving: recipe.perServing) { dayCard(impact) }
-                tiles(b, weakest: ex.weakest)
+                tiles(b, weakest: ex.weakest, strongest: ex.strongest)
                 if let rank = recipeRank(id: recipe.id, recipes: recipes) { rankCard(rank) }
                 if !b.improve.isEmpty { tipsCard(b) }
                 if let summary = b.summary, !summary.isEmpty { feedback }
@@ -116,15 +116,17 @@ struct RecipeScoreCard: View {
         let over = row.target.map { row.after > $0 } ?? false
         // without a target (kímélő day) the bar is scaled to the serving's end point, so it still shows the share
         let scale = row.target ?? max(row.after, 1)
+        let layout = typeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2)) : AnyLayout(HStackLayout(alignment: .firstTextBaseline))
         return VStack(alignment: .leading, spacing: 5) {
-            HStack(alignment: .firstTextBaseline) {
+            layout {
                 Text(name).nkFont(13, .medium).foregroundStyle(.white.opacity(0.8))
-                Spacer()
+                if !typeSize.isAccessibilitySize { Spacer() }
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text("\(huInt(eaten)) →").nkFont(12.5).foregroundStyle(.white.opacity(0.5))
                     Text(huInt(after)).font(.custom(Lagy.outfitFamily, size: 15).weight(.medium)).foregroundStyle(.white)
                     if let t = row.target {
-                        Text(over ? "· \(huInt(after - Int(t.rounded())))\(unit.isEmpty ? "" : " \(unit)") felett"
+                        Text(over ? "· \(huInt(after - Int(t.rounded()))) \(unit.isEmpty ? name : unit) felett"
                                   : "/ \(huInt(Int(t.rounded())))\(unit.isEmpty ? "" : " \(unit)")")
                             .nkFont(12.5).foregroundStyle(.white.opacity(0.5))
                     } else if !unit.isEmpty {
@@ -155,14 +157,14 @@ struct RecipeScoreCard: View {
 
     // MARK: tiles
 
-    private func tiles(_ b: MealBreakdown, weakest: String?) -> some View {
+    private func tiles(_ b: MealBreakdown, weakest: String?, strongest: String?) -> some View {
         let perRow = typeSize.isAccessibilitySize ? 2 : 4
         let rows = stride(from: 0, to: b.dimensions.count, by: perRow).map { Array(b.dimensions[$0..<min($0 + perRow, b.dimensions.count)]) }
         return EtelSheetCard(label: "MIBŐL ÁLL ÖSSZE") {
             VStack(spacing: 10) {
                 ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
                     HStack(alignment: .top, spacing: 8) {
-                        ForEach(row, id: \.id) { tile($0, isWeak: $0.id == weakest) }
+                        ForEach(row, id: \.id) { tile($0, isWeak: $0.id == weakest, isStrong: $0.id == strongest) }
                         ForEach(0..<(perRow - row.count), id: \.self) { _ in Color.clear.frame(maxWidth: .infinity) }
                     }
                 }
@@ -171,7 +173,7 @@ struct RecipeScoreCard: View {
         }
     }
 
-    private func tile(_ d: ScoreDimension, isWeak: Bool) -> some View {
+    private func tile(_ d: ScoreDimension, isWeak: Bool, isStrong: Bool) -> some View {
         let c = EtelPalette.dimension(d.id)
         return Button { onOpen(d) } label: {
             VStack(spacing: 6) {
@@ -191,17 +193,15 @@ struct RecipeScoreCard: View {
             }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("\(d.label), \(d.points.map(String.init) ?? "nincs adat")\(isWeak ? ", leggyengébb" : "")")
+        .accessibilityLabel("\(d.label), \(d.points.map(String.init) ?? "nincs adat")\(isWeak ? ", leggyengébb" : isStrong ? ", legerősebb" : "")")
         .accessibilityHint("Megnyitja a részleteket")
     }
 
     // MARK: rank
 
     private func rankCard(_ rank: RecipeRank) -> some View {
-        let scored = recipes.compactMap { r in r.fit.map { (id: r.id, fit: $0) } }.sorted { $0.fit < $1.fit }
-        let mine = scored.firstIndex { $0.id == recipe.id } ?? 0
-        return EtelSheetCard(label: "A RECEPTJEID KÖZÖTT") {
-            RankStrip(count: scored.count, mine: mine, label: "A \(rank.of) recepted közül a \(rank.position). legjobb").frame(height: 44)
+        EtelSheetCard(label: "A RECEPTJEID KÖZÖTT") {
+            RankStrip(count: rank.of, mine: rank.stripIndex, label: "A \(rank.of) recepted közül a \(rank.position). legjobb")
             HStack(alignment: .top, spacing: 10) {
                 fact("\(rank.position).", "legjobb pontszám\na \(rank.of) receptedből")
                 if let s = rank.standout {
@@ -314,7 +314,9 @@ struct Rosette: View {
                         .position(c)
                 }
                 Circle().fill(NK.ground).frame(width: r * 0.7, height: r * 0.7)
-                Text("\(score)").font(.custom(Lagy.outfitFamily, size: 30).weight(.light)).foregroundStyle(.white)
+                // the disc is a fixed 128 pt drawing: the number stays inside it (VoiceOver reads it from the label)
+                Text("\(score)").font(.custom(Lagy.outfitFamily, size: 30, relativeTo: .title).weight(.light)).foregroundStyle(.white)
+                    .dynamicTypeSize(...DynamicTypeSize.xxLarge)
             }
         }
         .accessibilityElement().accessibilityLabel("A recept pontszáma \(score)")
@@ -336,22 +338,35 @@ private struct RankStrip: View {
     let count: Int
     let mine: Int
     let label: String
+    @ScaledMetric(relativeTo: .caption2) private var wordRow: CGFloat = 14
     var body: some View {
-        GeometryReader { g in
-            let w = g.size.width
-            let x = { (i: Int) in min(max(w * Double(i) / Double(max(count - 1, 1)), 8), w - 8) }
-            ZStack(alignment: .topLeading) {
-                Capsule().fill(.white.opacity(0.08)).frame(height: 2).offset(y: 27)
-                ForEach(0..<count, id: \.self) { i in
-                    Circle().fill(i == mine ? EtelPalette.main : Color.white.opacity(0.28))
-                        .frame(width: i == mine ? 16 : 6, height: i == mine ? 16 : 6)
-                        .position(x: x(i), y: 28)
-                }
-                Text("ez").nkFont(10.5, .semibold).foregroundStyle(EtelPalette.main).position(x: x(mine), y: 8)
-                Text("gyengébb").nkFont(10).foregroundStyle(.white.opacity(0.35)).offset(y: 34)
-                Text("jobb").nkFont(10).foregroundStyle(.white.opacity(0.35)).frame(width: w, alignment: .trailing).offset(y: 34)
+        // stacked (word row · dots · word row) so the words grow with the text size, never over the facts below
+        VStack(spacing: 4) {
+            GeometryReader { g in
+                Text("ez").nkFont(10.5, .semibold).foregroundStyle(EtelPalette.main).fixedSize()
+                    .position(x: x(mine, g.size.width), y: g.size.height / 2)
             }
+            .frame(height: wordRow)
+            GeometryReader { g in
+                ZStack(alignment: .topLeading) {
+                    Capsule().fill(.white.opacity(0.08)).frame(height: 2).offset(y: 7)
+                    ForEach(0..<count, id: \.self) { i in
+                        Circle().fill(i == mine ? EtelPalette.main : Color.white.opacity(0.28))
+                            .frame(width: i == mine ? 16 : 6, height: i == mine ? 16 : 6)
+                            .position(x: x(i, g.size.width), y: 8)
+                    }
+                }
+            }
+            .frame(height: 16)
+            HStack {
+                Text("gyengébb")
+                Spacer()
+                Text("jobb")
+            }
+            .nkFont(10).foregroundStyle(.white.opacity(0.35))
         }
         .accessibilityElement().accessibilityLabel(label)
     }
+
+    private func x(_ i: Int, _ w: CGFloat) -> CGFloat { min(max(w * Double(i) / Double(max(count - 1, 1)), 8), w - 8) }
 }

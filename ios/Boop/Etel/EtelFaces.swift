@@ -247,13 +247,19 @@ struct EtelSheetCard<Content: View>: View {
     let label: String
     var trailing: String? = nil
     @ViewBuilder let content: Content
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 8) {
-                Capsule().fill(Hue.fuel.glow).frame(width: 3, height: 13)
-                NKMono(label)
-                Spacer(minLength: 8)
+            // at the accessibility text sizes the trailing note drops under the label, so neither is cut off
+            let header = typeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4)) : AnyLayout(HStackLayout(spacing: 8))
+            header {
+                HStack(spacing: 8) {
+                    Capsule().fill(Hue.fuel.glow).frame(width: 3, height: 13)
+                    NKMono(label)
+                }
+                if !typeSize.isAccessibilitySize { Spacer(minLength: 8) }
                 if let trailing { Text(trailing).nkFont(12).foregroundStyle(.white.opacity(0.5)) }
             }
             content

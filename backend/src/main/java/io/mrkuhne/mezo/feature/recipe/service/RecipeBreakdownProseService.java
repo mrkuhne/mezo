@@ -211,7 +211,9 @@ public class RecipeBreakdownProseService {
             String text = details.get(d.id()); // keyed by dimension id — narrates all 8
             return text == null || text.isBlank() ? d : d.withDetail(text);
         }).toList();
-        java.util.Set<String> ids = det.dimensions().stream().map(Dimension::id)
+        // a tip may only lift a live dimension: a degraded one (weight 0) has no numbers to point at
+        java.util.Set<String> ids = det.dimensions().stream()
+            .filter(d -> d.weight() != null && d.weight().signum() > 0).map(Dimension::id)
             .collect(java.util.stream.Collectors.toSet());
         List<ImproveRow> improve = prose.improve() == null ? List.<ImproveRow>of() : prose.improve().stream()
             .filter(i -> i.text() != null && !i.text().isBlank())

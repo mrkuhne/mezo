@@ -55,6 +55,8 @@ struct RecipeRank: Equatable {
     struct Standout: Equatable { var macro: DayMacro; var position: Int }
     var position: Int
     var of: Int
+    /// Its dot on the strip (weakest left, best right); a tie sits at the top of its group, as its rank says.
+    var stripIndex: Int { of - position }
     var standout: Standout?
 }
 

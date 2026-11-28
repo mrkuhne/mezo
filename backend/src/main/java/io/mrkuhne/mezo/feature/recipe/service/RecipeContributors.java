@@ -40,7 +40,7 @@ final class RecipeContributors {
         }
         return env.withDimensions(env.dimensions().stream().map(d -> {
             if (d.weight() == null || d.weight().signum() == 0) {
-                return d;
+                return d.contributors() == null ? d : d.withContributors(null);
             }
             List<Source> sources = switch (d.id()) {
                 case "who" -> List.of(source("salt", ScoredLine::saltG), source("sugar", ScoredLine::sugarG));
@@ -52,7 +52,8 @@ final class RecipeContributors {
             };
             List<Contributor> rows = new ArrayList<>();
             sources.forEach(s -> rows.addAll(top(lines, s)));
-            return rows.isEmpty() ? d : d.withContributors(List.copyOf(rows));
+            // always overwritten: rows a stored envelope still carries must not outlive a change in the lines
+            return d.withContributors(rows.isEmpty() ? null : List.copyOf(rows));
         }).toList());
     }
 
@@ -63,8 +64,10 @@ final class RecipeContributors {
         if (total.signum() == 0) {
             return List.of();
         }
+        // a trace that rounds to 0 at the display scale would read as a "0 g" source — never listed
         return lines.stream()
-            .filter(l -> s.eligible().test(l) && s.amount().apply(l) != null && s.amount().apply(l).signum() > 0)
+            .filter(l -> s.eligible().test(l) && s.amount().apply(l) != null
+                && s.amount().apply(l).setScale(s.scale(), RoundingMode.HALF_UP).signum() > 0)
             .sorted(Comparator.comparing((ScoredLine l) -> s.amount().apply(l)).reversed())
             .limit(TOP)
             .map(l -> new Contributor(l.name(), s.nutrient(),

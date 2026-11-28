@@ -81,6 +81,18 @@ class RecipeBreakdownProseServiceTest {
     }
 
     @Test
+    void testMerge_shouldDropImproveDimension_whenDimensionIsDegraded() {
+        var degraded = new MealBreakdownJson.Dimension("who", "who", BigDecimal.ZERO, BigDecimal.ZERO, null,
+            "nincs adat", null, null, null, null, null, null);
+        var prose = new RecipeBreakdownProseService.ExtractedProse("Összegzés.", null, List.of(), null,
+            List.of(new RecipeBreakdownProseService.ExtractedImprove("Kevesebb só.", "-só", "who")));
+
+        MealBreakdownJson out = RecipeBreakdownProseService.merge(envelopeWith(dim("macro"), degraded), prose);
+
+        assertThat(out.improve().getFirst().dimension()).isNull();
+    }
+
+    @Test
     void testMerge_shouldDropUnknownImproveDimension_whenIdNotInEnvelope() {
         var prose = new RecipeBreakdownProseService.ExtractedProse("Összegzés.", " ", List.of(), null,
             List.of(new RecipeBreakdownProseService.ExtractedImprove("Tipp.", "+rost", "timing")));
