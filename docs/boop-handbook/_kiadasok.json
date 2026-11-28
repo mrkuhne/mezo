@@ -1243,7 +1243,7 @@
     ],
     "mi_valtozott": "A Mezociklus fül tetején egy fő kártya áll: a futó mezociklus címe, hányadik hetén jársz, és nagyban a hetek íve (a mostani hét világít, a lezártak kipipálva, a pihenőhét szaggatott). Rajta egyetlen gomb, a Szerkesztés; az Újraindítás, a Lezárás és a Mentés a sablonba a kártya „…” menüjébe került. Alatta külön kártyán a heted napjai (a mai bekeretezve) és a hét öt legtöbbet dolgozó izma sávokkal — erre koppintva nyílik a részletes terhelés-oldal —, majd a Mezociklusaim és az Éves terv. Ha nincs futó mezociklus, a fő kártya ezt mondja az Új mezociklus gombbal; első megnyitáskor nem villan fel tévesen. A legnagyobb betűméretnél semmi nem lóg ki és nem törik szó közepén."
   },
-  "7133460fd": {
+  "80467efcb": {
     "cim": "Az Edzés Ma füle új kinézetet kapott: felül a mai edzés kártyája, alatta egységenként külön kártya",
     "datum": "2026-11-28",
     "verzio": "",
