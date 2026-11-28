@@ -1227,5 +1227,20 @@
       "mezo-r36n9.196"
     ],
     "mi_valtozott": "Az Évad gömb mostantól egy saját szobát nyit négy füllel. A Most a hét eddigi betartását mutatja napokra bontva, és hogy mi jön. A Hét a vasárnapi átnézést, a terhelést és a jövő hetet mutatja, meg azt, amit Boop tanult. A Terv az év sávja (koppintva az Edzés éves terve nyílik), az évad hetei, a cél és a szabályok helye. A Kísérlet a korábbi Hatás fül. Vasárnap 18:00-tól hétfő éjfélig egy ötlépéses heti átnézés vár. A Ma falán és a Hét fülön is megjelenik, és ha az értesítések engedélyezve vannak, vasárnap este egy értesítés is szól. A „Később” semmit nem változtat, a „Kész” egy mondatban összefoglalja a jövő hetet. A heti menü és a bevásárlólista átkerült az Étel szoba Hét fülére. Minden receptnél van egy „Menübe jöhet” kapcsoló, a Receptekben pedig szűrő is tartozik hozzá."
+  },
+  "d2f70dc93": {
+    "cim": "Az Edzés Mezociklus füle új kinézetet kapott: fő kártya a hetek ívével, külön kártyán a heted és az izmaid",
+    "datum": "2026-11-28",
+    "verzio": "",
+    "tipus": "Kinézet",
+    "hova": [
+      "iPhone app",
+      "Telefonra telepítve"
+    ],
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.197"
+    ],
+    "mi_valtozott": "A Mezociklus fül tetején egy fő kártya áll: a futó mezociklus címe, hányadik hetén jársz, és nagyban a hetek íve (a mostani hét világít, a lezártak kipipálva, a pihenőhét szaggatott). Rajta egyetlen gomb, a Szerkesztés; az Újraindítás, a Lezárás és a Mentés a sablonba a kártya „…” menüjébe került. Alatta külön kártyán a heted napjai (a mai bekeretezve) és a hét öt legtöbbet dolgozó izma sávokkal — erre koppintva nyílik a részletes terhelés-oldal —, majd a Mezociklusaim és az Éves terv. Ha nincs futó mezociklus, a fő kártya ezt mondja az Új mezociklus gombbal; első megnyitáskor nem villan fel tévesen. A legnagyobb betűméretnél semmi nem lóg ki és nem törik szó közepén."
   }
 }

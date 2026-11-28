@@ -2263,5 +2263,17 @@
     "mit_kapsz": "A Sport hete a ritka esetekben is pontos: a kímélő módban védett sportnap kihagyottként látszik, a késve rögzített esti alkalom megtartja a helyét és fajtáját, két kondi egy napon nem duplázódik, és a pihenő-jelzés a valóban szoros sportalkalmat nevezi meg.",
     "szulo": "mezo-r36n9.188",
     "munkamenet": "Sport S2 review"
+  },
+  "mezo-r36n9.215": {
+    "cim": "Kártyafeliratok a legnagyobb betűméretnél ne vágódjanak le",
+    "tipus": "Hiba",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés",
+      "Étel"
+    ],
+    "munkamenet": "edzes-ujratervezes",
+    "mit_kapsz": "A kártyák kis, csupa nagybetűs feliratai a legnagyobb betűméretnél is teljesen kiolvashatók lesznek, nem pedig három ponttal levágva.",
+    "szulo": "mezo-r36n9"
   }
 }
