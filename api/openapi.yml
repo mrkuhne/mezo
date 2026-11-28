@@ -2404,6 +2404,85 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/sport-sessions/{id}':
+    put:
+      tags:
+        - Train
+      operationId: updateSportSession
+      summary: >-
+        Correct a logged sport session (Boop Sport Napló, mezo-r36n9.205) — the
+        sheet sends every field again
+      description: >-
+        Replaces the editable fields of an owned session with the body. An
+        absent date/time keeps the stored one; an absent sport keeps the stored
+        kind. kcal follows the log rule — the given override verbatim, else the
+        estimate again (never 0). No "logged" trigger fires: a correction is not
+        a new session.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SportSessionCreateRequest'
+      responses:
+        '200':
+          description: The corrected session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SportSessionResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found (or not owned)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - Train
+      operationId: deleteSportSession
+      summary: 'Soft-delete a logged sport session (Boop Sport Napló, mezo-r36n9.205)'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found (or not owned)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/train/sport-schedule:
     get:
       tags:
