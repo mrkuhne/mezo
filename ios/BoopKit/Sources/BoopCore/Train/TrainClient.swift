@@ -621,7 +621,8 @@ extension TrainClient: OutboxSender {
         else { return malformed("sport session") }
         let body = Components.Schemas.SportSessionCreateRequest(
             sport: p.sport, date: p.date, time: p.time, duration: p.durationMinutes, setsPlayed: p.setsPlayed,
-            rounds: p.rounds, rpe: p.rpe, shoulderStrain: p.shoulderStrain, notes: p.notes)
+            rounds: p.rounds, rpe: p.rpe, shoulderStrain: p.shoulderStrain, notes: p.notes,
+            kcalOverride: p.kcalOverride)
         switch try await client.logSportSession(body: .json(body)) {
         case .created: return .sent(nil)
         case .badRequest: return Self.map(400)

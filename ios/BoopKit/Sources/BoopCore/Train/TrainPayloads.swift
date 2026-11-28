@@ -144,11 +144,14 @@ public struct SportSessionPayload: Codable, Equatable, Sendable {
     public var rpe: Double
     public var shoulderStrain: Int?
     public var notes: String?
+    /// The watch's own kcal (the Sport log's pre-fill, `mezo-r36n9.203`); nil = the server estimates. Optional, so a
+    /// payload queued by an older build still decodes.
+    public var kcalOverride: Int?
     public init(sport: String, date: String, time: String? = nil, durationMinutes: Int, setsPlayed: Int? = nil,
-                rounds: Int? = nil, rpe: Double, shoulderStrain: Int? = nil, notes: String? = nil) {
+                rounds: Int? = nil, rpe: Double, shoulderStrain: Int? = nil, notes: String? = nil, kcalOverride: Int? = nil) {
         self.sport = sport; self.date = date; self.time = time; self.durationMinutes = durationMinutes
         self.setsPlayed = setsPlayed; self.rounds = rounds; self.rpe = rpe
-        self.shoulderStrain = shoulderStrain; self.notes = notes
+        self.shoulderStrain = shoulderStrain; self.notes = notes; self.kcalOverride = kcalOverride
     }
 }
 
