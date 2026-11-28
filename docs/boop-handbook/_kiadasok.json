@@ -1389,5 +1389,20 @@
       "mezo-r36n9.223"
     ],
     "mi_valtozott": "A Sport terület Ma fülén az „Ezen a héten” sor lapozható kártyasor lett: a mai napon nyílik, szabadon áll a címe alatt, és alatta pöttyök mutatják, hány nap van még. Így az egész appban egyformán viselkednek a lapozható sorok."
+  },
+  "2daaf7e06": {
+    "cim": "Sport az egész appban: külön tétel a napodon, a falon és az Edzésben",
+    "datum": "2026-11-28",
+    "verzio": "",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app"
+    ],
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.206",
+      "mezo-r36n9.188"
+    ],
+    "mi_valtozott": "A Sport gömb az Edzés mellett áll a kezdőkörön. Ha egy napon edzés és sport is van, a napoldalon (A napod sorai és a görbe) és a Ma falon két külön tételként látod őket, és az egyik rögzítése nem pipálja ki a másikat. Sportnapon, amikor nincs termi edzés, az Edzés szoba „Ma sport van”-t ír egy ajtóval a Sporthoz, sosem pihenőnapot. A + lap Sport gombja a teljes sport-naplót nyitja (az óra edzésével előtöltve, Mikor sorral)."
   }
 }

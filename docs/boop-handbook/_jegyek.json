@@ -2018,7 +2018,7 @@
     "terulet": [
       "Sport"
     ],
-    "mit_kapsz": "Saját Sport gömb a kezdőkörön Ma · Hét · Napló · Test fülekkel; a röpit az órádon indítod, és az app előtölti a naplót; a kondi és a sport minden napon két külön dolog. A leírás és a hatlépéses terv elfogadva (2026-11-27), az építés lépésenként indul.",
+    "mit_kapsz": "Saját Sport gömb a kezdőkörön Ma · Hét · Napló · Test fülekkel; a röpit az órádon indítod, és az app előtölti a naplót; a kondi és a sport minden napon két külön dolog — a napoldalon, a Ma falon és az Edzés szobában is. Mind a hat lépés kész (2026-11-28).",
     "szulo": "mezo-r36n9",
     "munkamenet": "sport-terulet-terv"
   },
@@ -2396,5 +2396,16 @@
     "munkamenet": "sport-naplo-test",
     "mit_kapsz": "Ha utólag kijavítasz vagy törölsz egy sportalkalmat, Boop a napod terhelését is ehhez igazítja, nem a régi adattal számol.",
     "szulo": "mezo-r36n9"
+  },
+  "mezo-r36n9.224": {
+    "cim": "Nap görbe: a közeli jelölők feliratai egymásra csúsznak",
+    "tipus": "Hiba",
+    "szakasz": "Ma",
+    "terulet": [
+      "Ma"
+    ],
+    "mit_kapsz": "Ha két dolog fél órán belül van (például röpi 19:00-kor és vacsora 19:30-kor), a görbén a jelölőik és a feliratuk nem takarják egymást.",
+    "szulo": "mezo-r36n9",
+    "munkamenet": "sport-lezaras"
   }
 }
