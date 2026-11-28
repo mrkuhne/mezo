@@ -13,7 +13,7 @@ private func rgb(_ c: Color) -> (Int, Int, Int) {
     // The five metric worlds first, then the two the life dashboard added (Pénz, Levél): they have no metric,
     // so anything that means "a metric" iterates `Hue.metrics`, not `allCases`.
     #expect(Hue.metrics.map(\.name) == ["Forma", "Alvás", "Mozgás", "Fuel", "Pulzus"])
-    #expect(Hue.allCases.map(\.name) == ["Forma", "Alvás", "Mozgás", "Fuel", "Pulzus", "Pénz", "Levél", "Súly", "Évad"])
+    #expect(Hue.allCases.map(\.name) == ["Forma", "Alvás", "Mozgás", "Fuel", "Pulzus", "Pénz", "Levél", "Súly", "Évad", "Sport"])
 }
 
 /// The ninth area's world (owner 2026-11-24, `mezo-r36n9.158`): gold, the one colour the ring did not have.

@@ -74,8 +74,8 @@ struct KezdolapRingTests {
 
     /// The ninth orb (owner 2026-11-24, `mezo-r36n9.158`) and the tenth (2026-11-27, `.196`, decision #132): Évad
     /// between Energia and Súly, live, its number this week's adherence.
-    @Test func ringHasTenAreasWithEvadBetweenEnergiaAndSuly() {
-        #expect(Area.allCases.map(\.name) == ["Nap", "Alvás", "Étel", "Edzés", "Energia", "Évad", "Súly", "Forma", "Pénz", "Levél"])
+    @Test func ringHasElevenAreasWithSportAfterEdzes() {
+        #expect(Area.allCases.map(\.name) == ["Nap", "Alvás", "Étel", "Edzés", "Sport", "Energia", "Évad", "Súly", "Forma", "Pénz", "Levél"])
         #expect(Area.suly.world == .suly && Area.suly.hue == nil)
         #expect(Area.evad.world == .evad && Area.evad.hue == nil && Area.evad.live)
     }
