@@ -5,7 +5,8 @@ import BoopDesign
 /// The Sport room (`mezo-r36n9.203`, spec `2026-11-27-boop-sport-design.md` §5.1): the eleventh area, right after Edzés,
 /// on the shared area page in its own coral world — Ma · Hét · Napló · Test in the bar, the head's orb carrying the
 /// week's sport done / planned. The gym and the sport are two separate layers of every day. Data: `SportStore` (cache
-/// first). Hét, Napló and Test arrive in S4/S5 and show the not-live-yet block until then.
+/// first). Hét (S4, `mezo-r36n9.204`) is `SportHet` with its slot and event sheets; Napló and Test arrive in S5 and
+/// show the not-live-yet block until then.
 struct SportRoom: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.closeRoom) private var closeRoom
@@ -14,6 +15,9 @@ struct SportRoom: View {
     @SceneStorage("sport.tab") private var selected: String = "Ma"
     @State private var toast: String?
     @State private var sheet: SportRoomSheet?
+    @State private var hetSheet: SportHetSheet?
+    /// DEBUG `-sportSheet slot|event`: open the first slot / event once the rhythm has loaded.
+    @State private var openFirst: String?
 
     init() {
         #if DEBUG
@@ -21,6 +25,15 @@ struct SportRoom: View {
         let d = UserDefaults.standard
         _selected = SceneStorage(wrappedValue: d.string(forKey: "sportTab") ?? "Ma", "sport.tab")
         _sheet = State(initialValue: d.string(forKey: "sportSheet").flatMap(SportRoomSheet.init(rawValue:)))
+        switch d.string(forKey: "sportSheet") {
+        case "slotNew": _hetSheet = State(initialValue: .newSlot)
+        case "eventNew": _hetSheet = State(initialValue: .newEvent)
+        case "slot", "event": _openFirst = State(initialValue: d.string(forKey: "sportSheet"))
+        default: break
+        }
+        if ["slot", "slotNew", "event", "eventNew"].contains(d.string(forKey: "sportSheet") ?? "") {
+            _selected = SceneStorage(wrappedValue: "Hét", "sport.tab")
+        }
         #endif
     }
 
@@ -34,11 +47,15 @@ struct SportRoom: View {
 
     private var head: (String, String) {
         switch shown {
-        case .empty: return ("Még nincs sportod", "Add meg, mikor sportolsz, és mellé teszem a kondit.")
+        case .empty:
+            if selected == "Hét", let o = store?.week { let h = sportWeekHead(o); return (h.headline, h.sentence) }
+            return ("Még nincs sportod", "Add meg, mikor sportolsz, és mellé teszem a kondit.")
         case .loading: return ("A sportod", "Töltöm a hetedet…")
         case .error(let p):
             return ("A sportodat most nem érem el", p == .offline ? "Nincs net, és még nincs elmentett adatom." : "A szerver most nem válaszolt.")
-        case .week(let o): let h = sportHead(o); return (h.headline, h.sentence)
+        case .week(let o):
+            let h = selected == "Hét" ? sportWeekHead(o) : sportHead(o)
+            return (h.headline, h.sentence)
         }
     }
 
@@ -67,8 +84,13 @@ struct SportRoom: View {
             }
             switch selected {
             case "Hét":
-                NKNotLiveYet(hue: .sport, title: "A heti rended hamarosan itt lesz",
-                             line: "Itt adod meg, mikor sportolsz, és itt látod a hetet két sávban: kondi és sport. A következő lépésben érkezik.")
+                if let o = store?.week, let schedule = store?.schedule {
+                    SportHet(week: o, schedule: schedule, open: { hetSheet = $0 }, restore: restoreSlot)
+                } else if store?.problem != nil {
+                    SportError { Task { await store?.load(force: true) } }
+                } else {
+                    SportLoading()
+                }
             case "Napló":
                 NKNotLiveYet(hue: .sport, title: "A sportnaplód hamarosan itt lesz",
                              line: "Itt látod majd az elmúlt hetek alkalmait, a megterhelést és a trendet.")
@@ -90,6 +112,19 @@ struct SportRoom: View {
         .background(RoomSwipeBack().frame(width: 0, height: 0).accessibilityHidden(true))
         .nkToast($toast)
         .task { await store?.load(force: true) }
+        .task(id: selected) { if selected == "Hét" { await store?.schedule.load() } }
+        .onChange(of: store?.schedule.slots) { _, slots in
+            guard let which = openFirst, let store else { return }
+            if which == "slot", let first = slots?.first { openFirst = nil; hetSheet = .slot(first) }
+            if which == "event", let first = store.schedule.events?.first { openFirst = nil; hetSheet = .event(first) }
+        }
+        .sheet(item: $hetSheet) { s in
+            hetSheetView(s)
+                .presentationDetents([.large])
+                .presentationBackground(NK.ground)
+                .presentationCornerRadius(34)
+                .presentationDragIndicator(.visible)
+        }
         // page-level presentation (boop-ios.md §9)
         .sheet(item: $sheet) { s in
             Group {
@@ -116,6 +151,54 @@ struct SportRoom: View {
         }
     }
 
+    @ViewBuilder private func hetSheetView(_ s: SportHetSheet) -> some View {
+        let schedule = store?.schedule
+        switch s {
+        case .slot, .newSlot:
+            let isNew: Bool = { if case .newSlot = s { return true } else { return false } }()
+            let slot: SportSlot = { if case .slot(let x) = s { return x } else { return sportNewSlot() } }()
+            SportSlotSheet(slot: slot, isNew: isNew, others: schedule?.slots ?? [], week: store?.week,
+                           save: { edited in
+                               guard let schedule else { throw PlanFetchError.server }
+                               try await schedule.save(edited)
+                               hetSheet = nil
+                               toast = isNew ? "Felvettem — a heti rendben van" : "Elmentve — mostantól így lesz"
+                           },
+                           delete: { old in
+                               guard let schedule else { throw PlanFetchError.server }
+                               try await schedule.delete(old)
+                               hetSheet = nil
+                               toast = "Törölve — Visszavonás a listában"
+                           })
+        case .event, .newEvent:
+            let existing: SportEvent? = { if case .event(let e) = s { return e } else { return nil } }()
+            SportEventSheet(existing: existing, today: store?.week?.today ?? sportTodayYMD(),
+                            create: { draft in
+                                guard let schedule else { throw PlanFetchError.server }
+                                try await schedule.addEvent(draft)
+                                hetSheet = nil
+                                toast = "Felvettem — bekerült a hetedbe"
+                            },
+                            delete: { e in
+                                guard let schedule else { throw PlanFetchError.server }
+                                try await schedule.deleteEvent(e)
+                                hetSheet = nil
+                                toast = "Törölve — az esemény kikerült"
+                            })
+        }
+    }
+
+    private func restoreSlot() {
+        Task {
+            do throws(PlanFetchError) {
+                try await store?.schedule.restore()
+                toast = "Visszatettem — a heti rendben van"
+            } catch {
+                toast = error == .offline ? "Nincs net — a visszavonáshoz kapcsolat kell." : "Most nem sikerült visszatenni."
+            }
+        }
+    }
+
     private func undoSkip() {
         Task {
             do throws(PlanFetchError) {
@@ -126,6 +209,12 @@ struct SportRoom: View {
             }
         }
     }
+}
+
+/// Today on the phone (`yyyy-MM-dd`), only for an event sheet opened before the week has loaded.
+private func sportTodayYMD() -> String {
+    let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; f.locale = Locale(identifier: "en_US_POSIX")
+    return f.string(from: BoopClock.now())
 }
 
 enum SportRoomSheet: String, Identifiable { case log, skip; var id: String { rawValue } }
