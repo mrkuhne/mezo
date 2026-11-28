@@ -24,18 +24,10 @@ struct MezoReportPage: View {
                       sentence: r.map(mezoReportSentence) ?? "", onBack: onBack) {
             switch model.phase {
             case .loading:
-                HStack(spacing: 10) {
-                    ProgressView().tint(.white)
-                    Text("Betöltöm a zárójelentést…").nkFont(14).foregroundStyle(.white.opacity(0.7))
-                }
-                .frame(maxWidth: .infinity, minHeight: 60, alignment: .leading)
+                NKSectionCard("Zárójelentés", hue: hue, state: .loading) { EmptyView() }
             case .failed(let e):
-                NKBare("ZÁRÓJELENTÉS", hue: hue) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        NKNoFreshData(MezociklusokModel.message(e))
-                        MezoButton(title: "Újra", style: .secondary) { Task { await model.load(blockId: blockId) } }
-                    }
-                }
+                NKSectionCard("Zárójelentés", hue: hue,
+                              state: .failed(MezociklusokModel.message(e), { Task { await model.load(blockId: blockId) } })) { EmptyView() }
             case .ready:
                 if let r { content(r) }
             }
@@ -50,28 +42,17 @@ struct MezoReportPage: View {
     }
 
     @ViewBuilder private func content(_ r: WireReport) -> some View {
-        HStack(spacing: 18) {
-            MezoRing(value: r.adherence?.completionPct.map { Double($0) / 100 }, hue: hue, size: 104)
-            VStack(alignment: .leading, spacing: 12) {
-                if let a = r.adherence, let done = a.completedSessions, let planned = a.plannedSessions {
-                    stat("\(done)/\(planned)", "edzés kész")
-                }
-                stat("\(r.records?.medalCount ?? 0)", "új rekord")
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(18).nkGlass(26)
-        .accessibilityElement(children: .combine)
+        hero(r)
 
         let weeks = mezoReportWeeks(r)
         if !weeks.isEmpty {
-            NKBare("A HETEK: TERV ÉS VALÓSÁG", hue: hue, glyph: "chart-deep") {
+            NKSectionCard("A hetek: terv és valóság", hue: hue, glyph: "chart-deep") {
                 weekBars(weeks)
             }
         }
         let lifts = (r.strength ?? []).filter { $0.deltaKg != nil }
         if !lifts.isEmpty {
-            NKBare("ERŐ", hue: hue, glyph: "dumbbell-ink") {
+            NKSectionCard("Erő", hue: hue, glyph: "dumbbell-ink") {
                 let top = lifts.compactMap { $0.deltaKg.map(abs) }.max() ?? 1
                 let medals = Set((r.records?.top ?? []).map(\.exerciseName))
                 VStack(spacing: 12) {
@@ -82,11 +63,11 @@ struct MezoReportPage: View {
             }
         }
         if let own = r.selfEval?.trimmingCharacters(in: .whitespacesAndNewlines), !own.isEmpty {
-            NKBare("A TE ÉRTÉKELÉSED", hue: hue, glyph: "pen-sun") {
+            NKSectionCard("A te értékelésed", hue: hue, glyph: "pen-sun") {
                 Text(own).nkFont(15).foregroundStyle(.white.opacity(0.85)).frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        NKBare("BOOP ÉRTÉKELÉSE", hue: hue, glyph: "chat-ink") {
+        NKSectionCard("Boop értékelése", hue: hue, glyph: "chat-ink") {
             Group {
                 switch model.aiState {
                 case .pending:
@@ -102,9 +83,49 @@ struct MezoReportPage: View {
                     Text("Boop most nem tudta megírni az értékelést.").nkFont(14).foregroundStyle(.white.opacity(0.6))
                 }
             }
-            .padding(16).frame(maxWidth: .infinity, alignment: .leading).nkGlass(22)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .fixedSize(horizontal: false, vertical: true)
         }
         Color.clear.frame(height: 20)
+    }
+
+    /// Edzés redesign (spec 2026-11-27 §5.4, mezo-r36n9.197.4): the result in one ring, the two numbers beside it, and
+    /// Boop's verdict in one line under them (the whole text is in its own card further down).
+    private func hero(_ r: WireReport) -> some View {
+        MezoPageHero(label: "Az eredmény", hue: hue, glyph: "medal-sun") {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 18) { ring(r); stats(r); Spacer(minLength: 0) }
+                VStack(alignment: .leading, spacing: 14) { ring(r); stats(r) }
+            }
+            .accessibilityElement(children: .combine)
+            if let line = verdictLine {
+                Text(line).nkFont(14.5).foregroundStyle(.white.opacity(0.85))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityLabel("Boop: \(line)")
+            }
+        }
+    }
+
+    private func ring(_ r: WireReport) -> some View {
+        MezoRing(value: r.adherence?.completionPct.map { Double($0) / 100 }, hue: hue, size: 104)
+    }
+
+    private func stats(_ r: WireReport) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if let a = r.adherence, let done = a.completedSessions, let planned = a.plannedSessions {
+                stat("\(done)/\(planned)", "edzés kész")
+            }
+            stat("\(r.records?.medalCount ?? 0)", "új rekord")
+        }
+    }
+
+    /// Boop's one line for the hero; while it is still writing, it says so.
+    private var verdictLine: String? {
+        switch model.aiState {
+        case .ready(let text): mezoVerdictLine(text)
+        case .pending: "Boop még írja az értékelését…"
+        case .off, .failed: nil
+        }
     }
 
     private func weekBars(_ weeks: [MezoReportWeek]) -> some View {
@@ -164,6 +185,20 @@ struct MezoReportPage: View {
         }
         .accessibilityElement(children: .combine)
     }
+}
+
+/// Boop's verdict in one line: the first sentence of its text, or its first words when that sentence runs long.
+func mezoVerdictLine(_ text: String, limit: Int = 140) -> String? {
+    let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !t.isEmpty else { return nil }
+    var first = t
+    if let end = t.firstIndex(where: { ".!?\n".contains($0) }) {
+        first = String(t[...end]).trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    guard first.count > limit else { return first }
+    var cut = String(first.prefix(limit))
+    if let space = cut.lastIndex(of: " ") { cut = String(cut[..<space]) }
+    return cut.trimmingCharacters(in: CharacterSet(charactersIn: " ,;:")) + "…"
 }
 
 /// One week of the report: the working sets planned and done, summed over the muscles.

@@ -22,18 +22,23 @@ struct MezoRestartSheet: View {
                     .accessibilityAddTraits(.isHeader)
                 Text("A „\(card.title)” a mostani állapotával, minden módosításoddal együtt indul újra. A mostani futam (\(stats.week). hét \(mezoOf(stats.of))) lezárul, és zárójelentéssel megmarad a lezártak között.")
                     .nkFont(15).foregroundStyle(.white.opacity(0.75)).fixedSize(horizontal: false, vertical: true)
+                // Edzés redesign (spec 2026-11-27 §5.4, mezo-r36n9.197.4): each section a card, the structure unchanged.
                 NKStatRow(statsRow(stats), hue: hue)
+                    .padding(16).nkInnerCard()
                 ForEach(MezociklusokModel.restartDrops(running: card, upcoming: model.groups.upcoming, today: Date())) { p in
                     NKNote("A tervezett „\(p.title)” (\(p.dateText)) ezzel elmarad: az újraindított futam az ő heteire esik.", hue: hue)
                 }
                 Toggle(isOn: $updateTemplate) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("A sablont is frissítem").nkFont(15, .semibold).foregroundStyle(.white)
+                            .fixedSize(horizontal: false, vertical: true)
                         Text("A későbbi indítások is a módosításaiddal jönnek").nkFont(12.5).foregroundStyle(.white.opacity(0.6))
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
                 .tint(hue.glow)
                 .frame(minHeight: 44)
+                .padding(.horizontal, 16).padding(.vertical, 10).nkInnerCard()
                 if let error = model.lastError {
                     Text(error).nkFont(13.5).foregroundStyle(planWarn).fixedSize(horizontal: false, vertical: true)
                 }

@@ -57,4 +57,25 @@ struct EdzesMezociklusTabTests {
         #expect(store.blockAnswered == true)
         #expect(store.block == nil)
     }
+
+    // Step 4 (mezo-r36n9.197.4): the sub-pages' hero helpers.
+
+    @Test func verdictLineIsTheFirstSentence() {
+        #expect(mezoVerdictLine("Erős blokk volt. A guggolás 5 kilót nőtt.") == "Erős blokk volt.")
+        #expect(mezoVerdictLine("  \n ") == nil)
+        #expect(mezoVerdictLine("Egyetlen mondat pont nélkül") == "Egyetlen mondat pont nélkül")
+        let long = String(repeating: "nagyon ", count: 30) + "hosszú."
+        let cut = mezoVerdictLine(long, limit: 40)
+        #expect(cut?.hasSuffix("…") == true)
+        #expect((cut?.count ?? 0) <= 41)
+        #expect(cut?.contains("nagyo…") == false, "cut between words, never inside one")
+    }
+
+    @Test func muscleWeeksChartReadsTheCurrentWeek() {
+        let weeks = [MuscleVolumeWeek(week: 1, phase: .mav, planned: 10, actual: 10, isCurrent: false),
+                     MuscleVolumeWeek(week: 2, phase: .mav, planned: 12, actual: 9, isCurrent: true),
+                     MuscleVolumeWeek(week: 3, phase: .mav, planned: 14, isCurrent: false)]
+        #expect(MuscleWeeksChart.accessibilityText(weeks) == "3 hét szettjei; a 2. héten 9 megvolt a tervezett 12-\(evesBolBol(12))")
+        #expect(MuscleWeeksChart.accessibilityText([]) == "0 hét szettjei")
+    }
 }

@@ -20,20 +20,16 @@ struct MezoDetailPage: View {
 
     var body: some View {
         NKAreaSubPage(hue: hue, crumb: "Mezociklusaim", eyebrow: eyebrow, title: card.title, sentence: sentence, onBack: onBack) {
-            if !card.loads.isEmpty {
-                NKBare("A HETEK ÍVE", hue: hue, glyph: "chart-deep") {
-                    NKBlockTimeline(mezoTimeline(card), hue: hue, caption: timelineCaption)
-                }
-            }
+            hero
             if card.kind == .closed, card.hasReport, let id = card.blockId { reportTeaser(id) }
             if !card.days.isEmpty {
-                NKBare("A HÉT NAPJAI", hue: hue, glyph: "dumbbell-ink") {
+                NKSectionCard("A hét napjai", hue: hue, glyph: "dumbbell-ink") {
                     NKCarousel(card.days.enumerated().map { MezoDayItem(index: $0.offset, day: $0.element) }, hue: hue,
                                height: min(dayCardHeight, 360), widthFraction: 0.46) { item in dayCard(item.day) }
                 }
             }
             if !card.heat.isEmpty {
-                NKBare("MIT KAPNAK AZ IZMOK", hue: hue, glyph: "body-cream") {
+                NKSectionCard("Mit kapnak az izmok", hue: hue, glyph: "body-cream") {
                     HStack(spacing: 18) {
                         NKBodyMap(mezoHeat(card), hue: hue, views: .both).frame(height: 170).accessibilityHidden(true)
                         VStack(alignment: .leading, spacing: 10) {
@@ -95,21 +91,41 @@ struct MezoDetailPage: View {
         return mezoLine(card) + rest
     }
 
-    private func reportTeaser(_ id: String) -> some View {
-        NKBare("HOGY SIKERÜLT", hue: hue, glyph: "medal-sun") {
-            Button { showReport = true } label: {
-                HStack(spacing: 16) {
-                    MezoRing(value: card.adherence, hue: hue, size: 70)
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(teaserLine).nkFont(15, .semibold).foregroundStyle(.white)
-                        Text("Zárójelentés és Boop értékelése").nkFont(13).foregroundStyle(.white.opacity(0.6))
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    Image(systemName: "chevron.right").foregroundStyle(.white.opacity(0.45))
-                }
-                .padding(16).nkGlass(22).contentShape(RoundedRectangle(cornerRadius: 22))
+    /// Edzés redesign (spec 2026-11-27 §5.4, mezo-r36n9.197.4): the hero is the weeks' arc under a status tag; the
+    /// title stays in the page head above it.
+    private var hero: some View {
+        MezoPageHero(label: "A hetek íve", hue: hue, glyph: "chart-deep",
+                     trailing: AnyView(MezoTag(text: statusTag, lit: card.kind == .running || card.kind == .planned, hue: hue))) {
+            if !card.loads.isEmpty {
+                EdzesWeeksArc(weeks: mezoTimeline(card), hue: hue)
             }
-            .buttonStyle(.plain)
+            Text(timelineCaption).nkFont(13).foregroundStyle(.white.opacity(0.65))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// The status the hero's tag names.
+    private var statusTag: String {
+        switch card.kind {
+        case .running: "fut"
+        case .planned: "következik"
+        case .closed: "lezárt"
+        case .template: "sablon"
+        }
+    }
+
+    private func reportTeaser(_ id: String) -> some View {
+        NKSectionCard("Hogy sikerült", hue: hue, glyph: "medal-sun", trailing: .chevron, onOpen: { showReport = true }) {
+            HStack(spacing: 16) {
+                MezoRing(value: card.adherence, hue: hue, size: 70)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(teaserLine).nkFont(15, .semibold).foregroundStyle(.white)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text("Zárójelentés és Boop értékelése").nkFont(13).foregroundStyle(.white.opacity(0.6))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("Zárójelentés: \(teaserLine)")
             .accessibilityAddTraits(.isButton)
@@ -131,7 +147,7 @@ struct MezoDetailPage: View {
             Spacer(minLength: 0)
             Text("\(d.exerciseCount) gyakorlat").nkFont(12, design: .monospaced).foregroundStyle(.white.opacity(0.5))
         }
-        .padding(14).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading).nkGlass(22)
+        .padding(14).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading).nkInnerCard()
         .accessibilityElement(children: .combine)
     }
 

@@ -23,20 +23,10 @@ struct MezociklusokPage: View {
                       onBack: onBack) {
             switch model.phase {
             case .loading:
-                NKBare("MEZOCIKLUSAIM", hue: hue) {
-                    HStack(spacing: 10) {
-                        ProgressView().tint(.white)
-                        Text("Betöltöm a mezociklusaidat…").nkFont(14).foregroundStyle(.white.opacity(0.7))
-                    }
-                    .frame(maxWidth: .infinity, minHeight: 60, alignment: .leading)
-                }
+                NKSectionCard("Mezociklusaim", hue: hue, state: .loading) { EmptyView() }
             case .failed(let e):
-                NKBare("MEZOCIKLUSAIM", hue: hue) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        NKNoFreshData(MezociklusokModel.message(e))
-                        MezoButton(title: "Újra", style: .secondary) { Task { await model.load() } }
-                    }
-                }
+                NKSectionCard("Mezociklusaim", hue: hue,
+                              state: .failed(MezociklusokModel.message(e), { Task { await model.load() } })) { EmptyView() }
             case .ready:
                 if let age = model.ageText {
                     NKNote("Most nem érem el a szervert: ez a \(age) mentett lista. Net nélkül csak nézni tudod, indítani és szerkeszteni nem.", hue: hue)
@@ -64,21 +54,34 @@ struct MezociklusokPage: View {
         return "Eddig \(runs) mezociklus, \(weeks) hét edzés"
     }
 
+    /// Edzés redesign (spec 2026-11-27 §5.4, mezo-r36n9.197.4): the running one as the hero, then one glass card per
+    /// group — the planned and the closed ones as rows inside their card, the templates as a card row.
     @ViewBuilder private var sections: some View {
         if let running = g.running { hero(running) }
         if !g.upcoming.isEmpty {
-            NKBare("KÖVETKEZIK", hue: hue, glyph: "clock-ink") {
-                VStack(spacing: 12) { ForEach(g.upcoming) { plannedCard($0) } }
+            NKSectionCard("Következik", hue: hue, glyph: "clock-ink") {
+                rows(g.upcoming) { plannedCard($0) }
             }
         }
         if !g.templates.isEmpty {
-            NKBare("SABLONJAIM", hue: hue, glyph: "book-sage", trailing: "\(g.templates.count)") {
+            NKSectionCard("Sablonjaim", hue: hue, glyph: "book-sage", trailing: .text("\(g.templates.count)")) {
                 NKCarousel(g.templates, hue: hue, height: min(templateCardHeight, 480), widthFraction: 0.62) { templateCard($0) }
             }
         }
         if !g.closed.isEmpty {
-            NKBare("LEZÁRTAK", hue: hue, glyph: "check-ink") {
-                VStack(spacing: 12) { ForEach(g.closed) { closedCard($0) } }
+            // Newest first (`mezoCards` sorts them by their close).
+            NKSectionCard("Lezártak", hue: hue, glyph: "check-ink", trailing: .text("\(g.closed.count)")) {
+                rows(g.closed) { closedCard($0) }
+            }
+        }
+    }
+
+    /// Rows inside one card, a hairline between them.
+    private func rows<Row: View>(_ cards: [MezoCard], @ViewBuilder row: @escaping (MezoCard) -> Row) -> some View {
+        VStack(spacing: 0) {
+            ForEach(Array(cards.enumerated()), id: \.element.id) { i, m in
+                if i > 0 { Rectangle().fill(.white.opacity(0.08)).frame(height: 0.5) }
+                row(m)
             }
         }
     }
@@ -86,27 +89,19 @@ struct MezociklusokPage: View {
     /// The running one, big: the weeks with today lit, the body it trains. Tapping it goes back to the tab, where it lives.
     private func hero(_ m: MezoCard) -> some View {
         Button(action: onBack) {
-            VStack(alignment: .leading, spacing: 16) {
+            MezoPageHero(label: "Most fut", hue: hue, glyph: "cycle-ink") {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("MOST FUT").nkFont(10.5, .semibold, design: .monospaced).tracking(1.4).foregroundStyle(hue.glow)
-                    Text(m.title).nkFont(26, design: .serif).foregroundStyle(.white)
+                    MezoHeroTitle(text: m.title)
                     Text("\(m.currentWeek). hét \(mezoOf(m.weeks))\(m.split.map { " · \($0)" } ?? "")")
-                        .nkFont(13).foregroundStyle(.white.opacity(0.65))
+                        .nkFont(13.5).foregroundStyle(.white.opacity(0.65)).fixedSize(horizontal: false, vertical: true)
                 }
                 HStack(alignment: .bottom, spacing: 14) {
-                    NKBlockTimeline(mezoTimeline(m), hue: hue).frame(maxWidth: .infinity)
+                    EdzesWeeksArc(weeks: mezoTimeline(m), hue: hue).frame(maxWidth: .infinity)
                     if !m.heat.isEmpty {
-                        NKBodyMap(mezoHeat(m), hue: hue, views: .front).frame(width: 64, height: 110).accessibilityHidden(true)
+                        NKBodyMap(mezoHeat(m), hue: hue, views: .front).frame(width: 56, height: 96).accessibilityHidden(true)
                     }
                 }
             }
-            .padding(18)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background {
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .fill(LinearGradient(colors: [hue.glow.opacity(0.28), .clear], startPoint: .topTrailing, endPoint: .bottomLeading))
-            }
-            .nkGlass(28)
             .contentShape(RoundedRectangle(cornerRadius: 28))
         }
         .buttonStyle(.plain)
@@ -125,7 +120,7 @@ struct MezociklusokPage: View {
                     Text(date.day).nkFont(26, .semibold).foregroundStyle(.white)
                 }
                 .frame(width: 58, height: 64)
-                .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(.white.opacity(0.08)))
+                .nkInnerCard(radius: 16)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(m.title).nkFont(18, design: .serif).foregroundStyle(.white)
                     Text(mezoLine(m)).nkFont(12.5).foregroundStyle(.white.opacity(0.6))
@@ -133,7 +128,7 @@ struct MezociklusokPage: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 MezoMiniCurve(loads: m.loads).frame(width: 64)
             }
-            .padding(14).nkGlass(22).contentShape(RoundedRectangle(cornerRadius: 22))
+            .padding(.vertical, 12).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
@@ -164,8 +159,8 @@ struct MezociklusokPage: View {
             }
             .padding(16)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .nkGlass(24)
-            .contentShape(RoundedRectangle(cornerRadius: 24))
+            .nkInnerCard(radius: 20)
+            .contentShape(RoundedRectangle(cornerRadius: 20))
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
@@ -190,7 +185,7 @@ struct MezociklusokPage: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 MezoMiniCurve(loads: m.loads).frame(width: 52).opacity(0.8)
             }
-            .padding(14).nkGlass(22).contentShape(RoundedRectangle(cornerRadius: 22))
+            .padding(.vertical, 12).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
@@ -207,4 +202,47 @@ func mezoDateParts(_ text: String) -> (month: String, day: String) {
     let month = parts[0].replacingOccurrences(of: ".", with: "").uppercased()
     let day = parts[1].prefix { $0.isNumber }
     return (month, day.isEmpty ? "–" : String(day))
+}
+
+/// The hero card of a Mezociklus sub-page (Edzés redesign, spec 2026-11-27 §5.4, mezo-r36n9.197.4): the page's one
+/// point, a larger glass card than the section cards below it, with the same hue-tick head and an optional trailing
+/// slot (a „…" menu, an age).
+struct MezoPageHero<Content: View>: View {
+    let label: String
+    let hue: Hue
+    var glyph: String? = nil
+    var trailing: AnyView? = nil
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 8) {
+                Capsule().fill(hue.glow).frame(width: 3, height: 13)
+                if let glyph { NKGlyph(glyph, hue.glow.opacity(0.9), size: 14) }
+                Text(label.uppercased()).nkFont(12, .medium, design: .monospaced).tracking(1.4)
+                    .foregroundStyle(.white.opacity(0.6))
+                    .dynamicTypeSize(...DynamicTypeSize.accessibility2)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 8)
+                if let trailing { trailing }
+            }
+            .frame(minHeight: 28)
+            content()
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .nkGlass(28)
+    }
+}
+
+/// A hero's title: wraps between words, shrinks a little before it would break inside one, stops growing past the
+/// first accessibility size (spike glitch „Hypertrop / hy").
+struct MezoHeroTitle: View {
+    let text: String
+    var body: some View {
+        Text(text).nkFont(24, .semibold).foregroundStyle(.white)
+            .lineLimit(3).minimumScaleFactor(0.8)
+            .dynamicTypeSize(...DynamicTypeSize.accessibility1)
+            .fixedSize(horizontal: false, vertical: true)
+    }
 }

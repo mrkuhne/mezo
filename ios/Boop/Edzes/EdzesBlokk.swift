@@ -33,6 +33,11 @@ struct BlockLoadPage: View {
 
     private var bands: [MuscleBand] { muscleBands(block) }
 
+    #if DEBUG
+    /// `-previewMezo muscle`: the first muscle's page opens on its own.
+    private var previewMuscle: Bool { UserDefaults.standard.string(forKey: "previewMezo") == "muscle" }
+    #endif
+
     var body: some View {
         let summary = blockWeekSummary(bands)
         NKAreaSubPage(hue: hue, crumb: "Edzés · Mezociklus", eyebrow: "A mezociklus terhelése · \(block.currentWeek). hét",
@@ -46,18 +51,25 @@ struct BlockLoadPage: View {
         .fullScreenCover(item: $muscle) { band in
             MuscleWeeksPage(band: band, block: block, hue: hue) { muscle = nil }
         }
+        #if DEBUG
+        .task { if previewMuscle { muscle = bands.first } }
+        #endif
     }
 
-    /// The week in one picture: the total, and the body filled muscle by muscle.
+    /// The week in one picture (Edzés redesign, spec 2026-11-27 §5.4, mezo-r36n9.197.4): the hero — the total and
+    /// the body filled muscle by muscle, then the hardest-worked muscles as bars.
     private func thisWeek(_ summary: BlockWeekSummary) -> some View {
-        NKBare("EZEN A HÉTEN", hue: hue, trailing: age) {
+        MezoPageHero(label: "Ezen a héten", hue: hue,
+                     trailing: age.map { AnyView(Text($0).nkFont(12).foregroundStyle(.white.opacity(0.5))) }) {
             HStack(alignment: .center, spacing: 18) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("\(summary.total)")
                         .nkFont(52, .medium)
                         .foregroundStyle(hue.glow)
+                        .dynamicTypeSize(...DynamicTypeSize.accessibility2)
                     Text("szett ezen a héten")
                         .nkFont(13).foregroundStyle(.white.opacity(0.6))
+                        .fixedSize(horizontal: false, vertical: true)
                     if let previous = summary.previous {
                         Text("múlt héten \(previous)")
                             .nkFont(12, design: .monospaced).foregroundStyle(.white.opacity(0.45))
@@ -65,15 +77,18 @@ struct BlockLoadPage: View {
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityElement(children: .combine)
                 NKBodyMap(bands.map { NKBodyHeat(muscle: $0.muscle, level: $0.level) }, hue: hue, views: .both)
-                    .frame(maxHeight: 190)
+                    .frame(maxHeight: 170)
+                    .accessibilityHidden(true)
             }
+            EdzesMuscleBars(bands: bands, hue: hue)
         }
     }
 
-    /// One row per muscle, the ones with room first.
+    /// One row per muscle, the ones with room first — all inside one card.
     private var perMuscle: some View {
-        NKBare("IZMONKÉNT · AHOL A LEGTÖBB HELY VAN, ELÖL", hue: hue) {
+        NKSectionCard("Izmonként · ahol a legtöbb hely van, elöl", hue: hue) {
             VStack(spacing: 0) {
                 ForEach(Array(bands.enumerated()), id: \.element.id) { i, band in
                     if i > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
@@ -155,15 +170,12 @@ private struct MuscleWeeksPage: View {
                       eyebrow: "\(muscleName(band.muscle)) · \(band.tier.hungarian.lowercased())",
                       title: muscleName(band.muscle).capitalizedFirst,
                       sentence: sentence, onBack: onBack) {
-            NKBare("HETENKÉNT", hue: hue) {
-                VStack(spacing: 0) {
-                    ForEach(Array(band.weeks.enumerated()), id: \.element.week) { i, week in
-                        if i > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
-                        WeekRow(week: week, band: band, hue: hue)
-                    }
-                }
+            // Edzés redesign (spec 2026-11-27 §5.4, mezo-r36n9.197.4): the hero is this muscle's weeks as a chart,
+            // then its limits and where it is; the week-by-week rows keep every number in one card.
+            MezoPageHero(label: "Hetenként", hue: hue) {
+                MuscleWeeksChart(band: band, hue: hue)
             }
-            NKBare("A HATÁRAI", hue: hue) {
+            NKSectionCard("A határai", hue: hue) {
                 NKStatRow([
                     NKStat(value: "\(band.mev)", unit: "szett", label: "ennyitől fejlődik"),
                     NKStat(value: "\(band.ceiling)", unit: "szett", label: "eddig megy ez a terv", hot: true),
@@ -171,10 +183,19 @@ private struct MuscleWeeksPage: View {
                 ], hue: hue)
             }
             if NKBodyMark.canDraw(band.muscle) {
-                NKBare("HOL VAN", hue: hue) {
+                NKSectionCard("Hol van", hue: hue) {
                     NKBodyMap([NKBodyHeat(muscle: band.muscle, level: 1)], hue: hue)
                         .frame(maxHeight: 200)
                         .frame(maxWidth: .infinity)
+                        .accessibilityHidden(true)
+                }
+            }
+            NKSectionCard("Hétről hétre", hue: hue) {
+                VStack(spacing: 0) {
+                    ForEach(Array(band.weeks.enumerated()), id: \.element.week) { i, week in
+                        if i > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
+                        WeekRow(week: week, band: band, hue: hue)
+                    }
                 }
             }
             NKNote(note, hue: hue)
@@ -194,6 +215,61 @@ private struct MuscleWeeksPage: View {
         band.step > 0
             ? "Hétfőtől \(band.step) szettel többet kap, ha a hét jól megy."
             : "Hétfőtől ugyanennyit kap — ebben a tervben ez a felső értéke."
+    }
+}
+
+/// One muscle's weeks as bars: the plan faint, what was done lit, the current week glowing, against the muscle's own
+/// limit (`mrv`) so the bars read the same as the rows below.
+struct MuscleWeeksChart: View {
+    let band: MuscleBand
+    let hue: Hue
+
+    var body: some View {
+        let top = Double(max(1, band.mrv, band.weeks.map { max($0.planned, $0.actual ?? 0) }.max() ?? 1))
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .bottom, spacing: 8) {
+                ForEach(band.weeks, id: \.week) { w in
+                    VStack(spacing: 6) {
+                        ZStack(alignment: .bottom) {
+                            RoundedRectangle(cornerRadius: 6).fill(.white.opacity(w.isCurrent ? 0.18 : 0.10))
+                                .frame(height: max(6, CGFloat(Double(w.planned) / top) * 96))
+                            if let actual = w.actual {
+                                RoundedRectangle(cornerRadius: 6).fill(hue.glow.opacity(w.isCurrent ? 1 : 0.75))
+                                    .frame(height: CGFloat(Double(actual) / top) * 96)
+                            }
+                        }
+                        .frame(height: 96, alignment: .bottom)
+                        .shadow(color: w.isCurrent ? hue.glow.opacity(0.5) : .clear, radius: 8)
+                        Text("\(w.week)").nkFont(11.5, w.isCurrent ? .semibold : .regular, design: .monospaced)
+                            .foregroundStyle(.white.opacity(w.isCurrent ? 0.95 : 0.5))
+                            .lineLimit(1).fixedSize()
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Self.accessibilityText(band.weeks))
+            HStack(spacing: 14) {
+                legend(hue.glow, "megcsinált szett")
+                legend(.white.opacity(0.18), "terv")
+            }
+            .accessibilityHidden(true)
+        }
+    }
+
+    private func legend(_ color: Color, _ text: String) -> some View {
+        HStack(spacing: 6) {
+            RoundedRectangle(cornerRadius: 3).fill(color).frame(width: 12, height: 12)
+            Text(text).nkFont(12).foregroundStyle(.white.opacity(0.6))
+        }
+    }
+
+    /// What VoiceOver reads for the chart: where the current week stands.
+    static func accessibilityText(_ weeks: [MuscleVolumeWeek]) -> String {
+        guard let c = weeks.first(where: \.isCurrent) else { return "\(weeks.count) hét szettjei" }
+        let done = c.actual.map { "\($0) megvolt a tervezett \(c.planned)-\(evesBolBol(c.planned))" } ?? "\(c.planned) tervezett"
+        return "\(weeks.count) hét szettjei; a \(c.week). héten \(done)"
     }
 }
 
