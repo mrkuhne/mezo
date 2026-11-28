@@ -15,6 +15,7 @@ struct OtherDaySheet: View {
                 ForEach(choices) { c in
                     Button { onPick(c.id) } label: { row(c) }
                         .buttonStyle(.plain)
+                        .frameProbe("other.\(c.title)")
                 }
                 Text("A választott nap terve indul, a mai nap a héten nyitva marad — később ugyanitt megcsinálhatod.")
                     .nkFont(12).foregroundStyle(.white.opacity(0.45))

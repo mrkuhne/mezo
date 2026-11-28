@@ -317,6 +317,8 @@ struct EdzesRoom: View {
             if UserDefaults.standard.bool(forKey: "previewEdzesSwap") || UserDefaults.standard.bool(forKey: "previewEdzesPlayer") {
                 if store?.session != nil { phase = .playing } else if workout != nil { beginWorkout() }
             }
+            // `-previewEdzesBriefing YES` (mezo-r36n9.197.5): straight onto today's briefing.
+            if UserDefaults.standard.bool(forKey: "previewEdzesBriefing"), workout != nil { phase = .briefing }
             // `-previewEdzesCeremony estimate|watch|none` (mezo-r36n9.170): the closing ceremony with its kcal line —
             // the estimate, the watch's figure, or none at all (offline / no body data). Nothing is sent.
             if let mode = UserDefaults.standard.string(forKey: "previewEdzesCeremony") {

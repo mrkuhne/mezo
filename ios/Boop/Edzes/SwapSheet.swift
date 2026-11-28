@@ -81,6 +81,7 @@ struct SwapSheet: View {
                         .frame(minHeight: 44)
                 }
                 .buttonStyle(.plain)
+                .frameProbe("swap.gym")
             }
         }
         .task { await refresh() }
@@ -183,6 +184,7 @@ struct SwapSheet: View {
         .disabled(off || busy)
         .opacity(off ? 0.4 : 1)
         .accessibilityAddTraits(on ? .isSelected : [])
+        .frameProbe("swap.chip.\(title)")
     }
 
     /// The exercise needs several portable kinds: which one is missing? The bench, which rarely is, comes last.
@@ -278,6 +280,7 @@ struct SwapSheet: View {
                 Button { onPick(p.exercise) } label: { card(p, first: i == 0) }
                     .buttonStyle(.plain)
                     .disabled(swapping)
+                    .frameProbe("swap.pick.\(i)")
             }
         }
     }
@@ -328,6 +331,7 @@ struct SwapSheet: View {
             }
             .buttonStyle(.plain)
             .accessibilityAddTraits(.isHeader)
+            .frameProbe("swap.all")
         }
         if showAll || failed {
             if catalog.isEmpty {

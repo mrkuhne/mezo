@@ -42,9 +42,14 @@ struct WorkoutBriefing: View {
                 header
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
-                        title
-                        if let minutes = workout.durationEst { NKTimeRange(minutes: minutes, hue: hue) }
-                        numbers
+                        // **The hero** (spec §5.5): the day's title and its three numbers, one card drawn behind them
+                        // with the page's own 20 spacing inside — the start button stays exactly where it was.
+                        VStack(alignment: .leading, spacing: 20) {
+                            title
+                            if let minutes = workout.durationEst { NKTimeRange(minutes: minutes, hue: hue, inner: true) }
+                            numbers
+                        }
+                        .workoutCard(.hero, v: 10, hue: hue)
                         if let warning { warningCard(warning) }
                         if !missions.isEmpty { missionSection }
                         lineUp
@@ -66,6 +71,7 @@ struct WorkoutBriefing: View {
                     Text("Ezt a mondatot az edzésmotor írta, nem Boop fogalmazta újra.")
                         .nkFont(12).foregroundStyle(.white.opacity(0.45))
                 }
+                .workoutCard(h: 8, v: 8)
             }
             .presentationDetents([.medium])
             .presentationBackground(NK.ground)
@@ -84,6 +90,7 @@ struct WorkoutBriefing: View {
             }
             .buttonStyle(.plain).glassEffect(.clear.interactive(), in: .circle)
             .accessibilityLabel("Vissza")
+            .frameProbe("brief.close")
             VStack(spacing: 1) {
                 Text("Eligazítás").nkFont(15, .medium).foregroundStyle(.white)
                 if let dayLine {
@@ -174,7 +181,7 @@ struct WorkoutBriefing: View {
             Spacer(minLength: 0)
         }
         .padding(14)
-        .nkGlass()
+        .workoutCard(v: 0)
         .accessibilityElement(children: .combine)
     }
 
@@ -199,6 +206,7 @@ struct WorkoutBriefing: View {
                                   else { released.insert(m.exerciseId) }
                               })
             }
+            .frameProbe("brief.carousel")
             Text(running ? "Az edzés már fut, ezek a döntések megvannak — a súlyokat a lejátszóban írod át."
                          : "Amit elengedsz, a múlt heti számaival megy — a gyakorlat marad.")
                 .nkFont(12).foregroundStyle(.white.opacity(0.45))
@@ -233,6 +241,7 @@ struct WorkoutBriefing: View {
                 }
             }
         }
+        .workoutCard(v: 10)
     }
 
     private func lineUpRow(_ number: Int, _ e: PlannedExercise) -> some View {
@@ -277,7 +286,7 @@ struct WorkoutBriefing: View {
             Spacer(minLength: 0)
         }
         .padding(14)
-        .nkGlass()
+        .workoutCard(.quiet, v: 0)
         .accessibilityElement(children: .combine)
     }
 
@@ -293,6 +302,7 @@ struct WorkoutBriefing: View {
         }
         .buttonStyle(.plain)
         .padding(.top, 4)
+        .frameProbe("brief.start")
     }
 
     private var startLabel: String {

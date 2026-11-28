@@ -118,38 +118,48 @@ struct GymSheet: View {
 
     private var switches: some View {
         VStack(alignment: .leading, spacing: 4) {
-            ForEach(EquipmentKind.allCases, id: \.self) { kind in
-                Toggle(isOn: Binding(get: { editor.isOn(kind) },
-                                     set: { on in Task { await editor.setKind(kind, on: on) } })) {
-                    Text(kind.label).nkFont(16).foregroundStyle(.white)
-                }
-                .tint(hue.glow)
-                .disabled(!editor.loaded || editor.loading)
-                .padding(.vertical, 9)
-                .frame(minHeight: 44)
-                .overlay(alignment: .bottom) { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
-            }
-
-            Text("AMI KONKRÉTAN HIÁNYZIK").nkFont(10, .medium, design: .monospaced).tracking(1.4)
-                .foregroundStyle(.white.opacity(0.5)).padding(.top, 18).padding(.bottom, 4)
-            if gone.isEmpty {
-                Text("Még semmi. Ha egy gép nincs meg nálatok, a cserénél az „ehhez nincs eszközöm” gombbal jelezheted — ide kerül.")
-                    .nkFont(13).foregroundStyle(.white.opacity(0.5))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            ForEach(gone, id: \.id) { e in
-                HStack {
-                    Text(e.name).nkFont(15).foregroundStyle(.white)
-                    Spacer()
-                    Button { Task { await editor.restore(e.id) } } label: {
-                        Text("mégis van").font(.system(size: 13, weight: .semibold)).foregroundStyle(.white.opacity(0.85))
-                            .frame(minHeight: 44)
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(EquipmentKind.allCases, id: \.self) { kind in
+                    Toggle(isOn: Binding(get: { editor.isOn(kind) },
+                                         set: { on in Task { await editor.setKind(kind, on: on) } })) {
+                        Text(kind.label).nkFont(16).foregroundStyle(.white)
                     }
-                    .buttonStyle(.plain)
+                    .tint(hue.glow)
+                    .disabled(!editor.loaded || editor.loading)
+                    .padding(.vertical, 9)
+                    .frame(minHeight: 44)
+                    .overlay(alignment: .bottom) { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
+                    .frameProbe("gym.\(kind.label)")
                 }
-                .padding(.vertical, 2)
-                .overlay(alignment: .bottom) { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
             }
+            .workoutCard(h: 8, v: 4)
+
+            // The second card; its top gap sits outside it, so the layout is the one it always was.
+            VStack(alignment: .leading, spacing: 4) {
+                Text("AMI KONKRÉTAN HIÁNYZIK").nkFont(10, .medium, design: .monospaced).tracking(1.4)
+                    .foregroundStyle(.white.opacity(0.5)).padding(.bottom, 4)
+                if gone.isEmpty {
+                    Text("Még semmi. Ha egy gép nincs meg nálatok, a cserénél az „ehhez nincs eszközöm” gombbal jelezheted — ide kerül.")
+                        .nkFont(13).foregroundStyle(.white.opacity(0.5))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                ForEach(gone, id: \.id) { e in
+                    HStack {
+                        Text(e.name).nkFont(15).foregroundStyle(.white)
+                        Spacer()
+                        Button { Task { await editor.restore(e.id) } } label: {
+                            Text("mégis van").font(.system(size: 13, weight: .semibold)).foregroundStyle(.white.opacity(0.85))
+                                .frame(minHeight: 44)
+                        }
+                        .buttonStyle(.plain)
+                        .frameProbe("gym.restore.\(e.name)")
+                    }
+                    .padding(.vertical, 2)
+                    .overlay(alignment: .bottom) { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
+                }
+            }
+            .workoutCard(h: 8, v: 4)
+            .padding(.top, 18)
         }
     }
 

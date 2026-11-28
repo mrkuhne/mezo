@@ -18,11 +18,14 @@ struct RestEndSheet: View {
     var body: some View {
         NKSheetFrame(hue: hue, eyebrow: "Edzés · beállítások", title: "Pihenő vége") {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Mi szóljon, ha lezárt telefonnál lejár a pihenő?")
-                    .nkFont(15).foregroundStyle(.white.opacity(0.85))
-                    .fixedSize(horizontal: false, vertical: true)
-                card(.vibrate, "Rezgés és rövid hang", "Alapból ez. Némított telefonon csak rezeg.")
-                card(.alarm, "Ébresztő", "Mint egy időzítő: egész képernyő, némításon is szól. Zsebben is észreveszed.")
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Mi szóljon, ha lezárt telefonnál lejár a pihenő?")
+                        .nkFont(15).foregroundStyle(.white.opacity(0.85))
+                        .fixedSize(horizontal: false, vertical: true)
+                    card(.vibrate, "Rezgés és rövid hang", "Alapból ez. Némított telefonon csak rezeg.")
+                    card(.alarm, "Ébresztő", "Mint egy időzítő: egész képernyő, némításon is szól. Zsebben is észreveszed.")
+                }
+                .workoutCard(h: 8, v: 6)
                 if denied {
                     Text("Az ébresztő nincs engedélyezve — a Beállításokban kapcsolhatod be.")
                         .nkFont(13).foregroundStyle(hue.glow)
@@ -57,6 +60,7 @@ struct RestEndSheet: View {
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(on ? .isSelected : [])
+        .frameProbe("restend.\(title)")
     }
 
     private func choose(_ m: RestEndMode) {
