@@ -1411,7 +1411,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 - **Contract** `api/feature/train/train-week-proposal.yml` — 2 operations
   - **endpoints:** GET /api/train/mesocycles/{id}/week-proposals ·
     POST /api/train/mesocycles/{id}/week-proposals/{proposalId}/decisions
-- **Contract** `api/feature/train/train.yml` — 81 operations
+- **Contract** `api/feature/train/train.yml` — 83 operations
   - **endpoints:** GET /api/train/mesocycles · POST /api/train/mesocycles/{id}/activate ·
     POST /api/train/mesocycles/{id}/close · POST /api/train/mesocycles/{id}/discard ·
     PUT /api/train/mesocycles/{id}/muscle-priorities · PUT /api/train/mesocycles/{id}/settings ·
@@ -1428,10 +1428,11 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     GET /api/train/gym-profile · PUT /api/train/gym-profile · GET /api/train/exercises · POST /api/train/exercises ·
     PUT /api/train/exercises/{id} · DELETE /api/train/exercises/{id} · PUT /api/train/exercises/{id}/video ·
     PUT /api/train/exercises/{id}/images · GET /api/train/exercise-records · GET /api/train/medals ·
-    GET /api/train/sport-sessions · POST /api/train/sport-sessions · GET /api/train/sport-schedule ·
-    PUT /api/train/sport-schedule · GET /api/train/sport-events · POST /api/train/sport-events ·
-    DELETE /api/train/sport-events/{id} · GET /api/train/sport-slot-skips · GET /api/train/gym-schedule ·
-    PUT /api/train/gym-schedule · GET /api/train/workouts/today · GET /api/train/workouts · POST /api/train/workouts ·
+    GET /api/train/sport-sessions · POST /api/train/sport-sessions · PUT /api/train/sport-sessions/{id} ·
+    DELETE /api/train/sport-sessions/{id} · GET /api/train/sport-schedule · PUT /api/train/sport-schedule ·
+    GET /api/train/sport-events · POST /api/train/sport-events · DELETE /api/train/sport-events/{id} ·
+    GET /api/train/sport-slot-skips · GET /api/train/gym-schedule · PUT /api/train/gym-schedule ·
+    GET /api/train/workouts/today · GET /api/train/workouts · POST /api/train/workouts ·
     POST /api/train/workouts/as-planned · GET /api/train/workouts/{id} · POST /api/train/workouts/{id}/sets ·
     PUT /api/train/workouts/{id}/sets/{setId} · DELETE /api/train/workouts/{id}/sets/{setId} ·
     POST /api/train/workouts/{id}/feedback · POST /api/train/workouts/{id}/skip ·
@@ -1445,7 +1446,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     GET /api/train/run-sessions · POST /api/train/run-sessions · GET /api/train/timing-profile ·
     POST /api/train/year-plans/preview · POST /api/train/year-plans · GET /api/train/year-plans/active ·
     PATCH /api/train/year-plans/blocks/{blockId} · POST /api/train/year-plans/{id}/archive
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 149 IT + 71 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 150 IT + 71 unit
   - **ITs:** `BlockCoverageIT`, `BlockExerciseSuggestionsIT`, `CatalogMediaResolutionIT`, `CatalogWriteContractIT`,
     `ClosingBlockIT`, `ClosingBlockSwitchOffIT`, `ClosingBlockVolumeFlagIT`, `ComebackTodayIT`, `CrossDayWorkoutIT`,
     `CustomWorkoutIT`, `ExerciseCatalogContractIT`, `ExerciseCatalogLoaderIT`, `ExerciseCatalogPermissionIT`,
@@ -1465,17 +1466,18 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
     `RecoveryFuelDaysIT`, `RecoveryPeriodPersistenceIT`, `ReplaceDayExercisesRunningWorkoutIT`,
     `RunSessionNoLevelUpApiIT`, `RunningContractIT`, `ScheduleGoalRecomputeIT`, `SetLegLogIT`,
     `SetRecommendationServiceIT`, `SportContractIT`, `SportEventContractIT`, `SportReadContractIT`, `SportServiceIT`,
-    `SportSessionRangeIT`, `SportSlotSkipContractIT`, `SportSlotSkipPersistenceIT`, `TechniqueAiRefinerIT`,
-    `TechniqueExclusionIT`, `TechniquePlanServiceIT`, `TimingProfileIT`, `TimingProfileSwitchOffIT`,
-    `TodaySportContractIT`, `TrainContractIT`, `TrainSeedDataIT`, `TrainServiceIT`, `TrainStylePropertiesIT`,
-    `TrainTechniquePropertiesIT`, `TrainingYearPlanRepositoryIT`, `VolumeAmountMigrationRunnerIT`,
-    `VolumeArcContractIT`, `VolumeArcVolumeFlagIT`, `VolumeLedgerIT`, `VolumeLedgerSwitchOffIT`,
-    `VolumeProgressionTierIT`, `VolumePropertiesIT`, `WarmupExclusionIT`, `WeekProposalApiAutoIT`, `WeekProposalApiIT`,
-    `WeekProposalAutoIT`, `WeekProposalAutoSwitchOffIT`, `WeekProposalDaySaveIT`, `WeekProposalLoadLinesIT`,
-    `WeekProposalLoadLinesSwitchOffIT`, `WeekProposalManualIT`, `WeekProposalRunModeIT`, `WeekProposalStallFailureIT`,
-    `WeekProposalStallIT`, `WeekProposalTechniqueIT`, `WeekProposalTierChangeApiIT`, `WeekProposalTierChangeIT`,
-    `WeekProposalTierIT`, `WeeklyPinIT`, `WeeklyScheduledActivityServiceIT`, `WeeklyScheduledActivityTrainingDaysIT`,
-    `WeeklySignalReaderIT`, `WorkoutAsPlannedIT`, `WorkoutAutoCloseIT`, `WorkoutClosingNoteApiIT`, `WorkoutContractIT`,
+    `SportSessionEditContractIT`, `SportSessionRangeIT`, `SportSlotSkipContractIT`, `SportSlotSkipPersistenceIT`,
+    `TechniqueAiRefinerIT`, `TechniqueExclusionIT`, `TechniquePlanServiceIT`, `TimingProfileIT`,
+    `TimingProfileSwitchOffIT`, `TodaySportContractIT`, `TrainContractIT`, `TrainSeedDataIT`, `TrainServiceIT`,
+    `TrainStylePropertiesIT`, `TrainTechniquePropertiesIT`, `TrainingYearPlanRepositoryIT`,
+    `VolumeAmountMigrationRunnerIT`, `VolumeArcContractIT`, `VolumeArcVolumeFlagIT`, `VolumeLedgerIT`,
+    `VolumeLedgerSwitchOffIT`, `VolumeProgressionTierIT`, `VolumePropertiesIT`, `WarmupExclusionIT`,
+    `WeekProposalApiAutoIT`, `WeekProposalApiIT`, `WeekProposalAutoIT`, `WeekProposalAutoSwitchOffIT`,
+    `WeekProposalDaySaveIT`, `WeekProposalLoadLinesIT`, `WeekProposalLoadLinesSwitchOffIT`, `WeekProposalManualIT`,
+    `WeekProposalRunModeIT`, `WeekProposalStallFailureIT`, `WeekProposalStallIT`, `WeekProposalTechniqueIT`,
+    `WeekProposalTierChangeApiIT`, `WeekProposalTierChangeIT`, `WeekProposalTierIT`, `WeeklyPinIT`,
+    `WeeklyScheduledActivityServiceIT`, `WeeklyScheduledActivityTrainingDaysIT`, `WeeklySignalReaderIT`,
+    `WorkoutAsPlannedIT`, `WorkoutAutoCloseIT`, `WorkoutClosingNoteApiIT`, `WorkoutContractIT`,
     `WorkoutDayAdjustmentPersistenceIT`, `WorkoutDetailContractIT`, `WorkoutDoneSemanticsIT`, `WorkoutEnergyServiceIT`,
     `WorkoutExerciseChangeIT`, `WorkoutFinishNoLevelUpApiIT`, `WorkoutPlannedMuscleGroupsIT`, `WorkoutServiceIT`,
     `WorkoutSessionRepositoryChallengeIT`, `WorkoutSetMutationIT`, `WorkoutTimingBackfillIT`, `WorkoutTimingIT`,

@@ -76,6 +76,43 @@ public class SportService {
     }
 
     /**
+     * Corrects an owned session (Boop Sport Napló, mezo-r36n9.205): the sheet sends every editable field again. An
+     * absent date / time / sport keeps the stored value; kcal follows the log rule (override verbatim, else the
+     * estimate again). No {@link SportSessionLoggedEvent}: a correction is not a new session.
+     */
+    @Transactional
+    public SportSessionResponse updateSportSession(UUID createdBy, UUID id, SportSessionCreateRequest req) {
+        SportSessionEntity s = sportSessionRepository.findByIdAndCreatedByAndDeletedFalse(id, createdBy)
+            .orElseThrow(OwnershipGuard::notFound);
+        if (req.getSport() != null) {
+            s.setSport(req.getSport());
+        }
+        if (req.getDate() != null) {
+            s.setDate(req.getDate());
+        }
+        if (req.getTime() != null) {
+            s.setTime(req.getTime());
+        }
+        s.setDurationMin(req.getDuration());
+        s.setSetsPlayed(req.getSetsPlayed());
+        s.setRounds(req.getRounds());
+        s.setRpe(req.getRpe());
+        s.setShoulderStrain(req.getShoulderStrain());
+        s.setNotes(req.getNotes());
+        s.setKcal(null);
+        s.setKcalIsEstimate(null);
+        applyKcal(createdBy, s, req.getKcalOverride());
+        return mapper.toResponse(sportSessionRepository.save(s));
+    }
+
+    /** Soft-deletes an owned session (Boop Sport Napló, mezo-r36n9.205); not owned or gone = 404. */
+    @Transactional
+    public void deleteSportSession(UUID createdBy, UUID id) {
+        sportSessionRepository.delete(sportSessionRepository.findByIdAndCreatedByAndDeletedFalse(id, createdBy)
+            .orElseThrow(OwnershipGuard::notFound)); // @SQLDelete soft-deletes
+    }
+
+    /**
      * The session's burnt energy: the user's own number is ACTIVE (net) kcal — a watch's "active
      * calories" — stored verbatim ({@code kcalIsEstimate=false}); otherwise the net activity-energy
      * model's estimate ({@link ActivityEnergyModel}) marked as an estimate. Both stay NULL when the

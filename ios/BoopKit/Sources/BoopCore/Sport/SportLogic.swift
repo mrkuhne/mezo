@@ -431,6 +431,8 @@ public func sportCardLabel(_ c: SportDayCard) -> String {
 public struct SportHintLine: Equatable, Sendable {
     public let text: String
     public let ok: Bool
+    /// The server hint behind the line (its „miért?"); nil for the calm line.
+    public var source: SportHint? = nil
 }
 
 /// Boop's interference hints in words: the server's from today on, plus a calm line when today's two fit well.
@@ -442,18 +444,18 @@ public func sportHints(_ o: SportOverview) -> [SportHintLine] {
         switch h.key {
         case "GAP_TIGHT" where h.date >= o.today:
             let gap = h.gapHours.map { "\(hoursText($0)) óra" } ?? "kevés idő"
-            out.append(SportHintLine(text: "\(dayWord(h.date, o)) a kondi és \(sportArticle(kind.inSentence)) között csak \(gap) van — ez szoros, a második előtt melegíts be alaposan.", ok: false))
+            out.append(SportHintLine(text: "\(dayWord(h.date, o)) a kondi és \(sportArticle(kind.inSentence)) között csak \(gap) van — ez szoros, a második előtt melegíts be alaposan.", ok: false, source: h))
         case "GAP_SHORT" where h.date >= o.today:
             let gap = h.gapHours.map { "\(hoursText($0)) óra" } ?? "kevés idő"
-            out.append(SportHintLine(text: "\(dayWord(h.date, o)) \(gap) van a kondi és \(sportArticle(kind.inSentence)) között — elég, ha nem hajtod túl.", ok: false))
+            out.append(SportHintLine(text: "\(dayWord(h.date, o)) \(gap) van a kondi és \(sportArticle(kind.inSentence)) között — elég, ha nem hajtod túl.", ok: false, source: h))
         case "SPORT_BEFORE_LEG_MORNING" where h.date > o.today:
             let isTomorrow = tomorrow.map { sportDate(h.date) == $0 } ?? false
             let when = isTomorrow ? "Holnap reggel" : "\(firstUpper(sportLegacyWeekday(h.date).map { weekdayOn[$0] } ?? "")) reggel"
             let heavy = h.heavy == true ? " kemény" : ""
-            out.append(SportHintLine(text: "\(when) lábnap jön az előző esti\(heavy) \(kind.inSentence) után — ha fáj a lábad, a Könnyítés egy koppintás.", ok: false))
+            out.append(SportHintLine(text: "\(when) lábnap jön az előző esti\(heavy) \(kind.inSentence) után — ha fáj a lábad, a Könnyítés egy koppintás.", ok: false, source: h))
         case "SPORT_LOAD_DECLINE":
             let n = h.pairs ?? 2
-            out.append(SportHintLine(text: "Az elmúlt két hétben \(n) alkalommal kevesebb ismétlés ment a kondin egy kemény \(kind.inSentence) utáni napon.", ok: false))
+            out.append(SportHintLine(text: "Az elmúlt két hétben \(n) alkalommal kevesebb ismétlés ment a kondin egy kemény \(kind.inSentence) utáni napon.", ok: false, source: h))
         default: break
         }
     }

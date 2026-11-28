@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.train.repository;
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -15,6 +16,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface SportSessionRepository extends JpaRepository<SportSessionEntity, UUID> {
 
     List<SportSessionEntity> findByCreatedByAndDeletedFalseOrderByDateDesc(UUID createdBy);
+
+    /** One owned live session — the Napló correct / delete (mezo-r36n9.205). */
+    Optional<SportSessionEntity> findByIdAndCreatedByAndDeletedFalse(UUID id, UUID createdBy);
 
     /** Sessions on/after {@code from} — the companion snapshot's last-N-days digest. */
     List<SportSessionEntity> findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(

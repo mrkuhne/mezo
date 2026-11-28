@@ -6,9 +6,16 @@ import BoopDesign
 /// kcal come pre-filled from Apple Health („Az órádról") and he marks only the effort (+ sets and shoulder for
 /// volleyball); without a watch he picks the sport and the length. Saved on the phone first (`OutboxKind.sportSession`)
 /// and sent when the net allows; the room shows it as done at once.
+///
+/// The same sheet corrects a logged session from the Napló (`mezo-r36n9.205`): pre-filled, „Alkalom javítása", the
+/// correction and the delete go straight to the server (they need the net; the sheet stays open on failure).
 struct SportLogSheet: View {
     let tonight: SportTonight?
     let saved: (SportSessionPayload) -> Void
+    let editing: SportSessionRecord?
+    let update: ((SportSessionEdit) async throws -> Void)?
+    let remove: (() async throws -> Void)?
+    @State private var confirmDelete = false
     @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
     @Environment(\.dynamicTypeSize) private var typeSize
     @State private var kind: SportKind
@@ -21,19 +28,31 @@ struct SportLogSheet: View {
     @State private var problem: String?
 
     init(tonight: SportTonight?, lastRpe: Int, saved: @escaping (SportSessionPayload) -> Void) {
-        self.tonight = tonight; self.saved = saved
+        self.tonight = tonight; self.saved = saved; editing = nil; update = nil; remove = nil
         _kind = State(initialValue: tonight?.sportKind ?? .volleyball)
         _minutes = State(initialValue: tonight?.health?.minutes ?? tonight?.durationMin ?? 90)
         _rpe = State(initialValue: (1...10).contains(lastRpe) ? lastRpe : 6)
     }
 
-    /// The watch's workout, when tonight has one — and only for a session not logged yet.
-    private var health: SportHealthWorkout? { tonight?.moment == "DONE" ? nil : tonight?.health }
+    init(editing record: SportSessionRecord, update: @escaping (SportSessionEdit) async throws -> Void,
+         remove: @escaping () async throws -> Void) {
+        tonight = nil; saved = { _ in }; editing = record; self.update = update; self.remove = remove
+        _kind = State(initialValue: record.kind)
+        _minutes = State(initialValue: record.duration.map { max(1, $0) } ?? 60)
+        _rpe = State(initialValue: record.rpe.map { min(10, max(1, Int($0.rounded()))) } ?? 6)
+        _sets = State(initialValue: record.setsPlayed ?? 5)
+        _shoulder = State(initialValue: record.shoulderStrain.map { min(10, max(1, $0)) } ?? 6)
+        _note = State(initialValue: record.notes ?? "")
+    }
+
+    /// The watch's workout, when tonight has one — and only for a session not logged yet (never when correcting).
+    private var health: SportHealthWorkout? { editing != nil || tonight?.moment == "DONE" ? nil : tonight?.health }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                NKMono("SPORT RÖGZÍTÉSE")
+                NKMono(editing.map { ([sportMonthDay($0.date), $0.time].compactMap { $0 }).joined(separator: " · ").uppercased() }
+                       ?? "SPORT RÖGZÍTÉSE")
                 Text(title).nkFont(28, design: .serif).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
                 if let h = health {
                     VStack(alignment: .leading, spacing: 8) {
@@ -83,12 +102,23 @@ struct SportLogSheet: View {
                 NKPill(busy ? "Mentem…" : "Mentés", glyph: "check-ink") { Task { await save() } }
                     .disabled(busy)
                     .padding(.top, 6)
+                if editing != nil {
+                    NKPill("Alkalom törlése", primary: false) { confirmDelete = true }
+                        .disabled(busy)
+                        .confirmationDialog("Törlöd ezt az alkalmat?", isPresented: $confirmDelete, titleVisibility: .visible) {
+                            Button("Törlés", role: .destructive) { Task { await delete() } }
+                            Button("Mégse", role: .cancel) {}
+                        } message: {
+                            Text("Kikerül a naplóból és a heti számból is. Ezt nem lehet visszavonni.")
+                        }
+                }
             }
             .padding(22)
         }
     }
 
     private var title: String {
+        if editing != nil { return "Alkalom javítása" }
         guard let h = health else { return "Mit sportoltál?" }
         return "\(kind.name) · ma\(sportStartClock(h).map { " \($0)" } ?? "")"
     }
@@ -142,6 +172,17 @@ struct SportLogSheet: View {
     }
 
     private func save() async {
+        if let editing, let update {
+            busy = true
+            defer { busy = false }
+            do {
+                try await update(SportSessionEdit.of(editing, kind: kind, minutes: minutes, rpe: rpe, sets: sets,
+                                                     shoulder: shoulder, note: note))
+            } catch {
+                problem = Self.failure(error, "javításhoz")
+            }
+            return
+        }
         guard let ritmus else { problem = "Most nem tudom eltenni."; return }
         busy = true
         defer { busy = false }
@@ -161,6 +202,20 @@ struct SportLogSheet: View {
         } catch {
             problem = "Nem tudtam eltenni a telefonra — próbáld újra."
         }
+    }
+}
+
+extension SportLogSheet {
+    private func delete() async {
+        guard let remove else { return }
+        busy = true
+        defer { busy = false }
+        do { try await remove() } catch { problem = Self.failure(error, "törléshez") }
+    }
+
+    static func failure(_ error: Error, _ what: String) -> String {
+        if let e = error as? PlanFetchError, e == .offline { return "Nincs net — a \(what) kapcsolat kell. Próbáld újra, ha van net." }
+        return "Most nem sikerült — próbáld újra."
     }
 }
 

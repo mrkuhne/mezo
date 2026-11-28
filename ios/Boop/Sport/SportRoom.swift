@@ -5,8 +5,8 @@ import BoopDesign
 /// The Sport room (`mezo-r36n9.203`, spec `2026-11-27-boop-sport-design.md` §5.1): the eleventh area, right after Edzés,
 /// on the shared area page in its own coral world — Ma · Hét · Napló · Test in the bar, the head's orb carrying the
 /// week's sport done / planned. The gym and the sport are two separate layers of every day. Data: `SportStore` (cache
-/// first). Hét (S4, `mezo-r36n9.204`) is `SportHet` with its slot and event sheets; Napló and Test arrive in S5 and
-/// show the not-live-yet block until then.
+/// first). Hét (S4, `mezo-r36n9.204`) is `SportHet` with its slot and event sheets; Napló (S5, `mezo-r36n9.205`) is
+/// `SportNaplo` with the correction sheet, Test is `SportTest` with the „miért?" pages.
 struct SportRoom: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.closeRoom) private var closeRoom
@@ -16,6 +16,7 @@ struct SportRoom: View {
     @State private var toast: String?
     @State private var sheet: SportRoomSheet?
     @State private var hetSheet: SportHetSheet?
+    @State private var naploSheet: SportNaploSheet?
     /// DEBUG `-sportSheet slot|event`: open the first slot / event once the rhythm has loaded.
     @State private var openFirst: String?
 
@@ -29,6 +30,8 @@ struct SportRoom: View {
         case "slotNew": _hetSheet = State(initialValue: .newSlot)
         case "eventNew": _hetSheet = State(initialValue: .newEvent)
         case "slot", "event": _openFirst = State(initialValue: d.string(forKey: "sportSheet"))
+        case "edit": _openFirst = State(initialValue: "edit"); _selected = SceneStorage(wrappedValue: "Napló", "sport.tab")
+        case "why": _openFirst = State(initialValue: "why"); _selected = SceneStorage(wrappedValue: "Test", "sport.tab")
         default: break
         }
         if ["slot", "slotNew", "event", "eventNew"].contains(d.string(forKey: "sportSheet") ?? "") {
@@ -59,8 +62,23 @@ struct SportRoom: View {
         }
     }
 
+    /// Napló and Test speak about their own data; nil = the week's head.
+    private var tabHead: (String, String)? {
+        switch selected {
+        case "Napló":
+            guard let list = store?.journal.sessions else { return nil }
+            let h = sportJournalHead(list, today: store?.week?.today ?? sportPhoneToday())
+            return (h.headline, h.sentence)
+        case "Test":
+            guard let body = store?.bodyWeek.body else { return nil }
+            let h = sportTestHead(body)
+            return (h.headline, h.sentence)
+        default: return nil
+        }
+    }
+
     var body: some View {
-        let h = head
+        let h = tabHead ?? head
         let ring = store?.ring
         let recorded = store?.week.map { sportMoment($0) == .recorded } ?? false
         NKAreaPage(hue: .sport, name: "Sport", eyebrow: areaEyebrow(.sport, tab: selected),
@@ -72,7 +90,7 @@ struct SportRoom: View {
                              NKAreaAction(glyph: "clock-ink", label: "Heti rend") { selected = "Hét" }],
                    onBack: { if let closeRoom { closeRoom() } else { dismiss() } },
                    onAsk: { openDestination(.chat) }) {
-            if store?.offline == true, store?.week != nil {
+            if store?.offline == true, store?.week != nil, selected == "Ma" || selected == "Hét" {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Nincs net — a legutóbb látott hetedet mutatom. A rögzítés így is megy, később elküldöm.")
                         .nkFont(13.5).foregroundStyle(.white.opacity(0.8)).fixedSize(horizontal: false, vertical: true)
@@ -92,11 +110,24 @@ struct SportRoom: View {
                     SportLoading()
                 }
             case "Napló":
-                NKNotLiveYet(hue: .sport, title: "A sportnaplód hamarosan itt lesz",
-                             line: "Itt látod majd az elmúlt hetek alkalmait, a megterhelést és a trendet.")
+                if let journal = store?.journal, let list = journal.sessions {
+                    SportNaplo(sessions: list, pending: store?.pending ?? [], today: store?.week?.today ?? sportPhoneToday(),
+                               offline: journal.offline, ageText: penzAgeText(journal.age),
+                               edit: { naploSheet = .edit($0) }, log: { sheet = .log })
+                } else if store?.journal.problem != nil {
+                    SportError { Task { await store?.journal.load(force: true) } }
+                } else {
+                    SportLoading()
+                }
             case "Test":
-                NKNotLiveYet(hue: .sport, title: "Hamarosan itt látod, hogyan bírja a tested",
-                             line: "Melyik izmodat terheli a kondi és a sport együtt, hogy bírja a vállad, és mennyi pihenő jut két alkalom közé.")
+                if let b = store?.bodyWeek, !b.isEmpty {
+                    SportTest(body: b.body, shoulder: b.shoulder, gaps: b.gaps, week: store?.week, offline: b.offline,
+                              why: { naploSheet = .why($0) }, ask: { openDestination(.chat) })
+                } else if store?.bodyWeek.problem != nil {
+                    SportError { Task { await store?.bodyWeek.load(force: true) } }
+                } else {
+                    SportLoading()
+                }
             default:
                 switch shown {
                 case .loading: SportLoading()
@@ -112,7 +143,21 @@ struct SportRoom: View {
         .background(RoomSwipeBack().frame(width: 0, height: 0).accessibilityHidden(true))
         .nkToast($toast)
         .task { await store?.load(force: true) }
-        .task(id: selected) { if selected == "Hét" { await store?.schedule.load() } }
+        .task(id: selected) {
+            switch selected {
+            case "Hét": await store?.schedule.load()
+            case "Napló": await store?.journal.load(force: true)
+            case "Test": await store?.bodyWeek.load(force: true)
+            default: break
+            }
+            #if DEBUG
+            // `-sportSheet edit|why`: the first session's correction / the first hint's „miért?".
+            if openFirst == "edit", let first = store?.journal.sessions?.first { openFirst = nil; naploSheet = .edit(first) }
+            if openFirst == "why", let w = store?.week.flatMap({ sportHints($0).compactMap { $0.source.flatMap(sportWhy) }.first }) {
+                openFirst = nil; naploSheet = .why(w)
+            }
+            #endif
+        }
         .onChange(of: store?.schedule.slots) { _, slots in
             guard let which = openFirst, let store else { return }
             if which == "slot", let first = slots?.first { openFirst = nil; hetSheet = .slot(first) }
@@ -120,6 +165,13 @@ struct SportRoom: View {
         }
         .sheet(item: $hetSheet) { s in
             hetSheetView(s)
+                .presentationDetents([.large])
+                .presentationBackground(NK.ground)
+                .presentationCornerRadius(34)
+                .presentationDragIndicator(.visible)
+        }
+        .sheet(item: $naploSheet) { s in
+            naploSheetView(s)
                 .presentationDetents([.large])
                 .presentationBackground(NK.ground)
                 .presentationCornerRadius(34)
@@ -188,6 +240,27 @@ struct SportRoom: View {
         }
     }
 
+    @ViewBuilder private func naploSheetView(_ s: SportNaploSheet) -> some View {
+        switch s {
+        case .edit(let record):
+            SportLogSheet(editing: record,
+                          update: { edit in
+                              guard let journal = store?.journal else { throw PlanFetchError.server }
+                              try await journal.update(record, edit)
+                              naploSheet = nil
+                              toast = "Javítva — a napló és a heti szám is frissült"
+                          },
+                          remove: {
+                              guard let journal = store?.journal else { throw PlanFetchError.server }
+                              try await journal.delete(record)
+                              naploSheet = nil
+                              toast = "Törölve — kikerült a naplóból"
+                          })
+        case .why(let w):
+            SportWhySheet(why: w)
+        }
+    }
+
     private func restoreSlot() {
         Task {
             do throws(PlanFetchError) {
@@ -219,6 +292,18 @@ private func sportTodayYMD() -> String {
 
 enum SportRoomSheet: String, Identifiable { case log, skip; var id: String { rawValue } }
 
+/// The Napló correction and the Test „miért?" pages.
+enum SportNaploSheet: Identifiable {
+    case edit(SportSessionRecord)
+    case why(SportWhy)
+    var id: String {
+        switch self {
+        case .edit(let r): "edit-\(r.id)"
+        case .why(let w): "why-\(w.title)"
+        }
+    }
+}
+
 // MARK: - States (spike copy)
 
 private struct SportEmpty: View {
@@ -236,7 +321,7 @@ private struct SportEmpty: View {
     }
 }
 
-private struct SportLoading: View {
+struct SportLoading: View {
     var body: some View {
         VStack(spacing: 14) {
             ForEach(0..<3, id: \.self) { i in
@@ -248,7 +333,7 @@ private struct SportLoading: View {
     }
 }
 
-private struct SportError: View {
+struct SportError: View {
     let retry: () -> Void
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
