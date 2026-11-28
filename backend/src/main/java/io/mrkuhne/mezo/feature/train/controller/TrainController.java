@@ -377,6 +377,16 @@ public class TrainController implements TrainApi {
     }
 
     @Override
+    public SportSessionResponse updateSportSession(UUID id, SportSessionCreateRequest sportSessionCreateRequest) {
+        return sportService.updateSportSession(currentUserId.get(), id, sportSessionCreateRequest);
+    }
+
+    @Override
+    public void deleteSportSession(UUID id) {
+        sportService.deleteSportSession(currentUserId.get(), id);
+    }
+
+    @Override
     public List<SportScheduleSlotResponse> getSportSchedule() {
         return sportService.getSchedule(currentUserId.get());
     }
