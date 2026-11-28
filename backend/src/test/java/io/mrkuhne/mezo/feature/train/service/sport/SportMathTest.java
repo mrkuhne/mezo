@@ -57,6 +57,15 @@ class SportMathTest {
     }
 
     @Test
+    void aSetWithNoKnownMuscleTakesItsShareWithIt() {
+        // 60 min, 4 sets RIR 2 → load 480 = 120 a set; the set with no muscle is not moved onto the quad
+        GymSession g = new GymSession(MON, 60, List.of(
+            new GymSet("quad", 2), new GymSet("quad", 2), new GymSet("quad", 2), new GymSet(null, 2)));
+        assertThat(SportMath.body(List.of(g), List.of())).singleElement()
+            .isEqualTo(new MuscleHeat("quad", 360, 0, 1.0, 0.0, 1.0));
+    }
+
+    @Test
     void otherSportAndAnEmptyWeekGiveNoHeat() {
         SportSession other = new SportSession(MON, "other", new BigDecimal("6"), null, 60, null);
         assertThat(SportMath.body(List.of(), List.of(other))).isEmpty();

@@ -86,7 +86,8 @@ public final class SportMath {
             if (load == null || placed.isEmpty()) {
                 continue;
             }
-            double perSet = (double) load / placed.size();
+            // Split over ALL done working sets; a set with no known muscle takes its share with it (never moved).
+            double perSet = (double) load / g.sets().size();
             placed.forEach(s -> acc.computeIfAbsent(s.muscle(), k -> new double[2])[0] += perSet);
         }
         for (SportSession s : sport) {

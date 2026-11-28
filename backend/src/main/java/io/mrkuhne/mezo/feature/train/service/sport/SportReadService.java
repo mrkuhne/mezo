@@ -343,7 +343,7 @@ public class SportReadService {
         for (PlannedSkipPolicy.Verdict v : skipsOn(d, day, PlannedSkipEntity.Kind.GYM)) {
             if (out.stream().noneMatch(i -> i.getState() == SportItemState.DONE)) {
                 out.add(new SportLaneItem().layer(SportLaneItem.LayerEnum.GYM).state(SportItemState.SKIPPED)
-                    .skipId(v.row().id()));
+                    .skipId(undoableId(v)));
             }
         }
         return out;
@@ -369,10 +369,18 @@ public class SportReadService {
             out.add(new SportLaneItem().layer(SportLaneItem.LayerEnum.SPORT)
                 .sport(slot.map(SportScheduleSlotEntity::getSport).orElse(null)).time(v.row().time())
                 .durationMin(slot.map(SportScheduleSlotEntity::getDurationMin).orElse(null))
-                .state(SportItemState.SKIPPED).skipId(v.row().id()));
+                .state(SportItemState.SKIPPED).skipId(undoableId(v)));
         }
         out.sort(Comparator.comparing(SportLaneItem::getTime, Comparator.nullsLast(Comparator.naturalOrder())));
         return out;
+    }
+
+    /**
+     * The id the phone may undo through {@code DELETE /api/train/skips/{id}} — only a USER row lives in
+     * {@code planned_skip}; an ADVICE row (a {@code sport_slot_skip}) or a virtual RECOVERY row is not undoable there.
+     */
+    private static UUID undoableId(PlannedSkipPolicy.Verdict v) {
+        return v.row().source() == PlannedSkipPolicy.Source.USER ? v.row().id() : null;
     }
 
     private static SportItemState state(boolean done, LocalDate day, LocalDate today) {
@@ -451,17 +459,19 @@ public class SportReadService {
             });
             return t;
         }
+        // Only a skip whose slot is still known: tonight's card never guesses the sport.
         Optional<PlannedSkipPolicy.Verdict> skip = skipsOn(d, today, PlannedSkipEntity.Kind.SPORT).stream()
+            .filter(v -> slotAt(d, v.row().dayOfWeek(), v.row().time()).isPresent())
             .findFirst();
         if (skip.isPresent()) {
             PlannedSkipPolicy.Verdict v = skip.get();
             Optional<SportScheduleSlotEntity> slot = slotAt(d, v.row().dayOfWeek(), v.row().time());
-            SportTonight t = new SportTonight().sport(slot.map(SportScheduleSlotEntity::getSport).orElse("volleyball"))
+            SportTonight t = new SportTonight().sport(slot.orElseThrow().getSport())
                 .time(v.row().time()).durationMin(slot.map(SportScheduleSlotEntity::getDurationMin).orElse(null))
                 .kind(slot.map(s -> kindOf(s.getKind())).orElse(null))
                 .location(slot.map(SportScheduleSlotEntity::getLocation).orElse(null))
                 .moment(SportTonight.MomentEnum.SKIPPED);
-            if (v.row().id() != null) {
+            if (undoableId(v) != null) {
                 t.skip(new SportSkipInfo().id(v.row().id())
                     .reason(PlannedSkipReason.fromValue(v.row().reason().name()))
                     .reasonText(v.row().reasonText()).freePass(v.freePass()).serious(v.serious()));
@@ -528,7 +538,8 @@ public class SportReadService {
         List<SportHint> out = new ArrayList<>();
         for (LocalDate day = week.start(); !day.isAfter(week.end()); day = day.plusDays(1)) {
             List<Window> ws = d.windowsOn(day);
-            Double gap = gapHours(ws);
+            // A past day counts only what was done: two missed sessions left no short rest behind.
+            Double gap = gapHours(day.isBefore(today) ? ws.stream().filter(Window::done).toList() : ws);
             String verdict = SportInterference.gapVerdict(gap);
             if (verdict != null) {
                 out.add(new SportHint().key("TIGHT".equals(verdict) ? SportHint.KeyEnum.GAP_TIGHT
@@ -571,6 +582,9 @@ public class SportReadService {
 
     /** ≥ 2 heavy sport → next-day rep-decline pairs in the 14 days up to the week's end (or today). */
     private Optional<SportHint> decline(UUID user, SportWeek week, LocalDate today) {
+        if (week.start().isAfter(today)) {
+            return Optional.empty(); // a future week has no history of its own
+        }
         LocalDate end = week.end().isAfter(today) ? today : week.end();
         LocalDate from = end.minusDays(DECLINE_WINDOW_DAYS - 1L);
         List<SportInterference.SportDay> sport = sportSessions(user, from, end).stream()

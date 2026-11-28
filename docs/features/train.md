@@ -1147,7 +1147,9 @@ A custom (meso-less) workout template is an ordinary `workout_session` TEMPLATE 
     event occurrences, skipped ones included; done = logged sessions), `tonight` (current week only: BEFORE with
     `startsInMinutes`, **RECORDED** = a Health workout of that sport exists today and no log yet → `health` is the
     pre-fill, DONE with the session and its matched workout, SKIPPED with the skip's reason and free-pass flag) and
-    `hints[]`. Plans come from `WorkoutWindowQueryService.windowsFor` (THE resolver: slots + events − skips),
+    `hints[]`. `skipId` / `tonight.skip` are set only for a USER skip (the one `DELETE /api/train/skips/{id}` can
+    undo); an advice or kímélő-protected skip shows SKIPPED with no id. Tonight never guesses a sport: a skip whose slot
+    is gone does not make a card. Plans come from `WorkoutWindowQueryService.windowsFor` (THE resolver: slots + events − skips),
     skips from `PlannedSkipService`, Health workouts through `train/port/SportHealthPort` (adapter
     `wearable/service/SportHealthAdapter`, wearable → train is the existing direction).
   - `GET /api/train/sport/load?weeks=` — per week `gymLoad` / `sportLoad` on **one scale: session-RPE × minutes
