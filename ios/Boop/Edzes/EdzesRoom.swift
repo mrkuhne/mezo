@@ -102,6 +102,10 @@ struct EdzesRoom: View {
     @State private var showRestEnd = false
     /// „Melyik napot csinálod ma?" (mezo-r36n9.163).
     @State private var showOtherDays = false
+    /// The Ma hero's page 1, measured — the pager takes its height, so no state leaves an empty band (spike glitch).
+    @State private var maFrontHeight: CGFloat = 240
+    /// Page 2 (the body map) needs at least this much.
+    @ScaledMetric(relativeTo: .body) private var maLoadMinHeight: CGFloat = 236
     /// Every mezociklus — the Mezociklus tab's card actions, tiles and pages (mezo-r36n9.177).
     @State private var mezo: MezociklusokModel?
     @State private var mezoFlow = MezoFlowState()
@@ -426,61 +430,191 @@ struct EdzesRoom: View {
 
     // MARK: - Ma
 
+    /// The Ma tab in the redesign's rank (spec 2026-11-27 §5.3, mezo-r36n9.197.3; order #129): the day's hero, the
+    /// Következik card under it, then one glass card per unit — today's exercises, where he is in the block, the
+    /// area's doors — and the ask row.
     @ViewBuilder private var ma: some View {
+        maHero
         kovetkezik
-        highlight
-        todaysLoad
-        timeline
         exercises
-        NKBare("AZ EDZÉS TERÜLET", hue: hue) { menu }
+        timeline
+        NKSectionCard("Az Edzés terület", hue: hue) { menu }
         NKAskRow(hue: hue, text: "Kérdezd meg Boopot a mai edzésről") { openDestination(.chat) }
     }
 
-    /// Today's session in a sentence. The brief's own title and time stay the source — it is
-    /// what the rest of the app says about today.
-    @ViewBuilder private var highlight: some View {
-        // Done is the brief's word OR the training store's (the server's finished instance, or a workout finished
-        // on this phone whose write is still on its way) — before this the card fell back to „Indítás" the moment
-        // the ceremony closed (owner, 2026-11-23).
-        let doneToday = store?.doneToday ?? false
-        let result: (() -> Void)? = store?.finishedToday == nil ? nil : { phase = .result }
-        if let w = workout, let title = w.title, !doneToday, let i = store?.todayIndex, isAnotherDay(w, todayIndex: i) {
-            // Another day of the week, picked for today or running since (mezo-r36n9.163): the plan's own words.
-            let other = w.dayLabel.flatMap(TrainWeekdays.index(of:)).map(TrainWeekdays.adjective) ?? "másik"
-            TodaySessionCard(label: "pótlás", title: title, sub: anotherDaySub(other), hue: hue, done: false,
-                             progress: runningProgress, missions: store?.missions.count ?? 0,
-                             released: released.count, action: { startOrResume() })
-            if store?.session == nil, store?.pickedDay != nil {
-                quietLink("Mégis a mai napot csinálom") {
+    /// Which day the hero talks about — the old card's branch order, now a tested decision.
+    private var maKind: MaHeroKind {
+        let another: Bool = {
+            guard let w = workout, w.title != nil, let i = store?.todayIndex else { return false }
+            return isAnotherDay(w, todayIndex: i)
+        }()
+        return MaHeroKind.resolve(anotherDay: another,
+                                  briefSession: brief?.day.session != nil,
+                                  briefDone: brief?.day.session?.done ?? false,
+                                  planWorkout: workout.map { !$0.isRestDay && $0.title != nil } ?? false,
+                                  restDay: workout?.isRestDay ?? false,
+                                  doneToday: store?.doneToday ?? false)
+    }
+
+    /// **A mai edzés** — page 1 is the day (label, title, time, three numbers, the one button, the quiet links),
+    /// page 2 the day's load on the body. Rest and „no plan" days have one page.
+    private var maHero: some View {
+        let kind = maKind
+        let load = maLoadPage
+        let pages = [AnyView(maFront(kind))] + (kind.pages(hasLoad: load != nil) > 1 ? [load!] : [])
+        // Page 1 is measured, so a day without a running workout has no empty band under its links (spike glitch).
+        let height = pages.count > 1 ? max(maFrontHeight, maLoadMinHeight) : maFrontHeight
+        return NKPagedHero(pages: pages, height: height)
+    }
+
+    private func maFront(_ kind: MaHeroKind) -> some View {
+        let primary = MaHeroPrimary.resolve(kind, running: running, hasResult: store?.finishedToday != nil)
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Text(maLabel(kind).uppercased())
+                    .nkFont(10, .medium, design: .monospaced).tracking(1.4)
+                    .foregroundStyle(hue.glow)
+                if runningProgress != nil {
+                    Text("FUT").nkFont(9, .semibold, design: .monospaced).tracking(1.2)
+                        .foregroundStyle(NK.ground)
+                        .padding(.horizontal, 6).padding(.vertical, 2)
+                        .background(Capsule().fill(hue.glow))
+                }
+                Spacer(minLength: 0)
+                let taken = max(0, (store?.missions.count ?? 0) - released.count)
+                if taken > 0, kind == .today || kind == .potlas {
+                    HStack(spacing: 4) {
+                        NKGlyph("star-sun", NK.gold, size: 12)
+                        Text("\(taken) küldetés").nkFont(10, .medium, design: .monospaced).foregroundStyle(NK.gold)
+                    }
+                }
+            }
+            maBody(kind)
+            if let progress = runningProgress {
+                VStack(alignment: .leading, spacing: 5) {
+                    NKLevelBar(level: progress, hue: hue)
+                    Text("\(Int((progress * 100).rounded()))% megvan")
+                        .nkFont(11, design: .monospaced).foregroundStyle(.white.opacity(0.5))
+                }
+            }
+            switch primary {
+            case .start, .resume:
+                NKCardActions(primary: NKCardAction(primary == .resume ? "Folytatom" : "Indítás", glyph: "bolt.fill") {
+                    startOrResume()
+                }, primaryStyle: .hue(hue))
+            case .result:
+                NKCardActions(primary: NKCardAction("Megnézem a mai eredményt", glyph: "medal.fill") { phase = .result })
+            case .none:
+                EmptyView()
+            }
+            if kind == .potlas, store?.session == nil, store?.pickedDay != nil {
+                maLink("Mégis a mai napot csinálom") {
                     released = []
                     Task { _ = await store?.pick(nil) }
                 }
             }
-        } else if let s = brief?.day.session {
-            let done = s.done || doneToday
-            TodaySessionCard(label: done ? "megvolt" : "ma", title: done ? doneTitle(s.title) : s.title,
-                             sub: highlightSub,
-                             hue: hue, done: done, progress: runningProgress,
-                             missions: store?.missions.count ?? 0, released: released.count,
-                             action: (done && store?.session == nil) ? nil : { startOrResume() },
-                             onResult: done ? result : nil)
-        } else if let w = workout, !w.isRestDay, let title = w.title {
-            // The brief has no session but the training plan does (a day started across
-            // midnight, or a brief that has not caught up): the plan is the honest thing.
-            TodaySessionCard(label: doneToday ? "megvolt" : "ma", title: doneToday ? doneTitle(title) : title,
-                             sub: highlightSub, hue: hue,
-                             done: doneToday, progress: runningProgress, missions: store?.missions.count ?? 0,
-                             released: released.count,
-                             action: (doneToday && store?.session == nil) ? nil : { startOrResume() },
-                             onResult: doneToday ? result : nil)
-        } else if let w = workout, w.isRestDay {
-            NKHighlight(hue: hue, label: "ma", text: "Ma nincs edzés", sub: "A mezociklusod szerint ez pihenőnap.")
-        } else if let c = brief.map({ maiCopy($0, .mozgas) }) {
-            NKHighlight(hue: hue, label: "ma", text: c.headline, sub: c.sentence)
+            if canPickOtherDay {
+                maLink("Másik napot csinálok ma") { showOtherDays = true }
+            }
         }
-        if canPickOtherDay {
-            quietLink("Másik napot csinálok ma") { showOtherDays = true }
+        .padding(.horizontal, 18)
+        .fixedSize(horizontal: false, vertical: true)
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { maFrontHeight = $0 }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private func maLabel(_ kind: MaHeroKind) -> String {
+        switch kind {
+        case .potlas: "pótlás"
+        case .done: "megvolt"
+        case .today, .rest, .none: "ma"
         }
+    }
+
+    /// Title, the time line and the three numbers — or the rest day's / the brief's own words.
+    @ViewBuilder private func maBody(_ kind: MaHeroKind) -> some View {
+        switch kind {
+        case .today, .potlas, .done:
+            let own = brief?.day.session?.title ?? workout?.title ?? ""
+            let title = kind == .potlas ? (workout?.title ?? own) : kind == .done ? doneTitle(own) : own
+            maTitle(title)
+            if let line = maTimeLine(kind) { maLine(line) }
+            maStats(edzesSummary(workout, brief: kind == .potlas ? nil : brief))
+        case .rest:
+            maTitle("Pihenőnap")
+            maLine(store?.todayIndex.flatMap { maNextSessionLine(days: block?.days ?? [], todayIndex: $0) }
+                   ?? "A mezociklusod szerint ma nincs edzés.")
+        case .none:
+            if let c = brief.map({ maiCopy($0, .mozgas) }) {
+                maTitle(c.headline)
+                maLine(c.sentence)
+            } else if store?.problem != nil {
+                NKNoFreshData("A mai edzésterved most nem érem el")
+            } else if store?.today == nil {
+                // The first answer has not come yet: a calm line, never a verdict.
+                maLine("Betöltöm a mai edzésedet…")
+            } else {
+                maTitle("Ma nincs edzés")
+                maLine("Nincs futó mezociklusod, ami mára edzést tervezne.")
+            }
+        }
+    }
+
+    /// „17:30" for today, „keddi nap, ma pótolod" for a picked day.
+    private func maTimeLine(_ kind: MaHeroKind) -> String? {
+        if kind == .potlas {
+            let other = workout?.dayLabel.flatMap(TrainWeekdays.index(of:)).map(TrainWeekdays.adjective) ?? "másik"
+            return "\(other) nap, ma pótolod"
+        }
+        return brief?.day.session?.time ?? brief?.day.session?.plannedTime ?? workout?.dayLabel
+    }
+
+    private func maTitle(_ text: String) -> some View {
+        Text(text).nkFont(27, design: .serif).foregroundStyle(.white)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func maLine(_ text: String) -> some View {
+        Text(text).nkFont(13, design: .monospaced).foregroundStyle(.white.opacity(0.6))
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    /// perc · gyakorlat · éles sorozat — side by side, one under the other at the accessibility sizes, so no word is
+    /// cut („gyakorl", „éles" in the spike at XXXL).
+    @ViewBuilder private func maStats(_ s: EdzesSummary) -> some View {
+        let items: [(String, String)] = [(s.minutes.map { "\($0)" } ?? "–", "perc"),
+                                         (s.exercises.map { "\($0)" } ?? "–", "gyakorlat"),
+                                         (s.workingSets.map { "\($0)" } ?? "–", "éles sorozat")]
+        let stat = { (item: (String, String)) in
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(item.0).font(.nkNumber(26)).foregroundStyle(.white).monospacedDigit()
+                Text(item.1).nkFont(12).foregroundStyle(.white.opacity(0.6)).fixedSize(horizontal: false, vertical: true)
+            }
+            .accessibilityElement(children: .combine)
+        }
+        if typeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 6) { ForEach(items, id: \.1) { stat($0) } }
+        } else {
+            HStack(spacing: 16) {
+                ForEach(items, id: \.1) { stat($0).frame(maxWidth: .infinity, alignment: .leading) }
+            }
+            .padding(.vertical, 2)
+        }
+    }
+
+    /// A quiet text link inside the hero (#129: „Másik napot csinálok ma" under the button, no second glass).
+    private func maLink(_ text: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                Text(text).nkFont(14, .medium).foregroundStyle(.white.opacity(0.75))
+                    .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+                Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.4))
+            }
+            .frame(maxWidth: .infinity, minHeight: 40)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     /// On a done day the card names what was done: another weekday's workout done today says its own title
@@ -512,30 +646,6 @@ struct EdzesRoom: View {
         return !otherDays.isEmpty
     }
 
-    /// „keddi nap, ma pótolod · 60 perc · 5 gyakorlat".
-    private func anotherDaySub(_ adjective: String) -> String {
-        let s = edzesSummary(workout, brief: nil)
-        return ["\(adjective) nap, ma pótolod", s.minutes.map { "\($0) perc" }, s.exercises.map { "\($0) gyakorlat" },
-                s.workingSets.map { "\($0) sorozat" }].compactMap { $0 }.joined(separator: " · ")
-    }
-
-    /// A quiet one-line action under the Ma card.
-    private func quietLink(_ text: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 8) {
-                Text(text).nkFont(15, .medium).foregroundStyle(.white.opacity(0.85))
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.35))
-            }
-            .padding(.horizontal, 16)
-            .frame(maxWidth: .infinity, minHeight: 48)
-            .contentShape(Rectangle())
-            .nkGlass()
-        }
-        .buttonStyle(.plain)
-    }
-
     /// The week's done days and the queued Napló bookings, for the ticks and the other-day sheet.
     private func loadWeek() async {
         var queued: [WorkoutAsPlannedPayload] = []
@@ -543,58 +653,40 @@ struct EdzesRoom: View {
         await store?.loadWeek(queued: queued)
     }
 
-    /// „17:30 · 60 perc · 5 gyakorlat · 18 sorozat" — each part only when it is known.
-    private var highlightSub: String {
-        let s = edzesSummary(workout, brief: brief)
-        return [brief?.day.session?.time ?? brief?.day.session?.plannedTime ?? workout?.dayLabel,
-                s.minutes.map { "\($0) perc" },
-                s.exercises.map { "\($0) gyakorlat" },
-                s.workingSets.map { "\($0) sorozat" }]
-            .compactMap { $0 }.joined(separator: " · ")
-    }
-
-    /// **A mai terhelés** — which muscles today's session works, on the body, with the day's
-    /// three numbers beside it. The body is the one in the web app, from the same upstream
-    /// artwork; the heat is today's working sets, read against the hardest-worked muscle.
-    @ViewBuilder private var todaysLoad: some View {
+    /// **A mai terhelés** — the hero's page 2: which muscles today's session works, on the body, and each muscle with
+    /// the working sets it gets. The heat is today's working sets, read against the hardest-worked muscle. nil when
+    /// the day has no muscles to show.
+    private var maLoadPage: AnyView? {
         let heat = edzesBodyHeat(workout)
-        if !heat.isEmpty {
-            let s = edzesSummary(workout, brief: brief)
-            NKBare("A MAI TERHELÉS", hue: hue, trailing: store?.ageText) {
-                VStack(spacing: 16) {
-                    // The three numbers run the whole width — the kit's own row, so they sit
-                    // exactly as they do on every other page.
-                    NKStatRow([
-                        NKStat(value: s.exercises.map { "\($0)" }, label: "gyakorlat", hot: true),
-                        NKStat(value: s.workingSets.map { "\($0)" }, label: "éles sorozat"),
-                        NKStat(value: s.minutes.map { "\($0)" }, unit: "perc", label: "körülbelül"),
-                    ], hue: hue)
-                    HStack(alignment: .top, spacing: 16) {
-                        NKBodyMap(heat, hue: hue)
-                            .frame(maxHeight: 180)
-                        // And the muscles themselves, each with what it gets today, filling
-                        // the rest of the row instead of leaving a hole on the right.
-                        VStack(spacing: 10) {
-                            ForEach(muscleLoadRows, id: \.muscle) { row in
-                                HStack(spacing: 10) {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(row.muscle.capitalizedFirst)
-                                            .nkFont(13).foregroundStyle(.white.opacity(0.85))
-                                        NKLevelBar(level: row.level, hue: hue)
-                                    }
-                                    Text("\(row.sets)")
-                                        .nkFont(15, .medium, design: .monospaced)
-                                        .foregroundStyle(.white.opacity(0.7))
-                                        .frame(width: 22, alignment: .trailing)
-                                }
-                            }
-                            Spacer(minLength: 0)
-                        }
-                        .frame(maxWidth: .infinity)
-                    }
+        guard !heat.isEmpty else { return nil }
+        return AnyView(VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("A MAI TERHELÉS").nkFont(10, .medium, design: .monospaced).tracking(1.4).foregroundStyle(hue.glow)
+                Spacer(minLength: 0)
+                if let age = store?.ageText {
+                    Text(age).nkFont(11, design: .monospaced).foregroundStyle(.white.opacity(0.45))
                 }
             }
+            HStack(alignment: .top, spacing: 16) {
+                NKBodyMap(heat, hue: hue).frame(maxHeight: 200)
+                VStack(spacing: 10) {
+                    ForEach(muscleLoadRows, id: \.muscle) { row in
+                        HStack(spacing: 10) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(row.muscle.capitalizedFirst).nkFont(13).foregroundStyle(.white.opacity(0.85))
+                                NKLevelBar(level: row.level, hue: hue)
+                            }
+                            Text("\(row.sets)").nkFont(15, .medium, design: .monospaced)
+                                .foregroundStyle(.white.opacity(0.7)).frame(width: 22, alignment: .trailing)
+                        }
+                    }
+                    Spacer(minLength: 0)
+                }
+                .frame(maxWidth: .infinity)
+            }
         }
+        .padding(.horizontal, 18)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading))
     }
 
     /// Today's muscles with the working sets each one gets, hardest first — grouped by **the name he reads**,
@@ -613,38 +705,41 @@ struct EdzesRoom: View {
             .map { (muscle: $0.key, sets: $0.value, level: Double($0.value) / Double(top)) }
     }
 
-    /// **Hol tartasz a blokkban** — the eight weeks as time, their height as difficulty, the
-    /// week he is in lit and named.
+    /// **Hol tartasz** — the block's weeks as the small arc (the Mezociklus hero's graphic), the week he is in lit;
+    /// the whole card opens the Mezociklus tab.
     @ViewBuilder private var timeline: some View {
         let weeks = edzesTimeline(block)
         if !weeks.isEmpty, let b = block {
-            NKBare("HOL TARTASZ", hue: hue, trailing: store?.blockAgeText) {
-                NKBlockTimeline(weeks, hue: hue,
-                                caption: "\(b.weeks) hetes mezociklus · \(b.currentWeek). hét · \(b.shortTitle)")
+            NKSectionCard("Hol tartasz", hue: hue, trailing: .chevron, onOpen: { selected = EdzesTab.blokk.rawValue }) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("\(b.shortTitle) · \(b.currentWeek). hét \(mezoOf(b.weeks))")
+                        .nkFont(15, .semibold).foregroundStyle(.white)
+                        .fixedSize(horizontal: false, vertical: true)
+                    EdzesWeeksArc(weeks: weeks, hue: hue, compact: true)
+                }
             }
+            .accessibilityHint("A mezociklus fül")
         }
     }
 
-    /// The session's exercises, one card each, swipeable — **with the engine's own sentence on
-    /// the card it is about**. There is no separate „eligazítás" list: it was the same thing
-    /// said twice.
+    /// **A mai gyakorlatok** — the session's exercises, one card each, swipeable, inside the card.
     @ViewBuilder private var exercises: some View {
         if let w = workout, !w.exercises.isEmpty {
-            NKBare("A MAI EDZÉS", hue: hue, trailing: store?.ageText) {
+            NKSectionCard("A mai gyakorlatok", hue: hue, trailing: .text("\(w.exercises.count) gyakorlat")) {
                 NKCarousel(w.exercises, hue: hue, height: 190) { e in
                     ExerciseCard(exercise: e, hue: hue, done: isDone(e))
                 }
             }
         } else if let e = brief?.day.session?.exercises, !e.isEmpty {
             // Offline with no cache: the brief still knows the names and the set counts.
-            NKBare("A MAI EDZÉS", hue: hue, trailing: store?.ageText) {
+            NKSectionCard("A mai gyakorlatok", hue: hue, trailing: store?.ageText.map { .text($0) } ?? .none) {
                 NKRowList(e.map { x in
                     NKAreaRow(glyph: "dumbbell-ink", title: x.name, sub: "\(x.sets) sorozat",
                               state: brief?.day.session?.done == true ? .done : .normal)
                 }, hue: hue)
             }
-        } else if store?.problem != nil {
-            NKBare("A MAI EDZÉS", hue: hue) { NKNoFreshData("A mai edzésterved most nem érem el") }
+        } else if store?.problem != nil, maKind != .none {
+            NKSectionCard("A mai gyakorlatok", hue: hue) { NKNoFreshData("A mai edzésterved most nem érem el") }
         }
     }
 
@@ -981,95 +1076,9 @@ private struct ExerciseCard: View {
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .nkGlass()
+        .nkInnerCard()
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(exercise.name), \(SubMuscles.name(exercise.muscle))\(done ? ", megvan" : "")")
-    }
-}
-
-/// Today's session at the top of Ma: what it is, **the one button that starts or continues it**, and — once
-/// it is running — how far he is in it (owner, 2026-11-17).
-private struct TodaySessionCard: View {
-    let label: String
-    let title: String
-    let sub: String
-    let hue: Hue
-    let done: Bool
-    /// 0…1 while a workout is running, nil otherwise.
-    let progress: Double?
-    let missions: Int
-    let released: Int
-    let action: (() -> Void)?
-    /// „Megnézem a mai eredményt" on a done day, when the phone still has the result.
-    var onResult: (() -> Void)? = nil
-
-    private var takenMissions: Int { max(0, missions - released) }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 8) {
-                Text(label.uppercased())
-                    .nkFont(10, .medium, design: .monospaced).tracking(1.4)
-                    .foregroundStyle(hue.glow)
-                if progress != nil {
-                    Text("FUT").nkFont(9, .semibold, design: .monospaced).tracking(1.2)
-                        .foregroundStyle(NK.ground)
-                        .padding(.horizontal, 6).padding(.vertical, 2)
-                        .background(Capsule().fill(hue.glow))
-                }
-                Spacer(minLength: 0)
-                if takenMissions > 0 {
-                    HStack(spacing: 4) {
-                        NKGlyph("star-sun", NK.gold, size: 12)
-                        Text("\(takenMissions) küldetés").nkFont(10, .medium, design: .monospaced)
-                            .foregroundStyle(NK.gold)
-                    }
-                }
-            }
-            Text(title).nkFont(27, design: .serif).foregroundStyle(.white)
-                .fixedSize(horizontal: false, vertical: true)
-            if !sub.isEmpty {
-                Text(sub).nkFont(13, design: .monospaced).foregroundStyle(.white.opacity(0.6))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            if let progress {
-                VStack(alignment: .leading, spacing: 5) {
-                    NKLevelBar(level: progress, hue: hue)
-                    Text("\(Int((progress * 100).rounded()))% megvan")
-                        .nkFont(11, design: .monospaced).foregroundStyle(.white.opacity(0.5))
-                }
-            }
-            if let action {
-                Button(action: action) {
-                    HStack(spacing: 8) {
-                        NKGlyph("bolt-ink", NK.ground, size: 16)
-                        Text(progress != nil ? "Folytatom" : "Indítás")
-                            .nkFont(16, .semibold).foregroundStyle(NK.ground)
-                    }
-                    .frame(maxWidth: .infinity, minHeight: 52)
-                    .background(Capsule().fill(hue.glow))
-                }
-                .buttonStyle(.plain)
-            }
-            if done, let onResult {
-                Button(action: onResult) {
-                    HStack(spacing: 8) {
-                        NKGlyph("medal-sun", NK.gold, size: 16)
-                        Text("Megnézem a mai eredményt").nkFont(15, .medium).foregroundStyle(.white.opacity(0.9))
-                        Spacer(minLength: 0)
-                        Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(.white.opacity(0.35))
-                    }
-                    .padding(.horizontal, 16)
-                    .frame(maxWidth: .infinity, minHeight: 48)
-                    .background(Capsule().fill(.white.opacity(0.1)))
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .nkGlass()
     }
 }
 
@@ -1148,4 +1157,55 @@ func nkKg(_ kg: Double) -> String {
     let whole = kg.rounded() == kg
     let text = whole ? String(Int(kg)) : String(format: "%.1f", kg).replacingOccurrences(of: ".", with: ",")
     return "\(text) kg"
+}
+
+// MARK: - The Ma hero's decisions (mezo-r36n9.197.3)
+
+/// Which day the Ma hero talks about, in the order the old card decided it: another weekday picked for today wins
+/// (until today is done), then the brief's session, then the training plan's own workout, then a rest day.
+enum MaHeroKind: Equatable {
+    case today, potlas, done, rest, none
+
+    static func resolve(anotherDay: Bool, briefSession: Bool, briefDone: Bool, planWorkout: Bool, restDay: Bool,
+                        doneToday: Bool) -> MaHeroKind {
+        if anotherDay, !doneToday { return .potlas }
+        if briefSession { return briefDone || doneToday ? .done : .today }
+        if anotherDay || planWorkout { return doneToday ? .done : .today }
+        if restDay { return .rest }
+        return .none
+    }
+
+    /// Rest and „no plan" days have no load to show; nor does a day whose muscles have not arrived.
+    func pages(hasLoad: Bool) -> Int {
+        switch self {
+        case .rest, .none: 1
+        case .today, .potlas, .done: hasLoad ? 2 : 1
+        }
+    }
+}
+
+/// The hero's one button: start, continue, or — on a done day — the result, never a second start.
+enum MaHeroPrimary: Equatable {
+    case start, resume, result, none
+
+    static func resolve(_ kind: MaHeroKind, running: Bool, hasResult: Bool) -> MaHeroPrimary {
+        switch kind {
+        case .rest, .none: return .none
+        case .today, .potlas: return running ? .resume : .start
+        case .done: return running ? .resume : hasResult ? .result : .none
+        }
+    }
+}
+
+/// The block's next training day after `todayIndex` (0 = Monday), wrapping to next week.
+func maNextSession(days: [BlockDay], todayIndex: Int) -> BlockDay? {
+    let indexed = days.compactMap { d in TrainWeekdays.index(of: d.day).map { (i: $0, day: d) } }
+    return (indexed.filter { $0.i > todayIndex }.min { $0.i < $1.i } ?? indexed.min { $0.i < $1.i })?.day
+}
+
+/// „Következő: Alsó A · szerda" — the rest day's line.
+func maNextSessionLine(days: [BlockDay], todayIndex: Int) -> String? {
+    guard let next = maNextSession(days: days, todayIndex: todayIndex),
+          let i = TrainWeekdays.index(of: next.day) else { return nil }
+    return "Következő: \(next.type) · \(TrainWeekdays.name(i).lowercased())"
 }
