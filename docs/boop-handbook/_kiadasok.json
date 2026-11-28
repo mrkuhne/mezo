@@ -1301,5 +1301,20 @@
       "mezo-r36n9.218"
     ],
     "mi_valtozott": "A legnagyobb betűméretnél az Étel Ma nagy körének felső felirata eddig levágódott (például „ma nincs k…”). Most ilyenkor a kör kicsit nagyobb, a felirata két sorba törhet, és teljesen kiolvasható. Normál betűméretnél semmi nem változott."
+  },
+  "354a3ead2": {
+    "cim": "Edzés 6: a blokképítő és a nap szerkesztése az új kártyás kinézetben",
+    "datum": "2026-11-28",
+    "verzio": "",
+    "tipus": "Funkció",
+    "hova": [
+      "iPhone app",
+      "Telefonra telepítve"
+    ],
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.197.6"
+    ],
+    "mi_valtozott": "A blokképítő Mezociklus fülén minden rész (edzésmód, edzéshossz, kapcsolók, hétről hétre, izmonként) saját kártyát kapott, mint az Edzés többi oldalán; a gyakorlat beállításai lapon a csoportok is kártyák, a „Kész” fehér. A kiegészítő mozgás „Hozzáadom” gombja halkabb lett, hogy a kártyán egy fő gomb legyen. A Gyakorlatok és Előzmények fül üzenete kártyába került. Nagyon nagy betűméretnél a blokk neve, a lapcímek és a fülsor nem vágódnak le, nem törnek szó közepén. Gomb és funkció nem változott."
   }
 }
