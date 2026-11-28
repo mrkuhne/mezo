@@ -1257,5 +1257,19 @@
       "mezo-r36n9.197"
     ],
     "mi_valtozott": "A Ma fül tetején egy fő kártya áll: ma / pótlás / megvolt, a mai edzés neve, az időpont, három nagy szám (perc, gyakorlat, éles sorozat) és egyetlen gomb — Indítás, Folytatom, vagy megvolt napon a mai eredmény. Ugyanitt halkan a „Másik napot csinálok ma” és a „Mégis a mai napot csinálom”. A kártyát elhúzva a mai terhelés látszik az izomtérképen. Pihenőnapon „Pihenőnap” és a következő edzés neve, napja. Alatta külön kártyán: a Következik (az éves terv következő mezociklusa), a mai gyakorlatok lapozva, a Hol tartasz (a mezociklus hetei kicsiben, koppintásra a Mezociklus fül) és a terület menüje. A legnagyobb betűméretnél a számok és a lapok egymás alá kerülnek, semmi nem törik szó közepén."
+  },
+  "e7f2313fc": {
+    "cim": "Sport terület: a Hét fül és a heti rend",
+    "datum": "2026-11-28",
+    "verzio": "",
+    "tipus": "Funkció",
+    "hova": [
+      "iPhone app"
+    ],
+    "szakasz": "Sport",
+    "jegyek": [
+      "mezo-r36n9.204"
+    ],
+    "mi_valtozott": "A Sport terület Hét fülén látszik a heted két sávban (felül kondi, alul sport; kész vagy tervben), a heti mozgás, a kondi és a sport összideje, és a terhelés az elmúlt 6 hétre. Itt veszed fel és szerkeszted a rendszeres sportalkalmaidat (sport, nap, kezdés, hossz, edzés vagy meccs, hely); egy doboz megmondja, mennyi idő lesz aznap a kondi és a sport között, és ha azon a napon már van egy másik alkalom. Törlés visszavonással, egyszeri események (például egy torna) felvétele és törlése. Ha egy mentés nem sikerül, semmi nem vész el: a lap nyitva marad, és újra lehet próbálni. A telefonra a Sport 6. lépésben kerül fel."
   }
 }
