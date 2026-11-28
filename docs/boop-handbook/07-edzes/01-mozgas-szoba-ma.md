@@ -10,6 +10,11 @@ osszefoglalo: Az Edzés gömbről nyíló szoba mutatja a mai edzést a valódi 
 ---
 
 ## Mit csinál
+- **A szoba ege (2026-11-28):** az Edzés szoba világosabb, kékesebb-barackos eget kapott (a próbaváltozat „2. lépcsője”, a
+  döntésed #129). A Mozgás gömb máshol — a Ma oldalon, a gyűrűben — megtartja a saját, erősebb színeit. Ez az első lépése az
+  Edzés oldalak áttervezésének: a közös kártyaelemek (egy fő kártya felül, egy üvegkártya minden egységnek, a gombok a
+  kártyán belül) most készültek el, az Edzés oldalak a következő lépésekben költöznek rájuk. Az Étel Ma oldal már ezekből
+  az elemekből épül, látható változás nélkül.
 - **A mai edzés** a reggeli összefoglalóban és az Edzés szobában: cím, időpont, becsült hossz, a gyakorlatok és a sorozatszám
   (ha aznap könnyítés van, már a könnyített sorozatszámmal).
 - **A mai terhelés (B5):** egy **izomtérkép** — ugyanaz a test, amit a webes appban is használsz —, rajta azok az
