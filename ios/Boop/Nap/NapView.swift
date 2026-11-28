@@ -86,9 +86,8 @@ struct NapView: View {
                             // Levél's room has its own data (mezo-r36n9.39): the mail API, not the brief.
                             LevelRoom()
                         } else if hue == .evad {
-                            // Évad's room (decision #132): today's Évad page in a room frame until step 2 gives it
-                            // its own tabs.
-                            EvadPage()
+                            // Évad's room (decision #132): Most · Hét · Terv · Kísérlet.
+                            EvadRoom()
                         } else if hue == .suly {
                             // Súly's room (mezo-r36n9.158): the season's weight course, the trend and the weigh-ins.
                             SulyRoom()

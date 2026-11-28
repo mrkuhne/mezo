@@ -122,8 +122,10 @@ struct KezdolapView: View {
         case .nap(let tab): NapView(initialNapTab: tab, onHome: back)
         case .room(let entry) where entry.hue == .evad:
             // The season never waited for the morning brief: Évad opens even offline or without Health.
-            EvadPage().environment(\.closeRoom, back)
-        case .room(let entry): NapView(initialRoom: entry.hue, onHome: back)
+            EvadRoom(entry: entry).environment(\.closeRoom, back)
+        case .room(let entry):
+            // the entry's tab / sub (a wall card's „Étel › Hét › menü") reaches the room through the environment
+            NapView(initialRoom: entry.hue, onHome: back).environment(\.roomEntry, entry)
         case .chat: BoopTabView(onBack: back)
         }
     }

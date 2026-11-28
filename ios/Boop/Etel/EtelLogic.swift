@@ -583,3 +583,56 @@ func etelWindowStateWhenEmptied(_ w: PlanWindow, now: Date, calendar: Calendar =
     if to <= now { return .missed }
     return from <= now ? .now : .pending
 }
+
+// MARK: - The weekly menu in Étel (`mezo-r36n9.196`, decisions #133 / #137)
+
+/// A recipe's „Menübe jöhet" switch.
+enum EtelMenuToggle: Equatable { case hidden, on, off, blocked(String) }
+
+/// The season's id for a recipe: the server sends lowercased UUID strings.
+func etelMenuKey(_ recipe: Recipe) -> String { recipe.id.uuidString.lowercased() }
+
+/// No season → hidden; the server does not know the recipe → hidden; it does not fit his rules → blocked with the
+/// reason; in the menu set → on, else off. `allowed` (the store's set with his unconfirmed taps) wins over the option.
+func etelMenuToggle(_ recipe: Recipe, options: [EvadRecipeOption]?, hasSeason: Bool, allowed: Set<String>? = nil) -> EtelMenuToggle {
+    guard hasSeason, let o = options?.first(where: { $0.id == etelMenuKey(recipe) }) else { return .hidden }
+    guard o.usable else { return .blocked(o.reason.flatMap { $0.isEmpty ? nil : $0 } ?? "nem fér a szabályaidba") }
+    return (allowed?.contains(o.id) ?? o.allowed) ? .on : .off
+}
+
+/// The recipes in the menu set (the „Menübe jöhet" filter chip).
+func etelMenuFilter(_ recipes: [Recipe], allowed: Set<String>) -> [Recipe] {
+    recipes.filter { allowed.contains(etelMenuKey($0)) }
+}
+
+func etelMenuCountLine(_ n: Int) -> String { "\(n) recept a menüben" }
+
+/// The small tag on the Hét menu card.
+func etelMenuTag(_ status: String) -> String? {
+    switch status {
+    case "proposed": "javaslat"
+    case "approved": "jóváhagyva"
+    default: nil
+    }
+}
+
+/// The Hét menu card's one sentence.
+func etelMenuHeadline(_ w: EvadMenuWeek) -> String {
+    let meals = w.days.flatMap(\.meals).filter { $0.recipeId != nil }
+    let kcal = w.days.isEmpty ? 0 : w.days.map(\.kcal).reduce(0, +) / w.days.count
+    switch w.status {
+    case "seeding": return "Válaszd ki, melyik receptjeidből álljon a menü."
+    case "none": return "Erre a hétre még nincs menü."
+    case "proposed": return "\(meals.count) étkezés, átlag \(evadKcal(kcal)) kcal — még nem hagytad jóvá."
+    default: return "\(meals.count) étkezés, átlag \(evadKcal(kcal)) kcal — jóváhagyva."
+    }
+}
+
+/// The first four days' dinners (or their last recipe meal) as „H · Csirkés bulgur".
+func etelMenuPreviewRows(_ w: EvadMenuWeek) -> [(day: String, meal: String)] {
+    let letters = ["H", "K", "Sze", "Cs", "P", "Szo", "V"]
+    return w.days.prefix(4).enumerated().compactMap { i, d in
+        let meal = d.meals.first(where: { $0.slot == "dinner" && $0.recipeId != nil }) ?? d.meals.last(where: { $0.recipeId != nil })
+        return meal.map { (day: letters[min(i, 6)], meal: $0.name) }
+    }
+}

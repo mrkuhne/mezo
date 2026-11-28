@@ -5,7 +5,7 @@ import BoopDesign
 /// **Lista** (screen 06, Évad S3): the shopping list of the approved menu — grouped by shelf, every line with its
 /// amount and „mihez kell", ticked off (kept on the server), a „változott" section after a mid-week change, his staples
 /// as chips that join only on his tap, plain-text sharing and the past lists.
-struct EvadListTab: View {
+struct EtelListBody: View {
     let menu: EvadMenuStore
     let openPast: @MainActor @Sendable () -> Void
     let openStaples: @MainActor @Sendable () -> Void
@@ -16,24 +16,24 @@ struct EvadListTab: View {
             if let l = menu.list {
                 content(l)
             } else if menu.listMissing {
-                NKHighlight(hue: evadHue, label: "Bevásárlólista",
+                NKHighlight(hue: etelMenuHue, label: "Bevásárlólista",
                             text: "Ha jóváhagyod a heti menüt, itt lesz a bevásárlólista.",
                             sub: "Összeadom az összes hozzávalót, polcok szerint csoportosítom, és minden tétel alatt látod, melyik ételhez kell.",
                             actions: [NKHighlightAction("A menühöz", action: openMenu)])
-                NKActions([NKAction(glyph: "repeat-deep", title: "Korábbi listák", action: openPast)], hue: evadHue)
+                NKActions([NKAction(glyph: "repeat-deep", title: "Korábbi listák", action: openPast)], hue: etelMenuHue)
             } else if let p = menu.listProblem {
-                NKBare("Bevásárlólista", hue: evadHue, glyph: "check-ink", state: .failed(evadErrorText(p), {
+                NKBare("Bevásárlólista", hue: etelMenuHue, glyph: "check-ink", state: .failed(evadErrorText(p), {
                     Task { await menu.loadList(force: true) }
                 })) { EmptyView() }
             } else {
-                NKBare("Bevásárlólista", hue: evadHue, glyph: "check-ink", state: .loading) { EmptyView() }
+                NKBare("Bevásárlólista", hue: etelMenuHue, glyph: "check-ink", state: .loading) { EmptyView() }
             }
         }
         .task { await menu.loadList() }
     }
 
     @ViewBuilder private func content(_ l: EvadShoppingList) -> some View {
-        NKBare("Bevásárlólista · \(evadWeekRange(l.weekStart))", hue: evadHue, glyph: "check-ink",
+        NKBare("Bevásárlólista · \(evadWeekRange(l.weekStart))", hue: etelMenuHue, glyph: "check-ink",
                trailing: "\(l.items.filter { $0.checked && !$0.removed }.count)/\(l.items.filter { !$0.removed }.count) a kosárban") {
             Text("A jóváhagyott menü alapján. Minden tétel alatt látod, melyik ételhez kell.")
                 .nkFont(13).foregroundStyle(.white.opacity(0.55)).fixedSize(horizontal: false, vertical: true)
@@ -42,7 +42,7 @@ struct EvadListTab: View {
         }
         let changed = evadChangedItems(l)
         if !changed.isEmpty {
-            NKBare("Változott", hue: evadHue, glyph: "repeat-deep", trailing: "a hét közbeni módosítás után") {
+            NKBare("Változott", hue: etelMenuHue, glyph: "repeat-deep", trailing: "a hét közbeni módosítás után") {
                 VStack(spacing: 0) {
                     ForEach(changed) { i in
                         HStack(spacing: 12) {
@@ -58,14 +58,14 @@ struct EvadListTab: View {
             }
         }
         ForEach(evadShelfGroups(l), id: \.key) { g in
-            NKBare(g.title, hue: evadHue, glyph: g.glyph) {
+            NKBare(g.title, hue: etelMenuHue, glyph: g.glyph) {
                 VStack(spacing: 0) {
                     ForEach(g.items) { item in row(item) }
                 }
             }
         }
         if !l.staples.isEmpty {
-            NKBare("Szokásos tételek", hue: evadHue, glyph: "star-ink", trailing: "koppints, ha kell") {
+            NKBare("Szokásos tételek", hue: etelMenuHue, glyph: "star-ink", trailing: "koppints, ha kell") {
                 NKFlowRow {
                     ForEach(l.staples) { chip in
                         Button { Task { await menu.toggleStaple(chip) } } label: {
@@ -94,7 +94,7 @@ struct EvadListTab: View {
             Spacer(minLength: 0)
         }
         NKActions([NKAction(glyph: "repeat-deep", title: "Korábbi listák", action: openPast),
-                   NKAction(glyph: "star-ink", title: "Szokásos tételek", action: openStaples)], hue: evadHue)
+                   NKAction(glyph: "star-ink", title: "Szokásos tételek", action: openStaples)], hue: etelMenuHue)
     }
 
     private func row(_ item: EvadShoppingItem) -> some View {
@@ -128,7 +128,7 @@ struct EvadTick: View {
         ZStack {
             Circle().stroke(.white.opacity(on ? 0 : 0.4), lineWidth: 1.5)
             if on {
-                Circle().fill(evadHue.glow)
+                Circle().fill(etelMenuHue.glow)
                 Path { p in
                     p.move(to: CGPoint(x: 6.5, y: 11.5)); p.addLine(to: CGPoint(x: 9.8, y: 14.8))
                     p.addLine(to: CGPoint(x: 15.8, y: 7.8))
@@ -137,104 +137,6 @@ struct EvadTick: View {
             }
         }
         .frame(width: 22, height: 22)
-    }
-}
-
-/// **Kiválasztott receptek**: the recipes the menu may use. A recipe his rules keep out of every menu is shown with
-/// the reason and cannot be chosen. Saved with „Mentés" (no kcal effect, so no preview).
-struct EvadRecipesPage: View {
-    let close: @MainActor @Sendable () -> Void
-    @Environment(EvadStore.self) private var store: EvadStore?
-    @State private var options: [EvadRecipeOption]?
-    @State private var chosen: Set<String> = []
-    @State private var problem: String?
-    @State private var saving = false
-
-    private static let groups: [(String, String)] = [("breakfast", "Reggeli"), ("lunch", "Ebéd"), ("dinner", "Vacsora"),
-                                                     ("snack", "Uzsonna")]
-
-    var body: some View {
-        NKAreaSubPage(hue: evadHue, crumb: "Évad", eyebrow: "Heti menü", title: "Kiválasztott receptek",
-                      sentence: "A heti menü *csak ezekből* áll össze. Minél többet választasz, annál változatosabb lesz.",
-                      onBack: close) {
-            if let problem { EvadLine(text: problem) }
-            if let options {
-                let usable = options.filter(\.usable)
-                NKBare("Kijelölve", hue: evadHue, glyph: "book-sage", trailing: "\(chosen.count) / \(usable.count)") {
-                    HStack(spacing: 10) {
-                        smallButton("Mind") { chosen = Set(usable.map(\.id)) }
-                        smallButton("Egyik sem") { chosen = [] }
-                    }
-                }
-                ForEach(Self.groups, id: \.0) { key, title in
-                    let rows = options.filter { $0.category == key }
-                    if !rows.isEmpty {
-                        NKBare(title, hue: evadHue, glyph: "bowl-sage") {
-                            VStack(spacing: 0) { ForEach(rows) { recipeRow($0) } }
-                        }
-                    }
-                }
-                NKActions([NKAction(glyph: "check-ink", title: saving ? "Mentem…" : "Mentés", primary: true, action: save),
-                           NKAction(title: "Mégsem", action: close)], hue: evadHue)
-            } else if problem == nil {
-                NKBare("Receptek", hue: evadHue, glyph: "book-sage", state: .loading) { EmptyView() }
-            }
-        }
-        .evadReviewAnchor()
-        .task {
-            guard options == nil, let menu = store?.menu else { return }
-            do throws(PlanFetchError) {
-                let o = try await menu.recipes()
-                options = o
-                chosen = Set(o.filter { $0.allowed && $0.usable }.map(\.id))
-            } catch { problem = evadErrorText(error) }
-        }
-    }
-
-    private func recipeRow(_ r: EvadRecipeOption) -> some View {
-        let on = chosen.contains(r.id)
-        return Button {
-            guard r.usable else { return }
-            if on { chosen.remove(r.id) } else { chosen.insert(r.id) }
-        } label: {
-            HStack(spacing: 12) {
-                EvadTick(on: on).opacity(r.usable ? 1 : 0.3)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(r.name).nkFont(15, .medium).foregroundStyle(.white.opacity(r.usable ? 1 : 0.45))
-                    if let reason = r.reason {
-                        Text(reason).nkFont(12).foregroundStyle(.white.opacity(0.45))
-                    }
-                }
-                Spacer()
-                if let k = r.kcal { Text("\(k)").font(.nkNumber(14)).foregroundStyle(.white.opacity(0.6)) }
-            }
-            .padding(.vertical, 9).contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .disabled(!r.usable)
-    }
-
-    private func smallButton(_ title: String, _ action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title).nkFont(13.5).foregroundStyle(.white.opacity(0.9))
-                .padding(.horizontal, 14).padding(.vertical, 8)
-                .background(Capsule().fill(.white.opacity(0.1)))
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func save() {
-        guard let store, let id = store.overview?.season.id, !saving else { return }
-        saving = true
-        let ids = (options ?? []).filter { chosen.contains($0.id) }.map(\.id)
-        Task {
-            defer { saving = false }
-            do throws(PlanFetchError) {
-                try await store.menu.putRecipes(seasonId: id, ids)
-                await store.load(force: true)
-                close()
-            } catch { problem = evadErrorText(error) }
-        }
     }
 }
 
@@ -247,27 +149,27 @@ struct EvadPastListsPage: View {
     @State private var problem: String?
 
     var body: some View {
-        NKAreaSubPage(hue: evadHue, crumb: "Évad", eyebrow: "Bevásárlás", title: "Korábbi listák",
+        NKAreaSubPage(hue: etelMenuHue, crumb: "Étel", eyebrow: "Bevásárlás", title: "Korábbi listák",
                       sentence: "Minden jóváhagyott hét listája megmarad.", onBack: close) {
             if let problem { EvadLine(text: problem) }
             if let lists {
                 if lists.isEmpty {
-                    NKNote("Még nincs korábbi listád. Az első a heti menü jóváhagyásakor készül.", hue: evadHue)
+                    NKNote("Még nincs korábbi listád. Az első a heti menü jóváhagyásakor készül.", hue: etelMenuHue)
                 } else {
-                    NKBare("Hetek", hue: evadHue, glyph: "check-ink") {
+                    NKBare("Hetek", hue: etelMenuHue, glyph: "check-ink") {
                         NKRowList(lists.map { s in
                             NKAreaRow(id: s.id, glyph: "check-ink", title: evadWeekRange(s.weekStart),
                                       sub: "\(s.itemCount) tétel, \(s.checkedCount) megvéve",
                                       action: { show(s.weekStart) })
-                        }, hue: evadHue)
+                        }, hue: etelMenuHue)
                     }
                 }
             } else if problem == nil {
-                NKBare("Hetek", hue: evadHue, glyph: "check-ink", state: .loading) { EmptyView() }
+                NKBare("Hetek", hue: etelMenuHue, glyph: "check-ink", state: .loading) { EmptyView() }
             }
             if let l = open {
                 ForEach(evadShelfGroups(l), id: \.key) { g in
-                    NKBare("\(evadWeekRange(l.weekStart)) · \(g.title)", hue: evadHue, glyph: g.glyph) {
+                    NKBare("\(evadWeekRange(l.weekStart)) · \(g.title)", hue: etelMenuHue, glyph: g.glyph) {
                         VStack(spacing: 0) {
                             ForEach(g.items) { i in
                                 HStack(spacing: 12) {
@@ -306,11 +208,11 @@ struct EvadStaplesPage: View {
     @State private var problem: String?
 
     var body: some View {
-        NKAreaSubPage(hue: evadHue, crumb: "Évad", eyebrow: "Bevásárlás", title: "Szokásos tételek",
+        NKAreaSubPage(hue: etelMenuHue, crumb: "Étel", eyebrow: "Bevásárlás", title: "Szokásos tételek",
                       sentence: "Ami mindig kell itthonra. A listán koppintással kerül fel, magától soha.", onBack: close) {
             if let problem { EvadLine(text: problem) }
             if var list = names {
-                NKBare("A tételeid", hue: evadHue, glyph: "star-ink", trailing: "koppints a törléshez") {
+                NKBare("A tételeid", hue: etelMenuHue, glyph: "star-ink", trailing: "koppints a törléshez") {
                     if list.isEmpty { EvadLine(text: "Még nincs szokásos tételed.") }
                     NKFlowRow {
                         ForEach(list, id: \.self) { n in
@@ -339,9 +241,9 @@ struct EvadStaplesPage: View {
                     }
                 }
                 NKActions([NKAction(glyph: "check-ink", title: "Mentés", primary: true, action: save),
-                           NKAction(title: "Mégsem", action: close)], hue: evadHue)
+                           NKAction(title: "Mégsem", action: close)], hue: etelMenuHue)
             } else if problem == nil {
-                NKBare("A tételeid", hue: evadHue, glyph: "star-ink", state: .loading) { EmptyView() }
+                NKBare("A tételeid", hue: etelMenuHue, glyph: "star-ink", state: .loading) { EmptyView() }
             }
         }
         .task {
@@ -362,5 +264,86 @@ struct EvadStaplesPage: View {
         Task {
             do throws(PlanFetchError) { try await menu.putStaples(names); close() } catch { problem = evadErrorText(error) }
         }
+    }
+}
+
+// MARK: - Étel › Hét (`mezo-r36n9.196`): the list page and the Hét tab's list card
+
+/// The shopping list as its own page; past lists and staples open over it (page-level covers).
+struct EtelListPage: View {
+    let close: @MainActor @Sendable () -> Void
+    let openMenu: @MainActor @Sendable () -> Void
+    @Environment(EvadStore.self) private var store: EvadStore?
+    @State private var sub: EtelListSub?
+
+    enum EtelListSub: String, Identifiable { case past, staples; var id: String { rawValue } }
+
+    var body: some View {
+        NKAreaSubPage(hue: etelMenuHue, crumb: "Étel › Hét", eyebrow: "Bevásárlás", title: "Bevásárlólista",
+                      sentence: "A jóváhagyott menü hozzávalói, polcok szerint. Pipáld ki, ami a kosárban van.", onBack: close) {
+            if let store {
+                EtelListBody(menu: store.menu, openPast: { sub = .past }, openStaples: { sub = .staples }, openMenu: openMenu)
+            }
+        }
+        .fullScreenCover(item: $sub) { s in
+            Group {
+                switch s {
+                case .past: EvadPastListsPage(close: { sub = nil })
+                case .staples: EvadStaplesPage(close: { sub = nil })
+                }
+            }
+            .environment(store)
+        }
+    }
+}
+
+/// The Hét tab's list card (spike `27`): how much is in the basket, the shelves, what is left.
+struct EtelListCard: View {
+    let menu: EvadMenuStore
+    let open: @MainActor @Sendable () -> Void
+
+    var body: some View {
+        Group {
+            if let l = menu.list {
+                let live = l.items.filter { !$0.removed }
+                let done = live.filter(\.checked).count
+                Button(action: open) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack(spacing: 8) {
+                            Capsule().fill(etelMenuHue.glow).frame(width: 3, height: 13)
+                            NKGlyph("check-ink", etelMenuHue.glow.opacity(0.95), size: 15)
+                            NKMono("BEVÁSÁRLÓLISTA")
+                            Spacer(minLength: 8)
+                            Text("\(done) / \(live.count)").nkFont(12).foregroundStyle(.white.opacity(0.55))
+                            Image(systemName: "chevron.right").nkFont(12, .semibold).foregroundStyle(.white.opacity(0.45))
+                        }
+                        GeometryReader { g in
+                            ZStack(alignment: .leading) {
+                                Capsule().fill(.white.opacity(0.1))
+                                Capsule().fill(etelMenuHue.glow).frame(width: g.size.width * Double(done) / Double(max(1, live.count)))
+                            }
+                        }
+                        .frame(height: 8)
+                        NKFlowRow {
+                            ForEach(evadShelfGroups(l), id: \.key) { g in
+                                Text("\(g.title) \(g.items.filter { !$0.checked && !$0.removed }.count)").nkFont(12.5)
+                                    .foregroundStyle(.white.opacity(0.8))
+                                    .padding(.horizontal, 10).frame(minHeight: 28)
+                                    .background(Capsule().fill(.white.opacity(0.08)))
+                            }
+                        }
+                        EvadText(live.count - done > 0 ? "\(live.count - done) tétel van még hátra" : "Minden a kosárban.",
+                                 size: 12.5, opacity: 0.55)
+                    }
+                    .padding(18).frame(maxWidth: .infinity, alignment: .leading).nkGlass()
+                    .contentShape(RoundedRectangle(cornerRadius: 26))
+                }
+                .buttonStyle(.plain)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Bevásárlólista, \(done) a \(live.count)-ből a kosárban")
+                .accessibilityAddTraits(.isButton)
+            }
+        }
+        .task { await menu.loadList() }
     }
 }

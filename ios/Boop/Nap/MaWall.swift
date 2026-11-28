@@ -61,8 +61,11 @@ struct MaWall: View {
         r.register(WallSource(id: "brief") { [brief] input in
             briefWallCandidates(brief, now: input.now)
         })
-        r.register(WallSource(id: WallSources.evad) { [overview = evad?.overview, experiments = evad?.experiments.data] input in
-            evadCandidates(overview, experiments: experiments, now: input.now)
+        r.register(WallSource(id: WallSources.evad) { [overview = evad?.overview, experiments = evad?.experiments.data, reviewDone = weeklyReviewLog().doneWeeks] input in
+            let window = evadReviewWindow(now: input.now)
+            let review = evadReviewCandidate(window: window, hasSeason: overview != nil,
+                                             done: window.map { reviewDone.contains($0.weekMonday) } ?? false)
+            return evadCandidates(overview, experiments: experiments, review: review, now: input.now)
         })
         r.register(WallSource(id: WallSources.level) { [digest = level?.digest] input in
             levelWallCandidates(digest, now: input.now)
@@ -234,7 +237,16 @@ struct MaWall: View {
             }
             return
         }
-        else if c.area == WallSources.evad { evad?.pendingSub = evadWallOpens(c.id); openDestination(.room(RoomEntry(.evad))) }
+        else if c.area == WallSources.evad, let target = evadWallTarget(c.id) {
+            switch target {
+            case .review:
+                // „Később" in the review must leave the card: it settles only when the week is marked done
+                RitmusRouter.shared.openReview()
+                return
+            case .etelMenu: openDestination(.room(RoomEntry(.fuel, tab: "Hét", sub: "menu")))
+            case .evad(let tab, let sub): openDestination(.room(RoomEntry(.evad, tab: tab, sub: sub)))
+            }
+        }
         else if c.area == WallSources.kapacitas { openAtrendezes?() }
         settle(id: c.id, line: c.settled)
     }

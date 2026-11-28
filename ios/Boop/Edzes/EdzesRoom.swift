@@ -62,6 +62,9 @@ struct EdzesRoom: View {
     @Environment(MorningStore.self) private var morning: MorningStore?
     /// The season overview: its training days are the new block's days (mezo-r36n9.113).
     @Environment(EvadStore.self) private var evad: EvadStore?
+    /// Évad › Terv's year strip opens this room on the Éves terv (`mezo-r36n9.196`): taken once.
+    @Environment(\.roomEntry) private var roomEntry
+    @State private var tookEntry = false
     @SceneStorage("edzes.tab") private var selected: String = EdzesTab.ma.rawValue
     @State private var store: EdzesStore?
     @State private var toast: String?
@@ -278,6 +281,7 @@ struct EdzesRoom: View {
             .presentationBackground(NK.ground).presentationCornerRadius(34).presentationDragIndicator(.visible)
         }
         .task {
+            if !tookEntry, let e = roomEntry, e.hue == .mozgas, e.sub == "evesterv" { tookEntry = true; openYearPlan() }
             if store == nil { store = EdzesStore(client: train, cache: cache, folder: workoutFolder) }
             await store?.load()
             // The app closed while the ceremony was open: the finish had gone out, so the server's word ends it here.

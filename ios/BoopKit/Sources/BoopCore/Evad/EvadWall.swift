@@ -5,7 +5,7 @@ import Foundation
 // no second notification policy: only the weekly menu waiting for approval (S3) is `.expires`, so only it may ring,
 // within the wall's own cap (decision #35). S4 adds the experiments (a proposal, a fresh result) — neither rings.
 
-/// Candidate ids, so the wall's tap can tell where each one opens (`evadWallOpens`).
+/// Candidate ids, so the wall's tap can tell where each one opens (`evadWallTarget`).
 enum EvadWallID {
     static let learned = "evad-learned-"
     static let end = "evad-end-"
@@ -87,17 +87,6 @@ func evadExperimentCandidates(_ x: EvadExperiments, now: Date, calendar: Calenda
             why: "\(e.lengthDays) napig figyeltem, és összevetettem az előtte levő napokkal. Ez a te napjaidból látszik, de nem bizonyíték."))
     }
     return out
-}
-
-/// Where a tap on an Évad card lands: `modositas` for the correction proposal, `menu` (the Menü tab) for the weekly
-/// menu, `hatas` (the Hatás tab) for an experiment proposal, `kiserlet:<id>` for a finished experiment's result, nil
-/// for the Évad page itself.
-public func evadWallOpens(_ id: String) -> String? {
-    if id.hasPrefix(EvadWallID.learned) { return "modositas" }
-    if id.hasPrefix(EvadWallID.menu) { return "menu" }
-    if id.hasPrefix(EvadWallID.proposal) { return "hatas" }
-    if id.hasPrefix(EvadWallID.result) { return "kiserlet:" + id.dropFirst(EvadWallID.result.count) }
-    return nil
 }
 
 /// "2026-W47": the ISO week `now` falls in, in the phone's time zone.
