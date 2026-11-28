@@ -161,6 +161,10 @@ fő session when the series stops to wait for the owner) — never by a session 
 3. Show the owner **one table per series** (session · hol tart · javaslat) and ask once. On his yes, archive the
    lezárható ones, rename stray titles to the §Names shape, file them into the series group. Never archive a fő
    session whose al-session still has unmerged work. Sessions of other projects are not yours — leave them.
+   **Trap (2026-11-28):** archiving one session also archives every *idle linked* session of its family — not only
+   its own children (archiving a stray "Következő lépések" session took the Sport fő session with it, and the
+   classifier refused the unarchive). So archive **leaves one by one** and never a session that is linked to one
+   that must stay open; when in doubt, `get_session` → `parentSessionId` first.
 4. Report what was archived and what is left, ending with a záró blokk per still-open series; verify the
    befejezendő branches still exist.
 5. `node scripts/boop-notion-sync.mjs check` — if something waits and no series that owns it is still running, push
