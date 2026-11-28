@@ -2263,5 +2263,16 @@
     "mit_kapsz": "A Sport hete a ritka esetekben is pontos: a kímélő módban védett sportnap kihagyottként látszik, a késve rögzített esti alkalom megtartja a helyét és fajtáját, két kondi egy napon nem duplázódik, és a pihenő-jelzés a valóban szoros sportalkalmat nevezi meg.",
     "szulo": "mezo-r36n9.188",
     "munkamenet": "Sport S2 review"
+  },
+  "mezo-r36n9.216": {
+    "cim": "Sport rögzítés: dupla mentés elleni védelem a szerveren",
+    "tipus": "Feladat",
+    "szakasz": "Sport",
+    "terulet": [
+      "Sport"
+    ],
+    "mit_kapsz": "Ha gyenge a net és a telefon újraküldi a sportrögzítést, a szerver akkor sem menti el kétszer.",
+    "szulo": "mezo-r36n9.188",
+    "munkamenet": "sport-s3-app"
   }
 }

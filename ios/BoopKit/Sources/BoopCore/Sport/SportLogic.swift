@@ -181,7 +181,7 @@ public func sportHead(_ o: SportOverview) -> SportHead {
 }
 
 /// „röpit", „futást", „TRX-et", „kosarat", „túrát".
-func sportAccusative(_ kind: SportKind) -> String {
+public func sportAccusative(_ kind: SportKind) -> String {
     switch kind {
     case .volleyball: "röpit"
     case .running: "futást"
@@ -301,7 +301,7 @@ public func sportHero(_ o: SportOverview, zone: TimeZone = .current) -> SportHer
 }
 
 /// „18:04–20:01" from the watch's start and minutes, in the phone's zone.
-func sportRange(_ h: SportHealthWorkout, zone: TimeZone) -> String? {
+public func sportRange(_ h: SportHealthWorkout, zone: TimeZone = .current) -> String? {
     guard let start = sportInstant(h.start) else { return nil }
     let f = DateFormatter()
     f.locale = Locale(identifier: "hu_HU")
@@ -482,7 +482,7 @@ private func dayWord(_ date: String, _ o: SportOverview) -> String {
 }
 
 /// „a röpi", „az úszás".
-func sportArticle(_ word: String) -> String {
+public func sportArticle(_ word: String) -> String {
     guard let first = word.lowercased().first else { return word }
     return ("aáeéiíoóöőuúüű".contains(first) ? "az " : "a ") + word
 }

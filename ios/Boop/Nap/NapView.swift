@@ -92,6 +92,8 @@ struct NapView: View {
                         } else if hue == .suly {
                             // Súly's room (mezo-r36n9.158): the season's weight course, the trend and the weigh-ins.
                             SulyRoom()
+                        } else if hue == .sport {
+                            SportRoom()   // mezo-r36n9.203
                         } else {
                             AreaRoom(hue: hue, brief: morning.brief ?? brief, store: morning, ctx: ctx, desk: desk) { sheet = DetailSheet($0) }
                         }
