@@ -377,7 +377,8 @@ public struct FoodClient: Sendable {
             switch try await client.getRecipeBreakdown(path: .init(id: id.wire)) {
             case .ok(let ok):
                 let b = try ok.body.json
-                return RecipeBreakdown(breakdown: b.breakdown.map { Self.map($0.value1) }, fitsFor: b.fitsFor)
+                return RecipeBreakdown(breakdown: b.breakdown.map { Self.map($0.value1) }, fitsFor: b.fitsFor,
+                                       prosePending: b.prosePending ?? false)
             case .unauthorized: throw FoodFetchError.unauthorized
             case .notFound: throw FoodFetchError.notFound
             case .undocumented: throw FoodFetchError.server

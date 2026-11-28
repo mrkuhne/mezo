@@ -28,6 +28,9 @@ struct RecipeScoreCard: View {
     let vote: Bool?
     let onVote: (Bool?) -> Void
     let onOpen: (ScoreDimension) -> Void
+    /// Boop is still writing the explanation in the background (mezo-r36n9.219): the numbers are all here, a quiet
+    /// line says the words are coming.
+    var proseWriting: Bool = false
 
     @Environment(\.dynamicTypeSize) private var typeSize
 
@@ -82,6 +85,9 @@ struct RecipeScoreCard: View {
             }
             if let summary = b.summary, !summary.isEmpty {
                 Text(summary).nkFont(14.5).lineSpacing(3).foregroundStyle(.white.opacity(0.85)).fixedSize(horizontal: false, vertical: true)
+            } else if proseWriting {
+                Text("Boop most írja a részletes magyarázatot…").nkFont(13).foregroundStyle(.white.opacity(0.5))
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }

@@ -109,4 +109,23 @@ struct RecipeScoreLogicTests {
         #expect(recipeVerdict(MealBreakdown(value: 0.85, confidence: 0.8, dimensions: [dim("macro", 0.85)])) == "Erős recept.")
         #expect(recipeVerdict(MealBreakdown(value: 0.4, confidence: 0.8, tagline: "  ", dimensions: dims)) == "Van rajta mit javítani, a(z) só és cukor húzza le.")
     }
+
+    // MARK: the background explanation's re-fetch (mezo-r36n9.219)
+
+    @Test func prosePollRunsOnlyWhileTheServerWritesAndNoSummaryArrived() {
+        let card = MealBreakdown(value: 0.7, confidence: 0.8, dimensions: [dim("macro", 0.7)])
+        let written = MealBreakdown(value: 0.7, confidence: 0.8, summary: "Fehérjés reggeli.", dimensions: [dim("macro", 0.7)])
+        let pending = RecipeBreakdown(breakdown: card, prosePending: true)
+        #expect(RecipeProsePoll.shouldPoll(pending, elapsed: 0))
+        #expect(RecipeProsePoll.shouldPoll(pending, elapsed: 179))
+        // stops after ~3 minutes
+        #expect(!RecipeProsePoll.shouldPoll(pending, elapsed: 180))
+        // stops when the words arrived, even if the flag lags
+        #expect(!RecipeProsePoll.shouldPoll(RecipeBreakdown(breakdown: written, prosePending: true), elapsed: 10))
+        // never starts when nothing is being written (AI off, a failure) or there is no card at all
+        #expect(!RecipeProsePoll.shouldPoll(RecipeBreakdown(breakdown: card, prosePending: false), elapsed: 0))
+        #expect(!RecipeProsePoll.shouldPoll(RecipeBreakdown(breakdown: nil, prosePending: true), elapsed: 0))
+        #expect(!RecipeProsePoll.shouldPoll(nil, elapsed: 0))
+        #expect(RecipeProsePoll.interval == .seconds(8))
+    }
 }

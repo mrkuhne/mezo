@@ -33,7 +33,9 @@ osszefoglalo: A saját receptjeid pontszámmal és címkékkel; új receptet elm
 
 - **rozetta** — a pontszám középen, körülötte szempontonként egy szirom, minél hosszabb, annál jobb; mellette egy
   címsor, ami erre az ételre szól (például „Fehérjében erős reggeli, a só húzza le”), a megbízhatóság, mire jó, és egy
-  rövid összefoglaló;
+  rövid összefoglaló; ha a recept még új (vagy változott), a kártya azonnal megjelenik a számokkal, és egy halk sor
+  jelzi: „Boop most írja a részletes magyarázatot…” — a szöveg magától beúszik, amint kész (általában 1–2 perc),
+  nem kell újranyitni;
 - **Ha ma megennéd** — a mai napod eddigi kalóriája és makrói, és hová jutnál ezzel az adaggal; ha túllépnéd a keretet,
   azt is megmondja („120 kcal felett”), kímélő napon keret nélkül;
 - **Miből áll össze** — nyolc csempe, a leggyengébb sárga ponttal; egy csempére koppintva az oldal elhomályosul, és
@@ -66,7 +68,10 @@ műhely-behúzás átnézője ugyanezt tudja.
 4. A recept pontszámát szabályok adják (nyolc szempont), a szöveget (címsor, összefoglaló, szempontonként 3–4 mondat,
    tippek) az AI írja — csak a szabályok számait magyarázza, saját számot nem talál ki. A „honnan jön” sorokat nem az
    AI, hanem a hozzávalók tápértéke adja, minden megnyitáskor frissen. A régi, sablonos szövegek a recept következő
-   megnyitásakor újraíródnak. A „Ha ma megennéd” a telefonon számolódik a mai étkezéseidből, ugyanúgy, mint az Étel
+   megnyitásakor újraíródnak. A szöveg megírása kb. két perc, ezért **a háttérben** készül: az első megnyitás azonnal
+   adja a számokat és a szabályokból számolt címsort, a telefon pedig 8 másodpercenként, legfeljebb 3 percig
+   újrakérdez. Egy receptet egyszerre csak egyszer íratunk meg; ha közben megváltoztak a számai, a kész szöveget
+   eldobjuk. Ha az AI hibázik, a kártya szöveg nélkül marad, és 10 percig nem próbáljuk újra. A „Ha ma megennéd” a telefonon számolódik a mai étkezéseidből, ugyanúgy, mint az Étel
    „Ma” fülén.
 5. Egy dupla koppintás sem hoz létre két receptet.
 
@@ -75,7 +80,8 @@ A tulajdonos 2026-11-17-én kérte az „Ezt főztem”-et (spec `2026-11-17-boo
 a recept- és kamraoldalak átrendezését: tagolás, ikonok, címkék, látható pontszám és a szempontok, és hogy az
 érzékenység ne törje szét a sort. 2026-11-27-én azt jelezte, hogy a webes appban gazdagabb volt a receptértékelés;
 a 2026-11-28-i újratervezés (döntések #139–#140) ezt hozta vissza és tette túl: napi hatás, rangsor, részletlap,
-ételre szabott szöveg.
+ételre szabott szöveg. Az első napon a gazdagabb szöveg ~110 másodpercig készült, a telefon 40 másodperc után feladta,
+és az értékelés meg sem jelent — ezért készül azóta a háttérben (2026-11-28, `mezo-r36n9.219`).
 
 ## Beállítások
 | Beállítás | Mit állít | Alapérték |

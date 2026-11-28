@@ -92,6 +92,25 @@ func dimensionExtremes(_ dims: [ScoreDimension]) -> (weakest: String?, strongest
     return (lo.id, hi.id)
 }
 
+/// When the recipe sheet re-fetches the evaluation while Boop writes its explanation in the background
+/// (mezo-r36n9.219): every ~8 s, for at most ~3 minutes, only while the server says it is still writing and no
+/// summary has arrived. The sheet closing cancels it.
+enum RecipeProsePoll {
+    static let interval: Duration = .seconds(8)
+    static let maxWait: TimeInterval = 180
+
+    /// The explanation is on its way: the server says so and there is a card without a summary yet.
+    static func awaitingProse(_ b: RecipeBreakdown?) -> Bool {
+        guard let b, b.prosePending, let card = b.breakdown else { return false }
+        return (card.summary ?? "").isEmpty
+    }
+
+    /// Fetch once more after `elapsed` seconds of waiting?
+    static func shouldPoll(_ b: RecipeBreakdown?, elapsed: TimeInterval) -> Bool {
+        awaitingProse(b) && elapsed < maxWait
+    }
+}
+
 /// The verdict headline: the AI's tagline when it fits, else an honest fallback from the score band and the weakest
 /// dimension — never invented facts.
 func recipeVerdict(_ b: MealBreakdown) -> String {
