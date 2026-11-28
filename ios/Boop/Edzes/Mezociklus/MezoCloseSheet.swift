@@ -32,6 +32,8 @@ struct MezoCloseSheet: View {
                         .padding(14).background(RoundedRectangle(cornerRadius: 16).fill(.white.opacity(0.08)))
                         .accessibilityLabel("Saját értékelés, nem kötelező")
                 }
+                // Edzés redesign (spec 2026-11-27 §5.4, mezo-r36n9.197.4): the evaluation is its own card.
+                .padding(14).nkInnerCard()
                 if let error = model.lastError {
                     Text(error).nkFont(13.5).foregroundStyle(planWarn).fixedSize(horizontal: false, vertical: true)
                 }

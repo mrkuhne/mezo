@@ -29,11 +29,12 @@ import BoopDesign
 //   -previewUjBlokkScroll Y                the step opens scrolled down by Y points
 //   -previewUjBlokkStart fail              „Ezzel kezdem" fails at the start (503): the inline error under the button
 //   -previewEvesTerv YES                   the Éves terv (mezo-r36n9.113); its states in EvesTerv/EvesTervPreview.swift
-//   -previewMezo tab|list|detail|detailClosed|restart|close|report|pending|save|offline|empty
+//   -previewMezo tab|list|detail|detailClosed|restart|close|report|pending|save|offline|empty|load|muscle
 //                                          the Mezociklus tab (mezo-r36n9.177): the card + tiles (tab), Mezociklusaim,
 //                                          a template's / a closed run's detail page, the restart / close sheets, the
 //                                          zárójelentés ready or with Boop still writing, the save confirmation, the
-//                                          list offline (a 5-hour-old copy) and with nothing at all
+//                                          list offline (a 5-hour-old copy) and with nothing at all; load: the
+//                                          mezociklus terhelése page on the shell's block, muscle: one muscle's page
 //   -previewKovetkezik YES|nincs|lezaras   with `-preview shell -previewHome edzes`: the Ma tab's Következik card and the
 //                                          pre-filled intake behind „Indítás" (scenarios in EvesTerv/EvesTervPreview.swift)
 //
@@ -74,6 +75,8 @@ struct MezoPreviewRoot: View {
     @State private var model = MezociklusokModel(client: PlanPreview.client, cache: nil)
     @State private var flow = MezoFlowState()
     @State private var toast: String?
+    /// `load` / `muscle` (mezo-r36n9.197.4): the shell fixture's running block behind the terhelés page.
+    @State private var loadBlock: BlockPlan?
     @Namespace private var zoom
     private let state = UserDefaults.standard.string(forKey: "previewMezo") ?? "tab"
 
@@ -101,7 +104,15 @@ struct MezoPreviewRoot: View {
         }
         .nkToast($toast)
         .mezoFlow($flow, model: model, plan: PlanPreview.client, hue: planHue, toast: $toast) {}
+        .fullScreenCover(item: $loadBlock) { b in
+            BlockLoadPage(block: b, hue: planHue, age: nil, onBack: { loadBlock = nil })
+        }
         .task {
+            if state == "load" || state == "muscle" {
+                let train = TrainClient(client: makeClient(tokens: MemoryTokenStore("preview"), transport: PreviewTransport()))
+                loadBlock = try? await train.blockPlan()
+                return
+            }
             if state == "offline" {
                 // A copy read five hours ago, then the net goes.
                 let dir = FileManager.default.temporaryDirectory.appendingPathComponent("mezo-preview-\(UUID().uuidString)")
