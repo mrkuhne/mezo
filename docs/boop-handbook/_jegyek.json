@@ -2329,5 +2329,16 @@
     "mit_kapsz": "A Notion tábla és kézikönyv biztosan a valódi állapotot mutatja a Sport 2 visszaállítása után.",
     "szulo": "mezo-r36n9",
     "munkamenet": "sport-s3-app"
+  },
+  "mezo-r36n9.218": {
+    "cim": "Étel Ma: a nagy kör felirata ne vágódjon le nagy betűméretnél",
+    "tipus": "Hiba",
+    "szakasz": "B4 Étel",
+    "terulet": [
+      "Étel"
+    ],
+    "munkamenet": "edzes-ujratervezes",
+    "mit_kapsz": "A legnagyobb betűméretnél a nagy kör felső felirata („ma nincs keret”) eddig levágódott; most a kör nagyobb, a felirat két sorba törhet, és teljesen olvasható.",
+    "szulo": "mezo-r36n9"
   }
 }

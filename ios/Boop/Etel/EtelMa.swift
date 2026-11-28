@@ -91,15 +91,18 @@ struct EtelMa: View {
                                 style: StrokeStyle(lineWidth: 14, lineCap: .round))
                         .rotationEffect(.degrees(-90))
                     VStack(spacing: 2) {
-                        Text(centre.top).nkFont(13).foregroundStyle(.white.opacity(0.65)).lineLimit(1).minimumScaleFactor(0.6)
-                        // The ring is a fixed 166 pt: at the largest text sizes the number shrinks to fit, never "1…".
+                        // At the largest text sizes the ring grows and its two short lines may wrap, never "ma nincs k…" (mezo-r36n9.218).
+                        Text(centre.top).nkFont(13).foregroundStyle(.white.opacity(0.65))
+                            .lineLimit(big ? 2 : 1).minimumScaleFactor(big ? 0.5 : 0.6).multilineTextAlignment(.center)
+                        // The ring is 166 pt (208 at accessibility sizes): at the largest text sizes the number shrinks to fit, never "1…".
                         Text(centre.number).font(.nkNumber(44)).foregroundStyle(.white).monospacedDigit()
                             .lineLimit(1).minimumScaleFactor(0.2)
-                        Text(centre.bottom).nkFont(12).foregroundStyle(.white.opacity(0.6)).lineLimit(1).minimumScaleFactor(0.6)
+                        Text(centre.bottom).nkFont(12).foregroundStyle(.white.opacity(0.6))
+                            .lineLimit(big ? 2 : 1).minimumScaleFactor(big ? 0.5 : 0.6).multilineTextAlignment(.center)
                     }
                     .padding(20)
                 }
-                .frame(width: 166, height: 166)
+                .frame(width: big ? 208 : 166, height: big ? 208 : 166)
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(guidance ? "Ma nincs keret. \(centre.number) kilokalória megvan."
                                              : "\(centre.top) \(centre.number) \(centre.bottom). \(huInt(Int(eaten.rounded()))) a \(huInt(Int(target.rounded())))-ból.")
