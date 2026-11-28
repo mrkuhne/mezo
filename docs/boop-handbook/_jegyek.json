@@ -2208,5 +2208,16 @@
     "munkamenet": "etel-receptek-kamra",
     "mit_kapsz": "A legnagyobb betűméretnél is olvasható a pontszám a gyűrűben, a három szám nem törik szótag közepén, és a szoba címe sem.",
     "szulo": "mezo-r36n9"
+  },
+  "mezo-r36n9.210": {
+    "cim": "Sport apróságok: visszaesés-számítás, hiányzó percek, kímélő sportnap",
+    "tipus": "Feladat",
+    "szakasz": "Sport",
+    "terulet": [
+      "Sport"
+    ],
+    "mit_kapsz": "A Sport számai a ritka esetekben is pontosak: a visszaesés ugyanúgy számol, mint Boop többi figyelmeztetése, a hiányzó idejű alkalmakat külön jelzi, a kímélő módban védett sportnap kihagyottként látszik.",
+    "szulo": "mezo-r36n9.188",
+    "munkamenet": "pensive-ellis (Sport S2 review)"
   }
 }
