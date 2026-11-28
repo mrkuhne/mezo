@@ -77,21 +77,25 @@ struct MezoPreviewRoot: View {
     @Namespace private var zoom
     private let state = UserDefaults.standard.string(forKey: "previewMezo") ?? "tab"
 
+    /// The running card as a block (the list knows its title, weeks and split; the phase curve stays flat here).
+    private var previewHeroState: MezoHeroState {
+        guard let r = model.groups.running else { return .none(planned: model.groups.upcoming.first) }
+        return .running(BlockPlan(id: UUID(), title: r.title, shortTitle: r.title, status: "active", startDate: "",
+                                  endDate: "", weeks: r.weeks, currentWeek: r.currentWeek, split: r.split ?? "", style: ""))
+    }
+
     var body: some View {
         ZStack {
             NK.ground.ignoresSafeArea()
             NKAreaSubPage(hue: planHue, crumb: "Edzés", eyebrow: "Mezociklus", title: model.groups.running?.title ?? "Edzés",
                           sentence: "", onBack: nil) {
-                if let r = model.groups.running {
-                    MezoCurrentCard(title: r.title, week: r.currentWeek, weeks: r.weeks, split: r.split ?? "", hue: planHue,
-                                    zoom: zoom, offlineReason: nil,
-                                    onEdit: { toast = "Szerkesztés" },
-                                    onRestart: { flow.sheet = .restart(r) },
-                                    onClose: { flow.sheet = .close(r) },
-                                    onSaveTemplate: { flow.saveRunning = r })
-                } else if let p = model.groups.upcoming.first {
-                    MezoPlannedCard(card: p, hue: planHue) { flow.cover = .detail(p) }
-                }
+                MezoHero(state: previewHeroState, hue: planHue, zoom: zoom, offlineReason: nil,
+                         onEdit: { toast = "Szerkesztés" },
+                         onRestart: { if let r = model.groups.running { flow.sheet = .restart(r) } },
+                         onClose: { if let r = model.groups.running { flow.sheet = .close(r) } },
+                         onSaveTemplate: { if let r = model.groups.running { flow.saveRunning = r } },
+                         onNew: { toast = "Új mezociklus" },
+                         onOpenPlanned: { flow.cover = .detail($0) })
                 MezoTiles(hue: planHue, groups: model.groups, year: nil, onAll: { flow.cover = .list }, onYear: { toast = "Éves terv" })
             }
         }

@@ -66,6 +66,9 @@ struct EdzesRoom: View {
     @Environment(\.roomEntry) private var roomEntry
     @State private var tookEntry = false
     @SceneStorage("edzes.tab") private var selected: String = EdzesTab.ma.rawValue
+    @Environment(\.dynamicTypeSize) private var typeSize
+    /// The week's day cards grow with the text size, so a day's name is never cut at the largest sizes.
+    @ScaledMetric(relativeTo: .body) private var dayCardHeight: CGFloat = 150
     @State private var store: EdzesStore?
     @State private var toast: String?
     @State private var page: EdzesPage?
@@ -829,44 +832,32 @@ struct EdzesRoom: View {
 
     // MARK: - Blokk
 
+    /// The Mezociklus tab in the redesign's rank (spec 2026-11-27 §5.2, mezo-r36n9.197.2): the hero, the week's
+    /// review entrance, then one glass card per unit — the week, the muscles — the two tiles and the ask row.
     @ViewBuilder private var blokk: some View {
+        MezoHero(state: mezoHeroState, hue: hue, zoom: planZoom, offlineReason: mezoOfflineReason,
+                 canCreate: plan != nil,
+                 onEdit: { page = .builder },
+                 onRestart: { withRunning { mezoFlow.sheet = .restart($0) } },
+                 onClose: { withRunning { mezoFlow.sheet = .close($0) } },
+                 onSaveTemplate: { withRunning { mezoFlow.saveRunning = $0 } },
+                 onNew: { openNewBlock() },
+                 onOpenPlanned: { mezoFlow.cover = .detail($0) })
         if let b = block {
-            MezoCurrentCard(title: b.title, week: b.currentWeek, weeks: b.weeks, split: b.split, hue: hue, zoom: planZoom,
-                            offlineReason: mezoOfflineReason,
-                            onEdit: { page = .builder },
-                            onRestart: { withRunning { mezoFlow.sheet = .restart($0) } },
-                            onClose: { withRunning { mezoFlow.sheet = .close($0) } },
-                            onSaveTemplate: { withRunning { mezoFlow.saveRunning = $0 } })
             if let weekReview, plan != nil {
                 WeekReviewEntrance(model: weekReview, hue: hue, zoom: planZoom, openReview: { page = .review })
             }
-            blockLoadCard(b)
             weekCarousel(b)
-            mezoTiles
-            NKAskRow(hue: hue, text: "Kérdezd meg Boopot az edzéstervedről") { openDestination(.chat) }
-        } else if store?.blockProblem != nil {
-            NKBare("A MEZOCIKLUSOD", hue: hue) { NKNoFreshData("A mezociklusodat most nem érem el") }
-            mezoTiles
-            NKAskRow(hue: hue, text: "Kérdezd meg Boopot az edzéstervedről") { openDestination(.chat) }
-        } else {
-            if let planned = mezo?.groups.upcoming.first {
-                MezoPlannedCard(card: planned, hue: hue) { mezoFlow.cover = .detail(planned) }
-            } else {
-                NKNotLiveYet(hue: hue, title: "Nincs futó mezociklusod",
-                             line: "Amint elindítasz egy mezociklust, itt fog állni, hányadik hetén jársz, mit hoz a hét, és melyik izomcsoport mennyit kap.")
-            }
-            if plan != nil {
-                Button { openNewBlock() } label: {
-                    Text("Új mezociklus").nkFont(16, .semibold).foregroundStyle(NK.ground)
-                        .padding(.horizontal, 28).frame(minHeight: 52).background(Capsule().fill(.white))
-                }
-                .buttonStyle(PressStyle())
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
-            }
-            mezoTiles
-            NKAskRow(hue: hue, text: "Kérdezd meg Boopot az edzéstervedről") { openDestination(.chat) }
+            musclesCard(b)
         }
+        mezoTiles
+        NKAskRow(hue: hue, text: "Kérdezd meg Boopot az edzéstervedről") { openDestination(.chat) }
+    }
+
+    private var mezoHeroState: MezoHeroState {
+        MezoHeroState.resolve(block: block, firstAnswerArrived: store?.blockAnswered ?? true,
+                              failure: store?.blockProblem == nil ? nil : "A mezociklusodat most nem érem el",
+                              planned: mezo?.groups.upcoming.first)
     }
 
     /// Mezociklusaim · Éves terv — always there, whatever state the running one is in.
@@ -881,44 +872,36 @@ struct EdzesRoom: View {
         if case .ready(let p, _) = year?.phase { p } else { nil }
     }
 
-    /// The whole block's load in one card: the weeks, and what the muscles get. Tapping it
-    /// opens the page that breaks it down muscle by muscle.
-    private func blockLoadCard(_ b: BlockPlan) -> some View {
-        NKBare("A MEZOCIKLUS TERHELÉSE", hue: hue, trailing: store?.blockAgeText) {
-            Button { page = .blockLoad } label: {
-                VStack(alignment: .leading, spacing: 14) {
-                    NKBlockTimeline(edzesTimeline(b), hue: hue,
-                                    caption: "\(b.weeks) hetes mezociklus · \(b.currentWeek). hét · \(b.split)")
-                    HStack(spacing: 10) {
-                        Text(muscleSummary(b))
-                            .nkFont(13).foregroundStyle(.white.opacity(0.7))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(.white.opacity(0.45))
-                    }
-                }
+    /// **Izmok ezen a héten** — this week's top muscles as slim bars; the whole card opens the page that breaks the
+    /// block down muscle by muscle.
+    private func musclesCard(_ b: BlockPlan) -> some View {
+        let bands = muscleBands(b)
+        let total = "\(blockWeekSummary(bands).total) szett"
+        // At the largest text sizes the total moves under the head, so the card's name is not cut short.
+        let big = typeSize.isAccessibilitySize
+        let trailing: NKCardTrailing = b.muscles.isEmpty || big ? .chevron : .text(total)
+        return NKSectionCard("Izmok ezen a héten", hue: hue, trailing: trailing, onOpen: { page = .blockLoad }) {
+            if big, !b.muscles.isEmpty {
+                Text("\(total) ezen a héten").nkFont(13).foregroundStyle(.white.opacity(0.6))
             }
-            .buttonStyle(.plain)
-            .accessibilityHint("Izomcsoportonkénti bontás")
+            if b.muscles.isEmpty {
+                Text("Az izomcsoportok bontása még nem érkezett meg.").nkFont(13).foregroundStyle(.white.opacity(0.6))
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                EdzesMuscleBars(bands: bands, hue: hue)
+            }
         }
-    }
-
-    /// The same sentence the load page opens with, so the card and the page agree.
-    private func muscleSummary(_ b: BlockPlan) -> String {
-        guard !b.muscles.isEmpty else { return "Az izomcsoportok bontása még nem érkezett meg." }
-        let summary = blockWeekSummary(muscleBands(b))
-        return "\(summary.total) szett ezen a héten · \(summary.muscles) izomcsoport"
+        .accessibilityHint("Izomcsoportonkénti bontás")
     }
 
     /// **A heted** — the week's days as a carousel: pick a day, see what it asks for. It moved
     /// here from Ma (owner, 2026-11-17): Ma is today, the week is the block's business.
     private func weekCarousel(_ b: BlockPlan) -> some View {
-        NKBare("A HETED", hue: hue, trailing: store?.blockAgeText) {
+        NKSectionCard("A heted", hue: hue, trailing: store?.blockAgeText.map { .text($0) } ?? .none) {
             if b.days.isEmpty {
                 NKNoFreshData("A mezociklus napjai még nem érkeztek meg")
             } else {
-                NKCarousel(b.days, hue: hue, height: 150) { day in
+                NKCarousel(b.days, hue: hue, height: min(dayCardHeight, 330)) { day in
                     DayCard(day: day, hue: hue, done: isDayDone(day), today: day.isCurrent)
                 }
             }
@@ -1127,7 +1110,13 @@ private struct DayCard: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .nkGlass()
+        // Inside the „A heted" card: the inner treatment, never a second glass; today's day ringed.
+        .nkInnerCard()
+        .overlay {
+            if today {
+                RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(hue.glow.opacity(0.7), lineWidth: 1.5)
+            }
+        }
         .accessibilityElement(children: .combine)
     }
 }

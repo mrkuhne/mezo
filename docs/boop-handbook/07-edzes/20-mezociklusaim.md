@@ -11,10 +11,26 @@ osszefoglalo: Minden mezociklusodnak saját oldala van — a futó, a tervezett,
 
 ## Mit csinál
 
-**A Mezociklus fül.** Az Edzés szoba negyedik füle mostantól „Mezociklus” (régen „Blokk”). Felül a **futó mezociklusod kártyája**:
-a címe, „N. hét / M”, egy haladássáv, és három gomb: **Szerkesztés**, **Újraindítás**, **Lezárás**. A „…” menüben van a
-**Mentés a sablonba**. A heti átnézés kártyáján a másodlagos „szerkesztés” gomb megszűnt, mert a futó kártyán már ott van.
-Legalul két csempe: **Mezociklusaim** és **Éves terv** (a régi éves terv sor helyett).
+**A Mezociklus fül** (új kinézet 2026-11-28, az Edzés újratervezés 2. lépése). Az Edzés szoba negyedik füle „Mezociklus”
+(régen „Blokk”). Felülről lefelé:
+- **A mezociklusod — a fő kártya.** A futó mezociklus címe, „3. hét a 8-ból · 5 napos” (például), és nagyban **a hetek íve**:
+  hetenként egy oszlop, a magassága az, mennyit kér a hét; a mostani hét világít és ki van írva a fázisa, a lezárt hetek
+  ki vannak pipálva, a pihenőhét szaggatott körvonal. Alatta egyetlen gomb: **Szerkesztés**. A ritkább lépések —
+  **Újraindítás**, **Lezárás**, **Mentés a sablonba** — a kártya fejében lévő **„…” menüben** vannak (döntés #129).
+  Ha nincs net, a kártya kiírja, miért nem lehet most újraindítani vagy lezárni.
+- **A heti átnézés kártyája** — változatlan, ugyanott (ha épp jóváhagyásra vár egy új hét). A legnagyobb betűméretnél a
+  gombjai már nem lógnak ki a kártyából.
+- **A heted** — külön kártyán a hét napjai lapozva; a mai nap körbe van keretezve, a megcsináltak kipipálva.
+- **Izmok ezen a héten** — külön kártyán a hét öt legtöbbet dolgozó izomcsoportja vékony sávval és a szettszámmal,
+  alatta „+N további izomcsoport”, a fejben a hét összes szettje. Az egész kártyára koppintva megnyílik **A mezociklus
+  terhelése** oldal.
+- **Mezociklusaim · Éves terv** — két kis kártya (kis telefonon egymás alatt).
+- Legalul a kérdés-sor Boopnak.
+
+Ha **nincs futó mezociklus**, a fő kártya azt mondja: „Nincs futó mezociklusod”, és az **Új mezociklus** gomb van rajta;
+ha van tervezett, az is a kártyán látszik a **Megnézem** gombbal. Ha a mezociklust **nem érem el**, a fő kártyán egy
+nyugodt sor áll, a két kis kártya marad. Az első megnyitáskor, amíg az első válasz meg nem jön, a fő kártya csak annyit
+mond: „Töltöm a mezociklusodat…” — nem villan fel tévesen a „Nincs futó mezociklusod”.
 
 **A Mezociklusaim oldal.** Négy rész:
 - **MOST FUT** — nagy kártya: a hetek sora (a mai hét kiemelve), egy gyűrű és a test, amelyen látszik, mely izmok kapnak munkát.
