@@ -69,6 +69,8 @@ class RecipeBreakdownFallbackApiIT extends ApiIntegrationTest {
             .containsExactly("macro", "micro", "who", "fat_quality", "nova",
                 "plant_diversity", "energy_density", "portion");
         assertThat(res.getFitsFor()).isEmpty();
+        // no model to ask → nothing is being written in the background; the phone must not poll
+        assertThat(res.getProsePending()).isFalse();
         // prose-less envelopes are never persisted — prose self-heals when the LLM returns
         assertThat(recipeRepository.findById(recipe).orElseThrow().getBreakdown()).isNull();
     }
