@@ -1359,5 +1359,21 @@
       "mezo-r36n9.221"
     ],
     "mi_valtozott": "Az Edzés oldalain a lapozható sorok (mai gyakorlatok, a heted, sablonjaim, a hét napjai) nincsenek többé egy nagy kártyába zárva: csak a lapozható lapok állnak a címük alatt, és alattuk a pöttyök mutatják, hány van még. Ez mostantól az egész app szabálya."
+  },
+  "afc449a58": {
+    "cim": "Sport: Napló és Test fül — alkalmak javítása, törlése, izomtérkép, váll, pihenő",
+    "datum": "2026-11-28",
+    "verzio": "",
+    "tipus": "Új funkció",
+    "hova": [
+      "iPhone app",
+      "Háttérrendszer",
+      "Telefonra telepítve"
+    ],
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.205"
+    ],
+    "mi_valtozott": "A Sport terület Napló fülén látod az elmúlt négy hetet (alkalmak, átlagos megterhelés, váll) és az elmúlt 12 hét minden alkalmát; egy kártyára koppintva kijavíthatod vagy törölheted az alkalmat, és a heti szám is frissül. A Test fülön az izomtérkép mutatja, mit terhelt a héten a kondi, a sport és a kettő együtt, alatta a vállad 6 hétre a 7-es vonallal, a pihenő a kondi és a sport között, és a jelzések mellett egy „miért?” lap."
   }
 }
