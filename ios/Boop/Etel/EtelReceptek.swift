@@ -195,7 +195,10 @@ struct EtelReceptek: View {
             }
         }
         card("A KÖNYVTÁRAD", trailing: store.recipes.isEmpty ? nil : "\(store.recipes.count) recept", state: libraryState) { library }
-            .task(id: seasonId) { if seasonId != nil { await evad?.menu.loadRecipeOptions() } }
+            .task(id: seasonId) {
+                // a direct open may come before the ring read the season; then the id changes and this runs again
+                if seasonId == nil { await evad?.load() } else { await evad?.menu.loadRecipeOptions() }
+            }
     }
 
     // MARK: „Menübe jöhet" (decision #137)

@@ -1063,7 +1063,12 @@ struct EtelRoom: View {
             switch tab {
             case .receptek: if !store.recipesLoaded { await store.loadRecipes(food: food) }
             case .kamra: if !store.shelfLoaded { await store.loadShelf(food: food) }
-            case .het: if !store.weekLoaded { await store.loadWeek(food: food, evad: evad?.client, now: BoopClock.now()) }
+            case .het:
+                // the menu and list cards need the season; a direct open (wall card, link) may come before the ring read it
+                if evad?.overview == nil { await evad?.load() }
+                if !store.weekLoaded { await store.loadWeek(food: food, evad: evad?.client, now: BoopClock.now()) }
+                // loaded here, not by the cards: a card with nothing yet is empty, and an empty view never runs its task
+                if evad?.overview != nil, let menu = evad?.menu { await menu.loadMenu(); await menu.loadList() }
             case .ma: break
             }
         }

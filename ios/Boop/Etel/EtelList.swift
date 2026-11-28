@@ -344,6 +344,5 @@ struct EtelListCard: View {
                 .accessibilityAddTraits(.isButton)
             }
         }
-        .task { await menu.loadList() }
     }
 }

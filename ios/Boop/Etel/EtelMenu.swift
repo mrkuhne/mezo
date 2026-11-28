@@ -288,7 +288,6 @@ struct EtelMenuCard: View {
                 .accessibilityHint("Megnyitja a heti menüt")
             }
         }
-        .task { await menu.loadMenu() }
     }
 }
 
