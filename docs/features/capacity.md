@@ -2,7 +2,7 @@
 title: Capacity (day load vs. what the owner can carry)
 type: feature-domain
 status: done
-updated: 2026-11-27
+updated: 2026-11-28
 tags: [capacity, boop, b7-kapacitas, backend, ai, calendar, energy-curve, wearable]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/capacity
@@ -173,6 +173,7 @@ Unit: `DemandCalculatorTest`, `CapacityCalculatorTest`, `RuleEventScoreTest`, `L
 
 - Decisions 2026-11-21 (spec §2): learns from everything; moves only with approval and never touch the Évad plan; the calendar is never written; the model sees all fields.
 - **Gotcha:** scoring is async — the first read after a calendar change shows rule scores; tests must use Awaitility. A 3-day timed event loads a middle day with 24 h worth (clipping, not capped to waking hours).
+- **Gotcha (2026-11-28, `mezo-r36n9.201` fix):** the boop day the capacity reads counts one Health workout against at most one planned gym or sport occurrence, and a slot near midnight reads its minutes across the day boundary (never negative) — see [`train.md`](train.md) dated note 2026-11-28.
 - Deferred: the one-tap lighter-week move (`mezo-r36n9.187`); other follow-ups under `mezo-r36n9`.
 - The *Mennyit bírsz ma* bar's two marks (szoros 0.9/1.2, határ 1.0/1.2) are unlabelled, as in the approved spike: their words collide 8 % apart.
 
