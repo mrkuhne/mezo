@@ -2219,5 +2219,27 @@
     "mit_kapsz": "A Sport számai a ritka esetekben is pontosak: a visszaesés ugyanúgy számol, mint Boop többi figyelmeztetése, a hiányzó idejű alkalmakat külön jelzi, a kímélő módban védett sportnap kihagyottként látszik.",
     "szulo": "mezo-r36n9.188",
     "munkamenet": "pensive-ellis (Sport S2 review)"
+  },
+  "mezo-r36n9.211": {
+    "cim": "Étel kímélő nap: a kikapcsoló gomb ne lógjon ki nagy betűméretnél",
+    "tipus": "Hiba",
+    "szakasz": "B4 Étel",
+    "terulet": [
+      "Étel"
+    ],
+    "munkamenet": "edzes-ujratervezes",
+    "mit_kapsz": "A legnagyobb betűméretnél a „Kikapcsolom a kímélő módot” gomb felirata kilóg a kártyából; javítás után több sorba törik és teljesen olvasható.",
+    "szulo": "mezo-r36n9"
+  },
+  "mezo-r36n9.212": {
+    "cim": "Étel Receptek és Kamra a közös kártyaelemekre",
+    "tipus": "Feladat",
+    "szakasz": "B4 Étel",
+    "terulet": [
+      "Étel"
+    ],
+    "munkamenet": "edzes-ujratervezes",
+    "mit_kapsz": "Nincs látható változás: a két fül ugyanazokra a közös kártyaelemekre áll át, amelyekből az Étel Ma és az új Edzés oldalak épülnek, így később egy helyen javítható.",
+    "szulo": "mezo-r36n9"
   }
 }
