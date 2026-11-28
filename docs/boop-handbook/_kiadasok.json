@@ -1242,5 +1242,20 @@
       "mezo-r36n9.197"
     ],
     "mi_valtozott": "A Mezociklus fül tetején egy fő kártya áll: a futó mezociklus címe, hányadik hetén jársz, és nagyban a hetek íve (a mostani hét világít, a lezártak kipipálva, a pihenőhét szaggatott). Rajta egyetlen gomb, a Szerkesztés; az Újraindítás, a Lezárás és a Mentés a sablonba a kártya „…” menüjébe került. Alatta külön kártyán a heted napjai (a mai bekeretezve) és a hét öt legtöbbet dolgozó izma sávokkal — erre koppintva nyílik a részletes terhelés-oldal —, majd a Mezociklusaim és az Éves terv. Ha nincs futó mezociklus, a fő kártya ezt mondja az Új mezociklus gombbal; első megnyitáskor nem villan fel tévesen. A legnagyobb betűméretnél semmi nem lóg ki és nem törik szó közepén."
+  },
+  "7133460fd": {
+    "cim": "Az Edzés Ma füle új kinézetet kapott: felül a mai edzés kártyája, alatta egységenként külön kártya",
+    "datum": "2026-11-28",
+    "verzio": "",
+    "tipus": "Kinézet",
+    "hova": [
+      "iPhone app",
+      "Telefonra telepítve"
+    ],
+    "szakasz": "B5 Edzés + Watch",
+    "jegyek": [
+      "mezo-r36n9.197"
+    ],
+    "mi_valtozott": "A Ma fül tetején egy fő kártya áll: ma / pótlás / megvolt, a mai edzés neve, az időpont, három nagy szám (perc, gyakorlat, éles sorozat) és egyetlen gomb — Indítás, Folytatom, vagy megvolt napon a mai eredmény. Ugyanitt halkan a „Másik napot csinálok ma” és a „Mégis a mai napot csinálom”. A kártyát elhúzva a mai terhelés látszik az izomtérképen. Pihenőnapon „Pihenőnap” és a következő edzés neve, napja. Alatta külön kártyán: a Következik (az éves terv következő mezociklusa), a mai gyakorlatok lapozva, a Hol tartasz (a mezociklus hetei kicsiben, koppintásra a Mezociklus fül) és a terület menüje. A legnagyobb betűméretnél a számok és a lapok egymás alá kerülnek, semmi nem törik szó közepén."
   }
 }
