@@ -2307,5 +2307,27 @@
     "munkamenet": "edzes-ujratervezes",
     "mit_kapsz": "A legnagyobb betűméretnél is egyben olvasható a „Következik · az éves tervből” fejléc.",
     "szulo": "mezo-r36n9.197"
+  },
+  "mezo-r36n9.217": {
+    "cim": "Néhány automatikus app-ellenőrzés terhelt gépen tévesen hibát jelez",
+    "tipus": "Hiba",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "mit_kapsz": "Az app ellenőrzései akkor is megbízhatóan zöldek vagy pirosak, ha a gép épp sok mindent csinál egyszerre — nem jeleznek hibát ott, ahol nincs.",
+    "szulo": "mezo-r36n9",
+    "munkamenet": "edzes-ujratervezes"
+  },
+  "mezo-r36n9.214": {
+    "cim": "Notion ellenőrzése a Sport 2 visszaállítása után",
+    "tipus": "Feladat",
+    "szakasz": "Sport",
+    "terulet": [
+      "Sport"
+    ],
+    "mit_kapsz": "A Notion tábla és kézikönyv biztosan a valódi állapotot mutatja a Sport 2 visszaállítása után.",
+    "szulo": "mezo-r36n9",
+    "munkamenet": "sport-s3-app"
   }
 }

@@ -716,7 +716,7 @@
     },
     "kezikonyv:07-edzes/01-mozgas-szoba-ma": {
       "page_id": "4168968e-752b-81b1-add3-c4f79e1b44e6",
-      "hash": "1e6f8f9de588"
+      "hash": "271b67b63d87"
     },
     "kezikonyv:07-edzes/02-mezociklus-terv": {
       "page_id": "4168968e-752b-81c0-9ca3-e89afff341e8",
@@ -752,7 +752,7 @@
     },
     "kezikonyv:07-edzes/10-sport-futas": {
       "page_id": "4168968e-752b-8189-bcd3-caf1aa23fda3",
-      "hash": "2a1d872efcca"
+      "hash": "9e7c52c157c0"
     },
     "kezikonyv:07-edzes/11-kihagyas-kimelo": {
       "page_id": "4168968e-752b-8119-981d-e24f027f7f4f",
@@ -3332,7 +3332,7 @@
     },
     "kezikonyv:07-edzes/20-mezociklusaim": {
       "page_id": "4248968e-752b-81d6-9999-cd970298e62b",
-      "hash": "b827559ab694"
+      "hash": "c6b40b705710"
     },
     "jegyek:mezo-r36n9.184": {
       "page_id": "4258968e-752b-8120-9091-c0c8758e57be",
@@ -3464,11 +3464,11 @@
     },
     "jegyek:mezo-r36n9.204": {
       "page_id": "4258968e-752b-8104-9d47-e33c7848e067",
-      "hash": "de2f4930de73"
+      "hash": "97c1d283b809"
     },
     "jegyek:mezo-r36n9.203": {
       "page_id": "4258968e-752b-8160-8dfc-f3a4ff9fe32e",
-      "hash": "b50c15e89674"
+      "hash": "ce9dbf1cdeb6"
     },
     "jegyek:mezo-r36n9.202": {
       "page_id": "4258968e-752b-8114-9b5e-f43ba93006a9",
@@ -3584,7 +3584,7 @@
     },
     "jegyek:mezo-r36n9.211": {
       "page_id": "4268968e-752b-8132-9691-c33ce7e2f262",
-      "hash": "299263aefe40"
+      "hash": "e7918a657d61"
     },
     "jegyek:mezo-r36n9.199": {
       "page_id": "4268968e-752b-81ac-8fb7-dc57a188f408",
@@ -3649,6 +3649,38 @@
     "kiadasok:e31474dea": {
       "page_id": "4268968e-752b-81d2-824e-fe2ed212377d",
       "hash": "3942c6d936f7"
+    },
+    "jegyek:mezo-r36n9.216": {
+      "page_id": "4268968e-752b-8145-a145-ec2ce08a352b",
+      "hash": "33d0bfd4d412"
+    },
+    "jegyek:mezo-r36n9.215": {
+      "page_id": "4268968e-752b-81af-8368-c241aa367461",
+      "hash": "6fda6a6e30d2"
+    },
+    "kiadasok:d2f70dc93": {
+      "page_id": "4268968e-752b-8182-a8fe-f050ebc611e1",
+      "hash": "fadd19e695fa"
+    },
+    "kiadasok:80467efcb": {
+      "page_id": "4268968e-752b-8113-83a1-e4c40d554d10",
+      "hash": "3b19028df8b2"
+    },
+    "kiadasok:df63cb281": {
+      "page_id": "4268968e-752b-8170-baba-c57c0247ff5f",
+      "hash": "fa06213c9816"
+    },
+    "jegyek:mezo-r36n9.217": {
+      "page_id": "4268968e-752b-81cb-875a-d377e7728a27",
+      "hash": "958047b5e3d2"
+    },
+    "jegyek:mezo-r36n9.214": {
+      "page_id": "4268968e-752b-814b-8dab-fc12cb406e60",
+      "hash": "8e0acc1b82ab"
+    },
+    "kiadasok:e7f2313fc": {
+      "page_id": "4268968e-752b-814b-9a3a-ccdc8e877144",
+      "hash": "a3de8266fee5"
     }
   }
 }
