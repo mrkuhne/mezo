@@ -1946,5 +1946,17 @@
     "miert": "„Nagyon egyszínű nekem az egész Étel domain.”",
     "kovetkezmeny": "Először a receptértékelésen jelenik meg, az Étel többi része később követi.",
     "levaltotta": "Az egyszínű zöld Étel."
+  },
+  "d-2026-11-28-munkamenet-fa": {
+    "datum": "2026-11-28",
+    "terulet": [
+      "Alapok"
+    ],
+    "cim": "Minden munka egy fő session alatt fut, egységes nevekkel és záró összefoglalóval",
+    "suly": "Közepes",
+    "valasztas": "Ahol a munkát elindítod, az a fő session; az építés lépései al-sessionökben futnak alatta (nem leválasztva), egységes névvel („Sport 3/5 · Ma fül”) és egy oldalsáv-csoportban. Minden session egy záró blokkal ér véget: hol tartunk, mi a következő, hol és milyen szöveggel kell folytatni.",
+    "miert": "Kb. 30 session volt nyitva, a leválasztott utódok és a maguktól bezáró sessionök miatt nem lehetett követni, mi hol fut, és hol kell folytatni a tegnapi munkát.",
+    "levaltotta": "Az átadáskor azonnal leválasztott utód és a karmester nélküli sessionök (2026-11-27).",
+    "kovetkezmeny": "A fő session kicsi marad: a terv után nem épít, csak indítja és két sorban nyugtázza a lépéseket, így a várakozás olcsó marad."
   }
 }

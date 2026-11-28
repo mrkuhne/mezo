@@ -74,10 +74,14 @@ Notion calls made inside that bloated context were ~10 %. So:
   + `~/.claude/hooks/session-length-guard.mjs` (generated from `scripts/hooks/`, skipped where a project has its own;
   re-copy it when the repo script changes).
 - **One task, one session.** When the task is done (merged + pushed + reported), the next task starts in a **new
-  session** (`start_session` / tell the owner) — never keep a session going across days or unrelated slices. Past
+  session** (a new al-session within the series, or a new fő session for a new series) — never keep a session going across days or unrelated slices. Past
   ~250k context, wrap up and hand off with a short brief instead of continuing.
-- **Clean handoff** (mezo-g641l): if about 25 steps or fewer remain, finish here. Otherwise start **one** successor,
-  `detach_session` it, and archive yourself at once — never wait for it or stay open as its coordinator.
+- **Session tree + záró blokk** (owner rule 2026-11-28, mezo-vmqwc; replaces the detach rule of mezo-g641l): every
+  series has **one fő session** (where the owner talks; it stops building after the plan OK and acks al-session
+  reports in ≤ 2 lines); every step runs as a **linked al-session** under it — never detached, never grandchildren;
+  titles `<Terület> — <sorozat>` / `<Terület> <n>/<össz> · <lépés>`, one sidebar group per series. If about 25 steps
+  or fewer remain, finish in place. **Every session end** carries the munkamenet *záró blokk* (hol tartunk · mi a
+  következő · hol folytasd · prompt a folytatáshoz · ez a session), also written into the bd notes.
 - **Subagents on the cheap model by default.** Pass `model: "sonnet"` for implementers, spec checks, lookups,
   Notion sync and recon (`researcher`/`investigator` are pinned to sonnet). Use the most capable model only for the
   final fresh-context review and genuinely design-heavy work. Prefer doing a handful of reads yourself over a subagent.

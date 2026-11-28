@@ -10,7 +10,7 @@
 
 | Elv | Mit jelent a gyakorlatban |
 |---|---|
-| **Egy feladat, egy session** | Minden munka friss sessionben indul, és lezárással ér véget: beolvasztás, jelentés, archiválás. Ami nem fér bele, azt **szeletekre** bontjuk (5. fejezet). |
+| **Egy sorozat, egy fő session, rövid al-sessionök** | Ahol te elindítod a munkát, az a **fő session**: ott beszélgetünk, ott születik a leírás és a terv. Az építés lépésenként **al-sessionökben** fut, amelyek a fő session alatt látszanak; egységes névvel (`Sport 3/5 · Ma fül`), egy oldalsáv-csoportban. Minden session egy **záró blokkal** ér véget: hol tartunk, mi a következő, hol és milyen szöveggel folytasd. |
 | **Az emlékezet a jegyben van, nem a chatben** | A haladás, a döntések és a csapdák a jegyben és a tervben élnek. Így bármelyik új session 2 perc alatt felveszi a fonalat. |
 | **Előbb felderítés, aztán építés** | Új képernyő, új technika vagy gyanús hiba előtt egy olcsó kutató megnézi, hogyan csinálják ma a legjobbak (8. fejezet). |
 | **A UX/UI az első szempont** | Nem elég, ha működik: szépnek, gyorsnak és egyértelműnek kell lennie, minden állapotában (9. fejezet). |
@@ -116,16 +116,17 @@ egyetlen beszélgetés vitte az egészet. Mostantól **a munka hosszú, a sessio
 2. Építés → ellenőrzés → beolvasztás. A lépések rendszerint a fő ágba kerülnek; a még be nem kapcsolt részek
    kapcsoló mögött várnak, így nem gyűlik egy hatalmas, kockázatos ág.
 3. **Átadó jegyzet** a következő lépés jegyébe (5.4) → lezárás → archiválás.
-4. A következő lépés új sessionben indul, **leválasztva**: a régi azonnal bezár, nem várja meg és nem figyeli.
-   A te jóváhagyásod nem kell hozzá: a ③ terv már lefedi. Ha már csak a lezárás van hátra (kb. 25 lépés vagy
+4. A következő lépést a **fő session** indítja új al-sessionben (nem leválasztva, hogy alatta lásd); a befejezett
+   al-session a záró blokk után bezár. A te jóváhagyásod nem kell hozzá: a ③ terv már lefedi. Ha már csak a lezárás van hátra (kb. 25 lépés vagy
    kevesebb), nincs átadás: a session maga fejezi be.
 5. A Notion a **sorozat végén egyszer** frissül, nem lépésenként.
 
 ### 5.3 Párhuzamosság
 - Két session csak akkor fut egyszerre, ha **nem nyúlnak ugyanahhoz a fájlhoz** (például az egyik a szerveren,
   a másik egy másik képernyőn dolgozik).
-- **Nincs hosszan élő „karmester” session.** A szervezés a jegyekben és a tervben él. A karmester-sessionök
-  hízottak a legjobban, és archiválni sem lehetett őket, amíg egy gyerekük félkész volt.
+- **A fő session vékony karmester:** a terv elfogadása után nem épít, nem olvas fájlt, csak indít és nyugtáz
+  (legfeljebb két sorban). A régi karmesterek azért híztak, mert közben építettek is. Al-session nem indít újabb
+  sessiont: ha utód kell, a záró blokkjában jelzi, és a fő session indítja.
 
 ### 5.4 Az átadás sablonja (jegy-jegyzetbe, nem chatbe)
 ```
@@ -137,7 +138,8 @@ Csapdák: (amit nehezen tanultunk meg)
 Parancsok: (a tesztek és a futtatás pontos parancsai)
 ```
 Az új session indító üzenete ennyi: *„Folytasd a <jegy> munkát a <ág> ágról. Előbb olvasd el a jegy
-jegyzetét. A munkamenet skill szerint zárd le.”*
+jegyzetét. Csak ezt csináld: <lépés>. A munkamenet skill szerint zárd le, záró blokkal.”* Ugyanez a szöveg áll
+a session utolsó üzenetében, a záró blokk „Prompt a folytatáshoz” részében, hogy te is be tudd másolni.
 
 **Soha:** egy hosszú chat „lemásolása” (fork), vagy annak reménye, hogy a tömörítés majd megoldja.
 A tömörítés nem átadás: elveszíti a részleteket, és drága marad.
@@ -224,7 +226,8 @@ A tömörítés nem átadás: elveszíti a részleteket, és drága marad.
 |---|---|
 | Egy feladat, egy session. 250 ezer token (kb. 60–70 lépés) felett átadás. | Minden lépés újraolvassa a teljes beszélgetést. |
 | Ha legfeljebb kb. 25 lépés van hátra, helyben kell befejezni | Egy új session elindítása ennél többe kerül. |
-| Átadás: egy utód, azonnal leválasztva, a régi bezár | A várakozó „szülő” sessionök vitték a friss fogyasztás kb. 12%-át (2026-11-27). |
+| Al-sessionök mindig a fő session alatt, egységes névvel; a fő session vékony (nem épít, két sorban nyugtáz) | Leválasztva nem lehetett követni, mi hol fut (2026-11-28). A várakozó szülők a fogyasztás kb. 12%-át vitték (2026-11-27), ezért a fő session kicsi marad. |
+| Minden session záró blokkal ér véget (hol tartunk, mi a következő, hol és milyen szöveggel folytasd) | Így egy nap után is tudod, mi hol tart, és hol folytasd. |
 | A figyelmeztetésre a következő biztonságos pontnál lezárás vagy átadás | Az automatikus őr szól, nem kell rá emlékezni. |
 | Az alügynökök olcsó modellen futnak; a drága csak a végső átnézésre és a nehéz tervezésre | A nagy sessionökben az alügynökök vitték a tokenek felét. |
 | Végrehajtás alapból egy sessionben; alügynök-sor csak nagy, független részekre | A soros alügynökök (feladatonként építő és ellenőrző) a legdrágábbak. |
@@ -240,5 +243,6 @@ A tömörítés nem átadás: elveszíti a részleteket, és drága marad.
 - **Új munka:** „csináljuk X-et”. A gép eldönti a típust, és jelzi, ha új sessionben indítja.
 - **Folytatás:** „folytasd a B7-et”. A jegyből és a tervből veszi fel a fonalat, nem a régi chatből.
 - **Vége:** „zárjuk le”. Beolvasztás, telepítés, jelentés, archiválás.
-- **Rend:** „takarítás”, hetente egyszer.
+- **Rend:** „takarítás” vagy „hol tartok?”, hetente egyszer. Sorozatonként egy táblát kapsz: melyik session mit csinál, mi a javaslat.
+- **Ha elveszted a fonalat:** minden session utolsó üzenete a záró blokk; a „Prompt a folytatáshoz” részt bemásolva bármelyik munka folytatható.
 - **Ha valami túl drágának tűnik:** „mennyit fogyasztottunk?”. A gép ugyanúgy megméri, mint 2026-11-25-én.
