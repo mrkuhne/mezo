@@ -141,8 +141,25 @@ struct WorkoutPlayer: View {
                 case "note": sheet = .note(first.id)
                 case "menu": sheet = .exerciseMenu(first.id)
                 case "swapBlock": sheet = .swap(first.id, true)
+                // mezo-r36n9.197.5: the rest of the player's sheets, for the before/after review.
+                case "records": sheet = .records(first.id)
+                case "technique": sheet = .technique(first.id)
+                case "pick": sheet = .pick
+                case "edit":
+                    _ = session.log(kg: kg > 0 ? kg : nil, reps: reps, rir: rir)
+                    if let set = session.exercises[first.id]?.logged.first { sheet = .editSet(set.id) }
                 default: break
                 }
+            }
+            // `-previewEdzesStep rest|debrief` (mezo-r36n9.197.5): the player opens on the rest after one set, or
+            // on the three questions after the exercise's last set. Logged on the phone only, nothing is sent.
+            switch UserDefaults.standard.string(forKey: "previewEdzesStep") {
+            case "rest": _ = session.log(kg: kg > 0 ? kg : nil, reps: reps, rir: rir)
+            case "debrief":
+                if let e = session.current {
+                    for _ in e.logged.count..<e.setCount { _ = session.log(kg: kg > 0 ? kg : nil, reps: reps, rir: rir) }
+                }
+            default: break
             }
             #endif
         }
@@ -169,6 +186,7 @@ struct WorkoutPlayer: View {
                 }
                 .buttonStyle(.plain).glassEffect(.clear.interactive(), in: .circle)
                 .accessibilityLabel("Kis méretre — az edzés tovább fut")
+                .frameProbe("player.minimise")
 
                 VStack(spacing: 1) {
                     Text(title).nkFont(15, .medium).foregroundStyle(.white).lineLimit(1)
@@ -188,6 +206,7 @@ struct WorkoutPlayer: View {
                 .buttonStyle(.plain).glassEffect(.clear.interactive(), in: .circle)
                 .accessibilityLabel("Mit csinálunk ezzel a gyakorlattal?")
                 .disabled(session.currentExerciseId == nil)
+                .frameProbe("player.menu")
             }
             NKSetStrip(strip, hue: hue)
                 .frame(height: 3)
@@ -216,46 +235,56 @@ struct WorkoutPlayer: View {
 
     @ViewBuilder private var lifting: some View {
         if let e = session.current {
-            exerciseHead(e)
+            // **The exercise card** (spec §5.5): the name, today's technique line, the note and the technique set's
+            // steps as one unit. A `VStack` with the page's own 18 spacing, so not a point of the layout moves.
+            VStack(spacing: 18) {
+                exerciseHead(e)
 
-            // The note is on the screen while he lifts — the owner caught its absence once.
-            if let note = e.note, !note.isEmpty {
-                Button { sheet = .note(e.id) } label: {
-                    HStack(alignment: .top, spacing: 9) {
-                        NKGlyph("book-sage", .white.opacity(0.7), size: 15)
-                        Text(note).nkFont(13).foregroundStyle(.white.opacity(0.8))
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                // The note is on the screen while he lifts — the owner caught its absence once.
+                if let note = e.note, !note.isEmpty {
+                    Button { sheet = .note(e.id) } label: {
+                        HStack(alignment: .top, spacing: 9) {
+                            NKGlyph("book-sage", .white.opacity(0.7), size: 15)
+                            Text(note).nkFont(13).foregroundStyle(.white.opacity(0.8))
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .padding(12)
+                        .nkInnerCard()
                     }
-                    .padding(12)
-                    .nkGlass()
+                    .buttonStyle(.plain)
+                    .frameProbe("player.note")
                 }
-                .buttonStyle(.plain)
-            }
 
-            // The technique set is next: the card shows every step before he starts, the first one lit.
-            if let plan = techniquePlan(e), let t = plan.technique, t != .partials {
-                let card = TechniqueLines.lines(plan: plan, run: nil)
-                TechniqueStepCard(technique: t, lines: card.lines, current: 0, remaining: nil, total: nil, hue: hue)
-            }
-
-            if e.planned.indices.contains(e.logged.count),
-               e.planned[e.logged.count].technique == .topPause,
-               let seconds = e.planned[e.logged.count].topHoldSec {
-                HStack(alignment: .top, spacing: 10) {
-                    PlanMark(.timer, color: hue.glow, size: 20)
-                    Text("Minden ismétlés tetején tartsd meg \(seconds) másodpercig.")
-                        .nkFont(15, .medium).foregroundStyle(.white)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Spacer(minLength: 0)
+                // The technique set is next: the card shows every step before he starts, the first one lit.
+                if let plan = techniquePlan(e), let t = plan.technique, t != .partials {
+                    let card = TechniqueLines.lines(plan: plan, run: nil)
+                    TechniqueStepCard(technique: t, lines: card.lines, current: 0, remaining: nil, total: nil, hue: hue)
                 }
-                .padding(14)
-                .nkGlass()
-                .accessibilityLabel("Minden ismétlés tetején tartsd meg \(seconds) másodpercig.")
+
+                if e.planned.indices.contains(e.logged.count),
+                   e.planned[e.logged.count].technique == .topPause,
+                   let seconds = e.planned[e.logged.count].topHoldSec {
+                    HStack(alignment: .top, spacing: 10) {
+                        PlanMark(.timer, color: hue.glow, size: 20)
+                        Text("Minden ismétlés tetején tartsd meg \(seconds) másodpercig.")
+                            .nkFont(15, .medium).foregroundStyle(.white)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(14)
+                    .nkInnerCard()
+                    .accessibilityLabel("Minden ismétlés tetején tartsd meg \(seconds) másodpercig.")
+                }
             }
+            .workoutCard()
 
             numberPads
-            planLine(e)
-            setList(e)
+            // The plan and the sets, one quieter card under the scales.
+            VStack(spacing: 18) {
+                planLine(e)
+                setList(e)
+            }
+            .workoutCard(.quiet)
 
             primary(liftLabel(e)) { logSet() }
         }
@@ -287,6 +316,7 @@ struct WorkoutPlayer: View {
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .frameProbe("player.head")
     }
 
     /// The technique to put on the head: the exercise's own, unless the challenge already says it (the challenge's
@@ -328,14 +358,17 @@ struct WorkoutPlayer: View {
                         plan: plan?.targetKg, format: { $0 > 0 ? Self.plain($0) : "–" },
                         onChange: { kg = $0; touched = true },
                         onSet: { typed in if let v = Self.decimal(typed) { kg = max(0, v); touched = true } })
+                .frameProbe("player.kg")
                 NKScale(label: "Ismétlés", value: Double(reps), step: 1, range: 1...60, hue: hue, tag: tag,
                         plan: plan?.targetReps.map(Double.init), format: { "\(Int($0))" },
                         onChange: { reps = max(1, Int($0)); touched = true },
                         onSet: { typed in if let v = Int(typed.filter(\.isNumber)), v > 0 { reps = v; touched = true } })
+                .frameProbe("player.reps")
             }
             NKInlineStepper(label: "Tartalék · ismétlés", value: rir >= 5 ? "5+" : "\(rir)", hue: hue,
                             onDown: { rir = max(0, rir - 1) },
                             onUp: { rir = min(5, rir + 1) })
+            .frameProbe("player.rir")
         }
     }
 
@@ -404,6 +437,7 @@ struct WorkoutPlayer: View {
                 }
             }
         }
+        .frameProbe("player.sets")
     }
 
     /// The line under a technique set's row: its mark and what it adds (planned) or what was done (logged).
@@ -453,11 +487,12 @@ struct WorkoutPlayer: View {
         if let current = session.current {
             NKRestBar(remaining: remaining, total: session.restTotal ?? WorkoutSession.restSeconds, hue: hue)
                 .padding(.vertical, 6)
+                .frameProbe("player.restbar")
             // **The set just done, wherever it was.** Answering the three questions moves the session to the
             // next exercise while the rest runs on, so asking the *current* exercise for its last set left
             // this screen with nothing on it — a black screen he could not get out of.
             if let done = session.lastLogged { verdictCard(done.set, exercise: done.exercise) }
-            setList(current)
+            setList(current).workoutCard(.quiet)
             if let next = nextUp { nextRow(next) }
             HStack(spacing: 10) {
                 Button { session.addRest() } label: {
@@ -466,6 +501,7 @@ struct WorkoutPlayer: View {
                         .background(Capsule().fill(.white.opacity(0.1)))
                 }
                 .buttonStyle(.plain)
+                .frameProbe("player.add30")
                 Button { session.skipRest() } label: {
                     HStack(spacing: 6) {
                         Text("Tovább").nkFont(16, .semibold)
@@ -476,6 +512,7 @@ struct WorkoutPlayer: View {
                     .background(Capsule().fill(hue.glow))
                 }
                 .buttonStyle(.plain)
+                .frameProbe("player.skipRest")
             }
         }
     }
@@ -514,7 +551,8 @@ struct WorkoutPlayer: View {
             Spacer(minLength: 0)
         }
         .padding(15)
-        .nkGlass()
+        .workoutCard(v: 0)
+        .frameProbe("player.verdict")
     }
 
     /// „3. szett · 80 × 8", and the exercise's name too when the set belongs to the one he has just finished
@@ -558,7 +596,8 @@ struct WorkoutPlayer: View {
             Spacer(minLength: 0)
         }
         .padding(13)
-        .nkGlass()
+        .workoutCard(.quiet, v: 0)
+        .frameProbe("player.next")
     }
 
     // MARK: - Inside a technique set
@@ -567,7 +606,7 @@ struct WorkoutPlayer: View {
     /// is time to lift — the step's own numbers.
     @ViewBuilder private var techniqueStep: some View {
         if let e = session.current, let run = session.technique, let plan = techniquePlanOfRun(e) {
-            exerciseHead(e)
+            exerciseHead(e).workoutCard()
             let card = TechniqueLines.lines(plan: plan, run: run)
             let resting: Bool = { if case .techniqueRest = session.step { return true } else { return false } }()
             TechniqueStepCard(technique: run.technique, lines: card.lines, current: card.current,
@@ -585,6 +624,7 @@ struct WorkoutPlayer: View {
                         .background(Capsule().fill(hue.glow))
                     }
                     .buttonStyle(.plain)
+                    .frameProbe("player.tech.start")
                 }
             } else {
                 legPads(run)
@@ -656,6 +696,7 @@ struct WorkoutPlayer: View {
                 .background(Capsule().fill(.white.opacity(0.1)))
         }
         .buttonStyle(.plain)
+        .frameProbe("player.secondary.\(label)")
     }
 
     // MARK: - The three questions
@@ -693,9 +734,13 @@ struct WorkoutPlayer: View {
             }
             setList(e)
 
-            question("Pumpa · érzed?", ["Semmi", "Enyhe", "Jó", "Brutális"], value: $feedback.pump)
-            question("Ízületi fájdalom", ["Nincs", "Enyhe", "Erős"], value: $feedback.jointPain)
-            question("Akarunk még?", ["Kevés volt", "Pont jó", "Sok volt"], value: $feedback.workload)
+            // The three questions, one card (the page's own spacing inside, so nothing moves).
+            VStack(spacing: 18) {
+                question("Pumpa · érzed?", ["Semmi", "Enyhe", "Jó", "Brutális"], value: $feedback.pump)
+                question("Ízületi fájdalom", ["Nincs", "Enyhe", "Erős"], value: $feedback.jointPain)
+                question("Akarunk még?", ["Kevés volt", "Pont jó", "Sok volt"], value: $feedback.workload)
+            }
+            .workoutCard()
 
             Button { sheet = .note(e.id) } label: {
                 HStack(spacing: 9) {
@@ -705,9 +750,10 @@ struct WorkoutPlayer: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .padding(13)
-                .nkGlass()
+                .workoutCard(v: 0)
             }
             .buttonStyle(.plain)
+            .frameProbe("player.debrief.note")
 
             primary(nextUp == nil ? "Mentés · edzés vége" : "Mentés · tovább") {
                 let id = e.id
@@ -748,6 +794,7 @@ struct WorkoutPlayer: View {
                 }
             }
         }
+        .frameProbe("player.q.\(title)")
     }
 
     // MARK: - Shared bits
@@ -764,6 +811,7 @@ struct WorkoutPlayer: View {
         }
         .buttonStyle(.plain)
         .padding(.top, 2)
+        .frameProbe("player.primary")
     }
 
     private func say(_ text: String) { toast = text }
@@ -892,25 +940,30 @@ struct WorkoutPlayer: View {
     private func noteSheet(_ id: UUID) -> some View {
         NKSheetFrame(hue: hue, eyebrow: session.exercises[id]?.name ?? "Gyakorlat", title: "Jegyzet") {
             VStack(alignment: .leading, spacing: 14) {
-                TextField("Például: a váll végig nyugton volt", text: $noteDraft, axis: .vertical)
-                    .lineLimit(3...6)
-                    .nkFont(15).foregroundStyle(.white)
-                    .focused($noteFocused)
-                    .padding(14).nkGlass()
-                    .onAppear {
-                        noteOpen = id
-                        noteDraft = session.exercises[id]?.note ?? ""
-                        noteFocused = true
-                    }
-                Text("A jegyzet a gyakorlatnál marad: edzés közben végig látod, és a következő alkalommal is itt lesz.")
-                    .nkFont(12).foregroundStyle(.white.opacity(0.5))
-                    .fixedSize(horizontal: false, vertical: true)
+                VStack(alignment: .leading, spacing: 14) {
+                    TextField("Például: a váll végig nyugton volt", text: $noteDraft, axis: .vertical)
+                        .lineLimit(3...6)
+                        .nkFont(15).foregroundStyle(.white)
+                        .focused($noteFocused)
+                        .padding(14).nkInnerCard()
+                        .frameProbe("note.field")
+                        .onAppear {
+                            noteOpen = id
+                            noteDraft = session.exercises[id]?.note ?? ""
+                            noteFocused = true
+                        }
+                    Text("A jegyzet a gyakorlatnál marad: edzés közben végig látod, és a következő alkalommal is itt lesz.")
+                        .nkFont(12).foregroundStyle(.white.opacity(0.5))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .workoutCard(h: 8, v: 6)
                 Button { sheet = nil } label: {
                     Text("Mentés").nkFont(16, .semibold).foregroundStyle(NK.ground)
                         .frame(maxWidth: .infinity, minHeight: 52)
                         .background(Capsule().fill(hue.glow))
                 }
                 .buttonStyle(.plain)
+                .frameProbe("note.save")
             }
         }
         .toolbar {
@@ -962,15 +1015,18 @@ struct WorkoutPlayer: View {
                                     }
                                 })
                     }
+                    .frameProbe("edit.scales")
                     // The reserve too (owner, 2026-11-23: „RIR állítás nincs utólagos szett korrekciónál").
                     NKInlineStepper(label: "Tartalék · ismétlés",
                                     value: set.rir.map { $0 >= 5 ? "5+" : "\($0)" } ?? "–", hue: hue,
                                     onDown: { correct(setId, kg: set.kg, reps: set.reps, rir: max(0, (set.rir ?? 2) - 1)) },
                                     onUp: { correct(setId, kg: set.kg, reps: set.reps, rir: min(5, (set.rir ?? 2) + 1)) })
+                    .frameProbe("edit.rir")
                     Text("A javítás azonnal érvényes, és amint van net, a szerverre is felmegy — ugyanazt a sorozatot írja át, nem vesz fel újat.")
                         .nkFont(12).foregroundStyle(.white.opacity(0.5))
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .workoutCard(h: 8, v: 8)
             }
         }
     }
@@ -1025,6 +1081,7 @@ struct WorkoutPlayer: View {
                     sheet = nil; onFinish()
                 }
             }
+            .workoutCard(h: 10, v: 4)
         }
     }
 
@@ -1067,12 +1124,14 @@ struct WorkoutPlayer: View {
                             .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                         }
                         .buttonStyle(.plain)
+                        .frameProbe("pick.\(e.name)")
                     }
                     Text("A terved sorrendje nem változik — ha ezzel megvagy, ott folytatod, ahol tartottál.")
                         .nkFont(12).foregroundStyle(.white.opacity(0.45))
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, 4)
                 }
+                .workoutCard(h: 8, v: 8)
             }
         }
     }
@@ -1131,6 +1190,7 @@ struct WorkoutPlayer: View {
                     }
                     recordRow("Eddig összesen", "\(r.sessionCount) alkalom · \(r.totalSets) szett", nil, gold: false)
                 }
+                .workoutCard(h: 10, v: 4)
             } else {
                 NKNotLiveYet(hue: hue, title: "Ezzel még nincs előzményed",
                              line: "Amint néhány szettet rögzítesz ebből a gyakorlatból, itt fognak állni a rekordjaid.")
@@ -1150,6 +1210,7 @@ struct WorkoutPlayer: View {
         .padding(.vertical, 9)
         .overlay(alignment: .bottom) { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
         .accessibilityElement(children: .combine)
+        .frameProbe("rec.\(label)")
     }
 
     /// The two demo stills the catalog has for the exercise — the start and the end of the movement — plus the
@@ -1173,6 +1234,7 @@ struct WorkoutPlayer: View {
                 Text("A képek a gyakorlattárból jönnek. Videót a weben tudsz hozzárakni.")
                     .nkFont(12).foregroundStyle(.white.opacity(0.45))
             }
+            .workoutCard(h: 8, v: 8)
         }
     }
 
@@ -1184,6 +1246,7 @@ struct WorkoutPlayer: View {
                 .foregroundStyle(.white.opacity(0.5))
         }
         .frame(maxWidth: .infinity)
+        .frameProbe("tech.\(label)")
     }
 
     private func menuRow(_ glyph: String, _ label: String, action: @escaping () -> Void) -> some View {
@@ -1199,5 +1262,6 @@ struct WorkoutPlayer: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .frameProbe("menu.\(label)")
     }
 }

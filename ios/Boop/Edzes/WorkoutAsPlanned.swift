@@ -109,7 +109,7 @@ struct WorkoutAsPlannedSheet: View {
                         Text(problem).nkFont(14).foregroundStyle(.white.opacity(0.75)).fixedSize(horizontal: false, vertical: true)
                         NKPill("Újra", primary: false) { Task { await model.load() } }
                     }
-                    .padding(14).frame(maxWidth: .infinity, alignment: .leading).nkGlass(16)
+                    .padding(14).frame(maxWidth: .infinity, alignment: .leading).nkGlass(24)
                 } else {
                     sets
                     when
@@ -152,6 +152,7 @@ struct WorkoutAsPlannedSheet: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityHint("A súly átírása")
+                .frameProbe("asp.\(r.name)")
                 if model.editing == r.id {
                     HStack(spacing: 10) {
                         TextField("", text: $weightText, prompt: Text("kg").foregroundStyle(.white.opacity(0.4)))
@@ -165,7 +166,7 @@ struct WorkoutAsPlannedSheet: View {
                 }
             }
         }
-        .padding(14).frame(maxWidth: .infinity, alignment: .leading).nkGlass(16)
+        .padding(14).frame(maxWidth: .infinity, alignment: .leading).nkGlass(24)
     }
 
     private var when: some View {
@@ -187,7 +188,7 @@ struct WorkoutAsPlannedSheet: View {
                     .environment(\.locale, Locale(identifier: "hu_HU"))
             }
         }
-        .padding(14).frame(maxWidth: .infinity, alignment: .leading).nkGlass(16)
+        .padding(14).frame(maxWidth: .infinity, alignment: .leading).nkGlass(24)
     }
 
     private func chip(_ text: String, on: Bool, _ action: @escaping () -> Void) -> some View {
@@ -198,5 +199,6 @@ struct WorkoutAsPlannedSheet: View {
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(on ? .isSelected : [])
+        .frameProbe("asp.chip.\(text)")
     }
 }

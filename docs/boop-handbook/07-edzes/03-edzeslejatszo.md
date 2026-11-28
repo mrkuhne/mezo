@@ -11,6 +11,16 @@ osszefoglalo: Edzés közben a telefon sorozatról sorozatra vezet — előírt 
 
 ## Mit csinál
 
+**Kártyákba rendezve (2026-11-28, az Edzés újratervezés 5. lépése):** az eligazítás, a lejátszó, az összegzés és a
+lapjaik tartalma most egy-egy kártyába áll össze — **egyetlen gomb sem mozdult el, és egyik sem lett kisebb vagy
+nagyobb**. Az eligazítás tetején egy fő kártya áll a nap nevével és a három számmal, alatta „A mai sor" egy kártyában.
+Emelés közben a gyakorlat neve, a mai technika sora, a jegyzeted és a technikás sorozat lépései **egy kártyát**
+alkotnak, a terv sora és a sorozatok táblázata egy halkabbat. Pihenőn a „Következik" sor a leghalkabb kártya; a három
+kérdés egy kártyában áll. Az összegzés tetején egy fő kártya mutatja az eredményt (szett, ismétlés, megmozgatott kg,
+kalória), a rekordok és a megdolgoztatott izmok külön kártyát kapnak. A lapok (jegyzet, szett javítása, „Mit csinálunk
+vele?", rekordok, technika, „Mit csinálsz helyette?", „Pihenő vége", „Mi van a termemben", az edzés pótlása) tartalma
+szintén kártyában ül.
+
 **Így néz ki edzés közben (B5, 2026-11-17 — a Lágy irány lejátszója, a mostani stílusban):**
 
 - **A lejátszó sötét**, egyetlen élénk színnel. Az arany **csak a rekordoké**.

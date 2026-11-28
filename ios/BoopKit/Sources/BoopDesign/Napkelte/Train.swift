@@ -658,10 +658,12 @@ public struct NKTimeRange: View {
     let minutes: Int
     let hue: Hue
     let caption: String
+    /// Inside a card (the briefing's hero, mezo-r36n9.197.5): the inner treatment instead of its own glass.
+    let inner: Bool
     private let axis = 90.0
 
-    public init(minutes: Int, hue: Hue, caption: String = "a saját tempód alapján") {
-        self.minutes = minutes; self.hue = hue; self.caption = caption
+    public init(minutes: Int, hue: Hue, caption: String = "a saját tempód alapján", inner: Bool = false) {
+        self.minutes = minutes; self.hue = hue; self.caption = caption; self.inner = inner
     }
 
     private var low: Int { max(1, Int((Double(minutes) * 0.9).rounded())) }
@@ -700,7 +702,7 @@ public struct NKTimeRange: View {
             }
         }
         .padding(16)
-        .nkGlass()
+        .background { if inner { Color.clear.nkInnerCard(radius: 26) } else { Color.clear.nkGlass() } }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Várható idő \(low)–\(high) perc, \(caption)")
     }

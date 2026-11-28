@@ -58,12 +58,17 @@ struct WorkoutCeremony: View {
                     .ignoresSafeArea(edges: .top)
                 ScrollView {
                     VStack(spacing: 26) {
-                        head(p)
-                        VStack(spacing: 10) {
-                            counters(p)
-                            if let energy { energyLine(energy, p: p).transition(.opacity) }
+                        // **The result hero** (spec §5.5): the verdict and its numbers in one card, drawn behind them
+                        // with the page's own 26 spacing inside — the buttons below stay where they were.
+                        VStack(spacing: 26) {
+                            head(p)
+                            VStack(spacing: 10) {
+                                counters(p)
+                                if let energy { energyLine(energy, p: p).transition(.opacity) }
+                            }
+                            .animation(reduceMotion ? nil : .easeOut(duration: 0.6), value: energy)
                         }
-                        .animation(reduceMotion ? nil : .easeOut(duration: 0.6), value: energy)
+                        .workoutCard(.hero, h: 12, v: 10, hue: hue)
                         if !records.isEmpty { recordSection(p) }
                         // Nothing logged, nothing worked: an empty body would be a picture of
                         // a workout that did not happen.
@@ -132,7 +137,7 @@ struct WorkoutCeremony: View {
             counter(Int(Double(totals.volume) * p), "kg megmozgatva", p: p)
         }
         .padding(.vertical, 18)
-        .nkGlass()
+        .nkInnerCard()
         .opacity(reveal(p, from: 0.1))
     }
 
@@ -153,7 +158,7 @@ struct WorkoutCeremony: View {
                 .lineLimit(2).minimumScaleFactor(0.85)
         }
         .padding(.horizontal, 18).padding(.vertical, 14)
-        .nkGlass()
+        .nkInnerCard()
         .opacity(reveal(p, from: 0.1))
         .accessibilityElement(children: .combine)
         .accessibilityLabel(e.source == .estimate
@@ -201,8 +206,9 @@ struct WorkoutCeremony: View {
                 }
             }
             .padding(.horizontal, 15)
-            .nkGlass()
+            .nkInnerCard()
         }
+        .workoutCard(h: 12, v: 8)
         .opacity(reveal(p, from: 0.35))
         .offset(y: (1 - reveal(p, from: 0.35)) * 12)
     }
@@ -232,6 +238,7 @@ struct WorkoutCeremony: View {
                 .frame(maxWidth: .infinity)
             }
         }
+        .workoutCard(h: 12, v: 8)
         .opacity(reveal(p, from: 0.5))
         .offset(y: (1 - reveal(p, from: 0.5)) * 12)
     }
@@ -261,10 +268,11 @@ struct WorkoutCeremony: View {
                     .foregroundStyle(.white.opacity(0.35))
             }
             .padding(14)
-            .nkGlass()
+            .workoutCard(h: 12, v: 0)
         }
         .buttonStyle(.plain)
         .opacity(reveal(p, from: 0.6))
+        .frameProbe("cer.note")
     }
 
     private func doneButton(_ p: Double) -> some View {
@@ -276,6 +284,7 @@ struct WorkoutCeremony: View {
         }
         .buttonStyle(.plain)
         .opacity(reveal(p, from: 0.65))
+        .frameProbe("cer.done")
     }
 
     // MARK: - What the numbers are
