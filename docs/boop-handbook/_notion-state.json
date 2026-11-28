@@ -688,7 +688,7 @@
     },
     "kezikonyv:06-etel/05-receptek": {
       "page_id": "4168968e-752b-816b-af92-d893e20f59e2",
-      "hash": "b6a8e18f85ef"
+      "hash": "c239668eba7f"
     },
     "kezikonyv:06-etel/06-kamra": {
       "page_id": "4168968e-752b-81cc-96d5-c3f0fa42540c",
@@ -724,7 +724,7 @@
     },
     "kezikonyv:07-edzes/03-edzeslejatszo": {
       "page_id": "4168968e-752b-8153-a900-cd5b2e535717",
-      "hash": "de9d1447a4e1"
+      "hash": "49c63079de94"
     },
     "kezikonyv:07-edzes/04-progresszio-motor": {
       "page_id": "4168968e-752b-819d-94a9-cbea5d321e46",
@@ -736,7 +736,7 @@
     },
     "kezikonyv:07-edzes/06-gyakorlatok-elozmenyek": {
       "page_id": "4168968e-752b-8189-8150-ca1dc31f807c",
-      "hash": "fea8937c5918"
+      "hash": "ce8bd88d463f"
     },
     "kezikonyv:07-edzes/07-apple-watch": {
       "page_id": "4168968e-752b-8155-ad39-d2a3d6ef07bc",
@@ -1228,7 +1228,7 @@
     },
     "kezikonyv:07-edzes/16-blokk-epito": {
       "page_id": "41d8968e-752b-81cc-818e-dc11d0726e8f",
-      "hash": "9fb45031411b"
+      "hash": "8d8368cb2d45"
     },
     "kiadasok:78e52679e": {
       "page_id": "41d8968e-752b-8127-9b15-d0288d125bd0",
@@ -3701,6 +3701,14 @@
     "dontesek:d-2026-11-28-edzes-5-6-nem-var": {
       "page_id": "4268968e-752b-81d5-b102-fd0f2005ece7",
       "hash": "5e796c3bd2bb"
+    },
+    "kiadasok:354a3ead2": {
+      "page_id": "4268968e-752b-8113-a4ea-de8be31a9746",
+      "hash": "pending-relations"
+    },
+    "kiadasok:6d84e16ab": {
+      "page_id": "4268968e-752b-8140-b3df-e95901bb4a90",
+      "hash": "pending-relations"
     }
   }
 }
