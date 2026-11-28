@@ -2252,5 +2252,16 @@
     "munkamenet": "receptertekeles",
     "mit_kapsz": "A recept értékelése ételre szabott ítélettel és magyarázattal jön; látod, hol tartanál ma, ha megennéd, hányadik a receptjeid között, és a szempontokra koppintva részletes oldal nyílik arról, honnan jön a gond és mit cserélj.",
     "szulo": "mezo-r36n9"
+  },
+  "mezo-r36n9.209": {
+    "cim": "Sport apróságok: kímélő sportnap, esti fajta késői rögzítésnél, két kondi egy napon, pihenő-jelzés sportja",
+    "tipus": "Feladat",
+    "szakasz": "Sport",
+    "terulet": [
+      "Sport"
+    ],
+    "mit_kapsz": "A Sport hete a ritka esetekben is pontos: a kímélő módban védett sportnap kihagyottként látszik, a késve rögzített esti alkalom megtartja a helyét és fajtáját, két kondi egy napon nem duplázódik, és a pihenő-jelzés a valóban szoros sportalkalmat nevezi meg.",
+    "szulo": "mezo-r36n9.188",
+    "munkamenet": "Sport S2 review"
   }
 }
