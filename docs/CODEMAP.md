@@ -139,7 +139,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 ### boop
 
 *BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-28, in-progress) ·
-  [docs/features/capacity.md](features/capacity.md) (updated 2026-11-27, done)
+  [docs/features/capacity.md](features/capacity.md) (updated 2026-11-28, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/boop`
   - **sub-features:** `port`
@@ -165,7 +165,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### capacity
 
-*BE + API* · read next: [docs/features/capacity.md](features/capacity.md) (updated 2026-11-27, done)
+*BE + API* · read next: [docs/features/capacity.md](features/capacity.md) (updated 2026-11-28, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/capacity`
   - **sub-features:** `port`
@@ -1327,7 +1327,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 *BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-11-28, done) ·
   [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-11-25, done) ·
   [docs/features/season.md](features/season.md) (updated 2026-11-28, in-progress) ·
-  [docs/features/train.md](features/train.md) (updated 2026-11-27, done)
+  [docs/features/train.md](features/train.md) (updated 2026-11-28, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/train`
   - **sub-features:** `port`
@@ -1486,7 +1486,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 ### wearable
 
 *BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-28, in-progress) ·
-  [docs/features/capacity.md](features/capacity.md) (updated 2026-11-27, done)
+  [docs/features/capacity.md](features/capacity.md) (updated 2026-11-28, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/wearable`
   - **entities→tables:** `CalendarEventEntity`→`calendar_event`, `DailyMetricEntity`→`daily_metric`,
