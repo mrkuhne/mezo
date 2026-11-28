@@ -12,7 +12,8 @@ import BoopCore
 ///   game · the watch recorded it · logged · skipped · a gym-only day („Ma nincs sport" + the next one) · a sport-only day.
 /// - `-sportState ready|empty|loading|error|offline` (default `ready`): no rhythm and no sport yet · the first read
 ///   never answers · the server failing · no net with the week cached five hours ago.
-/// - `-sportSheet log|skip`: the room opens with that sheet up.
+/// - `-sportSheet log|skip|slot|slotNew|event|eventNew`: the room opens with that sheet up (slot / event = the first one).
+/// - `-sportSaveFail YES`: every Hét write fails (the sheet keeps what was entered and offers a retry).
 /// A skip and its undo change the transport's week, so the room's re-read shows the server's own picture.
 enum SportPreview {
     static var moment: String { UserDefaults.standard.string(forKey: "sportMoment") ?? "before" }
@@ -23,7 +24,10 @@ enum SportPreview {
 
     @MainActor static func store(cache: ServerCache?) -> SportStore {
         let store = SportStore(client: SportClient(raw: raw), cache: nil)
-        if state == "offline" { store.debugShow(week(), offline: true, age: 5 * 3600) }
+        if state == "offline" {
+            store.debugShow(week(), offline: true, age: 5 * 3600)
+            store.schedule.debugShow(slots: slots, events: events(), load: load(), offline: true)
+        }
         return store
     }
 
@@ -103,6 +107,29 @@ enum SportPreview {
                              weekCount: SportWeekCount(done: done, planned: planned), tonight: tonight, hints: hints)
     }
 
+    /// The rhythm behind the fixture week: volleyball Monday, Tuesday and Friday evening, plus today's when it has one.
+    static let slots: [SportSlot] = [
+        SportSlot(id: "slot-1", dayOfWeek: 0, time: "18:00", durationMin: 120, kind: "training", location: "Sportcsarnok"),
+        SportSlot(id: "slot-2", dayOfWeek: 1, time: "18:00", durationMin: 120, kind: "training", location: "Sportcsarnok"),
+        SportSlot(id: "slot-3", dayOfWeek: 2, time: "18:00", durationMin: 120, kind: "training", location: "Sportcsarnok"),
+        SportSlot(id: "slot-4", dayOfWeek: 4, time: "19:30", durationMin: 90, kind: "match", location: "Budaörs"),
+    ]
+
+    static func events() -> [SportEvent] {
+        let today = week().today
+        return [SportEvent(id: "event-1", date: sportAddDays(today, 15), time: "09:00", durationMin: 360, kind: "match",
+                           sport: "volleyball", location: "Budaörs")]
+    }
+
+    static func load() -> SportLoad {
+        let monday = week().weekStart
+        let rows: [(Int, Int, Int)] = [(1900, 2100, 0), (2050, 900, 0), (2200, 0, 0), (2300, 1500, 1), (2350, 2400, 0), (1400, 1640, 0)]
+        return SportLoad(weeks: rows.enumerated().map { i, r in
+            SportLoadWeek(weekStart: sportAddDays(monday, (i - 5) * 7), sportLoad: r.1, gymLoad: r.0,
+                          sportSessions: r.1 / 600, gymSessions: 5, sportUnknown: r.2)
+        })
+    }
+
     /// No rhythm and nothing logged: the empty state.
     static func emptyWeek() -> SportOverview {
         let w = week()
@@ -115,6 +142,8 @@ enum SportPreview {
 final class SportPreviewTransport: ClientTransport, @unchecked Sendable {
     private let lock = NSLock()
     private var skipped: String?
+    private var slots: [SportSlot]?
+    private var events: [SportEvent]?
 
     func send(_ request: HTTPRequest, body: HTTPBody?, baseURL: URL, operationID: String) async throws -> (HTTPResponse, HTTPBody?) {
         let state = SportPreview.state
@@ -137,6 +166,33 @@ final class SportPreviewTransport: ClientTransport, @unchecked Sendable {
         case "undoPlannedSkip":
             lock.withLock { skipped = nil }
             return (HTTPResponse(status: .noContent), nil)
+        case "getSportSchedule":
+            return try json(lock.withLock { slots } ?? (state == "empty" ? [] : SportPreview.slots))
+        case "replaceSportSchedule":
+            if UserDefaults.standard.bool(forKey: "sportSaveFail") { throw URLError(.notConnectedToInternet) }
+            let sent = try JSONDecoder().decode([SportSlotInput].self, from: try await Data(collecting: body ?? HTTPBody(), upTo: 1 << 20))
+            let saved = sent.enumerated().map { i, x in
+                SportSlot(id: "slot-\(i)-\(Int(Date().timeIntervalSince1970))", dayOfWeek: x.dayOfWeek, time: x.time, durationMin: x.durationMin,
+                          kind: x.kind, location: x.location, intensityLabel: x.intensityLabel, sport: x.sport)
+            }
+            lock.withLock { slots = saved }
+            return try json(saved)
+        case "listSportEvents":
+            return try json(lock.withLock { events } ?? (state == "empty" ? [] : SportPreview.events()))
+        case "createSportEvent":
+            if UserDefaults.standard.bool(forKey: "sportSaveFail") { throw URLError(.notConnectedToInternet) }
+            let d = try JSONDecoder().decode(SportEventDraft.self, from: try await Data(collecting: body ?? HTTPBody(), upTo: 1 << 20))
+            let e = SportEvent(id: "event-\(Int(Date().timeIntervalSince1970))", date: d.date, time: d.time, durationMin: d.durationMin,
+                               kind: d.kind, sport: d.sport, location: d.location)
+            lock.withLock { events = ((events ?? SportPreview.events()) + [e]).sorted { $0.date < $1.date } }
+            return try json(e, 201)
+        case "deleteSportEvent":
+            if UserDefaults.standard.bool(forKey: "sportSaveFail") { throw URLError(.notConnectedToInternet) }
+            let id = String(request.path?.split(separator: "/").last ?? "")
+            lock.withLock { events = (events ?? SportPreview.events()).filter { $0.id != id } }
+            return (HTTPResponse(status: .noContent), nil)
+        case "getSportLoad":
+            return try json(state == "empty" ? SportLoad(weeks: []) : SportPreview.load())
         default:
             return (HTTPResponse(status: .notFound), nil)
         }

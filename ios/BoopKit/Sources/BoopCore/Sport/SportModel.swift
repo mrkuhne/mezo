@@ -24,6 +24,9 @@ public final class SportStore {
     static let rpeEndpoint = "sport/last-rpe"
     static let key = "-"
 
+    /// The Hét tab's weekly rhythm, events and six-week load (`mezo-r36n9.204`); a write there re-reads the week.
+    public let schedule: SportScheduleStore
+
     @ObservationIgnored let client: SportClient?
     @ObservationIgnored private let cache: ServerCache?
     @ObservationIgnored private var reloadAgain = false
@@ -31,6 +34,9 @@ public final class SportStore {
 
     public init(client: SportClient?, cache: ServerCache?) {
         self.client = client; self.cache = cache
+        schedule = SportScheduleStore(client: client, cache: cache)
+        schedule.changed = { [weak self] in await self?.load(force: true) }
+        schedule.today = { [weak self] in self?.overview?.today }
     }
 
     // MARK: - What the room and the ring read
