@@ -11,6 +11,7 @@
 | Elv | Mit jelent a gyakorlatban |
 |---|---|
 | **Egy sorozat, egy fő session, rövid al-sessionök** | Ahol te elindítod a munkát, az a **fő session**: ott beszélgetünk, ott születik a leírás és a terv. Az építés lépésenként **al-sessionökben** fut, amelyek a fő session alatt látszanak; egységes névvel (`Sport 3/5 · Ma fül`), egy oldalsáv-csoportban. Minden session egy **záró blokkal** ér véget: hol tartunk, mi a következő, hol és milyen szöveggel folytasd. |
+| **Beszélgetés egy helyen, nehéz munka külön** | A fő sessionben beszélünk: cél, kérdések, leírás. A próbaváltozat (ott adod a képekre a visszajelzést), a tervírás és az építési körök külön al-sessionben futnak, és a fő sessionnek jelentenek; a következő lépést egy kattintással indítod a fő sessionben. Kis munka (kb. 25 lépésig) egyetlen sessionben marad. |
 | **Az emlékezet a jegyben van, nem a chatben** | A haladás, a döntések és a csapdák a jegyben és a tervben élnek. Így bármelyik új session 2 perc alatt felveszi a fonalat. |
 | **Előbb felderítés, aztán építés** | Új képernyő, új technika vagy gyanús hiba előtt egy olcsó kutató megnézi, hogyan csinálják ma a legjobbak (8. fejezet). |
 | **A UX/UI az első szempont** | Nem elég, ha működik: szépnek, gyorsnak és egyértelműnek kell lennie, minden állapotában (9. fejezet). |

@@ -1970,5 +1970,17 @@
     "miert": "Azok napok óta nem mozdultak, és egyik friss munka sem nyúl ezekhez a képernyőkhöz.",
     "kovetkezmeny": "Ha a régi munkák folytatódnak, ők igazodnak az új kinézethez.",
     "levaltotta": "A terv előfeltétele, hogy az 5–6. lépés csak azok után indul."
+  },
+  "d-2026-11-28-munkamenet-vegyes": {
+    "datum": "2026-11-28",
+    "terulet": [
+      "Alapok"
+    ],
+    "cim": "A beszélgetés a fő sessionben marad, a nehéz szakaszok külön sessiont kapnak",
+    "suly": "Közepes",
+    "valasztas": "A fő sessionben zajlik a cél tisztázása, a kérdések és a leírás (a kutatás háttérben fut). Külön al-session kapja a szimulátoros próbaváltozatot, a terv megírását és minden építési kört; mindegyik a fő sessionnek jelent, a következőt egy kattintással indítod. Kis munka egyetlen sessionben marad.",
+    "miert": "A próbaváltozat és a tervírás hízlalta legjobban a fő sessiont; a teljes szétbontás viszont két helyen való beszélgetést és sok felesleges sessiont hozott volna.",
+    "levaltotta": "A fő sessionben futó próbaváltozat és terv.",
+    "kovetkezmeny": "A próbaváltozatnál a képekre abban az al-sessionben adsz visszajelzést; a gép nem tud magától új sessiont indítani egy másik üzenetére, ezért szakaszonként egy kattintás kell."
   }
 }

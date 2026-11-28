@@ -77,8 +77,9 @@ Notion calls made inside that bloated context were ~10 %. So:
   session** (a new al-session within the series, or a new fő session for a new series) — never keep a session going across days or unrelated slices. Past
   ~250k context, wrap up and hand off with a short brief instead of continuing.
 - **Session tree + záró blokk** (owner rule 2026-11-28, mezo-vmqwc; replaces the detach rule of mezo-g641l): every
-  series has **one fő session** (where the owner talks; it stops building after the plan OK and acks al-session
-  reports in ≤ 2 lines); every step runs as a **linked al-session** under it — never detached, never grandchildren;
+  series has **one fő session** (where the owner talks: scope, brainstorm, spec; acks al-session reports in ≤ 2
+  lines); the spike, the plan writing and every build round run as **linked al-sessions** under it (*vegyes* flow;
+  a ≤ 25-step task stays in one session) — never detached, never grandchildren;
   titles `<Terület> — <sorozat>` / `<Terület> <n>/<össz> · <lépés>`, one sidebar group per series. If about 25 steps
   or fewer remain, finish in place. **Every session end** carries the munkamenet *záró blokk* (hol tartunk · mi a
   következő · hol folytasd · prompt a folytatáshoz · ez a session), also written into the bd notes.
