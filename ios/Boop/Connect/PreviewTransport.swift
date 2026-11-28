@@ -1277,7 +1277,14 @@ struct PreviewTransport: ClientTransport {
             : #"{"key":"alvas","score":78,"display":"7ó 12p","caption":"mély 1ó 28p","headline":"Nyugodt éjszaka","sentence":"A mély alvásod a heti átlag fölött volt."}"#
         let steps = evening ? 9200 : 3240
         let sessionTime = evening ? "18:30" : time
-        let session = recovering
+        // S6 (`mezo-r36n9.206`): `-previewDaySport both|done|sportonly` puts tonight's volleyball on the brief's day —
+        // next to the gym (both), logged (done), or on a day without a gym session (sportonly)
+        let daySport = UserDefaults.standard.string(forKey: "previewDaySport")
+        let sportJSON = daySport.map { m in
+            m == "done" ? #","sport":[{"sport":"volleyball","time":"19:00","minutes":90,"done":true,"doneMinutes":95,"avgHr":131}]"#
+                        : #","sport":[{"sport":"volleyball","time":"19:00","minutes":90,"done":false}]"#
+        } ?? ""
+        let session = recovering || daySport == "sportonly"
             ? "null"
             : #"{"title":"Vállak és hát","time":"\#(sessionTime)","plannedTime":"17:30","minutes":60,\#(evening ? #""done":true,"doneMinutes":62,"avgHr":128,"# : "")"exercises":[{"name":"Húzódzkodás","sets":4},{"name":"Evezés rúddal","sets":4},{"name":"Vállnyomás","sets":3},{"name":"Oldalemelés","sets":3}]}"#
         let logged = evening ? "true" : "false"
@@ -1315,7 +1322,7 @@ struct PreviewTransport: ClientTransport {
           "intention":{"creed":"Egyenletesen, nem erőből.","foci":["Nyugodt tempó","Vizet inni"]},
           "observations":[\#(observations)],
           "calendar":{"count":2,"busySlots":[\#(slots)]},
-          "weight":{"kg":78.4,"trendKg":78.1},"recovery":\#(recovery)}\#(previewCapacity(date: date))}
+          "weight":{"kg":78.4,"trendKg":78.1},"recovery":\#(recovery)\#(sportJSON)}\#(previewCapacity(date: date))}
         """#
     }
 

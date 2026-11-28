@@ -26,9 +26,14 @@ struct SportLogSheet: View {
     @State private var note = ""
     @State private var busy = false
     @State private var problem: String?
+    /// S6: the „+" sheet's quick entry also asks „Mikor?" (a session from earlier today or yesterday) — only while no
+    /// Watch workout fills the time in.
+    private var withWhen = false
+    @State private var when: WhenChoice = .previewDefault
 
-    init(tonight: SportTonight?, lastRpe: Int, saved: @escaping (SportSessionPayload) -> Void) {
+    init(tonight: SportTonight?, lastRpe: Int, withWhen: Bool = false, saved: @escaping (SportSessionPayload) -> Void) {
         self.tonight = tonight; self.saved = saved; editing = nil; update = nil; remove = nil
+        self.withWhen = withWhen
         _kind = State(initialValue: tonight?.sportKind ?? .volleyball)
         _minutes = State(initialValue: tonight?.health?.minutes ?? tonight?.durationMin ?? 90)
         _rpe = State(initialValue: (1...10).contains(lastRpe) ? lastRpe : 6)
@@ -80,6 +85,9 @@ struct SportLogSheet: View {
                         SportStepper(text: sportClock(minutes), less: "Rövidebb", more: "Hosszabb",
                                      down: { minutes = max(15, minutes - 15) }, up: { minutes = min(300, minutes + 15) })
                     }
+                }
+                if withWhen, health == nil {
+                    WhenRow(eyebrow: "MIKOR SPORTOLTÁL", hue: .sport, withTime: true, choice: $when)
                 }
                 row("Milyen nehéz volt?", sub: sportEffortWord(rpe)) { effortRow }
                 if kind.hasSetsAndShoulder {
@@ -188,7 +196,7 @@ struct SportLogSheet: View {
         defer { busy = false }
         let now = BoopClock.now()
         let h = health
-        let payload = SportSessionPayload(
+        var payload = SportSessionPayload(
             sport: kind.rawValue, date: ritmus.day(of: now),
             time: h.flatMap { sportStartClock($0) } ?? tonight?.time ?? clockLabel(now),
             durationMinutes: h?.minutes ?? minutes,
@@ -196,6 +204,10 @@ struct SportLogSheet: View {
             shoulderStrain: kind.hasSetsAndShoulder ? shoulder : nil,
             notes: note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : note,
             kcalOverride: h?.kcal)
+        if withWhen, h == nil {
+            let moment = whenResolved(when, now: now, calendar: .current)
+            payload = Self.dated(payload, day: ritmus.day(of: moment), moment: moment)
+        }
         do {
             try await ritmus.captureSport(payload)
             saved(payload)
@@ -206,6 +218,14 @@ struct SportLogSheet: View {
 }
 
 extension SportLogSheet {
+    /// The session moved to the „Mikor?" choice: its day and its clock time reach the server unchanged.
+    static func dated(_ payload: SportSessionPayload, day: String, moment: Date) -> SportSessionPayload {
+        var p = payload
+        p.date = day
+        p.time = clockLabel(moment)
+        return p
+    }
+
     private func delete() async {
         guard let remove else { return }
         busy = true

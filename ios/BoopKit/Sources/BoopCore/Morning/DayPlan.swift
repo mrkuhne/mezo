@@ -77,6 +77,12 @@ public enum DayPlan {
                                 title: s.title, sub: sub))
         }
 
+        // S6: each sport is its own row next to the gym session — never folded into it
+        for (i, sp) in day.sport.enumerated() {
+            rows.append(PlanRow(id: "sport-\(i)", time: sp.time, glyph: "ball-sun", title: SportKind(wire: sp.sport).name,
+                                sub: sp.done ? "megvolt" : (sp.minutes.map { "\($0) perc" } ?? "")))
+        }
+
         if let c = day.checkins.first(where: { $0.slot == .evening }) {
             rows.append(PlanRow(id: "checkin-evening", time: c.time, glyph: "spark-cream", title: "Esti zárás", sub: "egy perc"))
         }
@@ -103,6 +109,12 @@ public enum DayPlan {
             let t = s.time ?? s.plannedTime
             goals.append(CloseGoal(id: "session", title: t.map { "\(s.title) · \($0)" } ?? s.title,
                                    result: sessionResult(s), met: s.done ? true : nil))
+        }
+        // S6: a sport is its own goal, met only by its own log / Health workout
+        for (i, sp) in day.sport.enumerated() {
+            let result = sp.done ? (sp.doneMinutes ?? sp.minutes).map { "\($0) perc" } ?? "" : ""
+            goals.append(CloseGoal(id: "sport-\(i)", title: "\(SportKind(wire: sp.sport).name) · \(sp.time)",
+                                   result: result, met: sp.done ? true : nil))
         }
         if let bed = day.bedtimeTarget {
             goals.append(CloseGoal(id: "bedtime", title: "Lefekvés \(bed)", result: "", met: nil))

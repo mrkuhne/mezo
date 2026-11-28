@@ -7,6 +7,8 @@ struct BriefFixture {
     var sleep = "null"
     var bedtimeTarget = "null"
     var session = "null"
+    /// S6: today's sport list (`BoopDay.sport`); nil = the key is absent (an older server).
+    var sport: String? = nil
     var meals = "[]"
     var checkins = "[]"
     var creed = "null"
@@ -42,7 +44,7 @@ struct BriefFixture {
            "steps":0,"stepsGoal":10000,"activeKcal":0,"session":\#(session),"meals":\#(meals),
            "kcalSoFar":0,"kcalTarget":\#(kcalTarget),"proteinG":\#(proteinG),"proteinTarget":\#(proteinTarget),"carbsG":0,"fatG":0,
            "checkins":\#(checkins),"intention":{"creed":\#(creed),"foci":[]},"observations":\#(observations),
-           "calendar":{"count":\#(busyRuns.count),"busySlots":[\#(slots)]},"recovery":\#(recovery)}}
+           "calendar":{"count":\#(busyRuns.count),"busySlots":[\#(slots)]},"recovery":\#(recovery)\#(sport.map { ",\"sport\":\($0)" } ?? "")}}
         """#
     }
 

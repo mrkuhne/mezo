@@ -63,6 +63,14 @@ osszefoglalo: Röplabda, kerékpár, úszás és más sportok naplója heti beos
    ezt kimondja. **A vállad · 6 hét:** hetenkénti váll-átlag a 7-es figyelmeztető vonallal. **Pihenő a kettő között:**
    napokra bontva, mikor van kondi és sport, és hány óra jut köztük. **Amire figyelek:** a jelzések, mellettük egy
    „miért?”, ami megmutatja, mit látott Boop és mit gondol róla a Mozgás és a Szkeptikus — a tervet magától nem változtatja.
+12. **A sport az app többi részén is külön dolog (2026-11-28):** a **nap oldalán** (A napod sorai, az idővonal és az esti
+   zárás céljai) a kondi és a sport két külön sor — ha az egyiket rögzíted, a másik nyitva marad; a sport állomásán egy
+   „Megnyitom” gomb a Sport területre visz. A **Ma falon** a sportnak saját kártyája van: este meccs („Ma röpi 18:00”,
+   két órával előtte „90 perc múlva röpi”), „Az órád felvette a röpit — egészítsd ki” (a gomb egyenesen a rögzítő lapra
+   visz, az óra adataival kitöltve), „Röplabda megvolt” és „Röplabda ma kimarad”. Az **Edzés szoba** olyan napon, amikor
+   csak sport van, nem ír „pihenőnapot”, hanem „Ma sport van — röpi 18:00” és egy „Sport megnyitása” gombot. A **„+”
+   lap Sport gombja** ugyanazt a rögzítő lapot nyitja, mint a Sport terület (az óra edzésével kitöltve, ha van), és
+   megmaradt a „Mikor sportoltál?” sor is a korábbi alkalmakhoz.
 
 ## Miért így
 A spec szerint a sport és a futás megmarad; a futás az órával kap értelmet (távolság, tempó, pulzus), ezért a B5 ott építi újra.
@@ -85,8 +93,7 @@ A spec szerint a sport és a futás megmarad; a futás az órával kap értelmet
 | `run_session_log` | Futásnapló (tényleges megterhelés) |
 
 ## Mi jön még
-B5: futás az óráról távolsággal, tempóval, pulzussal. Sport 6. lépés: a sport megjelenik a gömbön, a falon, a nap oldalán
-és az Edzés sportnapján; telepítés a telefonra. Egy kijavított vagy törölt sportalkalom ma még nem igazítja újra a napi
+B5: futás az óráról távolsággal, tempóval, pulzussal. Egy kijavított vagy törölt sportalkalom ma még nem igazítja újra a napi
 terhelhetőséget (csak az új rögzítés) — ez külön jegyen van. Egy egyszeri esemény ma még nem
 változtat a kondin (például nem teszi könnyebbé az előtte lévő lábnapot) — ez egy későbbi döntés.
 

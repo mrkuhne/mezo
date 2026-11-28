@@ -4,7 +4,7 @@ import BoopDesign
 
 // The quick log's own sheets (`mezo-r36n9.154`): each is one screen, one tap to the point, and says in his words what
 // happened. Water and the supplements write straight to the server, as the Étel room does; the weight, the night, the
-// sport and the journal line go through the outbox, so they work on a plane.
+// sport (the Sport room's Log sheet, S6) and the journal line go through the outbox, so they work on a plane.
 
 private let quickEyebrow = "Gyors rögzítés"
 
@@ -231,72 +231,6 @@ struct SleepLogSheet: View {
         do {
             try await ritmus.captureSleep(payload)
             onDone(whenToast("Alvás \(sleepHoursText(hours)) rögzítve", choice: when, now: now, calendar: .current))
-        } catch {
-            problem = "Nem tudtam eltenni a telefonra — próbáld újra."
-        }
-    }
-}
-
-// MARK: - Sport
-
-/// A session outside the plan: what, how long, how hard. The server's own ten sports; the week's load counts it.
-struct SportSheet: View {
-    let onDone: (String?) -> Void
-    @Environment(RitmusEnvironment.self) private var ritmus: RitmusEnvironment?
-    @State private var sport: QuickSport = .volleyball
-    @State private var minutes: Double = 60
-    @State private var rpe = 6
-    @State private var when: WhenChoice = .previewDefault
-    @State private var busy = false
-    @State private var problem: String?
-
-    var body: some View {
-        NKSheetFrame(hue: .mozgas, eyebrow: quickEyebrow, title: "Sport") {
-            VStack(alignment: .leading, spacing: 14) {
-                NKMono("MI VOLT?")
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
-                    ForEach(QuickSport.allCases, id: \.self) { s in
-                        let on = s == sport
-                        Button { sport = s } label: {
-                            Text(s.name).nkFont(13.5, .semibold).foregroundStyle(on ? NK.ground : .white)
-                                .lineLimit(1).minimumScaleFactor(0.8)
-                                .frame(maxWidth: .infinity).frame(height: 40)
-                                .background(Capsule().fill(on ? Color.white : Color.white.opacity(0.08)))
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityAddTraits(on ? .isSelected : [])
-                    }
-                }
-                NKScale(label: "MENNYI IDEIG", value: minutes, step: 5, range: 5...300, hue: .mozgas,
-                        format: { "\(Int($0)) perc" },
-                        onChange: { minutes = $0 },
-                        onSet: { typed in if let v = Int(typed.filter(\.isNumber)) { minutes = Double(min(300, max(5, v))) } })
-                NKInlineStepper(label: "Mennyire volt nehéz (1–10)", value: "\(rpe)", hue: .mozgas,
-                                onDown: { rpe = max(1, rpe - 1) }, onUp: { rpe = min(10, rpe + 1) })
-                    .padding(14).nkGlass(16)
-                WhenRow(eyebrow: "MIKOR SPORTOLTÁL", hue: .mozgas, withTime: true, choice: $when)
-                quickHint("A terven kívüli mozgás — röpi, bringa, túra. A heti terhelésbe beleszámít.")
-            }
-        }
-        .safeAreaInset(edge: .bottom) { QuickFoot(title: "Rögzítem", busy: busy, error: problem) { Task { await save() } } }
-    }
-
-    /// The session as the server takes it: the chosen day and the chosen clock time.
-    static func payload(sport: QuickSport, minutes: Double, rpe: Int, day: String, moment: Date) -> SportSessionPayload {
-        SportSessionPayload(sport: sport.rawValue, date: day, time: clockLabel(moment),
-                            durationMinutes: Int(minutes), rpe: Double(rpe))
-    }
-
-    private func save() async {
-        guard let ritmus else { problem = "Most nem tudom eltenni."; return }
-        busy = true
-        defer { busy = false }
-        let now = BoopClock.now()
-        let moment = whenResolved(when, now: now, calendar: .current)
-        let payload = Self.payload(sport: sport, minutes: minutes, rpe: rpe, day: ritmus.day(of: moment), moment: moment)
-        do {
-            try await ritmus.captureSport(payload)
-            onDone(whenToast("\(sport.name) · \(Int(minutes)) perc rögzítve", choice: when, now: now, calendar: .current))
         } catch {
             problem = "Nem tudtam eltenni a telefonra — próbáld újra."
         }
