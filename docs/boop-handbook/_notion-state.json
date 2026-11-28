@@ -3504,7 +3504,7 @@
     },
     "jegyek:mezo-r36n9.197": {
       "page_id": "4258968e-752b-8191-a07d-e5f4efafdace",
-      "hash": "aab8aa4d3ee8"
+      "hash": "5783b849c011"
     },
     "dontesek:d-2026-11-27-edzes-proba": {
       "page_id": "4258968e-752b-81fb-9b27-e8a301479f21",
@@ -3697,6 +3697,10 @@
     "dontesek:d-2026-11-28-munkamenet-fa": {
       "page_id": "4268968e-752b-8180-bb50-ef6b7f52a850",
       "hash": "b20c229a610a"
+    },
+    "dontesek:d-2026-11-28-edzes-5-6-nem-var": {
+      "page_id": "4268968e-752b-81d5-b102-fd0f2005ece7",
+      "hash": "5e796c3bd2bb"
     }
   }
 }
