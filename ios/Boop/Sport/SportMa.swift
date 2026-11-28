@@ -14,7 +14,8 @@ struct SportMa: View {
     let undo: () -> Void
     let ask: () -> Void
     @Environment(\.dynamicTypeSize) private var typeSize
-    @ScaledMetric(relativeTo: .body) private var cardWidth: CGFloat = 132
+    /// The week row's height: given (a carousel never measures its cards), growing with the text size.
+    @ScaledMetric(relativeTo: .body) private var dayCardHeight: CGFloat = 112
 
     private var big: Bool { typeSize.isAccessibilitySize }
 
@@ -168,13 +169,12 @@ struct SportMa: View {
 
     // MARK: - Ezen a héten
 
+    /// **Ezen a héten** — the week's days as a carousel with dots. Bare, not a card: a carousel is never inside a
+    /// card (owner, 2026-11-28, mezo-r36n9.223).
     private func weekCarousel(_ cards: [SportDayCard]) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            NKMono("EZEN A HÉTEN").padding(.horizontal, 4)
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(alignment: .top, spacing: 10) { ForEach(cards) { dayCard($0) } }
-                    .padding(.horizontal, 2)
-            }
+        NKBare("Ezen a héten", hue: .sport) {
+            NKCarousel(cards, hue: .sport, height: min(dayCardHeight, 300), widthFraction: big ? 0.86 : 0.44,
+                       initial: cards.first(where: \.today)?.id) { dayCard($0) }
         }
     }
 
@@ -190,8 +190,7 @@ struct SportMa: View {
             Spacer(minLength: 0)
         }
         .padding(12)
-        .frame(width: cardWidth, alignment: .topLeading)
-        .frame(minHeight: 112, alignment: .topLeading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .nkGlass(20)
         .overlay(RoundedRectangle(cornerRadius: 20).stroke(d.today ? Hue.sport.glow.opacity(0.7) : .clear, lineWidth: 1.5))
         .accessibilityElement(children: .ignore)

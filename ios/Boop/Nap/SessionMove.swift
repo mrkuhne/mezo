@@ -48,7 +48,7 @@ enum SessionText {
 
 // MARK: - The session card on the Mozgás path
 
-/// Today's session hanging off the path (spec §5.1a, Mozgás): the exercises as a sideways strip, the conflict in
+/// Today's session hanging off the path (spec §5.1a, Mozgás): the exercises as a plain list, the conflict in
 /// Boop's words and "Áttolom HH:mm-ra" → move, toast with undo, the brief reloads. Without a conflict: start (S4).
 struct SessionCard: View {
     let session: Brief.Session
@@ -63,22 +63,20 @@ struct SessionCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             if !session.exercises.isEmpty {
-                ScrollView(.horizontal) {
-                    HStack(spacing: 8) {
-                        ForEach(Array(session.exercises.enumerated()), id: \.offset) { _, e in
-                            VStack(alignment: .leading, spacing: 4) {
-                                NKGlyph("dumbbell-ink", .white.opacity(0.8), size: 16)
-                                Text(e.name).nkFont(14, .medium).foregroundStyle(.white).lineLimit(2).minimumScaleFactor(0.7)
-                                Text("\(e.sets) sorozat").nkFont(11, .medium, design: .monospaced).foregroundStyle(.white.opacity(0.6))
-                            }
-                            .padding(12)
-                            .frame(width: 128, height: 96, alignment: .topLeading)
-                            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(.white.opacity(0.08)))
+                // A plain list, not a sideways row: this card is glass, and a swipe row never sits inside a card
+                // (owner, 2026-11-28, mezo-r36n9.223).
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(Array(session.exercises.enumerated()), id: \.offset) { _, e in
+                        HStack(alignment: .firstTextBaseline, spacing: 10) {
+                            NKGlyph("dumbbell-ink", .white.opacity(0.7), size: 14).accessibilityHidden(true)
+                            Text(e.name).nkFont(14, .medium).foregroundStyle(.white)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Spacer(minLength: 8)
+                            Text("\(e.sets) sorozat").nkFont(11, .medium, design: .monospaced).foregroundStyle(.white.opacity(0.6))
                         }
+                        .accessibilityElement(children: .combine)
                     }
                 }
-                .scrollIndicators(.hidden)
-                .padding(.horizontal, -14).contentMargins(.horizontal, 14)
             }
             if let conflict, !moved, !store.conflictKept {
                 Text(conflict.text).nkFont(13.5).foregroundStyle(.white.opacity(0.8)).fixedSize(horizontal: false, vertical: true)

@@ -2373,5 +2373,17 @@
     "munkamenet": "lapozo-kartya-nelkul",
     "mit_kapsz": "Az Edzés oldalain a lapozható sorok (mai gyakorlatok, a heted, sablonjaim, a hét napjai) nincsenek többé egy nagy kártyába zárva: csak a lapozható lapok és alattuk a pöttyök.",
     "szulo": "mezo-r36n9"
+  },
+  "mezo-r36n9.223": {
+    "cim": "Lapozók kártya nélkül a Sport Ma és a Ma oldalon",
+    "tipus": "Hiba",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Sport",
+      "Ma"
+    ],
+    "munkamenet": "lapozo-sport-ma",
+    "mit_kapsz": "A Sport Ma „Ezen a héten” sora és a Ma oldal edzéskártyájának gyakorlatai is a közös lapozó-szabályt követik: nincs lapozható sor kártyába zárva, és ahol lapozni lehet, alatta pöttyök mutatják, mennyi van még.",
+    "szulo": "mezo-r36n9"
   }
 }
