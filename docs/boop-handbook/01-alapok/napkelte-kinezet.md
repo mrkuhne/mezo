@@ -18,6 +18,13 @@ A Boop minden képernyője ugyanazt a nyelvet beszéli:
   értéket még nem ismer, a gömb mozdulatlan, és azt írja: „még tanulom”.
 - Betűk: talpas betű a mondatokhoz, kerek számok, gépírásos apró címkék. **Nincs emoji**, saját rajzolt ikonok vannak.
 - Este alkonyi égbolt, kímélő módban nyugodt szürkéskék ég.
+- **Egy fő kártya és üvegkártyák (2026-11-28):** egy oldal tetején egy lapozható fő kártya áll (alatta pöttyök, ha
+  több lapja van), alatta minden témának saját üvegkártyája. Egy kártyán egy fő gomb van, mellette legfeljebb két
+  csendesebb; a ritkább műveletek a kártya „…” menüjébe kerülnek. Nagy betűméretnél a gombok egymás alá állnak, a fő
+  kártya lapjai pedig egymás alatt jelennek meg. Az Étel Ma fül már ezekből a közös elemekből épül (ugyanúgy néz
+  ki, mint eddig); az Edzés oldalai a következő lépésekben kapják meg.
+- **Az Edzés szoba ege világosabb, kékesebb** (2026-11-28): a szobán belül kék–barack–krém égbolt; a kezdőlapon az
+  Edzés gömb színe nem változott.
 
 ## Hogyan működik
 Minden képernyő ugyanabból a közös építőkészletből épül (égbolt, táj, gömb, üvegkártya, gomb, címke). Ha valaki

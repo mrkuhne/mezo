@@ -2,7 +2,7 @@
 title: Train
 type: feature-domain
 status: done
-updated: 2026-11-28
+updated: 2026-11-27
 tags: [train, season, running, sport, frontend, backend, data-layer, progression, hypertrophy]
 key_files:
   - api/feature/train/train.yml
@@ -19,8 +19,6 @@ related: [season, _platform-data-layer, _platform-design-system, today, fuel, me
 > **2026-11-25 — A workout's energy on the instance (`mezo-r36n9.170`).** `WorkoutInstanceResponse` gains optional nullable `energy` (`WorkoutEnergy {kcal ≥ 1, source estimate|watch}`), filled only on a completed instance and only on `getTodayWorkout.completedWorkout` and the `finishWorkout` answer (`WorkoutService.withEnergy`, decorative — a failure logs and answers without it). `WorkoutEnergyService`: the watch's figure first, through the consumer-owned `WatchWorkoutEnergyPort` implemented in wearable (`WatchWorkoutEnergyAdapter`: the day's Health workouts with kcal run through `WorkoutReconciler` against the session; the **largest** match wins, never the sum — Health often holds one workout twice); else the net estimate `ActivityEnergyModel.netKcal("gym", …)` over `WorkoutWindowQueryService.gymMinutes(instance, default)` — the very minutes rule the day's food budget uses, now a shared static. No table, no migration, no error code. The iPhone app also stops showing warm-up sets (they are still prescribed). Test: `WorkoutEnergyServiceIT`.
 
 > **2026-11-24 — Book a past template day as planned (Boop gym catch-up, `mezo-r36n9.161`, decision #104).** `POST /api/train/workouts/as-planned` (`completeWorkoutAsPlanned`; body `templateSessionId`, `date`, `startedAt`, `clientRef`, `overrides[{exerciseId, weightKg}]`) → `WorkoutService.completeAsPlanned`: idempotent on `clientRef` (`workout_session.client_ref`, Liquibase `202611241400_mezo-r36n9.161_workout_session_client_ref.sql`, unique per owner); `date` within today−7 … today else 400 `TRAIN_AS_PLANNED_DATE_OUT_OF_WINDOW`; `startedAt` through `CapturedAtWindow`; D6 (a live workout) and D5 (the template day completed in the **given date's** Mon–Sun week — `completedInWeekOf`) answer 409 as `startWorkout` does; a template day whose block is no longer active (rotated, ended; `origin != custom`) → 404, never a booking onto a stale block (Review Focus 4); the instance is built by the shared `newInstance` dated `date`, status `completed`, `finishedAt = startedAt`, **no derived timing**; the prescription is today's `getToday` — every working set of a prescribed exercise is logged done at `startedAt` (an override's weight where given, RIR = the exercise's target), an exercise with neither a prescription nor an override gets the skip marker (`skipMarker`, shared with `skipExercise`), never a zero weight; `WorkoutFinishedEvent` is published. Test: `WorkoutAsPlannedIT` (9).
-
-> **2026-11-28 — Sport read models (Boop Sport S2, `mezo-r36n9.202`).** Five GETs under `/api/train/sport/` (overview, load, body, shoulder, gaps) on one load scale (session-RPE × minutes); rules in §4 *Sport / volleyball · cross · TRX*.
 
 > **2026-11-20 — the season gate (Boop B6 Évad S1, `mezo-r36n9.16`).** A new training block needs a season: 409
 > `SEASON_REQUIRED` on the start paths — see §4 *Mesocycles (planning)* → **The season gate**. Running blocks are
@@ -1135,49 +1133,6 @@ A custom (meso-less) workout template is an ordinary `workout_session` TEMPLATE 
   each session its own pre-session snack, a window already marked for an earlier session is not reused. Boop's day
   (`BoopDay.sport[]`, `boop.yml` `BoopSport`) ticks gym and sport apart — see `boop-ios.md` §4. Plan:
   `docs/superpowers/plans/2026-11-27-boop-sport-s1.md`.
-
-- **The Sport read models (Boop Sport S2, `mezo-r36n9.202`, 2026-11-28).** Five read-only GETs, contract
-  `api/feature/train/train-sport.yml` (tag `Sport`), `SportReadController` → `SportReadService`
-  (`feature/train/service/sport/`). Weeks are ISO Mon–Sun **in the owner's zone** (`mezo.wearable.zone`,
-  `TrainOwnerZoneProperties`; Sunday 23:30 local is still this week — `SportWeekTest`); `?week=` takes any date of
-  the week, `?weeks=` 1–26 (default 6) ends with the current week.
-  - `GET /api/train/sport/overview?week=` — `days[]` with two lanes (`gym[]`, `sport[]`; `SportItemState`
-    PLANNED / DONE / SKIPPED / MISSED, per-item `load`, `skipId`), `totals` (gym / sport / movement minutes),
-    `weekCount {done, planned}` (**null when the week has no sport rhythm** — no slot, event or log; planned = slot +
-    event occurrences, skipped ones included; done = logged sessions), `tonight` (current week only: BEFORE with
-    `startsInMinutes`, **RECORDED** = a Health workout of that sport exists today and no log yet → `health` is the
-    pre-fill, DONE with the session and its matched workout, SKIPPED with the skip's reason and free-pass flag) and
-    `hints[]`. `skipId` / `tonight.skip` are set only for a USER skip (the one `DELETE /api/train/skips/{id}` can
-    undo); an advice or kímélő-protected skip shows SKIPPED with no id. Tonight never guesses a sport: a skip whose slot
-    is gone does not make a card. Plans come from `WorkoutWindowQueryService.windowsFor` (THE resolver: slots + events − skips),
-    skips from `PlannedSkipService`, Health workouts through `train/port/SportHealthPort` (adapter
-    `wearable/service/SportHealthAdapter`, wearable → train is the existing direction).
-  - `GET /api/train/sport/load?weeks=` — per week `gymLoad` / `sportLoad` on **one scale: session-RPE × minutes
-    (Foster 2001).** Sport: `rpe` (else the 1–10 `intensity`) × `durationMin`. Gym: session RPE = mean of `10 − RIR`
-    over the session's done working sets (logged RIR, else the exercise's target RIR) × the session's minutes (the
-    energy model's minutes rule, `WorkoutWindowQueryService.gymMinutes`). Resistance session-RPE is validated (Day
-    et al. 2004; Sweet et al. 2004); the per-set mean is our stand-in for the session rating. A session missing a
-    part is counted in `sportUnknown` / `gymUnknown`, never guessed (`SportLoadRule`).
-  - `GET /api/train/sport/body?week=` — per muscle (catalogue fine tokens) `gymLoad`, `sportLoad` and three 0..1
-    levels. Sport heat = `SportMuscleTable` weight × session load (`other` / unknown kind → no heat, counted in
-    `sportUnknown`); gym heat = the session load split over its muscles by share of done working sets — the set's
-    exercise row is looked up **by the set's `exercise_id`** (sets point at the template day's row, which may be
-    soft-deleted). `gym` / `sport` = value ÷ that layer's top muscle; `together` = (gym + sport) ÷ the top combined
-    muscle, capped at 1. Plus `sharedMuscles` and the week's `shoulderAverage`. Pure in `SportMath` (golden test).
-  - `GET /api/train/sport/shoulder?weeks=` — weekly average shoulder strain after sport (one decimal, null when no
-    value) + the count of sessions carrying one.
-  - `GET /api/train/sport/gaps?week=` — per day the gym / sport blocks and `gapHours` between the two layers, plus
-    the hints.
-  - **Hints** (`SportHint`, the phone words them): `GAP_TIGHT` (< 3 h, WATCH) and `GAP_SHORT` (3–6 h, INFO) between
-    gym and sport on one day — Robineau et al. 2016 (JSCR, 0 / 6 / 24 h) and the Sports Med 2021 interference
-    meta-analysis; `SPORT_BEFORE_LEG_MORNING` — a sport day followed by a gym session before 12:00 the next day whose
-    plan hits quad / ham / glute / calf (`heavy` = the session met the heavy rule, shoulder ≥ 6 or RPE ≥ 8);
-    `SPORT_LOAD_DECLINE` — ≥ 2 heavy-sport → next-day rep-decline pairs in the 14 days to the week's end, the same
-    rule the character detector uses (`SportInterference`, which `SportInterferenceDetector` now delegates to).
-  - Also in S2: `BoopWorkoutKinds` moved to `train/service/sport/SportWorkoutKinds` (+ `sportOf`), so train never
-    imports boop; `WorkoutReconciler`'s SPORT branch pairs a logged sport only with that sport's own Health type or
-    `other` (before: the strength set for every kind). Contract IT `SportReadContractIT` (empty user on all five,
-    the fixture week, pre-fill, skip). Plan: `docs/superpowers/plans/2026-11-28-boop-sport-s2.md`.
 
 ### Gym schedule (`GymScheduleSlot` — weekday → time)
 A **standalone** owner-scoped weekly schedule answering only *when* the user trains on each weekday; it **persists across mesocycles** (the active meso supplies *what*, this supplies *when*). Mirrors `sport_schedule_slot`, minus the volleyball-specific columns. This is the Option-Y choice (standalone schedule, not time-on-the-meso-day) — see the X-vs-Y decision in `docs/superpowers/specs/2026-06-15-gym-schedule-times-design.md`. **Edited from two places (both write the `PUT`): the mesocycle planner Step 2 (a per-day time picker, prefilled from the standing slots — the primary editor, set when you plan a block) and the Gym-page "Időpontok" chip (mid-cycle tweaks). Fuel only *reads* it. Y+ refinement: `docs/superpowers/specs/2026-07-25-gym-times-in-planner-design.md` (`mezo-4t43`).**

@@ -1,7 +1,6 @@
 package io.mrkuhne.mezo.feature.wearable.service;
 
 import io.mrkuhne.mezo.feature.train.service.LoggedSession;
-import io.mrkuhne.mezo.feature.train.service.sport.SportWorkoutKinds;
 import io.mrkuhne.mezo.feature.wearable.config.WearableProperties;
 import java.time.Duration;
 import java.time.Instant;
@@ -26,9 +25,8 @@ public class WorkoutReconciler {
 
     private static final Set<String> STRENGTH = Set.of("strength", "hiit", "other", "traditionalstrengthtraining", "functionalstrengthtraining",
         "highintensityintervaltraining", "crosstraining");
+    private static final Set<String> VOLLEYBALL = Set.of("volleyball", "other");
     private static final String SPORT_VOLLEYBALL = "volleyball";
-    private static final String OTHER = "other";
-    private static final Set<String> STRENGTH_LIKE_SPORTS = Set.of("cross", "trx");
 
     private final double minOverlapRatio;
     private final long maxStartGapMinutes;
@@ -88,11 +86,7 @@ public class WorkoutReconciler {
             case GYM -> STRENGTH.contains(a);
             case SPORT -> {
                 String sport = s.sport() == null ? SPORT_VOLLEYBALL : s.sport().toLowerCase(Locale.ROOT);
-                // Boop Sport S2 (mezo-r36n9.202): a logged sport pairs with its own Health type (or Health "other");
-                // only cross / TRX (often recorded as a strength workout) keep the strength set — before, every
-                // non-volleyball sport fell to STRENGTH, so a logged run paired with a gym workout.
-                yield OTHER.equals(a) || SportWorkoutKinds.fitsSport(a, sport)
-                    || (STRENGTH_LIKE_SPORTS.contains(sport) && STRENGTH.contains(a));
+                yield SPORT_VOLLEYBALL.equals(sport) ? VOLLEYBALL.contains(a) : STRENGTH.contains(a);
             }
         };
     }

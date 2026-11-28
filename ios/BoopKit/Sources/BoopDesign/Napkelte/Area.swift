@@ -87,6 +87,8 @@ public enum NKBlockState {
 /// the page — with that block's own loading and failed states.
 public struct NKBare<Content: View>: View {
     let label: String, hue: Hue, trailing: String?
+    /// A control in the head's trailing slot instead of the text (`NKSectionCard`'s „…" menu or chevron).
+    let trailingView: AnyView?
     /// The section's own glyph between the tick and the label (Pénz round 11, owner: "nincsenek ikonok" — every
     /// section head that has a sensible glyph wears one). nil = the plain head every older caller keeps.
     let glyph: String?
@@ -95,6 +97,14 @@ public struct NKBare<Content: View>: View {
     public init(_ label: String, hue: Hue, glyph: String? = nil, trailing: String? = nil, state: NKBlockState = .ready,
                 @ViewBuilder content: () -> Content) {
         self.label = label; self.hue = hue; self.glyph = glyph; self.trailing = trailing; self.state = state
+        self.trailingView = nil
+        self.content = content()
+    }
+    /// The same head with a control in the trailing slot (used by `NKSectionCard`).
+    init(_ label: String, hue: Hue, glyph: String?, trailingView: AnyView, state: NKBlockState,
+         @ViewBuilder content: () -> Content) {
+        self.label = label; self.hue = hue; self.glyph = glyph; self.trailing = nil; self.state = state
+        self.trailingView = trailingView
         self.content = content()
     }
     public var body: some View {
@@ -105,6 +115,7 @@ public struct NKBare<Content: View>: View {
                 NKMono(label.uppercased())
                 Spacer(minLength: 8)
                 if let trailing { Text(trailing).nkFont(12).foregroundStyle(.white.opacity(0.5)) }
+                if let trailingView { trailingView }
             }
             switch state {
             case .ready:

@@ -2,7 +2,7 @@
 title: Karakter (user character dossier)
 type: feature-domain
 status: shipped
-updated: 2026-11-28
+updated: 2026-11-26
 tags: [character, karakter, ai, llm, backend, frontend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/character
@@ -12,8 +12,6 @@ key_files:
   - backend/src/main/resources/db/changelog/1.1.0/script/202609262200_mezo-a9bo7.11_character_maturity_week.sql
 related: [companion, proactive, insights, me, _platform-api-backend]
 ---
-
-> **2026-11-28 — reviewed after Boop Sport S2 (`mezo-r36n9.202`).** `SportInterferenceDetector` keeps its behaviour and numbers but now delegates the heavy-session rule and the 14-day decline-pair count to train's pure `train/service/sport/SportInterference`, which the Sport area's `SPORT_LOAD_DECLINE` hint shares ([`train.md`](train.md) §4).
 
 > **2026-11-26 — Meso adherence follows the ledger (Boop B7 K3 final review, `mezo-r36n9.17`).** `CharacterSignalReads.gatherMeso` passes the effective planned gym dates over the whole trend window (`trendStart..day`, 8 weeks — the motivation detector asks for every check-in day back to `trendStart`; K3 re-review) (`EffectivePlanService.plannedGymDates` over `TrainDayAdjustmentPort.effectiveSessions`, the flags' rule) as `MesoContext.plannedDates`; `MesoAdherenceDetector` and `MotivationFollowThroughDetector` ask `MesoContext.planned(date)`, so a moved session done on its new day is never a miss. Test: `DetectorTest.mesoAdherence_judgesTheEffectivePlannedDates`.
 
