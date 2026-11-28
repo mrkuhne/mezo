@@ -127,6 +127,17 @@ hogy egy beállítást elments; ha nincs mit menteni, de valamelyik izom kilóg,
 alkalmazza a javaslatot). Ha a „Két sorozat bukásig” módról váltanál, előtte szól, hogy a gyakorlatok két sorozaton maradnak. Kisebb telefonon,
 ha a „Nincs mit menteni” felirat nem fér el a gombon, helyette „Nincs változás” áll.
 
+**Kinézet (2026-11-28, az Edzés újratervezésének 6. lépése).** A blokképítő ugyanazokra a kártyákra állt, mint az Edzés
+többi oldala: a **Mezociklus** fülön minden rész egy saját kártya, kis narancs vonással és nagybetűs fejjel — „Edzésmód · az
+egész blokkra”, „Meddig tarthat egy edzés”, „Kapcsolók”, „Hétről hétre” (a heti oszlopok és a technika-címkék, jobb fent a
+hetek száma) és „Izmonként”. Az edzésmód csempéi halvány belső kitöltést kapnak, a kiválasztott narancs marad; nagyon nagy
+betűméretnél egymás alá kerülnek. Az **Izmok** kártyán a kiegészítő mozgás doboza ugyanazt a halvány belső kitöltést kapja,
+a „Hozzáadom” gombja pedig halk, keretes gomb lett — a kártyán egyetlen fehér fő gomb van, a javaslat „Elfogadom”-ja. A
+**gyakorlat beállításai** lapon minden csoport (ismétlés, tartalék, kezdősúly) saját kártya a fejjel; ha a számot te
+állítottad, a kártyán narancs keret és „TE ÁLLÍTOTTAD” címke van; a „Kész” fehér. Nagyon nagy betűméretnél a blokk neve a
+fejlécben szóhatáron tör, a lapcímek és a betöltő képernyő címe nem törik szó közepén, az alsó fülsor felirata nem vágódik le.
+Gomb, funkció és sorrend nem változott.
+
 ## Hogyan működik
 1. A telefon lekéri a futó blokkot és a gyakorlatok adatait (melyik stabil, melyiknél biztonságos a félismétlés).
 2. Minden koppintás után (fél másodpercen belül) elküldi a **piszkozatot a szerver tervmérőjének**, és azt rajzolja ki, amit az
@@ -159,6 +170,8 @@ ha a „Nincs mit menteni” felirat nem fér el a gombon, helyette „Nincs vá
    következő edzéstől él**; a már megkezdett edzést nem írja át.
 
 ## Miért így
+- A kártyás kinézet az Edzés újratervezésének része (#119, #129); a tulajdonos 2026-11-28-án úgy döntött, hogy ez a lépés
+  nem várja meg a régóta álló építő-munkákat — azok később igazodnak az új kinézethez.
 - A hiányjelzés **jelzés és egy koppintásos hozzáadás** együtt — a tulajdonos döntése (#59, 2026-11-25), a kinézet a
   szimulátorban jóváhagyva („Jó, építsd”).
 - A tulajdonos döntései: az app **javasol, te döntesz**; a heti átnézés gyakorlatonként, „Elfogadom átnézés nélkül” gombbal; a

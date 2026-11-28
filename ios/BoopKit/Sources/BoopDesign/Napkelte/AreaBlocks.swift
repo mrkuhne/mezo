@@ -1021,8 +1021,11 @@ public struct NKInfoRow: View {
 /// **What an area says while it has nothing to say yet** — a tab that exists in the design but whose data is not
 /// built. Never a fake number: the line says what will be here and what has to happen first.
 public struct NKNotLiveYet: View {
-    let hue: Hue, title: String, line: String, eyebrow: String
-    public init(hue: Hue, title: String, line: String, eyebrow: String = "MÉG NEM ÉL") { self.hue = hue; self.title = title; self.line = line; self.eyebrow = eyebrow }
+    let hue: Hue, title: String, line: String, eyebrow: String, glass: Bool
+    /// - Parameter glass: `false` inside an `NKSectionCard` (the card is the glass; no glass on glass).
+    public init(hue: Hue, title: String, line: String, eyebrow: String = "MÉG NEM ÉL", glass: Bool = true) {
+        self.hue = hue; self.title = title; self.line = line; self.eyebrow = eyebrow; self.glass = glass
+    }
     public var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 9) {
@@ -1035,9 +1038,17 @@ public struct NKNotLiveYet: View {
             Text(line).nkFont(14).foregroundStyle(.white.opacity(0.7))
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(18)
+        .padding(glass ? 18 : 0)
+        .padding(.vertical, glass ? 0 : 4)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .nkGlass()
+        .modifier(NKNotLiveYetGlass(on: glass))
         .accessibilityElement(children: .combine)
+    }
+}
+
+private struct NKNotLiveYetGlass: ViewModifier {
+    let on: Bool
+    func body(content: Content) -> some View {
+        if on { content.nkGlass() } else { content }
     }
 }

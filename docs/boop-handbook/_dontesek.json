@@ -1958,5 +1958,17 @@
     "miert": "Kb. 30 session volt nyitva, a leválasztott utódok és a maguktól bezáró sessionök miatt nem lehetett követni, mi hol fut, és hol kell folytatni a tegnapi munkát.",
     "levaltotta": "Az átadáskor azonnal leválasztott utód és a karmester nélküli sessionök (2026-11-27).",
     "kovetkezmeny": "A fő session kicsi marad: a terv után nem épít, csak indítja és két sorban nyugtázza a lépéseket, így a várakozás olcsó marad."
+  },
+  "d-2026-11-28-edzes-5-6-nem-var": {
+    "datum": "2026-11-28",
+    "terulet": [
+      "Edzés"
+    ],
+    "cim": "Az Edzés 5–6. lépése nem várja meg a régóta álló munkákat",
+    "suly": "Kicsi",
+    "valasztas": "Az edzés közbeni képernyők és a blokképítő új kinézete most elindul, bár az ugyanezeket a képernyőket érintő három régebbi munka még nincs kész.",
+    "miert": "Azok napok óta nem mozdultak, és egyik friss munka sem nyúl ezekhez a képernyőkhöz.",
+    "kovetkezmeny": "Ha a régi munkák folytatódnak, ők igazodnak az új kinézethez.",
+    "levaltotta": "A terv előfeltétele, hogy az 5–6. lépés csak azok után indul."
   }
 }

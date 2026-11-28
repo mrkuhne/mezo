@@ -36,10 +36,13 @@ public struct NKPill: View {
 
 /// Monospaced caps label ("BOOP MONDJA").
 public struct NKMono: View {
-    let text: String
-    public init(_ text: String) { self.text = text }
+    let text: String, wraps: Bool
+    /// - Parameter wraps: wrap between words instead of truncating (a card head at the accessibility sizes).
+    public init(_ text: String, wraps: Bool = false) { self.text = text; self.wraps = wraps }
     public var body: some View {
-        Text(text).nkFont(12, .medium, design: .monospaced).tracking(1.4).foregroundStyle(.white.opacity(0.6)).lineLimit(1).minimumScaleFactor(0.8)
+        Text(text).nkFont(12, .medium, design: .monospaced).tracking(1.4).foregroundStyle(.white.opacity(0.6))
+            .lineLimit(wraps ? nil : 1).minimumScaleFactor(wraps ? 1 : 0.8)
+            .fixedSize(horizontal: false, vertical: wraps)
     }
 }
 

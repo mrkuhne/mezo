@@ -1036,14 +1036,21 @@ struct EdzesRoom: View {
     // MARK: - The two tabs their own stages fill
 
     @ViewBuilder private var gyakorlatok: some View {
-        NKNotLiveYet(hue: hue, title: "A gyakorlataid",
-                     line: "A súlyaid, a rekordjaid és minden gyakorlat egy helyen. Az edzés-szakasz hozza, a Watch-appal együtt.")
+        // §5.7 of the 2026-11-27 redesign: the message sits in a section card, nothing else.
+        NKSectionCard("Gyakorlatok", hue: hue) {
+            NKNotLiveYet(hue: hue, title: "A gyakorlataid",
+                         line: "A súlyaid, a rekordjaid és minden gyakorlat egy helyen. Az edzés-szakasz hozza, a Watch-appal együtt.",
+                         glass: false)
+        }
         NKAskRow(hue: hue, text: "Kérdezd meg Boopot egy gyakorlatról") { openDestination(.chat) }
     }
 
     @ViewBuilder private var elozmenyek: some View {
-        NKNotLiveYet(hue: hue, title: "Az eddigi edzéseid",
-                     line: "A telefon ma csak a mai napot látja az edzésekből. A teljes előzmény az edzés-szakasszal érkezik.")
+        NKSectionCard("Előzmények", hue: hue) {
+            NKNotLiveYet(hue: hue, title: "Az eddigi edzéseid",
+                         line: "A telefon ma csak a mai napot látja az edzésekből. A teljes előzmény az edzés-szakasszal érkezik.",
+                         glass: false)
+        }
         NKAskRow(hue: hue, text: "Kérdezd meg Boopot a fejlődésedről") { openDestination(.chat) }
     }
 }

@@ -86,6 +86,7 @@ public enum NKBlockState {
 /// What the warm treatment puts in place of a glass card: a hue tick, a mono label, and the content straight on
 /// the page — with that block's own loading and failed states.
 public struct NKBare<Content: View>: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let label: String, hue: Hue, trailing: String?
     /// A control in the head's trailing slot instead of the text (`NKSectionCard`'s „…" menu or chevron).
     let trailingView: AnyView?
@@ -112,7 +113,8 @@ public struct NKBare<Content: View>: View {
             HStack(spacing: 8) {
                 Capsule().fill(hue.glow).frame(width: 3, height: 13)
                 if let glyph { NKGlyph(glyph, hue.glow.opacity(0.9), size: 14) }
-                NKMono(label.uppercased())
+                // At the accessibility sizes a long head wraps instead of losing its end („Ismétlés…").
+                NKMono(label.uppercased(), wraps: dynamicTypeSize.isAccessibilitySize)
                 Spacer(minLength: 8)
                 if let trailing { Text(trailing).nkFont(12).foregroundStyle(.white.opacity(0.5)) }
                 if let trailingView { trailingView }

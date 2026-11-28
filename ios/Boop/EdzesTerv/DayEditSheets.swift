@@ -152,8 +152,8 @@ struct DayEditSettingsSheet: View {
                         }
                         Button { edit { $0.resetToStyle(day: at.day, at: at.index) } } label: {
                             Text("Visszaállítom az edzésmódra").nkFont(14, .semibold).foregroundStyle(.white)
-                                .padding(.horizontal, 16).frame(minHeight: 40)
-                                .background(Capsule().strokeBorder(.white.opacity(0.3), lineWidth: 1))
+                                .padding(.horizontal, 16).frame(minHeight: 44)
+                                .background(Capsule().fill(.white.opacity(0.08)).overlay(Capsule().stroke(.white.opacity(0.16))))
                         }
                         .buttonStyle(.plain)
                     }
@@ -164,10 +164,11 @@ struct DayEditSettingsSheet: View {
                     .nkFont(12).foregroundStyle(.white.opacity(0.45))
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                // The sheet's one primary: white, as in every card (NKCardActions; the hue is for Indítás).
                 Button { dismiss() } label: {
                     Text("Kész").nkFont(16, .semibold).foregroundStyle(NK.ground)
                         .frame(maxWidth: .infinity, minHeight: 54)
-                        .background(Capsule().fill(planHue.glow))
+                        .background(Capsule().fill(.white))
                 }
                 .buttonStyle(.plain)
                 .padding(.top, 4)
@@ -181,25 +182,27 @@ struct DayEditSettingsSheet: View {
         withAnimation(reduceMotion ? nil : .snappy) { model.draft = d }
     }
 
+    /// One group of the sheet as a section card (spec 2026-11-27 §5.6): the kit's head, the „te állítottad" tag
+    /// under it and a hue rim while the value is his own.
     private func field(_ title: String, note: String? = nil, mine: Bool, @ViewBuilder control: () -> some View) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(title).nkFont(15, .medium).foregroundStyle(.white)
-                if mine {
-                    Text("TE ÁLLÍTOTTAD").nkFont(9, .semibold, design: .monospaced).tracking(1)
-                        .foregroundStyle(NK.ground)
-                        .padding(.horizontal, 6).padding(.vertical, 3)
-                        .background(Capsule().fill(planHue.glow))
-                }
-                Spacer(minLength: 0)
+        NKSectionCard(title, hue: planHue) {
+            VStack(alignment: .leading, spacing: 10) {
+                if mine { mineTag }
+                if let note { Text(note).nkFont(12).foregroundStyle(.white.opacity(0.5)).fixedSize(horizontal: false, vertical: true) }
+                control()
             }
-            if let note { Text(note).nkFont(12).foregroundStyle(.white.opacity(0.5)).padding(.top, -6) }
-            control()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.bottom, 4)
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.white.opacity(mine ? 0.1 : 0.06)))
-        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(planHue.glow.opacity(mine ? 0.45 : 0), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(planHue.glow.opacity(mine ? 0.45 : 0), lineWidth: 1))
+    }
+
+    private var mineTag: some View {
+        Text("TE ÁLLÍTOTTAD").nkFont(9, .semibold, design: .monospaced).tracking(1)
+            .foregroundStyle(NK.ground)
+            .padding(.horizontal, 6).padding(.vertical, 3)
+            .background(Capsule().fill(planHue.glow))
+            .fixedSize()
     }
 }
 
@@ -257,7 +260,7 @@ struct DayEditValueSheet: View {
                     }
                 }
                 .padding(.horizontal, 14)
-                .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.white.opacity(0.06)))
+                .nkInnerCard(radius: 18)
                 if own {
                     VStack(alignment: .leading, spacing: 2) {
                         HStack(alignment: .top, spacing: 6) {
