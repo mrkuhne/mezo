@@ -197,6 +197,7 @@ final class ReminderPresenter: NSObject, UNUserNotificationCenterDelegate, Senda
     @MainActor func handleTap(route: String?) {
         guard let route else { return }
         if let cover = RitmusCover(route: route) { RitmusRouter.shared.open(cover) }
+        else if route == WeeklyReviewReminder.route { RitmusRouter.shared.openReview() }
         else if ReminderRoute(route: route) != nil { RitmusRouter.shared.openReminders() }
     }
 }

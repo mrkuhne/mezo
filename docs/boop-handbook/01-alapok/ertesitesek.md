@@ -10,13 +10,14 @@ osszefoglalo: A Boop a telefonon beütemezett, csendes értesítésekkel szól l
 ---
 
 ## Mit csinál
-Három fajta emlékeztető van:
+Négy fajta emlékeztető van:
 
 | Emlékeztető | Mikor szól | Állapot |
 |---|---|---|
 | **Lefekvés** | A lefekvési cél előtt 30 perccel, minden este | Élesben |
 | **Kitöltés** (reggel, délben, délután) | 07:30, 12:30, 16:00 — csak ha az adott kitöltés még nincs meg | Ellenőrzés (B3) |
 | **Esti zárás** | A lefekvési cél előtt 75 perccel (cél nélkül 21:30) — csak ha a nap még nincs lezárva | Ellenőrzés (B3) |
+| **Heti átnézés** | Vasárnap 18:00: „Kész a heti átnézés” — „Öt rövid lépés a hetedről — két perc.” Csak ha van évadod | Élesben (2026-11-28) |
 
 Az értesítésre koppintva a Boop **egyenesen** a kitöltés első kérdésére vagy az esti zárásra nyit.
 
@@ -26,6 +27,9 @@ Az értesítésre koppintva a Boop **egyenesen** a kitöltés első kérdésére
   megtagadod, egy kedves sor megmondja, hol lehet bekapcsolni.
 - A **kitöltési és zárási emlékeztetők** a telefonon vannak beütemezve hét napra előre; minden mentés, minden
   app-megnyitás és minden háttérfrissítés újraszámolja őket, így egy kész kitöltés aznap már nem szól.
+- A **heti átnézés értesítése** is a telefonon van beütemezve (vasárnap 18:00), és csak akkor, ha van évadod **és az
+  értesítések már engedélyezve vannak** — ezt az értesítést az app soha nem kéri el külön; koppintásra a heti átnézés
+  nyílik (lásd [Heti átnézés](../04-terv/10-heti-atnezes.md)).
 - Nincs számláló a piros pöttyön, nincs ismétlés, nincs „elmulasztottad” szöveg.
 - A telefon már bejelenti az értesítési címét a szervernek, de **a szerver még nem küld semmit**.
 

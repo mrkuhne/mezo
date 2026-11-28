@@ -5,13 +5,15 @@ import Foundation
 // no second notification policy: only the weekly menu waiting for approval (S3) is `.expires`, so only it may ring,
 // within the wall's own cap (decision #35). S4 adds the experiments (a proposal, a fresh result) — neither rings.
 
-/// Candidate ids, so the wall's tap can tell where each one opens (`evadWallOpens`).
+/// Candidate ids, so the wall's tap can tell where each one opens (`evadWallTarget`).
 enum EvadWallID {
     static let learned = "evad-learned-"
     static let end = "evad-end-"
     /// S4: Boop's experiment proposal (its primary „Indulhat" starts it) and a just-finished result.
     static let proposal = "evad-exp-proposal-"
     static let result = "evad-exp-result-"
+    /// The Sunday weekly review (`mezo-r36n9.196`), one card per week: the id ends with that week's Monday.
+    static let review = "evad-review-"
 }
 
 /// The Évad source's candidates:
@@ -23,10 +25,11 @@ enum EvadWallID {
 ///     tip — an experiment can wait a day, a meal window cannot).
 ///   • S4 `.happened` — an experiment finished within the last three days („Kész a kísérlet"); a tap opens its result.
 /// Every card's „miért?" is the overview's own words. No season (nil overview), no candidates.
-public func evadCandidates(_ o: EvadOverview?, experiments: EvadExperiments? = nil, now: Date,
-                           calendar: Calendar = .current) -> [WallCandidate] {
+public func evadCandidates(_ o: EvadOverview?, experiments: EvadExperiments? = nil, review: WallCandidate? = nil,
+                           now: Date, calendar: Calendar = .current) -> [WallCandidate] {
     guard let o else { return [] }
     var out: [WallCandidate] = []
+    if let review { out.append(review) }
     if let menu = evadMenuCandidate(o, now: now, calendar: calendar) { out.append(menu) }
 
     if let i = o.insights.first(where: { $0.key == "learned_expenditure" }) {
@@ -84,17 +87,6 @@ func evadExperimentCandidates(_ x: EvadExperiments, now: Date, calendar: Calenda
             why: "\(e.lengthDays) napig figyeltem, és összevetettem az előtte levő napokkal. Ez a te napjaidból látszik, de nem bizonyíték."))
     }
     return out
-}
-
-/// Where a tap on an Évad card lands: `modositas` for the correction proposal, `menu` (the Menü tab) for the weekly
-/// menu, `hatas` (the Hatás tab) for an experiment proposal, `kiserlet:<id>` for a finished experiment's result, nil
-/// for the Évad page itself.
-public func evadWallOpens(_ id: String) -> String? {
-    if id.hasPrefix(EvadWallID.learned) { return "modositas" }
-    if id.hasPrefix(EvadWallID.menu) { return "menu" }
-    if id.hasPrefix(EvadWallID.proposal) { return "hatas" }
-    if id.hasPrefix(EvadWallID.result) { return "kiserlet:" + id.dropFirst(EvadWallID.result.count) }
-    return nil
 }
 
 /// "2026-W47": the ISO week `now` falls in, in the phone's time zone.

@@ -2479,7 +2479,7 @@
     "terulet": "Célok és évad",
     "app": "Kész",
     "mit_tud": "A kiválasztott receptekből, a napi keretekhez igazított adagokkal összeállítja a jövő heti menüt (vasárnap este magától is), egy-egy étel lecserélhető, jóváhagyás után ezek a napi terv javaslatai, és egy hét közbeni évadmódosításnál a hátralévő napok igazodnak.",
-    "app_megjegyzes": "Az Évad Menü fülén: hét napkártya, jóváhagyás, csere, másik menü, receptválasztás; jóváhagyásra váró menünél kártya a Ma falon.",
+    "app_megjegyzes": "Az Étel szoba Hét fülén (2026-11-28 óta): hét napkártya, jóváhagyás, csere, másik menü; a receptválasztás a recepteknél a „Menübe jöhet” kapcsolóval; a vasárnapi heti átnézés (Évad › Hét) menü-lépése ide visz; jóváhagyásra váró menünél kártya a Ma falon.",
     "jegyek": [
       "mezo-r36n9.16"
     ],
@@ -2493,7 +2493,7 @@
     "terulet": "Célok és évad",
     "app": "Kész",
     "mit_tud": "A jóváhagyott heti menüből összeadja a hozzávalókat polcok szerint, minden tételnél mennyiséggel és azzal, melyik ételhez kell; pipálható, a szokásos tételek csak koppintásra kerülnek fel, a korábbi listák megmaradnak.",
-    "app_megjegyzes": "Az Évad Lista fülén: pipálás, „változott” rész, szokásos tételek, megosztás szövegként, korábbi listák.",
+    "app_megjegyzes": "Az Étel szoba Hét fülén (2026-11-28 óta): pipálás, „változott” rész, szokásos tételek, megosztás szövegként, korábbi listák.",
     "jegyek": [
       "mezo-r36n9.16"
     ],
@@ -2529,7 +2529,7 @@
     "terulet": "Célok és évad",
     "app": "Nem kell",
     "mit_tud": "A mintáidra épülő egyszemélyes kísérleteket javasol, elfogadásra elindítja őket, és az ablak végén őszintén kiértékeli az eredményt.",
-    "app_megjegyzes": "Az Évad Hatás füle kiváltotta (2026-11-21): a régi javaslatgyártás leállt, a régi adatok megmaradnak.",
+    "app_megjegyzes": "Az Évad Kísérlet füle kiváltotta (2026-11-21): a régi javaslatgyártás leállt, a régi adatok megmaradnak.",
     "jegyek": [
       "mezo-r36n9.16"
     ],
@@ -2871,7 +2871,7 @@
     "terulet": "Boop és AI",
     "app": "Tervben",
     "mit_tud": "A szerver méri, hogy bizonyos emberek vagy eseménytípusok után hogyan alakul a hangulatod, energiád és feszültséged, és egy-egy témát el lehet némítani.",
-    "app_megjegyzes": "Az appban nincs külön; ételekre, kiegészítőkre és szokásokra az Évad Hatás füle (kísérletek) méri a hatást.",
+    "app_megjegyzes": "Az appban nincs külön; ételekre, kiegészítőkre és szokásokra az Évad szoba Kísérlet füle (kísérletek) méri a hatást.",
     "jegyek": [
       "mezo-r36n9.16"
     ],
@@ -3899,7 +3899,7 @@
     "terulet": "Célok és évad",
     "app": "Kész",
     "mit_tud": "Egyszerre egy kísérlet: kipipálod a napokat, a végén összeveti az előtte lévő ugyanolyan hosszú időszakkal az alvást, a pulzust és a közérzetet; őszinte eredmény, egyetlen százalék nélkül. Boop is javasolhat (új kiegészítő, kétszer evett új étel, naplóban „elkezdtem”), a megtartott szokás bekerül az évad szabályai közé.",
-    "app_megjegyzes": "Az Évad Hatás fülén és az eredménylapon; a javaslat és a kész eredmény a Ma falon is megjelenik.",
+    "app_megjegyzes": "Az Évad szoba Kísérlet fülén és az eredménylapon; a javaslat és a kész eredmény a Ma falon is megjelenik.",
     "jegyek": [
       "mezo-r36n9.16"
     ],

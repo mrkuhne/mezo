@@ -45,7 +45,7 @@ struct SulyRoom: View {
             switch selected {
             case "Test": SulyTest(store: store, openInfo: { info = $0 }, ask: { openDestination(.chat) })
             case "Napló": SulyNaplo(store: store, capture: { openPick(.quick(.weight)) })
-            default: SulyMa(store: store, openInfo: { info = $0 }, openEvad: { openDestination(.room(RoomEntry(.evad))) },
+            default: SulyMa(store: store, openInfo: { info = $0 }, openEvad: { openDestination(.room(RoomEntry(.evad, tab: "Terv"))) },
                             capture: { openPick(.quick(.weight)) }, ask: { openDestination(.chat) })
             }
             Color.clear.frame(height: 10)

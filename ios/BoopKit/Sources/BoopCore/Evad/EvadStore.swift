@@ -20,9 +20,6 @@ public final class EvadStore {
     /// Why the last read gave no answer (nil while an answer — fresh, cached or "no season" — is on screen).
     public private(set) var problem: PlanFetchError?
     public private(set) var loading = false
-    /// A sub-page someone outside the page asked for (the Ma wall's „Átnézem" → `modositas`): the Évad page opens it
-    /// once it is on screen and clears it.
-    public var pendingSub: String?
     /// This week so far, Monday → yesterday (the Évad orb and the Most tab); nil on Monday or before the first read.
     public private(set) var week: EvadAdherenceResponse?
     /// How old `week` is when it came from the cache; nil for a fresh read.

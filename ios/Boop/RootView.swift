@@ -99,6 +99,9 @@ struct RootView: View {
         .background {
             if let ritmus, let kapacitasStore, case .ready = session.state { KapacitasTriggers(env: ritmus, store: kapacitasStore) }
         }
+        .background {
+            if let evad, case .ready(let me) = session.state { WeeklyReviewTriggers(store: evad).id(me.id) }
+        }
     }
 
     /// One Health link and one morning brief store per signed-in user; refreshed on open once the shell shows.
@@ -319,6 +322,25 @@ private struct KapacitasTriggers: View {
             .task { await store.syncOutbox() }
             .onChange(of: env.kapacitasTick) { Task { await store.outboxChanged() } }
             .onChange(of: env.refused.count) { Task { await store.syncOutbox() } }
+    }
+}
+
+/// The Sunday review's notification (`mezo-r36n9.196`): re-armed whenever the app comes forward and whenever the
+/// season appears or goes — Sunday 18:00, only with a season and with notifications already allowed.
+private struct WeeklyReviewTriggers: View {
+    let store: EvadStore
+    @Environment(\.scenePhase) private var scenePhase
+    var body: some View {
+        Color.clear
+            .onChange(of: scenePhase, initial: true) { _, phase in if phase == .active { arm() } }
+            .onChange(of: store.overview == nil) { arm() }
+            .onChange(of: store.empty) { arm() }
+    }
+    private func arm() {
+        // unknown (not loaded yet, offline with no cache) is not "no season": only a known answer changes anything
+        guard store.overview != nil || store.empty else { return }
+        let hasSeason = store.overview != nil
+        Task { await WeeklyReviewReminder(center: SystemReminderCenter(), log: weeklyReviewLog()).refresh(now: Date(), hasSeason: hasSeason) }
     }
 }
 

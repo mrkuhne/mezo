@@ -16,7 +16,7 @@ belül (a tulajdonos döntése, 2026-11-11: „teljes étel-app és teljes edzé
 - **Ma** — a mai étkezések, a napi keret (mennyi fér még bele), a víz és a kiegészítők.
 - **Receptek** — a saját receptek, a receptműhely (AI-val együtt összerakott receptek), recept behúzása egy weboldalról.
 - **Kamra** — az alapanyagok és termékek, behúzás termékoldalról, címkefotóról vagy vonalkódról.
-- **Hét** — a hét napjai a célokhoz mérve.
+- **Hét** — a hét napjai a célokhoz mérve, felül a heti menü és a bevásárlólista kártyája (menüoldal, listaoldal, korábbi listák, szokásos tételek; 2026-11-28 óta itt él, döntés #133).
 
 Étkezést rögzíteni a szobából és a globális **„+”** gombról is lehet: fotóval, szabad szöveggel (szóval is),
 vonalkóddal, receptből, alapanyagból vagy a „szokásosak” közül. Boop egy vázlatot készít, amit jóváhagysz —

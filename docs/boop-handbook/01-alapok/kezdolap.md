@@ -20,7 +20,7 @@ fotózott ködös hegygerinc, előtte lassan szálló köd.
 | **Étel** | Az Étel szoba (Ma · Receptek · Kamra · Hét) |
 | **Edzés** | Az edzés területe |
 | **Energia** | A közérzeted területe |
-| **Évad** | Az Évad szoba (lila gömb): a mai Évad oldal, visszagombbal; a gömb a heti betartásodat mutatja (2026-11-28 óta) |
+| **Évad** | Az Évad szoba (lila gömb): négy füllel — Most · Hét · Terv · Kísérlet —, visszagombbal; a gömb a heti betartásodat mutatja (2026-11-28 óta) |
 | **Súly** | A Súly területe — a súlytrend és az évad ütemének tartása (2026-11-24 óta) |
 | **Forma** | Az összképed területe |
 | **Pénz** | A Pénz területe |
@@ -65,4 +65,4 @@ Nincs saját beállítása. A csökkentett mozgást a telefon Kisegítő lehető
 
 ## Mi jön még
 - A Levél gömbje megépült (a reggeli posta); a Pénz gömbje a saját területével él, és 2026-11-24 óta számot is mond.
-- Az Évad szoba saját füles szobává válik (a következő lépés); most még a mai Évad oldalt nyitja.
+- Az Évad szoba 2026-11-28 óta saját füles szoba (lásd [Évad](../04-terv/00-attekintes.md)).

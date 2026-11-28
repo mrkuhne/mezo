@@ -40,3 +40,14 @@ extension EnvironmentValues {
         set { self[OpenDestinationKey.self] = newValue }
     }
 }
+
+/// The tab and sub-page the ring was asked to open a room on (`mezo-r36n9.196` step 2): the Ma wall's menu card asks
+/// for Étel › Hét's menu, the Évad year strip for Edzés › Éves terv. nil = the room's own default. Set by the ring
+/// around the room it opens; a room reads it once, when it appears.
+private struct RoomEntryKey: EnvironmentKey { static let defaultValue: RoomEntry? = nil }
+extension EnvironmentValues {
+    var roomEntry: RoomEntry? {
+        get { self[RoomEntryKey.self] }
+        set { self[RoomEntryKey.self] = newValue }
+    }
+}

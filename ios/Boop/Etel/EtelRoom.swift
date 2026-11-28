@@ -826,14 +826,34 @@ struct EtelRoom: View {
     @State private var hetDay: HetDay?
     /// The Ma tab's settings, skip and supplement-list sheets (page level, one at a time).
     @State private var etelSheet: EtelSheet?
+    /// The weekly menu and list pages over Hét (`mezo-r36n9.196`, page level).
+    @State private var hetSub: EtelHetSub?
+    /// Receptek's „Menübe jöhet" filter; the menu page's „N recept a menüben" turns it on.
+    @State private var menuOnly = false
+    /// A wall card's entry (`Étel › Hét › menu`): taken once.
+    @Environment(\.roomEntry) private var roomEntry
+    @State private var tookEntry = false
+
+    enum EtelHetSub: String, Identifiable { case menu, list; var id: String { rawValue } }
 
     init(tab: EtelTab = .ma) {
         #if DEBUG
         let preview = UserDefaults.standard.string(forKey: "etelTab").flatMap(EtelTab.init(rawValue:))
         _selected = SceneStorage(wrappedValue: (preview ?? tab).rawValue, "etel.tab")
+        _menuOnly = State(initialValue: UserDefaults.standard.bool(forKey: "etelMenuOnly"))
         #else
         _selected = SceneStorage(wrappedValue: tab.rawValue, "etel.tab")
         #endif
+    }
+
+    /// Hét: the weekly menu and list cards (with a season) above the week (`mezo-r36n9.196`).
+    @ViewBuilder private var hetTab: some View {
+        if let menu = evad?.menu, evad?.overview != nil {
+            EtelMenuCard(menu: menu, open: { hetSub = .menu })
+            EtelListCard(menu: menu, open: { hetSub = .list })
+        }
+        EtelHet(store: store, onOpen: { hetDay = $0 }, onRetry: { Task { await reload() } },
+                onStep: { delta in Task { if let food { await store.stepWeek(delta, food: food, evad: evad?.client, now: BoopClock.now()) } } })
     }
 
     private var tab: EtelTab { EtelTab(rawValue: selected) ?? .ma }
@@ -846,6 +866,28 @@ struct EtelRoom: View {
     }
 
     var body: some View {
+        page
+            .fullScreenCover(item: $hetSub) { sub in
+                Group {
+                    switch sub {
+                    case .menu:
+                        EtelMenuPage(close: { hetSub = nil },
+                                     openRecipes: { hetSub = nil; menuOnly = true; selected = EtelTab.receptek.rawValue })
+                    case .list:
+                        EtelListPage(close: { hetSub = nil }, openMenu: { hetSub = .menu })
+                    }
+                }
+                .environment(evad)
+            }
+            .onAppear {
+                guard !tookEntry, let e = roomEntry, e.hue == .fuel else { return }
+                tookEntry = true
+                if let t = e.tab.flatMap(EtelTab.init(rawValue:)) { selected = t.rawValue }
+                if e.sub == "menu" { hetSub = .menu } else if e.sub == "list" { hetSub = .list }
+            }
+    }
+
+    @ViewBuilder private var page: some View {
         let today = etelVerdict(day: store.day, plan: store.plan, problem: store.day == nil ? (store.dayProblem ?? (food == nil ? .unauthorized : nil)) : nil)
         let v = etelTabVerdict(tab, today: today, recipes: store.recipesLoaded ? store.recipes : nil, shelf: store.shelfLoaded ? store.shelf : nil,
                                 week: store.week.map { hetWeek($0, scores: store.weekScores, today: store.ymd, scoreFailures: store.weekScoreFailures,
@@ -869,13 +911,12 @@ struct EtelRoom: View {
             case .receptek:
                 EtelReceptek(store: store, onImport: { recipeSheet = .importer($0) }, onWorkshop: { recipeSheet = .workshop },
                              onCooked: { recipeSheet = .cooked(.input) },
-                             onOpen: { recipeSheet = .detail($0.id) }, onRetry: { Task { await reload() } })
+                             onOpen: { recipeSheet = .detail($0.id) }, onRetry: { Task { await reload() } }, menuOnly: $menuOnly)
             case .kamra:
                 EtelKamra(store: store, onAdd: { kamraSheet = .add($0) }, onOpen: { kamraSheet = .item($0) }, onRetry: { Task { await reload() } },
                           onSheet: { etelSheet = $0 })
             case .het:
-                EtelHet(store: store, onOpen: { hetDay = $0 }, onRetry: { Task { await reload() } },
-                        onStep: { delta in Task { if let food { await store.stepWeek(delta, food: food, evad: evad?.client, now: BoopClock.now()) } } })
+                hetTab
             }
             Color.clear.frame(height: 20)
         }
@@ -883,6 +924,7 @@ struct EtelRoom: View {
         // Frissítés button reloads the room.
         .toolbar(.hidden, for: .navigationBar)
         .background(RoomSwipeBack().frame(width: 0, height: 0).accessibilityHidden(true))
+
         .nkToast($toast, action: undoMeal != nil && toast == undoLine ? "Visszavonás" : nil) { undoDelete() }
         // A waiting delete never outlives the room or the app in the foreground. Only the background counts: the
         // inactive phase (Control Center, a Face ID prompt, a call banner) comes back with the toast still up.
@@ -1021,7 +1063,12 @@ struct EtelRoom: View {
             switch tab {
             case .receptek: if !store.recipesLoaded { await store.loadRecipes(food: food) }
             case .kamra: if !store.shelfLoaded { await store.loadShelf(food: food) }
-            case .het: if !store.weekLoaded { await store.loadWeek(food: food, evad: evad?.client, now: BoopClock.now()) }
+            case .het:
+                // the menu and list cards need the season; a direct open (wall card, link) may come before the ring read it
+                if evad?.overview == nil { await evad?.load() }
+                if !store.weekLoaded { await store.loadWeek(food: food, evad: evad?.client, now: BoopClock.now()) }
+                // loaded here, not by the cards: a card with nothing yet is empty, and an empty view never runs its task
+                if evad?.overview != nil, let menu = evad?.menu { await menu.loadMenu(); await menu.loadList() }
             case .ma: break
             }
         }

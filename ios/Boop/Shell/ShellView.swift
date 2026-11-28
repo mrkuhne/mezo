@@ -28,6 +28,10 @@ struct ShellView: View {
     /// The Emlékeztetők page asked for while a sheet was up (the "+" sheet's Emlékeztető door, a reminder's notification
     /// tapped): it opens after that sheet has gone.
     @State private var reminderPageAfterSheet = false
+    /// The weekly review asked for while a sheet was up: it opens after that sheet has gone.
+    @State private var reviewAfterSheet = false
+    /// The review's week, fixed when it opens: a redraw after Monday midnight must not swap the flow for „closed".
+    @State private var reviewWindow: EvadReviewWindow?
     /// The meal composer the "+" sheet asked for (opens once the sheet has gone), and the one on screen.
     @State private var mealAfterCapture: MealStart?
     @State private var meal: MealStart?
@@ -82,6 +86,7 @@ struct ShellView: View {
         if let q = quickAfterCapture { quickAfterCapture = nil; quick = q }
         if let hue = areaAfterCapture { areaAfterCapture = nil; router.go(.room(RoomEntry(hue))) }
         if reminderPageAfterSheet { reminderPageAfterSheet = false; router.openReminders() }
+        if reviewAfterSheet { reviewAfterSheet = false; router.openReview() }
     }
 
     /// The quick log's own sheets (`mezo-r36n9.154`); each closes itself with the toast to show.
@@ -155,7 +160,8 @@ struct ShellView: View {
                 .presentationDragIndicator(.visible)
         }
         // The page reads the router's flag here, so the cover presents when anything below asks for it.
-        .fullScreenCover(item: Binding(get: { [cover = router.cover] in cover }, set: { router.cover = $0 })) { cover in
+        .fullScreenCover(item: Binding(get: { [cover = router.cover] in cover }, set: { router.cover = $0 }),
+                         onDismiss: openCoverAfterSheet) { cover in
             switch cover {
             case .checkin:
                 if let ritmus {
@@ -172,7 +178,8 @@ struct ShellView: View {
             }
         }
         // The Emlékeztetők page (a reminder's notification, Ma's „Mind”) and the new-reminder sheet (the "+" door).
-        .fullScreenCover(isPresented: Binding(get: { [r = router.reminders] in r == .page }, set: { if !$0 { router.reminders = nil } })) {
+        .fullScreenCover(isPresented: Binding(get: { [r = router.reminders] in r == .page }, set: { if !$0 { router.reminders = nil } }),
+                         onDismiss: openCoverAfterSheet) {
             EmlekeztetokPage { router.reminders = nil }
         }
         .sheet(isPresented: Binding(get: { [r = router.reminders] in r == .new }, set: { if !$0 { router.reminders = nil } })) {
@@ -184,14 +191,44 @@ struct ShellView: View {
                     .presentationDragIndicator(.visible)
             }
         }
+        // The Sunday weekly review (`mezo-r36n9.196`): its notification, the Ma wall card, Évad › Most / Hét.
+        .fullScreenCover(isPresented: Binding(get: { [r = router.review] in r }, set: { router.review = $0 }),
+                         onDismiss: { reviewWindow = nil; openCoverAfterSheet() }) {
+            // fallback: asked before the shell was up (a cold launch from the notification), so no onChange captured it
+            if let window = reviewWindow ?? evadReviewWindow(now: BoopClock.now()) ?? WeeklyReviewFlow.previewWindow {
+                WeeklyReviewFlow(window: window) { router.review = false }
+            } else {
+                WeeklyReviewClosed { router.review = false }
+            }
+        }
         // A notification tap while the "+" or account sheet is up: the sheet goes first, then the cover (two
-        // presentations never overlap).
+        // presentations never overlap). The same between the full-screen covers: one asked for while another is up
+        // waits until that one closes.
         .onChange(of: router.cover) { _, asked in
-            guard let asked, capturing || account else { return }
-            coverAfterCapture = asked
-            router.cover = nil
-            capturing = false
-            account = false
+            guard let asked else { return }
+            if capturing || account {
+                coverAfterCapture = asked
+                router.cover = nil
+                capturing = false
+                account = false
+            } else if router.review {
+                coverAfterCapture = asked
+                router.cover = nil
+            }
+        }
+        .onChange(of: router.review) { _, asked in
+            guard asked else { return }
+            if capturing || account {
+                router.review = false
+                capturing = false
+                account = false
+                reviewAfterSheet = true
+            } else if router.cover != nil || router.reminders == .page {
+                router.review = false
+                reviewAfterSheet = true
+            } else {
+                reviewWindow = evadReviewWindow(now: BoopClock.now()) ?? WeeklyReviewFlow.previewWindow
+            }
         }
         .onChange(of: router.reminders) { _, asked in
             guard asked == .page, capturing || account else { return }
@@ -228,6 +265,8 @@ struct ShellView: View {
             case "checkin", "checkinDone": router.open(.checkin)
             case "reminderNew": router.openNewReminder()
             case "este", "esteDone": router.open(.este)
+            // `-previewOpen review -reviewPage 1…5`: the Sunday review on a page (any day of the week).
+            case "review": router.openReview()
             default: break
             }
             #endif

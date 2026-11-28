@@ -10,7 +10,7 @@ osszefoglalo: Kipróbálsz valamit (egy kiegészítőt, egy receptet, egy szoká
 ---
 
 ## Mit csinál
-Az Évad oldal **Hatás** fülén egyszerre **egy** kísérlet fut. Egy kísérlet egy változás (például „esti magnézium” vagy „este 9
+Az Évad szoba **Kísérlet** fülén (2026-11-28 óta; régen az Évad oldal Hatás füle) egyszerre **egy** kísérlet fut. Egy kísérlet egy változás (például „esti magnézium” vagy „este 9
 után nincs telefon”), általában 14 napig (7 és 28 nap között). A végén Boop összeveti a kísérlet napjait az **előtte lévő, ugyanolyan
 hosszú időszakkal**, és jelenként megmutatja: előtte | közben, a napok számával.
 
@@ -39,7 +39,7 @@ Az **eredménylap**: előtte | közben táblázat, „Mit jelent ez?” (ami té
 3. **Boop is javasol** (az évad szabályai között kikapcsolható): ha új étrend-kiegészítő kerül a napi listádba; ha egy receptet vagy
    ételt először eszel, és egy héten belül újra; vagy ha a naplóba azt írod, „elkezdtem…” / „mostantól…”. Egyszerre legfeljebb egy
    nyitott javaslat van, és amíg kísérlet fut, nem javasol újat.
-4. **Naponta egyszer** (hajnalban) a szerver lezárja a lejárt kísérletet és megnézi, van-e új javaslat; a Hatás fül megnyitásakor ugyanez
+4. **Naponta egyszer** (hajnalban) a szerver lezárja a lejárt kísérletet és megnézi, van-e új javaslat; a Kísérlet fül megnyitásakor ugyanez
    azonnal is lefut.
 5. A régi, webes kísérletjavasló kikapcsolt (a régi adatai megmaradnak, csak már nem javasol), így az évad kísérletei az egyetlenek.
 

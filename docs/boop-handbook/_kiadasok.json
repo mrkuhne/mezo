@@ -1204,5 +1204,14 @@
       "mezo-r36n9.199"
     ],
     "mi_valtozott": "A receptlapon az értékelés új: rozetta a pontszámmal, ételre szabott címsor és összefoglaló, hol tartanál ma, ha megennéd, nyolc színes szempont-csempe (koppintásra részletes lap arról, melyik hozzávaló hozza a sót, cukrot, zsírt, rostot), hányadik a receptjeid között, tippek a javított szemponttal és „Hasznos volt?”. A régi, sablonos szövegek a recept következő megnyitásakor újraíródnak."
+  },
+  "882709b9c": {
+    "cim": "Kezdőlap alsó sáv nélkül: tíz gömb, Évad gömb, Nap szoba, Boop középen",
+    "datum": "2026-11-28",
+    "szakasz": "B2 Gerinc",
+    "jegyek": [
+      "mezo-r36n9.196"
+    ],
+    "mi_valtozott": "Eltűnt az alsó sáv és a gyűrű alatti öt gyorsgomb. A gyűrűn tíz gömb van: az új lila Évad gömb a heti betartást mutatja százalékban (évad nélkül vagy amíg nincs mit nézni, vonalat). A középső gömb Boop beszélgetését nyitja, a Nap gömb a Nap szobát (Ma és Napok fül — a Napok a régi Napló napjai). Jobbra lent egy lebegő „+” nyitja a rögzítést, minden korábbi gyorsgomb ott van. Az Évad gömb egyelőre a mai Évad oldalt nyitja; a saját fülekkel bíró Évad szoba a következő lépés."
   }
 }

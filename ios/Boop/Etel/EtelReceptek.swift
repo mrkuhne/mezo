@@ -173,8 +173,12 @@ struct EtelReceptek: View {
     let onCooked: () -> Void
     let onOpen: (Recipe) -> Void
     let onRetry: () -> Void
+    /// „Menübe jöhet" filter (`mezo-r36n9.196`): only the recipes in the season's menu set. Owned by the room so the
+    /// menu page's „N recept a menüben" can open the tab with it on.
+    @Binding var menuOnly: Bool
     @State private var query = ""
     @State private var slot: String?
+    @Environment(EvadStore.self) private var evad: EvadStore?
     @Environment(\.dynamicTypeSize) private var typeSize
     @ScaledMetric(relativeTo: .body) private var pickHeight: CGFloat = 204
     private let hue = Hue.fuel
@@ -191,7 +195,17 @@ struct EtelReceptek: View {
             }
         }
         card("A KÖNYVTÁRAD", trailing: store.recipes.isEmpty ? nil : "\(store.recipes.count) recept", state: libraryState) { library }
+            .task(id: seasonId) {
+                // a direct open may come before the ring read the season; then the id changes and this runs again
+                if seasonId == nil { await evad?.load() } else { await evad?.menu.loadRecipeOptions() }
+            }
     }
+
+    // MARK: „Menübe jöhet" (decision #137)
+
+    private var seasonId: String? { evad?.overview?.season.id }
+    private var menuAllowed: Set<String> { evad?.menu.allowedIds ?? [] }
+
 
     /// A glass card: the small-caps head on the card, the block's own loading and failed states inside (as on Ma, Hét).
     private func card<C: View>(_ label: String, trailing: String? = nil, state: NKBlockState = .ready,
@@ -311,21 +325,37 @@ struct EtelReceptek: View {
                 .nkFont(14).foregroundStyle(.white.opacity(0.7)).fixedSize(horizontal: false, vertical: true)
         } else {
             let slots = recipeSlots(store.recipes)
-            let shown = filterRecipes(store.recipes, query: query).filter { slot == nil || $0.category == slot }
+            let base = menuOnly ? etelMenuFilter(store.recipes, allowed: menuAllowed) : store.recipes
+            let shown = filterRecipes(base, query: query).filter { slot == nil || $0.category == slot }
             VStack(alignment: .leading, spacing: 0) {
                 EtelSearchField(query: $query, prompt: "Keresés a receptek között").padding(.bottom, 10)
+                if seasonId != nil {
+                    Button { menuOnly.toggle() } label: {
+                        Text("Menübe jöhet · \(menuAllowed.count)").nkFont(13.5, menuOnly ? .semibold : .regular)
+                            .foregroundStyle(menuOnly ? NK.ground : .white.opacity(0.85))
+                            .padding(.horizontal, 13).padding(.vertical, 8)
+                            .background(Capsule().fill(menuOnly ? .white.opacity(0.92) : .white.opacity(0.1)))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityAddTraits(menuOnly ? [.isSelected] : [])
+                    .padding(.bottom, 8)
+                }
+                if let problem = evad?.menu.actionProblem, seasonId != nil {
+                    Text(problem).nkFont(13).foregroundStyle(.white.opacity(0.7)).padding(.bottom, 6)
+                }
                 if slots.count > 1 {
                     EtelFilterChips(chips: [(nil, "Mind · \(store.recipes.count)")] + slots.map { (Optional($0.key), "\($0.label) · \($0.count)") },
                                     selected: $slot)
                         .padding(.bottom, 6)
                 }
                 if shown.isEmpty {
-                    Text("Ilyen receptet nem találok.").nkFont(14).foregroundStyle(.white.opacity(0.6)).padding(.vertical, 12)
+                    Text(menuOnly && query.isEmpty ? "Még egy recept sincs a menüben — kapcsold be a „Menübe jöhet”-et egy receptnél." : "Ilyen receptet nem találok.").nkFont(14).foregroundStyle(.white.opacity(0.6)).padding(.vertical, 12)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 ForEach(Array(shown.enumerated()), id: \.element.id) { k, r in
                     if k > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5).padding(.leading, 70) }
                     recipeRow(r)
+                    EtelMenuToggleRow(recipe: r, leading: 70)
                 }
             }
         }
