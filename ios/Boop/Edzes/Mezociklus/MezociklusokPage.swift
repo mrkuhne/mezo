@@ -64,7 +64,8 @@ struct MezociklusokPage: View {
             }
         }
         if !g.templates.isEmpty {
-            NKSectionCard("Sablonjaim", hue: hue, glyph: "book-sage", trailing: .text("\(g.templates.count)")) {
+            // Bare, not a card: a carousel is never inside a card (owner, 2026-11-28).
+            NKBare("Sablonjaim", hue: hue, glyph: "book-sage", trailing: "\(g.templates.count)") {
                 NKCarousel(g.templates, hue: hue, height: min(templateCardHeight, 480), widthFraction: 0.62) { templateCard($0) }
             }
         }

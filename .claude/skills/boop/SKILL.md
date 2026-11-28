@@ -38,6 +38,10 @@ Hungarian, business language** (CLAUDE.md §Communication) — no file names, no
   (week curve, ring, body map, time strip), carousels. All-rows lists only for search/settings-like pages. Applies
   from the FIRST spike round. **Never propose the „kevés kártya, sok egymondatos tény” / no-card direction again**
   (#119, 2026-11-27, `mezo-r36n9.184`, „egybefolyik, nincs vezetve a szemem”) — it is retired for every screen. Anything he can start or overwrite opens for review first; actions sit at the bottom.
+- **A carousel is never inside a card** (2026-11-28, `mezo-r36n9.221`, owner: „a carousel kártyák ne legyen egy
+  kártyában hanem csak simán scrollozható carousel és alatta a mutató”). Every swipeable card row is `NKCarousel`
+  under a bare section head (`NKBare`), never inside `NKSectionCard` / `nkGlass` — its own cards are the glass, and
+  the dots under it always show how many there are. Forever, every screen.
 - **Standalone, not a port** (2026-11-11). Boop reuses the backend's engines (goal engine, gym progression,
   meal scoring + AI draft, check-in, journal, sleep log, chat platform) and **hides** the web clutter
   (gamification, quests, titles, habits, needs rings, activity, medication (the supplement stack is kept, simplified), life goals, tutorial,

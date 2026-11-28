@@ -34,7 +34,8 @@ osszefoglalo: Az Edzés gömbről nyíló szoba mutatja a mai edzést a valódi 
   ismétlésszámra, és **milyen súllyal** — pontosan azzal, amit a motor előírt. Ha egy sorozatot már rögzítettél, a sor kipipálva
   áll. **Ha a motor nem írt elő súlyt, nem is látsz súlyt** — csak a darabszámokat: a terv „kiindulási súlya" nem egy adott
   sorozatra szóló előírás, és nem írjuk ki annak.
-  A gyakorlatok **lapozhatók**: egy kártya egy gyakorlat, alattuk pöttyök mutatják, hány van még.
+  A gyakorlatok **lapozhatók**: egy kártya egy gyakorlat, alattuk pöttyök mutatják, hány van még. A lapozó sor
+  nincs egy nagy kártyába zárva (2026-11-28).
 - **Boop indoklása a gyakorlat kártyáján (B5):** egy mondat arról, mit változtatott a motor a múlt héthez képest és
   miért (például „Múlt hét 8 × 77,5 kg (RIR 3) → +2,5 kg"). **Ezt a mondatot a motor írja**, az app nem fogalmaz
   hozzá semmit; ha a motor ki van kapcsolva, nincs ott mondat. (Korábban ez külön „Az eligazítás" blokk volt a

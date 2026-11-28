@@ -20,7 +20,7 @@ osszefoglalo: Minden mezociklusodnak saját oldala van — a futó, a tervezett,
   Ha nincs net, a kártya kiírja, miért nem lehet most újraindítani vagy lezárni.
 - **A heti átnézés kártyája** — változatlan, ugyanott (ha épp jóváhagyásra vár egy új hét). A legnagyobb betűméretnél a
   gombjai már nem lógnak ki a kártyából.
-- **A heted** — külön kártyán a hét napjai lapozva; a mai nap körbe van keretezve, a megcsináltak kipipálva.
+- **A heted** — a hét napjai lapozva, kártyakeret nélkül, alattuk pöttyök; a mai nap körbe van keretezve, a megcsináltak kipipálva.
 - **Izmok ezen a héten** — külön kártyán a hét öt legtöbbet dolgozó izomcsoportja vékony sávval és a szettszámmal,
   alatta „+N további izomcsoport”, a fejben a hét összes szettje. Az egész kártyára koppintva megnyílik **A mezociklus
   terhelése** oldal.
@@ -37,7 +37,7 @@ csoportonként egy-egy üvegkártya:
 - **Most fut — a fő kártya.** A futó mezociklus címe, „3. hét a 8-ból · 5 napos” (például), a hetek íve (a mostani hét
   világít) és a test, amelyen látszik, mely izmok kapnak munkát. Rákoppintva visszavisz a Mezociklus fülre.
 - **Következik** — egy kártyán belül soronként a tervezett (még el nem indult) mezociklusok, dátummal és kis görbével.
-- **Sablonjaim** — egy kártyán belül vízszintesen lapozható kis lapok: a test, egy kis terhelés-görbe és az „N×” szám,
+- **Sablonjaim** — vízszintesen lapozható kis lapok (nem egy nagy kártyába zárva, alattuk pöttyök): a test, egy kis terhelés-görbe és az „N×” szám,
   hányszor futtattad le; a fejben a sablonok száma.
 - **Lezártak** — egy kártyán belül soronként a befejezett mezociklusok, a legfrissebb felül, mindegyik a teljesítés
   gyűrűjével; a fejben a darabszám.

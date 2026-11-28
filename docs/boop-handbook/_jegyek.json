@@ -2362,5 +2362,16 @@
     "munkamenet": "receptertekeles-gyors",
     "mit_kapsz": "A rost magyarázatában az „allotment” helyett magyar szó áll, és Boop szövege sem veszi át többé.",
     "szulo": "mezo-r36n9"
+  },
+  "mezo-r36n9.221": {
+    "cim": "Lapozók kártya nélkül az Edzés oldalain",
+    "tipus": "Hiba",
+    "szakasz": "B5 Edzés",
+    "terulet": [
+      "Edzés"
+    ],
+    "munkamenet": "lapozo-kartya-nelkul",
+    "mit_kapsz": "Az Edzés oldalain a lapozható sorok (mai gyakorlatok, a heted, sablonjaim, a hét napjai) nincsenek többé egy nagy kártyába zárva: csak a lapozható lapok és alattuk a pöttyök.",
+    "szulo": "mezo-r36n9"
   }
 }

@@ -1982,5 +1982,17 @@
     "miert": "A próbaváltozat és a tervírás hízlalta legjobban a fő sessiont; a teljes szétbontás viszont két helyen való beszélgetést és sok felesleges sessiont hozott volna.",
     "levaltotta": "A fő sessionben futó próbaváltozat és terv.",
     "kovetkezmeny": "A próbaváltozatnál a képekre abban az al-sessionben adsz visszajelzést; a gép nem tud magától új sessiont indítani egy másik üzenetére, ezért szakaszonként egy kattintás kell."
+  },
+  "d-2026-11-28-lapozo-kartya-nelkul": {
+    "datum": "2026-11-28",
+    "terulet": [
+      "Alapok",
+      "Edzés"
+    ],
+    "cim": "Lapozó sor soha nincs kártyában",
+    "suly": "Kicsi",
+    "valasztas": "Minden lapozható kártyasor az egész appban kártyakeret nélkül áll a címe alatt, és alatta mindig ott vannak a pöttyök, hogy hány lap van.",
+    "miert": "A kártyában lévő kártyák dobozt adnak a dobozban; a lapok maguk az üvegkártyák.",
+    "kovetkezmeny": "Az Edzés oldalain azonnal így lett; minden új képernyő eleve így készül."
   }
 }

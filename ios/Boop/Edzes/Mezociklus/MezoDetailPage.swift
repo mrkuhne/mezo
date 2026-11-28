@@ -23,7 +23,8 @@ struct MezoDetailPage: View {
             hero
             if card.kind == .closed, card.hasReport, let id = card.blockId { reportTeaser(id) }
             if !card.days.isEmpty {
-                NKSectionCard("A hét napjai", hue: hue, glyph: "dumbbell-ink") {
+                // Bare, not a card: a carousel is never inside a card (owner, 2026-11-28).
+                NKBare("A hét napjai", hue: hue, glyph: "dumbbell-ink") {
                     NKCarousel(card.days.enumerated().map { MezoDayItem(index: $0.offset, day: $0.element) }, hue: hue,
                                height: min(dayCardHeight, 360), widthFraction: 0.46) { item in dayCard(item.day) }
                 }
