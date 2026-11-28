@@ -139,7 +139,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 ### boop
 
 *BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-28, in-progress) ·
-  [docs/features/capacity.md](features/capacity.md) (updated 2026-11-27, done)
+  [docs/features/capacity.md](features/capacity.md) (updated 2026-11-28, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/boop`
   - **sub-features:** `port`
@@ -165,7 +165,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### capacity
 
-*BE + API* · read next: [docs/features/capacity.md](features/capacity.md) (updated 2026-11-27, done)
+*BE + API* · read next: [docs/features/capacity.md](features/capacity.md) (updated 2026-11-28, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/capacity`
   - **sub-features:** `port`
@@ -208,7 +208,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### character
 
-*BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-11-26, shipped)
+*BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-11-28, shipped)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/character`
   - **sub-features:** `detector`
@@ -316,7 +316,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 
 ### companion
 
-*BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-11-26, shipped) ·
+*BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-11-28, shipped) ·
   [docs/features/companion.md](features/companion.md) (updated 2026-11-24, mixed) ·
   [docs/features/dayclose.md](features/dayclose.md) (updated 2026-11-26, done) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-11-24, done) ·
@@ -1491,7 +1491,7 @@ Two spaces: the backend package and its contract fragment(s), both domain-shaped
 ### wearable
 
 *BE + API* · read next: [docs/features/boop-ios.md](features/boop-ios.md) (updated 2026-11-28, in-progress) ·
-  [docs/features/capacity.md](features/capacity.md) (updated 2026-11-27, done)
+  [docs/features/capacity.md](features/capacity.md) (updated 2026-11-28, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/wearable`
   - **entities→tables:** `CalendarEventEntity`→`calendar_event`, `DailyMetricEntity`→`daily_metric`,
