@@ -105,7 +105,7 @@ struct EdzesRoom: View {
     /// The Ma hero's page 1, measured — the pager takes its height, so no state leaves an empty band (spike glitch).
     @State private var maFrontHeight: CGFloat = 240
     /// Page 2 (the body map) needs at least this much.
-    @ScaledMetric(relativeTo: .body) private var maLoadMinHeight: CGFloat = 236
+    @ScaledMetric(relativeTo: .body) private var maLoadMinHeight: CGFloat = 180
     /// Every mezociklus — the Mezociklus tab's card actions, tiles and pages (mezo-r36n9.177).
     @State private var mezo: MezociklusokModel?
     @State private var mezoFlow = MezoFlowState()
@@ -513,7 +513,8 @@ struct EdzesRoom: View {
                     Task { _ = await store?.pick(nil) }
                 }
             }
-            if canPickOtherDay {
+            // A done day offers no other day, whichever side (the brief or the history) knew it first.
+            if canPickOtherDay, kind != .done {
                 maLink("Másik napot csinálok ma") { showOtherDays = true }
             }
         }
@@ -595,7 +596,7 @@ struct EdzesRoom: View {
         if typeSize.isAccessibilitySize {
             VStack(alignment: .leading, spacing: 6) { ForEach(items, id: \.1) { stat($0) } }
         } else {
-            HStack(spacing: 16) {
+            HStack(alignment: .top, spacing: 16) {
                 ForEach(items, id: \.1) { stat($0).frame(maxWidth: .infinity, alignment: .leading) }
             }
             .padding(.vertical, 2)
@@ -667,17 +668,21 @@ struct EdzesRoom: View {
                     Text(age).nkFont(11, design: .monospaced).foregroundStyle(.white.opacity(0.45))
                 }
             }
-            HStack(alignment: .top, spacing: 16) {
+            // At the accessibility sizes the rows go under the body, full width, so a name never breaks mid-word.
+            let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 16))
+                                                      : AnyLayout(HStackLayout(alignment: .top, spacing: 16))
+            layout {
                 NKBodyMap(heat, hue: hue).frame(maxHeight: 200)
                 VStack(spacing: 10) {
                     ForEach(muscleLoadRows, id: \.muscle) { row in
                         HStack(spacing: 10) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(row.muscle.capitalizedFirst).nkFont(13).foregroundStyle(.white.opacity(0.85))
+                                    .lineLimit(1).minimumScaleFactor(0.6)
                                 NKLevelBar(level: row.level, hue: hue)
                             }
                             Text("\(row.sets)").nkFont(15, .medium, design: .monospaced)
-                                .foregroundStyle(.white.opacity(0.7)).frame(width: 22, alignment: .trailing)
+                                .foregroundStyle(.white.opacity(0.7)).fixedSize()
                         }
                     }
                     Spacer(minLength: 0)
@@ -1197,9 +1202,11 @@ enum MaHeroPrimary: Equatable {
     }
 }
 
-/// The block's next training day after `todayIndex` (0 = Monday), wrapping to next week.
+/// The block's next training day after `todayIndex` (0 = Monday), wrapping to next week; a rest day (no exercises)
+/// is never „the next session".
 func maNextSession(days: [BlockDay], todayIndex: Int) -> BlockDay? {
-    let indexed = days.compactMap { d in TrainWeekdays.index(of: d.day).map { (i: $0, day: d) } }
+    let indexed = days.filter { $0.exerciseCount > 0 }
+        .compactMap { d in TrainWeekdays.index(of: d.day).map { (i: $0, day: d) } }
     return (indexed.filter { $0.i > todayIndex }.min { $0.i < $1.i } ?? indexed.min { $0.i < $1.i })?.day
 }
 

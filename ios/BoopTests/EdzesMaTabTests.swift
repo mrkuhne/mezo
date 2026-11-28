@@ -47,10 +47,11 @@ struct EdzesMaTabTests {
     }
 
     @Test func restDayNamesTheNextSession() {
-        func day(_ d: String, _ t: String) -> BlockDay {
-            BlockDay(id: UUID(), day: d, type: t, muscle: "", exerciseCount: 5, note: nil, isCurrent: false)
+        func day(_ d: String, _ t: String, _ n: Int = 5) -> BlockDay {
+            BlockDay(id: UUID(), day: d, type: t, muscle: "", exerciseCount: n, note: nil, isCurrent: false)
         }
-        let days = [day("Hétfő", "Felső A"), day("Szerda", "Alsó A"), day("Péntek", "Felső B")]
+        let days = [day("Hétfő", "Felső A"), day("Kedd", "Pihenő", 0), day("Szerda", "Alsó A"), day("Péntek", "Felső B")]
+        #expect(maNextSession(days: days, todayIndex: 0)?.type == "Alsó A", "a rest day is skipped")
         #expect(maNextSession(days: days, todayIndex: 1)?.type == "Alsó A")
         #expect(maNextSession(days: days, todayIndex: 5)?.type == "Felső A", "after the week's last day: next Monday")
         #expect(maNextSession(days: [], todayIndex: 1) == nil)

@@ -2296,5 +2296,16 @@
     "mit_kapsz": "Ha gyenge a net és a telefon újraküldi a sportrögzítést, a szerver akkor sem menti el kétszer.",
     "szulo": "mezo-r36n9.188",
     "munkamenet": "sport-s3-app"
+  },
+  "mezo-r36n9.197.7": {
+    "cim": "Edzés: a Következik kártya fejléce nagy betűnél szótagra törik",
+    "tipus": "Hiba",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Edzés"
+    ],
+    "munkamenet": "edzes-ujratervezes",
+    "mit_kapsz": "A legnagyobb betűméretnél is egyben olvasható a „Következik · az éves tervből” fejléc.",
+    "szulo": "mezo-r36n9.197"
   }
 }
