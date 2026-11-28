@@ -290,7 +290,9 @@ struct BlockBuilderPage: View {
             PlanCloseButton { if model.hasChanges { confirmLeave = true } else { onClose() } }
             VStack(alignment: .leading, spacing: 2) {
                 Text(scope).nkFont(10, .semibold, design: .monospaced).tracking(1.3).foregroundStyle(.white.opacity(0.7))
-                Text(model.draft?.title ?? "").nkFont(22, design: .serif).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
+                // Wraps between words (spec 2026-11-27 §6.1: never a cut-off or mid-word block title).
+                Text(model.draft?.title ?? "").nkFont(22, design: .serif).foregroundStyle(.white)
+                    .lineLimit(2).minimumScaleFactor(0.7).fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 8)
             let out = model.outside.count
@@ -305,6 +307,7 @@ struct BlockBuilderPage: View {
             .opacity(model.evaluation == nil ? 0 : 1)
         }
         .padding(.horizontal, 20).padding(.top, 6).padding(.bottom, 10)
+        .dynamicTypeSize(...DynamicTypeSize.accessibility1)
     }
 
     /// The one line that says what he is looking at.
@@ -377,6 +380,8 @@ struct BlockBuilderPage: View {
             .disabled(p == .done || p == .saving || (p == .align && !model.canApplyProposals))
         }
         .padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 4)
+        // Fixed-size tab buttons, like the system tab bar: capped so the labels never cut off („Iz…").
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
         .background(LinearGradient(colors: [NK.ground.opacity(0), NK.ground.opacity(0.95)], startPoint: .top, endPoint: .bottom).ignoresSafeArea())
     }
 
@@ -849,9 +854,11 @@ private struct CoverageHintBox: View {
             }
             HStack(spacing: 18) {
                 if finding.proposal != nil, dayName != nil {
+                    // A quiet capsule: the card's one white primary is the proposal's „Elfogadom".
                     Button(action: add) {
-                        Text("Hozzáadom").nkFont(14, .semibold).foregroundStyle(NK.ground)
-                            .padding(.horizontal, 18).padding(.vertical, 9).background(Capsule().fill(.white))
+                        Text("Hozzáadom").nkFont(14, .semibold).foregroundStyle(.white)
+                            .padding(.horizontal, 18).padding(.vertical, 9)
+                            .background(Capsule().fill(.white.opacity(0.08)).overlay(Capsule().stroke(.white.opacity(0.16))))
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Hozzáadom: \(finding.proposal?.exercise.name ?? ""), \(coverageSublative(dayName ?? ""))")
@@ -865,8 +872,7 @@ private struct CoverageHintBox: View {
             }
         }
         .padding(14).frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.white.opacity(0.035)))
-        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(.white.opacity(0.13), lineWidth: 0.75))
+        .nkInnerCard(radius: 18)
     }
 
     /// „Hiányzik a lábhajlítás — a combhajlítót most csak …": the head white, the rest quieter.
@@ -1489,6 +1495,7 @@ private struct BuilderBlockView: View {
     let openWhy: (String) -> Void
     /// Leaving „Két sorozat bukásig" keeps every exercise at its two sets — he is asked before.
     @State private var leavingAllout: BlockStyle?
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         let path = model.evaluation?.path ?? []
@@ -1503,6 +1510,8 @@ private struct BuilderBlockView: View {
                 minutesChoice
                 switches(draft)
 
+                NKSectionCard("Hétről hétre", hue: planHue, trailing: .text("\(path.count) hét")) {
+                VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .bottom, spacing: 8) {
                     ForEach(path, id: \.week) { w in
                         let rest = w.phase == "Deload"
@@ -1522,9 +1531,7 @@ private struct BuilderBlockView: View {
                         .accessibilityLabel("\(w.week). hét, \(phaseName(w.phase)), \(w.total) sorozat\(techniqueWeek(w, draft) ? ", technikákkal" : "")")
                     }
                 }
-                .padding(18)
-                .background(RoundedRectangle(cornerRadius: 26, style: .continuous).fill(NK.ground.opacity(0.62)))
-                .nkGlass(26)
+                .padding(.top, 4)
 
                 NKFlowRow(spacing: 8, rowSpacing: 8) {
                     if draft?.techniquesEnabled == true {
@@ -1534,7 +1541,10 @@ private struct BuilderBlockView: View {
                         PlanPill("technikák kikapcsolva", mark: .keep)
                     }
                 }
+                }
+                }
 
+                NKSectionCard("Izmonként", hue: planHue) {
                 VStack(spacing: 0) {
                     ForEach(Array(model.bandedMuscles.enumerated()), id: \.element.muscle) { i, m in
                         if i > 0 { Rectangle().fill(.white.opacity(0.07)).frame(height: 0.5) }
@@ -1572,7 +1582,7 @@ private struct BuilderBlockView: View {
                         .accessibilityAddTraits(.isButton)
                     }
                 }
-                .padding(.horizontal, 18).padding(.vertical, 6).nkGlass(26)
+                }
             }
             .padding(.horizontal, 20).padding(.bottom, 60)
         }
@@ -1580,9 +1590,11 @@ private struct BuilderBlockView: View {
     }
 
     private func styleChoice(_ draft: BlockDraft?) -> some View {
+        NKSectionCard("Edzésmód · az egész blokkra", hue: planHue) {
         VStack(alignment: .leading, spacing: 10) {
-            Text("EDZÉSMÓD · AZ EGÉSZ BLOKKRA").nkFont(10, .semibold, design: .monospaced).tracking(1.3).foregroundStyle(planHue.glow)
-            LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible())], spacing: 10) {
+            // One column at the accessibility sizes: two squeezed tiles broke their names and lines.
+            LazyVGrid(columns: dynamicTypeSize.isAccessibilitySize ? [GridItem(.flexible())]
+                                                                  : [GridItem(.flexible(), spacing: 10), GridItem(.flexible())], spacing: 10) {
                 ForEach(BlockStyle.allCases, id: \.self) { item in
                     let on = draft?.style == item
                     Button {
@@ -1602,7 +1614,9 @@ private struct BuilderBlockView: View {
                         }
                         .padding(12)
                         .frame(maxWidth: .infinity, minHeight: 112, alignment: .topLeading)
-                        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(on ? AnyShapeStyle(planHue.glow) : AnyShapeStyle(.white.opacity(0.07))))
+                        // Inside a section card: the faint inner fill, the chosen one in the hue (no glass on glass).
+                        .nkInnerCard(radius: 20)
+                        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(on ? AnyShapeStyle(planHue.glow) : AnyShapeStyle(.clear)))
                     }
                     .buttonStyle(.plain)
                     .accessibilityAddTraits(on ? .isSelected : [])
@@ -1612,6 +1626,7 @@ private struct BuilderBlockView: View {
                  ? "Most nincs edzésmód: a gyakorlatok a saját beállításukkal mennek. Ha választasz, az egész mezociklusra érvényes lesz."
                  : "Egy gyakorlatnál az eltérő beállítás megmarad.")
                 .nkFont(11).foregroundStyle(.white.opacity(0.45)).fixedSize(horizontal: false, vertical: true)
+        }
         }
         .sensoryFeedback(.selection, trigger: draft?.style)
         .confirmationDialog("A sorozatok kettőn maradnak", isPresented: Binding(get: { leavingAllout != nil }, set: { if !$0 { leavingAllout = nil } }),
@@ -1626,8 +1641,7 @@ private struct BuilderBlockView: View {
     /// How long a session may last (mezo-r36n9.113): the evaluator's capacity, the heti keret line under the head.
     /// Not saved with the block; „Nincs" hides the keret.
     private var minutesChoice: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("MEDDIG TARTHAT EGY EDZÉS").nkFont(10, .semibold, design: .monospaced).tracking(1.3).foregroundStyle(planHue.glow)
+        NKSectionCard("Meddig tarthat egy edzés", hue: planHue) {
             HStack(spacing: 6) {
                 // A target outside the choices (an intake fix's 105) shows as its own, selected pill.
                 ForEach(Array(Set(NewBlockModel.minuteChoices + [model.minutesTarget].compactMap { $0 })).sorted(), id: \.self) { m in
@@ -1655,6 +1669,7 @@ private struct BuilderBlockView: View {
 
     /// The block's two switches: techniques, and who approves the week.
     private func switches(_ draft: BlockDraft?) -> some View {
+        NKSectionCard("Kapcsolók", hue: planHue) {
         VStack(spacing: 0) {
             toggleRow(title: "Technikák", text: "Pihenős drop, drop set, myo set és félismétlés a stabil gyakorlatok utolsó sorozatán.",
                       isOn: Binding(get: { model.draft?.techniquesEnabled ?? false }, set: { model.draft?.techniquesEnabled = $0 }))
@@ -1666,7 +1681,7 @@ private struct BuilderBlockView: View {
                           isOn: Binding(get: { model.draft?.reviewMode == .manual }, set: { model.draft?.reviewMode = $0 ? .manual : .auto }))
             }
         }
-        .padding(.horizontal, 18).padding(.vertical, 4).nkGlass(26)
+        }
     }
 
     private func toggleRow(title: String, text: String, isOn: Binding<Bool>) -> some View {

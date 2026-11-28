@@ -397,7 +397,9 @@ public struct NKSheetFrame<Content: View>: View {
                         .overlay(LinearGradient(colors: [.clear, NK.ground], startPoint: .center, endPoint: .bottom))
                     VStack(alignment: .leading, spacing: 4) {
                         Text(eyebrow.uppercased()).nkFont(12, .medium, design: .monospaced).tracking(1.6).foregroundStyle(.white.opacity(0.75))
+                        // Past accessibility1 a long word („Beállítások") breaks mid-word.
                         Text(title).nkFont(34, design: .serif).foregroundStyle(.white)
+                            .dynamicTypeSize(...DynamicTypeSize.accessibility1)
                     }
                     .padding(.horizontal, 22).padding(.bottom, 8)
                 }

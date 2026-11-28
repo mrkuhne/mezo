@@ -193,7 +193,9 @@ struct PlanStateView: View {
                 } else {
                     PlanMark(mark, color: planHue.glow, size: 34)
                 }
+                // Past accessibility1 a long Hungarian word („mezociklust") breaks mid-word (spec 2026-11-27 §6.1).
                 Text(title).nkFont(28, design: .serif).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
+                    .dynamicTypeSize(...DynamicTypeSize.accessibility1)
                 Text(text).nkFont(15).foregroundStyle(.white.opacity(0.7)).fixedSize(horizontal: false, vertical: true)
                 if let action {
                     Button(action: action.1) {
