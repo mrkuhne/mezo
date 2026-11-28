@@ -128,7 +128,7 @@ struct CaptureSheet: View {
         ("drop-sky", "Víz", "egy koppintás", .quick(.water)),
         ("leaf-sage", "Kiegészítők", "bevettem", .quick(.supplements)),
         ("dumbbell-ink", "Edzés indítása", "a mai terv szerint", .area(.mozgas)),
-        ("ball-sun", "Sport", "a terven kívül", .quick(.sport)),
+        ("ball-sun", "Sport", "röpi, futás, bármi", .quick(.sport)),
         ("scale-ink", "Súly", "mérés felvétele", .quick(.weight)),
         ("spark-cream", "Check-in", "fél perc", .cover(.checkin)),
         ("book-sage", "Napló", "egy sor, bármikor", .quick(.journal)),

@@ -41,6 +41,7 @@ struct ShellView: View {
     /// The quick log's own sheet the "+" sheet asked for (opens once that sheet has gone), and the one on screen.
     @State private var quickAfterCapture: QuickLog?
     @State private var quick: QuickLog?
+    @Environment(SportStore.self) private var sportStore: SportStore?
     /// Simulator review: `-previewOpen megvolt` opens the Megvolt sheet for yesterday's preview template day (DEBUG).
     @State private var previewMegvolt = false
     /// Simulator review: `-previewOpen naploDay` opens yesterday's Napló day sheet from the shell (DEBUG).
@@ -95,7 +96,13 @@ struct ShellView: View {
         switch kind {
         case .water: WaterSheet(onDone: done)
         case .supplements: SupplementsSheet(onDone: done)
-        case .sport: SportSheet(onDone: done)
+        case .sport:
+            // S6: the same Log sheet as the Sport room — tonight's Watch workout pre-filled, „Mikor?" kept
+            SportLogSheet(tonight: sportStore?.week?.tonight, lastRpe: sportStore?.lastRpe ?? 6, withWhen: true) { payload in
+                sportStore?.noteLogged(payload)
+                done("\(SportKind(wire: payload.sport).name) · \(payload.durationMinutes) perc rögzítve")
+            }
+            .task { await sportStore?.load() }
         case .weight: WeightSheet(onDone: done)
         case .sleep: SleepLogSheet(onDone: done)
         case .journal: JournalSheet(onDone: done)

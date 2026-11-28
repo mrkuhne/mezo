@@ -537,6 +537,11 @@ struct EdzesRoom: View {
     /// Title, the time line and the three numbers — or the rest day's / the brief's own words.
     @ViewBuilder private func maBody(_ kind: MaHeroKind) -> some View {
         switch kind {
+        case .rest where sportDayLine != nil, .none where sportDayLine != nil:
+            // S6 (`mezo-r36n9.206`): a sport-only day is never „pihenőnap" — the sport is named, with a door to it
+            maTitle("Ma sport van")
+            maLine(sportDayLine ?? "")
+            maLink("Sport megnyitása") { openDestination(.room(RoomEntry(.sport))) }
         case .today, .potlas, .done:
             let own = brief?.day.session?.title ?? workout?.title ?? ""
             let title = kind == .potlas ? (workout?.title ?? own) : kind == .done ? doneTitle(own) : own
@@ -562,6 +567,9 @@ struct EdzesRoom: View {
             }
         }
     }
+
+    /// Today's sport from the brief (S6), when there is any — „Röpi 18:00".
+    private var sportDayLine: String? { brief.flatMap { edzesSportDayLine($0.day.sport) } }
 
     /// „17:30" for today, „keddi nap, ma pótolod" for a picked day.
     private func maTimeLine(_ kind: MaHeroKind) -> String? {
@@ -771,7 +779,8 @@ struct EdzesRoom: View {
         // first set, not a gate he has to pass twice.
         if store.session != nil { phase = .playing; return }
         guard workout?.isRestDay == false || workout?.templateSessionId != nil else {
-            toast = "Ma nincs mit elkezdeni — a mezociklusod szerint pihenőnap."
+            toast = sportDayLine.map { "Ma nincs edzőtermi edzés — ma sport van: \($0)." }
+                ?? "Ma nincs mit elkezdeni — a mezociklusod szerint pihenőnap."
             return
         }
         guard workout != nil else {

@@ -8,7 +8,8 @@ import BoopCore
 struct QuickSheetsWhenTests {
     @Test func theSportPayloadCarriesTheChosenDayAndClock() {
         let moment = Calendar.current.date(from: DateComponents(year: 2026, month: 11, day: 23, hour: 18, minute: 30))!
-        let p = SportSheet.payload(sport: .volleyball, minutes: 60, rpe: 6, day: "2026-11-23", moment: moment)
+        let base = SportSessionPayload(sport: "volleyball", date: "2026-11-28", time: "07:00", durationMinutes: 60, rpe: 6)
+        let p = SportLogSheet.dated(base, day: "2026-11-23", moment: moment)
         #expect(p.date == "2026-11-23")
         #expect(p.time == "18:30")
         #expect(p.durationMinutes == 60)

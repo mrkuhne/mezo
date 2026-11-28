@@ -38,6 +38,8 @@ struct MaWall: View {
     /// Day capacity (B7 K3): the current week's open proposals feed the `kapacitas` source; a tap on its card opens the
     /// Átrendezés page, which the Nap page presents at page level (boop-ios.md §9).
     @Environment(KapacitasStore.self) private var kapacitas: KapacitasStore?
+    /// Sport (S6, `mezo-r36n9.206`): tonight's moment feeds the `sport` source; a tap opens the Sport room.
+    @Environment(SportStore.self) private var sport: SportStore?
     @Environment(\.openAtrendezes) private var openAtrendezes
     @Environment(\.openDestination) private var openDestination
     @Environment(\.scenePhase) private var scenePhase
@@ -68,6 +70,9 @@ struct MaWall: View {
             let review = evadReviewCandidate(window: window, hasSeason: overview != nil,
                                              done: window.map { reviewDone.contains($0.weekMonday) } ?? false)
             return evadCandidates(overview, experiments: experiments, review: review, now: input.now)
+        })
+        r.register(WallSource(id: WallSources.sport) { [overview = sport?.week] input in
+            sportWallCandidates(overview, now: input.now)
         })
         r.register(WallSource(id: WallSources.level) { [digest = level?.digest] input in
             levelWallCandidates(digest, now: input.now)
@@ -160,6 +165,8 @@ struct MaWall: View {
             if evad?.overview != nil { await evad?.experiments.load() }
         }
         .task(id: level.map(ObjectIdentifier.init)) { await level?.refresh() }
+        // the sport overview, cache-first (the ring reads the same store)
+        .task(id: sport.map(ObjectIdentifier.init)) { await sport?.load() }
         // the current week's proposals (B7 K3): the week read generates them on the server's first call
         .task(id: kapacitasKey) { await loadKapacitasWeeks() }
         // the wall may ring for what expires: what is on screen now counts as seen, the rest may reach his pocket
@@ -230,6 +237,10 @@ struct MaWall: View {
         else if c.id == "etel-supplements" { onEtelRoom() }
         else if c.id == "edzes-keszulj" || c.id == "edzes-megvolt" { onDrill(.mozgas) }
         else if c.area == WallSources.level { onDrill(.level) }
+        else if c.area == WallSources.sport {
+            // „Kiegészítem" lands on the Log sheet with the Watch's workout; every other sport card on the room
+            openDestination(.room(RoomEntry(.sport, tab: "Ma", sub: c.id == SportWallID.recorded ? "log" : nil)))
+        }
         else if let id = evadWallProposalID(c.id) {
             // „Indulhat" starts Boop's experiment proposal right here; the Hatás tab shows it running. Settled only
             // once the server says it started — on a refusal or without a net the card stays (the store re-reads the
@@ -304,6 +315,7 @@ func hue(_ area: String) -> Hue {
     case WallSources.energia: .pulzus
     case WallSources.evad: evadHue
     case WallSources.level: .level
+    case WallSources.sport: .sport
     case WallSources.kapacitas: kapacitasHue
     default: .forma
     }

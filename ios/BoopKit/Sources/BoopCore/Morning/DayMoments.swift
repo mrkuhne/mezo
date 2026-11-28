@@ -64,7 +64,7 @@ func calendarMoment(_ cal: Brief.CalendarDay) -> DayMoment? {
 }
 
 /// Every moment of the day that belongs on the curve, in clock order, at most `cap` of them. Ties keep the order
-/// below (waking, meals, calendar, session, bedtime), so the same day always draws the same pins.
+/// below (waking, meals, calendar, session, sport, bedtime), so the same day always draws the same pins.
 public func dayMoments(_ brief: Brief, cap: Int = 6) -> [DayMoment] {
     var out: [DayMoment] = []
     let d = brief.day
@@ -84,6 +84,14 @@ public func dayMoments(_ brief: Brief, cap: Int = 6) -> [DayMoment] {
         let len = s.minutes.map { " · \($0) perc" } ?? ""
         out.append(DayMoment(id: "session", hour: h, glyph: "dumbbell-ink", label: "edzés",
                              detail: "\(t) · \(s.title)\(len)"))
+    }
+    // S6 (`mezo-r36n9.206`): each sport is its own pin next to the gym's — never folded into „edzés"
+    for (i, sp) in d.sport.enumerated() {
+        guard let h = dayMomentHour(sp.time) else { continue }
+        let kind = SportKind(wire: sp.sport)
+        let len = sp.minutes.map { " · \($0) perc" } ?? ""
+        out.append(DayMoment(id: "sport-\(i)", hour: h, glyph: "ball-sun", label: kind.inSentence,
+                             detail: "\(sp.time) · \(kind.name)\(len)" + (sp.done ? " · megvolt" : "")))
     }
     if let b = d.bedtimeTarget, let h = dayMomentHour(b) {
         out.append(DayMoment(id: "bedtime", hour: h, glyph: "moon-cream", label: "alvás",

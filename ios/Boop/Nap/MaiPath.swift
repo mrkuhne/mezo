@@ -40,6 +40,7 @@ struct OrbPathCards: View {
     let store: MorningStore
     let ctx: MaiContext
     @Environment(RitmusRouter.self) private var router: RitmusRouter?
+    @Environment(\.openDestination) private var openDestination
 
     private var key: MetricKey { metricKey(for: hue) }
 
@@ -88,6 +89,10 @@ struct OrbPathCards: View {
         default:
             if st.id.hasPrefix("meal-"), let i = Int(st.id.dropFirst(5)), d.meals.indices.contains(i) {
                 mealCard(d.meals[i])
+            }
+            // S6: a sport is its own station, with a door to the Sport room (never the gym's card)
+            if st.id.hasPrefix("sport-"), let i = Int(st.id.dropFirst(6)), d.sport.indices.contains(i) {
+                sportCard(d.sport[i])
             }
         }
     }
@@ -199,6 +204,20 @@ struct OrbPathCards: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel("Lefotózom")
             }
+        }
+        .padding(14).frame(maxWidth: .infinity, alignment: .leading).nkGlass(20)
+    }
+
+    private func sportCard(_ s: Brief.Sport) -> some View {
+        let kind = SportKind(wire: s.sport)
+        let text = s.done ? "\(kind.name) megvolt — a heti terhelésedbe az edzőtermi edzéstől külön számít."
+                          : "Ma \(s.time)-kor \(kind.inSentence). Indítsd el az órádon, utána két koppintás a rögzítés."
+        return HStack(spacing: 12) {
+            StillOrb(palette: Hue.sport.orb, size: 40, level: s.done ? 1 : 0.5)
+            Text(text).nkFont(13.5).foregroundStyle(.white.opacity(0.8)).fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+            pill("Megnyitom") { openDestination(.room(RoomEntry(.sport))) }
+                .accessibilityLabel("\(kind.name) megnyitása")
         }
         .padding(14).frame(maxWidth: .infinity, alignment: .leading).nkGlass(20)
     }

@@ -134,6 +134,15 @@ public enum PathBuilder {
                 id: "session", time: t.map(fmt) ?? "–", glyph: "dumbbell-ink", title: s.title,
                 sub: parts.joined(separator: " · "), done: s.done, isNow: false, opens: true)))
         }
+        // S6: each sport is its own station — the gym's tick never reaches it, nor its tick the gym
+        for (i, sp) in x.day.sport.enumerated() {
+            let t = mins(sp.time)
+            let sub = sp.done ? ((sp.doneMinutes ?? sp.minutes).map { "\($0) perc · megvolt" } ?? "megvolt")
+                              : (sp.minutes.map { "\($0) perc" } ?? "")
+            out.append(Item(key: t ?? 18 * 60, step: PathStep(
+                id: "sport-\(i)", time: t.map(fmt) ?? "–", glyph: "ball-sun", title: SportKind(wire: sp.sport).name,
+                sub: sub, done: sp.done, isNow: false, opens: true)))
+        }
         return out
     }
 

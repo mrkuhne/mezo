@@ -12,6 +12,9 @@ struct SportRoom: View {
     @Environment(\.closeRoom) private var closeRoom
     @Environment(\.openDestination) private var openDestination
     @Environment(SportStore.self) private var store: SportStore?
+    /// S6: a wall card's entry — `sub: "log"` opens the Log sheet (the Watch's workout pre-filled) on arrival.
+    @Environment(\.roomEntry) private var roomEntry
+    @State private var tookEntry = false
     @SceneStorage("sport.tab") private var selected: String = "Ma"
     @State private var toast: String?
     @State private var sheet: SportRoomSheet?
@@ -142,7 +145,14 @@ struct SportRoom: View {
         .toolbar(.hidden, for: .navigationBar)
         .background(RoomSwipeBack().frame(width: 0, height: 0).accessibilityHidden(true))
         .nkToast($toast)
-        .task { await store?.load(force: true) }
+        .task {
+            if !tookEntry, let e = roomEntry, e.hue == .sport {
+                tookEntry = true
+                if let tab = e.tab { selected = tab }
+                if e.sub == "log" { sheet = .log }
+            }
+            await store?.load(force: true)
+        }
         .task(id: selected) {
             switch selected {
             case "Hét": await store?.schedule.load()

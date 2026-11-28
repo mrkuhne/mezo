@@ -47,6 +47,20 @@ public struct Brief: Sendable, Equatable {
         public var doneMinutes: Int?
         public var avgHr: Int?
     }
+    /// Boop Sport S1/S6 (`mezo-r36n9.206`): one planned or logged sport of the day — the second layer next to the gym
+    /// `session`. `done` is ticked only by a sport log or that sport's own Health workout, never by the gym.
+    public struct Sport: Sendable, Equatable {
+        public let sport: String
+        public let time: String
+        public let minutes: Int?
+        public var done: Bool
+        public var doneMinutes: Int?
+        public var avgHr: Int?
+        public init(sport: String, time: String, minutes: Int? = nil, done: Bool = false, doneMinutes: Int? = nil, avgHr: Int? = nil) {
+            self.sport = sport; self.time = time; self.minutes = minutes; self.done = done
+            self.doneMinutes = doneMinutes; self.avgHr = avgHr
+        }
+    }
     public struct Meal: Sendable, Equatable { public let time, title: String; public let kcal, proteinG: Int; public let logged: Bool }
     public struct Checkin: Sendable, Equatable {
         public enum Slot: String, Sendable { case morning, midday, afternoon, evening }
@@ -87,6 +101,8 @@ public struct Brief: Sendable, Equatable {
         public let calendar: CalendarDay
         public let weight: Weight?
         public let recovery: Recovery?
+        /// Today's sport in clock order (S6); empty without sport. Gym only is `session`.
+        public var sport: [Sport] = []
     }
 
     public let date: String
@@ -151,7 +167,11 @@ extension Brief {
                 observations: d.observations.map { Observation(id: $0.id, lead: $0.lead, bold: $0.bold, tail: $0.tail, strength: $0.strength) },
                 calendar: CalendarDay(count: d.calendar.count, busySlots: d.calendar.busySlots),
                 weight: d.weight.map { Weight(kg: $0.kg, trendKg: $0.trendKg) },
-                recovery: d.recovery.map { Recovery(reason: $0.reason, day: $0.day) }
+                recovery: d.recovery.map { Recovery(reason: $0.reason, day: $0.day) },
+                sport: (d.sport ?? []).map {
+                    Sport(sport: $0.sport, time: $0.time, minutes: $0.minutes, done: $0.done,
+                          doneMinutes: $0.doneMinutes, avgHr: $0.avgHr)
+                }
             ),
             capacity: b.capacity?.value1
         )
