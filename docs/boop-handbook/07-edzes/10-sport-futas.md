@@ -47,6 +47,9 @@ osszefoglalo: Röplabda, kerékpár, úszás és más sportok naplója heti beos
    visszavonással; az **egyszeri események** (például egy torna) felvétele és törlése; és a 11 beírható sport. Mentéskor a
    teljes heti rend megy el, a többi alkalom változatlanul. Ha a mentés nem sikerül (például nincs net), a lap nyitva marad
    a beírt adatokkal és egy „Újra próbálom” gombbal.
+10. **Sport terület — Ma fül, „Ezen a héten” (2026-11-28):** a hét napjai lapozható kártyasorként, a mai napon nyitva
+   (kondi és sport soronként, kitöltve = megvolt). A sor szabadon áll a fejléce alatt, nincs kártyába zárva, alatta
+   pöttyök mutatják, melyik napnál tartasz; nagy betűmérettel egy kártya szinte a teljes szélességet kapja.
 
 10. **Napló fül (2026-11-28):** felül az elmúlt négy hét: hány alkalom volt, mennyi az átlagos megterhelés és a váll
    átlaga, egy vonal az utolsó alkalmak megterheléséről, és egy mondat arról, hányszor ért el a vállad 7-et két hét alatt.
