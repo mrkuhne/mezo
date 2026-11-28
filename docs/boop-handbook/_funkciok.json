@@ -510,6 +510,81 @@
     ],
     "csomag": "train"
   },
+  "train-sport-het": {
+    "cim": "Sport hete: kondi és sport két sávban, a mai sportalkalom",
+    "terulet": "Edzés",
+    "app": "Nincs még",
+    "mit_tud": "Egy hétre (hétfőtől vasárnapig, a te idődben) napról napra megmutatja a kondit és a sportot két külön sávban — tervezett, kész, kihagyott vagy elmaradt —, a heti perceket, a heti sportszámot (tervezett/kész), a mai sportalkalmat (előtte, az óra már rögzítette, kész, kihagyva — az óra edzésével előtöltve) és Boop figyelmeztetéseit.",
+    "app_megjegyzes": "Az app Sport területe (következő lépés) erre épül; még nem olvassa.",
+    "jegyek": [
+      "mezo-r36n9.202",
+      "mezo-r36n9.203"
+    ],
+    "kezikonyv": [
+      "07-edzes/10-sport-futas"
+    ],
+    "csomag": "train"
+  },
+  "train-sport-terheles": {
+    "cim": "Sport és kondi terhelése egy skálán, 6 hétre",
+    "terulet": "Edzés",
+    "app": "Nincs még",
+    "mit_tud": "Hetente összeadja a kondi és a sport terhelését ugyanazon a mércén (megerőltetés × perc); amelyik alkalomnál nincs megerőltetés vagy idő, azt külön megszámolja, nem találgat.",
+    "app_megjegyzes": "Az app Sport területe (következő lépés) erre épül; még nem olvassa.",
+    "jegyek": [
+      "mezo-r36n9.202",
+      "mezo-r36n9.203"
+    ],
+    "kezikonyv": [
+      "07-edzes/10-sport-futas"
+    ],
+    "csomag": "train"
+  },
+  "train-sport-test": {
+    "cim": "Testtérkép: mely izmok dolgoztak a héten kondiban és sportban",
+    "terulet": "Edzés",
+    "app": "Nincs még",
+    "mit_tud": "Izmonként megmutatja, mennyit dolgozott a kondi és mennyit a sport a héten, külön és együtt egy közös skálán, hány izmot terhelt mindkettő, és a hét átlagos vállterhelését.",
+    "app_megjegyzes": "Az app Sport területe (következő lépés) erre épül; még nem olvassa.",
+    "jegyek": [
+      "mezo-r36n9.202",
+      "mezo-r36n9.203"
+    ],
+    "kezikonyv": [
+      "07-edzes/10-sport-futas"
+    ],
+    "csomag": "train"
+  },
+  "train-sport-vall": {
+    "cim": "Vállterhelés hétről hétre",
+    "terulet": "Edzés",
+    "app": "Nincs még",
+    "mit_tud": "A sport után beírt vállterhelés heti átlagát adja vissza 6 hétre (egy tizedesre), és hogy hány alkalomnál volt érték.",
+    "app_megjegyzes": "Az app Sport területe (következő lépés) erre épül; még nem olvassa.",
+    "jegyek": [
+      "mezo-r36n9.202",
+      "mezo-r36n9.203"
+    ],
+    "kezikonyv": [
+      "07-edzes/10-sport-futas"
+    ],
+    "csomag": "train"
+  },
+  "train-sport-pihenoido": {
+    "cim": "Pihenőidő a kondi és a sport között",
+    "terulet": "Edzés",
+    "app": "Nincs még",
+    "mit_tud": "Naponta megmutatja a kondi és a sport időpontját és a köztük lévő órákat; 3 óránál kevesebb pihenőnél figyelmeztet, 3–6 óránál jelez, és szól, ha sport után másnap délelőtt lábnap jön.",
+    "app_megjegyzes": "Az app Sport területe (következő lépés) erre épül; még nem olvassa.",
+    "jegyek": [
+      "mezo-r36n9.202",
+      "mezo-r36n9.203"
+    ],
+    "kezikonyv": [
+      "07-edzes/10-sport-futas"
+    ],
+    "csomag": "train"
+  },
   "train-edzes-potlas": {
     "cim": "Edzés pótlása a terv számaival",
     "terulet": "Edzés",

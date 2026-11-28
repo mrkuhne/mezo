@@ -1410,6 +1410,12 @@ neither. Before S1 any logged sport or any ≥ 20 min workout near the gym windo
 adds a `|sport:` part only when the day has sport (sport-less days keep their hash). Not yet read by the app — S3
 builds the Sport area on it; the Edzés room can read `sportToday[]` on the today workout read (`train.md` §4).
 
+### Sport S2 — the Sport read models (`mezo-r36n9.202`, 2026-11-28, backend only)
+Five GETs under `/api/train/sport/` — `overview` (the week's two lanes, totals, week count, tonight incl. the
+unmatched Watch workout for pre-fill, hints), `load` (6 weeks, session-RPE × minutes), `body` (muscle heat gym /
+sport / together), `shoulder`, `gaps`. Rules and shapes: [`train.md`](train.md) §4 *Sport / volleyball · cross ·
+TRX*. Not yet in the app's generator filter — S3 (`mezo-r36n9.203`) adds them and builds the Sport area.
+
 ### B3 API operations (the generator filter, `ios/BoopKit/Sources/BoopAPI/openapi-generator-config.yaml`)
 
 Added to the `filter.operations` list in B3: `listCheckInsForDay`, `saveCheckIn`, `getCheckInPlan`, `getIntentionDay`, `addFocus`, `removeFocus`, `createJournalEntry`, `transcribeVoiceNote`, `putDayClose`, `getDayClose`, `listDayCloses`, `generateDayCloseLine`, `generateCheckInLine`, `listConversations`, `createConversation`, `listMessages`, `sendMessage`, `getDayContext`. Contract changes behind them (`api/feature/{biometrics,intention,journal,dayclose,companion,boop}`): `CheckInSnapshot`, `capturedAt` on check-ins, `clientRef` on goals and journal entries, the whole `DayClose` tag, conversation `channel`, `GET /api/companion/day-context`, and `BoopSession.done` / `planGoals` on the brief. Write ordering and idempotency are described in §3.
