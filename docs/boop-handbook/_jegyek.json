@@ -2385,5 +2385,16 @@
     "munkamenet": "lapozo-sport-ma",
     "mit_kapsz": "A Sport Ma „Ezen a héten” sora és a Ma oldal edzéskártyájának gyakorlatai is a közös lapozó-szabályt követik: nincs lapozható sor kártyába zárva, és ahol lapozni lehet, alatta pöttyök mutatják, mennyi van még.",
     "szulo": "mezo-r36n9"
+  },
+  "mezo-r36n9.222": {
+    "cim": "A napi terhelés újratervezése figyelembe veszi a javított vagy törölt sportalkalmat",
+    "tipus": "Feladat",
+    "szakasz": "B5 Edzés + Watch",
+    "terulet": [
+      "Sport"
+    ],
+    "munkamenet": "sport-naplo-test",
+    "mit_kapsz": "Ha utólag kijavítasz vagy törölsz egy sportalkalmat, Boop a napod terhelését is ehhez igazítja, nem a régi adattal számol.",
+    "szulo": "mezo-r36n9"
   }
 }
